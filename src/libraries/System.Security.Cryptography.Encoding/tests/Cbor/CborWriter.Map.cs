@@ -5,6 +5,7 @@
 #nullable enable
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Threading;
 
@@ -12,10 +13,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborWriter
     {
-        private static readonly ArrayPool<KeyValueEncodingRange> s_rangeBuffers = ArrayPool<KeyValueEncodingRange>.Create();
-
-        private KeyEncodingComparer? _keyComparer;
-        private Stack<HashSet<KeyValueEncodingRange>>? _pooledKeyValueEncodingRangeSets;
+        private KeyEncodingComparer? _keyEncodingComparer;
+        private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;
+        private Stack<List<KeyValueEncodingRange>>? _pooledKeyValueEncodingRangeLists;
 
         public void WriteStartMap(int definiteLength)
         {
@@ -58,27 +58,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
             {
-                // Check against the existing set of key/value encodings that the new key is not a dupe.
-                // NB the key/value encoding set stores values up to key encoding equality.
-                // We use a dummy KeyValueEncodingRange instance which only contains key offset information to check this.
-                HashSet<KeyValueEncodingRange> keyValueEncodingRanges = GetKeyValueEncodingRanges();
+                HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
 
-                var currentKeyRange = new KeyValueEncodingRange(
-                    offset: _currentKeyOffset.Value,
-                    keyLength: _offset - _currentKeyOffset.Value,
-                    totalLength: -1 // totalLength not yet known, but is not significant w.r.t. key equality semantics
-                );
+                (int Offset, int Length) currentKey = (_currentKeyOffset.Value, _offset - _currentKeyOffset.Value);
 
-                if (keyValueEncodingRanges.Contains(currentKeyRange))
+                if (!keyEncodingRanges.Add(currentKey))
                 {
                     // reset writer state to right before the offending key write
-                    _buffer.AsSpan(currentKeyRange.Offset, _offset).Fill(0);
-                    _offset = currentKeyRange.Offset;
+                    _buffer.AsSpan(currentKey.Offset, _offset).Fill(0);
+                    _offset = currentKey.Offset;
 
                     throw new InvalidOperationException("Duplicate key encoding in CBOR map.");
                 }
             }
 
+            // record the value buffer offset
             _currentValueOffset = _offset;
         }
 
@@ -86,104 +80,128 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
-            if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
+            if (CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
             {
-                HashSet<KeyValueEncodingRange> ranges = GetKeyValueEncodingRanges();
+                List<KeyValueEncodingRange> keyValueRanges = GetKeyValueEncodingRanges();
 
                 var currentKeyValueRange = new KeyValueEncodingRange(
                     offset: _currentKeyOffset.Value,
                     keyLength: _currentValueOffset.Value - _currentKeyOffset.Value,
                     totalLength: _offset - _currentKeyOffset.Value);
 
-                bool unique = ranges.Add(currentKeyValueRange);
-                Debug.Assert(unique); // guaranteed to hold by virtue of uniqueness check at key write time
-            }
-            else
-            {
-                // There is currently no conformance level that requires sorted keys but not key uniqueness.
-                // NB using HashSet for storing key ranges would be inappropriate in such a scenario.
-                Debug.Assert(!CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel));
+                // Check that the keys are written in sorted order.
+                // Once invalidated, declare that the map requires sorting,
+                // which will prompt a sorting of the encodings once map writes have completed.
+                if (!_keysRequireSorting && keyValueRanges.Count > 0)
+                {
+                    KeyEncodingComparer comparer = GetKeyEncodingComparer();
+                    KeyValueEncodingRange previousKeyValueRange = keyValueRanges[keyValueRanges.Count - 1];
+                    _keysRequireSorting = comparer.Compare(previousKeyValueRange, currentKeyValueRange) > 0;
+                }
+
+                keyValueRanges.Add(currentKeyValueRange);
             }
 
-            // reset state to new key
+            // update offset state to the next key
             _currentKeyOffset = _offset;
             _currentValueOffset = null;
         }
 
-        private void SortKeyValuePairEncodings()
+        private void CompleteMapWrite()
         {
-            if (_keyValueEncodingRanges == null || _keyValueEncodingRanges.Count < 2)
+            if (_keysRequireSorting)
             {
-                return; // no need to sort empty or singleton maps
+                Debug.Assert(_keyValueEncodingRanges != null);
+
+                // sort the key/value ranges in-place
+                _keyValueEncodingRanges.Sort(GetKeyEncodingComparer());
+
+                // copy sorted ranges to temporary buffer
+                int totalMapPayloadEncodingLength = _offset - _frameOffset;
+                Span<byte> source = _buffer.AsSpan();
+
+                byte[] tempBuffer = s_bufferPool.Rent(totalMapPayloadEncodingLength);
+                Span<byte> tmpSpan = tempBuffer.AsSpan(0, totalMapPayloadEncodingLength);
+
+                Span<byte> s = tmpSpan;
+                foreach (KeyValueEncodingRange range in _keyValueEncodingRanges)
+                {
+                    ReadOnlySpan<byte> keyValueEncoding = source.Slice(range.Offset, range.TotalLength);
+                    keyValueEncoding.CopyTo(s);
+                    s = s.Slice(keyValueEncoding.Length);
+                }
+                Debug.Assert(s.IsEmpty);
+
+                // now copy back to the original buffer segment & clean up
+                tmpSpan.CopyTo(source.Slice(_frameOffset, totalMapPayloadEncodingLength));
+                s_bufferPool.Return(tempBuffer, clearArray: true);
             }
 
-            Debug.Assert(_keyComparer != null);
-
-            // copy the key/value ranges to a temporary buffer and sort in-place
-            KeyValueEncodingRange[] rangeBuffer = s_rangeBuffers.Rent(_keyValueEncodingRanges.Count);
-            Span<KeyValueEncodingRange> rangeSpan = rangeBuffer.AsSpan(0, _keyValueEncodingRanges.Count);
-            _keyValueEncodingRanges.CopyTo(rangeBuffer);
-            rangeSpan.Sort(_keyComparer);
-
-            // copy sorted ranges to temporary buffer
-            int totalMapPayloadEncodingLength = _offset - _frameOffset;
-            byte[] tempBuffer = s_bufferPool.Rent(totalMapPayloadEncodingLength);
-            Span<byte> tmpSpan = tempBuffer.AsSpan(0, totalMapPayloadEncodingLength);
-
-            Span<byte> s = tmpSpan;
-            foreach (KeyValueEncodingRange range in rangeSpan)
-            {
-                ReadOnlySpan<byte> kvEnc = GetKeyValueEncoding(in range);
-                kvEnc.CopyTo(s);
-                s = s.Slice(kvEnc.Length);
-            }
-            Debug.Assert(s.IsEmpty);
-
-            // now copy back to the original buffer segment
-            tmpSpan.CopyTo(_buffer.AsSpan(_frameOffset, totalMapPayloadEncodingLength));
-
-            s_bufferPool.Return(tempBuffer, clearArray: true);
-            s_rangeBuffers.Return(rangeBuffer, clearArray: false);
-            ReturnKeyValueEncodingRange();
+            ReturnKeyEncodingRangeAllocation();
+            ReturnKeyValueEncodingRangeAllocation();
         }
 
-        private ReadOnlySpan<byte> GetKeyEncoding(in KeyValueEncodingRange keyValueRange)
-        {
-            return _buffer.AsSpan(keyValueRange.Offset, keyValueRange.KeyLength);
-        }
-
-        private ReadOnlySpan<byte> GetKeyValueEncoding(in KeyValueEncodingRange keyValueRange)
-        {
-            return _buffer.AsSpan(keyValueRange.Offset, keyValueRange.TotalLength);
-        }
-
-        // Gets or initializes a hashset containing all key/value encoding ranges for the current CBOR map context
+        // Gets or initializes a hashset containing all key encoding ranges for the current CBOR map context
         // Equality of the HashSet is determined up to key encoding equality.
-        private HashSet<KeyValueEncodingRange> GetKeyValueEncodingRanges()
+        private HashSet<(int Offset, int Length)> GetKeyEncodingRanges()
+        {
+            if (_keyEncodingRanges != null)
+            {
+                return _keyEncodingRanges;
+            }
+
+            if (_pooledKeyEncodingRangeSets != null &&
+                _pooledKeyEncodingRangeSets.TryPop(out HashSet<(int Offset, int Length)>? result))
+            { 
+                result.Clear();
+                return _keyEncodingRanges = result;
+            }
+
+            return _keyEncodingRanges = new HashSet<(int Offset, int Length)>(GetKeyEncodingComparer());
+        }
+
+
+        // Gets or initializes a list containing all key/value encoding ranges for the current CBOR map context
+        private void ReturnKeyEncodingRangeAllocation()
+        {
+            if (_keyEncodingRanges != null)
+            {
+                _pooledKeyEncodingRangeSets ??= new Stack<HashSet<(int Offset, int Length)>>();
+                _pooledKeyEncodingRangeSets.Push(_keyEncodingRanges);
+                _keyEncodingRanges = null;
+            }
+        }
+
+        private List<KeyValueEncodingRange> GetKeyValueEncodingRanges()
         {
             if (_keyValueEncodingRanges != null)
             {
                 return _keyValueEncodingRanges;
             }
 
-            if (_pooledKeyValueEncodingRangeSets != null &&
-                _pooledKeyValueEncodingRangeSets.TryPop(out HashSet<KeyValueEncodingRange>? result))
-            { 
+            if (_pooledKeyValueEncodingRangeLists != null &&
+                _pooledKeyValueEncodingRangeLists.TryPop(out List<KeyValueEncodingRange>? result))
+            {
                 result.Clear();
                 return _keyValueEncodingRanges = result;
             }
 
-            _keyComparer ??= new KeyEncodingComparer(this);
-            return _keyValueEncodingRanges = new HashSet<KeyValueEncodingRange>(_keyComparer);
+            return _keyValueEncodingRanges = new List<KeyValueEncodingRange>();
         }
 
-        private void ReturnKeyValueEncodingRange()
+        private void ReturnKeyValueEncodingRangeAllocation()
         {
-            Debug.Assert(_keyValueEncodingRanges != null);
+            if (_keyValueEncodingRanges != null)
+            {
+                _pooledKeyValueEncodingRangeLists ??= new Stack<List<KeyValueEncodingRange>>();
+                _pooledKeyValueEncodingRangeLists.Push(_keyValueEncodingRanges);
+                _keyValueEncodingRanges = null;
+            }
+        }
 
-            _pooledKeyValueEncodingRangeSets ??= new Stack<HashSet<KeyValueEncodingRange>>();
-            _pooledKeyValueEncodingRangeSets.Push(_keyValueEncodingRanges);
-            _keyValueEncodingRanges = null;
+        private KeyEncodingComparer GetKeyEncodingComparer()
+        {
+            return _keyEncodingComparer ??= new KeyEncodingComparer(this);
         }
 
         private readonly struct KeyValueEncodingRange
@@ -202,7 +220,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         // Defines order and equality semantics for a key/value encoding range pair up to key encoding
         private class KeyEncodingComparer : IComparer<KeyValueEncodingRange>,
-                                            IEqualityComparer<KeyValueEncodingRange>
+                                            IEqualityComparer<(int Offset, int Length)>
         {
             private readonly CborWriter _writer;
 
@@ -211,19 +229,29 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 _writer = writer;
             }
 
-            public int GetHashCode(KeyValueEncodingRange value)
+            private Span<byte> GetKeyEncoding((int Offset, int Length) range)
             {
-                return CborConformanceLevelHelpers.GetKeyEncodingHashCode(_writer.GetKeyEncoding(in value));
+                return _writer._buffer.AsSpan(range.Offset, range.Length);
             }
 
-            public bool Equals(KeyValueEncodingRange x, KeyValueEncodingRange y)
+            private Span<byte> GetKeyEncoding(in KeyValueEncodingRange range)
             {
-                return CborConformanceLevelHelpers.AreEqualKeyEncodings(_writer.GetKeyEncoding(in x), _writer.GetKeyEncoding(in y));
+                return _writer._buffer.AsSpan(range.Offset, range.KeyLength);
+            }
+
+            public int GetHashCode((int Offset, int Length) range)
+            {
+                return CborConformanceLevelHelpers.GetKeyEncodingHashCode(GetKeyEncoding(range));
+            }
+
+            public bool Equals((int Offset, int Length) x, (int Offset, int Length) y)
+            {
+                return CborConformanceLevelHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
             }
 
             public int Compare(KeyValueEncodingRange x, KeyValueEncodingRange y)
             {
-                return CborConformanceLevelHelpers.CompareKeyEncodings(_writer.GetKeyEncoding(in x), _writer.GetKeyEncoding(in y), _writer.ConformanceLevel);
+                return CborConformanceLevelHelpers.CompareKeyEncodings(GetKeyEncoding(in x), GetKeyEncoding(in y), _writer.ConformanceLevel);
             }
         }
     }

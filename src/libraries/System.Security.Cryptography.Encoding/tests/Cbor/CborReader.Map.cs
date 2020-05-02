@@ -164,7 +164,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return _keyEncodingRanges = new HashSet<(int Offset, int Length)>(_keyEncodingComparer);
         }
 
-        private void ReturnKeyEncodingRangeSet()
+        private void ReturnKeyEncodingRangeAllocation()
         {
             if (_keyEncodingRanges != null)
             {
@@ -172,11 +172,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 _pooledKeyEncodingRangeSets.Push(_keyEncodingRanges);
                 _keyEncodingRanges = null;
             }
-        }
-
-        private ReadOnlySpan<byte> GetKeyEncoding(in (int Offset, int Length) range)
-        {
-            return _originalBuffer.Span.Slice(range.Offset, range.Length);
         }
 
         private class KeyEncodingComparer : IEqualityComparer<(int Offset, int Length)>
@@ -188,14 +183,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 _reader = reader;
             }
 
+            private ReadOnlySpan<byte> GetKeyEncoding((int Offset, int Length) range)
+            {
+                return _reader._originalBuffer.Span.Slice(range.Offset, range.Length);
+            }
+
             public int GetHashCode((int Offset, int Length) value)
             {
-                return CborConformanceLevelHelpers.GetKeyEncodingHashCode(_reader.GetKeyEncoding(in value));
+                return CborConformanceLevelHelpers.GetKeyEncodingHashCode(GetKeyEncoding(value));
             }
 
             public bool Equals((int Offset, int Length) x, (int Offset, int Length) y)
             {
-                return CborConformanceLevelHelpers.AreEqualKeyEncodings(_reader.GetKeyEncoding(in x), _reader.GetKeyEncoding(in y));
+                return CborConformanceLevelHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
             }
         }
     }

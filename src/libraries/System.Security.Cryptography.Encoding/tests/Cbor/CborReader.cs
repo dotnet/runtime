@@ -345,7 +345,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (frame.MajorType == CborMajorType.Map)
             {
-                ReturnKeyEncodingRangeSet();
+                ReturnKeyEncodingRangeAllocation();
             }
 
             _nestedDataItems.Pop();

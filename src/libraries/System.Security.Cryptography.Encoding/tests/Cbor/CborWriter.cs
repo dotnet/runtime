@@ -27,7 +27,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Map-specific bookkeeping
         private int? _currentKeyOffset = null;
         private int? _currentValueOffset = null;
-        private HashSet<KeyValueEncodingRange>? _keyValueEncodingRanges = null;
+        // State required for sorting map keys
+        private bool _keysRequireSorting = false;
+        private List<KeyValueEncodingRange>? _keyValueEncodingRanges = null;
+        // State required for checking key uniqueness
+        private HashSet<(int Offset, int Length)>? _keyEncodingRanges = null;
 
         public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool encodeIndefiniteLengths = false, bool allowMultipleRootLevelValues = false)
         {
@@ -152,12 +156,28 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private void PushDataItem(CborMajorType type, int? definiteLength)
         {
             _nestedDataItems ??= new Stack<StackFrame>();
-            _nestedDataItems.Push(new StackFrame(type, _frameOffset, _definiteLength, _itemsWritten, _currentKeyOffset, _currentValueOffset, _keyValueEncodingRanges));
+
+            var frame = new StackFrame(
+                type: type,
+                frameOffset: _frameOffset,
+                definiteLength: _definiteLength,
+                itemsWritten: _itemsWritten,
+                currentKeyOffset: _currentKeyOffset,
+                currentValueOffset: _currentValueOffset,
+                keysRequireSorting: _keysRequireSorting,
+                keyValueEncodingRanges: _keyValueEncodingRanges,
+                keyEncodingRanges: _keyEncodingRanges
+            );
+
+            _nestedDataItems.Push(frame);
+
             _frameOffset = _offset;
             _definiteLength = definiteLength;
             _itemsWritten = 0;
             _currentKeyOffset = (type == CborMajorType.Map) ? (int?)_offset : null;
             _currentValueOffset = null;
+            _keysRequireSorting = false;
+            _keyEncodingRanges = null;
             _keyValueEncodingRanges = null;
         }
 
@@ -188,16 +208,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             // Perform encoding fixups that require the current context and must be done before popping
-            // NB key sorting must happen before indefinite-length patching
+            // NB map key sorting must happen before indefinite-length patching
 
-            if (expectedType == CborMajorType.Map && CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
+            if (expectedType == CborMajorType.Map)
             {
-                SortKeyValuePairEncodings();
+                CompleteMapWrite();
             }
 
             if (_definiteLength == null)
             {
-                CompleteIndefiniteLengthCollection(expectedType);
+                CompleteIndefiniteLengthWrite(expectedType);
             }
 
             // pop writer state
@@ -207,7 +227,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _itemsWritten = frame.ItemsWritten;
             _currentKeyOffset = frame.CurrentKeyOffset;
             _currentValueOffset = frame.CurrentValueOffset;
+            _keysRequireSorting = frame.KeysRequireSorting;
             _keyValueEncodingRanges = frame.KeyValueEncodingRanges;
+            _keyEncodingRanges = frame.KeyEncodingRanges;
         }
 
         private bool IsMajorTypeContext(CborMajorType type)
@@ -219,7 +241,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             if (_currentKeyOffset != null) // this is a map context
             {
-                if (_currentValueOffset == null)
+                if (_currentValueOffset is null)
                 {
                     HandleKeyWritten();
                 }
@@ -281,7 +303,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        private void CompleteIndefiniteLengthCollection(CborMajorType type)
+        private void CompleteIndefiniteLengthWrite(CborMajorType type)
         {
             Debug.Assert(_definiteLength == null);
 
@@ -316,8 +338,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private readonly struct StackFrame
         {
-            public StackFrame(CborMajorType type, int frameOffset, int? definiteLength, int itemsWritten,
-                              int? currentKeyOffset, int? currentValueOffset, HashSet<KeyValueEncodingRange>? keyValueEncodingRanges)
+            public StackFrame(
+                CborMajorType type,
+                int frameOffset,
+                int? definiteLength,
+                int itemsWritten,
+                int? currentKeyOffset,
+                int? currentValueOffset,
+                bool keysRequireSorting,
+                List<KeyValueEncodingRange>? keyValueEncodingRanges,
+                HashSet<(int Offset, int Length)>? keyEncodingRanges)
             {
                 MajorType = type;
                 FrameOffset = frameOffset;
@@ -325,7 +355,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 ItemsWritten = itemsWritten;
                 CurrentKeyOffset = currentKeyOffset;
                 CurrentValueOffset = currentValueOffset;
+                KeysRequireSorting = keysRequireSorting;
                 KeyValueEncodingRanges = keyValueEncodingRanges;
+                KeyEncodingRanges = keyEncodingRanges;
             }
 
             public CborMajorType MajorType { get; }
@@ -335,7 +367,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public int? CurrentKeyOffset { get; }
             public int? CurrentValueOffset { get; }
-            public HashSet<KeyValueEncodingRange>? KeyValueEncodingRanges { get; }
+            public bool KeysRequireSorting { get; }
+            public List<KeyValueEncodingRange>? KeyValueEncodingRanges { get; }
+            public HashSet<(int Offset, int Length)>? KeyEncodingRanges { get; }
         }
     }
 }
