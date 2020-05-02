@@ -3,9 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Component
 {
+    // All component exports should have a version marked with UnmanagedCallersOnlyAttribute.
+    // Both versions are implicitly run in the nativehost runner. For methods marked with
+    // UnmanagedCallersOnlyAttribute, a prefix of "Unmanaged" is assumed by the nativehost runner.
     public class Component
     {
         private static int componentCallCount = 0;
@@ -33,6 +37,24 @@ namespace Component
             componentCallCount++;
             Console.WriteLine($"Called {nameof(ThrowException)}(0x{arg.ToString("x")}, {size}) - component call count: {componentCallCount}");
             throw new InvalidOperationException(nameof(ThrowException));
+        }
+
+        [UnmanagedCallersOnly]
+        public static int UnmanagedComponentEntryPoint1(IntPtr arg, int size)
+        {
+            return ComponentEntryPoint1(arg, size);
+        }
+
+        [UnmanagedCallersOnly]
+        public static int UnmanagedComponentEntryPoint2(IntPtr arg, int size)
+        {
+            return ComponentEntryPoint2(arg, size);
+        }
+
+        [UnmanagedCallersOnly]
+        public static int UnmanagedThrowException(IntPtr arg, int size)
+        {
+            return ThrowException(arg, size);
         }
     }
 }

@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -61,10 +62,14 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                string delegateType;
+                string? delegateType;
                 if (delegateTypeNative == IntPtr.Zero)
                 {
                     delegateType = typeof(ComponentEntryPoint).AssemblyQualifiedName!;
+                }
+                else if (delegateTypeNative == (IntPtr)(-1))
+                {
+                    delegateType = null;
                 }
                 else
                 {
@@ -81,15 +86,7 @@ namespace Internal.Runtime.InteropServices
                     throw new ArgumentNullException(nameof(functionHandle));
                 }
 
-                Delegate d = CreateDelegate(assemblyPath, typeName, methodName, delegateType);
-
-                IntPtr functionPtr = Marshal.GetFunctionPointerForDelegate(d);
-
-                lock (s_delegates)
-                {
-                    // Keep a reference to the delegate to prevent it from being garbage collected
-                    s_delegates[functionPtr] = d;
-                }
+                IntPtr functionPtr = GetFunctionPointer(assemblyPath, typeName, methodName, delegateType);
 
                 Marshal.WriteIntPtr(functionHandle, functionPtr);
             }
@@ -101,21 +98,38 @@ namespace Internal.Runtime.InteropServices
             return 0;
         }
 
-        private static Delegate CreateDelegate(string assemblyPath, string typeName, string methodName, string delegateTypeName)
+        private static IntPtr GetFunctionPointer(string assemblyPath, string typeName, string methodName, string? delegateTypeName)
         {
-            // Throws
             IsolatedComponentLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
-
             Func<AssemblyName, Assembly> resolver = name => alc.LoadFromAssemblyName(name);
 
-            // Throws
             Type type = Type.GetType(typeName, resolver, null, throwOnError: true)!;
 
-            // Throws
-            Type delegateType = Type.GetType(delegateTypeName, resolver, null, throwOnError: true)!;
+            IntPtr functionPtr;
+            if (delegateTypeName == null)
+            {
+                MethodInfo? methodInfo = type.GetMethod(methodName);
+                if (methodInfo == null)
+                    throw new MissingMethodException(typeName, methodName);
 
-            // Throws
-            return Delegate.CreateDelegate(delegateType, type, methodName)!;
+                Debug.Assert(null != methodInfo.GetCustomAttribute<UnmanagedCallersOnlyAttribute>());
+                functionPtr = ((RuntimeMethodInfo)methodInfo).MethodHandle.GetFunctionPointer();
+            }
+            else
+            {
+                Type delegateType = Type.GetType(delegateTypeName, resolver, null, throwOnError: true)!;
+                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName)!;
+
+                functionPtr = Marshal.GetFunctionPointerForDelegate(d);
+
+                lock (s_delegates)
+                {
+                    // Keep a reference to the delegate to prevent it from being garbage collected
+                    s_delegates[functionPtr] = d;
+                }
+            }
+
+            return functionPtr;
         }
 
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
