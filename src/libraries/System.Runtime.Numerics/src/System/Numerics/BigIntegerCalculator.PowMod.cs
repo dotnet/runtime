@@ -149,21 +149,16 @@ namespace System.Numerics
             return PowCore(power, modulus, v, 1);
         }
 
-        public static uint Pow(uint value, uint[] power, uint modulus)
+        public static uint Pow(uint value, ReadOnlySpan<uint> power, uint modulus)
         {
-            Debug.Assert(power != null);
-
             // The 32-bit modulus pow method for a 32-bit integer
             // raised by a big integer...
 
             return PowCore(power, modulus, value, 1);
         }
 
-        public static uint Pow(uint[] value, uint[] power, uint modulus)
+        public static uint Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power, uint modulus)
         {
-            Debug.Assert(value != null);
-            Debug.Assert(power != null);
-
             // The 32-bit modulus pow method for a big integer
             // raised by a big integer...
 
@@ -171,7 +166,7 @@ namespace System.Numerics
             return PowCore(power, modulus, v, 1);
         }
 
-        private static uint PowCore(uint[] power, uint modulus,
+        private static uint PowCore(ReadOnlySpan<uint> power, uint modulus,
                                     ulong value, ulong result)
         {
             // The 32-bit modulus pow algorithm for all but
