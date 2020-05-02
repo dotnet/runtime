@@ -70,7 +70,7 @@ namespace System.Net.Quic.Tests.Harness
 
         protected void SerializePayloadWithFrames(QuicWriter writer, TestHarnessContext context, IEnumerable<FrameBase> frames)
         {
-            var seal = context.GetSenderPacketNumberSpace(PacketType).SendCryptoSeal;
+            var seal = context.GetSendSeal(PacketType);
 
             // this more or less duplicates code inside ManagedQuicConnection
 

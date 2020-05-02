@@ -69,6 +69,9 @@ namespace System.Net.Quic.Implementations.Managed
                     return ProcessPacketResult.DropPacket;
                 }
 
+                // TODO-RZ: Implement key update
+                Debug.Assert(!header.KeyPhaseBit);
+
                 result = Receive1Rtt(reader, header, context);
             }
 
@@ -97,8 +100,16 @@ namespace System.Net.Quic.Implementations.Managed
                     // total length of the packet is known and checked during header parsing.
                     // Adjust the buffer to the range belonging to the current packet.
                     reader.Reset(reader.Buffer.Slice(0, reader.BytesRead + (int)headerData.Length), reader.BytesRead);
+                    var result = ReceiveCommon(reader, header, headerData, context);
 
-                    return ReceiveCommon(reader, header, headerData, context);
+                    if (result == ProcessPacketResult.Ok && _isServer && type == PacketType.Handshake)
+                    {
+                        // RFC: A server stops sending and processing Initial packets when it receives its first
+                        // HandshakeConfirmed packet
+                        DropPacketNumberSpace(PacketSpace.Initial);
+                    }
+
+                    return result;
                 case PacketType.Retry:
                     return ReceiveRetry(reader, header, context);
                 case PacketType.VersionNegotiation:
@@ -434,6 +445,12 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 RestartIdleTimer(context.Timestamp);
                 _ackElicitingSentSinceLastReceive = true;
+            }
+
+            if (!_isServer && packetType == PacketType.Handshake)
+            {
+                // RFC: A client stops sending and processing Initial packets when it sends its first Handshake packet
+                DropPacketNumberSpace(PacketSpace.Initial);
             }
 
             return true;

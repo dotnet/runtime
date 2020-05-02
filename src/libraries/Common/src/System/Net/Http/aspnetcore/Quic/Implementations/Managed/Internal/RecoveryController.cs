@@ -103,6 +103,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             ///     reaction to the timeout. Otherwise 0.
             /// </summary>
             internal int RemainingLossProbes { get; set; }
+
+            /// <summary>
+            ///     Resets the state of the packet space to the initial state.
+            /// </summary>
+            internal void Reset()
+            {
+                RemainingLossProbes = 0;
+                AckedPackets.Clear();
+                LostPackets.Clear();
+                SentPackets.Clear();
+                NextLossTime = long.MaxValue;
+                LargestAckedPacketNumber = 0;
+                TimeOfLastAckElicitingPacketSent = long.MaxValue;
+            }
         }
 
         private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[]
@@ -204,13 +218,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             foreach (PacketNumberSpace space in _pnSpaces)
             {
-                space.RemainingLossProbes = 0;
-                space.AckedPackets.Clear();
-                space.LostPackets.Clear();
-                space.SentPackets.Clear();
-                space.NextLossTime = long.MaxValue;
-                space.LargestAckedPacketNumber = 0;
-                space.TimeOfLastAckElicitingPacketSent = long.MaxValue;
+                space.Reset();
             }
         }
 
@@ -517,6 +525,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     BytesInFlight -= pnSpace.SentPackets[i].BytesSent;
                 }
             }
+
+            pnSpace.Reset();
         }
     }
 }

@@ -324,6 +324,7 @@ namespace System.Net.Quic.Implementations.Managed
             // scenario where there is a pending ack in e.g. Initial epoch, but the connection cannot
             // send it because it is limited by congestion window, because it has in-flight packets
             // in Handshake epoch.
+            // TODO-RZ: this might not happen anymore if we drop packet space data
             var probeSpace = PacketSpace.Initial;
             for (int i = 1; i < _pnSpaces.Length; i++)
             {
@@ -620,6 +621,23 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 throw new QuicErrorException(inboundError!);
             }
+        }
+
+        private void DropPacketNumberSpace(PacketSpace space)
+        {
+            // TODO-RZ: discard the PacketNumberSpace instance and let GC collect it?
+            var pnSpace = _pnSpaces[(int)space];
+            if (pnSpace.SendCryptoSeal == null)
+            {
+                // already dropped
+                return;
+            }
+
+            Recovery.DropUnackedData(space);
+
+            // drop protection keys
+            pnSpace.SendCryptoSeal = null;
+            pnSpace.RecvCryptoSeal = null;
         }
 
         internal void SignalConnectionClose() => _closeTcs.TryComplete();

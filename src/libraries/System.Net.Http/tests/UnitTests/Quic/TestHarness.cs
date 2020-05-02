@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
@@ -25,6 +26,7 @@ namespace System.Net.Quic.Tests
         private readonly QuicSocketContext.SendContext _sendContext;
         private readonly QuicSocketContext.RecvContext _recvContext;
 
+        private readonly Dictionary<(ManagedQuicConnection, PacketType), CryptoSeal> _sealMap = new Dictionary<(ManagedQuicConnection, PacketType), CryptoSeal>();
 
         private readonly long _startTimestamp = Implementations.Managed.Internal.Timestamp.Now;
         internal long Timestamp;
@@ -65,13 +67,13 @@ namespace System.Net.Quic.Tests
             from.SendData(_writer, out _, _sendContext);
             int written = _writer.BytesWritten;
             var copy = buffer.AsSpan(0, written).ToArray();
-            var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(from));
+            var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(from, _sealMap));
 
             // debug: check that serializing packets back gives identical datagram
             _writer.Reset(copy);
             foreach (var packet in packets)
             {
-                packet.Serialize(_writer, new TestHarnessContext(from));
+                packet.Serialize(_writer, new TestHarnessContext(from, _sealMap));
                 _writer.Reset(_writer.Buffer.Slice(_writer.BytesWritten));
             }
             Debug.Assert(copy.AsSpan().SequenceEqual(buffer.AsSpan(0, written)));
@@ -130,7 +132,7 @@ namespace System.Net.Quic.Tests
         internal void SendFlight(ManagedQuicConnection source,
             ManagedQuicConnection destination, IEnumerable<PacketBase> packets)
         {
-            TestHarnessContext testHarness = new TestHarnessContext(source);
+            TestHarnessContext testHarness = new TestHarnessContext(source, _sealMap);
 
             LogFlightPackets(packets, source == _client);
 
@@ -183,7 +185,7 @@ namespace System.Net.Quic.Tests
             int written = _writer.BytesWritten;
             var copy = buffer.AsSpan(0, written).ToArray();
 
-            var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(source));
+            var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(source, _sealMap));
 
             LogFlightPackets(packets, source == _client);
 

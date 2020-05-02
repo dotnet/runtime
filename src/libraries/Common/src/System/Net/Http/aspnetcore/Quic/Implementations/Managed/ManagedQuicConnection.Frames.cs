@@ -173,6 +173,10 @@ namespace System.Net.Quic.Implementations.Managed
 
             reader.ReadFrameType(); // there are no more data, just the frame type identifier.
             _handshakeDoneReceived = true;
+
+            // An endpoint MUST discard handshake keys when TLS handshake is complete.
+            DropPacketNumberSpace(PacketSpace.Handshake);
+
             _connectTcs.TryComplete();
 
             return ProcessPacketResult.Ok;
@@ -416,6 +420,9 @@ namespace System.Net.Quic.Implementations.Managed
                 _connectTcs.TryComplete();
                 context.SentPacket.HandshakeDoneSent = true;
                 _handshakeDoneSent = true;
+
+                // handshake is done
+                DropPacketNumberSpace(PacketSpace.Handshake);
             }
 
             if (writer.BytesAvailable > 0 && _pingWanted)
