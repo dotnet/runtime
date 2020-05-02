@@ -150,7 +150,7 @@ namespace System.Numerics
             // The 32-bit modulus pow method for a 32-bit integer
             // raised by a big integer...
 
-            return PowCore(power, modulus, value, 1);
+            return PowCore(value, power, modulus, 1);
         }
 
         public static uint Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power, uint modulus)
@@ -159,11 +159,10 @@ namespace System.Numerics
             // raised by a big integer...
 
             uint v = Remainder(value, modulus);
-            return PowCore(power, modulus, v, 1);
+            return PowCore(v, power, modulus, 1);
         }
 
-        private static uint PowCore(ReadOnlySpan<uint> power, uint modulus,
-                                    ulong value, ulong result)
+        private static uint PowCore(ulong value, ReadOnlySpan<uint> power, uint modulus, ulong result)
         {
             // The 32-bit modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
