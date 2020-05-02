@@ -60,7 +60,8 @@ namespace System.Numerics
 
                 // Let v = (v - q2) % 2^(k+1) - i*m
                 var length = SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length + 1);
-                value.Slice(length).Clear();
+                value = value.Slice(length);
+                value.Clear();
 
                 return length;
             }
