@@ -972,6 +972,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/*">
             <Issue>https://github.com/dotnet/runtime/issues/35639</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/SimpleSIMDProgram/*">
+            <Issue>https://github.com/dotnet/runtime/issues/35724</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- runtest.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.

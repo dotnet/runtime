@@ -501,8 +501,7 @@ set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 if %%__Mono%%==1 (
   set RuntimeFlavor="mono"
-)
-else (
+) else (
   set RuntimeFlavor="coreclr"
 )
 
