@@ -1,12 +1,24 @@
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 
 namespace System.Net.Quic.Implementations.Managed
 {
     internal sealed partial class ManagedQuicConnection
     {
+        /// <summary>
+        ///     Current value of the key phase bit for key update detection.
+        /// </summary>
+        private bool _currentKeyPhase;
+
+        private CryptoSeal? _nextSendSeal;
+
+        private CryptoSeal? _nextRecvSeal;
+
+        private bool _doKeyUpdate;
+
         internal void ReceiveData(QuicReader reader, IPEndPoint sender, QuicSocketContext.RecvContext ctx)
         {
             if (_closingPeriodEnd != null)
@@ -24,7 +36,7 @@ namespace System.Net.Quic.Implementations.Managed
                 switch (status)
                 {
                     case ProcessPacketResult.DropPacket:
-                        Console.WriteLine("Packet dropped");
+                        // Console.WriteLine("Packet dropped");
                         break;
                     case ProcessPacketResult.Ok:
                         // An endpoint restarts its idle timer when a packet from its peer is
@@ -68,9 +80,6 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     return ProcessPacketResult.DropPacket;
                 }
-
-                // TODO-RZ: Implement key update
-                Debug.Assert(!header.KeyPhaseBit);
 
                 result = Receive1Rtt(reader, header, context);
             }
@@ -122,7 +131,8 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header, QuicSocketContext.RecvContext context)
+        private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header,
+            QuicSocketContext.RecvContext context)
         {
             throw new NotImplementedException();
         }
@@ -167,23 +177,6 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, context);
-        }
-
-        private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header, QuicSocketContext.RecvContext context)
-        {
-            int pnOffset = reader.BytesRead;
-            PacketType packetType = PacketType.OneRtt;
-            var pnSpace = GetPacketNumberSpace(EncryptionLevel.Application);
-            int payloadLength = reader.BytesLeft;
-
-            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, context);
-        }
-
-        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
-            int payloadLength,
-            PacketType packetType, QuicSocketContext.RecvContext context)
-        {
             if (pnSpace.RecvCryptoSeal == null)
             {
                 // Decryption keys are not available yet, drop the packet for now
@@ -191,8 +184,59 @@ namespace System.Net.Quic.Implementations.Managed
                 return ProcessPacketResult.DropPacket;
             }
 
-            var seal = pnSpace.RecvCryptoSeal!;
+            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, pnSpace.RecvCryptoSeal!,
+                context);
+        }
 
+        private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header,
+            QuicSocketContext.RecvContext context)
+        {
+            int pnOffset = reader.BytesRead;
+            PacketType packetType = PacketType.OneRtt;
+            var pnSpace = GetPacketNumberSpace(EncryptionLevel.Application);
+            int payloadLength = reader.BytesLeft;
+
+            if (pnSpace.RecvCryptoSeal == null)
+            {
+                // Decryption keys are not available yet, drop the packet for now
+                // TODO-RZ: consider buffering the packet
+                return ProcessPacketResult.DropPacket;
+            }
+
+            CryptoSeal recvSeal = pnSpace.RecvCryptoSeal;
+
+            if (header.KeyPhaseBit != _currentKeyPhase && false)
+            {
+                // TODO-RZ: Remember old protection keys
+                // An endpoint SHOULD retain old keys so that packets sent by its peer
+                // prior to receiving the key update can be processed.  Discarding old
+                // keys too early can cause delayed packets to be discarded.  Discarding
+                // packets will be interpreted as packet loss by the peer and could
+                // adversely affect performance.
+
+                // keys will be updated next time a packet is sent
+                _doKeyUpdate = true;
+                if (_nextRecvSeal == null)
+                {
+                    // create updated keys
+
+                    // TODO-RZ: the peer MUST not initiate key update before handshake is done,
+                    // so the seals should already exist, but we should still check against an attack.
+                    _nextSendSeal = CryptoSeal.UpdateSeal(pnSpace.SendCryptoSeal!);
+                    _nextRecvSeal = CryptoSeal.UpdateSeal(pnSpace.RecvCryptoSeal!);
+                }
+
+                recvSeal = _nextRecvSeal;
+            }
+
+
+            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, recvSeal, context);
+        }
+
+        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
+            int payloadLength,
+            PacketType packetType, CryptoSeal seal, QuicSocketContext.RecvContext context)
+        {
             if (!seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength,
                 pnSpace.LargestReceivedPacketNumber))
             {
@@ -245,7 +289,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             receiver = _remoteEndpoint;
 
-            if(ctx.Timestamp > _closingPeriodEnd)
+            if (ctx.Timestamp > _closingPeriodEnd)
             {
                 SignalConnectionClose();
                 return;
@@ -334,15 +378,6 @@ namespace System.Net.Quic.Implementations.Managed
                 context.ReturnPacket(lostPacket);
             }
 
-            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(recoverySpace.LargestAckedPacketNumber);
-            WritePacketHeader(writer, packetType, pnLength);
-
-            // for non 1-RTT packets, we reserve 2 bytes which we will overwrite once total payload length is known
-            var payloadLengthSpan = writer.Buffer.Span.Slice(writer.BytesWritten - 2, 2);
-
-            int pnOffset = writer.BytesWritten;
-            writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
-
             int maxPacketLength = (int)(_tls.IsHandshakeComplete
                 // Limit maximum size so that it can be always encoded into the reserved 2 bytes of `payloadLengthSpan`
                 ? Math.Min((1 << 14) - 1, _peerTransportParameters.MaxPacketSize)
@@ -378,6 +413,15 @@ namespace System.Net.Quic.Implementations.Managed
                 return false;
             }
 
+            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(recoverySpace.LargestAckedPacketNumber);
+            WritePacketHeader(writer, packetType, pnLength);
+
+            // for non 1-RTT packets, we reserve 2 bytes which we will overwrite once total payload length is known
+            var payloadLengthSpan = writer.Buffer.Span.Slice(writer.BytesWritten - 2, 2);
+
+            int pnOffset = writer.BytesWritten;
+            writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
+
             int written = writer.BytesWritten;
             var origBuffer = writer.Buffer;
 
@@ -392,6 +436,17 @@ namespace System.Net.Quic.Implementations.Managed
                 writer.Reset(writer.Buffer);
                 Debug.Assert(!_pingWanted);
                 return false;
+            }
+
+            // after this point it is certain that the packet will be sent, commit pending key update
+            if (_doKeyUpdate)
+            {
+                pnSpace.SendCryptoSeal = _nextSendSeal;
+                pnSpace.RecvCryptoSeal = _nextRecvSeal;
+                _nextRecvSeal = null;
+                _nextSendSeal = null;
+                _currentKeyPhase = !_currentKeyPhase;
+                _doKeyUpdate = false;
             }
 
             if (!_isServer && packetType == PacketType.Initial)
@@ -462,9 +517,12 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // 1-RTT packets are the only ones using short header
                 // TODO-RZ: implement spin
-                // TODO-RZ: implement key update
+                // TODO-RZ: implement key update fully
+                bool keyPhase = _doKeyUpdate
+                    ? !_currentKeyPhase
+                    : _currentKeyPhase;
                 ShortPacketHeader.Write(writer,
-                    new ShortPacketHeader(false, false, pnLength, DestinationConnectionId!));
+                    new ShortPacketHeader(false, keyPhase, pnLength, DestinationConnectionId!));
             }
             else
             {

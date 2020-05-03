@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Security;
 using System.Security.Cryptography;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
@@ -19,6 +20,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             _aesCcm = new AesCcm(key);
         }
 
+        internal override TlsCipherSuite CipherSuite => TlsCipherSuite.TLS_AES_128_CCM_SHA256;
         internal override int TagLength => 16;
 
         internal override void Encrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag,

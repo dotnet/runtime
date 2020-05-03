@@ -17,7 +17,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             0xf9, 0xf5, 0x02
         };
 
-        public static byte[] ExpandLabel(ReadOnlySpan<byte> prk, string label, ushort length)
+        public static byte[] ExpandLabel(ReadOnlySpan<byte> prk, string label, int length)
         {
             // create the hkdfLabel structure locally, as defined by the RFC8446, Section 7.1.
             // both label and context fields are length prefixed
@@ -36,7 +36,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             Debug.Assert(hkdfLabelSize < 32);
             Span<byte> hkdfLabel = stackalloc byte[hkdfLabelSize];
             // length is in big endian
-            BinaryPrimitives.WriteUInt16BigEndian(hkdfLabel, length);
+            BinaryPrimitives.WriteUInt16BigEndian(hkdfLabel, (ushort) length);
 
             // write label
             hkdfLabel[2] = (byte)(label.Length + tls13Prefix.Length);
@@ -82,6 +82,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         public static byte[] DeriveHp(ReadOnlySpan<byte> prk)
         {
             return ExpandLabel(prk, "quic hp", 16);
+        }
+
+        public static byte[] UpdateSecret(ReadOnlySpan<byte> oldSecret)
+        {
+            return ExpandLabel(oldSecret, "quic ku", oldSecret.Length);
         }
     }
 }

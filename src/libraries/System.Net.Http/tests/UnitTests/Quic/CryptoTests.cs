@@ -12,7 +12,7 @@ namespace System.Net.Quic.Tests
             var secret =
                 KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.DcidHex));
 
-            return new CryptoSeal(QuicConstants.InitialCipherSuite, secret);
+            return CryptoSeal.Create(QuicConstants.InitialCipherSuite, secret);
         }
 
         [Fact]

@@ -8,6 +8,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
     {
         private readonly CryptoSealAlgorithm _algorithm;
 
+        private byte[] Secret { get; }
         private byte[] IV { get; }
         private byte[] Key { get; }
         private byte[] HeaderKey { get; }
@@ -16,12 +17,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         public int PayloadSampleLength => _algorithm.SampleLength;
 
-        public CryptoSeal(TlsCipherSuite alg, ReadOnlySpan<byte> secret)
+        private CryptoSeal(TlsCipherSuite alg, byte[] secret, byte[] headerKey)
         {
+            Secret = secret;
             IV = KeyDerivation.DeriveIv(secret);
             Key = KeyDerivation.DeriveKey(secret);
-            HeaderKey = KeyDerivation.DeriveHp(secret);
-            _algorithm = CryptoSealAlgorithm.Create(alg, Key, HeaderKey);
+            HeaderKey = headerKey;
+            _algorithm = CryptoSealAlgorithm.Create(alg, Key, headerKey);
+        }
+
+        public static CryptoSeal Create(TlsCipherSuite alg, ReadOnlySpan<byte> secret)
+        {
+            return new CryptoSeal(alg, secret.ToArray(), KeyDerivation.DeriveHp(secret));
+        }
+
+        public static CryptoSeal UpdateSeal(CryptoSeal seal)
+        {
+            // the header key is not updated
+            return new CryptoSeal(seal._algorithm.CipherSuite, KeyDerivation.UpdateSecret(seal.Secret), seal.HeaderKey);
         }
 
         public void EncryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, long packetNumber)

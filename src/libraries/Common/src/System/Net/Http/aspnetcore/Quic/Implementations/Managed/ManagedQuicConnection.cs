@@ -458,8 +458,8 @@ namespace System.Net.Quic.Implementations.Managed
             var pnSpace = GetPacketNumberSpace(level);
             Debug.Assert(pnSpace.SendCryptoSeal == null, "Protection keys already derived");
 
-            pnSpace.RecvCryptoSeal = new CryptoSeal(algorithm, readSecret);
-            pnSpace.SendCryptoSeal = new CryptoSeal(algorithm, writeSecret);
+            pnSpace.RecvCryptoSeal = CryptoSeal.Create(algorithm, readSecret);
+            pnSpace.SendCryptoSeal = CryptoSeal.Create(algorithm, writeSecret);
         }
 
         internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,

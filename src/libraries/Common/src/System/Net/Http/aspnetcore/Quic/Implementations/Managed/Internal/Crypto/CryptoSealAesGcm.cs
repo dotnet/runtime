@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Security;
 using System.Security.Cryptography;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
@@ -12,14 +13,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         // AES-128 and AES-256 implementation for actual packet payload protection
         private readonly AesGcm _aesGcm;
 
-        internal CryptoSealAesGcm(byte[] key, byte[] headerKey) : base(headerKey)
+        internal CryptoSealAesGcm(byte[] key, byte[] headerKey, TlsCipherSuite cipherSuite) : base(headerKey)
         {
             Debug.Assert(key.Length == 16 || key.Length == 32);
             Debug.Assert(headerKey.Length == 16);
 
+            CipherSuite = cipherSuite;
             _aesGcm = new AesGcm(key);
         }
 
+        internal override TlsCipherSuite CipherSuite { get; }
         internal override int TagLength => IntegrityTagLength;
 
         internal override void Encrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag,
