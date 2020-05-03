@@ -88,10 +88,9 @@ namespace System.Numerics
         /// </summary>
         /// <param name="other">The Vector2 to compare this instance to.</param>
         /// <returns>True if the other Vector2 is equal to this instance; False otherwise.</returns>
-        [Intrinsic]
         public readonly bool Equals(Vector2 other)
         {
-            return this.X == other.X && this.Y == other.Y;
+            return this == other;
         }
         #endregion Public Instance Methods
 
@@ -275,7 +274,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector2 left, Vector2 right)
         {
-            return left.Equals(right);
+            return left.X == right.X &&
+                   left.Y == right.Y;
         }
 
         /// <summary>
