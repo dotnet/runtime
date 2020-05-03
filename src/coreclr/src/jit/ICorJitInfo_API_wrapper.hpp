@@ -1476,13 +1476,15 @@ void WrapICorJitInfo::MethodCompileComplete(
     API_LEAVE(MethodCompileComplete);
 }
 
-void* WrapICorJitInfo::getTailCallCopyArgsThunk(
-                CORINFO_SIG_INFO       *pSig,
-                CorInfoHelperTailCallSpecialHandling flags)
+void* WrapICorJitInfo::getTailCallHelpers(
+                CORINFO_RESOLVED_TOKEN* callToken,
+                CORINFO_SIG_INFO* sig,
+                CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                CORINFO_TAILCALL_HELPERS* pResult)
 {
-    API_ENTER(getTailCallCopyArgsThunk);
-    void *result = wrapHnd->getTailCallCopyArgsThunk(pSig, flags);
-    API_LEAVE(getTailCallCopyArgsThunk);
+    API_ENTER(getTailCallHelpers);
+    void *result = wrapHnd->getTailCallHelpers(callToken, sig, flags, pResult);
+    API_LEAVE(getTailCallHelpers);
     return result;
 }
 

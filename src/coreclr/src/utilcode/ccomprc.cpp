@@ -5,7 +5,6 @@
 #include "stdafx.h"                     // Standard header.
 #include <utilcode.h>                   // Utility helpers.
 #include <corerror.h>
-#include "ndpversion.h"
 
 #include "../dlls/mscorrc/resource.h"
 #ifdef HOST_UNIX

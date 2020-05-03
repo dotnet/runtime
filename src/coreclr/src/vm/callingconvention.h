@@ -638,7 +638,7 @@ public:
 
         int cSlots = (GetArgSize() + 7)/ 8;
 
-        // Composites greater than 16bytes are passed by reference
+        // Composites greater than 16 bytes are passed by reference
         if (GetArgType() == ELEMENT_TYPE_VALUETYPE && GetArgSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
         {
             cSlots = 1;
@@ -1346,8 +1346,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        // Handle HFAs: packed structures of 2-4 floats or doubles that are passed in FP argument
-        // registers if possible.
+        // Handle HFAs: packed structures of 1-4 floats, doubles, or short vectors
+        // that are passed in FP argument registers if possible.
         if (thValueType.IsHFA())
         {
             CorElementType type = thValueType.GetHFAType();

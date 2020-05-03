@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard2.0'">$(DefineConstants);FEATURE_TRACING</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.0'">$(DefineConstants);USE_INTERNAL_CONCURRENT_COLLECTIONS</DefineConstants>
@@ -41,9 +41,8 @@
     <Compile Include="Internal\SpscTargetCore.cs" />
     <Compile Include="Internal\TargetCore.cs" />
     <Compile Include="Internal\TargetRegistry.cs" />
-    <Compile Include="$(CommonPath)Internal\Padding.cs">
-      <Link>Common\Internal\Padding.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Internal\Padding.cs"
+             Link="Common\Internal\Padding.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.1'">
     <Compile Include="Internal\Threading.cs" />

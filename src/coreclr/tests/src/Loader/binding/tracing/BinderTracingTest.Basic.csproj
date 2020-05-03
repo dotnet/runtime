@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- TestAssemblyLoadContext.Load called from the finalizer -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.Basic.cs" />
     <Compile Include="BinderTracingTest.DefaultProbing.cs" />

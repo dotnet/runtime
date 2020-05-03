@@ -30,6 +30,11 @@
       <Architectures>x64</Architectures>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="browser">
+      <Parent>any</Parent>
+      <Architectures>wasm</Architectures>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="centos">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>

@@ -1153,18 +1153,18 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
 
 #if !defined(FEATURE_STUBS_AS_IL)
 
-    // System.Runtime.InteropServices.NativeCallableAttribute
+    // System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute
     BYTE* pData = NULL;
     LONG cData = 0;
     CorPinvokeMap callConv = (CorPinvokeMap)0;
 
-    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallable, (const VOID **)(&pData), (ULONG *)&cData);
+    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
     IfFailThrow(hr);
 
     if (cData > 0)
     {
         CustomAttributeParser ca(pData, cData);
-        // NativeCallable has two optional named arguments CallingConvention and EntryPoint.
+        // UnmanagedCallersOnly has two optional named arguments CallingConvention and EntryPoint.
         CaNamedArg namedArgs[2];
         CaTypeCtor caType(SERIALIZATION_TYPE_STRING);
         // First, the void constructor.
@@ -2945,11 +2945,11 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // associated with the instantiation.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
-    // Do not allow static methods with [NativeCallableAttribute] to be a delegate target.
-    // A native callable method is special and allowing it to be delegate target will destabilize the runtime.
-    if (pTargetMethod->HasNativeCallableAttribute())
+    // Do not allow static methods with [UnmanagedCallersOnlyAttribute] to be a delegate target.
+    // A method marked UnmanagedCallersOnly is special and allowing it to be delegate target will destabilize the runtime.
+    if (pTargetMethod->HasUnmanagedCallersOnlyAttribute())
     {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NativeCallableTarget"));
+        COMPlusThrow(kNotSupportedException, W("NotSupported_UnmanagedCallersOnlyTarget"));
     }
 
     if (isStatic)

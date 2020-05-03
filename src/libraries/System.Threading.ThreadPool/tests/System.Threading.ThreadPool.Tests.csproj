@@ -8,8 +8,7 @@
     <Compile Include="ThreadPoolTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
   </ItemGroup>
 </Project>

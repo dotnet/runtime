@@ -31,6 +31,7 @@
 #include "ex.h"
 #include "dbginterface.h"
 #include "finalizerthread.h"
+#include "clrversion.h"
 
 #define Win32EventWrite EventWrite
 
@@ -4934,17 +4935,17 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             PathString dllPath;
             UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 
-            //version info for clr.dll
-            USHORT vmMajorVersion = CLR_MAJOR_VERSION;
-            USHORT vmMinorVersion = CLR_MINOR_VERSION;
-            USHORT vmBuildVersion = CLR_BUILD_VERSION;
-            USHORT vmQfeVersion = CLR_BUILD_VERSION_QFE;
+            //version info for coreclr.dll
+            USHORT vmMajorVersion = RuntimeFileMajorVersion;
+            USHORT vmMinorVersion = RuntimeFileMinorVersion;
+            USHORT vmBuildVersion = RuntimeFileBuildVersion;
+            USHORT vmRevisionVersion = RuntimeFileRevisionVersion;
 
-            //version info for mscorlib.dll
-            USHORT bclMajorVersion = VER_ASSEMBLYMAJORVERSION;
-            USHORT bclMinorVersion = VER_ASSEMBLYMINORVERSION;
-            USHORT bclBuildVersion = VER_ASSEMBLYBUILD;
-            USHORT bclQfeVersion = VER_ASSEMBLYBUILD_QFE;
+            //version info for System.Private.CoreLib.dll
+            USHORT bclMajorVersion = RuntimeProductMajorVersion;
+            USHORT bclMinorVersion = RuntimeProductMinorVersion;
+            USHORT bclBuildVersion = RuntimeProductPatchVersion;
+            USHORT bclRevisionVersion = 0;
 
             LPCGUID comGUID=&IID_NULL;
 
@@ -4964,11 +4965,11 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                   bclMajorVersion,
                                                   bclMinorVersion,
                                                   bclBuildVersion,
-                                                  bclQfeVersion,
+                                                  bclRevisionVersion,
                                                   vmMajorVersion,
                                                   vmMinorVersion,
                                                   vmBuildVersion,
-                                                  vmQfeVersion,
+                                                  vmRevisionVersion,
                                                   startupFlags,
                                                   startupMode,
                                                   lpwszCommandLine,
@@ -4982,11 +4983,11 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                 bclMajorVersion,
                                                 bclMinorVersion,
                                                 bclBuildVersion,
-                                                bclQfeVersion,
+                                                bclRevisionVersion,
                                                 vmMajorVersion,
                                                 vmMinorVersion,
                                                 vmBuildVersion,
-                                                vmQfeVersion,
+                                                vmRevisionVersion,
                                                 startupFlags,
                                                 startupMode,
                                                 lpwszCommandLine,

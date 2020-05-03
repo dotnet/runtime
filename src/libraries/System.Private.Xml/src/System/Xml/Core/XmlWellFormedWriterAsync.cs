@@ -1472,5 +1472,63 @@ namespace System.Xml
             }
             return Task.CompletedTask;
         }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            if (_currentState != State.Closed)
+            {
+                try
+                {
+                    if (_writeEndDocumentOnClose)
+                    {
+                        while (_currentState != State.Error && _elemTop > 0)
+                        {
+                            await WriteEndElementAsync().ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        if (_currentState != State.Error && _elemTop > 0)
+                        {
+                            //finish the start element tag '>'
+                            try
+                            {
+                                await AdvanceStateAsync(Token.EndElement).ConfigureAwait(false);
+                            }
+                            catch
+                            {
+                                _currentState = State.Error;
+                                throw;
+                            }
+                        }
+                    }
+
+                    if (InBase64 && _rawWriter != null)
+                    {
+                        await _rawWriter.WriteEndBase64Async().ConfigureAwait(false);
+                    }
+
+                    await _writer.FlushAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    try
+                    {
+                        if (_rawWriter != null)
+                        {
+                            await _rawWriter.DisposeAsyncCore(WriteState).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await _writer.DisposeAsync().ConfigureAwait(false);
+                        }
+                    }
+                    finally
+                    {
+                        _currentState = State.Closed;
+                    }
+                }
+            }
+        }
     }
 }

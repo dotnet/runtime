@@ -105,6 +105,21 @@ namespace System.Security.Cryptography
             return !(left == right);
         }
 
+        /// <summary>
+        /// Tries to convert the specified OID to a hash algorithm name.
+        /// </summary>
+        /// <param name="oidValue">The OID of the hash algorithm.</param>
+        /// <param name="value">
+        /// When this method returns <c>true</c>, the hash algorithm. When this
+        /// method returns <c>false</c>, contains <c>default</c>.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if the OID was successfully mapped to a hash
+        /// algorithm; otherwise <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="oidValue" /> is null.
+        /// </exception>
         public static bool TryFromOid(string oidValue, out HashAlgorithmName value)
         {
             if (oidValue is null)
@@ -135,6 +150,19 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Converts the specified OID to a hash algorithm name.
+        /// </summary>
+        /// <param name="oidValue">The OID of the hash algorithm.</param>
+        /// <returns>
+        /// The hash algorithm name identified by the OID.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="oidValue" /> is null.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// <paramref name="oidValue" /> does not represent a known hash algorithm.
+        /// </exception>
         public static HashAlgorithmName FromOid(string oidValue)
         {
             if (TryFromOid(oidValue, out HashAlgorithmName value))

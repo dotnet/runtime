@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
+using System.Reflection;
 
 namespace System.Text.Json
 {
@@ -377,15 +378,15 @@ namespace System.Text.Json
             // https://github.com/dotnet/runtime/issues/32357
             if (!_classes.TryGetValue(type, out JsonClassInfo? result))
             {
-                if (type.ContainsGenericParameters)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_CannotSerializeOpenGeneric(type);
-                }
-
                 result = _classes.GetOrAdd(type, new JsonClassInfo(type, this));
             }
 
             return result;
+        }
+
+        internal bool TypeIsCached(Type type)
+        {
+            return _classes.ContainsKey(type);
         }
 
         internal JsonReaderOptions GetReaderOptions()
