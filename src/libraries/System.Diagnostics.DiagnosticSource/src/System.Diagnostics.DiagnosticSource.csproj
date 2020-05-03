@@ -59,9 +59,13 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
+    <Compile Include="System\Diagnostics\ActivityContext.netcoreapp.cs" />
+    <Compile Include="System\Diagnostics\ActivityLink.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsNetCoreApp)' != 'true' and '$(TargetFramework)' != 'netstandard2.1' and '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netfx.cs" />
+    <Compile Include="System\Diagnostics\ActivityContext.netfx.cs" />
+    <Compile Include="System\Diagnostics\ActivityLink.netfx.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />

@@ -37,7 +37,7 @@ namespace System.Diagnostics
         private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
         private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
 #pragma warning restore CA1825
-        private static ActivitySource s_defaultSource = new ActivitySource(string.Empty);
+        private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
         private const int RequestIdMaxLength = 1024;
@@ -74,15 +74,15 @@ namespace System.Diagnostics
 
         private byte _w3CIdFlags;
 
-        private LinkedListNode<KeyValuePair<string, string?>>? _tags;
-        private LinkedListNode<KeyValuePair<string, string?>>? _baggage;
-        private LinkedListNode<ActivityLink>? _links;
-        private LinkedListNode<ActivityEvent>? _events;
+        private LinkedList<KeyValuePair<string, string?>>? _tags;
+        private LinkedList<KeyValuePair<string, string?>>? _baggage;
+        private LinkedList<ActivityLink>? _links;
+        private LinkedList<ActivityEvent>? _events;
         private ConcurrentDictionary<string, object>? _customProperties;
         private string? _displayName;
 
         /// <summary>
-        /// Kind describes the relationship between the Activity, its parents, and its children in a Trace.
+        /// Gets the relationship between the Activity, its parents, and its children in a Trace.
         /// </summary>
         public ActivityKind Kind { get; private set; } = ActivityKind.Internal;
 
@@ -94,21 +94,21 @@ namespace System.Diagnostics
         /// </summary>
         public string OperationName { get; } = null!;
 
-        /// <summary>
-        /// DisplayName is name mainly intended to be used in the UI and not necessary has to be
-        /// same as OperationName.
-        /// </summary>
+        /// <summary>Gets or sets the display name of the Activity</summary>
+        /// <remarks>
+        /// DisplayName is intended to be used in a user interface and need not be the same as OperationName.
+        /// </remarks>
         public string DisplayName
         {
             get => _displayName ?? OperationName;
-            set => _displayName = value;
+            set => _displayName = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        /// <summary>
-        /// Get the ActivitySource object associated with this Activity.
-        /// All Activities created from public constructors will have a singleton source where the source name is empty string.
-        /// Otherwise, the source will be holding the object that created the Activity through ActivitySource.StartActivity.
-        /// </summary>
+        /// <summary>Get the ActivitySource object associated with this Activity.</summary>
+        /// <remarks>
+        /// All Activities created from public constructors will have a singleton source where the source name is an empty string.
+        /// Otherwise, the source will hold the object that created the Activity through ActivitySource.StartActivity.
+        /// </remarks>
         public ActivitySource Source { get; private set; }
 
         /// <summary>
@@ -238,29 +238,13 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Tags are string-string key-value pairs that represent information that will
-        /// be logged along with the Activity to the logging system.   This information
+        /// be logged along with the Activity to the logging system. This information
         /// however is NOT passed on to the children of this activity.
         /// </summary>
         /// <seealso cref="Baggage"/>
         public IEnumerable<KeyValuePair<string, string?>> Tags
         {
-            get
-            {
-                LinkedListNode<KeyValuePair<string, string?>>? tags = _tags;
-                return tags != null ?
-                    Iterate(tags) :
-                    s_emptyBaggageTags;
-
-                static IEnumerable<KeyValuePair<string, string?>> Iterate(LinkedListNode<KeyValuePair<string, string?>>? tags)
-                {
-                    do
-                    {
-                        yield return tags!.Value;
-                        tags = tags.Next;
-                    }
-                    while (tags != null);
-                }
-            }
+            get => _tags != null ? _tags.Enumerate() : s_emptyBaggageTags;
         }
 
         /// <summary>
@@ -269,21 +253,7 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<ActivityEvent> Events
         {
-            get
-            {
-                LinkedListNode<ActivityEvent>? events = _events;
-                return events != null ? Iterate(events) : s_emptyEvents;
-
-                static IEnumerable<ActivityEvent> Iterate(LinkedListNode<ActivityEvent>? events)
-                {
-                    do
-                    {
-                        yield return events!.Value;
-                        events = events.Next;
-                    }
-                    while (events != null);
-                }
-            }
+            get => _events != null ? _events.Enumerate() : s_emptyEvents;
         }
 
         /// <summary>
@@ -292,21 +262,7 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<ActivityLink> Links
         {
-            get
-            {
-                LinkedListNode<ActivityLink>? links = _links;
-                return links != null ? Iterate(links) : s_emptyLinks;
-
-                static IEnumerable<ActivityLink> Iterate(LinkedListNode<ActivityLink>? links)
-                {
-                    do
-                    {
-                        yield return links!.Value;
-                        links = links.Next;
-                    }
-                    while (links != null);
-                }
-            }
+            get => _links != null ? _links.Enumerate() : s_emptyLinks;
         }
 
         /// <summary>
@@ -336,14 +292,16 @@ namespace System.Diagnostics
                     Debug.Assert(activity != null);
                     do
                     {
-                        for (LinkedListNode<KeyValuePair<string, string?>>? baggage = activity._baggage; baggage != null; baggage = baggage.Next)
+                        if (activity._baggage != null)
                         {
-                            yield return baggage.Value;
+                            for (LinkedListNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current != null; current = current.Next)
+                            {
+                                yield return current.Value;
+                            }
                         }
 
                         activity = activity.Parent;
-                    }
-                    while (activity != null);
+                    } while (activity != null);
                 }
             }
         }
@@ -390,13 +348,12 @@ namespace System.Diagnostics
         /// <returns>'this' for convenient chaining</returns>
         public Activity AddTag(string key, string? value)
         {
-            LinkedListNode<KeyValuePair<string, string?>>? currentTags = _tags;
-            LinkedListNode<KeyValuePair<string, string?>> newTags = new LinkedListNode<KeyValuePair<string, string?>>(new KeyValuePair<string, string?>(key, value));
-            do
+            KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
+
+            if (_tags != null || Interlocked.CompareExchange(ref _tags, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
             {
-                newTags.Next = currentTags;
-                currentTags = Interlocked.CompareExchange(ref _tags, newTags, currentTags);
-            } while (!ReferenceEquals(newTags.Next, currentTags));
+                _tags.Add(kvp);
+            }
 
             return this;
         }
@@ -408,13 +365,10 @@ namespace System.Diagnostics
         /// <returns>'this' for convenient chaining</returns>
         public Activity AddEvent(ActivityEvent e)
         {
-            LinkedListNode<ActivityEvent>? currentEvents = _events;
-            LinkedListNode<ActivityEvent> newEvents = new LinkedListNode<ActivityEvent>(e);
-            do
+            if (_events != null || Interlocked.CompareExchange(ref _events, new LinkedList<ActivityEvent>(e), null) != null)
             {
-                newEvents.Next = currentEvents;
-                currentEvents = Interlocked.CompareExchange(ref _events, newEvents, currentEvents);
-            } while (!ReferenceEquals(newEvents.Next, currentEvents));
+                _events.Add(e);
+            }
 
             return this;
         }
@@ -430,14 +384,12 @@ namespace System.Diagnostics
         /// <returns>'this' for convenient chaining</returns>
         public Activity AddBaggage(string key, string? value)
         {
-            LinkedListNode<KeyValuePair<string, string?>>? currentBaggage = _baggage;
-            LinkedListNode<KeyValuePair<string, string?>> newBaggage = new LinkedListNode<KeyValuePair<string, string?>>(new KeyValuePair<string, string?>(key, value));
+            KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
 
-            do
+            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
             {
-                newBaggage.Next = currentBaggage;
-                currentBaggage = Interlocked.CompareExchange(ref _baggage, newBaggage, currentBaggage);
-            } while (!ReferenceEquals(newBaggage.Next, currentBaggage));
+                _baggage.Add(kvp);
+            }
 
             return this;
         }
@@ -938,17 +890,23 @@ namespace System.Diagnostics
 
             if (links != null)
             {
-                foreach (ActivityLink link in links)
+                using (IEnumerator<ActivityLink> enumerator = links.GetEnumerator())
                 {
-                     activity._links = new LinkedListNode<ActivityLink>(link, activity._links);
+                    if (enumerator.MoveNext())
+                    {
+                        activity._links = new LinkedList<ActivityLink>(enumerator);
+                    }
                 }
             }
 
             if (tags != null)
             {
-                foreach (KeyValuePair<string, string?> tag in tags)
+                using (IEnumerator<KeyValuePair<string, string?>> enumerator = tags.GetEnumerator())
                 {
-                    activity._tags = new LinkedListNode<KeyValuePair<string, string?>>(tag, activity._tags);
+                    if (enumerator.MoveNext())
+                    {
+                        activity._tags = new LinkedList<KeyValuePair<string, string?>>(enumerator);
+                    }
                 }
             }
 
@@ -1191,19 +1149,54 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        /// <summary>
-        /// Having our own key-value linked list allows us to be more efficient
-        /// </summary>
         private partial class LinkedListNode<T>
         {
             public LinkedListNode(T value) => Value = value;
-            public LinkedListNode(T value, LinkedListNode<T>? next)
-            {
-                Value = value;
-                Next = next;
-            }
             public T Value;
             public LinkedListNode<T>? Next;
+        }
+
+        // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
+        private class LinkedList<T>
+        {
+            private LinkedListNode<T> _first;
+            private LinkedListNode<T> _last;
+
+            public LinkedList(T firstValue) => _last = _first = new LinkedListNode<T>(firstValue);
+
+            public LinkedList(IEnumerator<T> e)
+            {
+                _last = _first = new LinkedListNode<T>(e.Current);
+
+                while (e.MoveNext())
+                {
+                    _last.Next = new LinkedListNode<T>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public LinkedListNode<T> First => _first;
+
+            public void Add(T value)
+            {
+                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
+
+                lock (_first)
+                {
+                    _last.Next = newNode;
+                    _last = newNode;
+                }
+            }
+
+            public IEnumerable<T> Enumerate()
+            {
+                LinkedListNode<T>? current = _first;
+                do
+                {
+                    yield return current.Value;
+                    current = current.Next;
+                } while (current != null);
+            }
         }
 
         [Flags]
