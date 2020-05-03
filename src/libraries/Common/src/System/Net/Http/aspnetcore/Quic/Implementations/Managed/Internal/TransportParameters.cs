@@ -14,11 +14,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal const long MinimumPacketSize = 1200;
         internal const long MaxAckDelayExponent = 20;
         internal const long MaxMaxAckDelay = 1 << 14;
+        internal const long MinActiveConnectionIdLimit = 2;
 
         // defaults mandated by RFC
         internal const long DefaultMaxPacketSize = 65527;
         internal const long DefaultAckDelayExponent = 3;
         internal const long DefaultMaxAckDelay = 25;
+        internal const long DefaultActiveConnectionIdLimit = MinActiveConnectionIdLimit;
 
         // defaults specific for this implementation, since many values cannot be set from user code
         internal const long DefaultMaxStreamData = 1024 * 1024;
@@ -147,7 +149,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     those received in NEW_CONNECTION_ID frames. Unless a zero-length connection ID is being used, the value MUST be no
         ///     less than 2. When a zero-length connection ID is being used, this parameter must not be sent.
         /// </summary>
-        internal long ActiveConnectionIdLimit { get; set; }
+        internal long ActiveConnectionIdLimit { get; set; } = DefaultActiveConnectionIdLimit;
 
         private static bool IsServerOnlyParameter(TransportParameterName name) =>
             name switch
@@ -243,7 +245,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         break;
                     }
                     case TransportParameterName.ActiveConnectionIdLimit:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
+                            varIntValue < MinActiveConnectionIdLimit) goto Error;
                         parameters.ActiveConnectionIdLimit = varIntValue;
                         break;
                     default:
@@ -323,8 +326,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 Internal.PreferredAddress.Write(writer, parameters.PreferredAddress.Value);
             }
 
+            // TODO-RZ: don't send this if zero length connection id is used
             WriteVarIntParameterIfNotDefault(writer, TransportParameterName.ActiveConnectionIdLimit,
-                parameters.ActiveConnectionIdLimit);
+                parameters.ActiveConnectionIdLimit, DefaultActiveConnectionIdLimit);
         }
     }
 }
