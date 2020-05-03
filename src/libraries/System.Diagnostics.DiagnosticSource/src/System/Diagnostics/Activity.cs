@@ -1472,7 +1472,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Returns the TraceId as a 16 character hexadecimal string.
+        /// Returns the SpanId as a 16 character hexadecimal string.
         /// </summary>
         /// <returns></returns>
         public string ToHexString()
