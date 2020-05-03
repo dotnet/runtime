@@ -67,7 +67,7 @@ namespace System.Net.Quic.Tests
             from.SendData(_writer, out _, _sendContext);
             int written = _writer.BytesWritten;
             var copy = buffer.AsSpan(0, written).ToArray();
-            var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(from, _sealMap));
+            var packets = PacketBase.ParseMany(copy, new TestHarnessContext(from, _sealMap));
 
             // debug: check that serializing packets back gives identical datagram
             _writer.Reset(copy);
@@ -185,7 +185,7 @@ namespace System.Net.Quic.Tests
             int written = _writer.BytesWritten;
             var copy = buffer.AsSpan(0, written).ToArray();
 
-            var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(source, _sealMap));
+            var packets = PacketBase.ParseMany(copy, new TestHarnessContext(source, _sealMap));
 
             LogFlightPackets(packets, source == _client);
 

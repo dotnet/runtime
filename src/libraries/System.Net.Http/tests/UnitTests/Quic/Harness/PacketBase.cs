@@ -28,14 +28,13 @@ namespace System.Net.Quic.Tests.Harness
             return "";
         }
 
-        internal abstract void Serialize(QuicWriter writer, TestHarnessContext context);
+        internal abstract void Serialize(QuicWriter writer, ITestHarnessContext context);
 
-        internal abstract void Deserialize(QuicReader reader, TestHarnessContext context);
+        internal abstract void Deserialize(QuicReader reader, ITestHarnessContext context);
 
-        internal static List<PacketBase> ParseMany(byte[] buffer, int count, TestHarnessContext context)
+        internal static List<PacketBase> ParseMany(Memory<byte> buffer, ITestHarnessContext context)
         {
-            var segment = buffer.AsMemory();
-            var reader = new QuicReader(segment);
+            var reader = new QuicReader(buffer);
 
             var packets = new List<PacketBase>();
 
@@ -43,14 +42,14 @@ namespace System.Net.Quic.Tests.Harness
             {
                 packets.Add(Parse(reader, context));
 
-                segment = segment.Slice(reader.BytesRead);
-                reader.Reset(segment);
+                buffer = buffer.Slice(reader.BytesRead);
+                reader.Reset(buffer);
             }
 
             return packets;
         }
 
-        internal static PacketBase Parse(QuicReader reader, TestHarnessContext context)
+        internal static PacketBase Parse(QuicReader reader, ITestHarnessContext context)
         {
             var type = HeaderHelpers.GetPacketType(reader.Peek());
             PacketBase packet = type switch
@@ -68,7 +67,7 @@ namespace System.Net.Quic.Tests.Harness
             return packet;
         }
 
-        protected void SerializePayloadWithFrames(QuicWriter writer, TestHarnessContext context, IEnumerable<FrameBase> frames)
+        protected void SerializePayloadWithFrames(QuicWriter writer, ITestHarnessContext context, IEnumerable<FrameBase> frames)
         {
             var seal = context.GetSendSeal(PacketType);
 
@@ -97,18 +96,17 @@ namespace System.Net.Quic.Tests.Harness
             seal.EncryptPacket(writer.Buffer.Span, pnOffset, payloadLength, (uint) PacketNumber);
         }
 
-        protected (int pnLength, long packetNumber) DeserializePayloadWithFrames(QuicReader reader, TestHarnessContext harnessContext, List<FrameBase> frames, PacketType packetType, int payloadLength)
+        protected (int pnLength, long packetNumber) DeserializePayloadWithFrames(QuicReader reader, ITestHarnessContext harnessContext, List<FrameBase> frames, PacketType packetType, int payloadLength)
         {
             // this more or less duplicates code inside ManagedQuicConnection
             int pnOffset = reader.BytesRead;
 
             // first, strip packet protection.
-            var pnSpace = harnessContext.GetSenderPacketNumberSpace(packetType);
-
+            long expectedPn = harnessContext.GetPacketNumber(PacketType);
             var seal = harnessContext.GetRecvSeal(packetType);
 
             // guess largest acked packet number to make deserialization work
-            Assert.True(seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength, Math.Max(0, (int) pnSpace.NextPacketNumber - 3)));
+            Assert.True(seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength, Math.Max(0, (int) expectedPn - 3)));
 
             int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer.Span[0]);
             reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
@@ -121,7 +119,7 @@ namespace System.Net.Quic.Tests.Harness
             }
             reader.Reset(originalSegment, pnOffset + payloadLength);
 
-            return (pnLength, QuicPrimitives.DecodePacketNumber(pnSpace.NextPacketNumber, truncatedPn, pnLength));
+            return (pnLength, QuicPrimitives.DecodePacketNumber(expectedPn, truncatedPn, pnLength));
         }
     }
 }

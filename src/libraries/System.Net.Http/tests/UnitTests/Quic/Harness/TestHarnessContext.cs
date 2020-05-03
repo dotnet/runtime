@@ -5,7 +5,15 @@ using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 
 namespace System.Net.Quic.Tests.Harness
 {
-    internal class TestHarnessContext
+    internal interface ITestHarnessContext
+    {
+        CryptoSeal GetRecvSeal(PacketType packetType);
+        CryptoSeal GetSendSeal(PacketType packetType);
+        ConnectionIdCollection ConnectionIdCollection { get; }
+        long GetPacketNumber(PacketType packetType);
+    }
+
+    internal class TestHarnessContext : ITestHarnessContext
     {
         public TestHarnessContext(ManagedQuicConnection sender, Dictionary<(ManagedQuicConnection, PacketType), CryptoSeal> sealMap)
         {
@@ -17,15 +25,15 @@ namespace System.Net.Quic.Tests.Harness
 
         private readonly Dictionary<(ManagedQuicConnection, PacketType), CryptoSeal> _sealMap;
 
-        internal ManagedQuicConnection Sender { get; }
+        private ManagedQuicConnection Sender { get; }
 
-        internal CryptoSeal GetRecvSeal(PacketType packetType)
+        public CryptoSeal GetRecvSeal(PacketType packetType)
         {
             // encryption is symmetric
             return GetSendSeal(packetType);
         }
 
-        internal CryptoSeal GetSendSeal(PacketType packetType)
+        public CryptoSeal GetSendSeal(PacketType packetType)
         {
             if (!_sealMap.TryGetValue((Sender, packetType), out var seal))
             {
@@ -36,9 +44,9 @@ namespace System.Net.Quic.Tests.Harness
             return seal;
         }
 
-        internal ConnectionIdCollection ConnectionIdCollection { get; } = new ConnectionIdCollection();
+        public ConnectionIdCollection ConnectionIdCollection { get; } = new ConnectionIdCollection();
 
-        internal PacketNumberSpace GetSenderPacketNumberSpace(PacketType packetType)
+        private PacketNumberSpace GetSenderPacketNumberSpace(PacketType packetType)
         {
             var level = packetType switch
             {
@@ -50,6 +58,11 @@ namespace System.Net.Quic.Tests.Harness
             };
 
             return Sender.GetPacketNumberSpace(level);
+        }
+
+        public long GetPacketNumber(PacketType packetType)
+        {
+            return GetSenderPacketNumberSpace(packetType).NextPacketNumber;
         }
     }
 }
