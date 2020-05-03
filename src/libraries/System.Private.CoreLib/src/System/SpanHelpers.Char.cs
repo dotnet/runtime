@@ -54,7 +54,7 @@ namespace System
                 if (SequenceEqual(
                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + 1)),
                     ref Unsafe.As<char, byte>(ref valueTail),
-                    (nuint)valueTailLength * 2))
+                    (nuint)(uint)valueTailLength * 2))
                 {
                     return index;  // The tail matched. Return a successful find.
                 }
@@ -76,7 +76,7 @@ namespace System
             if (Unsafe.AreSame(ref first, ref second))
                 goto Equal;
 
-            nuint minLength = (((nuint)firstLength < (nuint)secondLength) ? (nuint)firstLength : (nuint)secondLength);
+            nuint minLength = (nuint)(((uint)firstLength < (uint)secondLength) ? (uint)firstLength : (uint)secondLength);
             nuint i = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
 
             if (minLength >= (sizeof(nuint) / sizeof(char)))

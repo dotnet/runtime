@@ -111,7 +111,7 @@ namespace System
 
             uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
@@ -163,9 +163,9 @@ namespace System
                 offset += 1;
             }
 
-            if (Vector.IsHardwareAccelerated && (offset < (nuint)length))
+            if (Vector.IsHardwareAccelerated && (offset < (nuint)(uint)length))
             {
-                lengthToExamine = (((nuint)length - offset) & (nuint)~(Vector<byte>.Count - 1));
+                lengthToExamine = (((nuint)(uint)length - offset) & (nuint)~(Vector<byte>.Count - 1));
 
                 Vector<byte> values = new Vector<byte>(value);
 
@@ -181,9 +181,9 @@ namespace System
                     goto Found;
                 }
 
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
-                    lengthToExamine = ((nuint)length - offset);
+                    lengthToExamine = ((nuint)(uint)length - offset);
                     goto SequentialScan;
                 }
             }
@@ -201,7 +201,7 @@ namespace System
 
             uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Avx2.IsSupported || Sse2.IsSupported)
             {
@@ -274,9 +274,9 @@ namespace System
             // have hardware accelerated. After processing Vector lengths we return to SequentialScan to finish any remaining.
             if (Avx2.IsSupported)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
-                    if ((((nuint)Unsafe.AsPointer(ref searchSpace) + offset) & (nuint)(Vector256<byte>.Count - 1)) != 0)
+                    if ((((nuint)(uint)Unsafe.AsPointer(ref searchSpace) + offset) & (nuint)(Vector256<byte>.Count - 1)) != 0)
                     {
                         // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
                         // with no upper bound e.g. String.strlen.
@@ -341,16 +341,16 @@ namespace System
                         }
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
             }
             else if (Sse2.IsSupported)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
 
@@ -372,16 +372,16 @@ namespace System
                         return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
                     lengthToExamine = GetByteVectorSpanLength(offset, length);
 
@@ -400,9 +400,9 @@ namespace System
                         return (int)offset + LocateFirstFoundByte(matches);
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
@@ -452,7 +452,7 @@ namespace System
                     break;
 
                 // Found the first element of "value". See if the tail matches.
-                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, relativeIndex + 1), ref valueTail, (nuint)valueTailLength))  // The (nunit)-cast is necessary to pick the correct overload
+                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, relativeIndex + 1), ref valueTail, (nuint)(uint)valueTailLength))  // The (nunit)-cast is necessary to pick the correct overload
                     return relativeIndex;  // The tail matched. Return a successful find.
 
                 offset += remainingSearchSpaceLength - relativeIndex;
@@ -466,8 +466,8 @@ namespace System
             Debug.Assert(length >= 0);
 
             uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
-            nuint offset = (nuint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint offset = (nuint)(uint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
@@ -573,7 +573,7 @@ namespace System
             uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             uint uValue1 = value1; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Avx2.IsSupported || Sse2.IsSupported)
             {
@@ -659,7 +659,7 @@ namespace System
             // the JIT to see that the code is unreachable and eliminate it when the platform does not have hardware accelerated.
             if (Avx2.IsSupported)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
                     lengthToExamine = GetByteVector256SpanLength(offset, length);
                     if (lengthToExamine > offset)
@@ -712,16 +712,16 @@ namespace System
                         }
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
             }
             else if (Sse2.IsSupported)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
 
@@ -747,16 +747,16 @@ namespace System
                         return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
                     lengthToExamine = GetByteVectorSpanLength(offset, length);
 
@@ -779,9 +779,9 @@ namespace System
                         return (int)offset + LocateFirstFoundByte(matches);
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
@@ -814,7 +814,7 @@ namespace System
             uint uValue1 = value1;
             uint uValue2 = value2;
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Avx2.IsSupported || Sse2.IsSupported)
             {
@@ -898,7 +898,7 @@ namespace System
 
             if (Avx2.IsSupported)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
                     lengthToExamine = GetByteVector256SpanLength(offset, length);
                     if (lengthToExamine > offset)
@@ -955,16 +955,16 @@ namespace System
                         }
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
             }
             else if (Sse2.IsSupported)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
 
@@ -992,16 +992,16 @@ namespace System
                         return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                if (offset < (nuint)length)
+                if (offset < (nuint)(uint)length)
                 {
                     lengthToExamine = GetByteVectorSpanLength(offset, length);
 
@@ -1029,9 +1029,9 @@ namespace System
                         return (int)offset + LocateFirstFoundByte(matches);
                     }
 
-                    if (offset < (nuint)length)
+                    if (offset < (nuint)(uint)length)
                     {
-                        lengthToExamine = ((nuint)length - offset);
+                        lengthToExamine = ((nuint)(uint)length - offset);
                         goto SequentialScan;
                     }
                 }
@@ -1061,8 +1061,8 @@ namespace System
 
             uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             uint uValue1 = value1;
-            nuint offset = (nuint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint offset = (nuint)(uint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
@@ -1186,8 +1186,8 @@ namespace System
             uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             uint uValue1 = value1;
             uint uValue2 = value2;
-            nuint offset = (nuint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint offset = (nuint)(uint)length; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
@@ -1548,7 +1548,7 @@ namespace System
             if (Unsafe.AreSame(ref first, ref second))
                 goto Equal;
 
-            nuint minLength = (((nuint)firstLength < (nuint)secondLength) ? (nuint)firstLength : (nuint)secondLength);
+            nuint minLength = (nuint)(((uint)firstLength < (uint)secondLength) ? (uint)firstLength : (uint)secondLength);
 
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = minLength;
@@ -1804,15 +1804,15 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteVectorSpanLength(nuint offset, int length)
-            => (nuint)((length - (nint)offset) & ~(Vector<byte>.Count - 1));
+            => (nuint)(uint)((length - (int)offset) & ~(Vector<byte>.Count - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteVector128SpanLength(nuint offset, int length)
-            => (nuint)((length - (nint)offset) & ~(Vector128<byte>.Count - 1));
+            => (nuint)(uint)((length - (int)offset) & ~(Vector128<byte>.Count - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteVector256SpanLength(nuint offset, int length)
-            => (nuint)((length - (nint)offset) & ~(Vector256<byte>.Count - 1));
+            => (nuint)(uint)((length - (int)offset) & ~(Vector256<byte>.Count - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint UnalignedCountVector(ref byte searchSpace)
@@ -1825,14 +1825,14 @@ namespace System
         private static unsafe nuint UnalignedCountVector128(ref byte searchSpace)
         {
             nint unaligned = (nint)Unsafe.AsPointer(ref searchSpace) & (Vector128<byte>.Count - 1);
-            return (nuint)((Vector128<byte>.Count - unaligned) & (Vector128<byte>.Count - 1));
+            return (nuint)(uint)((Vector128<byte>.Count - unaligned) & (Vector128<byte>.Count - 1));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint UnalignedCountVectorFromEnd(ref byte searchSpace, int length)
         {
             nint unaligned = (nint)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
-            return (nuint)(((length & (Vector<byte>.Count - 1)) + unaligned) & (Vector<byte>.Count - 1));
+            return (nuint)(uint)(((length & (Vector<byte>.Count - 1)) + unaligned) & (Vector<byte>.Count - 1));
         }
     }
 }
