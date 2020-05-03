@@ -543,8 +543,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                    nullptr DEBUGARG("Clone constVector for Vector<T>.Max/Min"));
 
                         GenTree* constVectorDup2;
-                        constVectorDup1 = impCloneExpr(constVectorDup1, &constVectorDup2, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                                                       nullptr DEBUGARG("Clone constVector for Vector<T>.Max/Min"));
+                        constVectorDup1 =
+                            impCloneExpr(constVectorDup1, &constVectorDup2, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                         nullptr DEBUGARG("Clone constVector for Vector<T>.Max/Min"));
 
                         hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(opIntrinsic, opType);
 
