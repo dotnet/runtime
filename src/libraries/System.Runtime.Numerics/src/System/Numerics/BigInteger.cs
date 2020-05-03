@@ -483,8 +483,8 @@ namespace System.Numerics
         {
             int len;
 
-            // Try to conserve space as much as possible by checking for wasted leading uint[] entries
-            // sometimes the uint[] has leading zeros from bit manipulation operations & and ^
+            // Try to conserve space as much as possible by checking for wasted leading span entries
+            // sometimes the span has leading zeros from bit manipulation operations & and ^
             for (len = value.Length; len > 0 && value[len - 1] == 0; len--);
 
             if (len == 0)
@@ -516,7 +516,7 @@ namespace System.Numerics
             int dwordCount = value.Length;
             bool isNegative = dwordCount > 0 && ((value[dwordCount - 1] & 0x80000000) == 0x80000000);
 
-            // Try to conserve space as much as possible by checking for wasted leading uint[] entries
+            // Try to conserve space as much as possible by checking for wasted leading span entries
             while (dwordCount > 0 && value[dwordCount - 1] == 0) dwordCount--;
 
             if (dwordCount == 0)
