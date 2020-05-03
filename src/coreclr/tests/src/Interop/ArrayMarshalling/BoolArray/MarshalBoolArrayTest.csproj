@@ -8,6 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
-    <ProjectReference Include="CMakeLists.txt" />
+    <NativeProjectReference Include="MarshalBoolArrayNative/CMakeLists.txt" CMakeProject="MarshalBoolArrayNative/MarshalBoolArrayNative.proj" BuildNative="true" />
   </ItemGroup>
 </Project>

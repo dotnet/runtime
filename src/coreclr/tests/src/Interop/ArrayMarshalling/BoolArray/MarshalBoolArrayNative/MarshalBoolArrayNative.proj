@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.DotNet.CMake.Sdk">
+  <PropertyGroup>
+    <CMakeLists>CMakeLists.txt</CMakeLists>
+  </PropertyGroup>
+</Project>
