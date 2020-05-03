@@ -414,6 +414,11 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 jsonWriter.WriteString(DependencyContextStrings.RuntimeStoreManifestPropertyName, library.RuntimeStoreManifestName, escape: false);
             }
+            
+            if (library is RuntimeLibrary runtimeLibrary && runtimeLibrary.FrameworkName != null)
+            {
+                jsonWriter.WriteString(DependencyContextStrings.FrameworkNamePropertyName, runtimeLibrary.FrameworkName, escape: false);
+            }
 
             jsonWriter.WriteEndObject();
         }

@@ -87,5 +87,7 @@ namespace Microsoft.Extensions.DependencyModel
         internal const string AssemblyVersionPropertyName = "assemblyVersion";
 
         internal const string FileVersionPropertyName = "fileVersion";
+        
+        internal const string FrameworkNamePropertyName = "frameworkName";
     }
 }

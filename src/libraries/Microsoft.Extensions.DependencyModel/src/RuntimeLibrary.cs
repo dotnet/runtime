@@ -71,6 +71,35 @@ namespace Microsoft.Extensions.DependencyModel
             string path,
             string hashPath,
             string runtimeStoreManifestName)
+            : this(type,
+                  name,
+                  version,
+                  hash,
+                  runtimeAssemblyGroups,
+                  nativeLibraryGroups,
+                  resourceAssemblies,
+                  dependencies,
+                  serviceable,
+                  path,
+                  hashPath,
+                  runtimeStoreManifestName,
+                  frameworkName: null)
+        {
+        }
+
+        public RuntimeLibrary(string type,
+            string name,
+            string version,
+            string hash,
+            IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups,
+            IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups,
+            IEnumerable<ResourceAssembly> resourceAssemblies,
+            IEnumerable<Dependency> dependencies,
+            bool serviceable,
+            string path,
+            string hashPath,
+            string runtimeStoreManifestName,
+            string frameworkName)
             : base(type,
                   name,
                   version,
@@ -96,6 +125,7 @@ namespace Microsoft.Extensions.DependencyModel
             RuntimeAssemblyGroups = runtimeAssemblyGroups;
             ResourceAssemblies = resourceAssemblies.ToArray();
             NativeLibraryGroups = nativeLibraryGroups;
+            FrameworkName = frameworkName;
         }
 
         public IReadOnlyList<RuntimeAssetGroup> RuntimeAssemblyGroups { get; }
@@ -103,5 +133,7 @@ namespace Microsoft.Extensions.DependencyModel
         public IReadOnlyList<RuntimeAssetGroup> NativeLibraryGroups { get; }
 
         public IReadOnlyList<ResourceAssembly> ResourceAssemblies { get; }
+
+        public string FrameworkName { get; }
     }
 }
