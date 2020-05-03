@@ -218,53 +218,184 @@ namespace CoreXml.Test.XLinq
         {
             XDocument document = XDocument.Parse("<root>Test document async save</root>");
             var element = new XElement("Test");
-            using (ForceSyncAsyncStream stream = new ForceSyncAsyncStream(isAsync))
+            
+            if (isAsync)
             {
-                if (isAsync)
+                await using (ForceSyncAsyncStream stream = new ForceSyncAsyncStream(isAsync))
                 {
                     await document.SaveAsync(stream, saveOptions, CancellationToken.None);
                     await element.SaveAsync(stream, saveOptions, CancellationToken.None);
                 }
-                else
+            }
+            else
+            {
+                using (ForceSyncAsyncStream stream = new ForceSyncAsyncStream(isAsync))
                 {
                     document.Save(stream);
                     element.Save(stream);
                 }
             }
         }
+
+        [Theory]
+        [MemberData(nameof(RoundtripSyncAsyncOnly_MemberData))]
+        public static async Task RoundtripSyncAsyncOnly(bool async, bool document, LoadOptions loadOptions, SaveOptions saveOptions)
+        {
+            ForceSyncAsyncStream outputStream = new ForceSyncAsyncStream(async);
+            
+            if (async)
+            {
+                await using (Stream inputStream = new ForceSyncAsyncStream(async, FilePathUtil.getStream(GetTestFileName())))
+                {
+                    if (document)
+                    {
+                        XDocument asyncDoc = await XDocument.LoadAsync(inputStream, loadOptions, CancellationToken.None);
+                        await asyncDoc.SaveAsync(outputStream, saveOptions, CancellationToken.None);
+                    }
+                    else
+                    {
+                        XElement asyncElement = await XElement.LoadAsync(inputStream, loadOptions, CancellationToken.None);
+                        await asyncElement.SaveAsync(outputStream, saveOptions, CancellationToken.None);
+                    }
+                }
+            }
+            else
+            {
+                using (Stream inputStream = new ForceSyncAsyncStream(async, FilePathUtil.getStream(GetTestFileName())))
+                {
+                    if (document)
+                    {
+                        XDocument syncDoc = XDocument.Load(inputStream, loadOptions);
+                        syncDoc.Save(outputStream, saveOptions);
+                    }
+                    else
+                    {
+                        XElement syncElement = XElement.Load(inputStream, loadOptions);
+                        syncElement.Save(outputStream, saveOptions);
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> RoundtripSyncAsyncOnly_MemberData
+        {
+            get
+            {
+                foreach (bool async in new[] { false, true })
+                    foreach (bool doc in new[] { true, false })
+                        foreach (LoadOptions loadOptions in Enum.GetValues(typeof(LoadOptions)))
+                            foreach (SaveOptions saveOptions in Enum.GetValues(typeof(SaveOptions)))
+                                yield return new object[] { async, doc, loadOptions, saveOptions };
+            }
+        }
     }
 
-    public class ForceSyncAsyncStream : MemoryStream
+    public class ForceSyncAsyncStream : Stream
     {
-        private bool _isAsync;
+        private readonly Stream _stream;
 
-        public ForceSyncAsyncStream(bool async)
+        private readonly bool _isAsync;
+        private bool _isAsyncInProgress;
+
+        public ForceSyncAsyncStream(bool async, Stream stream = null)
         {
+            _stream = stream ?? new MemoryStream();
             _isAsync = async;
         }
 
         public override void Flush()
         {
-            Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Flush is called");
-            base.Flush();
+            if (!_isAsyncInProgress)
+                Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Flush is called");
+            _stream.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Flush is called");
-            return Task.CompletedTask;
+            try
+            {
+                Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Flush is called");
+                _isAsyncInProgress = true;
+                return _stream.FlushAsync(cancellationToken);
+            }
+            finally
+            {
+                _isAsyncInProgress = false;
+            }
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Write is called");
-            base.Write(buffer, offset, count);
+            if (!_isAsyncInProgress)
+                Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Write is called");
+            _stream.Write(buffer, offset, count);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
-            return Task.CompletedTask;
+            try
+            {
+                Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
+                _isAsyncInProgress = true;
+                return _stream.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+            finally
+            {
+                _isAsyncInProgress = false;
+            }
         }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (!_isAsyncInProgress)
+                Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Read is called");
+            return _stream.Read(buffer, offset, count);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            try
+            {
+                Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Read is called");
+                _isAsyncInProgress = true;
+                return _stream.ReadAsync(buffer, offset, count, cancellationToken);
+            }
+            finally
+            {
+                _isAsyncInProgress = false;
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!_isAsyncInProgress)
+                    Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Dispose is called");
+                _stream.Dispose();
+            }
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            try
+            {
+                Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Dispose is called");
+                _isAsyncInProgress = true;
+                return _stream.DisposeAsync();
+            }
+            finally
+            {
+                _isAsyncInProgress = false;
+            }
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
+        public override void SetLength(long value) => _stream.SetLength(value);
+        public override bool CanRead => _stream.CanRead;
+        public override bool CanSeek => _stream.CanSeek;
+        public override bool CanWrite => _stream.CanWrite;
+        public override long Length => _stream.Length;
+        public override long Position { get => _stream.Position; set => _stream.Position = value; }
     }
 }
