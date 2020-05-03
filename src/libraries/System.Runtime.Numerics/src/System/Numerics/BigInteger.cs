@@ -1494,7 +1494,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="buffer">Pre-allocated buffer by the caller.</param>
         /// <returns>The actual number of copied elements.</returns>
-        private int CopyTo(Span<uint> buffer)
+        private int WriteTo(Span<uint> buffer)
         {
             Debug.Assert(_bits is null || _sign == 0 ? buffer.Length == 2 : buffer.Length >= _bits.Length + 1);
 
@@ -1973,14 +1973,14 @@ namespace System.Numerics
             Span<uint> x = size <= StackAllocThreshold ?
                            stackalloc uint[size]
                            : leftBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
-            x = x.Slice(0, left.CopyTo(x));
+            x = x.Slice(0, left.WriteTo(x));
 
             uint[]? rightBufferFromPool = null;
             size = (right._bits?.Length ?? 1) + 1;
             Span<uint> y = size <= StackAllocThreshold ?
                            stackalloc uint[size]
                            : rightBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
-            y = y.Slice(0, right.CopyTo(y));
+            y = y.Slice(0, right.WriteTo(y));
 
             uint[]? resultBufferFromPool = null;
             size = Math.Max(x.Length, y.Length);
@@ -2029,14 +2029,14 @@ namespace System.Numerics
             Span<uint> x = size <= StackAllocThreshold ?
                            stackalloc uint[size]
                            : leftBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
-            x = x.Slice(0, left.CopyTo(x));
+            x = x.Slice(0, left.WriteTo(x));
 
             uint[]? rightBufferFromPool = null;
             size = (right._bits?.Length ?? 1) + 1;
             Span<uint> y = size <= StackAllocThreshold ?
                            stackalloc uint[size]
                            : rightBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
-            y = y.Slice(0, right.CopyTo(y));
+            y = y.Slice(0, right.WriteTo(y));
 
             uint[]? resultBufferFromPool = null;
             size = Math.Max(x.Length, y.Length);
@@ -2080,14 +2080,14 @@ namespace System.Numerics
             Span<uint> x = size <= StackAllocThreshold ?
                            stackalloc uint[size]
                            : leftBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
-            x = x.Slice(0, left.CopyTo(x));
+            x = x.Slice(0, left.WriteTo(x));
 
             uint[]? rightBufferFromPool = null;
             size = (right._bits?.Length ?? 1) + 1;
             Span<uint> y = size <= StackAllocThreshold ?
                            stackalloc uint[size]
                            : rightBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
-            y = y.Slice(0, right.CopyTo(y));
+            y = y.Slice(0, right.WriteTo(y));
 
             uint[]? resultBufferFromPool = null;
             size = Math.Max(x.Length, y.Length);
