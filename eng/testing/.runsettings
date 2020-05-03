@@ -55,6 +55,11 @@
           <IncludeTestAssembly>false</IncludeTestAssembly>
         </Configuration>
       </DataCollector>
+      <DataCollector friendlyName="blame" enabled="true">
+        <Configuration>
+          <CollectDump CollectAlways="false" DumpType="mini" />
+        </Configuration>
+      </DataCollector>
     </DataCollectors>
   </DataCollectionRunSettings>
 </RunSettings>
