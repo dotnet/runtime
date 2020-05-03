@@ -201,7 +201,7 @@ namespace System.Numerics
 
             if (buffer.Length > 2)
             {
-                // Ensure leading zeros
+                // Ensure leading zeros in little-endian
                 buffer.Slice(2).Clear();
             }
 
