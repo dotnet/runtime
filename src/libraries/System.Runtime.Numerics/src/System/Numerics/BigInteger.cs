@@ -554,7 +554,6 @@ namespace System.Numerics
                 _sign = +1;
                 value = value.Slice(0, dwordCount);
                 _bits = value.ToArray();
-                value.CopyTo(_bits);
                 AssertValid();
                 return;
             }

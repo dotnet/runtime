@@ -208,8 +208,8 @@ namespace System.Numerics
             uint lo = unchecked((uint)value);
             uint hi = (uint)(value >> 32);
 
-            buffer[0] = lo;
             buffer[1] = hi;
+            buffer[0] = lo;
             return hi != 0 ? 2 : lo != 0 ? 1 : 0;
         }
 
