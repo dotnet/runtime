@@ -151,7 +151,7 @@ namespace System.Numerics
 
             // Executes different algorithms for computing z = a * b
             // based on the actual length of b. If b is "small" enough
-            // we stick to the classic "grammar-school" method; for the
+            // we stick to the classic "grammar-school" method; f the
             // rest we switch to implementations with less complexity
             // albeit more overhead (which needs to pay off!).
 
@@ -279,21 +279,21 @@ namespace System.Numerics
             int i = 0;
             long carry = 0L;
 
-            for (; i < right.Length; i++)
+            for ( ; i < right.Length; i++)
             {
                 ref uint elementPtr = ref core[i];
                 long digit = (elementPtr + carry) - left[i] - right[i];
                 elementPtr = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; i < left.Length; i++)
+            for ( ; i < left.Length; i++)
             {
                 ref uint elementPtr = ref core[i];
                 long digit = (elementPtr + carry) - left[i];
                 elementPtr = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; carry != 0 && i < core.Length; i++)
+            for ( ; carry != 0 && i < core.Length; i++)
             {
                 ref uint elementPtr = ref core[i];
                 long digit = elementPtr + carry;

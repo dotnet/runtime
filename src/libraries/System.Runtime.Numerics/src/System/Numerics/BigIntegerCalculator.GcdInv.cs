@@ -219,7 +219,7 @@ namespace System.Numerics
 
             if (bits.Length > 1)
             {
-                // Ensure leading zeros
+                // Ensure leading zeros in little-endian
                 bits.Slice(1).Clear();
             }
 

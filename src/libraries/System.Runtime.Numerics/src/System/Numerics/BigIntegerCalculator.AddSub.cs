@@ -44,13 +44,13 @@ namespace System.Numerics
             int i = 0;
             long carry = 0L;
 
-            for (; i < right.Length; i++)
+            for ( ; i < right.Length; i++)
             {
                 long digit = (left[i] + carry) + right[i];
                 bits[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; i < left.Length; i++)
+            for ( ; i < left.Length; i++)
             {
                 long digit = left[i] + carry;
                 bits[i] = unchecked((uint)digit);

@@ -475,7 +475,7 @@ namespace System.Numerics
 
         /// <summary>
         /// Constructor used during bit manipulation and arithmetic.
-        /// When possible the uints will be packed into  _sign to conserve space.
+        /// When possible the uints-span will be packed into  _sign to conserve space.
         /// </summary>
         /// <param name="value">The absolute value of the number</param>
         /// <param name="negative">The bool indicating the sign of the value.</param>
@@ -483,8 +483,8 @@ namespace System.Numerics
         {
             int len;
 
-            // Try to conserve space as much as possible by checking for wasted leading span entries
-            // sometimes the span has leading zeros from bit manipulation operations & and ^
+            // Try to conserve space as much as possible by checking for wasted leading uints-span entries
+            // sometimes the uints-span has leading zeros from bit manipulation operations & and ^
             for (len = value.Length; len > 0 && value[len - 1] == 0; len--);
 
             if (len == 0)
