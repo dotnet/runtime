@@ -10,6 +10,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     {
         private static Random _random = new Random(41);
 
+        internal const int DefaultCidSize = 20;
+
         public static ConnectionId Random(int length)
         {
             Debug.Assert((uint) length <= 20, "Maximum connection id length is 20");

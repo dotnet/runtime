@@ -216,8 +216,8 @@ namespace System.Net.Quic.Implementations.Managed
             _tls = new Tls(_gcHandle, options, _localTransportParameters);
 
             // init random connection ids for the client
-            SourceConnectionId = ConnectionId.Random(20);
-            DestinationConnectionId = ConnectionId.Random(20);
+            SourceConnectionId = ConnectionId.Random(ConnectionId.DefaultCidSize);
+            DestinationConnectionId = ConnectionId.Random(ConnectionId.DefaultCidSize);
             _localConnectionIdCollection.Add(SourceConnectionId);
 
             // derive also clients initial secrets.
@@ -455,6 +455,9 @@ namespace System.Net.Quic.Implementations.Managed
         internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
             ReadOnlySpan<byte> readSecret, ReadOnlySpan<byte> writeSecret)
         {
+            // TODO-RZ: is it wise to log secrets to event source?
+            if (NetEventSource.IsEnabled) NetEventSource.SetEncryptionSecrets(this, level, algorithm, readSecret, writeSecret);
+
             var pnSpace = GetPacketNumberSpace(level);
             Debug.Assert(pnSpace.SendCryptoSeal == null, "Protection keys already derived");
 
@@ -519,11 +522,13 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override async ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
+
             ThrowIfDisposed();
             ThrowIfError();
 
             if (Connected) return;
 
+            if (NetEventSource.IsEnabled) NetEventSource.NewClientConnection(this, SourceConnectionId!.Data, DestinationConnectionId!.Data);
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             _socketContext.Ping();
@@ -697,6 +702,12 @@ namespace System.Net.Quic.Implementations.Managed
                 // and three times the current Probe Timeout (PTO).
                 _idleTimeout = now + timeout + 3 * Recovery.GetProbeTimeoutInterval();
             }
+        }
+
+        private void SignalConnected()
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Connected(this);
+            _connectTcs.TryComplete();
         }
     }
 }

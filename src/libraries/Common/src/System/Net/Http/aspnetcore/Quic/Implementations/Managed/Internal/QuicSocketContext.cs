@@ -99,6 +99,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     break;
                 }
 
+                if (NetEventSource.IsEnabled) NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
+
                 await _socket.SendToAsync(new ArraySegment<byte>(_sendBuffer, 0, _writer.BytesWritten),
                     SocketFlags.None,
                     receiver).ConfigureAwait(false);
@@ -146,6 +148,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             var connection = FindConnection(reader, sender);
             if (connection != null)
             {
+                if (NetEventSource.IsEnabled) NetEventSource.DatagramReceived(connection, reader.Buffer.Span);
+
                 var previousState = connection.ConnectionState;
                 _recvContext.Timestamp = Timestamp.Now;
                 connection.ReceiveData(reader, sender, _recvContext);

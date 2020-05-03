@@ -36,7 +36,7 @@ namespace System.Net.Quic.Implementations.Managed
                 switch (status)
                 {
                     case ProcessPacketResult.DropPacket:
-                        // Console.WriteLine("Packet dropped");
+                        if (NetEventSource.IsEnabled) NetEventSource.PacketDropped(this, reader.Buffer.Length);
                         break;
                     case ProcessPacketResult.Ok:
                         // An endpoint restarts its idle timer when a packet from its peer is
@@ -97,13 +97,22 @@ namespace System.Net.Quic.Implementations.Managed
             switch (type)
             {
                 case PacketType.Initial:
-                // TODO-RZ: server must not send Token (Protocol violation)
+                    // TODO-RZ: server must not send Token (Protocol violation)
                 case PacketType.Handshake:
                 case PacketType.ZeroRtt:
                     if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData) ||
                         headerData.Length > reader.BytesLeft)
                     {
                         return ProcessPacketResult.DropPacket;
+                    }
+
+                    // TODO-RZ: after client receives the first packet (which is either initial or retry), it must
+                    // use the connection id supplied by the server, but should ignore any further changes to CID,
+                    // see [TRANSPORT] Section 7.2
+                    if (header.PacketType == PacketType.Initial && !_isServer)
+                    {
+                        // protection keys are not affected by this change
+                        DestinationConnectionId = new ConnectionId(header.SourceConnectionId.ToArray());
                     }
 
                     // total length of the packet is known and checked during header parsing.

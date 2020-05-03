@@ -177,7 +177,7 @@ namespace System.Net.Quic.Implementations.Managed
             // An endpoint MUST discard handshake keys when TLS handshake is complete.
             DropPacketNumberSpace(PacketSpace.Handshake);
 
-            _connectTcs.TryComplete();
+            SignalConnected();
 
             return ProcessPacketResult.Ok;
         }
@@ -417,7 +417,7 @@ namespace System.Net.Quic.Implementations.Managed
                 writer.WriteFrameType(FrameType.HandshakeDone);
                 // no data
 
-                _connectTcs.TryComplete();
+                SignalConnected();
                 context.SentPacket.HandshakeDoneSent = true;
                 _handshakeDoneSent = true;
 
