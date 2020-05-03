@@ -67,6 +67,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 {
 	ERROR_DECL (error);
 	MonoMethod *res;
+	gpointer addr;
 
 	if (obj == NULL) {
 		mono_error_set_null_reference (error);
@@ -94,7 +95,10 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 
 	/* An rgctx wrapper is added by the trampolines no need to do it here */
 
-	return mono_ldftn (res);
+	addr =  mono_ldftn (res);
+	if (m_class_is_valuetype (mono_object_class(obj)))
+		addr = mini_add_method_trampoline (method, addr, FALSE, TRUE);
+	return addr;
 }
 
 void*

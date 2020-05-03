@@ -1448,12 +1448,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_reldeep_array_nz/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/_il_dbgjumps4/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34379</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/_il_reljumps4/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/port/_il_dbghuge_gcref/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
