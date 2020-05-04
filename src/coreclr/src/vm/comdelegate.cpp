@@ -22,10 +22,7 @@
 #include "cgensys.h"
 #include "asmconstants.h"
 #include "virtualcallstub.h"
-#include "callingconvention.h"
-#include "customattribute.h"
 #include "typestring.h"
-#include "../md/compiler/custattr.h"
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
@@ -1133,62 +1130,23 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
 }
 
 #if defined(TARGET_X86)
-// Marshals a managed method to an unmanaged callback provided the
-// managed method is static and it's parameters require no marshalling.
-PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
+// Marshals a managed method to an unmanaged callback.
+PCODE COMDelegate::ConvertToUnmanagedCallback(MethodDesc* pMD)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(pMD != NULL);
+        PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
-    // Check the method for proper usage.
-    ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
-
-    PCODE pCode = NULL;
-
     // Get UMEntryThunk from the thunk cache.
     UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
 
-#if !defined(FEATURE_STUBS_AS_IL)
-
-    // System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute
-    BYTE* pData = NULL;
-    LONG cData = 0;
-    CorPinvokeMap callConv = (CorPinvokeMap)0;
-
-    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
-    IfFailThrow(hr);
-
-    if (cData > 0)
-    {
-        CustomAttributeParser ca(pData, cData);
-        // UnmanagedCallersOnly has two optional named arguments CallingConvention and EntryPoint.
-        CaNamedArg namedArgs[2];
-        CaTypeCtor caType(SERIALIZATION_TYPE_STRING);
-        // First, the void constructor.
-        IfFailThrow(ParseKnownCaArgs(ca, NULL, 0));
-
-        // Now the optional named properties
-        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)callConv);
-        namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caType);
-        IfFailThrow(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
-
-        callConv = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
-        // Let UMThunkMarshalInfo choose the default if calling convension not definied.
-        if (namedArgs[0].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
-        {
-            UMThunkMarshInfo* pUMThunkMarshalInfo = pUMEntryThunk->GetUMThunkMarshInfo();
-            pUMThunkMarshalInfo->SetCallingConvention(callConv);
-        }
-}
-#endif  // !FEATURE_STUBS_AS_IL
-
-    pCode = (PCODE)pUMEntryThunk->GetCode();
+    PCODE pCode = (PCODE)pUMEntryThunk->GetCode();
     _ASSERTE(pCode != NULL);
     return pCode;
 }

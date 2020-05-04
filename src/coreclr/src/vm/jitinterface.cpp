@@ -9209,7 +9209,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     // https://github.com/dotnet/runtime/issues/33582
     if (pMD->HasUnmanagedCallersOnlyAttribute())
     {
-        pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
+        pResult->addr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMD);
     }
     else
     {

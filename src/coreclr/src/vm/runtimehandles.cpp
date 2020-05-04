@@ -1767,7 +1767,7 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
     // https://github.com/dotnet/runtime/issues/33582
     if (pMethod->HasUnmanagedCallersOnlyAttribute())
     {
-        funcPtr = (void*)COMDelegate::ConvertToCallback(pMethod);
+        funcPtr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMethod);
     }
     else
     {
