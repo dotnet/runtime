@@ -118,7 +118,7 @@ namespace System
             UnixPath = 0x100000000000,
 
             /// <summary>
-            /// Used to ensure that InitializeAndValidate is only called once per Uri instance and only from from an override of InitializeAndValidate
+            /// Used to ensure that InitializeAndValidate is only called once per Uri instance and only from an override of InitializeAndValidate
             /// </summary>
             CustomParser_ParseMinimalAlreadyCalled = 0x4000000000000000,
 
