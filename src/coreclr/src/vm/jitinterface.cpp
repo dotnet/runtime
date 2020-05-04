@@ -9207,7 +9207,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     // Deferring X86 support until a need is observed or
     // time permits investigation into all the potential issues.
     // https://github.com/dotnet/runtime/issues/33582
-    if (COMDelegate::VerifyUnmanagedCallersOnlySupported(pMD))
+    if (pMD->HasUnmanagedCallersOnlyAttribute())
     {
         pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
     }
@@ -12423,8 +12423,11 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
     }
 
 #if !defined(TARGET_X86)
-    if (COMDelegate::VerifyUnmanagedCallersOnlySupported(ftn))
+    if (ftn->HasUnmanagedCallersOnlyAttribute())
+    {
+        COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(ftn);
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    }
 #endif // !TARGET_X86
 
     return flags;

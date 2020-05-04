@@ -127,9 +127,9 @@ public:
 
     static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
 
-    // Check if the method is marked UnmanagedCallersOnly.
-    // If it is throw if the method violates any usage restrictions.
-    static BOOL VerifyUnmanagedCallersOnlySupported(MethodDesc* pMD);
+    // Throw if the method violates any usage restrictions
+    // for UnmanagedCallersOnlyAttribute.
+    static void ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD);
 
 private:
     static Stub* SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);

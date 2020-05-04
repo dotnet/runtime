@@ -1146,6 +1146,9 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
     }
     CONTRACTL_END;
 
+    // Check the method for proper usage.
+    ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
+
     PCODE pCode = NULL;
 
     // Get UMEntryThunk from the thunk cache.
@@ -2140,31 +2143,27 @@ FCIMPLEND
 
 #endif // CROSSGEN_COMPILE
 
-BOOL COMDelegate::VerifyUnmanagedCallersOnlySupported(MethodDesc* pMD)
+void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
+        PRECONDITION(pMD != NULL);
+        PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
     }
     CONTRACTL_END;
 
-    BOOL isUnmanagedCallersOnly = pMD->HasUnmanagedCallersOnlyAttribute();
-    if (isUnmanagedCallersOnly)
-    {
-        if (!pMD->IsStatic())
-            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
+    if (!pMD->IsStatic())
+        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
 
-        // No generic methods
-        if (pMD->HasClassOrMethodInstantiation())
-            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
+    // No generic methods
+    if (pMD->HasClassOrMethodInstantiation())
+        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
 
-        // Arguments
-        if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
-    }
-
-    return isUnmanagedCallersOnly;
+    // Arguments
+    if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 
 BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
