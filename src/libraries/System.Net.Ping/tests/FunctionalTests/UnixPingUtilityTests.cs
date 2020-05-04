@@ -20,6 +20,7 @@ namespace System.Net.NetworkInformation.Tests
         private const int IcmpHeaderLengthInBytes = 8;
 
         [Theory]
+        [InlineData(0)]
         [InlineData(100)]
         [InlineData(1000)]
         [InlineData(1500)]
