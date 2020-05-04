@@ -3176,7 +3176,6 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
             case GT_STOREIND:
                 assert(user->TypeIs(TYP_SIMD8, TYP_REF));
                 user->ChangeType(returnType);
-                user->SetOper(GT_STOREIND);
                 break;
 
             default:

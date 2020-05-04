@@ -15137,9 +15137,9 @@ GenTree* Compiler::gtNewTempAssign(
             // and call returns. Lowering and Codegen will handle these.
             ok = true;
         }
-        else if (dstTyp == TYP_STRUCT && valTyp == TYP_INT)
+        else if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_INT))
         {
-            // It could come from `ASG(struct, 0)` that was propogated to `RETURN struct(0)`,
+            // It could come from `ASG(struct, 0)` that was propagated to `RETURN struct(0)`,
             // and now it is merging to a struct again.
             assert(!compDoOldStructRetyping());
             assert(tmp == genReturnLocal);
@@ -17201,10 +17201,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
         switch (tree->gtOper)
         {
             default:
-                break;
-            case GT_BITCAST:
-                assert(!compDoOldStructRetyping());
-                structHnd = gtGetStructHandleIfPresent(tree->AsUnOp()->gtOp1);
                 break;
             case GT_MKREFANY:
                 structHnd = impGetRefAnyClass();
