@@ -96,7 +96,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 	/* An rgctx wrapper is added by the trampolines no need to do it here */
 
 	addr =  mono_ldftn (res);
-	if (m_class_is_valuetype (mono_object_class(obj)))
+	if (m_class_is_valuetype (res->klass) && !m_class_is_valuetype (method->klass))
 		addr = mini_add_method_trampoline (method, addr, FALSE, TRUE);
 	return addr;
 }
