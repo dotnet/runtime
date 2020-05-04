@@ -1442,6 +1442,11 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
     }
 }
 
+IUnknown* ComWrappersNative::GetIdentityForExternalComObjectContext(_In_ void* context)
+{
+    return reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
+}
+
 #endif // FEATURE_COMWRAPPERS
 
 void Interop::OnGCStarted(_In_ int nCondemnedGeneration)

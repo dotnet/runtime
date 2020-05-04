@@ -37,6 +37,9 @@ public: // Lifetime management for COM Wrappers
 
 public: // COM activation
     static void MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe);
+
+public: // Unwrapping support
+    static IUnknown* GetIdentityForExternalComObjectContext(_In_ void* context);
 };
 
 class GlobalComWrappers

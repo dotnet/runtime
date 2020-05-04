@@ -350,6 +350,24 @@ namespace ComWrappersTests
             GC.Collect();
         }
 
+
+        static void ValidateNativeWeakReference()
+        {
+            Console.WriteLine($"Running {nameof(ValidateCreateObjectCachingScenario)}...");
+
+            var cw = new TestComWrappers();
+
+            // Get an object from a tracker runtime.
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            var trackerObj1 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+
+
+            // Ownership has been transferred to the wrapper.
+            Marshal.Release(trackerObjRaw);
+
+        }
+
         static int Main(string[] doNotUse)
         {
             try
