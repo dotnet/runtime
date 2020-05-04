@@ -161,9 +161,7 @@ internal static partial class Interop
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? o = h.Target as JSObject;
-            if (o != null && o.RawObject != null)
-                return o.RawObject;
-            return o;
+            return o?.RawObject ?? null;
         }
 
         internal static object BoxInt(int i)
