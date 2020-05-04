@@ -116,6 +116,7 @@
     <MicrosoftNETTestSdkVersion>16.7.0-preview-20200429-01</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestsRunnersVersion>1.0.0-prerelease.20230.6</MicrosoftDotNetXHarnessTestsRunnersVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
+    <CoverletCollectorVersion>1.2.0</CoverletCollectorVersion>
     <TraceEventVersion>2.0.5</TraceEventVersion>
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
     <MoqVersion>4.12.0</MoqVersion>

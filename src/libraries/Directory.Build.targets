@@ -31,7 +31,7 @@
          Tests which wish to control this should set TestStrongNameKeyId. -->
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
-    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisDirectory)intellisense.targets" Condition="'$(DesignTimeBuild)' == 'true'" />
@@ -51,7 +51,7 @@
 
   <!-- Corefx-specific binplacing properties -->
   <PropertyGroup>
-    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' and '$(IsReferenceAssembly)' != 'true' and '$(BinPlaceRef)' != 'true' and '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' and '$(IsReferenceAssembly)' != 'true' and '$(BinPlaceRef)' != 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">true</IsRuntimeAssembly>
     <!-- Try to determine if this is a simple library without a ref project.
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)') and !Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)/ref') and !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
@@ -142,7 +142,6 @@
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
-  <Import Project="$(RepositoryEngineeringDir)testing\launchSettings.targets" Condition="'$(EnableLaunchSettings)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
 

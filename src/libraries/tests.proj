@@ -1,15 +1,21 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <Import Project="$(RepositoryEngineeringDir)testing\coverage.props" Condition="'$(Coverage)' == 'true'" />
-
   <PropertyGroup>
-    <TestInParallel Condition="'$(Coverage)' != 'true'">true</TestInParallel>
+    <TestInParallel Condition="'$(Coverage)' == 'true'">false</TestInParallel>
     <!-- For tests we want to continue running if a test run failed. -->
     <TestContinueOnError>ErrorAndContinue</TestContinueOnError>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-    <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
+    <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests\*\coverage.opencover.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
+    <EnableCoverageSupport>true</EnableCoverageSupport>
   </PropertyGroup>
+  
+  <!-- Projects that don't support code coverage measurement. -->
+  <ItemGroup Condition="'$(Coverage)' == 'true'">
+    <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- We currently only test with C# projects. -->
@@ -20,14 +26,9 @@
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
-  <Target Name="GenerateCoverageReport"
-          Condition="'$(Coverage)' == 'true' and '$(SkipCoverageReport)' != 'true'"
+  <Target Name="GenerateMergedCoverageReport"
+          Condition="'$(Coverage)' == 'true'"
           AfterTargets="Test"
-          Inputs="$(CoverageReportInputPath)"
-          Outputs="$(CoverageReportResultsPath)">
-    <Exec Command="$(CoverageReportCommandLine)" />
-  </Target>
-
-  <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(Coverage)' == 'true'" />
+          DependsOnTargets="GenerateCoverageReport" />
 
 </Project>

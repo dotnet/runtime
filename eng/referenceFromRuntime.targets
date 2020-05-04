@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <Target Name="AddRuntimeProjectReference"
-          Condition="'$(IsTestProject)'!='true' and '@(ReferenceFromRuntime)' != ''">
+          Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true' and '@(ReferenceFromRuntime)' != ''">
     <Error Text="ReferenceFromRuntime may not be used from reference assemblies."
            Condition="'$(IsReferenceAssembly)' == 'true' and '$(AllowReferenceFromRuntime)' != 'true'" />
 
@@ -65,7 +65,7 @@
       <_referencePathFromRuntime Include="@(RuntimeFiles)" Private="false" />
       <_referencePathFromRuntime Include="@(_referencePathFromRestoredRuntime)" Private="false" />
       <!-- If this is a test project, also use the $(RuntimePath) to find a @(ReferenceFromRuntime) assembly. -->
-      <_referencePathFromRuntime Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" Condition="'$(IsTestProject)' == 'true'" />
+      <_referencePathFromRuntime Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'" />
       <!-- transform to filename in order to intersect -->
       <_referencePathFromRuntimeByFileName Include="@(_referencePathFromRuntime->'%(FileName)')" Condition="'%(_referencePathFromRuntime.Extension)' == '.dll'" >
         <ReferencePath>%(Identity)</ReferencePath>
