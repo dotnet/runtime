@@ -3059,7 +3059,7 @@ mono_ptr_to_ansibstr (const char *ptr, size_t slen)
 	return s;
 }
 
-static MonoStringHandle
+MonoStringHandle
 mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
 {
 	if (!bstr)
