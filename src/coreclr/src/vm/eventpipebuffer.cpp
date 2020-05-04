@@ -23,7 +23,7 @@ EventPipeBuffer::EventPipeBuffer(unsigned int bufferSize, EventPipeThread* pWrit
     m_state = EventPipeBufferState::WRITABLE;
     m_pWriterThread = pWriterThread;
     m_eventSequenceNumber = eventSequenceNumber;
-    m_pBuffer = new BYTE[bufferSize];
+    m_pBuffer = (BYTE*)ClrVirtualAlloc(NULL, bufferSize, MEM_COMMIT, PAGE_READWRITE);
     memset(m_pBuffer, 0, bufferSize);
     m_pLimit = m_pBuffer + bufferSize;
     m_pCurrent = GetNextAlignedAddress(m_pBuffer);
@@ -47,7 +47,7 @@ EventPipeBuffer::~EventPipeBuffer()
     }
     CONTRACTL_END;
 
-    delete[] m_pBuffer;
+    ClrVirtualFree(m_pBuffer, 0, MEM_RELEASE);
 }
 
 bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack)
