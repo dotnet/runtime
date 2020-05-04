@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -197,7 +196,6 @@ namespace System
         //
         private bool IriParsing => IriParsingStatic(_syntax);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IriParsingStatic(UriParser? syntax)
         {
             return syntax is null || syntax.InFact(UriSyntaxFlags.AllowIriParsing);
