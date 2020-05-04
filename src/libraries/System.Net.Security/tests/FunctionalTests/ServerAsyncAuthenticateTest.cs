@@ -73,8 +73,6 @@ namespace System.Net.Security.Tests
         public static IEnumerable<object[]> ProtocolMismatchData()
         {
 #pragma warning disable 0618
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
             yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
 #pragma warning restore 0618
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };

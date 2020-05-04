@@ -20,9 +20,8 @@ namespace System.Net.Security.Tests
 
     public class NegotiatedCipherSuiteTest
     {
-#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
-        public const SslProtocols AllProtocols =
-            SslProtocols.Ssl2 | SslProtocols.Ssl3 |
+#pragma warning disable CS0618 // Ssl3 are obsolete
+        public const SslProtocols AllProtocols = SslProtocols.Ssl3 |
             SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #pragma warning restore CS0618
 
