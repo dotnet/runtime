@@ -120,12 +120,12 @@ namespace System
             /// <summary>
             /// Used to ensure that InitializeAndValidate is only called once per Uri instance and only from from an override of InitializeAndValidate
             /// </summary>
-            CustomParser_ParseMinimalAlreadyCalled = 1UL << 62,
+            CustomParser_ParseMinimalAlreadyCalled = 0x4000000000000000,
 
             /// <summary>
             /// Used for asserting that certain methods are only called from the constructor to validate thread-safety assumptions
             /// </summary>
-            Debug_LeftConstructor = 1UL << 63
+            Debug_LeftConstructor = 0x8000000000000000
         }
 
         [Conditional("DEBUG")]
