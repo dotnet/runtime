@@ -271,7 +271,7 @@ SEHProcessException(PAL_SEHException* exception)
                     void* stackLimit = CPalThread::GetStackLimit();
                     void* stackOverflowBottom = (void*)((size_t)stackLimit - GetVirtualPageSize());
                     // On some versions of glibc / platforms the stackLimit is an address of the guard page, on some
-                    // it is right above the guard page. 
+                    // it is right above the guard page.
                     // So consider SIGSEGV in one page above and below stack limit to be stack overflow.
                     void* stackOverflowTop = (void*)((size_t)stackLimit + GetVirtualPageSize());
                     void* violationAddr = (void*)exceptionRecord->ExceptionInformation[1];
@@ -322,9 +322,7 @@ PAL_ERROR SEHEnable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->EnableMachExceptions();
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__)
-    // TODO: This needs to be implemented. Cannot put an ASSERT here
-    // because it will make other parts of PAL fail.
+#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun)
     return NO_ERROR;
 #else// HAVE_MACH_EXCEPTIONS
 #error not yet implemented
@@ -349,9 +347,7 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->DisableMachExceptions();
-    // TODO: This needs to be implemented. Cannot put an ASSERT here
-    // because it will make other parts of PAL fail.
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun)
     return NO_ERROR;
 #else // HAVE_MACH_EXCEPTIONS
 #error not yet implemented

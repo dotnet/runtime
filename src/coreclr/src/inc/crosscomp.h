@@ -392,9 +392,11 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 #define DAC_CS_NATIVE_DATA_SIZE 56
 #elif defined(TARGET_NETBSD) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 56
+#elif defined(__sun) && defined(TARGET_AMD64)
+#define DAC_CS_NATIVE_DATA_SIZE 48
 #else
 #warning
-#error  DAC_CS_NATIVE_DATA_SIZE is not defined for this architecture
+#error  DAC_CS_NATIVE_DATA_SIZE is not defined for this architecture. This should be same value as PAL_CS_NATIVE_DATA_SIZE (aka sizeof(PAL_CS_NATIVE_DATA)).
 #endif
 
 struct T_CRITICAL_SECTION {

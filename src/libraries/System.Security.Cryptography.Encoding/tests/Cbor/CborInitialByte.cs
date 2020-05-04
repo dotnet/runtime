@@ -15,14 +15,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         Array = 4,
         Map = 5,
         Tag = 6,
-        Special = 7,
+        Simple = 7,
     }
 
     internal enum CborAdditionalInfo : byte
     {
-        SpecialValueFalse = 20,
-        SpecialValueTrue = 21,
-        SpecialValueNull = 22,
+        SimpleValueFalse = 20,
+        SimpleValueTrue = 21,
+        SimpleValueNull = 22,
 
         Additional8BitData = 24,
         Additional16BitData = 25,

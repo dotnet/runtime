@@ -514,8 +514,9 @@ namespace System.Net.WebSockets
             if (acquiredLock)
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
-                // The call will handle releasing the lock.
-                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, Memory<byte>.Empty);
+                // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
+                // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
+                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Pong, true, ReadOnlyMemory<byte>.Empty);
                 if (t.IsCompletedSuccessfully)
                 {
                     t.GetAwaiter().GetResult();
@@ -709,7 +710,7 @@ namespace System.Net.WebSockets
                             null, null);
                     }
 
-                    // Otherwise, read as much of the payload as we can efficiently, and upate the header to reflect how much data
+                    // Otherwise, read as much of the payload as we can efficiently, and update the header to reflect how much data
                     // remains for future reads.  We first need to copy any data that may be lingering in the receive buffer
                     // into the destination; then to minimize ReceiveAsync calls, we want to read as much as we can, stopping
                     // only when we've either read the whole message or when we've filled the payload buffer.

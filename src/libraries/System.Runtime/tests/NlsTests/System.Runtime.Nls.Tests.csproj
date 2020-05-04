@@ -6,54 +6,38 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\Helpers.cs">
-      <Link>Helpers.cs</Link>
-    </Compile>
-    <Compile Include="..\System\ArrayTests.cs">
-      <Link>System\ArrayTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\String.SplitTests.cs">
-      <Link>System\String.SplitTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\StringComparerTests.cs">
-      <Link>System\StringComparerTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\StringGetHashCodeTests.cs">
-      <Link>System\StringGetHashCodeTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\StringSplitExtensions.cs">
-      <Link>System\StringSplitExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\System\StringTests.cs">
-      <Link>System\StringTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\Text\RuneTests.cs">
-      <Link>System\Text\RuneTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\Text\RuneTests.TestData.cs">
-      <Link>System\Text\RuneTests.TestData.cs</Link>
-    </Compile>
-    <Compile Include="..\System\Text\StringBuilderTests.cs">
-      <Link>System\Text\StringBuilderTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\Uri.CreateStringTests.cs">
-      <Link>System\Uri.CreateStringTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\Uri.CreateUriTests.cs">
-      <Link>System\Uri.CreateUriTests.cs</Link>
-    </Compile>
-    <Compile Include="..\System\Uri.MethodsTests.cs">
-      <Link>System\Uri.MethodsTests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\EnumTypes.cs">
-      <Link>Common\System\EnumTypes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\MockType.cs">
-      <Link>Common\System\MockType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs">
-      <Link>Common\System\StringTests.cs</Link>
-    </Compile>
+    <Compile Include="..\Helpers.cs"
+             Link="Helpers.cs" />
+    <Compile Include="..\System\ArrayTests.cs"
+             Link="System\ArrayTests.cs" />
+    <Compile Include="..\System\String.SplitTests.cs"
+             Link="System\String.SplitTests.cs" />
+    <Compile Include="..\System\StringComparerTests.cs"
+             Link="System\StringComparerTests.cs" />
+    <Compile Include="..\System\StringGetHashCodeTests.cs"
+             Link="System\StringGetHashCodeTests.cs" />
+    <Compile Include="..\System\StringSplitExtensions.cs"
+             Link="System\StringSplitExtensions.cs" />
+    <Compile Include="..\System\StringTests.cs"
+             Link="System\StringTests.cs" />
+    <Compile Include="..\System\Text\RuneTests.cs"
+             Link="System\Text\RuneTests.cs" />
+    <Compile Include="..\System\Text\RuneTests.TestData.cs"
+             Link="System\Text\RuneTests.TestData.cs" />
+    <Compile Include="..\System\Text\StringBuilderTests.cs"
+             Link="System\Text\StringBuilderTests.cs" />
+    <Compile Include="..\System\Uri.CreateStringTests.cs"
+             Link="System\Uri.CreateStringTests.cs" />
+    <Compile Include="..\System\Uri.CreateUriTests.cs"
+             Link="System\Uri.CreateUriTests.cs" />
+    <Compile Include="..\System\Uri.MethodsTests.cs"
+             Link="System\Uri.MethodsTests.cs" />
+    <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
+             Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\MockType.cs"
+             Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs"
+             Link="Common\System\StringTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />

@@ -17,7 +17,7 @@
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
     <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
@@ -40,6 +40,7 @@
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
           Condition="'$(BinPlaceTestSharedFramework)' == 'true'"
+          DependsOnTargets="OverrideRuntimeMono"
           AfterTargets="AfterResolveReferences">
     <PropertyGroup>
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
@@ -50,7 +51,12 @@
       <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
+      <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
     </ItemGroup>
@@ -69,7 +75,7 @@
   </Target>
 
   <Target Name="SetupRuntimePackNative"
-          Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
+          Condition="'$(RuntimeFlavor)' == 'Mono'"
           AfterTargets="AfterResolveReferences">
     <ItemGroup>
       <NativeBinPlaceItem Include="@(RuntimeFiles)" />
@@ -79,6 +85,9 @@
       <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
       </NativeBinPlaceItem>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+      <TestHostBinPlaceItem Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
 
@@ -98,8 +107,9 @@
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+    <ItemGroup>
+      <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
   </Target>
 

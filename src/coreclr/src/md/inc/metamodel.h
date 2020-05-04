@@ -22,8 +22,6 @@
 #include "../datablob.h"
 #include "../debug_metadata.h"
 
-#undef __unaligned
-
 #define ALLOCATED_MEMORY_MARKER 0xff
 
 // Version numbers for metadata format.

@@ -135,6 +135,8 @@ namespace System.Drawing
             if (encoder == null)
                 throw new ArgumentNullException(nameof(encoder));
 
+            ThrowIfDirectoryDoesntExist(filename);
+
             IntPtr encoderParamsMemory = IntPtr.Zero;
 
             if (encoderParams != null)

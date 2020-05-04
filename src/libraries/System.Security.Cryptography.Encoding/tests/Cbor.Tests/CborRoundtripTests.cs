@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
             writer.WriteInt64(input);
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
 
             var reader = new CborReader(encoding);
             long result = reader.ReadInt64();
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
             writer.WriteUInt64(input);
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
 
             var reader = new CborReader(encoding);
             ulong result = reader.ReadUInt64();
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 #endif
             using var writer = new CborWriter();
             writer.WriteByteString(input);
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
 
             var reader = new CborReader(encoding);
             byte[] result = reader.ReadByteString();
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
             writer.WriteTextString(input);
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
 
             var reader = new CborReader(encoding);
             string result = reader.ReadTextString();
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 #endif
             using var writer = new CborWriter();
             writer.WriteByteString(input);
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
 
             int length = input?.Length ?? 0;
             int lengthEncodingLength = GetLengthEncodingLength(length);

@@ -1,5 +1,6 @@
 parameters:
   name: ''
+  runtimeFlavor: 'coreclr'
 
   isOfficialBuild: false
 
@@ -17,7 +18,7 @@ steps:
     testResultsFiles: '*.xml'
     searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
     mergeTestResults: true
-    testRunTitle: Installer-${{ parameters.name }}-$(_BuildConfig)
+    testRunTitle: Installer-${{ parameters.runtimeFlavor }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: eq(variables.SkipTests, false)
 
@@ -37,6 +38,6 @@ steps:
   displayName: Publish BuildLogs
   inputs:
     targetPath: '$(Build.StagingDirectory)/BuildLogs'
-    artifactName: Installer-Logs-${{ parameters.name }}-$(_BuildConfig)
+    artifactName: Installer-Logs-${{ parameters.runtimeFlavor }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: succeededOrFailed()

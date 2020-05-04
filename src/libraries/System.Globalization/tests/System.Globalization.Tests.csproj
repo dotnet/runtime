@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
@@ -113,9 +113,8 @@
     <Compile Include="System\Globalization\TextElementEnumeratorTests.cs" />
     <Compile Include="System\Globalization\UnicodeCategoryTests.cs" />
     <!-- Helpers -->
-    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs">
-      <Link>Common\System\RandomDataGenerator.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
+             Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />

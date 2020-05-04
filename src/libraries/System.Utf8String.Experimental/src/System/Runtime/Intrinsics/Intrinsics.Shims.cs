@@ -26,6 +26,18 @@ namespace System.Runtime.Intrinsics
 
 namespace System.Runtime.Intrinsics.X86
 {
+    internal static class X86Base
+    {
+        internal static class X64
+        {
+            public const bool IsSupported = false;
+            internal static ulong BitScanForward(ulong value) => throw new PlatformNotSupportedException();
+            internal static ulong BitScanReverse(ulong value) => throw new PlatformNotSupportedException();
+        }
+        public const bool IsSupported = false;
+        internal static uint BitScanForward(uint value) => throw new PlatformNotSupportedException();
+        internal static uint BitScanReverse(uint value) => throw new PlatformNotSupportedException();
+    }
     internal abstract class Bmi1
     {
         public abstract class X64

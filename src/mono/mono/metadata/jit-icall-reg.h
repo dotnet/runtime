@@ -307,6 +307,7 @@ MONO_JIT_ICALL (mono_throw_method_access) \
 MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
+MONO_JIT_ICALL (mono_trace_tail_method) \
 MONO_JIT_ICALL (mono_upgrade_remote_class_wrapper) \
 MONO_JIT_ICALL (mono_value_copy_internal) \
 MONO_JIT_ICALL (mono_x86_start_gsharedvt_call)	\

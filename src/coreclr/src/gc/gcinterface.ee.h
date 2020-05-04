@@ -348,13 +348,13 @@ public:
     // pointer is undefined. Otherwise, true is returned and the config key's value is written to
     // the passed-in pointer.
     virtual
-    bool GetBooleanConfigValue(const char* key, bool* value) = 0;
+    bool GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value) = 0;
 
     virtual
-    bool GetIntConfigValue(const char* key, int64_t* value) = 0;
+    bool GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value) = 0;
 
     virtual
-    bool GetStringConfigValue(const char* key, const char** value) = 0;
+    bool GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value) = 0;
 
     virtual
     void FreeStringConfigValue(const char* value) = 0;

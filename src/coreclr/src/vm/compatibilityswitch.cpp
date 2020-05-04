@@ -30,8 +30,7 @@ FCIMPL2(StringObject*, CompatibilitySwitch::GetValue, StringObject* switchNameUN
         // only check in windows appcompat DB
         info.options = CLRConfig::IgnoreEnv |
                        CLRConfig::IgnoreHKLM |
-                       CLRConfig::IgnoreHKCU |
-                       CLRConfig::IgnoreConfigFiles;
+                       CLRConfig::IgnoreHKCU;
     }
     else
     {
