@@ -18,8 +18,6 @@ while true; do
     fi
 done
 
-
-## XHarness doesn't support macOS/Linux yet (in progress) so we'll use a hand-made adb script
- dotnet xharness android test -i="net.dot.MonoRunner" \
+dotnet xharness android test -i="net.dot.MonoRunner" \
     --package-name="net.dot.$TEST_NAME" \
     --app=$APK -o=$EXECUTION_DIR/Bundle/TestResults -v
