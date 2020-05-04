@@ -31786,35 +31786,46 @@ void gc_heap::decommit_ephemeral_segment_pages()
 
     size_t slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment);
 
-    dynamic_data* dd = dynamic_data_of (0);
+    dynamic_data* dd0 = dynamic_data_of (0);
 
 #ifndef MULTIPLE_HEAPS
     size_t extra_space = (g_low_memory_status ? 0 : (512 * 1024));
     size_t decommit_timeout = (g_low_memory_status ? 0 : GC_EPHEMERAL_DECOMMIT_TIMEOUT);
-    size_t ephemeral_elapsed = dd_time_clock(dd) - gc_last_ephemeral_decommit_time;
+    size_t ephemeral_elapsed = dd_time_clock(dd0) - gc_last_ephemeral_decommit_time;
 
-    if (dd_desired_allocation (dd) > gc_gen0_desired_high)
+    if (dd_desired_allocation (dd0) > gc_gen0_desired_high)
     {
-        gc_gen0_desired_high = dd_desired_allocation (dd) + extra_space;
+        gc_gen0_desired_high = dd_desired_allocation (dd0) + extra_space;
     }
 
     if (ephemeral_elapsed >= decommit_timeout)
     {
         slack_space = min (slack_space, gc_gen0_desired_high);
 
-        gc_last_ephemeral_decommit_time = dd_time_clock(dd);
+        gc_last_ephemeral_decommit_time = dd_time_clock(dd0);
         gc_gen0_desired_high = 0;
     }
 #endif //!MULTIPLE_HEAPS
+
+    // this is how much we are going to allocate in gen 0
+    ptrdiff_t desired_allocation = dd_desired_allocation (dd0);
+
+    // estimate how we are going to need in gen 1 - estimate half the free list space gets used
+    dynamic_data* dd1 = dynamic_data_of (1);
+    ptrdiff_t desired_allocation_1 = dd_new_allocation (dd1) + (generation_free_list_space (generation_of (1)) / 2);
+    if (desired_allocation_1 > 0)
+    {
+        desired_allocation += desired_allocation_1;
+    }
 
     if (settings.condemned_generation >= (max_generation-1))
     {
         size_t new_slack_space =
 #ifdef HOST_64BIT
-                    max(min(min(soh_segment_size/32, dd_max_size(dd)), (generation_size (max_generation) / 10)), dd_desired_allocation(dd));
+                    max(min(min(soh_segment_size/32, dd_max_size (dd0)), (generation_size (max_generation) / 10)), (size_t)desired_allocation);
 #else
 #ifdef FEATURE_CORECLR
-                    dd_desired_allocation (dd);
+                    desired_allocation;
 #else
                     dd_max_size (dd);
 #endif //FEATURE_CORECLR
@@ -31838,12 +31849,12 @@ void gc_heap::decommit_ephemeral_segment_pages()
     else
     {
         // for a gen 0, revise the decommit target if it's lower than what we think we'll need
-        slack_space = dd_desired_allocation (dd);
+        slack_space = desired_allocation;
         if (heap_segment_decommit_target (ephemeral_heap_segment) < heap_segment_allocated (ephemeral_heap_segment) + slack_space)
             heap_segment_decommit_target (ephemeral_heap_segment) = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
     }
     ephemeral_heap_segment->saved_committed = heap_segment_committed (ephemeral_heap_segment);
-    ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation (dd);
+    ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation (dd0);
 #endif //MULTIPLE_HEAPS
 
 #ifndef MULTIPLE_HEAPS
@@ -31885,7 +31896,7 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
             GCToOSInterface::DebugBreak();
         }
 
-        const size_t DECOMMIT_STEP_SIZE = min (4096 / n_heaps, 100) * OS_PAGE_SIZE;
+        const size_t DECOMMIT_STEP_SIZE = max (4096 / n_heaps, 100) * OS_PAGE_SIZE;
         uint8_t* page_start = align_on_page ( max (decommit_target, committed - DECOMMIT_STEP_SIZE) );
         size_t size = committed - page_start;
         virtual_decommit(page_start, size, heap_number);
