@@ -34,3 +34,7 @@
 #define EXTERN_C extern
 #endif // __cplusplus
 #endif // EXTERN_C
+
+#ifndef MONO_API
+#include <mono/utils/mono-publib.h>
+#endif
