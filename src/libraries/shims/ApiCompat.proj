@@ -14,6 +14,7 @@
     <NetFxReference Include="System.DirectoryServices.Protocols" />
   </ItemGroup>
 
+  <!-- Evaluate these properties inside a Target to gain access to TargetFrameworkIdentifier. -->
   <Target Name="SetApiCompatFiles">
     <PropertyGroup>
       <ApiCompatResponseFile>$(IntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
