@@ -4,6 +4,8 @@
 
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Test.Cryptography;
 using Xunit;
@@ -472,5 +474,67 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
             Assert.Equal(CborTag.DecimalFraction, reader.ReadTag());
         }
+
+        [Theory]
+        [MemberData(nameof(SupportedConformanceTaggedValues))]
+        internal static void ReadTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            Helpers.VerifyValue(reader, expectedValue);
+        }
+
+        public static IEnumerable<object[]> SupportedConformanceTaggedValues =>
+            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Rfc7049Canonical }
+            from v in TaggedValues
+            select new object[] { l, v.value, v.hexEncoding };
+
+        [Theory]
+        [MemberData(nameof(UnsupportedConformanceTaggedValues))]
+        internal static void ReadTaggedValue_UnsupportedConformance_ShouldThrowFormatException(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, expectedValue));
+            Assert.Equal(0, reader.BytesRead);
+        }
+
+        public static IEnumerable<object[]> UnsupportedConformanceTaggedValues =>
+            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from v in TaggedValues
+            select new object[] { l, v.value, v.hexEncoding };
+
+        [Theory]
+        [MemberData(nameof(TaggedValuesAnyConformance))]
+        internal static void PeekTag_UnsupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            reader.PeekTag();
+        }
+
+        public static IEnumerable<object[]> TaggedValuesAnyConformance =>
+            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from v in TaggedValues
+            select new object[] { l, v.hexEncoding };
+
+        [Theory]
+        [MemberData(nameof(UnsupportedConformanceInvalidTypes))]
+        internal static void PeekTag_InvalidType_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level, string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            Assert.Throws<InvalidOperationException>(() => reader.PeekTag());
+        }
+
+        public static IEnumerable<object[]> UnsupportedConformanceInvalidTypes =>
+            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from e in new[] { "01", "40", "60" }
+            select new object[] { l, e };
+
+        private static (object value, string hexEncoding)[] TaggedValues =>
+            new (object, string)[]
+            {
+                (new object[] { CborTag.MimeMessage, 42 }, "d824182a"),
+                (42.0m, "c482201901a4"),
+                ((BigInteger)1, "c24101"),
+                (DateTimeOffset.UnixEpoch, "c0781c313937302d30312d30315430303a30303a30302e303030303030305a"),
+            };
     }
 }

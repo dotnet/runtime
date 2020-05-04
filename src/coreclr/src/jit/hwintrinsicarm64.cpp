@@ -281,7 +281,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         if (!varTypeIsArithmetic(baseType))
         {
-            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As));
+            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As) ||
+                   (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_get_AllBitsSet) ||
+                   (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_get_AllBitsSet));
             return nullptr;
         }
     }
@@ -363,7 +365,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = countNode;
             break;
         }
+        case NI_Vector64_get_Zero:
+        case NI_Vector64_get_AllBitsSet:
+        case NI_Vector128_get_Zero:
+        case NI_Vector128_get_AllBitsSet:
+        {
+            assert(!sig->hasThis());
+            assert(numArgs == 0);
 
+            retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
+        }
         default:
         {
             return nullptr;

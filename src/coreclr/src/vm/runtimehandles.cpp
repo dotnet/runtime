@@ -1752,10 +1752,13 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
 {
     QCALL_CONTRACT;
 
-    void* funcPtr = 0;
+    void* funcPtr = NULL;
 
     BEGIN_QCALL;
 
+    // Ensure the method is active so
+    // the function pointer can be used.
+    pMethod->EnsureActive();
     funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
 
     END_QCALL;

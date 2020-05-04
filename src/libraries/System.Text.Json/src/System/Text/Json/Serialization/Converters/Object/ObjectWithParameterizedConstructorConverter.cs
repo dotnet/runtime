@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.SupportContinuation && !shouldReadPreservedReferences)
             {
-                // Fast path that avoids maintaining state variables and dealing with preserved references.
+                // Fast path that avoids maintaining state variables.
 
                 ReadOnlySpan<byte> originalSpan = reader.OriginalSpan;
 
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                // Slower path that supports continuation and preserved references.
+                // Slower path that supports continuation.
 
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
@@ -176,7 +176,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (!(jsonParameterInfo!.ShouldDeserialize))
                     {
-                        reader.TrySkip();
+                        reader.Skip();
                         state.Current.EndConstructorParameter();
                         continue;
                     }

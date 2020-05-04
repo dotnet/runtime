@@ -329,6 +329,27 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        /// <summary>
+        /// Return file relocation type for the given relocation type. If the relocation
+        /// doesn't require a file-level relocation entry in the .reloc section, 0 is returned
+        /// corresponding to the IMAGE_REL_BASED_ABSOLUTE no-op relocation record.
+        /// </summary>
+        /// <param name="relocationType">Relocation type</param>
+        /// <returns>File-level relocation type or 0 (IMAGE_REL_BASED_ABSOLUTE) if none is required</returns>
+        public static RelocType GetFileRelocationType(RelocType relocationType)
+        {
+            switch (relocationType)
+            {
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case RelocType.IMAGE_REL_BASED_DIR64:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                    return relocationType;
+
+                default:
+                    return RelocType.IMAGE_REL_BASED_ABSOLUTE;
+            }
+        }
+
         public override string ToString()
         {
             return $"{Target} ({RelocType}, 0x{Offset:X})";

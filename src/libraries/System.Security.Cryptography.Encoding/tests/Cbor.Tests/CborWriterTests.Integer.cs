@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteInt64(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteInt32(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteUInt64(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteUInt32(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteCborNegativeIntegerEncoding(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
     }
 

@@ -1832,6 +1832,31 @@ INST1(uxtl,    "uxtl",   0, 0, IF_DV_2O,  0x2F00A400)
 
 INST1(uxtl2,   "uxtl2",  0, 0, IF_DV_2O,  0x6F00A400)
                                    //  uxtl2   Vd,Vn                DV_2O  011011110iiiiiii 101001nnnnnddddd   6F00 A400   Vd,Vn      (shift - vector)
+
+INST1(tbl,       "tbl",   0, 0, IF_DV_3C,   0x0E000000)
+                                   //  tbl    Vd,{Vn},Vm                DV_3C  0Q001110000mmmmm 000000nnnnnddddd   0E00 0000   Vd,Vn,Vm   (vector)
+
+INST1(tbl_2regs, "tbl",   0, 0, IF_DV_3C,   0x0E002000)
+                                   //  tbl    Vd,{Vn,Vn+1},Vm           DV_3C  0Q001110000mmmmm 001000nnnnnddddd   0E00 2000   Vd,Vn,Vm   (vector)
+
+INST1(tbl_3regs, "tbl",   0, 0, IF_DV_3C,   0x0E004000)
+                                   //  tbl    Vd,{Vn,Vn+1,Vn+2},Vm      DV_3C  0Q001110000mmmmm 010000nnnnnddddd   0E00 4000   Vd,Vn,Vm   (vector)
+
+INST1(tbl_4regs, "tbl",   0, 0, IF_DV_3C,   0x0E006000)
+                                   //  tbl    Vd,{Vn,Vn+1,Vn+2,Vn+3},Vm DV_3C  0Q001110000mmmmm 011000nnnnnddddd   0E00 6000   Vd,Vn,Vm   (vector)
+
+INST1(tbx,       "tbx",   0, 0, IF_DV_3C,   0x0E001000)
+                                   //  tbx    Vd,{Vn},Vm                DV_3C  0Q001110000mmmmm 000100nnnnnddddd   0E00 1000   Vd,Vn,Vm   (vector)
+
+INST1(tbx_2regs, "tbx",   0, 0, IF_DV_3C,   0x0E003000)
+                                   //  tbx    Vd,{Vn,Vn+1},Vm           DV_3C  0Q001110000mmmmm 001100nnnnnddddd   0E00 3000   Vd,Vn,Vm   (vector)
+
+INST1(tbx_3regs, "tbx",   0, 0, IF_DV_3C,   0x0E005000)
+                                   //  tbx    Vd,{Vn,Vn+1,Vn+2},Vm      DV_3C  0Q001110000mmmmm 010100nnnnnddddd   0E00 5000   Vd,Vn,Vm   (vector)
+
+INST1(tbx_4regs, "tbx",   0, 0, IF_DV_3C,   0x0E007000)
+                                   //  tbx    Vd,{Vn,Vn+1,Vn+2,Vn+3},Vm DV_3C  0Q001110000mmmmm 011100nnnnnddddd   0E00 7000   Vd,Vn,Vm   (vector)
+
 // clang-format on
 
 /*****************************************************************************/

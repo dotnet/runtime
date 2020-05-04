@@ -4,6 +4,9 @@
 
 #nullable enable
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Test.Cryptography;
 using Xunit;
@@ -29,7 +32,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteTag((CborTag)tag);
             Helpers.WriteValue(writer, value);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -47,7 +50,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 writer.WriteTag((CborTag)tag);
             }
             Helpers.WriteValue(writer, value);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -62,7 +65,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 writer.WriteTag((CborTag)tag);
             }
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.ToArray());
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
 
             Assert.Equal("Buffer contains incomplete CBOR document.", exn.Message);
         }
@@ -72,7 +75,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
 
-            writer.WriteStartArrayIndefiniteLength();
+            writer.WriteStartArray();
             writer.WriteTag(CborTag.Uri);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
@@ -87,7 +90,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteDateTimeOffset(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -102,7 +105,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -119,7 +122,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -152,7 +155,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteBigInteger(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -172,8 +175,44 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             decimal value = decimal.Parse(stringValue, Globalization.CultureInfo.InvariantCulture);
             using var writer = new CborWriter();
             writer.WriteDecimal(value);
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
+
+        [Theory]
+        [MemberData(nameof(UnsupportedConformanceTaggedValues))]
+        internal static void WriteTaggedValue_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel level, object value)
+        {
+            using var writer = new CborWriter(level);
+            Assert.Throws<InvalidOperationException>(() => Helpers.WriteValue(writer, value));
+            Assert.Equal(0, writer.BytesWritten);
+        }
+
+        public static IEnumerable<object[]> UnsupportedConformanceTaggedValues =>
+            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from v in TaggedValues
+            select new object[] { l, v };
+
+        [Theory]
+        [MemberData(nameof(SupportedConformanceTaggedValues))]
+        internal static void WriteTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object value)
+        {
+            using var writer = new CborWriter(level);
+            Helpers.WriteValue(writer, value);
+        }
+
+        public static IEnumerable<object[]> SupportedConformanceTaggedValues =>
+            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Rfc7049Canonical }
+            from v in TaggedValues
+            select new object[] { l, v };
+
+        private static object[] TaggedValues =>
+            new object[]
+            {
+                new object[] { CborTag.MimeMessage, 42 },
+                42.0m,
+                (BigInteger)1,
+                DateTimeOffset.UnixEpoch,
+            };
     }
 }

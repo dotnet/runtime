@@ -34,7 +34,7 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, IEnumerable<string> inputFiles)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, ReadyToRunCompilationModuleGroupBase group, IEnumerable<string> inputFiles)
             : base(context, group, new CoreRTNameMangler())
         {
             _inputFiles = inputFiles;

@@ -2119,7 +2119,7 @@ namespace System.Diagnostics.Tests
             Process process = CreateProcess();
             process.Start();
 
-            process.WaitForExit();
+            Assert.True(process.WaitForExit(Helpers.PassingTestTimeoutMilliseconds), $"Proccess {process.Id} did not finish in {Helpers.PassingTestTimeoutMilliseconds}.");
 
             process.Kill(killTree);
         }

@@ -936,9 +936,18 @@
              Targets="Restore;Build" />
   </Target>
 
+  <Target Name="BuildAndroidAppBuilder">
+    <MSBuild Projects="$(MonoProjectRoot)msbuild\AndroidAppBuilder\AndroidAppBuilder.csproj"
+             Properties="Configuration=$(Configuration)"
+             Targets="Restore;Build" />
+    <MSBuild Projects="$(MonoProjectRoot)msbuild\AndroidTestRunner\AndroidTestRunner.csproj"
+             Properties="Configuration=$(Configuration)"
+             Targets="Restore;Build" />
+  </Target>
+
   <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildAppleAppBuilder">
+  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildAppleAppBuilder;BuildAndroidAppBuilder">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
