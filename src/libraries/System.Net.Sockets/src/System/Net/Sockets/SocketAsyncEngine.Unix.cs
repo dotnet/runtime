@@ -320,6 +320,7 @@ namespace System.Net.Sockets
                 Interop.Sys.SocketEvent* buffer = _buffer;
                 ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
                 ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
+                IntPtr shutdownHandle = ShutdownHandle;
                 while (!shutdown)
                 {
                     int numEvents = EventBufferCount;
@@ -336,38 +337,37 @@ namespace System.Net.Sockets
                     for (int i = 0; i < numEvents; i++)
                     {
                         IntPtr handle = buffer[i].Data;
-                        if (handle == ShutdownHandle)
-                        {
-                            shutdown = true;
-                        }
-                        else
+
+                        if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper))
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-                            if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper))
-                            {
-                                SocketAsyncContext? context = contextWrapper.Context;
-                                if (context != null)
-                                {
-                                    Interop.Sys.SocketEvents events = buffer[i].Events;
-                                    events = context.HandleSyncEventsSpeculatively(events);
-                                    if (events != Interop.Sys.SocketEvents.None)
-                                    {
-                                        var ev = new SocketIOEvent(context, events);
-                                        eventQueue.Enqueue(ev);
-                                        enqueuedEvent = true;
 
-                                        // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                                        // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                                        // such code may keep the stack location live for longer than necessary
-                                        ev = default;
-                                    }
+                            SocketAsyncContext? context = contextWrapper.Context;
+                            if (context != null)
+                            {
+                                Interop.Sys.SocketEvents events = buffer[i].Events;
+                                events = context.HandleSyncEventsSpeculatively(events);
+                                if (events != Interop.Sys.SocketEvents.None)
+                                {
+                                    var ev = new SocketIOEvent(context, events);
+                                    eventQueue.Enqueue(ev);
+                                    enqueuedEvent = true;
 
                                     // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
                                     // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
                                     // such code may keep the stack location live for longer than necessary
-                                    context = null;
+                                    ev = default;
                                 }
+
+                                // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                                // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                                // such code may keep the stack location live for longer than necessary
+                                context = null;
                             }
+                        }
+                        else if (handle == shutdownHandle)
+                        {
+                            shutdown = true;
                         }
                     }
 
