@@ -26,6 +26,7 @@ using ILCompiler.DependencyAnalysis;
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+using Internal.TypeSystem.Interop;
 #endif
 
 namespace Internal.JitInterface
@@ -2931,6 +2932,22 @@ namespace Internal.JitInterface
                 if (targetArchitecture == TargetArchitecture.X86)
                 {
                     throw new RequiresRuntimeJitException("ReadyToRun: Methods with UnmanagedCallersOnlyAttribute not implemented");
+                }
+
+                // Validate UnmanagedCallersOnlyAttribute usage
+                if (!this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, this.MethodBeingCompiled);
+                }
+
+                if (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation) // No generics involved
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
+                }
+
+                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }
 #endif
 
