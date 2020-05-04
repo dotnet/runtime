@@ -8,7 +8,7 @@ set(DOTNET_PROJECT_NAME "nativehost")
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(MACOSX_RPATH ON)
-if (CLR_CMAKE_TARGET_DARWIN)
+if (CLR_CMAKE_TARGET_OSX)
     set(CMAKE_INSTALL_RPATH "@loader_path")
 else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
@@ -44,6 +44,8 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DELAYLOAD:nethost.dll")
 endif()
+
+include(../../hostmisc/hostmisc.cmake)
 
 include(../testexe.cmake)
 

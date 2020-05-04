@@ -284,7 +284,7 @@ unchecked {
 
 		// Despite a lot of effort, couldn't get dotnet to load these assemblies from the sdk dir, so copy them to our binary dir
 //		File.Copy ($"{sdkdir}/Microsoft.DotNet.PlatformAbstractions.dll", AppContext.BaseDirectory, true);
-		File.Copy ($"{sdkdir}/CoreFx.Private.TestUtilities.dll", AppContext.BaseDirectory, true);
+		File.Copy ($"{sdkdir}/TestUtilities.dll", AppContext.BaseDirectory, true);
 		File.Copy ($"{sdkdir}/Microsoft.DotNet.XUnitExtensions.dll", AppContext.BaseDirectory, true);
 
 		var cmdline = CommandLine.Parse (args);

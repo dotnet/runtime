@@ -35,14 +35,17 @@ namespace System.Net.Sockets
         public SafeSocketHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(ownsHandle)
         {
+            OwnsHandle = ownsHandle;
             SetHandleAndValid(preexistingHandle);
         }
 
-        private SafeSocketHandle() : base(true) { }
+        private SafeSocketHandle() : base(ownsHandle: true) => OwnsHandle = true;
+
+        internal bool OwnsHandle { get; }
 
         private bool TryOwnClose()
         {
-            return Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
+            return OwnsHandle && Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
         }
 
         private volatile bool _released;

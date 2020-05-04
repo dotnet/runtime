@@ -252,7 +252,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(expectedHex, output.AsSpan(0, bytesWritten).ByteArrayToHex());
         }
 
-        private static void TryCopyBitStringBytes_Throws(
+        private static void TryCopyBitStringBytes_Throws_Helper(
             PublicEncodingRules ruleSet,
             byte[] input)
         {
@@ -330,7 +330,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            TryCopyBitStringBytes_Throws(ruleSet, inputData);
+            TryCopyBitStringBytes_Throws_Helper(ruleSet, inputData);
         }
 
         [Fact]
@@ -348,7 +348,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             input[2] = 0x03;
             input[3] = 0xE9;
 
-            TryCopyBitStringBytes_Throws(PublicEncodingRules.CER, input);
+            TryCopyBitStringBytes_Throws_Helper(PublicEncodingRules.CER, input);
         }
 
         [Fact]
@@ -377,7 +377,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             input[5] = 0xE9;
             // EOC implicit since the byte[] initializes to zeros
 
-            TryCopyBitStringBytes_Throws(PublicEncodingRules.CER, input);
+            TryCopyBitStringBytes_Throws_Helper(PublicEncodingRules.CER, input);
         }
 
         [Fact]
@@ -416,7 +416,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             input[1011] = 0x02;
             // EOC implicit since the byte[] initializes to zeros
 
-            TryCopyBitStringBytes_Throws(PublicEncodingRules.CER, input);
+            TryCopyBitStringBytes_Throws_Helper(PublicEncodingRules.CER, input);
         }
 
         [Fact]

@@ -51,10 +51,12 @@ namespace AppHost.Bundle.Tests
                 .CaptureStdOut()
                 .Start();
 
-            while (!File.Exists(waitFile))
+            while (!File.Exists(waitFile) && !singleExe.Process.HasExited)
             {
                 Thread.Sleep(100);
             }
+
+            Assert.True(File.Exists(waitFile));
 
             File.Move(singleFile, renameFile);
             File.Create(resumeFile).Close();

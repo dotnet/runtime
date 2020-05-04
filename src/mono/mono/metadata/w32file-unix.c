@@ -2528,7 +2528,7 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 	if (fail_if_exists) {
 		dest_fd = _wapi_open (utf8_dest, O_WRONLY | O_CREAT | O_EXCL, st.st_mode);
 	} else {
-		/* FIXME: it kinda sucks that this code path potentially scans
+		/* FIXME: it's bad that this code path potentially scans
 		 * the directory twice due to the weird mono_w32error_set_last()
 		 * behavior. */
 		dest_fd = _wapi_open (utf8_dest, O_WRONLY | O_TRUNC, st.st_mode);

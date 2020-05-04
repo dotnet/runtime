@@ -5,6 +5,7 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="System\DllNotFoundExceptionTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />

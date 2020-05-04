@@ -32,10 +32,10 @@ namespace System
         {
             Debug.Assert(sink != null);
 
-            CancellationTokenRegistration ctReg = source.Register((state) => { ((CancellationTokenSource)state).Cancel(); },
+            CancellationTokenRegistration ctReg = source.Register((state) => { ((CancellationTokenSource)state!).Cancel(); },
                                                                   sink);
 
-            concatenationLifetime.ContinueWith((_, state) => { ((CancellationTokenRegistration)state).Dispose(); },
+            concatenationLifetime.ContinueWith((_, state) => { ((CancellationTokenRegistration)state!).Dispose(); },
                                                ctReg, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
 
@@ -90,7 +90,7 @@ namespace System
             var wrapper = source as TaskToAsyncActionAdapter;
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
-                Task innerTask = wrapper.Task;
+                Task? innerTask = wrapper.Task;
                 Debug.Assert(innerTask != null);
                 Debug.Assert(innerTask.Status != TaskStatus.Created);
 
@@ -164,7 +164,7 @@ namespace System
             var wrapper = source as TaskToAsyncOperationAdapter<TResult>;
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
-                Task<TResult> innerTask = wrapper.Task as Task<TResult>;
+                Task<TResult>? innerTask = wrapper.Task as Task<TResult>;
                 Debug.Assert(innerTask != null);
                 Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
@@ -240,7 +240,7 @@ namespace System
         /// <param name="source">The asynchronous operation.</param>
         /// <param name="progress">The progress object used to receive progress updates.</param>
         /// <returns>The Task representing the asynchronous operation.</returns>
-        public static Task AsTask<TProgress>(this IAsyncActionWithProgress<TProgress> source, IProgress<TProgress> progress)
+        public static Task AsTask<TProgress>(this IAsyncActionWithProgress<TProgress> source, IProgress<TProgress>? progress)
         {
             return AsTask(source, CancellationToken.None, progress);
         }
@@ -252,7 +252,7 @@ namespace System
         /// <param name="progress">The progress object used to receive progress updates.</param>
         /// <returns>The Task representing the asynchronous operation.</returns>
         public static Task AsTask<TProgress>(this IAsyncActionWithProgress<TProgress> source,
-                                             CancellationToken cancellationToken, IProgress<TProgress> progress)
+                                             CancellationToken cancellationToken, IProgress<TProgress>? progress)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -261,7 +261,7 @@ namespace System
             var wrapper = source as TaskToAsyncActionWithProgressAdapter<TProgress>;
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
-                Task innerTask = wrapper.Task;
+                Task? innerTask = wrapper.Task;
                 Debug.Assert(innerTask != null);
                 Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
@@ -347,7 +347,7 @@ namespace System
         /// <param name="progress">The progress object used to receive progress updates.</param>
         /// <returns>The Task representing the asynchronous operation.</returns>
         public static Task<TResult> AsTask<TResult, TProgress>(this IAsyncOperationWithProgress<TResult, TProgress> source,
-                                                               IProgress<TProgress> progress)
+                                                               IProgress<TProgress>? progress)
         {
             return AsTask(source, CancellationToken.None, progress);
         }
@@ -359,7 +359,7 @@ namespace System
         /// <param name="progress">The progress object used to receive progress updates.</param>
         /// <returns>The Task representing the asynchronous operation.</returns>
         public static Task<TResult> AsTask<TResult, TProgress>(this IAsyncOperationWithProgress<TResult, TProgress> source,
-                                                               CancellationToken cancellationToken, IProgress<TProgress> progress)
+                                                               CancellationToken cancellationToken, IProgress<TProgress>? progress)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -368,7 +368,7 @@ namespace System
             var wrapper = source as TaskToAsyncOperationWithProgressAdapter<TResult, TProgress>;
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
-                Task<TResult> innerTask = wrapper.Task as Task<TResult>;
+                Task<TResult>? innerTask = wrapper.Task as Task<TResult>;
                 Debug.Assert(innerTask != null);
                 Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
@@ -446,14 +446,14 @@ namespace System
         {
             // This method is an aid for NGen to save common generic
             // instantiations into the ngen image.
-            ((IAsyncOperation<bool>)null).AsTask();
-            ((IAsyncOperation<string>)null).AsTask();
-            ((IAsyncOperation<object>)null).AsTask();
-            ((IAsyncOperation<uint>)null).AsTask();
+            ((IAsyncOperation<bool>)null!).AsTask();
+            ((IAsyncOperation<string>)null!).AsTask();
+            ((IAsyncOperation<object>)null!).AsTask();
+            ((IAsyncOperation<uint>)null!).AsTask();
 
-            ((IAsyncOperationWithProgress<uint, uint>)null).AsTask();
-            ((IAsyncOperationWithProgress<ulong, ulong>)null).AsTask();
-            ((IAsyncOperationWithProgress<string, ulong>)null).AsTask();
+            ((IAsyncOperationWithProgress<uint, uint>)null!).AsTask();
+            ((IAsyncOperationWithProgress<ulong, ulong>)null!).AsTask();
+            ((IAsyncOperationWithProgress<string, ulong>)null!).AsTask();
         }
     }  // class WindowsRuntimeSystemExtensions
 }  // namespace

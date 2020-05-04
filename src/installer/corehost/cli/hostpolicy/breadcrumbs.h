@@ -11,7 +11,12 @@ class breadcrumb_writer_t
 {
 public:
     breadcrumb_writer_t(std::unordered_set<pal::string_t> &files);
+
+    // Starts writing breadcrumbs on a new thread if necessary.
+    // If end_write is not called on the returned instance before it is destructed, the process will be terminated.
     static std::shared_ptr<breadcrumb_writer_t> begin_write(std::unordered_set<pal::string_t> &files);
+
+    // Waits for the breadcrumb thread to finish writing.
     void end_write();
 
 private:

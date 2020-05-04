@@ -5405,7 +5405,7 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
-BOOL MethodDesc::HasNativeCallableAttribute()
+BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 {
     CONTRACTL
     {
@@ -5415,8 +5415,13 @@ BOOL MethodDesc::HasNativeCallableAttribute()
     }
     CONTRACTL_END;
 
+    if (IsILStub())
+    {
+        return AsDynamicMethodDesc()->IsUnmanagedCallersOnlyStub();
+    }
+
     HRESULT hr = GetCustomAttribute(
-        WellKnownAttribute::NativeCallable,
+        WellKnownAttribute::UnmanagedCallersOnly,
         nullptr,
         nullptr);
     return (hr == S_OK) ? TRUE : FALSE;

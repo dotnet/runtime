@@ -364,22 +364,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32359")]
-        public static void ExtensionPropertyRoundTripFails()
-        {
-            try
-            {
-                JsonSerializer.Deserialize<ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}");
-                Assert.True(false, "Expected JsonException was not thrown.");
-            }
-            catch (JsonException e)
-            {
-                // Until JsonElement supports populating Path ("UnknownProperty"), which will be prepended by the serializer ("MyNestedClass"), this will fail.
-                Assert.Equal("$.MyNestedClass.UnknownProperty", e.Path);
-            }
-        }
-
-        [Fact]
         public static void CaseInsensitiveFails()
         {
             var options = new JsonSerializerOptions();
@@ -525,6 +509,59 @@ namespace System.Text.Json.Serialization.Tests
 
             // Root-level Types (not from a property) do not include the Path.
             Assert.DoesNotContain("Path: $", ex.Message);
+        }
+
+        [Fact]
+        public static void DeserializeTypeInstance()
+        {
+            string json = @"""System.Int32, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e""";
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Type>(json));
+            string exAsStr = ex.ToString();
+            Assert.Contains("System.Type", exAsStr);
+            Assert.Contains("$", exAsStr);
+
+            json = $@"{{""Type"":{json}}}";
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithType>(json));
+            exAsStr = ex.ToString();
+            Assert.Contains("System.Type", exAsStr);
+            Assert.Contains("$.Type", exAsStr);
+
+            // NSE is not thrown because the serializer handles null.
+            Assert.Null(JsonSerializer.Deserialize<Type>("null"));
+
+            ClassWithType obj = JsonSerializer.Deserialize<ClassWithType>(@"{""Type"":null}");
+            Assert.Null(obj.Type);
+        }
+
+        [Fact]
+        public static void SerializeTypeInstance()
+        {
+            Type type = typeof(int);
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(type));
+            string exAsStr = ex.ToString();
+            Assert.Contains("System.Type", exAsStr);
+            Assert.Contains("$", exAsStr);
+
+            type = null;
+            string serialized = JsonSerializer.Serialize(type);
+            Assert.Equal("null", serialized);
+
+            ClassWithType obj = new ClassWithType { Type = typeof(int) };
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj));
+            exAsStr = ex.ToString();
+            Assert.Contains("System.Type", exAsStr);
+            Assert.Contains("$.Type", exAsStr);
+
+            obj.Type = null;
+            serialized = JsonSerializer.Serialize(obj);
+            Assert.Equal(@"{""Type"":null}", serialized);
+
+            serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions { IgnoreNullValues = true });
+            Assert.Equal(@"{}", serialized);
         }
     }
 }

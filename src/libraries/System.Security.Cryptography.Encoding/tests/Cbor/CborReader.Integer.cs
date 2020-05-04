@@ -3,22 +3,65 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using System.Xml;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        // Implements major type 0 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+        // Implements major type 0,1 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+
+        public long ReadInt64()
+        {
+            long value = PeekSignedInteger(out int additionalBytes);
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
+
         public ulong ReadUInt64()
+        {
+            ulong value = PeekUnsignedInteger(out int additionalBytes);
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
+
+        public int ReadInt32()
+        {
+            int value = checked((int)PeekSignedInteger(out int additionalBytes));
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
+
+        public uint ReadUInt32()
+        {
+            uint value = checked((uint)PeekUnsignedInteger(out int additionalBytes));
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
+
+        // Returns the next CBOR negative integer encoding according to
+        // https://tools.ietf.org/html/rfc7049#section-2.1
+        public ulong ReadCborNegativeIntegerEncoding()
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
+            ulong value = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
+
+        private ulong PeekUnsignedInteger(out int additionalBytes)
         {
             CborInitialByte header = PeekInitialByte();
 
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    ulong value = ReadUnsignedInteger(header, out int additionalBytes);
-                    AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    ulong value = ReadUnsignedInteger(_buffer.Span, header, out additionalBytes);
                     return value;
 
                 case CborMajorType.NegativeInteger:
@@ -29,26 +72,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        // Implements major type 0,1 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
-        public long ReadInt64()
+        private long PeekSignedInteger(out int additionalBytes)
         {
-            long value;
-            int additionalBytes;
-
             CborInitialByte header = PeekInitialByte();
+            long value;
 
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    value = checked((long)ReadUnsignedInteger(header, out additionalBytes));
-                    AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    value = checked((long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
                     return value;
 
                 case CborMajorType.NegativeInteger:
-                    value = checked(-1 - (long)ReadUnsignedInteger(header, out additionalBytes));
-                    AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    value = checked(-1 - (long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
                     return value;
 
                 default:
@@ -56,53 +92,75 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        // Returns the next CBOR negative integer encoding according to
-        // https://tools.ietf.org/html/rfc7049#section-2.1
-        public ulong ReadCborNegativeIntegerEncoding()
-        {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
-            ulong value = ReadUnsignedInteger(header, out int additionalBytes);
-            AdvanceBuffer(1 + additionalBytes);
-            _remainingDataItems--;
-            return value;
-        }
-
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1
-        private ulong ReadUnsignedInteger(CborInitialByte header, out int additionalBytes)
+        private ulong ReadUnsignedInteger(ReadOnlySpan<byte> buffer, CborInitialByte header, out int additionalBytes)
         {
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ulong result;
 
             switch (header.AdditionalInfo)
             {
-                case CborAdditionalInfo x when (x < CborAdditionalInfo.Unsigned8BitIntegerEncoding):
+                case CborAdditionalInfo x when (x < CborAdditionalInfo.Additional8BitData):
                     additionalBytes = 0;
                     return (ulong)x;
 
-                case CborAdditionalInfo.Unsigned8BitIntegerEncoding:
-                    EnsureBuffer(2);
+                case CborAdditionalInfo.Additional8BitData:
+                    EnsureBuffer(buffer, 2);
+                    result = buffer[1];
+
+                    if (result < (int)CborAdditionalInfo.Additional8BitData)
+                    {
+                        ValidateIsNonStandardIntegerRepresentationSupported();
+                    }
+
                     additionalBytes = 1;
-                    return buffer[1];
+                    return result;
 
-                case CborAdditionalInfo.Unsigned16BitIntegerEncoding:
-                    EnsureBuffer(3);
+                case CborAdditionalInfo.Additional16BitData:
+                    EnsureBuffer(buffer, 3);
+                    result = BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(1));
+
+                    if (result <= byte.MaxValue)
+                    {
+                        ValidateIsNonStandardIntegerRepresentationSupported();
+                    }
+
                     additionalBytes = 2;
-                    return BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(1));
+                    return result;
 
-                case CborAdditionalInfo.Unsigned32BitIntegerEncoding:
-                    EnsureBuffer(5);
+                case CborAdditionalInfo.Additional32BitData:
+                    EnsureBuffer(buffer, 5);
+                    result = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(1));
+
+                    if (result <= ushort.MaxValue)
+                    {
+                        ValidateIsNonStandardIntegerRepresentationSupported();
+                    }
+
                     additionalBytes = 4;
-                    return BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(1));
+                    return result;
 
-                case CborAdditionalInfo.Unsigned64BitIntegerEncoding:
-                    EnsureBuffer(9);
+                case CborAdditionalInfo.Additional64BitData:
+                    EnsureBuffer(buffer, 9);
+                    result = BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
+
+                    if (result <= uint.MaxValue)
+                    {
+                        ValidateIsNonStandardIntegerRepresentationSupported();
+                    }
+
                     additionalBytes = 8;
-                    return BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
-
-                case CborAdditionalInfo.IndefiniteLength:
-                    throw new NotImplementedException("indefinite length support");
+                    return result;
 
                 default:
-                    throw new FormatException("initial byte contains invalid integer encoding data");
+                    throw new FormatException("initial byte contains invalid integer encoding data.");
+            }
+
+            void ValidateIsNonStandardIntegerRepresentationSupported()
+            {
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresMinimalIntegerRepresentation(ConformanceLevel))
+                {
+                    throw new FormatException("Non-minimal integer representations are not permitted under the current conformance level.");
+                }
             }
         }
     }

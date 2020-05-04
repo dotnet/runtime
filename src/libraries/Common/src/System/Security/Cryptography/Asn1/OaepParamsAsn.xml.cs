@@ -13,11 +13,11 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct OaepParamsAsn
     {
-        private static readonly byte[] s_defaultHashFunc = { 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
+        private static ReadOnlySpan<byte> DefaultHashFunc => new byte[] { 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
 
-        private static readonly byte[] s_defaultMaskGenFunc = { 0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
+        private static ReadOnlySpan<byte> DefaultMaskGenFunc => new byte[] { 0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
 
-        private static readonly byte[] s_defaultPSourceFunc = { 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x09, 0x04, 0x00 };
+        private static ReadOnlySpan<byte> DefaultPSourceFunc => new byte[] { 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x09, 0x04, 0x00 };
 
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashFunc;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn MaskGenFunc;
@@ -30,15 +30,15 @@ namespace System.Security.Cryptography.Asn1
             ReadOnlyMemory<byte> rebind = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultHashFunc, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultHashFunc, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.HashFunc);
             reader.ThrowIfNotEmpty();
 
-            reader = new AsnValueReader(s_defaultMaskGenFunc, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultMaskGenFunc, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.MaskGenFunc);
             reader.ThrowIfNotEmpty();
 
-            reader = new AsnValueReader(s_defaultPSourceFunc, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultPSourceFunc, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.PSourceFunc);
             reader.ThrowIfNotEmpty();
         }
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Asn1
                     HashFunc.Encode(tmp);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultHashFunc))
+                    if (!encoded.SequenceEqual(DefaultHashFunc))
                     {
                         writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                         writer.WriteEncodedValue(encoded);
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Asn1
                     MaskGenFunc.Encode(tmp);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultMaskGenFunc))
+                    if (!encoded.SequenceEqual(DefaultMaskGenFunc))
                     {
                         writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
                         writer.WriteEncodedValue(encoded);
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Asn1
                     PSourceFunc.Encode(tmp);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultPSourceFunc))
+                    if (!encoded.SequenceEqual(DefaultPSourceFunc))
                     {
                         writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
                         writer.WriteEncodedValue(encoded);
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultHashFunc, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultHashFunc, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.HashFunc);
             }
 
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultMaskGenFunc, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultMaskGenFunc, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.MaskGenFunc);
             }
 
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultPSourceFunc, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultPSourceFunc, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.PSourceFunc);
             }
 

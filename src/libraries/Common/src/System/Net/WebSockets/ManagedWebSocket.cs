@@ -514,8 +514,9 @@ namespace System.Net.WebSockets
             if (acquiredLock)
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
-                // The call will handle releasing the lock.
-                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, Memory<byte>.Empty);
+                // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
+                // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
+                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Pong, true, ReadOnlyMemory<byte>.Empty);
                 if (t.IsCompletedSuccessfully)
                 {
                     t.GetAwaiter().GetResult();
@@ -709,7 +710,7 @@ namespace System.Net.WebSockets
                             null, null);
                     }
 
-                    // Otherwise, read as much of the payload as we can efficiently, and upate the header to reflect how much data
+                    // Otherwise, read as much of the payload as we can efficiently, and update the header to reflect how much data
                     // remains for future reads.  We first need to copy any data that may be lingering in the receive buffer
                     // into the destination; then to minimize ReceiveAsync calls, we want to read as much as we can, stopping
                     // only when we've either read the whole message or when we've filled the payload buffer.
@@ -1110,6 +1111,7 @@ namespace System.Net.WebSockets
                     {
                         Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
                         Task receiveTask;
+                        bool usingExistingReceive;
                         lock (ReceiveAsyncLock)
                         {
                             // Now that we're holding the ReceiveAsyncLock, double-check that we've not yet received the close frame.
@@ -1126,12 +1128,19 @@ namespace System.Net.WebSockets
                             // a race condition here, e.g. if there's a in-flight receive that completes after we check, but that's fine: worst
                             // case is we then await it, find that it's not what we need, and try again.
                             receiveTask = _lastReceiveAsync;
-                            _lastReceiveAsync = receiveTask = ValidateAndReceiveAsync(receiveTask, closeBuffer, cancellationToken);
+                            Task newReceiveTask = ValidateAndReceiveAsync(receiveTask, closeBuffer, cancellationToken);
+                            usingExistingReceive = ReferenceEquals(receiveTask, newReceiveTask);
+                            _lastReceiveAsync = receiveTask = newReceiveTask;
                         }
 
                         // Wait for whatever receive task we have.  We'll then loop around again to re-check our state.
+                        // If this is an existing receive, and if we have a cancelable token, we need to register with that
+                        // token while we wait, since it may not be the same one that was given to the receive initially.
                         Debug.Assert(receiveTask != null);
-                        await receiveTask.ConfigureAwait(false);
+                        using (usingExistingReceive ? cancellationToken.Register(s => ((ManagedWebSocket)s!).Abort(), this) : default)
+                        {
+                            await receiveTask.ConfigureAwait(false);
+                        }
                     }
                 }
                 finally

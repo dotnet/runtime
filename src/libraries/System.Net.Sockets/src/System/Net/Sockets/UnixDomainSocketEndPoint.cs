@@ -50,6 +50,8 @@ namespace System.Net.Sockets
             }
         }
 
+        internal static int MaxAddressSize => s_nativeAddressSize;
+
         internal UnixDomainSocketEndPoint(SocketAddress socketAddress)
         {
             if (socketAddress == null)

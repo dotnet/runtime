@@ -190,7 +190,7 @@ namespace System.Net.Mime
                 throw new FormatException(SR.InvalidHeaderName);
         }
 
-        internal static string? ReadQuotedString(string data, ref int offset, StringBuilder builder)
+        internal static string? ReadQuotedString(string data, ref int offset, StringBuilder? builder)
         {
             return ReadQuotedString(data, ref offset, builder, false, false);
         }
@@ -247,7 +247,7 @@ namespace System.Net.Mime
             throw new FormatException(SR.MailHeaderFieldMalformedHeader);
         }
 
-        internal static string? ReadParameterAttribute(string data, ref int offset, StringBuilder builder)
+        internal static string? ReadParameterAttribute(string data, ref int offset, StringBuilder? builder)
         {
             if (!SkipCFWS(data, ref offset))
                 return null; //

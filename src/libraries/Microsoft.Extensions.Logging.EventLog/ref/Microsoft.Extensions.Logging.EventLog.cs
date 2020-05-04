@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.Logging
 {
@@ -26,9 +29,9 @@ namespace Microsoft.Extensions.Logging.EventLog
     public partial class EventLogSettings
     {
         public EventLogSettings() { }
-        public System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> Filter { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public string LogName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public string MachineName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public string SourceName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> Filter { get { throw null; } set { } }
+        public string LogName { get { throw null; } set { } }
+        public string MachineName { get { throw null; } set { } }
+        public string SourceName { get { throw null; } set { } }
     }
 }

@@ -8,7 +8,13 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(BuildArch)' == 'x86'" Include="sizeof32.il" />
-    <Compile Condition="'$(BuildArch)' != 'x86'" Include="64sizeof32.il" />
+    <Compile Condition="'$(TargetArchitecture)' == 'x86'" Include="sizeof32.il" />
+    <Compile Condition="'$(TargetArchitecture)' != 'x86'" Include="64sizeof32.il" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
   </ItemGroup>
 </Project>

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct BasicConstraintsAsn
     {
-        private static readonly byte[] s_defaultCA = { 0x01, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultCA => new byte[] { 0x01, 0x01, 0x00 };
 
         internal bool CA;
         internal int? PathLengthConstraint;
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             BasicConstraintsAsn decoded = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultCA, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultCA, AsnEncodingRules.DER);
             decoded.CA = reader.ReadBoolean();
             reader.ThrowIfNotEmpty();
         }
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                     tmp.WriteBoolean(CA);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultCA))
+                    if (!encoded.SequenceEqual(DefaultCA))
                     {
                         writer.WriteEncodedValue(encoded);
                     }
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultCA, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultCA, AsnEncodingRules.DER);
                 decoded.CA = defaultReader.ReadBoolean();
             }
 

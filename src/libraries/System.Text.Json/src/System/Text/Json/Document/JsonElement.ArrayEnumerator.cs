@@ -24,19 +24,10 @@ namespace System.Text.Json
             {
                 _target = target;
                 _curIdx = -1;
-                Debug.Assert(target._parent != null);
 
-                if (target._parent is JsonDocument document)
-                {
-                    Debug.Assert(target.TokenType == JsonTokenType.StartArray);
+                Debug.Assert(target.TokenType == JsonTokenType.StartArray);
 
-                    _endIdxOrVersion = document.GetEndIndex(_target._idx, includeEndElement: false);
-                }
-                else
-                {
-                    var jsonArray = (JsonArray)target._parent;
-                    _endIdxOrVersion = jsonArray._version;
-                }
+                _endIdxOrVersion = target._parent.GetEndIndex(_target._idx, includeEndElement: false);
             }
 
             /// <inheritdoc />
@@ -49,18 +40,7 @@ namespace System.Text.Json
                         return default;
                     }
 
-                    if (_target._parent is JsonArray jsonArray)
-                    {
-                        if (_curIdx >= jsonArray.Count)
-                        {
-                            return default;
-                        }
-
-                        return jsonArray[_curIdx].AsJsonElement();
-                    }
-
-                    var document = (JsonDocument)_target._parent;
-                    return new JsonElement(document, _curIdx);
+                    return new JsonElement(_target._parent, _curIdx);
                 }
             }
 
@@ -102,22 +82,6 @@ namespace System.Text.Json
             /// <inheritdoc />
             public bool MoveNext()
             {
-                if (_target._parent is JsonArray jsonArray)
-                {
-                    if (jsonArray._version != _endIdxOrVersion)
-                    {
-                        throw new InvalidOperationException(SR.ArrayModifiedDuringIteration);
-                    }
-
-                    if (_curIdx >= jsonArray.Count)
-                    {
-                        return false;
-                    }
-
-                    _curIdx++;
-                    return _curIdx < jsonArray.Count;
-                }
-
                 if (_curIdx >= _endIdxOrVersion)
                 {
                     return false;
@@ -129,9 +93,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    Debug.Assert(_target._parent != null);
-                    var document = (JsonDocument)_target._parent;
-                    _curIdx = document.GetEndIndex(_curIdx, includeEndElement: true);
+                    _curIdx = _target._parent.GetEndIndex(_curIdx, includeEndElement: true);
                 }
 
                 return _curIdx < _endIdxOrVersion;

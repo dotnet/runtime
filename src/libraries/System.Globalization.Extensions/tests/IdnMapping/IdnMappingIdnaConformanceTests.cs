@@ -129,7 +129,7 @@ namespace System.Globalization.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public static void Equals(bool allowUnassigned, bool useStd3AsciiRules)
+        public static void EqualsTest(bool allowUnassigned, bool useStd3AsciiRules)
         {
             // first check for equals
             IdnMapping original = new IdnMapping() { AllowUnassigned = allowUnassigned, UseStd3AsciiRules = useStd3AsciiRules };

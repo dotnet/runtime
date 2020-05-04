@@ -245,7 +245,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(BaseClass), nameof(BaseClass.ReadWriteProperty1), typeof(BaseClass), nameof(BaseClass.ReadWriteProperty1), true)]
         [InlineData(typeof(BaseClass), nameof(BaseClass.ReadWriteProperty1), typeof(BaseClass), nameof(BaseClass.ReadWriteProperty2), false)]
-        public void Equals(Type type1, string name1, Type type2, string name2, bool expected)
+        public void EqualsTest(Type type1, string name1, Type type2, string name2, bool expected)
         {
             PropertyInfo propertyInfo1 = GetProperty(type1, name1);
             PropertyInfo propertyInfo2 = GetProperty(type2, name2);

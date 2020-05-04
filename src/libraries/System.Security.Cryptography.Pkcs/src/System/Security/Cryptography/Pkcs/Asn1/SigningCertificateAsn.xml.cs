@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     internal partial struct SigningCertificateAsn
     {
         internal System.Security.Cryptography.Pkcs.Asn1.EssCertId[] Certs;
-        internal System.Security.Cryptography.Pkcs.Asn1.PolicyInformation[] Policies;
+        internal System.Security.Cryptography.Pkcs.Asn1.PolicyInformation[]? Policies;
 
         internal void Encode(AsnWriter writer)
         {

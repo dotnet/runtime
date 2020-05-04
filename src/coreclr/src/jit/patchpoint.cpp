@@ -24,20 +24,17 @@
 //
 //   * no patchpoints in handler regions
 //   * no patchpoints for localloc methods
-//   * no patchpoints in try regions (workaround)
 //   * no patchpoints for synchronized methods (workaround)
 //
 class PatchpointTransformer
 {
-    unsigned  ppCounterLclNum;
     const int HIGH_PROBABILITY = 99;
+    unsigned  ppCounterLclNum;
     Compiler* compiler;
 
 public:
-    PatchpointTransformer(Compiler* compiler) : compiler(compiler)
+    PatchpointTransformer(Compiler* compiler) : ppCounterLclNum(BAD_VAR_NUM), compiler(compiler)
     {
-        ppCounterLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint counter"));
-        compiler->lvaTable[ppCounterLclNum].lvType = TYP_INT;
     }
 
     //------------------------------------------------------------------------
@@ -53,11 +50,8 @@ public:
             compiler->fgEnsureFirstBBisScratch();
         }
 
-        BasicBlock* block = compiler->fgFirstBB;
-        TransformEntry(block);
-
         int count = 0;
-        for (block = block->bbNext; block != nullptr; block = block->bbNext)
+        for (BasicBlock* block = compiler->fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
@@ -119,6 +113,16 @@ private:
     //
     void TransformBlock(BasicBlock* block)
     {
+        // If we haven't allocated the counter temp yet, set it up
+        if (ppCounterLclNum == BAD_VAR_NUM)
+        {
+            ppCounterLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint counter"));
+            compiler->lvaTable[ppCounterLclNum].lvType = TYP_INT;
+
+            // and initialize in the entry block
+            TransformEntry(compiler->fgFirstBB);
+        }
+
         // Capture the IL offset
         IL_OFFSET ilOffset = block->bbCodeOffs;
         assert(ilOffset != BAD_IL_OFFSET);
@@ -195,14 +199,15 @@ private:
 // Patchpoints are placed in the JIT IR during importation, and get expanded
 // here into normal JIT IR.
 //
-void Compiler::fgTransformPatchpoints()
+// Returns:
+//   phase status indicating if changes were made
+//
+PhaseStatus Compiler::fgTransformPatchpoints()
 {
-    JITDUMP("\n*************** in fgTransformPatchpoints\n");
-
     if (!doesMethodHavePatchpoints())
     {
-        JITDUMP(" -- no patchpoints to transform\n");
-        return;
+        JITDUMP("\n -- no patchpoints to transform\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // We should only be adding patchpoints at Tier0, so should not be in an inlinee
@@ -217,8 +222,8 @@ void Compiler::fgTransformPatchpoints()
     // optimizing the method (ala QJFL=0).
     if (compLocallocUsed)
     {
-        JITDUMP(" -- unable to handle methods with localloc\n");
-        return;
+        JITDUMP("\n -- unable to handle methods with localloc\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // We currently can't do OSR in synchronized methods. We need to alter
@@ -227,18 +232,18 @@ void Compiler::fgTransformPatchpoints()
     // obtained flag to true (or reuse the original method slot value).
     if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
     {
-        JITDUMP(" -- unable to handle synchronized methods\n");
-        return;
+        JITDUMP("\n -- unable to handle synchronized methods\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.IsReversePInvoke())
     {
         JITDUMP(" -- unable to handle Reverse P/Invoke\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     PatchpointTransformer ppTransformer(this);
     int                   count = ppTransformer.Run();
-    JITDUMP("\n*************** After fgTransformPatchpoints() [%d patchpoints transformed]\n", count);
-    INDEBUG(if (verbose) { fgDispBasicBlocks(true); });
+    JITDUMP("\n -- %d patchpoints transformed\n", count);
+    return (count == 0) ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
 }

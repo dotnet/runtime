@@ -229,7 +229,7 @@ __forceinline BOOL Nullable::IsNullableForType(TypeHandle type, MethodTable* par
         return FALSE;
     if (!type.AsMethodTable()->HasInstantiation())            // shortcut, if it is not generic it can't be Nullable<T>
         return FALSE;
-	return Nullable::IsNullableForTypeHelper(type.AsMethodTable(), paramMT);
+    return Nullable::IsNullableForTypeHelper(type.AsMethodTable(), paramMT);
 }
 
 //===============================================================================
@@ -241,7 +241,7 @@ __forceinline BOOL Nullable::IsNullableForTypeNoGC(TypeHandle type, MethodTable*
         return FALSE;
     if (!type.AsMethodTable()->HasInstantiation())            // shortcut, if it is not generic it can't be Nullable<T>
         return FALSE;
-	return Nullable::IsNullableForTypeHelperNoGC(type.AsMethodTable(), paramMT);
+    return Nullable::IsNullableForTypeHelperNoGC(type.AsMethodTable(), paramMT);
 }
 
 //===============================================================================

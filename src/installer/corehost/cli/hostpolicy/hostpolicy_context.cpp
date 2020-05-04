@@ -7,6 +7,8 @@
 #include "deps_resolver.h"
 #include <error_codes.h>
 #include <trace.h>
+#include "bundle/runner.h"
+#include "bundle/file_entry.h"
 
 namespace
 {
@@ -14,6 +16,43 @@ namespace
     {
         trace::error(_X("Duplicate runtime property found: %s"), property_key);
         trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the the application's .runtimeconfig.json"));
+    }
+
+    // bundle_probe:
+    // Probe the app-bundle for the file 'path' and return its location ('offset', 'size') if found.
+    //
+    // This function is an API exported to the runtime via the BUNDLE_PROBE property.
+    // This function used by the runtime to probe for bundled assemblies
+    // This function assumes that the currently executing app is a single-file bundle.
+    //
+    // bundle_probe recieves its path argument as cha16_t* instead of pal::char_t*, because:
+    // * The host uses Unicode strings on Windows and UTF8 strings on Unix
+    // * The runtime uses Unicode strings on all platforms
+    // * Using a unicode encoded path presents a uniform interface to the runtime
+    //   and minimizes the number if Unicode <-> UTF8 conversions necessary.
+    //
+    // The unicode char type is char16_t* instead of whcar_t*, because:
+    // * wchar_t is 16-bit encoding on Windows while it is 32-bit encoding on most Unix systems
+    // * The runtime uses 16-bit encoded unicode characters.
+
+    bool STDMETHODCALLTYPE bundle_probe(const char16_t* path, int64_t* offset, int64_t* size)
+    {
+        if (path == nullptr)
+        {
+            return false;
+        }
+
+        pal::string_t file_path;
+
+        if (!pal::unicode_palstring(path, &file_path))
+        {
+            trace::warning(_X("Failure probing contents of the application bundle."));
+            trace::warning(_X("Failed to convert path [%ls] to UTF8"), path);
+
+            return false;
+        }
+
+        return bundle::runner_t::app()->probe(file_path, offset, size);
     }
 }
 
@@ -86,21 +125,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     probe_paths.tpa.append(corelib_path);
 
-    pal::string_t clrjit_path = probe_paths.clrjit;
-    if (clrjit_path.empty())
-    {
-        trace::warning(_X("Could not resolve CLRJit path"));
-    }
-    else if (pal::realpath(&clrjit_path))
-    {
-        trace::verbose(_X("The resolved JIT path is '%s'"), clrjit_path.c_str());
-    }
-    else
-    {
-        clrjit_path.clear();
-        trace::warning(_X("Could not resolve symlink to CLRJit path '%s'"), probe_paths.clrjit.c_str());
-    }
-
     const fx_definition_vector_t &fx_definitions = resolver.get_fx_definitions();
 
     pal::string_t fx_deps_str;
@@ -125,16 +149,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         ++fx_curr;
     }
 
-    pal::string_t clr_library_version;
-    if (resolver.is_framework_dependent())
-    {
-        clr_library_version = get_root_framework(fx_definitions).get_found_version();
-    }
-    else
-    {
-        clr_library_version = resolver.get_coreclr_library_version();
-    }
-
     // Build properties for CoreCLR instantiation
     pal::string_t app_base = resolver.get_app_dir();
     coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
@@ -144,10 +158,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     coreclr_properties.add(common_property::AppContextDepsFiles, app_context_deps_str.c_str());
     coreclr_properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
     coreclr_properties.add(common_property::ProbingDirectories, resolver.get_lookup_probe_directories().c_str());
-    coreclr_properties.add(common_property::FxProductVersion, clr_library_version.c_str());
-
-    if (!clrjit_path.empty())
-        coreclr_properties.add(common_property::JitPath, clrjit_path.c_str());
+    coreclr_properties.add(common_property::RuntimeIdentifier, get_current_runtime_id(true /*use_fallback*/).c_str());
 
     bool set_app_paths = false;
 
@@ -195,6 +206,16 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
             log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
             return StatusCode::LibHostDuplicateProperty;
         }
+    }
+
+    // Single-File Bundle Probe
+    if (bundle::info_t::is_single_file_bundle())
+    {
+        // Encode the bundle_probe function pointer as a string, and pass it to the runtime.
+        pal::stringstream_t ptr_stream;
+        ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
+
+        coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str());
     }
 
     return StatusCode::Success;

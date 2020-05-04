@@ -727,6 +727,7 @@ TESTS_CS_SRC=		\
 	async-generic-enum.cs \
 	null-blob-main.cs \
 	last-error.cs \
+	rgctx-thread-static.cs \
 	bug-gh-17285.cs
 
 # some tests fail to compile on mcs
@@ -1718,6 +1719,11 @@ LLVM_DISABLED_TESTS = \
 # https://github.com/mono/mono/issues/6490
 LLVM_DISABLED_TESTS += \
 	weak-fields.exe
+
+if HOST_WIN32
+# https://github.com/mono/mono/issues/19603
+LLVM_DISABLED_TESTS += sgen-bridge.exe
+endif
 
 LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS) $(AOT_BUILD_FLAGS))
 

@@ -14,9 +14,9 @@ namespace System.Net
     {
         private readonly SslStream _sslStream;
         private readonly string _host;
-        private readonly X509CertificateCollection _clientCertificates;
+        private readonly X509CertificateCollection? _clientCertificates;
 
-        public TlsStream(NetworkStream stream, Socket socket, string host, X509CertificateCollection clientCertificates) : base(socket)
+        public TlsStream(NetworkStream stream, Socket socket, string host, X509CertificateCollection? clientCertificates) : base(socket)
         {
             _sslStream = new SslStream(stream, false, ServicePointManager.ServerCertificateValidationCallback);
             _host = host;

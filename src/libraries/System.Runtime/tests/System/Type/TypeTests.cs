@@ -37,6 +37,7 @@ public class Outside<T>
 
 namespace System.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34328", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public partial class TypeTests
     {
         private static readonly IList<Type> NonArrayBaseTypes;

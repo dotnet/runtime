@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifdef TARGET_UNIX
-
-#include "pal_types.h"
+#include <stdint.h>
 
 typedef uint16_t UChar;
 
@@ -19,15 +17,13 @@ typedef uint16_t UChar;
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
-#endif // TARGET_UNIX
 
-#define FCFuncStart(name) extern const void* name[]; const void* name[] = {
+#define FCFuncStart(name) EXTERN_C const void* name[]; const void* name[] = {
 #define FCFuncEnd() (void*)0x01 /* FCFuncFlag_EndOfArray */ };
 
 #define QCFuncElement(name,impl) \
     (void*)0x8 /* FCFuncFlag_QCall */, (void*)(impl), (void*)name,
 
-#ifdef TARGET_UNIX
 FCFuncStart(gPalGlobalizationNative)
     QCFuncElement("ChangeCase", GlobalizationNative_ChangeCase)
     QCFuncElement("ChangeCaseInvariant", GlobalizationNative_ChangeCaseInvariant)
@@ -64,4 +60,3 @@ FCFuncStart(gPalGlobalizationNative)
     QCFuncElement("ToAscii", GlobalizationNative_ToAscii)
     QCFuncElement("ToUnicode", GlobalizationNative_ToUnicode)
 FCFuncEnd()
-#endif // TARGET_UNIX

@@ -1540,17 +1540,25 @@ void MyICJI::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
     DebugBreakorAV(118);
 }
 
-// return a thunk that will copy the arguments for the given signature.
-void* MyICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
+bool MyICJI::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    jitInstance->mc->cr->AddCall("getTailCallCopyArgsThunk");
-    return jitInstance->mc->repGetTailCallCopyArgsThunk(pSig, flags);
+    jitInstance->mc->cr->AddCall("getTailCallHelpers");
+    return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
     jitInstance->mc->cr->AddCall("convertPInvokeCalliToCall");
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);
+}
+
+void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
 }
 
 // Stuff directly on ICorJitInfo
@@ -1583,12 +1591,12 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
 {
     jitInstance->mc->cr->AddCall("allocMem");
     // TODO-Cleanup: investigate if we need to check roDataBlock as well. Could hot block size be ever 0?
-    *hotCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, hotCodeSize);
+    *hotCodeBlock = jitInstance->mc->cr->allocateMemory(hotCodeSize);
     if (coldCodeSize > 0)
-        *coldCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, coldCodeSize);
+        *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
     else
         *coldCodeBlock = nullptr;
-    *roDataBlock       = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, roDataSize);
+    *roDataBlock       = jitInstance->mc->cr->allocateMemory(roDataSize);
     jitInstance->mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
                                      coldCodeBlock, roDataBlock);
 }
@@ -1652,7 +1660,7 @@ void* MyICJI::allocGCInfo(size_t size /* IN */
                           )
 {
     jitInstance->mc->cr->AddCall("allocGCInfo");
-    void* temp = (unsigned char*)HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, size);
+    void* temp = jitInstance->mc->cr->allocateMemory(size);
     jitInstance->mc->cr->recAllocGCInfo(size, temp);
 
     return temp;

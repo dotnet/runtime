@@ -4,6 +4,7 @@
 
 #nullable enable
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Text;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
@@ -18,12 +19,43 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             WriteUnsignedInteger(CborMajorType.Array, (ulong)definiteLength);
-            PushDataItem(CborMajorType.Array, (uint)definiteLength);
+            PushDataItem(CborMajorType.Array, definiteLength);
+        }
+
+        public void WriteStartArray()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));
+            PushDataItem(CborMajorType.Array, definiteLength: null);
         }
 
         public void WriteEndArray()
         {
             PopDataItem(CborMajorType.Array);
+            AdvanceDataItemCounters();
+        }
+
+        private void PatchIndefiniteLengthCollection(CborMajorType majorType, int count)
+        {
+            Debug.Assert(majorType == CborMajorType.Array || majorType == CborMajorType.Map);
+
+            int currentOffset = _offset;
+            int bytesToShift = GetIntegerEncodingLength((ulong)count) - 1;
+
+            if (bytesToShift > 0)
+            {
+                // length encoding requires more than 1 byte, need to shift encoded elements to the right
+                EnsureWriteCapacity(bytesToShift);
+
+                ReadOnlySpan<byte> elementEncoding = _buffer.AsSpan(_frameOffset, currentOffset - _frameOffset);
+                Span<byte> target = _buffer.AsSpan(_frameOffset + bytesToShift, currentOffset - _frameOffset);
+                elementEncoding.CopyTo(target);
+            }
+
+            // rewind to the start of the collection and write a new initial byte
+            _offset = _frameOffset - 1;
+            WriteUnsignedInteger(majorType, (ulong)count);
+            _offset = currentOffset + bytesToShift;
         }
     }
 }

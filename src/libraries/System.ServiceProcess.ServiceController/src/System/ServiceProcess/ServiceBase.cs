@@ -57,7 +57,7 @@ namespace System.ServiceProcess
         /// <devdoc>
         /// When this method is called from OnStart, OnStop, OnPause or OnContinue,
         /// the specified wait hint is passed to the
-        /// Service Control Manager to avoid having the service marked as hung.
+        /// Service Control Manager to avoid having the service marked as not responding.
         /// </devdoc>
         public unsafe void RequestAdditionalTime(int milliseconds)
         {

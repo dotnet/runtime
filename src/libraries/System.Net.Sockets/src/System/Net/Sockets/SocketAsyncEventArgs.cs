@@ -780,5 +780,19 @@ namespace System.Net.Sockets
                 ExecutionContext.Run(context, s_executionCallback, this);
             }
         }
+
+        private void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
+        {
+            Debug.Assert(socketError != SocketError.IOPending);
+
+            if (socketError == SocketError.Success)
+            {
+                FinishOperationSyncSuccess(bytesTransferred, flags);
+            }
+            else
+            {
+                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
+            }
+        }
     }
 }

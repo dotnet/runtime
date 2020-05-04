@@ -661,7 +661,7 @@ int32_t local_X509_check_host(X509* x509, const char* name, size_t namelen, unsi
                 X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
                 ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
 
-                // For compatibility with previous .NET Core builds, allow any type of
+                // For compatibility with previous .NET builds, allow any type of
                 // string for CN, provided it ended up with a single-byte encoding (otherwise
                 // strncasecmp simply won't match).
                 if (CheckX509HostnameMatch(cn, name, (int)namelen, cn->type))

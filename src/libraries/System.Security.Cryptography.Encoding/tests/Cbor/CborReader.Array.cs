@@ -9,20 +9,56 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        public ulong? ReadStartArray()
+        public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
-            ulong arrayLength = checked((ulong)ReadUnsignedInteger(header, out int additionalBytes));
-            AdvanceBuffer(1 + additionalBytes);
-            _remainingDataItems--;
 
-            PushDataItem(CborMajorType.Array, arrayLength);
-            return arrayLength;
+            if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
+            {
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items are not supported under the current conformance level.");
+                }
+
+                AdvanceBuffer(1);
+                PushDataItem(CborMajorType.Array, null);
+                return null;
+            }
+            else
+            {
+                ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+
+                if (arrayLength > (ulong)_buffer.Length)
+                {
+                    throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
+                }
+
+                AdvanceBuffer(1 + additionalBytes);
+                PushDataItem(CborMajorType.Array, (int)arrayLength);
+                return (int)arrayLength;
+            }
         }
 
         public void ReadEndArray()
         {
-            PopDataItem(expectedType: CborMajorType.Array);
+            if (_remainingDataItems == null)
+            {
+                CborInitialByte value = PeekInitialByte();
+
+                if (value.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
+                {
+                    throw new InvalidOperationException("Not at end of indefinite-length array.");
+                }
+
+                PopDataItem(expectedType: CborMajorType.Array);
+                AdvanceDataItemCounters();
+                AdvanceBuffer(1);
+            }
+            else
+            {
+                PopDataItem(expectedType: CborMajorType.Array);
+                AdvanceDataItemCounters();
+            }
         }
     }
 }

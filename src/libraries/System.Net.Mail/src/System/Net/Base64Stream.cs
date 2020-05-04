@@ -43,7 +43,7 @@ namespace System.Net
 
         private readonly int _lineLength;
         private readonly Base64WriteStateInfo _writeState;
-        private ReadStateInfo _readState;
+        private ReadStateInfo? _readState;
 
         //the number of bytes needed to encode three bytes (see algorithm description in Encode method below)
         private const int SizeOfBase64EncodedChar = 4;
@@ -74,7 +74,7 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (buffer == null)
             {
@@ -94,7 +94,7 @@ namespace System.Net
             return result;
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (buffer == null)
             {
@@ -416,7 +416,7 @@ namespace System.Net
 
             private static readonly AsyncCallback s_onRead = OnRead;
 
-            internal ReadAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state) : base(null, state, callback)
+            internal ReadAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) : base(null, state, callback)
             {
                 _parent = parent;
                 _buffer = buffer;
@@ -465,7 +465,7 @@ namespace System.Net
             {
                 if (!result.CompletedSynchronously)
                 {
-                    ReadAsyncResult thisPtr = (ReadAsyncResult)result.AsyncState;
+                    ReadAsyncResult thisPtr = (ReadAsyncResult)result.AsyncState!;
                     try
                     {
                         if (!thisPtr.CompleteRead(result))
@@ -502,7 +502,7 @@ namespace System.Net
             private readonly int _count;
             private int _written;
 
-            internal WriteAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state) : base(null, state, callback)
+            internal WriteAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) : base(null, state, callback)
             {
                 _parent = parent;
                 _buffer = buffer;
@@ -544,7 +544,7 @@ namespace System.Net
             {
                 if (!result.CompletedSynchronously)
                 {
-                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState;
+                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState!;
                     try
                     {
                         thisPtr.CompleteWrite(result);

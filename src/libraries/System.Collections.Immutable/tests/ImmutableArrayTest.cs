@@ -838,7 +838,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(EqualsData))]
-        public void Equals(ImmutableArray<int> first, ImmutableArray<int> second, bool expected)
+        public void EqualsTest(ImmutableArray<int> first, ImmutableArray<int> second, bool expected)
         {
             Assert.Equal(expected, first == second);
             Assert.NotEqual(expected, first != second);
@@ -944,7 +944,7 @@ namespace System.Collections.Immutable.Tests
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
         [MemberData(nameof(SpecialInt32ImmutableArrayData))]
-        public void GetHashCode(IEnumerable<int> source)
+        public void GetHashCodeTest(IEnumerable<int> source)
         {
             var array = source.ToImmutableArray();
 
@@ -1631,7 +1631,7 @@ namespace System.Collections.Immutable.Tests
             // ImmutableArray<T>.CopyTo defers to Array.Copy for argument validation, so
             // the parameter names here come from Array.Copy.
 
-            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(null));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", () => array.CopyTo(null));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(0, null, 0, 0));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(-1, null, -1, -1)); // The destination should be validated first.
@@ -2252,7 +2252,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
-        public void DebuggerAttributesValid(IEnumerable<int> source)
+        public void DebuggerAttributesValid_AdditionalCases(IEnumerable<int> source)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(source.ToImmutableArray());
         }

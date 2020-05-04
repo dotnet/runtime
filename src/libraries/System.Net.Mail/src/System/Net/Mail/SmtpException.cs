@@ -12,7 +12,7 @@ namespace System.Net.Mail
     {
         private SmtpStatusCode _statusCode = SmtpStatusCode.GeneralFailure;
 
-        private static string GetMessageForStatus(SmtpStatusCode statusCode, string serverResponse)
+        private static string GetMessageForStatus(SmtpStatusCode statusCode, string? serverResponse)
         {
             return GetMessageForStatus(statusCode) + " " + SR.Format(SR.MailServerResponse, serverResponse);
         }
@@ -76,7 +76,7 @@ namespace System.Net.Mail
             _statusCode = statusCode;
         }
 
-        public SmtpException(SmtpStatusCode statusCode, string message) : base(message)
+        public SmtpException(SmtpStatusCode statusCode, string? message) : base(message)
         {
             _statusCode = statusCode;
         }
@@ -85,11 +85,11 @@ namespace System.Net.Mail
         {
         }
 
-        public SmtpException(string message) : base(message)
+        public SmtpException(string? message) : base(message)
         {
         }
 
-        public SmtpException(string message, Exception innerException) : base(message, innerException)
+        public SmtpException(string? message, Exception? innerException) : base(message, innerException)
         {
         }
 
@@ -98,12 +98,12 @@ namespace System.Net.Mail
             _statusCode = (SmtpStatusCode)serializationInfo.GetInt32("Status");
         }
 
-        internal SmtpException(SmtpStatusCode statusCode, string serverMessage, bool serverResponse) : base(GetMessageForStatus(statusCode, serverMessage))
+        internal SmtpException(SmtpStatusCode statusCode, string? serverMessage, bool serverResponse) : base(GetMessageForStatus(statusCode, serverMessage))
         {
             _statusCode = statusCode;
         }
 
-        internal SmtpException(string message, string serverResponse) : base(message + " " + SR.Format(SR.MailServerResponse, serverResponse))
+        internal SmtpException(string message, string? serverResponse) : base(message + " " + SR.Format(SR.MailServerResponse, serverResponse))
         {
         }
 

@@ -29,11 +29,6 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"[\d-[13579]]+", "\x066102468\x0660", RegexOptions.ECMAScript, new string[] { "02468" } };
             yield return new object[] { null, @"[\d-[13579]]+", "\x066102468\x0660", RegexOptions.None, new string[] { "\x066102468\x0660" } };
 
-            yield return new object[] { null, @"[\w-[b-y]]+", "bbbaaaABCD09zzzyyy", RegexOptions.None, new string[] { "aaaABCD09zzz" } };
-
-            yield return new object[] { null, @"[\w-[b-y]]+", "bbbaaaABCD09zzzyyy", RegexOptions.None, new string[] { "aaaABCD09zzz" } };
-            yield return new object[] { null, @"[\w-[b-y]]+", "bbbaaaABCD09zzzyyy", RegexOptions.None, new string[] { "aaaABCD09zzz" } };
-
             yield return new object[] { null, @"[\p{Ll}-[ae-z]]+", "aaabbbcccdddeee", RegexOptions.None, new string[] { "bbbcccddd" } };
             yield return new object[] { null, @"[\p{Nd}-[2468]]+", "20135798", RegexOptions.None, new string[] { "013579" } };
 
@@ -164,7 +159,6 @@ namespace System.Text.RegularExpressions.Tests
 
             // Character Class Substraction
             yield return new object[] { null, @"[abcd\-d-[bc]]+", "bbbaaa---dddccc", RegexOptions.None, new string[] { "aaa---ddd" } };
-            yield return new object[] { null, @"[abcd\-d-[bc]]+", "bbbaaa---dddccc", RegexOptions.None, new string[] { "aaa---ddd" } };
             yield return new object[] { null, @"[^a-f-[\x00-\x60\u007B-\uFFFF]]+", "aaafffgggzzz{{{", RegexOptions.None, new string[] { "gggzzz" } };
             yield return new object[] { null, @"[\[\]a-f-[[]]+", "gggaaafff]]][[[", RegexOptions.None, new string[] { "aaafff]]]" } };
             yield return new object[] { null, @"[\[\]a-f-[]]]+", "gggaaafff[[[]]]", RegexOptions.None, new string[] { "aaafff[[[" } };
@@ -189,7 +183,6 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"[\0- [bc]+", "!!!\0\0\t\t  [[[[bbbcccaaa", RegexOptions.None, new string[] { "\0\0\t\t  [[[[bbbccc" } };
             yield return new object[] { null, "[[abcd]-[bc]]+", "a-b]", RegexOptions.None, new string[] { "a-b]" } };
             yield return new object[] { null, "[-[e-g]+", "ddd[[[---eeefffggghhh", RegexOptions.None, new string[] { "[[[---eeefffggg" } };
-            yield return new object[] { null, "[-e-g]+", "ddd---eeefffggghhh", RegexOptions.None, new string[] { "---eeefffggg" } };
             yield return new object[] { null, "[-e-g]+", "ddd---eeefffggghhh", RegexOptions.None, new string[] { "---eeefffggg" } };
             yield return new object[] { null, "[a-e - m-p]+", "---a b c d e m n o p---", RegexOptions.None, new string[] { "a b c d e m n o p" } };
             yield return new object[] { null, "[^-[bc]]", "b] c] -] aaaddd]", RegexOptions.None, new string[] { "d]" } };
@@ -345,7 +338,6 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(cat)(\77)", "hellocat?dogworld", RegexOptions.None, new string[] { "cat?", "cat", "?" } };
             yield return new object[] { null, @"(cat)(\176)", "hellocat~dogworld", RegexOptions.None, new string[] { "cat~", "cat", "~" } };
             yield return new object[] { null, @"(cat)(\400)", "hellocat\0dogworld", RegexOptions.None, new string[] { "cat\0", "cat", "\0" } };
-            yield return new object[] { null, @"(cat)(\300)", "hellocat\u00C0dogworld", RegexOptions.None, new string[] { "cat\u00C0", "cat", "\u00C0" } };
             yield return new object[] { null, @"(cat)(\300)", "hellocat\u00C0dogworld", RegexOptions.None, new string[] { "cat\u00C0", "cat", "\u00C0" } };
             yield return new object[] { null, @"(cat)(\477)", "hellocat\u003Fdogworld", RegexOptions.None, new string[] { "cat\u003F", "cat", "\u003F" } };
             yield return new object[] { null, @"(cat)(\777)", "hellocat\u00FFdogworld", RegexOptions.None, new string[] { "cat\u00FF", "cat", "\u00FF" } };
@@ -646,7 +638,6 @@ namespace System.Text.RegularExpressions.Tests
 
             // Atomic subexpressions
             // Implicitly upgrading (or not) oneloop to be atomic
-            yield return new object[] { null, @"a*", "aaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"a*b", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"a*b+", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"a*b+?", "aaab", RegexOptions.None, new string[] { "aaab" } };

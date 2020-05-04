@@ -929,5 +929,16 @@ namespace System
 
             return (CompareOptions)((int)comparisonType & (int)CompareOptions.IgnoreCase);
         }
+
+        private static CompareOptions GetCompareOptionsFromOrdinalStringComparison(StringComparison comparisonType)
+        {
+            Debug.Assert(comparisonType == StringComparison.Ordinal || comparisonType == StringComparison.OrdinalIgnoreCase);
+
+            // StringComparison.Ordinal (0x04) --> CompareOptions.Ordinal (0x4000_0000)
+            // StringComparison.OrdinalIgnoreCase (0x05) -> CompareOptions.OrdinalIgnoreCase (0x1000_0000)
+
+            int ct = (int)comparisonType;
+            return (CompareOptions)((ct & -ct) << 28); // neg and shl
+        }
     }
 }

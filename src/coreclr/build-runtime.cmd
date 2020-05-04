@@ -72,7 +72,7 @@ REM __PassThroughArgs is a set of things that will be passed through to nested c
 REM when using "all".
 set __PassThroughArgs=
 
-REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
+REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set "__args= %*"
 set processedArgs=
 set __UnprocessedBuildArgs=
@@ -81,6 +81,7 @@ set __CommonMSBuildArgs=
 set __BuildNative=1
 set __BuildCrossArchNative=0
 set __SkipCrossArchNative=0
+set __SkipGenerateVersion=0
 set __RestoreOptData=1
 set __CrossArch=
 set __PgoOptDataPath=
@@ -154,6 +155,7 @@ if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -166,6 +168,7 @@ if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&s
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -223,7 +226,7 @@ if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
 
-set __CommonMSBuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
+set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch%
 
 if %__EnforcePgo%==1 (
     if %__BuildArchArm%==1 (
@@ -317,16 +320,19 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-echo %__MsgPrefix%Generating native version headers
-set "__BinLog=%__LogsDir%\GenerateVersionHeaders_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-    %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
-    /t:GenerateNativeVersionFile /restore^
-    %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
-if not !errorlevel! == 0 (
-    set __exitCode=!errorlevel!
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
-    goto ExitWithCode
+if %__SkipGenerateVersion% EQU 0 (
+    echo %__MsgPrefix%Generating native version headers
+    set "__BinLog=%__LogsDir%\GenerateVersionHeaders_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
+        %__RepoRootDir%\eng\empty.csproj /t:GenerateRuntimeVersionFile /restore^
+        /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
+        /p:RuntimeVersionFile="%__RootBinDir%\obj\coreclr\runtime_version.h"^
+        %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
+    if not !errorlevel! == 0 (
+        set __exitCode=!errorlevel!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
+        goto ExitWithCode
+    )
 )
 
 REM =========================================================================================
@@ -500,7 +506,7 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
-    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
+    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%"
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
@@ -690,6 +696,7 @@ echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).
 echo -skipcrossarchnative: skip building cross-architecture native components ^(default: components are built^).
 echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
+echo -skipgenerateversion: skip generating the native version headers.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
 echo portable : build for portable RID.
 echo.

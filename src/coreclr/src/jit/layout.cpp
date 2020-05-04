@@ -373,12 +373,6 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
         // so it should be safe to fit this into a 30 bits bit field.
         assert(gcPtrCount < (1 << 30));
 
-        // We assume that we cannot have a struct with GC pointers that is not a multiple
-        // of the register size.
-        // The EE currently does not allow this, but it could change.
-        // Let's assert it just to be safe.
-        noway_assert((gcPtrCount == 0) || (roundUp(m_size, REGSIZE_BYTES) == m_size));
-
         m_gcPtrCount = gcPtrCount;
     }
 

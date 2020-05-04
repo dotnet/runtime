@@ -27,11 +27,11 @@ private:
     uint64_t corJitFlags;
 };
 
-static const GUID JITEEVersionIdentifier = { /* 54305fa1-a0d8-42e4-a6b4-b750a8143467 */
-    0x54305fa1,
-    0xa0d8,
-    0x42e4,
-    {0xa6, 0xb4, 0xb7, 0x50, 0xa8, 0x14, 0x34, 0x67}
+static const GUID JITEEVersionIdentifier = { /* 8b2226a2-ac30-4f5c-ae5c-926c792ecdb9 */
+    0x8b2226a2,
+    0xac30,
+    0x4f5c,
+    { 0xae, 0x5c, 0x92, 0x6c, 0x79, 0x2e, 0xcd, 0xb9 }
 };
 
 class Jit
@@ -49,7 +49,7 @@ public:
     // The EE asks the JIT for a "version identifier". This represents the version of the JIT/EE interface.
     // If the JIT doesn't implement the same JIT/EE interface expected by the EE (because the JIT doesn't
     // return the version identifier that the EE expects), then the EE fails to load the JIT.
-    // 
+    //
     virtual void getVersionIdentifier(GUID* versionIdentifier) = 0;
 
     // When the EE loads the System.Numerics.Vectors assembly, it asks the JIT what length (in bytes) of
@@ -60,8 +60,8 @@ public:
 
 DLL_EXPORT int JitCompileMethod(
     CorInfoException **ppException,
-    Jit * pJit, 
-    void * thisHandle, 
+    Jit * pJit,
+    void * thisHandle,
     void ** callbacks,
     void* methodInfo,
     unsigned flags,

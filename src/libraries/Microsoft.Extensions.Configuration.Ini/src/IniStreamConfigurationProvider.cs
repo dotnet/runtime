@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Configuration.Ini
                     int separator = line.IndexOf('=');
                     if (separator < 0)
                     {
-                        throw new FormatException(Resources.FormatError_UnrecognizedLineFormat(rawLine));
+                        throw new FormatException(SR.Format(SR.Error_UnrecognizedLineFormat, rawLine));
                     }
 
                     string key = sectionPrefix + line.Substring(0, separator).Trim();
@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Configuration.Ini
 
                     if (data.ContainsKey(key))
                     {
-                        throw new FormatException(Resources.FormatError_KeyIsDuplicated(key));
+                        throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
                     }
 
                     data[key] = value;

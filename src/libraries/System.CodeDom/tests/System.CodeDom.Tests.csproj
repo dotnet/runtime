@@ -97,23 +97,17 @@
     <Compile Include="System\CodeDom\CodeAttributeArgumentTests.cs" />
     <Compile Include="System\CodeDom\Compiler\VBCodeGenerationTests.cs" />
     <Compile Include="System\CodeDom\Compiler\CSharpCodeGenerationTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs">
-      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs"
+             Link="Common\System\Collections\TestBase.NonGeneric.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
 </Project>

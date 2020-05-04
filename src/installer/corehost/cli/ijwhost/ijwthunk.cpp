@@ -26,7 +26,7 @@ namespace
     bootstrap_thunk_chunk* g_pVtableBootstrapThunkChunkList;
 
     // We swallow the trace messages so we don't output to a stderr of a process that we do not own unless tracing is enabled.
-    void swallow_trace(const pal::char_t* msg)
+    void __cdecl swallow_trace(const pal::char_t* msg)
     {
         (void)msg;
     }
@@ -73,7 +73,7 @@ bool patch_vtable_entries(PEDecoder& pe)
     error_writer_scope_t writer_scope(swallow_trace);
 
     size_t currentThunk = 0;
-    for(size_t i = 0; i < numFixupRecords; ++i)
+    for (size_t i = 0; i < numFixupRecords; ++i)
     {
         if (pFixupTable[i].Type & COR_VTABLE_PTRSIZED)
         {
@@ -81,7 +81,7 @@ bool patch_vtable_entries(PEDecoder& pe)
 
 #ifdef _WIN64
             DWORD oldProtect;
-            if(!VirtualProtect(pointers, (sizeof(BYTE*) * pFixupTable[i].Count), PAGE_READWRITE, &oldProtect))
+            if (!VirtualProtect(pointers, (sizeof(BYTE*) * pFixupTable[i].Count), PAGE_READWRITE, &oldProtect))
             {
                 trace::error(_X("Failed to change the vtfixup table from RO to R/W failed.\n"));
                 return false;
@@ -101,7 +101,7 @@ bool patch_vtable_entries(PEDecoder& pe)
 
 #ifdef _WIN64
             DWORD _;
-            if(!VirtualProtect(pointers, (sizeof(BYTE*) * pFixupTable[i].Count), oldProtect, &_))
+            if (!VirtualProtect(pointers, (sizeof(BYTE*) * pFixupTable[i].Count), oldProtect, &_))
             {
                 trace::warning(_X("Failed to change the vtfixup table from R/W back to RO failed.\n"));
             }
@@ -125,11 +125,11 @@ extern "C" std::uintptr_t __stdcall start_runtime_and_get_target_address(std::ui
     if (status != StatusCode::Success)
     {
         // If we ignore the failure to patch bootstrap thunks we will come to this same
-        // function again, causing an infinite loop of "Failed to start the .NET Core runtime" errors.
+        // function again, causing an infinite loop of "Failed to start the .NET runtime" errors.
         // As we were taken here via an entry point with arbitrary signature,
         // there's no way of returning the error code so we just throw it.
 
-        trace::error(_X("Failed to start the .NET Core runtime. Error code %d"), status);
+        trace::error(_X("Failed to start the .NET runtime. Error code %d"), status);
 
 #pragma warning (push)
 #pragma warning (disable: 4297)

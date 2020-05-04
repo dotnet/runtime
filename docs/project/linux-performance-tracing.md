@@ -246,7 +246,7 @@ The current prerequisites are:
 
 
 
-# EventPipe and dotnet-trace (.NET Core 3.0 Preview 5 or later)
+# EventPipe and dotnet-trace (.NET Core 3.0 or later)
 
 ## Intro ##
 EventPipe is a new cross-platform tracing mechanism we built into the runtime from .NET Core 3.0. It works the same across all platforms we support (Windows, macOS, and Linux), and we have built various diagnostics tools on top of it. dotnet-trace is a dotnet CLI tool that allows you to trace your .NET application using EventPipe.
@@ -254,7 +254,7 @@ EventPipe is a new cross-platform tracing mechanism we built into the runtime fr
 ## Installing dotnet-trace ##
 dotnet-trace can be installed by using the dotnet CLI:
 ```
-dotnet tool install --global dotnet-trace --version 1.0.4-preview6.19311.1
+dotnet tool install --global dotnet-trace
 ```
 
 ## Collecting a trace ##

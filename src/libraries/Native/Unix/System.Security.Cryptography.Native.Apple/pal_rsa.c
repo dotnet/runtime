@@ -4,6 +4,7 @@
 
 #include "pal_rsa.h"
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static int32_t ExecuteCFDataTransform(
     SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut);
 
@@ -267,6 +268,7 @@ cleanup:
 
     return ret;
 }
+#endif
 
 static int32_t RsaPrimitive(SecKeyRef key,
                             uint8_t* pbData,

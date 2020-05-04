@@ -17,13 +17,13 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --subset                   Build a subset, print available subsets with -subset help"
-  echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
-  echo "  --os                       Build operating system: Windows_NT or Unix"
-  echo "  --arch                     Build platform: x86, x64, arm or arm64"
+  echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android or Browser"
+  echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
-  echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
-  echo "  --librariesConfiguration   Libraries build configuration: Debug or Release"
+  echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
+  echo "  --librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
+  echo "  --projects <value>         Project or solution file(s) to build"
   echo "  --verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
   echo "  --binaryLog                Output binary log (short: -bl)"
   echo "  --cross                    Optional argument to signify cross compilation"
@@ -33,7 +33,6 @@ usage()
   echo "Actions (defaults to --restore --build):"
   echo "  --restore                  Restore dependencies (short: -r)"
   echo "  --build                    Build all source projects (short: -b)"
-  echo "  --buildtests               Build all test projects"
   echo "  --rebuild                  Rebuild all source projects"
   echo "  --test                     Build and run tests (short: -t)"
   echo "  --pack                     Package build outputs into NuGet packages"
@@ -46,6 +45,7 @@ usage()
   echo "  --framework                Build framework: netcoreapp5.0 or net472 (short: -f)"
   echo "  --coverage                 Collect code coverage when testing"
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
+  echo "  --testnobuild              Skip building tests when invoking -test"
   echo "  --allconfigurations        Build packages for all build configurations"
   echo ""
 
@@ -82,50 +82,71 @@ initDistroRid()
 arguments=''
 cmakeargs=''
 extraargs=''
-build=false
-buildtests=false
-subsetCategory=''
-checkedPossibleDirectoryToBuild=false
 crossBuild=0
 
 source $scriptroot/native/init-os-and-arch.sh
 
 # Check if an action is passed in
-declare -a actions=("r" "restore" "b" "build" "buildtests" "rebuild" "t" "test" "pack" "sign" "publish" "clean")
+declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
+firstArgumentChecked=0
 
 while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
+
+  if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
+    arguments="$arguments /p:Subset=$1"
+    shift 1
+    continue
+  fi
+
+  firstArgumentChecked=1
+
   case "$opt" in
      -help|-h)
       usage
       exit 0
       ;;
-     -subsetcategory)
-      subsetCategory="$(echo "$2" | awk '{print tolower($0)}')"
-      arguments="$arguments /p:SubsetCategory=$subsetCategory"
-      shift 2
-      ;;
-     -subset)
-      arguments="$arguments /p:Subset=$2"
-      shift 2
+     -subset|-s)
+      if [ -z ${2+x} ]; then 
+        arguments="$arguments /p:Subset=help"
+        shift 1
+      else 
+        arguments="$arguments /p:Subset=$2"
+        shift 2
+      fi
       ;;
      -arch)
+      if [ -z ${2+x} ]; then 
+        echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
+        exit 1
+      fi
       arch=$2
-      arguments="$arguments /p:ArchGroup=$2 /p:TargetArchitecture=$2"
       shift 2
       ;;
      -configuration|-c)
+     if [ -z ${2+x} ]; then 
+        echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
+        exit 1
+      fi
       val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
       arguments="$arguments -configuration $val"
       shift 2
       ;;
      -framework|-f)
+      if [ -z ${2+x} ]; then 
+        echo "No framework supplied. See help (--help) for supported frameworks." 1>&2
+        exit 1
+      fi
       val="$(echo "$2" | awk '{print tolower($0)}')"
       arguments="$arguments /p:BuildTargetFramework=$val"
       shift 2
       ;;
      -os)
+      if [ -z ${2+x} ]; then 
+        echo "No target operating system supplied. See help (--help) for supported target operating systems." 1>&2
+        exit 1
+      fi
       os=$2
       arguments="$arguments /p:TargetOS=$2"
       shift 2
@@ -134,33 +155,36 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:BuildAllConfigurations=true"
       shift 1
       ;;
-     -build)
-      build=true
-      arguments="$arguments -build"
-      shift 1
-      ;;
-     -buildtests)
-      buildtests=true
-      shift 1
-      ;;
      -testscope)
+      if [ -z ${2+x} ]; then 
+        echo "No test scope supplied. See help (--help) for supported test scope values." 1>&2
+        exit 1
+      fi
       arguments="$arguments /p:TestScope=$2"
       shift 2
+      ;;
+     -testnobuild)
+      arguments="$arguments /p:TestNoBuild=true"
+      shift 1
       ;;
      -coverage)
       arguments="$arguments /p:Coverage=true"
       shift 1
       ;;
-     -stripsymbols)
-      arguments="$arguments /p:BuildNativeStripSymbols=true"
-      shift 1
-      ;;
-     -runtimeconfiguration)
+     -runtimeconfiguration|-rc)
+      if [ -z ${2+x} ]; then 
+        echo "No runtime configuration supplied. See help (--help) for supported runtime configurations." 1>&2
+        exit 1
+      fi
       val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
       arguments="$arguments /p:RuntimeConfiguration=$val"
       shift 2
       ;;
-     -librariesconfiguration)
+     -librariesconfiguration|-lc)
+      if [ -z ${2+x} ]; then 
+        echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
+        exit 1
+      fi
       arguments="$arguments /p:LibrariesConfiguration=$2"
       shift 2
       ;;
@@ -174,6 +198,10 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
      -cmakeargs)
+      if [ -z ${2+x} ]; then 
+        echo "No cmake args supplied." 1>&2
+        exit 1
+      fi
       cmakeargs="${cmakeargs} ${opt} $2"
       shift 2
       ;;
@@ -182,31 +210,11 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
       *)
-      ea=$1
-
-      if [[ $checkedPossibleDirectoryToBuild == false ]] && [[ $subsetCategory == "libraries" ]]; then
-        checkedPossibleDirectoryToBuild=true
-
-        if [[ -d "$1" ]]; then
-          ea="/p:DirectoryToBuild=$1"
-        elif [[ -d "$scriptroot/../src/libraries/$1" ]]; then
-          ea="/p:DirectoryToBuild=$scriptroot/../src/libraries/$1"
-        fi
-      fi
-
-      extraargs="$extraargs $ea"
+      extraargs="$extraargs $1"
       shift 1
       ;;
   esac
 done
-
-if [[ "$buildtests" == true ]]; then
-  if [[ "$build" == true ]]; then
-    arguments="$arguments /p:BuildTests=true"
-  else
-    arguments="$arguments -build /p:BuildTests=only"
-  fi
-fi
 
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
@@ -217,5 +225,6 @@ initDistroRid $os $arch $crossBuild
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
+arguments="$arguments /p:TargetArchitecture=$arch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 "$scriptroot/common/build.sh" $arguments

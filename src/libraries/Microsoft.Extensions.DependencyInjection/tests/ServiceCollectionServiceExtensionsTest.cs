@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+extern alias DIAbstractions;
 
 using System;
 using Microsoft.AspNetCore.Testing;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
 
-using AbstractionResources = Microsoft.Extensions.DependencyInjection.Abstractions.Resources;
+using AbstractionsSR = DIAbstractions::System.SR;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -350,7 +351,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ExceptionAssert.ThrowsArgument(
                 () => collection.TryAddEnumerable(descriptor),
                 "descriptor",
-                AbstractionResources.FormatTryAddIndistinguishableTypeToEnumerable(implementationType, serviceType));
+                AbstractionsSR.Format(AbstractionsSR.TryAddIndistinguishableTypeToEnumerable, implementationType, serviceType));
         }
 
         [Fact]

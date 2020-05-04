@@ -28,7 +28,7 @@ public:
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
     }
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
     // This variant of LowerRange is called from outside of the main Lowering pass,
     // so it creates its own instance of Lowering to do so.
@@ -136,7 +136,7 @@ private:
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
-    GenTree* LowerTailCallViaHelper(GenTreeCall* callNode, GenTree* callTarget);
+    GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
     void LowerFastTailCall(GenTreeCall* callNode);
     void RehomeArgForFastTailCall(unsigned int lclNum,
                                   GenTree*     insertTempBefore,

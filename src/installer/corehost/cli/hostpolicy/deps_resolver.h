@@ -14,6 +14,7 @@
 #include "deps_format.h"
 #include "deps_entry.h"
 #include "runtime_config.h"
+#include "bundle/runner.h"
 
 // Probe paths to be resolved for ordering
 struct probe_paths_t
@@ -22,7 +23,6 @@ struct probe_paths_t
     pal::string_t native;
     pal::string_t resources;
     pal::string_t coreclr;
-    pal::string_t clrjit;
 };
 
 struct deps_resolved_asset_t
@@ -168,11 +168,6 @@ public:
         return m_fx_definitions;
     }
 
-    const pal::string_t& get_coreclr_library_version() const
-    {
-        return m_coreclr_library_version;
-    }
-
     bool is_framework_dependent() const
     {
         return m_is_framework_dependent;
@@ -184,6 +179,17 @@ public:
         {
             static const pal::string_t s_empty;
             return s_empty;
+        }
+        if (m_host_mode == host_mode_t::apphost)
+        {
+            if (bundle::info_t::is_single_file_bundle())
+            {
+                const bundle::runner_t* app = bundle::runner_t::app();
+                if (app->is_netcoreapp3_compat_mode())
+                {
+                    return app->extraction_path();
+                }
+            }
         }
 
         return m_app_dir;
@@ -243,12 +249,6 @@ private:
 
     // Special entry for coreclr path
     pal::string_t m_coreclr_path;
-
-    // Special entry for coreclr library version
-    pal::string_t m_coreclr_library_version;
-
-    // Special entry for JIT path
-    pal::string_t m_clrjit_path;
 
     // The filepaths for the app custom deps
     std::vector<pal::string_t> m_additional_deps_files;

@@ -45,7 +45,7 @@ namespace System.ComponentModel.Design.Serialization.Tests
         [Theory]
         [InlineData(null, null)]
         [InlineData("SerializerTypeName", "BaseSerializerTypeName")]
-        public void Ctor_SerializerTypeName_BaseSerializerType(string serializerTypeName, string baseSerializerTypeName)
+        public void Ctor_SerializerTypeName_BaseSerializerTypeName(string serializerTypeName, string baseSerializerTypeName)
         {
             var attribute = new DesignerSerializerAttribute(serializerTypeName, baseSerializerTypeName);
             Assert.Equal(serializerTypeName, attribute.SerializerTypeName);

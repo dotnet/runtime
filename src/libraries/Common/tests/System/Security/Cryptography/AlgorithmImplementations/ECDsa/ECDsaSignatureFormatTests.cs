@@ -12,9 +12,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public abstract class ECDsaSignatureFormatTests : DsaFamilySignatureFormatTests
     {
-        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
-
-        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool SupportsSha2 => true;
 
         private static KeyDescription CreateKey(ECCurve curve)
@@ -38,7 +35,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 dsa.KeySize);
         }
 
-        private static IEnumerable<KeyDescription> LocalGenerateTestKeys()
+        protected static IEnumerable<KeyDescription> LocalGenerateTestKeys()
         {
             if (ECDsaFactory.IsCurveValid(EccTestData.BrainpoolP160r1Key1.Curve.Oid))
             {
@@ -58,8 +55,11 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
     public sealed class ECDsaArraySignatureFormatTests : ECDsaSignatureFormatTests
     {
-        protected override bool IsArrayBased => true;
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
 
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
+        protected override bool IsArrayBased => true;
+        
         protected override byte[] SignHash(
             KeyDescription key,
             byte[] hash,
@@ -99,6 +99,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
     public sealed class ECDsaArrayOffsetSignatureFormatTests : ECDsaSignatureFormatTests
     {
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
+
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => true;
 
         protected override byte[] SignHash(
@@ -217,6 +220,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
     public sealed class ECDsaSpanSignatureFormatTests : ECDsaSignatureFormatTests
     {
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
+
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => false;
 
         protected override byte[] SignHash(
@@ -331,7 +337,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
             ECDsa key = (ECDsa)keyDescription.Key;
 
             const DSASignatureFormat SignatureFormat = DSASignatureFormat.Rfc3279DerSequence;
-            const int RetryCount = 10;
+            // Make secp521r1 (7/16 chance of being smaller) and mod-8 keys (3/4 chance of being smaller)
+            // have the same 1-in-a-billion chance of failure.
+            int retryCount = keyDescription.FieldSizeInBits % 8 == 1 ? 36 : 15;
             byte[] hash = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 
             int expectedSize = GetExpectedSize(keyDescription.FieldSizeInBits);
@@ -339,7 +347,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(expectedSize < maxSize, "expectedSize < maxSize");
             byte[] signature = new byte[expectedSize];
 
-            for (int i = 0; i < RetryCount; i++)
+            for (int i = 0; i < retryCount; i++)
             {
                 if (key.TrySignHash(hash, signature, SignatureFormat, out int written))
                 {
@@ -359,7 +367,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
             ECDsa key = (ECDsa)keyDescription.Key;
 
             const DSASignatureFormat SignatureFormat = DSASignatureFormat.Rfc3279DerSequence;
-            const int RetryCount = 10;
+            // Make secp521r1 (7/16 chance of being smaller) and mod-8 keys (3/4 chance of being smaller)
+            // have the same 1-in-a-billion chance of failure.
+            int retryCount = keyDescription.FieldSizeInBits % 8 == 1 ? 36 : 15;
             HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
 
             int expectedSize = GetExpectedSize(keyDescription.FieldSizeInBits);
@@ -367,7 +377,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(expectedSize < maxSize, "expectedSize < maxSize");
             byte[] signature = new byte[expectedSize];
 
-            for (int i = 0; i < RetryCount; i++)
+            for (int i = 0; i < retryCount; i++)
             {
                 if (key.TrySignData(Array.Empty<byte>(), signature, hashAlgorithm, SignatureFormat, out int written))
                 {

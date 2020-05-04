@@ -14,7 +14,7 @@ endif(CMAKE_STATIC_LIB_LINK)
 
 find_package(OpenSSL)
 if(NOT OPENSSL_FOUND)
-    message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!")
+    message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!. See the requirements document for your specific operating system: https://github.com/dotnet/runtime/tree/master/docs/workflow/requirements.")
 endif(NOT OPENSSL_FOUND)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
@@ -52,7 +52,7 @@ set(NATIVECRYPTO_SOURCES
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
-if (CLR_CMAKE_TARGET_DARWIN)
+if (CLR_CMAKE_TARGET_OSX)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
 endif()
 
@@ -106,5 +106,5 @@ endif()
 
 include(configure.cmake)
 
-install_library_and_symbols (System.Security.Cryptography.Native.OpenSsl)
+install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
 install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION .)

@@ -13,6 +13,7 @@ set(MDRUNTIMERW_SOURCES
 set(MDRUNTIMERW_HEADERS
   ../../inc/corhdr.h
   ../../inc/metadata.h
+  ../../inc/mdfileformat.h
   ../../inc/pedecoder.h
   ../../inc/pedecoder.inl
   ../../inc/posterror.h
@@ -22,7 +23,6 @@ set(MDRUNTIMERW_HEADERS
   ../compiler/regmeta.h
   ../hotdata/hotdataformat.h
   ../inc/liteweightstgdb.h
-  ../inc/mdfileformat.h
   ../inc/mdinternalrw.h
   ../inc/mdlog.h
   ../inc/metadatahash.h

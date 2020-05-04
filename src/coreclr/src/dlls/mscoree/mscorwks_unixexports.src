@@ -11,3 +11,5 @@ GetCLRRuntimeHost
 ; DAC table export
 g_dacTable
 
+; Used by profilers
+MetaDataGetDispenser

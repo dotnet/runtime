@@ -434,24 +434,6 @@ FCFuncStart(gMdUtf8String)
     QCFuncElement("HashCaseInsensitive", MdUtf8String::HashCaseInsensitive)
 FCFuncEnd()
 
-FCFuncStart(gTypeNameBuilder)
-    QCFuncElement("CreateTypeNameBuilder", TypeNameBuilder::_CreateTypeNameBuilder)
-    QCFuncElement("ReleaseTypeNameBuilder", TypeNameBuilder::_ReleaseTypeNameBuilder)
-    QCFuncElement("OpenGenericArguments", TypeNameBuilder::_OpenGenericArguments)
-    QCFuncElement("CloseGenericArguments", TypeNameBuilder::_CloseGenericArguments)
-    QCFuncElement("OpenGenericArgument", TypeNameBuilder::_OpenGenericArgument)
-    QCFuncElement("CloseGenericArgument", TypeNameBuilder::_CloseGenericArgument)
-    QCFuncElement("AddName", TypeNameBuilder::_AddName)
-    QCFuncElement("AddPointer", TypeNameBuilder::_AddPointer)
-    QCFuncElement("AddByRef", TypeNameBuilder::_AddByRef)
-    QCFuncElement("AddSzArray", TypeNameBuilder::_AddSzArray)
-    QCFuncElement("AddArray", TypeNameBuilder::_AddArray)
-    QCFuncElement("AddAssemblySpec", TypeNameBuilder::_AddAssemblySpec)
-    QCFuncElement("ToString", TypeNameBuilder::_ToString)
-    QCFuncElement("Clear", TypeNameBuilder::_Clear)
-FCFuncEnd()
-
-
 FCFuncStart(gSafeTypeNameParserHandle)
     QCFuncElement("_ReleaseTypeNameParser", TypeName::QReleaseTypeNameParser)
 FCFuncEnd()
@@ -805,8 +787,8 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
     FCFuncElement("GetRawIUnknownForComObjectNoAddRef", MarshalNative::GetRawIUnknownForComObjectNoAddRef)
     FCFuncElement("IsComObject", MarshalNative::IsComObject)
-    FCFuncElement("GetObjectForIUnknown", MarshalNative::GetObjectForIUnknown)
-    FCFuncElement("GetUniqueObjectForIUnknown", MarshalNative::GetUniqueObjectForIUnknown)
+    FCFuncElement("GetObjectForIUnknownNative", MarshalNative::GetObjectForIUnknownNative)
+    FCFuncElement("GetUniqueObjectForIUnknownNative", MarshalNative::GetUniqueObjectForIUnknownNative)
     FCFuncElement("AddRef", MarshalNative::AddRef)
     FCFuncElement("GetNativeVariantForObject", MarshalNative::GetNativeVariantForObject)
     FCFuncElement("GetObjectForNativeVariant", MarshalNative::GetObjectForNativeVariant)
@@ -877,6 +859,7 @@ FCFuncStart(gInterlockedFuncs)
     FCIntrinsicSig("ExchangeAdd", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::ExchangeAdd64, CORINFO_INTRINSIC_InterlockedXAdd64)
 
     FCIntrinsic("MemoryBarrier", COMInterlocked::FCMemoryBarrier, CORINFO_INTRINSIC_MemoryBarrier)
+    FCIntrinsic("ReadMemoryBarrier", COMInterlocked::FCMemoryBarrierLoad, CORINFO_INTRINSIC_MemoryBarrierLoad)
     QCFuncElement("_MemoryBarrierProcessWide", COMInterlocked::MemoryBarrierProcessWide)
 FCFuncEnd()
 
@@ -923,6 +906,9 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
     FCFuncElement("GetUninitializedObjectInternal", ReflectionSerialization::GetUninitializedObject)
     QCFuncElement("AllocateTypeAssociatedMemoryInternal", RuntimeTypeHandle::AllocateTypeAssociatedMemory)
+    FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
+    FCFuncElement("FreeTailCallArgBuffer", TailCallHelp::FreeTailCallArgBuffer)
+    FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
@@ -997,8 +983,9 @@ FCFuncEnd()
 #ifdef FEATURE_COMWRAPPERS
 FCFuncStart(gComWrappersFuncs)
     QCFuncElement("GetIUnknownImplInternal", ComWrappersNative::GetIUnknownImpl)
-    QCFuncElement("GetOrCreateComInterfaceForObjectInternal", ComWrappersNative::GetOrCreateComInterfaceForObject)
-    QCFuncElement("GetOrCreateObjectForComInstanceInternal", ComWrappersNative::GetOrCreateObjectForComInstance)
+    QCFuncElement("TryGetOrCreateComInterfaceForObjectInternal", ComWrappersNative::TryGetOrCreateComInterfaceForObject)
+    QCFuncElement("TryGetOrCreateObjectForComInstanceInternal", ComWrappersNative::TryGetOrCreateObjectForComInstance)
+    QCFuncElement("SetGlobalInstanceRegistered", GlobalComWrappers::SetGlobalInstanceRegistered)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 
@@ -1057,6 +1044,7 @@ FCFuncStart(gStubHelperFuncs)
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("MulticastDebuggerTraceHelper", StubHelpers::MulticastDebuggerTraceHelper)
 #endif //FEATURE_MULTICASTSTUB_AS_IL
+    FCIntrinsic("NextCallReturnAddress", StubHelpers::NextCallReturnAddress, CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress)
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)
@@ -1239,10 +1227,8 @@ FCClassElement("FileLoadException", "System.IO", gFileLoadExceptionFuncs)
 FCClassElement("GC", "System", gGCInterfaceFuncs)
 FCClassElement("GCHandle", "System.Runtime.InteropServices", gGCHandleFuncs)
 FCClassElement("GCSettings", "System.Runtime", gGCSettingsFuncs)
-#ifdef TARGET_UNIX
 #ifndef CROSSGEN_COMPILE
 FCClassElement("Globalization", "", gPalGlobalizationNative)
-#endif
 #endif
 #ifdef FEATURE_COMINTEROP
 FCClassElement("IEnumerable", "System.Collections", gStdMngIEnumerableFuncs)
@@ -1316,7 +1302,6 @@ FCClassElement("TimerQueue", "System.Threading", gTimerFuncs)
 FCClassElement("Type", "System", gSystem_Type)
 FCClassElement("TypeBuilder", "System.Reflection.Emit", gCOMClassWriter)
 FCClassElement("TypeLoadException", "System", gTypeLoadExceptionFuncs)
-FCClassElement("TypeNameBuilder", "System.Reflection.Emit", gTypeNameBuilder)
 FCClassElement("TypeNameParser", "System", gTypeNameParser)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
 #ifdef FEATURE_COMINTEROP

@@ -13,6 +13,7 @@
 #ifndef __LiteWeightStgdb_h__
 #define __LiteWeightStgdb_h__
 
+#include "metadata.h"
 #include "metamodelro.h"
 #include "metamodelrw.h"
 

@@ -124,7 +124,6 @@ namespace System.Runtime.InteropServices
         public bool BestFitMapping { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("BStrWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class BStrWrapper
     {
         public BStrWrapper(object? value) { }
@@ -173,7 +172,6 @@ namespace System.Runtime.InteropServices
         public string Value { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ComAwareEventInfo may be unavailable in future releases.")]
     public partial class ComAwareEventInfo : System.Reflection.EventInfo
     {
         public ComAwareEventInfo(System.Type type, string eventName) { }
@@ -220,7 +218,6 @@ namespace System.Runtime.InteropServices
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ComEventInterfaceAttribute may be unavailable in future releases.")]
     public sealed partial class ComEventInterfaceAttribute : System.Attribute
     {
         public ComEventInterfaceAttribute(System.Type SourceInterface, System.Type EventProvider) { }
@@ -228,7 +225,6 @@ namespace System.Runtime.InteropServices
         public System.Type SourceInterface { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ComEventsHelper may be unavailable in future releases.")]
     public static partial class ComEventsHelper
     {
         public static void Combine(object rcw, System.Guid iid, int dispid, System.Delegate d) { }
@@ -272,7 +268,6 @@ namespace System.Runtime.InteropServices
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=true)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ComSourceInterfacesAttribute may be unavailable in future releases.")]
     public sealed partial class ComSourceInterfacesAttribute : System.Attribute
     {
         public ComSourceInterfacesAttribute(string sourceInterfaces) { }
@@ -327,7 +322,6 @@ namespace System.Runtime.InteropServices
         public object? Value { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("DispatchWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class DispatchWrapper
     {
         public DispatchWrapper(object? obj) { }
@@ -366,7 +360,6 @@ namespace System.Runtime.InteropServices
         SafeDirectories = 4096,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ErrorWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class ErrorWrapper
     {
         public ErrorWrapper(System.Exception e) { }
@@ -402,7 +395,6 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.HandleRef value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ICustomAdapter may be unavailable in future releases.")]
     public partial interface ICustomAdapter
     {
         object GetUnderlyingObject();
@@ -857,7 +849,6 @@ namespace System.Runtime.InteropServices
         public int MinorVersion { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("UnknownWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class UnknownWrapper
     {
         public UnknownWrapper(object? obj) { }
@@ -977,7 +968,6 @@ namespace System.Runtime.InteropServices
         VT_BYREF = 16384,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("VariantWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class VariantWrapper
     {
         public VariantWrapper(object? obj) { }
@@ -1020,9 +1010,9 @@ namespace System.Runtime.InteropServices
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
-    public sealed class NativeCallableAttribute : System.Attribute
+    public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
-        public NativeCallableAttribute() { }
+        public UnmanagedCallersOnlyAttribute() { }
         public System.Runtime.InteropServices.CallingConvention CallingConvention;
         public string? EntryPoint;
     }

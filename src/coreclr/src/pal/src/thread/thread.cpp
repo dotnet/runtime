@@ -1580,7 +1580,7 @@ GetThreadTimes(
 
 HRESULT
 PALAPI
-SetThreadDescription(    
+SetThreadDescription(
     IN HANDLE hThread,
     IN PCWSTR lpThreadDescription)
 {
@@ -1666,11 +1666,14 @@ CorUnix::InternalSetThreadDescription(
 
     // Null terminate early.
     // pthread_setname_np only accepts up to 16 chars.
-    nameBuf[15] = '\0';
+    if (nameSize > 15)
+    {
+        nameBuf[15] = '\0';
+    }
 
     error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
 
-    if (error != 0) 
+    if (error != 0)
     {
         palError = ERROR_INTERNAL_ERROR;
     }
@@ -2487,7 +2490,11 @@ CPalThread::EnsureSignalAlternateStack()
             altStackSize += SIGSTKSZ * 4;
 #endif
             altStackSize = ALIGN_UP(altStackSize, GetVirtualPageSize());
-            void* altStack = mmap(NULL, altStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_STACK | MAP_PRIVATE, -1, 0);
+            int flags = MAP_ANONYMOUS | MAP_PRIVATE;
+#ifdef MAP_STACK
+            flags |= MAP_STACK;
+#endif
+            void* altStack = mmap(NULL, altStackSize, PROT_READ | PROT_WRITE, flags, -1, 0);
             if (altStack != MAP_FAILED)
             {
                 // create a guard page for the alternate stack
