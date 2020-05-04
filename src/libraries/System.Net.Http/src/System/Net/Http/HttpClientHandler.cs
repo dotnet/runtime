@@ -13,7 +13,7 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-#if TargetsBrowser
+#if TARGETS_BROWSER
         private readonly BrowserHttpHandler _socketsHttpHandler;
 #else
         private readonly SocketsHttpHandler _socketsHttpHandler;
@@ -23,7 +23,7 @@ namespace System.Net.Http
 
         public HttpClientHandler()
         {
-#if TargetsBrowser
+#if TARGETS_BROWSER
             _socketsHttpHandler = new BrowserHttpHandler();
 #else
             _socketsHttpHandler = new SocketsHttpHandler();

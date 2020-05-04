@@ -14,7 +14,7 @@
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <DefineConstants>$(DefineConstants);BROWSER_DOES_NOT_SUPPORT_QUIC;TargetsBrowser</DefineConstants>
+    <DefineConstants>$(DefineConstants);BROWSER_DOES_NOT_SUPPORT_QUIC;TARGETS_BROWSER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
