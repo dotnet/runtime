@@ -335,15 +335,15 @@ namespace System.Net.Sockets
                     Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
                     bool enqueuedEvent = false;
-                    for (int i = 0; i < numEvents; i++)
+                    foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(buffer, numEvents))
                     {
-                        IntPtr handle = buffer[i].Data;
+                        IntPtr handle = socketEvent.Data;
 
                         if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
 
-                            Interop.Sys.SocketEvents events = buffer[i].Events;
+                            Interop.Sys.SocketEvents events = socketEvent.Events;
                             events = context.HandleSyncEventsSpeculatively(events);
                             if (events != Interop.Sys.SocketEvents.None)
                             {
