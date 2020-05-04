@@ -1936,11 +1936,6 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             {
                 op1->AsFptrVal()->gtEntryPoint = pCallInfo->codePointerLookup.constLookup;
             }
-            else
-            {
-                op1->AsFptrVal()->gtEntryPoint.addr       = nullptr;
-                op1->AsFptrVal()->gtEntryPoint.accessType = IAT_VALUE;
-            }
 #endif
             break;
 
@@ -1983,12 +1978,13 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
     // context parameter is this that we don't need the eager reporting logic.)
-    lvaGenericsContextUseCount++;
+    lvaGenericsContextInUse = true;
 
     if (kind == CORINFO_LOOKUP_THISOBJ)
     {
         // this Object
         ctxTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
 
         // Vtable pointer of this object
         ctxTree = gtNewOperNode(GT_IND, TYP_I_IMPL, ctxTree);
@@ -2000,6 +1996,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
         assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
 
         ctxTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL); // Exact method descriptor as passed in as last arg
+        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
     }
     return ctxTree;
 }
@@ -2044,11 +2041,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                              gtNewCallArgs(ctxTree), &pLookup->lookupKind);
         }
 #endif
-        GenTree* argNode =
-            gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
-        GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
-
-        return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
 
     // Slot pointer
@@ -3529,10 +3522,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     assert(intrinsicID != CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr);
 #endif
 
+    if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress)
+    {
+        // For now we just avoid inlining anything into these methods since
+        // this intrinsic is only rarely used. We could do this better if we
+        // wanted to by trying to match which call is the one we need to get
+        // the return address of.
+        info.compHasNextCallRetAddr = true;
+        return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
+
     GenTree* retNode = nullptr;
 
     // Under debug and minopts, only expand what is required.
-    if (!mustExpand && opts.OptimizationDisabled())
+    // NextCallReturnAddress intrinsic returns the return address of the next call.
+    // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
+    // To avoid that we conservatively expand only required intrinsics in methods that call
+    // the NextCallReturnAddress intrinsic.
+    if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
     {
         *pIntrinsicID = CORINFO_INTRINSIC_Illegal;
         return retNode;
@@ -4366,7 +4373,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     }
     if (className != nullptr)
     {
-        JITDUMP("%s", className);
+        JITDUMP("%s.", className);
     }
     if (methodName != nullptr)
     {
@@ -4434,7 +4441,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             }
         }
     }
-#if defined(TARGET_XARCH) // We currently only support BSWAP on x86
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
     {
         if ((strcmp(className, "BinaryPrimitives") == 0) && (strcmp(methodName, "ReverseEndianness") == 0))
@@ -4442,7 +4449,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
         }
     }
-#endif // !defined(TARGET_XARCH)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
     {
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
@@ -6741,9 +6748,16 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
-    for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
+    for (GenTreeCall::Use& argUse : GenTreeCall::UseList(args))
     {
-        call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        // We should not be passing gc typed args to an unmanaged call.
+        GenTree* arg = argUse.GetNode();
+        if (varTypeIsGC(arg->TypeGet()))
+        {
+            assert(!"*** invalid IL: gc type passed to unmanaged call");
+        }
+
+        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
     }
 }
 
@@ -7426,14 +7440,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         sig = &calliSig;
 
-#ifdef DEBUG
-        // We cannot lazily obtain the signature of a CALLI call because it has no method
-        // handle that we can use, so we need to save its full call signature here.
-        assert(call->AsCall()->callSig == nullptr);
-        call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-        *call->AsCall()->callSig = calliSig;
-#endif // DEBUG
-
         if ((sig->flags & CORINFO_SIGFLAG_FAT_CALL) != 0)
         {
             addFatPointerCandidate(call->AsCall());
@@ -7896,11 +7902,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // !FEATURE_VARARG
 
 #ifdef UNIX_X86_ABI
-    if (call->AsCall()->callSig == nullptr)
-    {
-        call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-        *call->AsCall()->callSig = *sig;
-    }
+    // On Unix x86 we usually use caller-cleaned convention.
+    if (!call->AsCall()->IsUnmanaged() && IsCallerPop(sig->callConv))
+        call->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
 
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
@@ -7937,14 +7941,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             unsigned numArgsDef = sig->numArgs;
 #endif
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
-
-#ifdef DEBUG
-            // We cannot lazily obtain the signature of a vararg call because using its method
-            // handle will give us only the declared argument list, not the full argument list.
-            assert(call->AsCall()->callSig == nullptr);
-            call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-            *call->AsCall()->callSig = *sig;
-#endif
 
             // For vararg calls we must be sure to load the return type of the
             // method actually being called, as well as the return types of the
@@ -8252,7 +8248,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The "this" pointer
 
-    if (!(mflags & CORINFO_FLG_STATIC) && !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
+    if (((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
+        !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
     {
         GenTree* obj;
 
@@ -8374,6 +8371,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
 DONE:
 
+#ifdef DEBUG
+    // In debug we want to be able to register callsites with the EE.
+    assert(call->AsCall()->callSig == nullptr);
+    call->AsCall()->callSig  = new (this, CMK_Generic) CORINFO_SIG_INFO;
+    *call->AsCall()->callSig = *sig;
+#endif
+
     // Final importer checks for calls flagged as tail calls.
     //
     if (tailCallFlags != 0)
@@ -8468,7 +8472,27 @@ DONE:
 #endif // FEATURE_TAILCALL_OPT
                 }
 
-                // we can't report success just yet...
+                // This might or might not turn into a tailcall. We do more
+                // checks in morph. For explicit tailcalls we need more
+                // information in morph in case it turns out to be a
+                // helper-based tailcall.
+                if (isExplicitTailCall)
+                {
+                    assert(call->AsCall()->tailCallInfo == nullptr);
+                    call->AsCall()->tailCallInfo = new (this, CMK_CorTailCallInfo) TailCallSiteInfo;
+                    switch (opcode)
+                    {
+                        case CEE_CALLI:
+                            call->AsCall()->tailCallInfo->SetCalli(sig);
+                            break;
+                        case CEE_CALLVIRT:
+                            call->AsCall()->tailCallInfo->SetCallvirt(sig, pResolvedToken);
+                            break;
+                        default:
+                            call->AsCall()->tailCallInfo->SetCall(sig, pResolvedToken);
+                            break;
+                    }
+                }
             }
             else
             {
@@ -8535,15 +8559,7 @@ DONE:
         //
 
         assert(call->gtOper == GT_CALL);
-        assert(sig != nullptr);
-
-        // Tail calls require us to save the call site's sig info so we can obtain an argument
-        // copying thunk from the EE later on.
-        if (call->AsCall()->callSig == nullptr)
-        {
-            call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-            *call->AsCall()->callSig = *sig;
-        }
+        assert(callInfo != nullptr);
 
         if (compIsForInlining() && opcode == CEE_CALLVIRT)
         {
@@ -13713,7 +13729,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
                         bool bbIsReturn = (block->bbJumpKind == BBJ_RETURN) &&
                                           (!compIsForInlining() || (impInlineInfo->iciBlock->bbJumpKind == BBJ_RETURN));
-                        if (fgVarNeedsExplicitZeroInit(lvaGetDesc(lclNum), bbInALoop, bbIsReturn))
+                        LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+                        if (fgVarNeedsExplicitZeroInit(lclDsc, bbInALoop, bbIsReturn))
                         {
                             // Append a tree to zero-out the temp
                             newObjThisPtr = gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet());
@@ -13723,6 +13740,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                            false,            // isVolatile
                                                            false);           // not copyBlock
                             impAppendTree(newObjThisPtr, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+                        }
+                        else
+                        {
+                            JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", lclNum);
+                            lclDsc->lvSuppressedZeroInit = 1;
+                            compSuppressedZeroInit       = true;
                         }
 
                         // Obtain the address of the temp
@@ -18599,7 +18622,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //
 //   Checks for various inline blocking conditions and makes notes in
 //   the inline info arg table about the properties of the actual. These
-//   properties are used later by impFetchArg to determine how best to
+//   properties are used later by impInlineFetchArg to determine how best to
 //   pass the argument into the inlinee.
 
 void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
@@ -19611,6 +19634,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (impInlineRoot()->m_inlineStrategy->IsInliningDisabled())
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
+        return;
+    }
+
+    // Don't inline into callers that use the NextCallReturnAddress intrinsic.
+    if (info.compHasNextCallRetAddr)
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLER_USES_NEXT_CALL_RET_ADDR);
         return;
     }
 

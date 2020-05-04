@@ -8,8 +8,8 @@ namespace System.Security.Cryptography.Encoding.Tests
     internal enum CborTag : ulong
     {
         DateTimeString = 0,
-        EpochDateTime  = 1,
-        PositiveBigNum = 2,
+        UnixTimeSeconds = 1,
+        UnsignedBigNum = 2,
         NegativeBigNum = 3,
         DecimalFraction = 4,
         BigFloat = 5,
@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Encoding.Tests
     }
 
     // https://tools.ietf.org/html/rfc7049#section-2.3
-    internal enum CborSpecialValue : byte
+    internal enum CborSimpleValue : byte
     {
         False = 20,
         True = 21,

@@ -77,6 +77,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(Loopbacks))]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
         {
@@ -114,6 +115,15 @@ namespace System.Net.NetworkInformation.Tests
             {
                 Assert.NotEqual(TcpState.Listen, ti.State);
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        public async Task GetUnicastAddresses_NotEmpty()
+        {
+            IPGlobalProperties props = IPGlobalProperties.GetIPGlobalProperties();
+            Assert.NotEmpty(props.GetUnicastAddresses());
+            Assert.NotEmpty(await props.GetUnicastAddressesAsync());
+            Assert.NotEmpty(await Task.Factory.FromAsync(props.BeginGetUnicastAddresses, props.EndGetUnicastAddresses, null));
         }
     }
 }

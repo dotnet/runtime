@@ -9,6 +9,7 @@
 #include "mono/metadata/icall-decl.h"
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/loaded-images-internals.h"
+#include "mono/metadata/mono-private-unstable.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-logger-internals.h"
 
@@ -170,6 +171,21 @@ gboolean
 mono_alc_is_default (MonoAssemblyLoadContext *alc)
 {
 	return alc == mono_alc_domain (alc)->default_alc;
+}
+
+MonoAssemblyLoadContext *
+mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
+{
+	MonoManagedAssemblyLoadContextHandle managed_alc = MONO_HANDLE_CAST (MonoManagedAssemblyLoadContext, mono_gchandle_get_target_handle (alc_gchandle));
+	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
+	return alc;
+}
+
+MonoGCHandle
+mono_alc_get_default_gchandle (void)
+{
+	// Because the default domain is never unloadable, this should be a strong handle and never change
+	return mono_domain_default_alc (mono_domain_get ())->gchandle;
 }
 
 static MonoAssembly*

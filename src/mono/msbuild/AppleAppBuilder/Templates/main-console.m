@@ -45,7 +45,7 @@ UITextView* logLabel;
 
     summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0.0, applicationFrame.size.width - 10.0, 50)];
     summaryLabel.textColor = [UIColor whiteColor];
-    summaryLabel.font = [UIFont boldSystemFontOfSize: 14];
+    summaryLabel.font = [UIFont boldSystemFontOfSize: 12];
     summaryLabel.numberOfLines = 2;
     summaryLabel.textAlignment = NSTextAlignmentLeft;
 #ifdef TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
@@ -67,7 +67,7 @@ UITextView* logLabel;
 void
 mono_ios_set_summary (const char* value)
 {
-    NSString* nsstr = [NSString stringWithUTF8String:strdup(value)];
+    NSString* nsstr = [NSString stringWithUTF8String:value];
     dispatch_async(dispatch_get_main_queue(), ^{
         summaryLabel.text = nsstr;
     });
@@ -77,7 +77,7 @@ mono_ios_set_summary (const char* value)
 void
 mono_ios_append_output (const char* value)
 {
-    NSString* nsstr = [NSString stringWithUTF8String:strdup(value)];
+    NSString* nsstr = [NSString stringWithUTF8String:value];
     dispatch_async(dispatch_get_main_queue(), ^{
         logLabel.text = [logLabel.text stringByAppendingString:nsstr];
         CGRect caretRect = [logLabel caretRectForPosition:logLabel.endOfDocument];

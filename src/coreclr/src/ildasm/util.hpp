@@ -13,7 +13,6 @@
 
 #if defined(_DEBUG)
 #include <crtdbg.h>
-#undef _ASSERTE    // utilcode defines a custom _ASSERTE
 #endif
 
 #include "utilcode.h"

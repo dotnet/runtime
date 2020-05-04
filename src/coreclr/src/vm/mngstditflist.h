@@ -30,9 +30,6 @@
 #define MNGSTDITF_DEFINE_METH3(FriendlyName, MethName, MethSig, FcallDecl) \
     MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, MethName##_3, MethName, MethSig, FcallDecl)
 
-#define CUSTOM_MARSHALER_ASM ", System.Private.CoreLib, Version=" VER_ASSEMBLYVERSION_STR ", Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
-
-
 
 
 //
@@ -83,7 +80,7 @@
 #define MNGSTDITF_IREFLECT_DECL__INVOKEMEMBER   FCDECL9(Object*, InvokeMember,  Object* refThisUNSAFE, Object* refNameUNSAFE, INT32 enumBindingAttr, Object* refBinderUNSAFE, Object* refTargetUNSAFE, Object* refArgsArrayUNSAFE, Object* refModifiersArrayUNSAFE, Object* refCultureUNSAFE, Object* refNamedParamsArrayUNSAFE)
 #define MNGSTDITF_IREFLECT_DECL__GET_UNDERLYING_SYSTEM_TYPE FCDECL1(Object*, get_UnderlyingSystemType, Object* refThisUNSAFE)
 
-MNGSTDITF_BEGIN_INTERFACE(StdMngIReflect, g_ReflectionReflectItfName, "System.Runtime.InteropServices.ComTypes.IReflect", g_CMExpandoToDispatchExMarshaler CUSTOM_MARSHALER_ASM, "IReflect", g_CMExpandoViewOfDispatchEx CUSTOM_MARSHALER_ASM, IID_IDispatchEx, TRUE)
+MNGSTDITF_BEGIN_INTERFACE(StdMngIReflect, g_ReflectionReflectItfName, "System.Runtime.InteropServices.ComTypes.IReflect", g_CMExpandoToDispatchExMarshaler, "IReflect", g_CMExpandoViewOfDispatchEx, IID_IDispatchEx, TRUE)
     MNGSTDITF_DEFINE_METH(StdMngIReflect, GetMethod,    &gsig_IM_Str_BindingFlags_Binder_ArrType_ArrParameterModifier_RetMethodInfo, MNGSTDITF_IREFLECT_DECL__GETMETHOD)
     MNGSTDITF_DEFINE_METH2(StdMngIReflect,GetMethod,    &gsig_IM_Str_BindingFlags_RetMethodInfo,    MNGSTDITF_IREFLECT_DECL__GETMETHOD_2)
     MNGSTDITF_DEFINE_METH(StdMngIReflect, GetMethods,   &gsig_IM_BindingFlags_RetArrMethodInfo,     MNGSTDITF_IREFLECT_DECL__GETMETHODS)
@@ -108,7 +105,7 @@ MNGSTDITF_END_INTERFACE(StdMngIReflect)
 #define MNGSTDITF_IEXPANDO_DECL__ADD_METHOD     FCDECL3(Object*, AddMethod, Object* refThisUNSAFE, StringObject* refNameUNSAFE, Object* refDelegateUNSAFE)
 #define MNGSTDITF_IEXPANDO_DECL__REMOVE_MEMBER  FCDECL2(void, RemoveMember, Object* refThisUNSAFE, Object* refMemberInfoUNSAFE)
 
-MNGSTDITF_BEGIN_INTERFACE(StdMngIExpando, g_ReflectionExpandoItfName, "System.Runtime.InteropServices.ComTypes.IExpando", g_CMExpandoToDispatchExMarshaler CUSTOM_MARSHALER_ASM, "IExpando", g_CMExpandoViewOfDispatchEx CUSTOM_MARSHALER_ASM, IID_IDispatchEx, TRUE)
+MNGSTDITF_BEGIN_INTERFACE(StdMngIExpando, g_ReflectionExpandoItfName, "System.Runtime.InteropServices.ComTypes.IExpando", g_CMExpandoToDispatchExMarshaler, "IExpando", g_CMExpandoViewOfDispatchEx, IID_IDispatchEx, TRUE)
     MNGSTDITF_DEFINE_METH(StdMngIExpando, AddField,     &gsig_IM_Str_RetFieldInfo,          MNGSTDITF_IEXPANDO_DECL__ADD_FIELD)
     MNGSTDITF_DEFINE_METH(StdMngIExpando, AddProperty,  &gsig_IM_Str_RetPropertyInfo,       MNGSTDITF_IEXPANDO_DECL__ADD_PROPERTY)
     MNGSTDITF_DEFINE_METH(StdMngIExpando, AddMethod,    &gsig_IM_Str_Delegate_RetMethodInfo,MNGSTDITF_IEXPANDO_DECL__ADD_METHOD)
@@ -123,7 +120,7 @@ MNGSTDITF_END_INTERFACE(StdMngIExpando)
 #define MNGSTDITF_IENUMERATOR_DECL__GET_CURRENT    FCDECL1(Object*, get_Current, Object* refThisUNSAFE)
 #define MNGSTDITF_IENUMERATOR_DECL__RESET          FCDECL1(void, Reset, Object* refThisUNSAFE)
 
-MNGSTDITF_BEGIN_INTERFACE(StdMngIEnumerator, g_CollectionsEnumeratorClassName, "System.Runtime.InteropServices.ComTypes.IEnumerator", g_EnumeratorToEnumClassName CUSTOM_MARSHALER_ASM, "", "System.Runtime.InteropServices.CustomMarshalers.EnumeratorViewOfEnumVariant" CUSTOM_MARSHALER_ASM, IID_IEnumVARIANT, TRUE)
+MNGSTDITF_BEGIN_INTERFACE(StdMngIEnumerator, g_CollectionsEnumeratorClassName, "System.Runtime.InteropServices.ComTypes.IEnumerator", g_EnumeratorToEnumClassName, "", "System.Runtime.InteropServices.CustomMarshalers.EnumeratorViewOfEnumVariant", IID_IEnumVARIANT, TRUE)
     MNGSTDITF_DEFINE_METH(StdMngIEnumerator, MoveNext,      &gsig_IM_RetBool,   MNGSTDITF_IENUMERATOR_DECL__MOVE_NEXT)
     MNGSTDITF_DEFINE_METH(StdMngIEnumerator, get_Current,   &gsig_IM_RetObj,    MNGSTDITF_IENUMERATOR_DECL__GET_CURRENT)
     MNGSTDITF_DEFINE_METH(StdMngIEnumerator, Reset,         &gsig_IM_RetVoid,   MNGSTDITF_IENUMERATOR_DECL__RESET)
@@ -135,6 +132,6 @@ MNGSTDITF_END_INTERFACE(StdMngIEnumerator)
 
 #define MNGSTDITF_IENUMERABLE_DECL__GETENUMERATOR   FCDECL1(Object*, GetEnumerator, Object* refThisUNSAFE)
 
-MNGSTDITF_BEGIN_INTERFACE(StdMngIEnumerable, g_CollectionsEnumerableItfName, "System.Runtime.InteropServices.ComTypes.IEnumerable", "System.Runtime.InteropServices.CustomMarshalers.EnumerableToDispatchMarshaler" CUSTOM_MARSHALER_ASM, "", "System.Runtime.InteropServices.CustomMarshalers.EnumerableViewOfDispatch" CUSTOM_MARSHALER_ASM, IID_IDispatch, FALSE)
+MNGSTDITF_BEGIN_INTERFACE(StdMngIEnumerable, g_CollectionsEnumerableItfName, "System.Runtime.InteropServices.ComTypes.IEnumerable", "System.Runtime.InteropServices.CustomMarshalers.EnumerableToDispatchMarshaler", "", "System.Runtime.InteropServices.CustomMarshalers.EnumerableViewOfDispatch", IID_IDispatch, FALSE)
     MNGSTDITF_DEFINE_METH(StdMngIEnumerable, GetEnumerator, &gsig_IM_RetIEnumerator, MNGSTDITF_IENUMERABLE_DECL__GETENUMERATOR)
 MNGSTDITF_END_INTERFACE(StdMngIEnumerable)

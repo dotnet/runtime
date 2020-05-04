@@ -50,14 +50,17 @@ namespace ILCompiler.Reflection.ReadyToRun
         public abstract int OffsetOfArgumentRegisters { get; }
 
         /// <summary>
+        /// The offset of the first slot in a GC ref map. Overridden on ARM64 to return the offset of the X8 register.
+        /// </summary>
+        public virtual int OffsetOfFirstGCRefMapSlot => OffsetOfArgumentRegisters;
+
+        /// <summary>
         /// Recalculate pos in GC ref map to actual offset. This is the default implementation for all architectures
         /// except for X86 where it's overridden to supply a more complex algorithm.
         /// </summary>
-        /// <param name="pos"></param>
-        /// <returns></returns>
         public virtual int OffsetFromGCRefMapPos(int pos)
         {
-            return OffsetOfArgumentRegisters + pos * PointerSize;
+            return OffsetOfFirstGCRefMapSlot + pos * PointerSize;
         }
 
         /// <summary>
@@ -144,8 +147,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             // Callee-saves, padding, m_x8RetBuffReg, argument registers
             public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + 2 * PointerSize + SizeOfArgumentRegisters;
             public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters + 2 * PointerSize;
+            private int OffsetOfX8Register => OffsetOfArgumentRegisters - PointerSize;
+            public override int OffsetOfFirstGCRefMapSlot => OffsetOfX8Register;
         }
     }
-
 }
-

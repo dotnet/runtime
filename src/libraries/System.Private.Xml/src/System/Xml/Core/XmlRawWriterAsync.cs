@@ -226,5 +226,10 @@ namespace System.Xml
             // The Flush will call WriteRaw to write out the rest of the encoded characters
             return base64Encoder.FlushAsync();
         }
+
+        internal virtual ValueTask DisposeAsyncCore(WriteState currentState)
+        {
+            return DisposeAsyncCore();
+        }
     }
 }

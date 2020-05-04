@@ -38,12 +38,23 @@
 
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+installer</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'">mono+libs+installer</DefaultSubsets>
-    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'WebAssembly'">mono+libs</DefaultSubsetCategories>
+    <DefaultSubsets Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'">mono+libs+installer</DefaultSubsets>
+  </PropertyGroup>
+
+  <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
+  <PropertyGroup>
+    <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
+    <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.buildtools+clr.packages</DefaultCoreClrSubsets>
+    <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')))">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib</DefaultMonoSubsets>
@@ -51,12 +62,10 @@
     <DefaultLibrariesSubsets>libs.depprojs+libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
 
     <DefaultInstallerSubsets>corehost+installer.managed+installer.depprojs+installer.pkgprojs+bundles+installers+installer.tests</DefaultInstallerSubsets>
-    <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'">installer.depprojs+installer.pkgprojs</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">installer.pkgprojs</DefaultInstallerSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
-    <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
-    <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
     <_subset>$(_subset.Replace('+clr+', '+$(DefaultCoreClrSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+mono+', '+$(DefaultMonoSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+libs+', '+$(DefaultLibrariesSubsets)+'))</_subset>
@@ -64,12 +73,6 @@
 
     <!-- Surround _subset in dashes to simplify checks below -->
     <_subset>+$(_subset.Trim('+'))+</_subset>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <RuntimeFlavor Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'WebAssembly'">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and $(_subset.Contains('+mono.runtime+')) and !$(_subset.Contains('+clr.runtime+'))">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
   </PropertyGroup>
 
   <ItemGroup>
@@ -81,7 +84,6 @@
     <SubsetName Include="Clr.CoreLib" Description="The managed System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
-    <SubsetName Include="Clr.BuildTools" Description="Tools needed for the native CoreCLR build." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
 
     <!-- Mono -->
@@ -142,10 +144,6 @@
   </ItemDefinitionGroup>
 
   <!-- CoreClr sets -->
-  <ItemGroup Condition="$(_subset.Contains('+clr.buildtools+'))">
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\GetModuleIndex\GetModuleIndex.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
     <CoreClrProject Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" />
   </ItemGroup>
@@ -170,7 +168,7 @@
     <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" BuildInParallel="true" />
     <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" BuildInParallel="true" />
     <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj" BuildInParallel="true" />
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.csproj" BuildInParallel="true" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\r2rtest\R2RTest.csproj" BuildInParallel="true" />
     <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" />
   </ItemGroup>
 
@@ -179,7 +177,7 @@
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+'))">
+  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser'">
     <MonoProject Include="$(MonoProjectRoot)llvm\llvm-init.proj" />
   </ItemGroup>
 

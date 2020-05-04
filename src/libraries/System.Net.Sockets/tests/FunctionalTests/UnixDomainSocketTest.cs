@@ -10,11 +10,20 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
     public class UnixDomainSocketTest
     {
+        private readonly ITestOutputHelper _log;
+        private static Random _random = new Random();
+
+        public UnixDomainSocketTest(ITestOutputHelper output)
+        {
+            _log = output;
+        }
+
         [Fact]
         public void OSSupportsUnixDomainSockets_ReturnsCorrectValue()
         {
@@ -166,6 +175,11 @@ namespace System.Net.Sockets.Tests
                         using var clientClone = new Socket(client.SafeHandle);
                         using var acceptedClone = new Socket(accepted.SafeHandle);
 
+                        _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
+                        _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+
+                        Assert.True(clientClone.Connected);
+                        Assert.True(acceptedClone.Connected);
                         Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
                         Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
                         Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
@@ -483,7 +497,8 @@ namespace System.Net.Sockets.Tests
             string result;
             do
             {
-                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                // get random name and append random number of characters to get variable name length.
+                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', _random.Next(1, 32)));
             }
             while (File.Exists(result));
 

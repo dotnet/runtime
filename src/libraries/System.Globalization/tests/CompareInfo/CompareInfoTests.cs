@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -104,6 +106,7 @@ namespace System.Globalization.Tests
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
         private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
 
+        private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
 
@@ -373,6 +376,33 @@ namespace System.Globalization.Tests
 
             Assert.Equal(string1, sk1.OriginalString);
             Assert.Equal(string2, sk2.OriginalString);
+
+            // Now try the span-based versions - use BoundedMemory to detect buffer overruns
+
+            RunSpanSortKeyTest(compareInfo, string1, options, sk1.KeyData);
+            RunSpanSortKeyTest(compareInfo, string2, options, sk2.KeyData);
+
+            unsafe static void RunSpanSortKeyTest(CompareInfo compareInfo, ReadOnlySpan<char> source, CompareOptions options, byte[] expectedSortKey)
+            {
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData(source);
+                sourceBoundedMemory.MakeReadonly();
+
+                Assert.Equal(expectedSortKey.Length, compareInfo.GetSortKeyLength(sourceBoundedMemory.Span, options));
+
+                using BoundedMemory<byte> sortKeyBoundedMemory = BoundedMemory.Allocate<byte>(expectedSortKey.Length);
+
+                // First try with a destination which is too small - should result in an error
+
+                Assert.Throws<ArgumentException>("destination", () => compareInfo.GetSortKey(sourceBoundedMemory.Span, sortKeyBoundedMemory.Span.Slice(1), options));
+
+                // Next, try with a destination which is perfectly sized - should succeed
+
+                Span<byte> sortKeyBoundedSpan = sortKeyBoundedMemory.Span;
+                sortKeyBoundedSpan.Clear();
+
+                Assert.Equal(expectedSortKey.Length, compareInfo.GetSortKey(sourceBoundedMemory.Span, sortKeyBoundedSpan, options));
+                Assert.Equal(expectedSortKey, sortKeyBoundedSpan[0..expectedSortKey.Length].ToArray());
+            }
         }
 
         [Fact]
@@ -435,6 +465,12 @@ namespace System.Globalization.Tests
         {
             string source = sourceObj as string ?? new string((char[])sourceObj);
             Assert.Equal(expected, CompareInfo.IsSortable(source));
+
+            // Now test the span version - use BoundedMemory to detect buffer overruns
+
+            using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source);
+            sourceBoundedMemory.MakeReadonly();
+            Assert.Equal(expected, CompareInfo.IsSortable(sourceBoundedMemory.Span));
 
             // If the string as a whole is sortable, then all chars which aren't standalone
             // surrogate halves must also be sortable.

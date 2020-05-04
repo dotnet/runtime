@@ -1,13 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs">
-      <Link>Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs"
+             Link="Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs" />
     <Compile Include="CancellationChangeToken.cs" />
     <Compile Include="ChangeToken.cs" />
     <Compile Include="CompositeChangeToken.cs" />

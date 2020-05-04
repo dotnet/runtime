@@ -820,8 +820,11 @@ namespace System.Xml
                 if (!writeToNull)
                 {
 <# if (WriterType == RawTextWriterType.Utf8) { #>
-                    Debug.Assert(stream != null);
-                    stream.Write(<#= BufferName #>, 1, bufPos - 1);
+                    if (bufPos - 1 > 0)
+                    {
+                        Debug.Assert(stream != null);
+                        stream.Write(<#= BufferName #>, 1, bufPos - 1);
+                    }
 <# } else { #>
                     Debug.Assert(stream != null || writer != null);
 
@@ -849,8 +852,11 @@ namespace System.Xml
                     }
                     else
                     {
-                        // Write text to TextWriter
-                        writer.Write(<#= BufferName #>, 1, bufPos - 1);
+                        if (bufPos - 1 > 0)
+                        {
+                            // Write text to TextWriter
+                            writer.Write(<#= BufferName #>, 1, bufPos - 1);
+                        }
                     }
 <# } #>
                 }

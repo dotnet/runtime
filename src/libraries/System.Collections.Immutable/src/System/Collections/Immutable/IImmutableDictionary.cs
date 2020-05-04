@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -18,7 +17,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets an empty dictionary with equivalent ordering and key/value comparison rules.
         /// </summary>
-        [Pure]
         IImmutableDictionary<TKey, TValue> Clear();
 
         /// <summary>
@@ -31,7 +29,6 @@ namespace System.Collections.Immutable
         /// <remarks>
         /// If the given key-value pair are already in the dictionary, the existing instance is returned.
         /// </remarks>
-        [Pure]
         IImmutableDictionary<TKey, TValue> Add(TKey key, TValue value);
 
         /// <summary>
@@ -40,7 +37,6 @@ namespace System.Collections.Immutable
         /// <param name="pairs">The pairs.</param>
         /// <returns>The new dictionary containing the additional key-value pairs.</returns>
         /// <exception cref="ArgumentException">Thrown when one of the given keys already exists in the dictionary but has a different value.</exception>
-        [Pure]
         IImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs);
 
         /// <summary>
@@ -53,7 +49,6 @@ namespace System.Collections.Immutable
         /// If the given key-value pair are already in the dictionary, the existing instance is returned.
         /// If the key already exists but with a different value, a new instance with the overwritten value will be returned.
         /// </remarks>
-        [Pure]
         IImmutableDictionary<TKey, TValue> SetItem(TKey key, TValue value);
 
         /// <summary>
@@ -61,7 +56,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The key=value pairs to set on the dictionary.  Any keys that conflict with existing keys will overwrite the previous values.</param>
         /// <returns>An immutable dictionary.</returns>
-        [Pure]
         IImmutableDictionary<TKey, TValue> SetItems(IEnumerable<KeyValuePair<TKey, TValue>> items);
 
         /// <summary>
@@ -69,7 +63,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="keys">The keys to remove.</param>
         /// <returns>A new dictionary with those keys removed; or this instance if those keys are not in the dictionary.</returns>
-        [Pure]
         IImmutableDictionary<TKey, TValue> RemoveRange(IEnumerable<TKey> keys);
 
         /// <summary>
@@ -77,7 +70,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="key">The key to remove.</param>
         /// <returns>A new dictionary with the matching entry removed; or this instance if the key is not in the dictionary.</returns>
-        [Pure]
         IImmutableDictionary<TKey, TValue> Remove(TKey key);
 
         /// <summary>
@@ -87,7 +79,6 @@ namespace System.Collections.Immutable
         /// <returns>
         ///   <c>true</c> if this dictionary contains the key-value pair; otherwise, <c>false</c>.
         /// </returns>
-        [Pure]
         bool Contains(KeyValuePair<TKey, TValue> pair);
 
         /// <summary>
@@ -102,7 +93,6 @@ namespace System.Collections.Immutable
         /// the canonical value, or a value that has more complete data than the value you currently have,
         /// although their comparer functions indicate they are equal.
         /// </remarks>
-        [Pure]
         bool TryGetKey(TKey equalKey, out TKey actualKey);
     }
 }

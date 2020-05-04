@@ -14,6 +14,7 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
+        // Keep in sync with MonoManagedAssemblyLoadContextInternalState in object-internals.h
         private enum InternalState
         {
             /// <summary>
@@ -34,6 +35,7 @@ namespace System.Runtime.Loader
 #region private data members
         // If you modify any of these fields, you must also update the
         // AssemblyLoadContextBaseObject structure in object.h
+        // and MonoManagedAssemblyLoadContext in object-internals.h
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
@@ -560,16 +562,6 @@ namespace System.Runtime.Loader
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 
             return context.ResolveUsingLoad(assemblyName);
-        }
-
-        // This method is invoked by the VM to resolve an assembly reference using the Resolving event
-        // after trying assembly resolution via Load override and TPA load context without success.
-        private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-            // Invoke the AssemblyResolve event callbacks if wired up
-            return context.ResolveUsingEvent(assemblyName);
         }
 
         // This method is invoked by the VM to resolve a satellite assembly reference

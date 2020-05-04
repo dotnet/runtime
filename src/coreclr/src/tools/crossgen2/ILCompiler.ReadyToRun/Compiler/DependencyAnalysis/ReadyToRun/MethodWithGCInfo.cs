@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IReadyToRunMethodCodeNode, IMethodBodyNode
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, ISymbolDefinitionNode
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -303,5 +303,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
         public override bool IsShareable => throw new NotImplementedException();
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
     }
 }

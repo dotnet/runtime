@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace SharedFxLookupPortableApp
 {
@@ -12,15 +13,10 @@ namespace SharedFxLookupPortableApp
         {
             Console.WriteLine("Hello World!");
             Console.WriteLine(string.Join(Environment.NewLine, args));
-            Console.WriteLine($"Framework Version:{GetFrameworkVersionFromAppDomain()}");
+            Console.WriteLine(RuntimeInformation.FrameworkDescription);
 
             // A small operation involving NewtonSoft.Json to ensure the assembly is loaded properly
             var t = typeof(Newtonsoft.Json.JsonReader);
-        }
-
-        private static string GetFrameworkVersionFromAppDomain()
-        {
-            return System.AppDomain.CurrentDomain.GetData("FX_PRODUCT_VERSION") as string;
         }
     }
 }

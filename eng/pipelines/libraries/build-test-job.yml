@@ -55,11 +55,23 @@ jobs:
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             cleanUnpackFolder: false
 
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+          - script: |
+              du -sh $(Build.SourcesDirectory)/*
+              df -h
+            displayName: Disk Usage before Build
+
         - script: $(_buildScript)
                 -subset libs.pretest+libs.tests
                 $(_buildArguments)
                 $(_archiveTestsParameter)
           displayName: Restore and Build
+
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+          - script: |
+              du -sh $(Build.SourcesDirectory)/*
+              df -h
+            displayName: Disk Usage after Build
 
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:

@@ -518,32 +518,11 @@ static volatile gint32 sampling_thread_running;
 
 #ifdef HOST_DARWIN
 
-static clock_serv_t sampling_clock_service;
+static clock_serv_t sampling_clock;
 
 static void
-clock_init (MonoProfilerSampleMode mode)
+clock_init_for_profiler (MonoProfilerSampleMode mode)
 {
-	kern_return_t ret;
-
-	do {
-		ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, &sampling_clock_service);
-	} while (ret == KERN_ABORTED);
-
-	if (ret != KERN_SUCCESS)
-		g_error ("%s: host_get_clock_service () returned %d", __func__, ret);
-}
-
-static void
-clock_cleanup (void)
-{
-	kern_return_t ret;
-
-	do {
-		ret = mach_port_deallocate (mach_task_self (), sampling_clock_service);
-	} while (ret == KERN_ABORTED);
-
-	if (ret != KERN_SUCCESS)
-		g_error ("%s: mach_port_deallocate () returned %d", __func__, ret);
 }
 
 static void
@@ -556,7 +535,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	then.tv_nsec = ns_abs % 1000000000;
 
 	do {
-		ret = clock_sleep (sampling_clock_service, TIME_ABSOLUTE, then, &remain_unused);
+		ret = clock_sleep (sampling_clock, TIME_ABSOLUTE, then, &remain_unused);
 
 		if (ret != KERN_SUCCESS && ret != KERN_ABORTED)
 			g_error ("%s: clock_sleep () returned %d", __func__, ret);
@@ -565,10 +544,10 @@ clock_sleep_ns_abs (guint64 ns_abs)
 
 #else
 
-static clockid_t sampling_posix_clock;
+static clockid_t sampling_clock;
 
 static void
-clock_init (MonoProfilerSampleMode mode)
+clock_init_for_profiler (MonoProfilerSampleMode mode)
 {
 	switch (mode) {
 	case MONO_PROFILER_SAMPLE_MODE_PROCESS: {
@@ -586,21 +565,16 @@ clock_init (MonoProfilerSampleMode mode)
 		 * those systems, we fall back to CLOCK_MONOTONIC if we get EINVAL.
 		 */
 		if (clock_nanosleep (CLOCK_PROCESS_CPUTIME_ID, TIMER_ABSTIME, &ts, NULL) != EINVAL) {
-			sampling_posix_clock = CLOCK_PROCESS_CPUTIME_ID;
+			sampling_clock = CLOCK_PROCESS_CPUTIME_ID;
 			break;
 		}
 #endif
 
 		// fallthrough
 	}
-	case MONO_PROFILER_SAMPLE_MODE_REAL: sampling_posix_clock = CLOCK_MONOTONIC; break;
+	case MONO_PROFILER_SAMPLE_MODE_REAL: sampling_clock = CLOCK_MONOTONIC; break;
 	default: g_assert_not_reached (); break;
 	}
-}
-
-static void
-clock_cleanup (void)
-{
 }
 
 static void
@@ -614,7 +588,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	then.tv_nsec = ns_abs % 1000000000;
 
 	do {
-		ret = clock_nanosleep (sampling_posix_clock, TIMER_ABSTIME, &then, NULL);
+		ret = clock_nanosleep (sampling_clock, TIMER_ABSTIME, &then, NULL);
 
 		if (ret != 0 && ret != EINTR)
 			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
@@ -649,7 +623,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	 * nanoseconds).
 	 */
 	do {
-		diff = (gint64) ns_abs - (gint64) mono_clock_get_time_ns ();
+		diff = (gint64) ns_abs - (gint64) mono_clock_get_time_ns (sampling_clock);
 
 		if (diff <= 0)
 			break;
@@ -717,16 +691,17 @@ init:
 		goto init;
 	}
 
-	clock_init (mode);
+	mono_clock_init (&sampling_clock);
+	clock_init_for_profiler (mode);
 
-	for (guint64 sleep = mono_clock_get_time_ns (); mono_atomic_load_i32 (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {
+	for (guint64 sleep = mono_clock_get_time_ns (sampling_clock); mono_atomic_load_i32 (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {
 		uint32_t freq;
 		MonoProfilerSampleMode new_mode;
 
 		mono_profiler_get_sample_mode (NULL, &new_mode, &freq);
 
 		if (new_mode != mode) {
-			clock_cleanup ();
+			mono_clock_cleanup (sampling_clock);
 			goto init;
 		}
 
@@ -748,7 +723,7 @@ init:
 		} FOREACH_THREAD_SAFE_END
 	}
 
-	clock_cleanup ();
+	mono_clock_cleanup (sampling_clock);
 
 done:
 	mono_atomic_store_i32 (&sampling_thread_exiting, 1);
