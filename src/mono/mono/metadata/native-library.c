@@ -1238,6 +1238,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	new_scope = g_strdup (orig_scope);
 	new_import = g_strdup (orig_import);
 #endif
+
 #ifdef ENABLE_NETCORE
 #ifndef HOST_WIN32
 retry_with_libcoreclr:
