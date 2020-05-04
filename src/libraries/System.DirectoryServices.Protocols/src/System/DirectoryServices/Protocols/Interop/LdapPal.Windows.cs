@@ -125,5 +125,7 @@ namespace System.DirectoryServices.Protocols
         internal static string PtrToString(IntPtr requestName) => Marshal.PtrToStringUni(requestName);
 
         internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalUni(s);
+
+        internal static bool IsBerDecodeError(int errorCode) => errorCode != 0;
     }
 }

@@ -9,28 +9,36 @@ namespace System.DirectoryServices.Protocols.Tests
 {
     public class BerConverterTests
     {
+        public static bool RunningOnWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;
+
         public static IEnumerable<object[]> Encode_TestData()
         {
             yield return new object[] { "", null, new byte[0] };
             yield return new object[] { "", new object[10], new byte[0] };
             yield return new object[] { "b", new object[] { true, false, true, false }, new byte[] { 1, 1, 255 } };
 
-            yield return new object[] { "{", new object[] { "a" }, new byte[] { 48, 0, 0, 0, 0, 0 } };
-            yield return new object[] { "{}", new object[] { "a" }, new byte[] { 48, 132, 0, 0, 0, 0 } };
-            yield return new object[] { "[", new object[] { "a" }, new byte[] { 49, 0, 0, 0, 0, 0 } };
-            yield return new object[] { "[]", new object[] { "a" }, new byte[] { 49, 132, 0, 0, 0, 0 } };
+            if (RunningOnWindows)
+            {
+                yield return new object[] { "{", new object[] { "a" }, new byte[] { 48, 0, 0, 0, 0, 0 } }; // This format is not supported by Linux OpenLDAP
+            }
+            yield return new object[] { "{}", new object[] { "a" }, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 0 } : new byte[] { 48, 0 } };
+            if (RunningOnWindows)
+            {
+                yield return new object[] { "[", new object[] { "a" }, new byte[] { 49, 0, 0, 0, 0, 0 } }; // This format is not supported by Linux OpenLDAP
+            }
+            yield return new object[] { "[]", new object[] { "a" }, (RunningOnWindows) ? new byte[] { 49, 132, 0, 0, 0, 0 } : new byte[] { 49, 0 } };
             yield return new object[] { "n", new object[] { "a" }, new byte[] { 5, 0 } };
 
-            yield return new object[] { "tetie", new object[] { -1, 0, 1, 2, 3 }, new byte[] { 255, 1, 0, 1, 1, 2, 10, 1, 3 } };
-            yield return new object[] { "{tetie}", new object[] { -1, 0, 1, 2, 3 }, new byte[] { 48, 132, 0, 0, 0, 9, 255, 1, 0, 1, 1, 2, 10, 1, 3 } };
+            yield return new object[] { "tetie", new object[] { -1, 0, 1, 2, 3 }, (RunningOnWindows) ? new byte[] { 255, 1, 0, 1, 1, 2, 10, 1, 3 } : new byte[] { 10, 1, 0, 1, 1, 2, 10, 1, 3 } };
+            yield return new object[] { "{tetie}", new object[] { -1, 0, 1, 2, 3 }, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 9, 255, 1, 0, 1, 1, 2, 10, 1, 3 } : new byte[] { 48, 9, 10, 1, 0, 1, 1, 2, 10, 1, 3 } };
 
             yield return new object[] { "bb", new object[] { true, false }, new byte[] { 1, 1, 255, 1, 1, 0 } };
-            yield return new object[] { "{bb}", new object[] { true, false }, new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+            yield return new object[] { "{bb}", new object[] { true, false }, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } : new byte[] { 48, 6, 1, 1, 255, 1, 1, 0 } };
 
             yield return new object[] { "ssss", new object[] { null, "", "abc", "\0" }, new byte[] { 4, 0, 4, 0, 4, 3, 97, 98, 99, 4, 1, 0 } };
-            yield return new object[] { "oXo", new object[] { null, new byte[] { 0, 1, 2, 255 }, new byte[0] }, new byte[] { 4, 0, 3, 4, 0, 1, 2, 255, 4, 0 } };
+            yield return new object[] { "oXo", new object[] { null, new byte[] { 0, 1, 2, 255 }, new byte[0] }, (RunningOnWindows) ? new byte[] { 4, 0, 3, 4, 0, 1, 2, 255, 4, 0 } : new byte[] { 4, 0, 3, 2, 4, 0, 4, 0 } };
             yield return new object[] { "vv", new object[] { null, new string[] { "abc", "", null } }, new byte[] { 4, 3, 97, 98, 99, 4, 0, 4, 0 } };
-            yield return new object[] { "{vv}", new object[] { null, new string[] { "abc", "", null } }, new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 } };
+            yield return new object[] { "{vv}", new object[] { null, new string[] { "abc", "", null } }, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 } : new byte[] { 48, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 } };
             yield return new object[] { "VVVV", new object[] { null, new byte[][] { new byte[] { 0, 1, 2, 3 }, null }, new byte[][] { new byte[0] }, new byte[0][] }, new byte[] { 4, 4, 0, 1, 2, 3, 4, 0, 4, 0 } };
         }
 

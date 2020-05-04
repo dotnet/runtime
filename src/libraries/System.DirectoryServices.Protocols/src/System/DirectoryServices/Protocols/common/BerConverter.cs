@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -263,7 +264,7 @@ namespace System.DirectoryServices.Protocols
                 throw new BerConversionException();
         }
 
-        internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
+        internal static unsafe object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
         {
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
@@ -309,7 +310,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     error = LdapPal.BerScanf(berElement, new string(fmt, 1));
 
-                    if (error != 0)
+                    if (LdapPal.IsBerDecodeError(error))
                         Debug.WriteLine("ber_scanf for {, }, [, ], n or x failed");
                 }
                 else if (fmt == 'i' || fmt == 'e' || fmt == 'b')
@@ -317,7 +318,7 @@ namespace System.DirectoryServices.Protocols
                     int result = 0;
                     error = LdapPal.BerScanfInt(berElement, new string(fmt, 1), ref result);
 
-                    if (error == 0)
+                    if (!LdapPal.IsBerDecodeError(error))
                     {
                         if (fmt == 'b')
                         {
@@ -341,7 +342,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     // return a string
                     byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', ref error);
-                    if (error == 0)
+                    if (!LdapPal.IsBerDecodeError(error))
                     {
                         string s = null;
                         if (byteArray != null)
@@ -354,7 +355,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     // return berval
                     byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, ref error);
-                    if (error == 0)
+                    if (!LdapPal.IsBerDecodeError(error))
                     {
                         // add result to the list
                         resultList.Add(byteArray);
@@ -367,7 +368,7 @@ namespace System.DirectoryServices.Protocols
                     int length = 0;
                     error = LdapPal.BerScanfBitstring(berElement, "B", ref ptrResult, ref length);
 
-                    if (error == 0)
+                    if (!LdapPal.IsBerDecodeError(error))
                     {
                         byte[] byteArray = null;
                         if (ptrResult != IntPtr.Zero)
@@ -390,7 +391,7 @@ namespace System.DirectoryServices.Protocols
                     string[] stringArray = null;
 
                     byteArrayresult = DecodingMultiByteArrayHelper(berElement, 'V', ref error);
-                    if (error == 0)
+                    if (!LdapPal.IsBerDecodeError(error))
                     {
                         if (byteArrayresult != null)
                         {
@@ -416,7 +417,7 @@ namespace System.DirectoryServices.Protocols
                     byte[][] result = null;
 
                     result = DecodingMultiByteArrayHelper(berElement, fmt, ref error);
-                    if (error == 0)
+                    if (!LdapPal.IsBerDecodeError(error))
                     {
                         resultList.Add(result);
                     }
@@ -427,7 +428,7 @@ namespace System.DirectoryServices.Protocols
                     throw new ArgumentException(SR.BerConverterUndefineChar);
                 }
 
-                if (error != 0)
+                if (LdapPal.IsBerDecodeError(error))
                 {
                     // decode failed, just return
                     return decodeResult;
@@ -458,8 +459,7 @@ namespace System.DirectoryServices.Protocols
             }
             else
             {
-                IntPtr tmp = Marshal.AllocHGlobal(0);
-                HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
+                HGlobalMemHandle memHandle = new HGlobalMemHandle(HGlobalMemHandle._dummyPointer);
                 error = LdapPal.BerPrintfBytearray(berElement, new string(fmt, 1), memHandle, 0);
             }
 
@@ -479,7 +479,7 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                if (error == 0)
+                if (!LdapPal.IsBerDecodeError(error))
                 {
                     if (result != IntPtr.Zero)
                     {
@@ -583,7 +583,7 @@ namespace System.DirectoryServices.Protocols
             {
                 error = LdapPal.BerScanfPtr(berElement, new string(fmt, 1), ref ptrResult);
 
-                if (error == 0)
+                if (!LdapPal.IsBerDecodeError(error))
                 {
                     if (ptrResult != IntPtr.Zero)
                     {

@@ -134,5 +134,7 @@ namespace System.DirectoryServices.Protocols
         internal static string PtrToString(IntPtr requestName) => Marshal.PtrToStringAnsi(requestName);
 
         internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
+
+        internal static bool IsBerDecodeError(int errorCode) => errorCode == -1;
     }
 }

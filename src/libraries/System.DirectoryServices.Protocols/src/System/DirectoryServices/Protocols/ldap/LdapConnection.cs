@@ -631,12 +631,13 @@ namespace System.DirectoryServices.Protocols
                 else if (request is ModifyDNRequest)
                 {
                     // It is a modify dn operation
-                    error = LdapPal.LdapRename( _ldapHandle,
-                                            ((ModifyDNRequest)request).DistinguishedName,
-                                            ((ModifyDNRequest)request).NewName,
-                                            ((ModifyDNRequest)request).NewParentDistinguishedName,
-                                            ((ModifyDNRequest)request).DeleteOldRdn ? 1 : 0,
-                                            serverControlArray, clientControlArray, ref messageID);
+                    error = LdapPal.LdapRename(
+                        _ldapHandle,
+                        ((ModifyDNRequest)request).DistinguishedName,
+                        ((ModifyDNRequest)request).NewName,
+                        ((ModifyDNRequest)request).NewParentDistinguishedName,
+                        ((ModifyDNRequest)request).DeleteOldRdn ? 1 : 0,
+                        serverControlArray, clientControlArray, ref messageID);
                 }
                 else if (request is CompareRequest compareRequest)
                 {
@@ -672,12 +673,13 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // It is a compare request.
-                    error = LdapPal.LdapCompare(_ldapHandle,
-                                            ((CompareRequest)request).DistinguishedName,
-                                            assertion.Name,
-                                            stringValue,
-                                            berValuePtr,
-                                            serverControlArray, clientControlArray, ref messageID);
+                    error = LdapPal.LdapCompare(
+                        _ldapHandle,
+                        ((CompareRequest)request).DistinguishedName,
+                        assertion.Name,
+                        stringValue,
+                        berValuePtr,
+                        serverControlArray, clientControlArray, ref messageID);
                 }
                 else if (request is AddRequest || request is ModifyRequest)
                 {
@@ -707,17 +709,19 @@ namespace System.DirectoryServices.Protocols
 
                     if (request is AddRequest)
                     {
-                        error = LdapPal.LdapAdd(_ldapHandle,
-                                            ((AddRequest)request).DistinguishedName,
-                                            modArray,
-                                            serverControlArray, clientControlArray, ref messageID);
+                        error = LdapPal.LdapAdd(
+                            _ldapHandle,
+                            ((AddRequest)request).DistinguishedName,
+                            modArray,
+                            serverControlArray, clientControlArray, ref messageID);
                     }
                     else
                     {
-                        error = LdapPal.LdapModify(_ldapHandle,
-                                               ((ModifyRequest)request).DistinguishedName,
-                                               modArray,
-                                               serverControlArray, clientControlArray, ref messageID);
+                        error = LdapPal.LdapModify(
+                            _ldapHandle,
+                            ((ModifyRequest)request).DistinguishedName,
+                            modArray,
+                            serverControlArray, clientControlArray, ref messageID);
                     }
                 }
                 else if (request is ExtendedRequest extendedRequest)
@@ -736,10 +740,11 @@ namespace System.DirectoryServices.Protocols
                         Marshal.Copy(val, 0, berValuePtr.bv_val, val.Length);
                     }
 
-                    error = LdapPal.LdapExtendedOperation(_ldapHandle,
-                                                       name,
-                                                       berValuePtr,
-                                                       serverControlArray, clientControlArray, ref messageID);
+                    error = LdapPal.LdapExtendedOperation(
+                        _ldapHandle,
+                        name,
+                        berValuePtr,
+                        serverControlArray, clientControlArray, ref messageID);
                 }
                 else if (request is SearchRequest searchRequest)
                 {
@@ -785,17 +790,18 @@ namespace System.DirectoryServices.Protocols
 
                     try
                     {
-                        error = LdapPal.LdapSearch(_ldapHandle,
-                                               searchRequest.DistinguishedName,
-                                               searchScope,
-                                               searchRequestFilter,
-                                               searchAttributes,
-                                               searchRequest.TypesOnly,
-                                               serverControlArray,
-                                               clientControlArray,
-                                               searchTimeLimit,
-                                               searchRequest.SizeLimit,
-                                               ref messageID);
+                        error = LdapPal.LdapSearch(
+                            _ldapHandle,
+                            searchRequest.DistinguishedName,
+                            searchScope,
+                            searchRequestFilter,
+                            searchAttributes,
+                            searchRequest.TypesOnly,
+                            serverControlArray,
+                            clientControlArray,
+                            searchTimeLimit,
+                            searchRequest.SizeLimit,
+                            ref messageID);
                     }
                     finally
                     {
