@@ -18,6 +18,7 @@ using Internal.Runtime.CompilerServices;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 using Internal.CorConstants;
 
 using ILCompiler;
@@ -26,7 +27,6 @@ using ILCompiler.DependencyAnalysis;
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
-using Internal.TypeSystem.Interop;
 #endif
 
 namespace Internal.JitInterface
