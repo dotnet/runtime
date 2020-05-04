@@ -82,10 +82,8 @@
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization">
-        <UniqueIdentifier></UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization">
-        <UniqueIdentifier></UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
