@@ -226,27 +226,33 @@ namespace
         return -1;
     }
 
-    struct delegate_flavour_t
+    struct _printable_delegate_name_t
     {
-        const pal::char_t *method_name;
-        const pal::char_t *delegate_name;
+        const pal::char_t* name;
     };
 
-    const pal::char_t *to_printable_delegate_name(const pal::char_t *delegate_name)
+    std::basic_ostream<pal::char_t>& operator<<(std::basic_ostream<pal::char_t>& stream, const _printable_delegate_name_t &p)
     {
-        if (delegate_name == nullptr)
+        if (p.name == nullptr)
         {
-            return _X("nullptr");
+            return stream << _X("nullptr");
         }
-        else if (delegate_name == UNMANAGEDCALLERSONLY_METHOD)
+        else if (p.name == UNMANAGEDCALLERSONLY_METHOD)
         {
-            return _X("UNMANAGEDCALLERSONLY_METHOD");
+            return stream << _X("UNMANAGEDCALLERSONLY_METHOD");
         }
-
-        return delegate_name;
+        else
+        {
+            return stream << _X("\"") << p.name << _X("\"");
+        }
     }
 
-    int call_delegate_flavours(
+    const _printable_delegate_name_t to_printable_delegate_name(const pal::char_t *delegate_name)
+    {
+        return _printable_delegate_name_t{ delegate_name };
+    }
+
+    int call_delegate_flavour(
         load_assembly_and_get_function_pointer_fn delegate,
         const pal::char_t *assembly_path,
         const pal::char_t *type_name,
@@ -254,46 +260,35 @@ namespace
         const pal::char_t *log_prefix,
         pal::stringstream_t &test_output)
     {
-        pal::string_t unmanaged_method_name{ _X("Unmanaged") };
-        unmanaged_method_name.append(method_name);
+        const pal::char_t *delegate_name = nullptr;
+        pal::string_t method_name_local{ method_name };
+        if (pal::string_t::npos != method_name_local.find(_X("Unmanaged")))
+            delegate_name = UNMANAGEDCALLERSONLY_METHOD;
 
-        std::array<delegate_flavour_t, 2> flavours
+        test_output << log_prefix << _X("calling load_assembly_and_get_function_pointer(\"")
+            << assembly_path << _X("\", \"")
+            << type_name << _X("\", \"")
+            << method_name << _X("\", ")
+            << to_printable_delegate_name(delegate_name) << _X(", ")
+            << _X("nullptr, &componentEntryPointDelegate)")
+            << std::endl;
+
+        component_entry_point_fn componentEntryPointDelegate = nullptr;
+        int rc = delegate(assembly_path,
+                        type_name,
+                        method_name,
+                        delegate_name,
+                        nullptr /* reserved */,
+                        (void **)&componentEntryPointDelegate);
+
+        if (rc != StatusCode::Success)
         {
-            delegate_flavour_t{ method_name, nullptr },
-            delegate_flavour_t{ unmanaged_method_name.c_str(), UNMANAGEDCALLERSONLY_METHOD }
-        };
-
-        int rc = StatusCode::Success;
-        for (const delegate_flavour_t& f : flavours)
+            test_output << log_prefix << _X("load_assembly_and_get_function_pointer failed: ") << std::hex << std::showbase << rc << std::endl;
+        }
+        else
         {
-            test_output << log_prefix << _X("calling load_assembly_and_get_function_pointer(\"")
-                << assembly_path << _X("\", \"")
-                << type_name << _X("\", \"")
-                << f.method_name << _X("\", \"")
-                << to_printable_delegate_name(f.delegate_name) << _X("\", \"")
-                << _X("nullptr, &componentEntryPointDelegate)")
-                << std::endl;
-
-            component_entry_point_fn componentEntryPointDelegate = nullptr;
-            rc = delegate(assembly_path,
-                            type_name,
-                            f.method_name,
-                            f.delegate_name,
-                            nullptr /* reserved */,
-                            (void **)&componentEntryPointDelegate);
-
-            if (rc != StatusCode::Success)
-            {
-                test_output << log_prefix << _X("load_assembly_and_get_function_pointer failed: ") << std::hex << std::showbase << rc << std::endl;
-            }
-            else
-            {
-                test_output << log_prefix << _X("load_assembly_and_get_function_pointer succeeded: ") << std::hex << std::showbase << rc << std::endl;
-                rc = call_delegate_with_try_except(componentEntryPointDelegate, method_name, log_prefix, test_output);
-            }
-
-            if (rc != StatusCode::Success)
-                break;
+            test_output << log_prefix << _X("load_assembly_and_get_function_pointer succeeded: ") << std::hex << std::showbase << rc << std::endl;
+            rc = call_delegate_with_try_except(componentEntryPointDelegate, method_name, log_prefix, test_output);
         }
 
         return rc;
@@ -332,7 +327,7 @@ namespace
             else
             {
                 test_output << log_prefix << _X("hostfxr_get_runtime_delegate succeeded: ") << std::hex << std::showbase << rc << std::endl;
-                rc = call_delegate_flavours(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
+                rc = call_delegate_flavour(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
             }
         }
 
