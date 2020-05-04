@@ -151,14 +151,17 @@ namespace System.Text.Json
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public JsonPropertyInfo GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame)
+        public JsonPropertyInfo GetProperty(
+            ReadOnlySpan<byte> propertyName,
+            ref ReadStackFrame frame,
+            out byte[] utf8PropertyName)
         {
-            JsonPropertyInfo? info = null;
+            PropertyRef propertyRef;
+
+            ulong key = GetKey(propertyName);
 
             // Keep a local copy of the cache in case it changes by another thread.
             PropertyRef[]? localPropertyRefsSorted = _propertyRefsSorted;
-
-            ulong key = GetKey(propertyName);
 
             // If there is an existing cache, then use it.
             if (localPropertyRefsSorted != null)
@@ -174,10 +177,11 @@ namespace System.Text.Json
                 {
                     if (iForward < count)
                     {
-                        PropertyRef propertyRef = localPropertyRefsSorted[iForward];
-                        if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
+                        propertyRef = localPropertyRefsSorted[iForward];
+                        if (IsPropertyRefEqual(propertyRef, propertyName, key))
                         {
-                            return info;
+                            utf8PropertyName = propertyRef.Name;
+                            return propertyRef.Info;
                         }
 
                         ++iForward;
@@ -185,9 +189,10 @@ namespace System.Text.Json
                         if (iBackward >= 0)
                         {
                             propertyRef = localPropertyRefsSorted[iBackward];
-                            if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
+                            if (IsPropertyRefEqual(propertyRef, propertyName, key))
                             {
-                                return info;
+                                utf8PropertyName = propertyRef.Name;
+                                return propertyRef.Info;
                             }
 
                             --iBackward;
@@ -195,10 +200,11 @@ namespace System.Text.Json
                     }
                     else if (iBackward >= 0)
                     {
-                        PropertyRef propertyRef = localPropertyRefsSorted[iBackward];
-                        if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
+                        propertyRef = localPropertyRefsSorted[iBackward];
+                        if (IsPropertyRefEqual(propertyRef, propertyName, key))
                         {
-                            return info;
+                            utf8PropertyName = propertyRef.Name;
+                            return propertyRef.Info;
                         }
 
                         --iBackward;
@@ -211,24 +217,40 @@ namespace System.Text.Json
                 }
             }
 
-            // No cached item was found. Try the main list which has all of the properties.
-
-            string stringPropertyName = JsonHelpers.Utf8GetString(propertyName);
-
+            // No cached item was found. Try the main dictionary which has all of the properties.
             Debug.Assert(PropertyCache != null);
-
-            if (!PropertyCache.TryGetValue(stringPropertyName, out info))
+            JsonPropertyInfo jsonPropertyInfo;
+            string stringPropertyName = JsonHelpers.Utf8GetString(propertyName);
+            if (PropertyCache.TryGetValue(stringPropertyName, out jsonPropertyInfo!))
             {
-                info = JsonPropertyInfo.s_missingProperty;
+                if (Options.PropertyNameCaseInsensitive)
+                {
+                    if (propertyName.SequenceEqual(jsonPropertyInfo!.NameAsUtf8))
+                    {
+                        Debug.Assert(key == GetKey(jsonPropertyInfo!.NameAsUtf8.AsSpan()));
+
+                        // Use the existing byte[] reference instead of creating another one.
+                        utf8PropertyName = jsonPropertyInfo!.NameAsUtf8!;
+                    }
+                    else
+                    {
+                        // Make a copy of the original Span.
+                        utf8PropertyName = propertyName.ToArray();
+                    }
+                }
+                else
+                {
+                    Debug.Assert(key == GetKey(jsonPropertyInfo!.NameAsUtf8!.AsSpan()));
+                    utf8PropertyName = jsonPropertyInfo!.NameAsUtf8!;
+                }
             }
+            else
+            {
+                jsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
 
-            Debug.Assert(info != null);
-
-            // Three code paths to get here:
-            // 1) info == s_missingProperty. Property not found.
-            // 2) key == info.PropertyNameKey. Exact match found.
-            // 3) key != info.PropertyNameKey. Match found due to case insensitivity.
-            Debug.Assert(info == JsonPropertyInfo.s_missingProperty || key == info.PropertyNameKey || Options.PropertyNameCaseInsensitive);
+                // Make a copy of the original Span.
+                utf8PropertyName = propertyName.ToArray();
+            }
 
             // Check if we should add this to the cache.
             // Only cache up to a threshold length and then just use the dictionary when an item is not found in the cache.
@@ -255,12 +277,14 @@ namespace System.Text.Json
                         frame.PropertyRefCache = new List<PropertyRef>();
                     }
 
-                    PropertyRef propertyRef = new PropertyRef(key, info);
+                    Debug.Assert(jsonPropertyInfo != null);
+
+                    propertyRef = new PropertyRef(key, jsonPropertyInfo, utf8PropertyName);
                     frame.PropertyRefCache.Add(propertyRef);
                 }
             }
 
-            return info;
+            return jsonPropertyInfo;
         }
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
@@ -386,15 +410,14 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
+        private static bool IsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key)
         {
             if (key == propertyRef.Key)
             {
                 // We compare the whole name, although we could skip the first 7 bytes (but it's not any faster)
                 if (propertyName.Length <= PropertyNameKeyLength ||
-                    propertyName.SequenceEqual(propertyRef.Info.Name))
+                    propertyName.SequenceEqual(propertyRef.Name))
                 {
-                    info = propertyRef.Info;
                     return true;
                 }
             }

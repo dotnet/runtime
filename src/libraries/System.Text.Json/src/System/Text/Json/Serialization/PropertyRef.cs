@@ -6,15 +6,17 @@ namespace System.Text.Json
 {
     internal readonly struct PropertyRef
     {
-        public PropertyRef(ulong key, JsonPropertyInfo info)
+        public PropertyRef(ulong key, JsonPropertyInfo info, byte[] name)
         {
             Key = key;
             Info = info;
+            Name = name;
         }
 
-        // The first 6 bytes are the first part of the name and last 2 bytes are the name's length.
         public readonly ulong Key;
-
         public readonly JsonPropertyInfo Info;
+
+        // Name may be different than Info.NameAsUtf8 when case insensitive is enabled.
+        public readonly byte[] Name;
     }
 }
