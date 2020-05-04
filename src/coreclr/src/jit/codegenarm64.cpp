@@ -1960,15 +1960,22 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
             if (varTypeIsSIMD(targetType))
             {
-                assert(targetType == TYP_SIMD16);
                 if (targetReg != REG_NA)
                 {
-                    emit->emitIns_R_I(INS_movi, EA_16BYTE, targetReg, 0x00, INS_OPTS_16B);
+                    emit->emitIns_R_I(INS_movi, emitActualTypeSize(targetType), targetReg, 0x00, INS_OPTS_16B);
                     genProduceReg(tree);
                 }
                 else
                 {
-                    GetEmitter()->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, REG_ZR, REG_ZR, varNum, 0);
+                    if (targetType == TYP_SIMD16)
+                    {
+                        GetEmitter()->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, REG_ZR, REG_ZR, varNum, 0);
+                    }
+                    else
+                    {
+                        assert(targetType == TYP_SIMD8);
+                        GetEmitter()->emitIns_S_R(INS_str, EA_8BYTE, REG_ZR, varNum, 0);
+                    }
                     genUpdateLife(tree);
                 }
                 return;
