@@ -94,7 +94,7 @@ namespace System.Tests
             if (PlatformDetection.IsWindows && PlatformDetection.IsArmProcess)
             {
                 // Active Issue: https://github.com/dotnet/runtime/issues/35754
-                 throw new SkipTestException("ArgIterator doesn't throw not supported in ArmProcess");
+                throw new SkipTestException("ArgIterator doesn't throw not supported in ArmProcess");
             }
 
             Assert.Throws<PlatformNotSupportedException>(() => new ArgIterator(new RuntimeArgumentHandle()));
