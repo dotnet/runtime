@@ -15,17 +15,9 @@ namespace System.Runtime.CompilerServices
     {
         private void* _ptr;
 
-        internal StringHandleOnStack([NotNull] ref string? s)
+        internal StringHandleOnStack(ref string? s)
         {
             _ptr = Unsafe.AsPointer(ref s);
-
-            // The StringHandleOnStack type itself doesn't guarantee that 's' is
-            // non-null. But the typical usage pattern is that this handle is
-            // passed to a QCall routine, and that QCall routine will ensure that
-            // the captured reference is non-null. So even though the [NonNull]
-            // annotation here is a lie we'll keep it around for convenience.
-
-            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref s);
         }
     }
 
@@ -39,13 +31,9 @@ namespace System.Runtime.CompilerServices
             _ptr = pObject;
         }
 
-        internal static ObjectHandleOnStack Create<T>([NotNull] ref T o) where T : class?
+        internal static ObjectHandleOnStack Create<T>(ref T o) where T : class?
         {
-            // See comment in StringHandleOnStack ctor.
-
-            void* ptr = Unsafe.AsPointer(ref o);
-            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref o);
-            return new ObjectHandleOnStack(ptr);
+            return new ObjectHandleOnStack(Unsafe.AsPointer(ref o));
         }
     }
 

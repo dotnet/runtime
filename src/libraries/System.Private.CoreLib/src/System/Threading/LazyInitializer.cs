@@ -49,11 +49,7 @@ namespace System.Threading
         /// </para>
         /// </remarks>
         public static T EnsureInitialized<T>([NotNull] ref T? target) where T : class
-        {
-            T value = Volatile.Read(ref target) ?? EnsureInitializedCore(ref target);
-            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref target);
-            return value;
-        }
+            => Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target);
 
         /// <summary>
         /// Initializes a target reference type with the type's default constructor (slow path)
@@ -105,11 +101,7 @@ namespace System.Threading
         /// </para>
         /// </remarks>
         public static T EnsureInitialized<T>([NotNull] ref T? target, Func<T> valueFactory) where T : class
-        {
-            T value = Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, valueFactory);
-            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref target);
-            return value;
-        }
+            => Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target, valueFactory);
 
         /// <summary>
         /// Initialize the target using the given delegate (slow path).
@@ -254,11 +246,7 @@ namespace System.Threading
         /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the reference.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
         public static T EnsureInitialized<T>([NotNull] ref T? target, [NotNullIfNotNull("syncLock")] ref object? syncLock, Func<T> valueFactory) where T : class
-        {
-            T value = Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
-            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref target);
-            return value;
-        }
+            => Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
 
         /// <summary>
         /// Ensure the target is initialized and return the value (slow path). This overload works only for reference type targets.
@@ -287,8 +275,8 @@ namespace System.Threading
                 }
             }
 
-            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref target);
-            return target!; // TODO-NULLABLE: Compiler can't infer target's non-nullness (https://github.com/dotnet/roslyn/issues/37300)
+            Debug.Assert(target != null);
+            return target;
         }
 
         /// <summary>

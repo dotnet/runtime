@@ -150,7 +150,7 @@ namespace System.Runtime.CompilerServices
         }
 
         internal static void AwaitOnCompleted<TAwaiter, TStateMachine>(
-            ref TAwaiter awaiter, ref TStateMachine stateMachine, [NotNull] ref StateMachineBox? box)
+            ref TAwaiter awaiter, ref TStateMachine stateMachine, ref StateMachineBox? box)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
@@ -161,7 +161,6 @@ namespace System.Runtime.CompilerServices
             catch (Exception e)
             {
                 System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
-                NullabilityHelpers.SuppressNonNullAssignmentWarning(ref box);
             }
         }
 

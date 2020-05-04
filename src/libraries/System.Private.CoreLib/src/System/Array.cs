@@ -65,7 +65,7 @@ namespace System
                 array = newArray;
             }
 
-            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref array);
+            Debug.Assert(array != null);
         }
 
         public static Array CreateInstance(Type elementType, params long[] lengths)
