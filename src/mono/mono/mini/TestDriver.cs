@@ -117,6 +117,11 @@ public class TestDriver {
 				for (j = 5; j < name.Length; ++j)
 					if (!Char.IsDigit (name [j]))
 						break;
+				if (methods[i].GetParameters().Length > 0) {
+					if (verbose)
+						Console.WriteLine ("Skipping '{0}' because it accepts parameters.", name);
+					continue;
+				}
 				if (verbose)
 					Console.WriteLine ("Running '{0}' ...", name);
 				expected = Int32.Parse (name.Substring (5, j - 5));

@@ -423,6 +423,18 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		}
 	}
 
+	// FIXME: param_count is always 0?
+	if (method->signature && (method->signature->param_count > 0)) {
+		g_print ("skip %s...\n", method->name);
+		return FALSE;
+	}
+
+	// HACK: filter rewriter generates methods with __catch at the end
+	if (strstr (method->name, "__catch")) {
+		g_print ("skip %s...\n", method->name);
+		return FALSE;
+	}
+
 	MonoCustomAttrInfo* ainfo = mono_custom_attrs_from_method_checked (method, error);
 	mono_error_cleanup (error);
 	if (!ainfo)
@@ -453,6 +465,8 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		g_free (named_args);
 		g_free (arginfo);
 
+		gboolean is_bitcode = (mono_aot_mode == MONO_AOT_MODE_INTERP_LLVMONLY || mono_aot_mode == MONO_AOT_MODE_LLVMONLY);
+
 		if (interp && !strcmp (utf8_str, "!INTERPRETER")) {
 			g_print ("skip %s...\n", method->name);
 			return FALSE;
@@ -463,13 +477,21 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 			g_print ("skip %s...\n", method->name);
 			return FALSE;
 		}
+#else
+		// Exception filter rewriter is currently only enabled for WASM, other
+		//  bitcode targets do not run it
+		if (is_bitcode && strcmp (utf8_str, "!EXCEPTIONFILTERS")) {
+			g_print ("skip %s...\n", method->name);
+			return FALSE;
+		}
 #endif
+
 		if (mono_aot_mode == MONO_AOT_MODE_FULL && !strcmp (utf8_str, "!FULLAOT")) {
 			g_print ("skip %s...\n", method->name);
 			return FALSE;
 		}
 
-		if ((mono_aot_mode == MONO_AOT_MODE_INTERP_LLVMONLY || mono_aot_mode == MONO_AOT_MODE_LLVMONLY) && !strcmp (utf8_str, "!BITCODE")) {
+		if (is_bitcode && !strcmp (utf8_str, "!BITCODE")) {
 			g_print ("skip %s...\n", method->name);
 			return FALSE;
 		}

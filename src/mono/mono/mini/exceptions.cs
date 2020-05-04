@@ -2911,7 +2911,7 @@ class Tests
 		}
 	}
 
-	[Category ("!BITCODE")]
+	[Category ("!EXCEPTIONFILTERS")]
 	public static int test_1_basic_filter_catch () {
 		try {
 			MyException e = new MyException ("");
@@ -2923,7 +2923,7 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!BITCODE")]
+	[Category ("!EXCEPTIONFILTERS")]
 	public static int test_1234_complicated_filter_catch () {
 		string res = "init";
 		try {
@@ -2962,18 +2962,291 @@ class Tests
         public byte Part3 { get; }
     }
 
-    [MethodImpl( MethodImplOptions.NoInlining )]
-    private static bool ExceptionFilter( byte x, FooStruct item ) => true;
+	[MethodImpl( MethodImplOptions.NoInlining )]
+	private static bool ExceptionFilter( byte x, FooStruct item ) => true;
 
-	[Category ("!BITCODE")]
+	[Category ("!EXCEPTIONFILTERS")]
 	public static int test_0_filter_caller_area () {
-        try {
-            throw new Exception();
-        }
-        catch (Exception) when (ExceptionFilter (default(byte), default (FooStruct))) {
-        }
+		try {
+			throw new Exception();
+		}
+		catch (Exception) when (ExceptionFilter (default(byte), default (FooStruct))) {
+		}
 		return 0;
 	}
+
+	[MethodImpl( MethodImplOptions.NoInlining )]
+	private static bool ExceptionFilter_Match (Exception exc, string s = null) {
+		return (exc.Message == s);
+	}
+
+	[MethodImpl( MethodImplOptions.NoInlining )]
+	private static void NoOp (string tag = null) {
+	}
+
+	[Category ("!EXCEPTIONFILTERS")]
+	public static int test_0_filters_datacolumn () {
+		bool a = false, b = false;
+		string value = "";
+
+		object _expression = null;
+		long logScopeId = 0; // DataCommonEventSource.Log.EnterScope("<ds.DataColumn.set_Expression|API> {0}, '{1}'", ObjectID, value);
+		object _table = null;
+
+		if (value == null) {
+			value = string.Empty;
+		}
+
+		try {
+			object newExpression = null;
+			if (value.Length > 0) {
+				object testExpression = new object();
+				if (a)
+					newExpression = testExpression;
+			}
+
+			if (_expression == null && newExpression != null) {
+				if (b) {
+					throw new Exception();
+				}
+
+				// We need to make sure the column is not involved in any Constriants
+				if (_table != null) {
+				}
+
+				bool oldReadOnly = false;
+				try {
+					NoOp("Dead try");
+				} catch (Exception e) {
+					NoOp("Dead catch");
+					throw;
+				}
+			}
+
+			// re-calculate the evaluation queue
+			if (_table != null) {
+				if (newExpression != null && false) {
+					throw new Exception();
+				}
+
+				// HandleDependentColumnList(_expression, newExpression);
+				//hold onto oldExpression in case of error applying new Expression.
+				object oldExpression = _expression;
+				_expression = newExpression;
+
+				// because the column is attached to a table we need to re-calc values
+				try {
+					if (newExpression == null) {
+						NoOp("a");
+						for (int i = 0; i < 10; i++) {
+							NoOp();
+							// InitializeRecord(i);
+						}
+					} else {
+						NoOp("b");
+						//_table.EvaluateExpressions(this);
+					}
+
+					NoOp("c");
+					/*
+					_table.ResetInternalIndexes(this);
+					_table.EvaluateDependentExpressions(this);
+					*/
+				} catch (Exception e1) when (ExceptionFilter_Match(e1)) {
+					// ExceptionBuilder.TraceExceptionForCapture(e1);
+					NoOp("d");
+					try {
+						// in the case of error we need to set the column expression to the old value
+						_expression = oldExpression;
+						NoOp();
+						// HandleDependentColumnList(newExpression, _expression);
+						if (oldExpression == null) {
+							for (int i = 0; i < 10; i++) {
+								NoOp();
+								// InitializeRecord(i);
+							}
+						} else {
+							NoOp(null);
+							// _table.EvaluateExpressions(this);
+						}
+						NoOp(null);
+						/*
+						_table.ResetInternalIndexes(this);
+						_table.EvaluateDependentExpressions(this);
+						*/
+					} catch (Exception e2) when (ExceptionFilter_Match(e2)) {
+						NoOp($"f {e2}");
+						// ExceptionBuilder.TraceExceptionWithoutRethrow(e2);
+					}
+					throw;
+				}
+			} else {
+				//if column is not attached to a table, just set.
+				_expression = newExpression;
+			}
+		} finally {
+			NoOp("ExitScope");
+			// DataCommonEventSource.Log.ExitScope(logScopeId);
+		}
+
+		return 0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static int One (bool b) {
+		if (b) return 1;
+		else return 0;
+	}
+
+	[Category ("!EXCEPTIONFILTERS")]
+	public static int test_1_filters_lopsided () {
+		int i = 0;
+		try {
+			i += One(true);
+		} catch (Exception exc) when (ExceptionFilter_Match(exc)) {
+			NoOp("Layer 1");
+			i += One(true);
+			try {
+				i += One(true);
+			} catch (Exception exc2) when (ExceptionFilter_Match(exc2)) {
+				NoOp("Layer 2");
+				i += One(true);
+				try {
+					i += One(true);
+				} catch (Exception exc3) when (ExceptionFilter_Match(exc3)) {
+					NoOp("Layer 3");
+					i += One(true);
+					try {
+						i += One(true);
+					} catch (Exception exc4) when (ExceptionFilter_Match(exc4)) {
+						NoOp("Layer 4");
+						i += One(true);
+						if (One(false) == 1)
+							throw;
+					}
+
+					if (One(true) == 1)
+						throw;
+				}
+			}
+		}
+
+		return i;
+	}
+
+	[Category ("!EXCEPTIONFILTERS")]
+	public static int test_1_filters_lopsided_with_finally () {
+		int i = 0;
+		try {
+			i += One(true);
+		} catch (Exception exc) when (ExceptionFilter_Match(exc)) {
+			NoOp("Layer 1");
+			i += One(true);
+			try {
+				i += One(true);
+			} catch (Exception exc2) when (ExceptionFilter_Match(exc2)) {
+				NoOp("Layer 2");
+				i += One(true);
+				try {
+					i += One(true);
+				} catch (Exception exc3) when (ExceptionFilter_Match(exc3)) {
+					NoOp("Layer 3");
+					i += One(true);
+					try {
+						i += One(true);
+					} catch (Exception exc4) when (ExceptionFilter_Match(exc4)) {
+						NoOp("Layer 4");
+						i += One(true);
+						if (One(false) == 1)
+							throw;
+					} finally {
+						NoOp("Innermost finally");
+					}
+
+					if (One(true) == 1)
+						throw;
+				}
+			}
+		} finally {
+			NoOp("Outmost finally");
+		}
+
+		return i;
+	}
+
+	public static int test_546_filters_multiple_typed_catches () {
+		int i = 0;
+
+		try {
+			throw new ArgumentException("ae");
+		} catch (NullReferenceException nre) when (ExceptionFilter_Match(nre, "nre")) {
+			i += 1;
+		} catch (ArgumentException ae) when (ExceptionFilter_Match(ae, "ae")) {
+			i += 2;
+		} catch {
+			i += 4;
+		}
+
+		try {
+			throw new Exception("e");
+		} catch (NullReferenceException nre) {
+			i += 8;
+		} catch (ArgumentException ae) when (ExceptionFilter_Match(ae, "ae")) {
+			i += 16;
+		} catch (Exception exc) when (ExceptionFilter_Match(exc, "e")) {
+			i += 32;
+		} catch {
+			i += 64;
+		}
+
+		try {
+			throw new NullReferenceException("nre");
+		} catch (NullReferenceException nre) when (ExceptionFilter_Match(nre, "nope")) {
+			i += 128;
+		} catch (ArgumentException ae) {
+			i += 256;
+		} catch {
+			i += 512;
+		}
+
+		return i;
+	}
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool BrokenExceptionFilter (Exception exc) {
+        throw new Exception("Broken filter", exc);
+    }
+
+	[Category ("!EXCEPTIONFILTERS")]
+    public static int test_5_filters_throw_inside_filter () {
+    	// FIXME: Disabled due to https://github.com/mono/mono/issues/19685
+    	return 5;
+
+    	int result = 0;
+
+        try {
+            try {
+                throw new Exception("test");
+                result += 128;
+            } catch (Exception exc) when (BrokenExceptionFilter(exc)) {
+            	result += 64;
+            } catch (Exception exc) {
+            	if (exc.InnerException != null)
+					result += 32;
+				else
+					result += 4;
+
+				throw;
+            }
+        } catch (Exception exc) {
+        	if (exc.InnerException != null)
+				result += 16;
+			else
+				result += 1;
+        }
+
+        return result;
+    }
 
 	public static int test_0_signed_ct_div () {
 		int n = 2147483647;
