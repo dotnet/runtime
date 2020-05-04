@@ -117,8 +117,14 @@ namespace System
             IriCanonical = 0x78000000000,
             UnixPath = 0x100000000000,
 
+            /// <summary>
+            /// Used to ensure that InitializeAndValidate is only called once per Uri instance and only from from an override of InitializeAndValidate
+            /// </summary>
             CustomParser_ParseMinimalAlreadyCalled = 1UL << 62,
 
+            /// <summary>
+            /// Used for asserting that certain methods are only called from the constructor to validate thread-safety assumptions
+            /// </summary>
             Debug_LeftConstructor = 1UL << 63
         }
 
@@ -127,6 +133,7 @@ namespace System
         {
             _flags |= Flags.Debug_LeftConstructor;
         }
+
         [Conditional("DEBUG")]
         internal void DebugAssertInCtor()
         {
