@@ -7730,7 +7730,7 @@ namespace System.Text.Json.Tests
                     i++;
                     sb.Append("\\u003c");
                 }
-                // Convert ".0" to ""
+                // Remove .0
                 else if (json[i] == '.' && json[i+1] == '0')
                 {
                     i+=2;
