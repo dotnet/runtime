@@ -147,15 +147,13 @@ IWeakReference* GetComWeakReference(OBJECTREF* pObject)
 #ifdef FEATURE_COMWRAPPERS
     else
     {
-        SyncBlock* syncBlock = (*pObject)->GetSyncBlock();
-        InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-        void* context;
-        if (!interopInfo->TryGetExternalComObjectContext(&context))
+
+        IUnknown* unknown = ComWrappersNative::GetIdentityForObject(pObject);
+
+        if (unknown == nullptr)
         {
             return nullptr;
         }
-
-        IUnknown* unknown = ComWrappersNative::GetIdentityForExternalComObjectContext(context);
 
         void* pWeakReferenceSourceMaybe;
         if(FAILED(unknown->QueryInterface(IID_IWeakReferenceSource, &pWeakReferenceSourceMaybe)))

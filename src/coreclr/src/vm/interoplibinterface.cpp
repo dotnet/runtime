@@ -1442,9 +1442,14 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
     }
 }
 
-IUnknown* ComWrappersNative::GetIdentityForExternalComObjectContext(_In_ void* context)
+IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* object)
 {
-    return reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
+    void* context;
+    if ((*object)->GetSyncBlock()->GetInteropInfo()->TryGetExternalComObjectContext(&context))
+    {
+        return reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
+    }
+    return nullptr;
 }
 
 #endif // FEATURE_COMWRAPPERS

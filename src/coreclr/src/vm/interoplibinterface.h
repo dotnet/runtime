@@ -39,7 +39,7 @@ public: // COM activation
     static void MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe);
 
 public: // Unwrapping support
-    static IUnknown* GetIdentityForExternalComObjectContext(_In_ void* context);
+    static IUnknown* GetIdentityForObject(_In_ OBJECTREF* object);
 };
 
 class GlobalComWrappers
