@@ -115,7 +115,7 @@ namespace R2RTest
             {
                 // Use reference folders and find the managed assemblies we want to reference from them.
                 // This is the standard path when we want to compile folders and compare crossgen1 and crossgen2.
-                StringComparer pathComparer = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+                StringComparer pathComparer = PathExtensions.OSPathCaseComparer;
                 HashSet<string> uniqueFolders = new HashSet<string>(pathComparer);
 
                 foreach (string assemblyFileName in assemblyFileNames)

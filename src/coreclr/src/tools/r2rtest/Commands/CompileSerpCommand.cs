@@ -53,13 +53,31 @@ namespace R2RTest
                 return 1;
             }
 
-            // Add all assemblies from the various SERP packages (filtered by ShouldInclude)
-            List<string> binFiles = Directory.GetFiles(Path.Combine(serpDir, "App_Data\\Answers\\Services\\Packages"), "*.dll", SearchOption.AllDirectories).ToList();
+            string binDir = Path.Combine(serpDir, "bin");
 
-            binFiles = binFiles.Where((string x) => ShouldInclude(x)).ToList();
+            // Remove existing native images
+            foreach (var file in Directory.GetFiles(Path.Combine(serpDir, "App_Data\\Answers\\Services\\Packages"), "*.dll", SearchOption.AllDirectories))
+            {
+                if (file.EndsWith(".ni.dll") || file.EndsWith(".ni.exe"))
+                {
+                    File.Delete(file);
+                }
+            }
+
+            foreach (var file in Directory.GetFiles(binDir, "*.dll", SearchOption.AllDirectories))
+            {
+                if (file.EndsWith(".ni.dll") || file.EndsWith(".ni.exe"))
+                {
+                    File.Delete(file);
+                }
+            }
+
+            // Add all assemblies from the various SERP packages (filtered by ShouldInclude)
+            List<string> binFiles = Directory.GetFiles(Path.Combine(serpDir, "App_Data\\Answers\\Services\\Packages"), "*.dll", SearchOption.AllDirectories)
+                .Where((string x) => ShouldInclude(x))
+                .ToList();
 
             // Add a whitelist of assemblies from bin
-            string binDir = Path.Combine(serpDir, "bin");
             foreach (string item in new HashSet<string>(File.ReadAllLines(whiteListFilePath)))
             {
                 binFiles.Add(Path.Combine(binDir, item));
@@ -84,11 +102,11 @@ namespace R2RTest
                 referenceAssemblies.Add(binFile);
             }
 
-            referenceAssemblies.AddRange(GetAssembliesWithNoSimpleNameDuplicates(simpleNames, options.AspNetPath.FullName, "*.dll"));
+            referenceAssemblies.AddRange(ComputeManagedAssemblies.GetManagedAssembliesInFolderNoSimpleNameDuplicates(simpleNames, options.AspNetPath.FullName, "*.dll"));
 
             // Add CoreRoot last because it contains various non-framework assemblies that are duplicated in SERP and we want SERP's to be used
-            referenceAssemblies.AddRange(GetAssembliesWithNoSimpleNameDuplicates(simpleNames, options.CoreRootDirectory.FullName, "System.*.dll"));
-            referenceAssemblies.AddRange(GetAssembliesWithNoSimpleNameDuplicates(simpleNames, options.CoreRootDirectory.FullName, "Microsoft.*.dll"));
+            referenceAssemblies.AddRange(ComputeManagedAssemblies.GetManagedAssembliesInFolderNoSimpleNameDuplicates(simpleNames, options.CoreRootDirectory.FullName, "System.*.dll"));
+            referenceAssemblies.AddRange(ComputeManagedAssemblies.GetManagedAssembliesInFolderNoSimpleNameDuplicates(simpleNames, options.CoreRootDirectory.FullName, "Microsoft.*.dll"));
             referenceAssemblies.Add(Path.Combine(options.CoreRootDirectory.FullName, "mscorlib.dll"));
             referenceAssemblies.Add(Path.Combine(options.CoreRootDirectory.FullName, "netstandard.dll"));
 
@@ -165,22 +183,6 @@ namespace R2RTest
                     if (reference.EndsWith(".ni.dll"))
                         continue;
                     yield return reference;
-                }
-            }
-        }
-
-        private static IEnumerable<string> GetAssembliesWithNoSimpleNameDuplicates(HashSet<string> simpleNames, string directory, string fileNamePattern)
-        {
-            foreach (var file in Directory.GetFiles(directory, fileNamePattern, SearchOption.TopDirectoryOnly))
-            {
-                if (file.EndsWith(".ni.dll"))
-                    continue;
-
-                var simpleName = Path.GetFileNameWithoutExtension(file);
-                if (!simpleNames.Contains(simpleName))
-                {
-                    yield return file;
-                    simpleNames.Add(simpleName);
                 }
             }
         }
