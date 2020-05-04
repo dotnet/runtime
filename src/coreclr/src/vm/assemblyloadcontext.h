@@ -6,6 +6,7 @@
 #define _ASSEMBLYLOADCONTEXT_H
 
 #include "crst.h"
+#include <sarray.h>
 
 class NativeImage;
 class Module;

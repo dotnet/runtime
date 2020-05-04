@@ -11,6 +11,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         public void WriteTag(CborTag tag)
         {
+            if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            {
+                throw new InvalidOperationException("Tagged items are not permitted under the current conformance level.");
+            }
+
             WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
             _isTagContext = true;
         }

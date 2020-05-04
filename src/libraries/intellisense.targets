@@ -64,10 +64,6 @@
 
   <Import Project="$(MSBuildThisDirectory)targetframework.props" />
   
-  <PropertyGroup>
-    <GeneratedAssemblyInfoFile>$(IntermediateOutputPath)$(MSBuildProjectName).AssemblyInfo$(DefaultLanguageSourceExtension)</GeneratedAssemblyInfoFile>
-  </PropertyGroup>
-  
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != '' and '$(TargetFrameworkVersion)' != ''">
     <TargetFrameworkMoniker Condition="'$(TargetFrameworkMoniker)' == '' and '$([System.String]::IsNullOrWhitespace($(TargetFrameworkProfile)))' != 'true'">$(TargetFrameworkIdentifier),Version=$(TargetFrameworkVersion),Profile=$(TargetFrameworkProfile)</TargetFrameworkMoniker>
     <TargetFrameworkMoniker Condition="'$(TargetFrameworkMoniker)' == ''">$(TargetFrameworkIdentifier),Version=$(TargetFrameworkVersion)</TargetFrameworkMoniker>

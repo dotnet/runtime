@@ -6116,12 +6116,13 @@ GenTreeCall* Compiler::gtNewCallNode(
     {
         node->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
     }
-    node->gtCallType      = callType;
-    node->gtCallMethHnd   = callHnd;
-    node->gtCallArgs      = args;
-    node->gtCallThisArg   = nullptr;
-    node->fgArgInfo       = nullptr;
-    node->callSig         = nullptr;
+    node->gtCallType    = callType;
+    node->gtCallMethHnd = callHnd;
+    node->gtCallArgs    = args;
+    node->gtCallThisArg = nullptr;
+    node->fgArgInfo     = nullptr;
+    INDEBUG(node->callSig = nullptr;)
+    node->tailCallInfo    = nullptr;
     node->gtRetClsHnd     = nullptr;
     node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = 0;
@@ -7805,7 +7806,11 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree, unsigned addFlag
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
     // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
     // because the inlinee still uses the inliner's memory allocator anyway.)
-    copy->callSig = tree->callSig;
+    INDEBUG(copy->callSig = tree->callSig;)
+
+    // The tail call info does not change after it is allocated, so for the same reasons as above
+    // a shallow copy suffices.
+    copy->tailCallInfo = tree->tailCallInfo;
 
     copy->gtCallType    = tree->gtCallType;
     copy->gtReturnType  = tree->gtReturnType;
@@ -10306,6 +10311,10 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             else if (lclNum == lvaGSSecurityCookie)
             {
                 ilName = "GsCookie";
+            }
+            else if (lclNum == lvaRetAddrVar)
+            {
+                ilName = "ReturnAddress";
             }
 #if FEATURE_FIXED_OUT_ARGS
             else if (lclNum == lvaPInvokeFrameRegSaveVar)

@@ -1728,8 +1728,8 @@ class ICorCompileInfo
     // to 1 on the clone. The buffer has to be large enough to hold the stub object and the code
     virtual HRESULT GetStubClone(void *pStub, BYTE *pBuffer, DWORD dwBufferSize) = 0;
 
-    // true if the method has [NativeCallableAttribute]
-    virtual BOOL IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle) = 0;
+    // true if the method has [UnmanagedCallersOnlyAttribute]
+    virtual BOOL IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle) = 0;
 
     virtual BOOL GetIsGeneratingNgenPDB() = 0;
     virtual void SetIsGeneratingNgenPDB(BOOL fGeneratingNgenPDB) = 0;

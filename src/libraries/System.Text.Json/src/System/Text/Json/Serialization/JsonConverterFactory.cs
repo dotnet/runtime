@@ -40,14 +40,15 @@ namespace System.Text.Json.Serialization
 
         internal override JsonPropertyInfo CreateJsonPropertyInfo()
         {
-            // We should never get here.
-            Debug.Assert(false);
+            Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }
 
         internal override JsonParameterInfo CreateJsonParameterInfo()
         {
+            Debug.Fail("We should never get here.");
+
             throw new InvalidOperationException();
         }
 
@@ -71,8 +72,7 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref ReadStack state)
         {
-            // We should never get here.
-            Debug.Assert(false);
+            Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }
@@ -83,8 +83,7 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            // We should never get here.
-            Debug.Assert(false);
+            Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }
@@ -97,8 +96,7 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            // We should never get here.
-            Debug.Assert(false);
+            Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }

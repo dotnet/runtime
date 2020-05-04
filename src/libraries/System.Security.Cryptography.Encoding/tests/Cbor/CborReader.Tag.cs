@@ -13,6 +13,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             CborTag tag = PeekTagCore(out int additionalBytes);
 
+            if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            {
+                throw new FormatException("Tagged items are not permitted under the current conformance level.");
+            }
+
             AdvanceBuffer(1 + additionalBytes);
             _isTagContext = true;
             return tag;
@@ -21,6 +26,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void ReadTag(CborTag expectedTag)
         {
             CborTag tag = PeekTagCore(out int additionalBytes);
+
+            if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            {
+                throw new FormatException("Tagged items are not permitted under the current conformance level.");
+            }
 
             if (expectedTag != tag)
             {
@@ -45,7 +55,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
 
-            CborReaderCheckpoint checkpoint = CreateCheckpoint();
+            Checkpoint checkpoint = CreateCheckpoint();
 
             try
             {
@@ -72,7 +82,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             catch
             {
-                RestoreCheckpoint(checkpoint);
+                RestoreCheckpoint(in checkpoint);
                 throw;
             }
         }
@@ -81,7 +91,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
 
-            CborReaderCheckpoint checkpoint = CreateCheckpoint();
+            Checkpoint checkpoint = CreateCheckpoint();
 
             try
             {
@@ -112,7 +122,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             catch
             {
-                RestoreCheckpoint(checkpoint);
+                RestoreCheckpoint(in checkpoint);
                 throw;
             }
         }
@@ -121,7 +131,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.2
 
-            CborReaderCheckpoint checkpoint = CreateCheckpoint();
+            Checkpoint checkpoint = CreateCheckpoint();
 
             try
             {
@@ -147,7 +157,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             catch
             {
-                RestoreCheckpoint(checkpoint);
+                RestoreCheckpoint(in checkpoint);
                 throw;
             }
         }
@@ -156,7 +166,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.3
 
-            CborReaderCheckpoint checkpoint = CreateCheckpoint();
+            Checkpoint checkpoint = CreateCheckpoint();
 
             try
             {
@@ -215,7 +225,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             catch
             {
-                RestoreCheckpoint(checkpoint);
+                RestoreCheckpoint(in checkpoint);
                 throw;
             }
         }

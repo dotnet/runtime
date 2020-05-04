@@ -38,6 +38,22 @@
       <Link>Common\Interop\Android\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
+  <!-- WebAssembly -->
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\ConsolePal.WebAssembly.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
+             Link="Common\Interop\Unix\Interop.Dup.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
+             Link="Common\Interop\Unix\Interop.Write.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FileDescriptors.cs"
+             Link="Common\Interop\Unix\Interop.FileDescriptors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
+             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+  </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\ConsolePal.Windows.cs" />
@@ -135,7 +151,7 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
