@@ -27,342 +27,232 @@
     <DefaultReferenceExclusions Include="System.Net.Mail" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\src\System\Net\Base64Stream.cs">
-      <Link>ProductionCode\Base64Stream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\SmtpException.cs">
-      <Link>ProductionCode\SmtpException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\SmtpStatusCode.cs">
-      <Link>ProductionCode\SmtpStatusCode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\DelegatedStream.cs">
-      <Link>ProductionCode\DelegatedStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\MailAddress.cs">
-      <Link>ProductionCode\MailAddress.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\NetEventSource.Mail.cs">
-      <Link>ProductionCode\NetEventSource.Mail.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs">
-      <Link>ProductionCode\SmtpConnection.Auth.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\ISmtpAuthenticationModule.cs">
-      <Link>ProductionCode\ISmtpAuthenticationModule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs">
-      <Link>ProductionCode\SmtpLoginAuthenticationModule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs">
-      <Link>ProductionCode\SmtpNegotiateAuthenticationModule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\SmtpNtlmAuthenticationModule.cs">
-      <Link>ProductionCode\SmtpNtlmAuthenticationModule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\MailAddressCollection.cs">
-      <Link>ProductionCode\MailAddressCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\MailPriority.cs">
-      <Link>ProductionCode\MailPriority.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\MimePart.cs">
-      <Link>ProductionCode\MimePart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\Base64WriteStateInfo.cs">
-      <Link>ProductionCode\Base64WriteStateInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\QuotedPrintableStream.cs">
-      <Link>ProductionCode\QuotedPrintableStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\CloseableStream.cs">
-      <Link>ProductionCode\CloseableStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\EightBitStream.cs">
-      <Link>ProductionCode\EightBitStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\EncodedStreamFactory.cs">
-      <Link>ProductionCode\EncodedStreamFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\IEncodableStream.cs">
-      <Link>ProductionCode\IEncodableStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\QEncodedStream.cs">
-      <Link>ProductionCode\QEncodedStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\WriteStateInfoBase.cs">
-      <Link>ProductionCode\WriteStateInfoBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\BaseWriter.cs">
-      <Link>ProductionCode\BaseWriter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\TransferEncoding.cs">
-      <Link>ProductionCode\TransferEncoding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\ContentDisposition.cs">
-      <Link>ProductionCode\ContentDisposition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\ContentType.cs">
-      <Link>ProductionCode\ContentType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\DispositionTypeNames.cs">
-      <Link>ProductionCode\DispositionTypeNames.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\HeaderCollection.cs">
-      <Link>ProductionCode\HeaderCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\MediaTypeNames.cs">
-      <Link>ProductionCode\MediaTypeNames.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\MimeBasePart.cs">
-      <Link>ProductionCode\MimeBasePart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\SmtpDateTime.cs">
-      <Link>ProductionCode\SmtpDateTime.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs">
-      <Link>ProductionCode\MultiAsyncResult.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\TrackingStringDictionary.cs">
-      <Link>ProductionCode\TrackingStringDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\TrackingValidationObjectDictionary.cs">
-      <Link>ProductionCode\TrackingValidationObjectDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\MailHeaderID.cs">
-      <Link>ProductionCode\MailHeaderID.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\MailHeaderInfo.cs">
-      <Link>ProductionCode\MailHeaderInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\BufferBuilder.cs">
-      <Link>ProductionCode\BufferBuilder.cs</Link>
-    </Compile>
+    <Compile Include="..\..\src\System\Net\Base64Stream.cs"
+             Link="ProductionCode\Base64Stream.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpException.cs"
+             Link="ProductionCode\SmtpException.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpStatusCode.cs"
+             Link="ProductionCode\SmtpStatusCode.cs" />
+    <Compile Include="..\..\src\System\Net\DelegatedStream.cs"
+             Link="ProductionCode\DelegatedStream.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\MailAddress.cs"
+             Link="ProductionCode\MailAddress.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\NetEventSource.Mail.cs"
+             Link="ProductionCode\NetEventSource.Mail.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs"
+             Link="ProductionCode\SmtpConnection.Auth.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\ISmtpAuthenticationModule.cs"
+             Link="ProductionCode\ISmtpAuthenticationModule.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs"
+             Link="ProductionCode\SmtpLoginAuthenticationModule.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs"
+             Link="ProductionCode\SmtpNegotiateAuthenticationModule.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpNtlmAuthenticationModule.cs"
+             Link="ProductionCode\SmtpNtlmAuthenticationModule.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\MailAddressCollection.cs"
+             Link="ProductionCode\MailAddressCollection.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\MailPriority.cs"
+             Link="ProductionCode\MailPriority.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\MimePart.cs"
+             Link="ProductionCode\MimePart.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\Base64WriteStateInfo.cs"
+             Link="ProductionCode\Base64WriteStateInfo.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\QuotedPrintableStream.cs"
+             Link="ProductionCode\QuotedPrintableStream.cs" />
+    <Compile Include="..\..\src\System\Net\CloseableStream.cs"
+             Link="ProductionCode\CloseableStream.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\EightBitStream.cs"
+             Link="ProductionCode\EightBitStream.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\EncodedStreamFactory.cs"
+             Link="ProductionCode\EncodedStreamFactory.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\IEncodableStream.cs"
+             Link="ProductionCode\IEncodableStream.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\QEncodedStream.cs"
+             Link="ProductionCode\QEncodedStream.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\WriteStateInfoBase.cs"
+             Link="ProductionCode\WriteStateInfoBase.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\BaseWriter.cs"
+             Link="ProductionCode\BaseWriter.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\TransferEncoding.cs"
+             Link="ProductionCode\TransferEncoding.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\ContentDisposition.cs"
+             Link="ProductionCode\ContentDisposition.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\ContentType.cs"
+             Link="ProductionCode\ContentType.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\DispositionTypeNames.cs"
+             Link="ProductionCode\DispositionTypeNames.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\HeaderCollection.cs"
+             Link="ProductionCode\HeaderCollection.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\MediaTypeNames.cs"
+             Link="ProductionCode\MediaTypeNames.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\MimeBasePart.cs"
+             Link="ProductionCode\MimeBasePart.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\SmtpDateTime.cs"
+             Link="ProductionCode\SmtpDateTime.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs"
+             Link="ProductionCode\MultiAsyncResult.cs" />
+    <Compile Include="..\..\src\System\Net\TrackingStringDictionary.cs"
+             Link="ProductionCode\TrackingStringDictionary.cs" />
+    <Compile Include="..\..\src\System\Net\TrackingValidationObjectDictionary.cs"
+             Link="ProductionCode\TrackingValidationObjectDictionary.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\MailHeaderID.cs"
+             Link="ProductionCode\MailHeaderID.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\MailHeaderInfo.cs"
+             Link="ProductionCode\MailHeaderInfo.cs" />
+    <Compile Include="..\..\src\System\Net\BufferBuilder.cs"
+             Link="ProductionCode\BufferBuilder.cs" />
 
-    <Compile Include="$(CommonPath)System\Net\TlsStream.cs">
-      <Link>Common\System\Net\TlsStream.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\InternalException.cs">
-      <Link>Common\System\Net\InternalException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs">
-      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs">
-      <Link>Common\System\Net\ContextAwareResult.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs">
-      <Link>Common\System\Net\Mail\MailBnfHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs">
-      <Link>Common\System\Net\Mail\DotAtomReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs">
-      <Link>Common\System\Net\Mail\MailAddressParser.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs">
-      <Link>Common\System\Net\Mail\QuotedStringFormatReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs">
-      <Link>Common\System\Net\Mail\WhitespaceReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs">
-      <Link>Common\System\Net\Mail\QuotedPairReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs">
-      <Link>Common\System\Net\Mail\DomainLiteralReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\StringExtensions.cs">
-      <Link>Common\System\StringExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs">
-      <Link>Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs">
-      <Link>Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs">
-      <Link>Common\System\Net\DebugSafeHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs">
-      <Link>Common\System\Net\ExceptionCheck.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs">
-      <Link>Common\System\Collections\Generic\BidirectionalDictionary.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs">
-      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs">
-      <Link>Common\System\Net\ContextFlagsPal.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs">
-      <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs">
-      <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs">
-      <Link>Common\System\Net\SecurityStatusPal.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs">
-      <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs">
-      <Link>Common\System\Net\Security\NetEventSource.Security.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Net\TlsStream.cs"
+             Link="Common\System\Net\TlsStream.cs" />
+    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
+             Link="Common\System\Net\InternalException.cs" />
+    <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
+             Link="Common\System\Net\LazyAsyncResult.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
+             Link="Common\System\Net\ContextAwareResult.cs" />
+    <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs"
+             Link="Common\System\Net\Mail\MailBnfHelper.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs"
+             Link="Common\System\Net\Mail\DotAtomReader.cs" />
+    <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs"
+             Link="Common\System\Net\Mail\MailAddressParser.cs" />
+    <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs"
+             Link="Common\System\Net\Mail\QuotedStringFormatReader.cs" />
+    <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs"
+             Link="Common\System\Net\Mail\WhitespaceReader.cs" />
+    <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs"
+             Link="Common\System\Net\Mail\QuotedPairReader.cs" />
+    <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs"
+             Link="Common\System\Net\Mail\DomainLiteralReader.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
+             Link="Common\System\Net\SecurityProtocol.cs" />
+    <Compile Include="$(CommonPath)System\StringExtensions.cs"
+             Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
+             Link="Common\System\Net\DebugSafeHandle.cs" />
+    <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
+             Link="Common\System\Net\ExceptionCheck.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
+             Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
+    <Compile Include="$(CommonPath)System\NotImplemented.cs"
+             Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs"
+             Link="Common\System\Net\Logging\DebugThreadTracking.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
+             Link="Common\System\Net\ContextFlagsPal.cs" />
+    <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
+             Link="Common\System\Net\NegotiationInfoClass.cs" />
+    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
+             Link="Common\System\Net\NTAuthentication.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
+             Link="Common\System\Net\SecurityStatusPal.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
+             Link="Common\System\Net\Security\SSPIHandleCache.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
+             Link="Common\System\Net\Security\NetEventSource.Security.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs">
-      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs">
-      <Link>Common\System\Net\ContextFlagsAdapterPal.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs">
-      <Link>Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs">
-      <Link>Common\System\Net\Security\Unix\SafeFreeCredentials.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs">
-      <Link>Common\System\Net\Security\Unix\SafeDeleteContext.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs">
-      <Link>Common\System\Net\Security\NegotiateStreamPal.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs">
-      <Link>Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs">
-      <Link>Common\System\Net\Security\Unix\SecChannelBindings.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
+             Link="Common\System\Net\ContextAwareResult.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
+             Link="Common\System\Net\ContextFlagsAdapterPal.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
+             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
-      <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs">
-      <Link>Common\System\Net\Security\SecurityBuffer.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs">
-      <Link>Common\System\Net\Security\SecurityBufferType.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs">
-      <Link>Common\System\Net\Security\SecurityContextTokenHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs">
-      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\SecurityStatusAdapterPal.Windows.cs">
-      <Link>Common\System\Net\SecurityStatusAdapterPal.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Windows.cs">
-      <Link>Common\System\Net\ContextFlagsAdapterPal.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Windows.cs">
-      <Link>Common\System\Net\Security\NegotiateStreamPal.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs">
-      <Link>Common\System\Net\Security\NetEventSource.Security.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Bindings.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
-      <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\NegotiationInfoClass.cs">
-      <Link>Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs">
-      <Link>Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs">
-      <Link>Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPISecureChannelType.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\ISSPIInterface.cs">
-      <Link>Common\Interop\Windows\SspiCli\ISSPIInterface.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIAuthType.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPIAuthType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfoClass.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfo.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Sizes.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SafeDeleteContext.cs">
-      <Link>Common\Interop\Windows\SspiCli\SafeDeleteContext.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\GlobalSSPI.cs">
-      <Link>Common\Interop\Windows\SspiCli\GlobalSSPI.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SSPI.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.SSPI.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecuritySafeHandles.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPIWrapper.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs"
+             Link="Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs"
+             Link="Common\System\Net\Security\SecurityBuffer.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs"
+             Link="Common\System\Net\Security\SecurityBufferType.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs"
+             Link="Common\System\Net\Security\SecurityContextTokenHandle.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
+             Link="Common\System\Net\ContextAwareResult.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityStatusAdapterPal.Windows.cs"
+             Link="Common\System\Net\SecurityStatusAdapterPal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Windows.cs"
+             Link="Common\System\Net\ContextFlagsAdapterPal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Windows.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs"
+             Link="Common\System\Net\Security\NetEventSource.Security.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Bindings.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs"
+             Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\NegotiationInfoClass.cs"
+             Link="Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs"
+             Link="Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs"
+             Link="Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPISecureChannelType.cs"
+             Link="Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\ISSPIInterface.cs"
+             Link="Common\Interop\Windows\SspiCli\ISSPIInterface.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIAuthType.cs"
+             Link="Common\Interop\Windows\SspiCli\SSPIAuthType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfoClass.cs"
+             Link="Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfo.cs"
+             Link="Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Sizes.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SafeDeleteContext.cs"
+             Link="Common\Interop\Windows\SspiCli\SafeDeleteContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\GlobalSSPI.cs"
+             Link="Common\Interop\Windows\SspiCli\GlobalSSPI.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SSPI.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.SSPI.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecuritySafeHandles.cs"
+             Link="Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs"
+             Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
   </ItemGroup>
 </Project>

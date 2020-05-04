@@ -1080,7 +1080,8 @@ namespace System.Xml.Linq
 
             ws.Async = true;
 
-            using (XmlWriter w = XmlWriter.Create(stream, ws))
+            XmlWriter w = XmlWriter.Create(stream, ws);
+            await using (w.ConfigureAwait(false))
             {
                 await SaveAsync(w, cancellationToken).ConfigureAwait(false);
             }
@@ -1141,7 +1142,8 @@ namespace System.Xml.Linq
 
             ws.Async = true;
 
-            using (XmlWriter w = XmlWriter.Create(textWriter, ws))
+            XmlWriter w = XmlWriter.Create(textWriter, ws);
+            await using (w.ConfigureAwait(false))
             {
                 await SaveAsync(w, cancellationToken).ConfigureAwait(false);
             }

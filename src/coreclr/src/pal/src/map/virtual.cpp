@@ -141,7 +141,7 @@ namespace VirtualMemoryLogging
         LogRecord* curRec = (LogRecord*)&logRecords[i % MaxRecords];
 
         curRec->RecordId = i;
-        curRec->CurrentThread = (LPVOID)pthread_self();
+        curRec->CurrentThread = reinterpret_cast<LPVOID>(pthread_self());
         curRec->RequestedAddress = requestedAddress;
         curRec->ReturnedAddress = returnedAddress;
         curRec->Size = size;
@@ -847,7 +847,7 @@ static LPVOID VIRTUALResetMemory(
 #endif
     {
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = madvise((LPVOID)StartBoundary, MemSize, MADV_DONTNEED);
+        st = posix_madvise((LPVOID)StartBoundary, MemSize, POSIX_MADV_DONTNEED);
     }
 
     if (st == 0)

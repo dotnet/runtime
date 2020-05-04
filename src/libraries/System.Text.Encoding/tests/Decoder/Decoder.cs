@@ -276,5 +276,78 @@ namespace System.Text.Encodings.Tests
             Assert.Equal('\u0000', fallbackBuffer.GetNextChar());
             Assert.False(fallbackBuffer.MovePrevious(), "Expected we cannot move back on the replacement buffer as we are rest the buffer");
         }
+
+        [Fact]
+        public void DecoderConvertSplitAcrossInvalidMultiByteSequenceTests()
+        {
+            // Input = [ C2 58 59 5A ]
+            // Expected output = [ FFFD 0058 0059 005A ]
+
+            Decoder decoder = Encoding.UTF8.GetDecoder();
+            char[] destBuffer = new char[100];
+
+            int bytesConsumed,  charsWritten;
+            bool completed;
+
+            decoder.Convert(new byte[] { 0xC2 }, destBuffer, flush: false, out bytesConsumed, out charsWritten, out completed);
+            Assert.Equal(1, bytesConsumed);
+            Assert.Equal(0, charsWritten); // waiting for more bytes in multi-byte sequence
+            Assert.True(completed);
+
+            decoder.Convert(new byte[] { (byte)'X' }, destBuffer, flush: false, out bytesConsumed, out charsWritten, out completed);
+            Assert.Equal(1, bytesConsumed);
+            Assert.Equal(2, charsWritten); // U+FFFD + 'X'
+            Assert.True(completed); // no internal state
+            Assert.Equal(new char[] { '\uFFFD', 'X' }, destBuffer[0..2]);
+
+            decoder.Convert(new byte[] { (byte)'Y' }, destBuffer, flush: false, out bytesConsumed, out charsWritten, out completed);
+            Assert.Equal(1, bytesConsumed);
+            Assert.Equal(1, charsWritten);
+            Assert.True(completed); // no internal state
+            Assert.Equal('Y', destBuffer[0]);
+
+            decoder.Convert(new byte[] { (byte)'Z' }, destBuffer, flush: true, out bytesConsumed, out charsWritten, out completed);
+            Assert.Equal(1, bytesConsumed);
+            Assert.Equal(1, charsWritten);
+            Assert.True(completed); // no internal state
+            Assert.Equal('Z', destBuffer[0]);
+        }
+
+        [Fact]
+        public void DecoderGetBytesSplitAcrossInvalidMultiByteSequenceTests()
+        {
+            // Input = [ C2 58 59 5A ]
+            // Expected output = [ FFFD 0058 0059 005A ]
+
+            Decoder decoder = Encoding.UTF8.GetDecoder();
+            char[] destBuffer = new char[100];
+
+            int charCount = decoder.GetCharCount(new byte[] { 0xC2 }, flush: false);
+            Assert.Equal(0, charCount); // waiting for more bytes in multi-byte sequence
+
+            charCount = decoder.GetChars(new byte[] { 0xC2 }, destBuffer, flush: false);
+            Assert.Equal(0, charCount);
+
+            charCount = decoder.GetCharCount(new byte[] { (byte)'X' }, flush: false);
+            Assert.Equal(2, charCount); // U+FFFD + 'X'
+
+            charCount = decoder.GetChars(new byte[] { (byte)'X' }, destBuffer, flush: false);
+            Assert.Equal(2, charCount);
+            Assert.Equal(new char[] { '\uFFFD', 'X' }, destBuffer[0..2]);
+
+            charCount = decoder.GetCharCount(new byte[] { (byte)'Y' }, flush: false);
+            Assert.Equal(1, charCount); // 'Y'
+
+            charCount = decoder.GetChars(new byte[] { (byte)'Y' }, destBuffer, flush: false);
+            Assert.Equal(1, charCount);
+            Assert.Equal('Y', destBuffer[0]);
+
+            charCount = decoder.GetCharCount(new byte[] { (byte)'Z' }, flush: true);
+            Assert.Equal(1, charCount); // 'Z'
+
+            charCount = decoder.GetChars(new byte[] { (byte)'Z' }, destBuffer, flush: true);
+            Assert.Equal(1, charCount);
+            Assert.Equal('Z', destBuffer[0]);
+        }
     }
 }

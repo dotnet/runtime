@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // ComEventInterfaceAttribute is marked as Obsolete.
     public class ComEventInterfaceAttributeTests
     {
         [Theory]
@@ -19,5 +18,4 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(eventProvider, attribute.EventProvider);
         }
     }
-#pragma warning restore 0618
 }

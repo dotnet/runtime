@@ -97,7 +97,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 
 	addr =  mono_ldftn (res);
 	if (m_class_is_valuetype (res->klass) && !m_class_is_valuetype (method->klass))
-		addr = mini_add_method_trampoline (method, addr, FALSE, TRUE);
+		addr = mini_add_method_trampoline (res, addr, FALSE, TRUE);
 	return addr;
 }
 

@@ -90,12 +90,17 @@ namespace ILCompiler
 
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
-            return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
-        }
-
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
+            if (type.Context.Target.Architecture == TargetArchitecture.ARM64)
+            {
+                return type.InstanceFieldSize.AsInt switch
+                {
+                    8 => ValueTypeShapeCharacteristics.Vector64Aggregate,
+                    16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
+                    32 => ValueTypeShapeCharacteristics.Vector256Aggregate,
+                    _ => ValueTypeShapeCharacteristics.None
+                };
+            }
+            return ValueTypeShapeCharacteristics.None;
         }
 
         public static bool IsVectorType(DefType type)
@@ -104,7 +109,8 @@ namespace ILCompiler
                 type.Namespace == "System.Runtime.Intrinsics" &&
                 (type.Name == "Vector64`1" ||
                 type.Name == "Vector128`1" ||
-                type.Name == "Vector256`1");
+                type.Name == "Vector256`1") &&
+                type.Instantiation[0].IsPrimitive;
         }
     }
 }

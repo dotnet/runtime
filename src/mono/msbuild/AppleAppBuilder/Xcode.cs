@@ -22,7 +22,7 @@ internal class Xcode
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
-        string[] excludes = {".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a"};
+        string[] excludes = {".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc"};
 
         string[] resources = Directory.GetFiles(workspace)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
@@ -76,7 +76,7 @@ internal class Xcode
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);
 
-        File.WriteAllText(Path.Combine(binDir, "Info.plist.in"), plist);
+        File.WriteAllText(Path.Combine(binDir, "Info.plist"), plist);
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
         var cmakeArgs = new StringBuilder();

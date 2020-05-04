@@ -16,6 +16,7 @@ namespace System.Net.Sockets
     internal static partial class SocketPal
     {
         public const bool SupportsMultipleConnectAttempts = false;
+        public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
@@ -861,7 +862,7 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, byte[] buffer, ref int nameLen)
+        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, Span<byte> buffer, ref int nameLen)
         {
             Interop.Error err;
             int addrLen = nameLen;
@@ -1755,11 +1756,11 @@ namespace System.Net.Sockets
 
                 if ((options & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0)
                 {
-                    await Task.Factory.FromAsync(
-                        (reuse, c, s) => ((Socket)s!).BeginDisconnect(reuse, c, s),
-                        iar => ((Socket)iar.AsyncState!).EndDisconnect(iar),
-                        (options & TransmitFileOptions.ReuseSocket) != 0,
-                        socket).ConfigureAwait(false);
+                    error = Disconnect(socket, socket.InternalSafeHandle, (options & TransmitFileOptions.ReuseSocket) != 0);
+                    if (error != SocketError.Success)
+                    {
+                        throw new SocketException((int)error);
+                    }
                 }
             }
             catch (Exception exc)

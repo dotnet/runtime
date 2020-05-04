@@ -4,7 +4,6 @@
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
     <NETCoreAppFrameworkIdentifier>$(TargetFrameworkIdentifier)</NETCoreAppFrameworkIdentifier>
-    <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
   </PropertyGroup>
 
   <!-- Explicitly build the runtime.depproj project first to correctly set up the testhost. -->

@@ -14,7 +14,9 @@ if !HOST_WIN32
 if !DISABLE_LIBRARIES
 if !DISABLE_PROFILER
 
+if !DISABLE_EXECUTABLES
 bin_PROGRAMS = mprof-report
+endif
 
 if HAVE_VTUNE
 vtune_libs = \
