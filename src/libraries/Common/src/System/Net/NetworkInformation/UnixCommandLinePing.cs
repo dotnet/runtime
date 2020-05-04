@@ -81,6 +81,10 @@ namespace System.Net.NetworkInformation
             var sb = new StringBuilder();
             sb.Append("-c 1"); // Just send a single ping ("count = 1")
 
+            //if timeout is zero then some ping implementations can stuck infinitely if endpoint is unreachable
+            if (timeout == 0)
+                timeout = 1;
+
             // Pass timeout argument to ping utility
             // BusyBox, Linux: ping and ping6 requires -W flag which accepts timeout in SECONDS.
             // FreeBSD: ping requires -W flag which accepts timeout in MILLISECONDS;
