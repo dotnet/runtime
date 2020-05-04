@@ -154,7 +154,7 @@ internal static partial class Interop
             if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
                 return -1;
 
-            return obj != null ? obj.JSHandle : -1;
+            return obj?.JSHandle ?? -1;
         }
 
         internal static object? GetMonoObject(int gcHandle)
