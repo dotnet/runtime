@@ -106,7 +106,6 @@ namespace System.Net.NameResolution.Tests
 
 #pragma warning disable xUnit1026
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [Theory]
         [MemberData(nameof(Numbers))]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName(int dummy)
@@ -117,7 +116,6 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(Dns.GetHostName(), entry.HostName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [Theory]
         [MemberData(nameof(Numbers))]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName(int dummy)

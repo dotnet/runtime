@@ -37,7 +37,6 @@ namespace System.Net.NameResolution.Tests
 
         public static TheoryData<string, int> StressData = GetStressData(100);
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [Theory]
         [MemberData(nameof(StressData))]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName, int dummy)
@@ -85,7 +84,6 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [Theory]
         [MemberData(nameof(StressData))]
         public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName, int dummy) =>

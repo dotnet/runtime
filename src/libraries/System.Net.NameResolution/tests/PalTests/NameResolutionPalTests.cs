@@ -53,7 +53,6 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [OuterLoop("Uses external server")]
         public void TryGetAddrInfo_HostName(bool justAddresses)
         {
             string hostName = NameResolutionPal.GetHostName();
@@ -116,7 +115,6 @@ namespace System.Net.NameResolution.PalTests
         }
 
         [Fact]
-        [OuterLoop("Uses external server")]
         public void TryGetAddrInfo_HostName_TryGetNameInfo()
         {
             string hostName = NameResolutionPal.GetHostName();
