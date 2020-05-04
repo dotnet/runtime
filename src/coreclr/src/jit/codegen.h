@@ -1465,11 +1465,13 @@ public:
 
     void instGen_Return(unsigned stkArgSize);
 
-#ifdef TARGET_ARM64
-    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_ISH);
-#else
-    void instGen_MemoryBarrier();
-#endif
+    enum BarrierKind
+    {
+        BARRIER_FULL,      // full barrier
+        BARRIER_LOAD_ONLY, // load barier
+    };
+
+    void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 
