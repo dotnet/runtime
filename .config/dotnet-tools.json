@@ -9,7 +9,7 @@
       ]
     },
     "microsoft.dotnet.xharness.cli": {
-      "version": "1.0.0-prerelease.20230.6",
+      "version": "1.0.0-prerelease.20254.3",
       "commands": [
         "xharness"
       ]
