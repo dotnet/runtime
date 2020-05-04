@@ -48,8 +48,8 @@ namespace System.Threading
         /// if an object was not used and to then dispose of the object appropriately.
         /// </para>
         /// </remarks>
-        public static T EnsureInitialized<T>([NotNull] ref T? target) where T : class
-            => Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target);
+        public static T EnsureInitialized<T>([NotNull] ref T? target) where T : class =>
+            Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target);
 
         /// <summary>
         /// Initializes a target reference type with the type's default constructor (slow path)
@@ -100,8 +100,8 @@ namespace System.Threading
         /// if an object was not used and to then dispose of the object appropriately.
         /// </para>
         /// </remarks>
-        public static T EnsureInitialized<T>([NotNull] ref T? target, Func<T> valueFactory) where T : class
-            => Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target, valueFactory);
+        public static T EnsureInitialized<T>([NotNull] ref T? target, Func<T> valueFactory) where T : class =>
+            Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target, valueFactory);
 
         /// <summary>
         /// Initialize the target using the given delegate (slow path).
@@ -245,8 +245,8 @@ namespace System.Threading
         /// been initialized, a new object will be instantiated.</param>
         /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the reference.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([NotNull] ref T? target, [NotNullIfNotNull("syncLock")] ref object? syncLock, Func<T> valueFactory) where T : class
-            => Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
+        public static T EnsureInitialized<T>([NotNull] ref T? target, [NotNullIfNotNull("syncLock")] ref object? syncLock, Func<T> valueFactory) where T : class =>
+            Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
 
         /// <summary>
         /// Ensure the target is initialized and return the value (slow path). This overload works only for reference type targets.
