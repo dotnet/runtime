@@ -13042,7 +13042,7 @@ DONE_MORPHING_CHILDREN:
                     if (op2->AsDblCon()->gtDconVal == 2.0)
                     {
                         // Fold "x*2.0" to "x+x"
-                        op2  = gtCloneExpr(op1->OperIsLeaf() ? op1 : fgMakeMultiUse(&tree->AsOp()->gtOp1));
+                        op2  = op1->OperIsLeaf() ? gtCloneExpr(op1) : fgMakeMultiUse(&tree->AsOp()->gtOp1);
                         op1  = tree->AsOp()->gtOp1;
                         oper = GT_ADD;
                         tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
