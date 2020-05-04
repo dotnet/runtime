@@ -97,7 +97,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);_DEBUG;%(PreprocessorDefinitions);TARGET_WINDOWS;PALEXPORT=MONO_API</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);_DEBUG;%(PreprocessorDefinitions);TARGET_WINDOWS;PALEXPORT=extern "C" __declspec(dllexport)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(SHIM_GLOBALIZATION);$(SHIM_GLOBALIZATION_COMMON);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -111,7 +111,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);WIN64;_DEBUG;%(PreprocessorDefinitions);TARGET_WINDOWS;PALEXPORT=MONO_API</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);WIN64;_DEBUG;%(PreprocessorDefinitions);TARGET_WINDOWS;PALEXPORT=extern "C" __declspec(dllexport)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE;$(SHIM_GLOBALIZATION);$(SHIM_GLOBALIZATION_COMMON));%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -125,7 +125,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);NDEBUG;%(PreprocessorDefinitions);TARGET_WINDOWS;PALEXPORT=MONO_API</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);NDEBUG;%(PreprocessorDefinitions);TARGET_WINDOWS;PALEXPORT=extern "C" __declspec(dllexport)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(SHIM_GLOBALIZATION);$(SHIM_GLOBALIZATION_COMMON);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
@@ -141,7 +141,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);WIN64;NDEBUG;%(PreprocessorDefinitions;TARGET_WINDOWS;PALEXPORT=MONO_API</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);WIN64;NDEBUG;%(PreprocessorDefinitions;TARGET_WINDOWS;PALEXPORT=extern "C" __declspec(dllexport)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(SHIM_GLOBALIZATION);$(SHIM_GLOBALIZATION_COMMON);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
