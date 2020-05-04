@@ -486,7 +486,8 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_STIND_REF);		
 		break;		
 
-	// In Mono historically LPSTR was treated as a UTF8STR
+	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_STR_UTF8STR:
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:
@@ -588,8 +589,6 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		break;
 	}
 		
-	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 	default: {
 		char *msg = g_strdup_printf ("marshaling conversion %d not implemented", conv);
@@ -712,7 +711,6 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_NEG);
 		mono_mb_emit_byte (mb, CEE_STIND_I2);
 		break;
-	// In Mono historically LPSTR was treated as a UTF8STR
 	case MONO_MARSHAL_CONV_STR_UTF8STR:
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:

@@ -382,6 +382,9 @@ mono_type_native_stack_size (MonoType *type, guint32 *alignment);
 mono_bstr
 mono_ptr_to_bstr (const gunichar2* ptr, int slen);
 
+char *
+mono_ptr_to_ansibstr (const char *ptr, size_t slen);
+
 void mono_delegate_free_ftnptr (MonoDelegate *delegate);
 
 void
