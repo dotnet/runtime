@@ -190,11 +190,14 @@ namespace System
 
             if (_syntax.IsSimple)
             {
+                // For build-in (simple) parsers, it is safe to do an Interlocked update here
                 Debug.Assert(sizeof(Flags) == sizeof(ulong));
                 Interlocked.Or(ref Unsafe.As<Flags, ulong>(ref _flags), (ulong)flags);
             }
             else
             {
+                // Custom parsers still use a lock in CreateHostString and perform non-atomic flags updates
+                // We have to take the lock to ensure flags access synchronization if CreateHostString and ParseRemaining are called concurrently
                 lock (_info)
                 {
                     _flags |= flags;
