@@ -331,7 +331,8 @@ internal static partial class Interop
         {
             if (dtv == null)
                 throw new ArgumentNullException(nameof(dtv), "Value can not be null");
-            if (!(dtv is DateTime))
+            if (!(dtv is DateTime dt))
+                throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
             {
                 throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
             }
