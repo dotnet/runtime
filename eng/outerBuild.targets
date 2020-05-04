@@ -1,4 +1,4 @@
-<Project>  
+<Project>
   <Target Name="GenerateReferenceAssemblySource" DependsOnTargets="GetProjectWithBestTargetFrameworks">
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
              Targets="GenerateReferenceAssemblySource"
