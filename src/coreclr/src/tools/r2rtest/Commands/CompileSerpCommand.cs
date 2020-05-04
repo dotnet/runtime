@@ -93,7 +93,7 @@ namespace R2RTest
 
             // TestILC needs a list of all directories containing assemblies that are referenced from crossgen
             List<string> referenceAssemblies = new List<string>();
-            HashSet<string> simpleNames = new HashSet<string>();
+            HashSet<string> simpleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             // Reference all managed assemblies in /bin and /App_Data/answers/services/packages
             foreach (string binFile in ResolveReferences(referenceAssemblyDirectories))
