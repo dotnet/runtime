@@ -6807,6 +6807,7 @@ if test x$with_core = xonly; then
 		if test x$have_sys_icu = xyes; then
 			ICU_CFLAGS="-DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -I/usr/local/opt/icu4c/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"
 			AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
+			AC_DEFINE(HAVE_SYS_ICU, 1, [Use static icu shim])
 			ICU_SHIM_PATH='$(top_srcdir)'/../libraries/Native/Unix/System.Globalization.Native
 		fi
 	elif test x$host_linux = xyes; then
@@ -6819,6 +6820,7 @@ if test x$with_core = xonly; then
 		if test x$have_sys_icu = xyes; then
 			ICU_CFLAGS="-DTARGET_UNIX -I/usr/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
+			AC_DEFINE(HAVE_SYS_ICU, 1, [Use static icu shim])
 			ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
 		fi
 	fi

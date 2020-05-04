@@ -137,6 +137,7 @@ libmonoruntime_support_la_LDFLAGS = $(Z_LIBS)
 libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @ZLIB_CFLAGS@
 
 if ENABLE_NETCORE
+if HAVE_SYS_ICU
 shim_libraries = libmonoruntime-shimglobalization.la
 
 libmonoruntime_shimglobalization_la_SOURCES = \
@@ -153,6 +154,7 @@ libmonoruntime_shimglobalization_la_SOURCES = \
 
 libmonoruntime_shimglobalization_la_LDFLAGS = @ICU_LIBS@
 libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/Common/
+endif
 endif
 
 #
