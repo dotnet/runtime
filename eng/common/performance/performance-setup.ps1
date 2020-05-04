@@ -56,6 +56,16 @@ if ($Internal) {
 if($MonoDotnet -ne "")
 {
     $Configurations += " LLVM=$LLVM MonoInterpreter=$MonoInterpreter MonoAOT=$MonoAOT"
+    if($ExtraBenchmarkDotNetArguments -eq "")
+    {
+        #FIX ME: We need to block these tests as they don't run on mono for now
+        $ExtraBenchmarkDotNetArguments = "--exclusion-filter *Perf_Image*"
+    }
+    else
+    {
+        #FIX ME: We need to block these tests as they don't run on mono for now
+        $ExtraBenchmarkDotNetArguments += " --exclusion-filter *Perf_Image*"
+    }
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
