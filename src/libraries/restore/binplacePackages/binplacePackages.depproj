@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <!-- Runtime / test-runtime binplacing, when we aren't building better live version of these libs -->
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <ItemName>BinPlaceLib</ItemName>
       <RuntimePath>$(RuntimePath)</RuntimePath>
@@ -30,22 +30,22 @@
   <!-- This is to make sure that nothing unintended gets restored for netcoreapp. -->
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <!-- runtime dependency: System.Diagnostics.PerformanceCounters netcoreapp2.0,net461 -->
-    <PackageReference Include="System.Memory" Version="4.5.3" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &gt;= 1.1)" />
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition="'$(TargetsNetStandardLowerThan21)' == 'true' or '$(TargetsNetfx)' == 'true'" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or '$(TargetsNetStandard)' == 'true'" />
+    <PackageReference Include="System.Memory" Version="4.5.3" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or $(TargetFramework.StartsWith('net4')) or ($(TargetFramework.StartsWith('netstandard')) and '$(NETStandardVersion)' &gt;= 1.1)" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition="'$(TargetsNetStandardLowerThan21)' == 'true' or $(TargetFramework.StartsWith('net4'))" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or $(TargetFramework.StartsWith('net4')) or $(TargetFramework.StartsWith('netstandard'))" />
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" Condition="!$(TargetFramework.StartsWith('netstandard')) or '$(NETStandardVersion)' &gt;= 2.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" Condition="!$(TargetFramework.StartsWith('netstandard')) or '$(NETStandardVersion)' &gt;= 2.0" />
     
-    <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &lt;= 2.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" Condition="!$(TargetFramework.StartsWith('netstandard')) or '$(NETStandardVersion)' &lt;= 2.0" />
     <!-- Only include the assets from the direct packages we reference in the output -->
     <PackageToInclude Include="@(PackageReference)" />
   </ItemGroup>
 
   <Target Name="AddHarvestedLibraries" BeforeTargets="CoreCompile"
-          Condition="'$(TargetsNetStandard)' != 'true'">
+          Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <ItemGroup>
       <BinPlaceLib Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>

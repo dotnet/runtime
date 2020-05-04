@@ -55,7 +55,7 @@
     <Compile Include="System\Media\SystemSounds.cs" />
     <Compile Include="System\Xaml\Permissions\XamlAccessLevel.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />

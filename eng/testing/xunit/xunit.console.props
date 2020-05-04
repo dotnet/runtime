@@ -5,7 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(TargetsNetCoreApp)' == 'true'" Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
-    <PackageReference Condition="'$(TargetsNetFx)' == 'true'" Include="xunit.runner.console" Version="$(XUnitVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner"
+                      Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)"
+                      Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <PackageReference Include="xunit.runner.console"
+                      Version="$(XUnitVersion)"
+                      Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'" />
   </ItemGroup>
 </Project>
