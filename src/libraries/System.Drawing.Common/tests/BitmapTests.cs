@@ -815,6 +815,12 @@ namespace System.Drawing.Tests
                 throw new SkipTestException("GDI+ 1.1 is not supported");
             }
 
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                // https://github.com/dotnet/runtime/issues/28859
+                throw new SkipTestException("Arm precision");
+            }
+
             string output = GetTestFilePath() + ".png";
             using Stream wmfStream = File.OpenRead(Helpers.GetTestBitmapPath("gdiwmfboundariesbug.wmf"));
             using Image bitmapFromWmf = Bitmap.FromStream(wmfStream);

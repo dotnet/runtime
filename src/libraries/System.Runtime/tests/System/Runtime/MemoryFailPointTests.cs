@@ -27,7 +27,7 @@ namespace System.Runtime.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sizeInMegabytes", () => new MemoryFailPoint(sizeInMegabytes));
         }
 
-        [Fact]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] //https://github.com/dotnet/runtime/issues/6879
         public void Ctor_LargeSizeInMegabytes_ThrowsInsufficientMemoryException()
         {
