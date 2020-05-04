@@ -115,10 +115,13 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
 //    base type of SIMD vector.
 //    sizeBytes if non-null is set to size in bytes.
 //
+// Notes:
+//    If the size of the struct is already known call structSizeMightRepresentSIMDType
+//    to determine if this api needs to be called.
+//
 // TODO-Throughput: current implementation parses class name to find base type. Change
 //         this when we implement  SIMD intrinsic identification for the final
 //         product.
-//
 var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
     assert(supportSIMDTypes());
@@ -764,6 +767,15 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
 #endif // defined(TARGET_ARM64)
             }
         }
+
+#if defined(TARGET_XARCH)
+        // Even though Vector256 is TYP_SIMD32, if AVX isn't supported, then it must
+        // be treated as a regular struct
+        if (size == YMM_REGSIZE_BYTES && (simdBaseType != TYP_UNKNOWN) && !compExactlyDependsOn(InstructionSet_AVX))
+        {
+            simdBaseType = TYP_UNKNOWN;
+        }
+#endif // TARGET_XARCH
 
         if (sizeBytes != nullptr)
         {

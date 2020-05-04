@@ -105,6 +105,8 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     amTracker.SuppressRelease();
 
+    pStubLinker->SetStubMethodDesc(pStubMD);
+
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
     pResolver->SetStubMethodDesc(pStubMD);
@@ -112,18 +114,19 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     {
         UINT   maxStack;
-        size_t cbCode;
-        DWORD  cbSig;
-        BYTE * pbBuffer;
-        BYTE * pbLocalSig;
-
-        cbCode = pStubLinker->Link(&maxStack);
-        cbSig = pStubLinker->GetLocalSigSize();
+        size_t cbCode = pStubLinker->Link(&maxStack);
+        DWORD cbSig = pStubLinker->GetLocalSigSize();
 
         COR_ILMETHOD_DECODER * pILHeader = pResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        pbBuffer   = (BYTE *)pILHeader->Code;
-        pbLocalSig = (BYTE *)pILHeader->LocalVarSig;
+        BYTE * pbBuffer   = (BYTE *)pILHeader->Code;
+        BYTE * pbLocalSig = (BYTE *)pILHeader->LocalVarSig;
         _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+
+        size_t numEH = pStubLinker->GetNumEHClauses();
+        if (numEH > 0)
+        {
+            pStubLinker->WriteEHClauses(pResolver->AllocEHSect(numEH));
+        }
 
         pStubLinker->GenerateCode(pbBuffer, cbCode);
         pStubLinker->GetLocalSig(pbLocalSig, cbSig);
@@ -244,6 +247,21 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     }
     else
 #endif
+    if (SF_IsTailCallStoreArgsStub(dwStubFlags))
+    {
+        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallStoreArgsStub);
+    }
+    else
+    if (SF_IsTailCallCallTargetStub(dwStubFlags))
+    {
+        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallCallTargetStub);
+    }
+    else
+    if (SF_IsTailCallDispatcherStub(dwStubFlags))
+    {
+        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallDispatcherStub);
+    }
+    else
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
@@ -279,6 +297,9 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         if (SF_IsReverseStub(dwStubFlags))
         {
             pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub;
+#if !defined(TARGET_X86)
+            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdUnmanagedCallersOnlyStub;
+#endif
             pMD->GetILStubResolver()->SetStubType(ILStubResolver::NativeToCLRInteropStub);
         }
         else
@@ -471,10 +492,6 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
     if (!pMD)
     {
-        size_t cbSizeOfBlob = pParams->m_cbSizeOfBlob;
-        AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
-
-
         //
         // Couldn't find it, let's make a new one.
         //
@@ -498,6 +515,8 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
         if (SF_IsSharedStub(dwStubFlags))
         {
+            size_t cbSizeOfBlob = pParams->m_cbSizeOfBlob;
+            AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
 
             CrstHolder ch(&m_crst);
 

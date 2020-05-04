@@ -93,7 +93,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValue_Byte()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 2, 3, 4, 5 });
             Span<byte> value = new Span<byte>(new byte[] { 2 });
             int index = span.IndexOf(value);
@@ -103,7 +102,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValueAtVeryEnd_Byte()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 2, 3, 4, 5 });
             Span<byte> value = new Span<byte>(new byte[] { 5 });
             int index = span.IndexOf(value);
@@ -113,7 +111,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValueJustPasttVeryEnd_Byte()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 2, 3, 4, 5 }, 0, 5);
             Span<byte> value = new Span<byte>(new byte[] { 5 });
             int index = span.IndexOf(value);

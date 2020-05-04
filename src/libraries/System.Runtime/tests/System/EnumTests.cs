@@ -944,7 +944,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(Enum e, object obj, bool expected)
+        public static void EqualsTest(Enum e, object obj, bool expected)
         {
             Assert.Equal(expected, e.Equals(obj));
             Assert.Equal(e.GetHashCode(), e.GetHashCode());

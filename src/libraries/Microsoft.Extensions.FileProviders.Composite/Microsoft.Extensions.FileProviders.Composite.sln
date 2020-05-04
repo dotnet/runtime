@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.FilePr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.FileProviders.Composite.Tests", "tests\Microsoft.Extensions.FileProviders.Composite.Tests.csproj", "{20A287F1-DC01-4569-851B-A54016B54618}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{DBBD82F2-6CC9-4FE1-B020-2F71E652104E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{20A287F1-DC01-4569-851B-A54016B54618}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20A287F1-DC01-4569-851B-A54016B54618}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20A287F1-DC01-4569-851B-A54016B54618}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBBD82F2-6CC9-4FE1-B020-2F71E652104E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBBD82F2-6CC9-4FE1-B020-2F71E652104E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBBD82F2-6CC9-4FE1-B020-2F71E652104E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBBD82F2-6CC9-4FE1-B020-2F71E652104E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -41,6 +47,7 @@ Global
 		{3AD7B949-DC7D-46E9-9781-47F631D11E79} = {B269123A-BA35-48E3-84CA-A2DC821D20B4}
 		{F9BB5B79-96EE-4255-A458-88E896E2FB5B} = {286582BD-078C-4705-BB1F-8AC3D8C35DCE}
 		{20A287F1-DC01-4569-851B-A54016B54618} = {17B68FB8-5750-412A-BE2F-0958142CB101}
+		{DBBD82F2-6CC9-4FE1-B020-2F71E652104E} = {17B68FB8-5750-412A-BE2F-0958142CB101}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1B4A0C76-E4FA-4FEC-A04D-F71987BB8830}

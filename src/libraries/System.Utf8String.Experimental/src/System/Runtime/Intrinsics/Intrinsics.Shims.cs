@@ -26,6 +26,18 @@ namespace System.Runtime.Intrinsics
 
 namespace System.Runtime.Intrinsics.X86
 {
+    internal static class X86Base
+    {
+        internal static class X64
+        {
+            public const bool IsSupported = false;
+            internal static ulong BitScanForward(ulong value) => throw new PlatformNotSupportedException();
+            internal static ulong BitScanReverse(ulong value) => throw new PlatformNotSupportedException();
+        }
+        public const bool IsSupported = false;
+        internal static uint BitScanForward(uint value) => throw new PlatformNotSupportedException();
+        internal static uint BitScanReverse(uint value) => throw new PlatformNotSupportedException();
+    }
     internal abstract class Bmi1
     {
         public abstract class X64
@@ -101,5 +113,21 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ushort> Min(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static bool TestZ(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
         public static bool TestZ(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
+    }
+}
+
+namespace System.Runtime.Intrinsics.Arm
+{
+    internal abstract class ArmBase
+    {
+        public abstract class Arm64
+        {
+            public const bool IsSupported = false;
+            public static int LeadingZeroCount(ulong value) => throw new PlatformNotSupportedException();
+            public static uint ReverseElementBits(ulong value) => throw new PlatformNotSupportedException();
+        }
+        public const bool IsSupported = false;
+        public static int LeadingZeroCount(uint value) => throw new PlatformNotSupportedException();
+        public static uint ReverseElementBits(uint value) => throw new PlatformNotSupportedException();
     }
 }

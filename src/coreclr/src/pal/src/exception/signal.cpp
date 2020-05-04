@@ -183,7 +183,11 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 7 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
         stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
-        g_stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_STACK | MAP_PRIVATE, -1, 0);
+        int flags = MAP_ANONYMOUS | MAP_PRIVATE;
+#ifdef MAP_STACK
+        flags |= MAP_STACK;
+#endif
+        g_stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, flags, -1, 0);
         if (g_stackOverflowHandlerStack == MAP_FAILED)
         {
             return FALSE;
@@ -534,7 +538,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             {
                 (void)write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
                 PROCAbort();
-            }            
+            }
         }
 
         // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common

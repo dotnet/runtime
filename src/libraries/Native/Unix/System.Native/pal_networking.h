@@ -59,6 +59,7 @@ typedef enum
  */
 typedef enum
 {
+    AddressFamily_AF_UNKNOWN = -1, // System.Net.AddressFamily.Unknown
     AddressFamily_AF_UNSPEC = 0,   // System.Net.AddressFamily.Unspecified
     AddressFamily_AF_UNIX = 1,     // System.Net.AddressFamily.Unix
     AddressFamily_AF_INET = 2,     // System.Net.AddressFamily.InterNetwork
@@ -74,6 +75,7 @@ typedef enum
  */
 typedef enum
 {
+    SocketType_UNKNOWN = -1,       // System.Net.SocketType.Unknown
     SocketType_SOCK_STREAM = 1,    // System.Net.SocketType.Stream
     SocketType_SOCK_DGRAM = 2,     // System.Net.SocketType.Dgram
     SocketType_SOCK_RAW = 3,       // System.Net.SocketType.Raw
@@ -88,6 +90,7 @@ typedef enum
  */
 typedef enum
 {
+    ProtocolType_PT_UNKNOWN = -1,    // System.Net.ProtocolType.Unknown
     ProtocolType_PT_UNSPECIFIED = 0, // System.Net.ProtocolType.Unspecified
     ProtocolType_PT_ICMP = 1,        // System.Net.ProtocolType.Icmp
     ProtocolType_PT_TCP = 6,         // System.Net.ProtocolType.Tcp
@@ -402,6 +405,8 @@ PALEXPORT int32_t SystemNative_SetRawSockOpt(
 
 PALEXPORT int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket);
 
+PALEXPORT int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening);
+
 PALEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* available);
 
 PALEXPORT int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
@@ -424,6 +429,8 @@ PALEXPORT int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void);
 PALEXPORT char* SystemNative_GetPeerUserName(intptr_t socket);
 
 PALEXPORT void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
+
+PALEXPORT int32_t SystemNative_GetMaximumAddressSize(void);
 
 PALEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent);
 

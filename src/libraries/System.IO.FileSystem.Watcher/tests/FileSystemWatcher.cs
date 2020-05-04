@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileSystemWatcherTests_netstandard17 : FileSystemWatcherTest
     {
         public class TestSite : ISite
@@ -186,22 +187,6 @@ namespace System.IO.Tests
                 watcher.EnableRaisingEvents = true;
                 new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose();
                 Thread.Sleep(WaitForExpectedEventTimeout);
-            }
-        }
-
-        /// <summary>
-        /// EndInit will begin EnableRaisingEvents if we previously set EnableRaisingEvents=true
-        /// </summary>
-        [Fact]
-        public void EndInit_ResumesPausedEnableRaisingEvents()
-        {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
-            {
-                watcher.BeginInit();
-                watcher.EnableRaisingEvents = true;
-                watcher.EndInit();
-                ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose(), null);
             }
         }
 

@@ -22,6 +22,10 @@
 #include "gcenv.unix.inl"
 #include "volatile.h"
 
+#if HAVE_SWAPCTL
+#include <sys/swap.h>
+#endif
+
 #undef min
 #undef max
 
@@ -731,7 +735,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 #endif
     {
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = madvise(address, size, MADV_DONTNEED);
+        st = posix_madvise(address, size, MADV_DONTNEED);
     }
 
     return (st == 0);
@@ -1111,6 +1115,13 @@ uint64_t GetAvailablePageFile()
             uint64_t avail = xsw.xsw_nblks - xsw.xsw_used;
             available += avail * pagesize;
         }
+    }
+#elif HAVE_SWAPCTL
+    struct anoninfo ai;
+    if (swapctl(SC_AINFO, &ai) != -1)
+    {
+        int pagesize = getpagesize();
+        available = ai.ani_free * pagesize;
     }
 #elif HAVE_SYSINFO
     // Linux

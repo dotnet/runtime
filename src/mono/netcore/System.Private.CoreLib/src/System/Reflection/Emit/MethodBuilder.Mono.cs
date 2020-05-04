@@ -30,8 +30,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -42,36 +42,36 @@ namespace System.Reflection.Emit
     {
 #pragma warning disable 169, 414
         private RuntimeMethodHandle mhandle;
-        private Type rtype;
-        internal Type[] parameters;
+        private Type? rtype;
+        internal Type[]? parameters;
         private MethodAttributes attrs; /* It's used directly by MCS */
         private MethodImplAttributes iattrs;
         private string name;
         private int table_idx;
-        private byte[] code;
-        private ILGenerator ilgen;
+        private byte[]? code;
+        private ILGenerator? ilgen;
         private TypeBuilder type;
-        internal ParameterBuilder[] pinfo;
-        private CustomAttributeBuilder[] cattrs;
-        private MethodInfo[] override_methods;
-        private string pi_dll;
-        private string pi_entry;
+        internal ParameterBuilder[]? pinfo;
+        private CustomAttributeBuilder[]? cattrs;
+        private MethodInfo[]? override_methods;
+        private string? pi_dll;
+        private string? pi_entry;
         private CharSet charset;
         private uint extra_flags; /* this encodes set_last_error etc */
         private CallingConvention native_cc;
         private CallingConventions call_conv;
         private bool init_locals = true;
         private IntPtr generic_container;
-        internal GenericTypeParameterBuilder[] generic_params;
-        private Type[] returnModReq;
-        private Type[] returnModOpt;
-        private Type[][] paramModReq;
-        private Type[][] paramModOpt;
-        private object permissions;
+        internal GenericTypeParameterBuilder[]? generic_params;
+        private Type[]? returnModReq;
+        private Type[]? returnModOpt;
+        private Type[][]? paramModReq;
+        private Type[][]? paramModOpt;
+        private object? permissions;
 #pragma warning restore 169, 414
-        private RuntimeMethodInfo created;
+        private RuntimeMethodInfo? created;
 
-        internal MethodBuilder(TypeBuilder tb, string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] returnModReq, Type[] returnModOpt, Type[] parameterTypes, Type[][] paramModReq, Type[][] paramModOpt)
+        internal MethodBuilder(TypeBuilder tb, string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             this.name = name;
             this.attrs = attributes;
@@ -101,7 +101,7 @@ namespace System.Reflection.Emit
         }
 
         internal MethodBuilder(TypeBuilder tb, string name, MethodAttributes attributes,
-                                CallingConventions callingConvention, Type returnType, Type[] returnModReq, Type[] returnModOpt, Type[] parameterTypes, Type[][] paramModReq, Type[][] paramModOpt,
+                                CallingConventions callingConvention, Type? returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt,
             string dllName, string entryName, CallingConvention nativeCConv, CharSet nativeCharset)
             : this(tb, name, attributes, callingConvention, returnType, returnModReq, returnModOpt, parameterTypes, paramModReq, paramModOpt)
         {
@@ -145,15 +145,15 @@ namespace System.Reflection.Emit
 
         public override Type ReturnType
         {
-            get { return rtype; }
+            get { return rtype!; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return type; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return type; }
         }
@@ -170,7 +170,7 @@ namespace System.Reflection.Emit
 
         public override ICustomAttributeProvider ReturnTypeCustomAttributes
         {
-            get { return null; }
+            get { return null!; } // FIXME: coreclr returns an empty instance
         }
 
         public override CallingConventions CallingConvention
@@ -249,7 +249,7 @@ namespace System.Reflection.Emit
         internal override ParameterInfo[] GetParametersInternal()
         {
             if (parameters == null)
-                return null;
+                return Array.Empty<ParameterInfo>();
 
             ParameterInfo[] retval = new ParameterInfo[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -269,7 +269,7 @@ namespace System.Reflection.Emit
 
         internal override Type GetParameterType(int pos)
         {
-            return parameters[pos];
+            return parameters![pos];
         }
 
         internal MethodBase RuntimeResolve()
@@ -282,7 +282,7 @@ namespace System.Reflection.Emit
             return type.Module;
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw NotSupported();
         }
@@ -368,7 +368,7 @@ namespace System.Reflection.Emit
                 if (((ilgen == null) || (ilgen.ILOffset == 0)) && (code == null || code.Length == 0))
                     throw new InvalidOperationException(
                                          string.Format("Method '{0}.{1}' does not have a method body.",
-                                                DeclaringType.FullName, Name));
+                                                DeclaringType!.FullName, Name));
             }
             if (ilgen != null)
                 ilgen.label_fixup(this);
@@ -408,7 +408,7 @@ namespace System.Reflection.Emit
             if (customBuilder == null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
-            switch (customBuilder.Ctor.ReflectedType.FullName)
+            switch (customBuilder.Ctor.ReflectedType!.FullName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
                     byte[] data = customBuilder.Data;
@@ -433,7 +433,7 @@ namespace System.Reflection.Emit
                      *   default in DllImportAttribute.
                      */
 
-                    pi_dll = (string)attr.ctorArgs[0];
+                    pi_dll = (string?)attr.ctorArgs[0];
                     if (pi_dll == null || pi_dll.Length == 0)
                         throw new ArgumentException("DllName cannot be empty");
 
@@ -442,24 +442,24 @@ namespace System.Reflection.Emit
                     for (int i = 0; i < attr.namedParamNames.Length; ++i)
                     {
                         string name = attr.namedParamNames[i];
-                        object value = attr.namedParamValues[i];
+                        object? value = attr.namedParamValues[i];
 
                         if (name == "CallingConvention")
-                            native_cc = (CallingConvention)value;
+                            native_cc = (CallingConvention)value!;
                         else if (name == "CharSet")
-                            charset = (CharSet)value;
+                            charset = (CharSet)value!;
                         else if (name == "EntryPoint")
-                            pi_entry = (string)value;
+                            pi_entry = (string)value!;
                         else if (name == "ExactSpelling")
-                            ExactSpelling = (bool)value;
+                            ExactSpelling = (bool)value!;
                         else if (name == "SetLastError")
-                            SetLastError = (bool)value;
+                            SetLastError = (bool)value!;
                         else if (name == "PreserveSig")
-                            preserveSig = (bool)value;
+                            preserveSig = (bool)value!;
                         else if (name == "BestFitMapping")
-                            BestFitMapping = (bool)value;
+                            BestFitMapping = (bool)value!;
                         else if (name == "ThrowOnUnmappableChar")
-                            ThrowOnUnmappableChar = (bool)value;
+                            ThrowOnUnmappableChar = (bool)value!;
                     }
 
                     attrs |= MethodAttributes.PinvokeImpl;
@@ -514,7 +514,7 @@ namespace System.Reflection.Emit
         }
 
         // FIXME:
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return base.Equals(obj);
         }
@@ -529,7 +529,7 @@ namespace System.Reflection.Emit
             return type.get_next_table_index(obj, table, count);
         }
 
-        private void ExtendArray<T>(ref T[] array, T elem)
+        private void ExtendArray<T>([NotNull] ref T[]? array, T elem)
         {
             if (array == null)
             {
@@ -566,7 +566,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException("Method is not a generic method definition");
             if (typeArguments == null)
                 throw new ArgumentNullException(nameof(typeArguments));
-            if (generic_params.Length != typeArguments.Length)
+            if (generic_params!.Length != typeArguments.Length)
                 throw new ArgumentException("Incorrect length", nameof(typeArguments));
             foreach (Type type in typeArguments)
             {
@@ -604,7 +604,7 @@ namespace System.Reflection.Emit
         public override Type[] GetGenericArguments()
         {
             if (generic_params == null)
-                return null;
+                return Type.EmptyTypes;
 
             Type[] result = new Type[generic_params.Length];
             for (int i = 0; i < generic_params.Length; i++)
@@ -632,12 +632,12 @@ namespace System.Reflection.Emit
             return generic_params;
         }
 
-        public void SetReturnType(Type returnType)
+        public void SetReturnType(Type? returnType)
         {
             rtype = returnType;
         }
 
-        public void SetParameters(params Type[] parameterTypes)
+        public void SetParameters(params Type[]? parameterTypes)
         {
             if (parameterTypes != null)
             {
@@ -650,7 +650,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetSignature(Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers, Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
+        public void SetSignature(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             SetReturnType(returnType);
             SetParameters(parameterTypes);
@@ -674,8 +674,7 @@ namespace System.Reflection.Emit
             {
                 if (!type.is_created)
                     throw new InvalidOperationException(SR.InvalidOperation_TypeNotCreated);
-                if (created == null)
-                    created = (RuntimeMethodInfo)GetMethodFromHandle(mhandle);
+                created ??= (RuntimeMethodInfo)GetMethodFromHandle(mhandle)!;
                 return created.ReturnParameter;
             }
         }
@@ -759,7 +758,7 @@ namespace System.Reflection.Emit
             return m_exceptionClass ^ m_tryStartOffset ^ m_tryEndOffset ^ m_filterOffset ^ m_handlerStartOffset ^ m_handlerEndOffset ^ (int)m_kind;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ExceptionHandler && Equals((ExceptionHandler)obj);
         }

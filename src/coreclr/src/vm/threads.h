@@ -969,6 +969,35 @@ EXTERN_C void STDCALL OnHijackWorker(HijackArgs * pArgs);
 class BaseStackGuard;
 #endif
 
+struct PortableTailCallFrame
+{
+    PortableTailCallFrame* Prev;
+    void* TailCallAwareReturnAddress;
+    void* NextCall;
+};
+
+class TailCallTls
+{
+    friend class MscorlibBinder;
+
+    PortableTailCallFrame* m_frame;
+    char* m_argBuffer;
+    size_t m_argBufferSize;
+    void* m_argBufferGCDesc;
+    char m_argBufferInline[64];
+
+public:
+    TailCallTls();
+    void* AllocArgBuffer(size_t size, void* gcDesc);
+    void FreeArgBuffer();
+    char* GetArgBuffer(void** gcDesc)
+    {
+        *gcDesc = m_argBufferGCDesc;
+        return m_argBuffer;
+    }
+    const PortableTailCallFrame* GetFrame() { return m_frame; }
+};
+
 // #ThreadClass
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  You can get at this
@@ -3412,7 +3441,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(VOID *pvHijackAddr, ExecutionState *esb);
+    void    HijackThread(ReturnKind returnKind, ExecutionState *esb);
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
@@ -4100,6 +4129,23 @@ private:
     // Called during Thread death to clean up all structures
     // associated with thread statics
     void DeleteThreadStaticData();
+
+private:
+    TailCallTls m_tailCallTls;
+
+public:
+    TailCallTls* GetTailCallTls() { return &m_tailCallTls; }
+    void* GetReturnAddress(void** retAddrSlot)
+    {
+#ifdef FEATURE_HIJACK
+        if ((m_State & TS_Hijacked) && (retAddrSlot == m_ppvHJRetAddrPtr))
+        {
+            return m_pvHJRetAddr;
+        }
+#endif
+
+        return *retAddrSlot;
+    }
 
 #ifdef _DEBUG
 private:

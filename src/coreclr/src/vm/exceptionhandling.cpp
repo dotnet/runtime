@@ -241,6 +241,9 @@ void InitializeExceptionHandling()
     // Register handler for termination requests (e.g. SIGTERM)
     PAL_SetTerminationRequestHandler(HandleTerminationRequest);
 #endif // TARGET_UNIX
+#ifdef HOST_WINDOWS
+    InitializeCrashDump();
+#endif // HOST_WINDOWS
 }
 
 struct UpdateObjectRefInResumeContextCallbackState
@@ -890,7 +893,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 
             // We should be in cooperative mode if we are going to handle the SO.
             // We track SO state for the thread.
-            EEPolicy::HandleStackOverflow(SOD_ManagedFrameHandler, (void*)MemoryStackFp);
+            EEPolicy::HandleStackOverflow();
             FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
             return ExceptionContinueSearch;
         }
@@ -1047,49 +1050,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-        {
-            // Switch to COOP mode since we are going to work
-            // with throwable
-            GCX_COOP();
-            if (pTracker->GetThrowable() != NULL)
-            {
-                BOOL fIsThrownExceptionAV = FALSE;
-                OBJECTREF oThrowable = NULL;
-                GCPROTECT_BEGIN(oThrowable);
-                oThrowable = pTracker->GetThrowable();
-
-                // Check if we are dealing with AV or not and if we are,
-                // ensure that this is a real AV and not managed AV exception
-                if ((pExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION) &&
-                    (MscorlibBinder::GetException(kAccessViolationException) == oThrowable->GetMethodTable()))
-                {
-                    // Its an AV - set the flag
-                    fIsThrownExceptionAV = TRUE;
-                }
-
-                GCPROTECT_END();
-
-                // Did we get an AV?
-                if (fIsThrownExceptionAV == TRUE)
-                {
-                    // Get the escalation policy action for handling AV
-                    EPolicyAction actionAV = GetEEPolicy()->GetActionOnFailure(FAIL_AccessViolation);
-
-                    // Valid actions are: eNoAction (default behviour) or eRudeExitProcess
-                    _ASSERTE(((actionAV == eNoAction) || (actionAV == eRudeExitProcess)));
-                    if (actionAV == eRudeExitProcess)
-                    {
-                        LOG((LF_EH, LL_INFO100, "ProcessCLRException: AccessViolation handler found and doing RudeExitProcess due to escalation policy (eRudeExitProcess)\n"));
-
-                        // EEPolicy::HandleFatalError will help us RudeExit the process.
-                        // RudeExitProcess due to AV is to prevent a security risk - we are ripping
-                        // at the boundary, without looking for the handlers.
-                        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_SECURITY);
-                    }
-                }
-            }
-        }
-
 #ifndef TARGET_UNIX // Watson is on Windows only
         // Setup bucketing details for nested exceptions (rethrow and non-rethrow) only if we are in the first pass
         if (!(dwExceptionFlags & EXCEPTION_UNWINDING))
@@ -1104,10 +1064,8 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 
         CLRUnwindStatus                     status;
 
-#ifdef USE_PER_FRAME_PINVOKE_INIT
         // Refer to comment in ProcessOSExceptionNotification about ICF and codegen difference.
         InlinedCallFrame *pICFSetAsLimitFrame = NULL;
-#endif // USE_PER_FRAME_PINVOKE_INIT
 
         status = pTracker->ProcessOSExceptionNotification(
             pExceptionRecord,
@@ -1116,11 +1074,8 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             dwExceptionFlags,
             sf,
             pThread,
-            STState
-#ifdef USE_PER_FRAME_PINVOKE_INIT
-            , (PVOID)pICFSetAsLimitFrame
-#endif // USE_PER_FRAME_PINVOKE_INIT
-            );
+            STState,
+            (PVOID)pICFSetAsLimitFrame);
 
         if (FirstPassComplete == status)
         {
@@ -1223,7 +1178,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 
 
                 CONSISTENCY_CHECK(pLimitFrame > dac_cast<PTR_VOID>(GetSP(pContextRecord)));
-#ifdef USE_PER_FRAME_PINVOKE_INIT
                 if (pICFSetAsLimitFrame != NULL)
                 {
                     _ASSERTE(pICFSetAsLimitFrame == pLimitFrame);
@@ -1235,7 +1189,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
                     // the next pinvoke callsite does not see the frame as active.
                     pICFSetAsLimitFrame->Reset();
                 }
-#endif // USE_PER_FRAME_PINVOKE_INIT
 
                 pThread->SetFrame(pLimitFrame);
 
@@ -1264,6 +1217,7 @@ lExit: ;
 
     if ((ExceptionContinueSearch == returnDisposition))
     {
+#ifdef USE_GC_INFO_DECODER
         if (dwExceptionFlags & EXCEPTION_UNWINDING)
         {
             EECodeInfo codeInfo(pDispatcherContext->ControlPc);
@@ -1272,13 +1226,14 @@ lExit: ;
                 GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
                 if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
                 {
-                    // Exception is being propagated from a native callable method into its native caller.
+                    // Exception is being propagated from a method marked UnmanagedCallersOnlyAttribute into its native caller.
                     // The explicit frame chain needs to be unwound at this boundary.
                     bool fIsSO = pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW;
                     CleanUpForSecondPass(pThread, fIsSO, (void*)MemoryStackFp, (void*)MemoryStackFp);
                 }
             }
         }
+#endif // USE_GC_INFO_DECODER
 
         GCX_PREEMP_NO_DTOR();
     }
@@ -1715,11 +1670,8 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
     DWORD dwExceptionFlags,
     StackFrame sf,
     Thread* pThread,
-    StackTraceState STState
-#ifdef USE_PER_FRAME_PINVOKE_INIT
-    , PVOID pICFSetAsLimitFrame
-#endif // USE_PER_FRAME_PINVOKE_INIT
-)
+    StackTraceState STState,
+    PVOID pICFSetAsLimitFrame)
 {
     CONTRACTL
     {
@@ -1785,10 +1737,8 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
         this->m_EnclosingClauseInfoForGCReporting.SetEnclosingClauseCallerSP(uCallerSP);
     }
 
-#ifdef USE_PER_FRAME_PINVOKE_INIT
     // Refer to detailed comment below.
     PTR_Frame pICFForUnwindTarget = NULL;
-#endif // USE_PER_FRAME_PINVOKE_INIT
 
     CheckForRudeAbort(pThread, fIsFirstPass);
 
@@ -1817,15 +1767,12 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
 
         while (((UINT_PTR)pFrame) < uCallerSP)
         {
-#ifdef USE_PER_FRAME_PINVOKE_INIT
             // InlinedCallFrames (ICF) are allocated, initialized and linked to the Frame chain
             // by the code generated by the JIT for a method containing a PInvoke.
             //
-            // On X64, JIT generates code to dynamically link and unlink the ICF around
-            // each PInvoke call. On ARM, on the other hand, JIT's codegen, in context of ICF,
-            // is more inline with X86 and thus, it links in the ICF at the start of the method
-            // and unlinks it towards the method end. Thus, ICF is present on the Frame chain
-            // at any given point so long as the method containing the PInvoke is on the stack.
+            // JIT generates code that links in the ICF at the start of the method and unlinks it towards
+            // the method end. Thus, ICF is present on the Frame chain at any given point so long as the
+            // method containing the PInvoke is on the stack.
             //
             // Now, if the method containing ICF catches an exception, we will reset the Frame chain
             // with the LimitFrame, that is computed below, after the catch handler returns. Since this
@@ -1895,7 +1842,6 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                     }
                 }
             }
-#endif // USE_PER_FRAME_PINVOKE_INIT
 
             cfThisFrame.CheckGSCookies();
 
@@ -2040,7 +1986,6 @@ lExit:
 
     if (fTargetUnwind && (status == SecondPassComplete))
     {
-#ifdef USE_PER_FRAME_PINVOKE_INIT
         // If we have got a ICF to set as the LimitFrame, do that now.
         // The Frame chain is still intact and would be updated using
         // the LimitFrame (done after the catch handler returns).
@@ -2052,7 +1997,6 @@ lExit:
             m_pLimitFrame = pICFForUnwindTarget;
             pICFSetAsLimitFrame = (PVOID)pICFForUnwindTarget;
         }
-#endif // USE_PER_FRAME_PINVOKE_INIT
 
         // Since second pass is complete and we have reached
         // the frame containing the catch funclet, reset the enclosing
@@ -4681,31 +4625,30 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             controlPc = Thread::VirtualUnwindLeafCallFrame(frameContext);
         }
 
+#ifdef USE_GC_INFO_DECODER
         GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
 
         if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
         {
-            // Propagating exception from a method marked by NativeCallable attribute is prohibited on Unix
+            // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
             if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
             {
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
             }
-            TerminateProcess(GetCurrentProcess(), 1);
+            CrashDumpAndTerminateProcess(1);
             UNREACHABLE();
         }
+#endif // USE_GC_INFO_DECODER
 
         // Check whether we are crossing managed-to-native boundary
         while (!ExecutionManager::IsManagedCode(controlPc))
         {
-#ifdef VSD_STUB_CAN_THROW_AV
-            if (IsIPinVirtualStub(controlPc))
+            if (AdjustContextForVirtualStub(NULL, frameContext))
             {
-                AdjustContextForVirtualStub(NULL, frameContext);
                 controlPc = GetIP(frameContext);
                 break;
             }
-#endif // VSD_STUB_CAN_THROW_AV
 
 #ifdef FEATURE_WRITEBARRIER_COPY
             if (IsIPInWriteBarrierCodeCopy(controlPc))
@@ -4736,7 +4679,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
                 }
-                TerminateProcess(GetCurrentProcess(), 1);
+                CrashDumpAndTerminateProcess(1);
                 UNREACHABLE();
             }
 
@@ -5215,9 +5158,7 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT ||
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
         (IsSafeToCallExecutionManager() && ExecutionManager::IsManagedCode(controlPc)) ||
-#ifdef VSD_STUB_CAN_THROW_AV
         IsIPinVirtualStub(controlPc) ||  // access violation comes from DispatchStub of Interface call
-#endif // VSD_STUB_CAN_THROW_AV
         IsIPInMarkedJitHelper(controlPc));
 }
 
@@ -5306,12 +5247,10 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 PAL_VirtualUnwind(ex->GetContextRecord(), NULL);
                 ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
             }
-#ifdef VSD_STUB_CAN_THROW_AV
-            else if (IsIPinVirtualStub(controlPc))
+            else
             {
                 AdjustContextForVirtualStub(ex->GetExceptionRecord(), ex->GetContextRecord());
             }
-#endif // VSD_STUB_CAN_THROW_AV
             fef.InitAndLink(ex->GetContextRecord());
         }
 

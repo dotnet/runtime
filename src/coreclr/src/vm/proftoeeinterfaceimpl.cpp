@@ -665,14 +665,14 @@ void __stdcall GarbageCollectionStartedCallback(int generation, BOOL induced)
     // Notify the profiler of start of the collection
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackGC() || CORProfilerTrackBasicGC());
-        BOOL generationCollected[COR_PRF_GC_LARGE_OBJECT_HEAP+1];
+        BOOL generationCollected[COR_PRF_GC_PINNED_OBJECT_HEAP+1];
         if (generation == COR_PRF_GC_GEN_2)
-            generation = COR_PRF_GC_LARGE_OBJECT_HEAP;
-        for (int gen = 0; gen <= COR_PRF_GC_LARGE_OBJECT_HEAP; gen++)
+            generation = COR_PRF_GC_PINNED_OBJECT_HEAP;
+        for (int gen = 0; gen <= COR_PRF_GC_PINNED_OBJECT_HEAP; gen++)
             generationCollected[gen] = gen <= generation;
 
         g_profControlBlock.pProfInterface->GarbageCollectionStarted(
-            COR_PRF_GC_LARGE_OBJECT_HEAP+1,
+            COR_PRF_GC_PINNED_OBJECT_HEAP+1,
             generationCollected,
             induced ? COR_PRF_GC_INDUCED : COR_PRF_GC_OTHER);
         END_PIN_PROFILER();
@@ -726,7 +726,7 @@ struct GenerationTable
 {
     ULONG count;
     ULONG capacity;
-    static const ULONG defaultCapacity = 4; // that's the minimum for 3 generation plus the large object heap
+    static const ULONG defaultCapacity = 5; // that's the minimum for Gen0-2 + LOH + POH
     GenerationTable *prev;
     GenerationDesc *genDescTable;
 #ifdef  _DEBUG
@@ -765,7 +765,7 @@ static void GenWalkFunc(void * context,
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
         PRECONDITION(CheckPointer(context));
-        PRECONDITION(0 <= generation && generation <= 3);
+        PRECONDITION(0 <= generation && generation <= 4);
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
@@ -3141,6 +3141,12 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
     // If this class is not fully restored, that is all the information we can get at this time.
     //
     if (!typeHandle.IsRestored())
+    {
+        return CORPROF_E_DATAINCOMPLETE;
+    }
+
+    if (typeHandle.GetModule()->GetLoaderAllocator() == NULL ||
+        typeHandle.GetModule()->GetLoaderAllocator()->GetExposedObject() == NULL)
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -9211,30 +9217,44 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
 
     if (pcchVersionString != NULL)
     {
-        HRESULT hr = GetCORVersionInternal(szVersionString, (DWORD)cchVersionString, (DWORD *)pcchVersionString);
-        if (FAILED(hr))
-            return hr;
+        PCWSTR pczVersionString = CLR_PRODUCT_VERSION_L;
+
+        // Get the module file name
+        ULONG trueLen = (ULONG)(wcslen(pczVersionString) + 1);
+
+        // Return name of module as required.
+        if (szVersionString && cchVersionString > 0)
+        {
+            ULONG copyLen = trueLen;
+
+            if (copyLen >= cchVersionString)
+            {
+                copyLen = cchVersionString - 1;
+            }
+
+            wcsncpy_s(szVersionString, cchVersionString, pczVersionString, copyLen);
+        }
+
+        *pcchVersionString = trueLen;
     }
 
     if (pClrInstanceId != NULL)
         *pClrInstanceId = static_cast<USHORT>(GetClrInstanceId());
 
     if (pRuntimeType != NULL)
-    {
         *pRuntimeType = COR_PRF_CORE_CLR;
-    }
 
     if (pMajorVersion != NULL)
-        *pMajorVersion = CLR_MAJOR_VERSION;
+        *pMajorVersion = RuntimeProductMajorVersion;
 
     if (pMinorVersion != NULL)
-        *pMinorVersion = CLR_MINOR_VERSION;
+        *pMinorVersion = RuntimeProductMinorVersion;
 
     if (pBuildNumber != NULL)
-        *pBuildNumber = CLR_BUILD_VERSION;
+        *pBuildNumber = RuntimeProductPatchVersion;
 
     if (pQFEVersion != NULL)
-        *pQFEVersion = CLR_BUILD_VERSION_QFE;
+        *pQFEVersion = 0;
 
     return S_OK;
 }

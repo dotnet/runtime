@@ -19,6 +19,11 @@
 
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
+#define MONO_MAX_XREGS 32
+
+#if !defined(DISABLE_SIMD) && defined(ENABLE_NETCORE)
+#define MONO_ARCH_SIMD_INTRINSICS 1
+#endif
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->regs [0] = (gsize)exc; } while (0)
 
@@ -40,6 +45,10 @@
 #define MONO_ARCH_CALLEE_FREGS 0xfffc00ff
 /* v8..v15 */
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0xff00
+
+#define MONO_ARCH_CALLEE_SAVED_XREGS 0
+
+#define MONO_ARCH_CALLEE_XREGS MONO_ARCH_CALLEE_FREGS
 
 #define MONO_ARCH_USE_FPSTACK FALSE
 

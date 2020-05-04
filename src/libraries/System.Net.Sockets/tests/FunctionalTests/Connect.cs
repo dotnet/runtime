@@ -30,6 +30,40 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Loopbacks))]
+        public async Task Connect_Udp_Success(IPAddress listenAt)
+        {
+            using Socket listener = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket client = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            listener.Bind(new IPEndPoint(listenAt, 0));
+
+            await ConnectAsync(client, new IPEndPoint(listenAt, ((IPEndPoint)listener.LocalEndPoint).Port));
+            Assert.True(client.Connected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Loopbacks))]
+        public async Task Connect_Dns_Success(IPAddress listenAt)
+        {
+            // On some systems (like Ubuntu 16.04 and Ubuntu 18.04) "localhost" doesn't resolve to '::1'.
+            if (Array.IndexOf(Dns.GetHostAddresses("localhost"), listenAt) == -1)
+            {
+                return;
+            }
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, listenAt, out port))
+            {
+                using (Socket client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    Task connectTask = ConnectAsync(client, new DnsEndPoint("localhost", port));
+                    await connectTask;
+                    Assert.True(client.Connected);
+                }
+            }
+        }
+
         [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
@@ -91,9 +125,6 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
         public async Task ConnectGetsCanceledByDispose()
         {
-            bool usesApm = UsesApm ||
-                           (this is ConnectTask); // .NET Core ConnectAsync Task API is implemented using Apm
-
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
@@ -133,7 +164,7 @@ namespace System.Net.Sockets.Tests
                     disposedException = true;
                 }
 
-                if (usesApm)
+                if (UsesApm)
                 {
                     Assert.Null(localSocketError);
                     Assert.True(disposedException);

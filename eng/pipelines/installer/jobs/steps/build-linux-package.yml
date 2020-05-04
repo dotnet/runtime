@@ -32,5 +32,6 @@ steps:
       ${{ parameters.packagingArgs }} \
       $(CommonMSBuildArgs) \
       ${{ parameters.outputRidArg }} \
+      $(LiveOverridePathArgs) \
       /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.distroRid }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}

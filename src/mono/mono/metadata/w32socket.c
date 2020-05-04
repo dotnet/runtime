@@ -679,8 +679,8 @@ convert_sockopt_level_and_name (MonoSocketOptionLevel mono_level, MonoSocketOpti
 			*system_name = TCP_NODELAY;
 			break;
 #if 0
-			/* The documentation is talking complete
-			 * bollocks here: rfc-1222 is titled
+			/* The documentation is
+			 * very vague here: rfc-1222 is titled
 			 * 'Advancing the NSFNET Routing Architecture'
 			 * and doesn't mention either of the words
 			 * "expedite" or "urgent".

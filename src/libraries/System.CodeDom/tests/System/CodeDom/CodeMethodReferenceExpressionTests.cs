@@ -28,7 +28,7 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_CodeExpression_String_TestData))]
-        public void Ctor(CodeExpression targetObject, string methodName)
+        public void Ctor_TargetObject_MethodName(CodeExpression targetObject, string methodName)
         {
             var methodReference = new CodeMethodReferenceExpression(targetObject, methodName);
             Assert.Equal(targetObject, methodReference.TargetObject);
@@ -44,7 +44,7 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_CodeExpression_String_ParamsCodeExpression_TestData))]
-        public void Ctor(CodeExpression targetObject, string methodName, CodeTypeReference[] typeArguments)
+        public void Ctor_TargetObject_MethodName_TypeArguments(CodeExpression targetObject, string methodName, CodeTypeReference[] typeArguments)
         {
             var methodReference = new CodeMethodReferenceExpression(targetObject, methodName, typeArguments);
             Assert.Equal(targetObject, methodReference.TargetObject);

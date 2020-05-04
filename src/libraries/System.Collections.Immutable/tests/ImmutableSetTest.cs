@@ -40,7 +40,23 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveNonExistingTest()
         {
-            this.RemoveNonExistingTest(this.Empty<int>());
+            IImmutableSet<int> emptySet = this.Empty<int>();
+            Assert.Same(emptySet, emptySet.Remove(5));
+
+            // Also fill up a set with many elements to build up the tree, then remove from various places in the tree.
+            const int Size = 200;
+            var set = emptySet;
+            for (int i = 0; i < Size; i += 2)
+            { // only even numbers!
+                set = set.Add(i);
+            }
+
+            // Verify that removing odd numbers doesn't change anything.
+            for (int i = 1; i < Size; i += 2)
+            {
+                var setAfterRemoval = set.Remove(i);
+                Assert.Same(set, setAfterRemoval);
+            }
         }
 
         [Fact]
@@ -379,26 +395,6 @@ namespace System.Collections.Immutable.Tests
             }
 
             Assert.Equal(initialCount - removedCount, set.Count);
-        }
-
-        private void RemoveNonExistingTest(IImmutableSet<int> emptySet)
-        {
-            Assert.Same(emptySet, emptySet.Remove(5));
-
-            // Also fill up a set with many elements to build up the tree, then remove from various places in the tree.
-            const int Size = 200;
-            var set = emptySet;
-            for (int i = 0; i < Size; i += 2)
-            { // only even numbers!
-                set = set.Add(i);
-            }
-
-            // Verify that removing odd numbers doesn't change anything.
-            for (int i = 1; i < Size; i += 2)
-            {
-                var setAfterRemoval = set.Remove(i);
-                Assert.Same(set, setAfterRemoval);
-            }
         }
 
         private void AddRemoveLoadTestHelper<T>(IImmutableSet<T> set, T[] data)

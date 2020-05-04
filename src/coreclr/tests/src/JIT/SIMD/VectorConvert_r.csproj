@@ -13,6 +13,9 @@
     <Compile Include="VectorConvert.cs" />
     <Compile Include="VectorUtil.cs" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
   <ItemGroup>
     <TraitTags Include="BitSpecific" />
   </ItemGroup>

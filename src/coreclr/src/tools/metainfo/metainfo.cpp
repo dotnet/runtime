@@ -7,7 +7,6 @@
 #include <crtdbg.h>
 #include <utilcode.h>
 #include "mdinfo.h"
-#include <ndpversion.h>
 
 // Global variables
 bool g_bSchema = false;
@@ -26,7 +25,7 @@ void DisplayArchive(__in_z __in WCHAR* szFile, ULONG DumpFilter, __in_z __in_opt
 
 void PrintLogo()
 {
-    printf("Microsoft (R) .NET Frameworks Runtime Meta Data Dump Utility   Version %s\n", VER_FILEVERSION_STR);
+    printf("Microsoft (R) .NET Runtime Meta Data Dump Utility   Version %s\n", CLR_PRODUCT_VERSION);
     printf("%S", VER_LEGALCOPYRIGHT_LOGO_STR_L);
     printf("\n");
 }// PrintLogo

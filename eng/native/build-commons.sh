@@ -53,7 +53,7 @@ check_prereqs()
 
     function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; }
 
-    local cmake_version="$(cmake --version | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+")"
+    local cmake_version="$(cmake --version | awk '/^cmake.* version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
 
     if [[ "$(version "$cmake_version")" -lt "$(version 3.14.2)" ]]; then
         echo "Please install CMake 3.14.2 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
@@ -82,6 +82,7 @@ build_native()
         buildTool="make"
     fi
 
+    runtimeVersionHeaderFile="$intermediatesDir/../runtime_version.h"
     if [[ "$__SkipConfigure" == 0 ]]; then
         # if msbuild is not supported, then set __SkipGenerateVersion to 1
         if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then __SkipGenerateVersion=1; fi
@@ -95,7 +96,8 @@ build_native()
         if [[ "$__SkipGenerateVersion" == 0 ]]; then
             "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary "$__ArcadeScriptArgs" "$__RepoRootDir"/eng/empty.csproj \
                                                    /p:NativeVersionFile="$__versionSourceFile" \
-                                                   /t:GenerateNativeVersionFile /restore \
+                                                   /p:RuntimeVersionFile="$runtimeVersionHeaderFile" \
+                                                   /t:GenerateRuntimeVersionFile /restore \
                                                    $__CommonMSBuildArgs $__binlogArg $__UnprocessedBuildArgs
             local exit_code="$?"
             if [[ "$exit_code" != 0 ]]; then
@@ -103,12 +105,24 @@ build_native()
                 exit "$exit_code"
             fi
         else
-            # Generate the dummy version.c, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
+            # Generate the dummy version.c and runtime_version.h, but only if they didn't exist to make sure we don't trigger unnecessary rebuild
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
             if [[ -e "$__versionSourceFile" ]]; then
                 read existingVersionSourceLine < "$__versionSourceFile"
             fi
             if [[ "$__versionSourceLine" != "$existingVersionSourceLine" ]]; then
+                cat << EOF > $runtimeVersionHeaderFile
+#define RuntimeAssemblyMajorVersion 0
+#define RuntimeAssemblyMinorVersion 0
+#define RuntimeFileMajorVersion 0
+#define RuntimeFileMinorVersion 0
+#define RuntimeFileBuildVersion 0
+#define RuntimeFileRevisionVersion 0
+#define RuntimeProductMajorVersion 0
+#define RuntimeProductMinorVersion 0
+#define RuntimeProductPatchVersion 0
+#define RuntimeProductVersion
+EOF
                 echo "$__versionSourceLine" > "$__versionSourceFile"
             fi
         fi
@@ -151,8 +165,13 @@ build_native()
 
         popd
     else
-        echo "Executing cmake --build \"$intermediatesDir\" --target install -j $__NumProc"
-        cmake --build "$intermediatesDir" --target install -j "$__NumProc"
+        cmake_command=cmake
+        if [[ "$build_arch" == "wasm" ]]; then
+            cmake_command="emcmake $cmake_command"
+        fi
+
+        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -j $__NumProc"
+        $cmake_command --build "$intermediatesDir" --target install -j "$__NumProc"
     fi
 
     local exit_code="$?"
@@ -380,7 +399,7 @@ done
 platform=$(uname)
 if [[ "$platform" == "FreeBSD" ]]; then
   __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
-elif [[ "$platform" == "NetBSD" ]]; then
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))

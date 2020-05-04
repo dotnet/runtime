@@ -60,7 +60,7 @@ Test cases are categorized by priority level. The most important subset should b
 1. Indicate the success of the test by returning `100`. Failure can be indicated by any non-`100` value.
 
     Example:
-    ```
+    ```CSharp
         static public int Main(string[] notUsed)
         {
             try

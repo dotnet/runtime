@@ -1132,7 +1132,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86)
 // Marshals a managed method to an unmanaged callback provided the
 // managed method is static and it's parameters require no marshalling.
 PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
@@ -1153,18 +1153,18 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
 
 #if !defined(FEATURE_STUBS_AS_IL)
 
-    // System.Runtime.InteropServices.NativeCallableAttribute
+    // System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute
     BYTE* pData = NULL;
     LONG cData = 0;
     CorPinvokeMap callConv = (CorPinvokeMap)0;
 
-    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallable, (const VOID **)(&pData), (ULONG *)&cData);
+    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
     IfFailThrow(hr);
 
     if (cData > 0)
     {
         CustomAttributeParser ca(pData, cData);
-        // NativeCallable has two optional named arguments CallingConvention and EntryPoint.
+        // UnmanagedCallersOnly has two optional named arguments CallingConvention and EntryPoint.
         CaNamedArg namedArgs[2];
         CaTypeCtor caType(SERIALIZATION_TYPE_STRING);
         // First, the void constructor.
@@ -1189,7 +1189,7 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
     _ASSERTE(pCode != NULL);
     return pCode;
 }
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86)
 
 // Marshals a delegate to a unmanaged callback.
 LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
@@ -1315,13 +1315,10 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
+        PRECONDITION(pCallback != NULL);
+        PRECONDITION(pMT != NULL);
     }
     CONTRACTL_END;
-
-    if (!pCallback)
-    {
-        return NULL;
-    }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Check if this callback was originally a managed method passed out to unmanaged code.
@@ -1339,25 +1336,13 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     if (DelegateHnd != (LPVOID)INVALIDENTRY)
     {
         // Found a managed callsite
-        OBJECTREF pDelegate = NULL;
-        GCPROTECT_BEGIN(pDelegate);
-
-        pDelegate = ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
-
-        // Make sure we're not trying to sneak into another domain.
-        SyncBlock* pSyncBlock = pDelegate->GetSyncBlock();
-        _ASSERTE(pSyncBlock);
-
-        InteropSyncBlockInfo* pInteropInfo = pSyncBlock->GetInteropInfo();
-        _ASSERTE(pInteropInfo);
-
-        pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
-        _ASSERTE(pUMEntryThunk);
-
-        GCPROTECT_END();
-        return pDelegate;
+        return ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
     }
 
+    // Validate the MethodTable is a delegate type
+    // See Marshal.GetDelegateForFunctionPointer() for exception details.
+    if (!pMT->IsDelegate())
+        COMPlusThrowArgumentException(W("t"), W("Arg_MustBeDelegate"));
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // This is an unmanaged callsite. We need to create a new delegate.
@@ -2960,11 +2945,11 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // associated with the instantiation.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
-    // Do not allow static methods with [NativeCallableAttribute] to be a delegate target.
-    // A native callable method is special and allowing it to be delegate target will destabilize the runtime.
-    if (pTargetMethod->HasNativeCallableAttribute())
+    // Do not allow static methods with [UnmanagedCallersOnlyAttribute] to be a delegate target.
+    // A method marked UnmanagedCallersOnly is special and allowing it to be delegate target will destabilize the runtime.
+    if (pTargetMethod->HasUnmanagedCallersOnlyAttribute())
     {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NativeCallableTarget"));
+        COMPlusThrow(kNotSupportedException, W("NotSupported_UnmanagedCallersOnlyTarget"));
     }
 
     if (isStatic)

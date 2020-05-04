@@ -24,23 +24,24 @@ CompileResult::CompileResult()
     allocMemDets.roDataSize    = 0;
     allocMemDets.xcptnsCount   = 0;
     allocMemDets.flag          = (CorJitAllocMemFlag)0;
-    allocMemDets.hotCodeBlock  = 0;
-    allocMemDets.coldCodeBlock = 0;
-    allocMemDets.roDataBlock   = 0;
+    allocMemDets.hotCodeBlock  = nullptr;
+    allocMemDets.coldCodeBlock = nullptr;
+    allocMemDets.roDataBlock   = nullptr;
 
-    allocGCInfoDets.retval = 0;
+    allocGCInfoDets.retval = nullptr;
     allocGCInfoDets.size   = 0;
+
+    memoryTracker = nullptr;
 }
 
 CompileResult::~CompileResult()
 {
 #define LWM(map, key, value)                                                                                           \
-    if (map != nullptr)                                                                                                \
-        delete map;
+    delete map;
 #include "crlwmlist.h"
 
-    if (CallTargetTypes != nullptr)
-        delete CallTargetTypes;
+    delete CallTargetTypes;
+    delete memoryTracker;
 }
 
 // Is the CompileResult empty? Define this as whether all the maps that store information given by the JIT are empty.
@@ -55,6 +56,14 @@ bool CompileResult::IsEmpty()
 #include "crlwmlist.h"
 
     return isEmpty;
+}
+
+// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
+void* CompileResult::allocateMemory(size_t sizeInBytes)
+{
+    if (memoryTracker == nullptr)
+        memoryTracker = new MemoryTracker();
+    return memoryTracker->allocate(sizeInBytes);
 }
 
 void CompileResult::recAssert(const char* assertText)
