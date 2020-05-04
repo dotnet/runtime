@@ -161,6 +161,7 @@ namespace System.Runtime.CompilerServices
             catch (Exception e)
             {
                 System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
+                NullabilityHelpers.SuppressNonNullAssignmentWarning(ref box);
             }
         }
 

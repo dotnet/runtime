@@ -48,8 +48,12 @@ namespace System.Threading
         /// if an object was not used and to then dispose of the object appropriately.
         /// </para>
         /// </remarks>
-        public static T EnsureInitialized<T>([NotNull] ref T? target) where T : class =>
-            Volatile.Read(ref target) ?? EnsureInitializedCore(ref target);
+        public static T EnsureInitialized<T>([NotNull] ref T? target) where T : class
+        {
+            T value = Volatile.Read(ref target) ?? EnsureInitializedCore(ref target);
+            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref target);
+            return value;
+        }
 
         /// <summary>
         /// Initializes a target reference type with the type's default constructor (slow path)
@@ -100,8 +104,12 @@ namespace System.Threading
         /// if an object was not used and to then dispose of the object appropriately.
         /// </para>
         /// </remarks>
-        public static T EnsureInitialized<T>([NotNull] ref T? target, Func<T> valueFactory) where T : class =>
-            Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, valueFactory);
+        public static T EnsureInitialized<T>([NotNull] ref T? target, Func<T> valueFactory) where T : class
+        {
+            T value = Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, valueFactory);
+            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref target);
+            return value;
+        }
 
         /// <summary>
         /// Initialize the target using the given delegate (slow path).
@@ -133,9 +141,10 @@ namespace System.Threading
         /// <param name="initialized">A reference to a boolean that determines whether the target has already
         /// been initialized.</param>
         /// <param name="syncLock">A reference to an object used as the mutually exclusive lock for initializing
-        /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, a new object will be instantiated.</param>
+        /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, and if the target hasn't already
+        /// been initialized, a new object will be instantiated.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock)
+        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull("syncLock")] ref object? syncLock)
         {
             // Fast path.
             if (Volatile.Read(ref initialized))
@@ -190,11 +199,12 @@ namespace System.Threading
         /// <param name="initialized">A reference to a boolean that determines whether the target has already
         /// been initialized.</param>
         /// <param name="syncLock">A reference to an object used as the mutually exclusive lock for initializing
-        /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, a new object will be instantiated.</param>
+        /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, and if the target hasn't already
+        /// been initialized, a new object will be instantiated.</param>
         /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the
         /// reference or value.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock, Func<T> valueFactory)
+        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull("syncLock")] ref object? syncLock, Func<T> valueFactory)
         {
             // Fast path.
             if (Volatile.Read(ref initialized))
@@ -239,11 +249,16 @@ namespace System.Threading
         /// <typeparam name="T">The type of the reference to be initialized. Has to be reference type.</typeparam>
         /// <param name="target">A reference of type <typeparamref name="T"/> to initialize if it has not already been initialized.</param>
         /// <param name="syncLock">A reference to an object used as the mutually exclusive lock for initializing
-        /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, a new object will be instantiated.</param>
+        /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, and if the target hasn't already
+        /// been initialized, a new object will be instantiated.</param>
         /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the reference.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([NotNull] ref T? target, [NotNull] ref object? syncLock, Func<T> valueFactory) where T : class =>
-            Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
+        public static T EnsureInitialized<T>([NotNull] ref T? target, [NotNullIfNotNull("syncLock")] ref object? syncLock, Func<T> valueFactory) where T : class
+        {
+            T value = Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
+            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref target);
+            return value;
+        }
 
         /// <summary>
         /// Ensure the target is initialized and return the value (slow path). This overload works only for reference type targets.
@@ -272,6 +287,7 @@ namespace System.Threading
                 }
             }
 
+            NullabilityHelpers.SuppressNonNullAssignmentWarning(ref target);
             return target!; // TODO-NULLABLE: Compiler can't infer target's non-nullness (https://github.com/dotnet/roslyn/issues/37300)
         }
 
