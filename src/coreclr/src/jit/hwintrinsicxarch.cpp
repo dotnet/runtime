@@ -19,6 +19,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
+        case InstructionSet_X86Base:
+            return InstructionSet_X86Base_X64;
         case InstructionSet_SSE:
             return InstructionSet_SSE_X64;
         case InstructionSet_SSE2:
@@ -134,12 +136,16 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     {
         return InstructionSet_LZCNT;
     }
+    else if (strcmp(className, "X86Base") == 0)
+    {
+        return InstructionSet_X86Base;
+    }
 
     return InstructionSet_ILLEGAL;
 }
 
 //------------------------------------------------------------------------
-// lookupIsa: Gets the InstructionSet for a given class name and enclsoing class name
+// lookupIsa: Gets the InstructionSet for a given class name and enclosing class name
 //
 // Arguments:
 //    className -- The name of the class associated with the InstructionSet to lookup
@@ -202,13 +208,15 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
 // isInImmRange: Check if ival is valid for the intrinsic
 //
 // Arguments:
-//    id   -- The NamedIntrinsic associated with the HWIntrinsic to lookup
-//    ival -- the imm value to be checked
+//    id        -- the NamedIntrinsic associated with the HWIntrinsic to lookup
+//    ival      -- the imm value to be checked
+//    simdType  -- vector size
+//    baseType  -- base type of the Vector64/128<T>
 //
 // Return Value:
 //     true if ival is valid for the intrinsic
 //
-bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival)
+bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival, int simdSize, var_types baseType)
 {
     assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
 
@@ -372,6 +380,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE42_X64:
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
+        case InstructionSet_X86Base:
+        case InstructionSet_X86Base_X64:
         {
             return true;
         }
@@ -403,6 +413,8 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
         case InstructionSet_LZCNT_X64:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
+        case InstructionSet_X86Base:
+        case InstructionSet_X86Base_X64:
         {
             return true;
         }
@@ -724,8 +736,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Count:
-        case NI_Vector256_Count:
+        case NI_Vector128_get_Count:
+        case NI_Vector256_get_Count:
         {
             assert(sig->numArgs == 0);
 
@@ -784,7 +796,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Zero:
+        case NI_Vector128_get_Zero:
+        case NI_Vector128_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
 
@@ -829,7 +842,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector256_Zero:
+        case NI_Vector256_get_Zero:
+        case NI_Vector256_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
 

@@ -20,12 +20,10 @@
     <Compile Include="System\Numerics\Complex.cs" />
     <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
     <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
-    <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs">
-      <Link>System\Globalization\FormatProvider.Number.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
-      <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs"
+             Link="System\Globalization\FormatProvider.Number.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="CoreLib\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

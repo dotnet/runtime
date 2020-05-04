@@ -1,5 +1,4 @@
 parameters:
-  buildTraversalBuildDependencies: false
   distroRid: null
   image: null
   outputRidArg: ''
@@ -8,18 +7,6 @@ parameters:
   subsetArg: ''
 
 steps:
-- ${{ if eq(parameters.buildTraversalBuildDependencies, true) }}:
-  - script: |
-      set -x
-      df -h
-      $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
-        --ci \
-        /root/runtime/tools-local/tasks/installer.tasks/installer.tasks.csproj \
-        /t:Restore /t:Build /t:CreateHostMachineInfoFile \
-        $(CommonMSBuildArgs) \
-        /bl:msbuild.${{ parameters.distroRid }}.traversaldependencies.binlog
-    displayName: ====== Build traversal build dependencies - ${{ parameters.distroRid }}
-
 - script: |
     set -x
     df -h
@@ -32,5 +19,6 @@ steps:
       ${{ parameters.packagingArgs }} \
       $(CommonMSBuildArgs) \
       ${{ parameters.outputRidArg }} \
+      $(LiveOverridePathArgs) \
       /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.distroRid }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}

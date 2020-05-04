@@ -125,6 +125,14 @@ namespace ILCompiler.DependencyAnalysis
                     new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token));
             });
 
+            _checkTypeLayoutCache = new NodeCache<TypeDesc, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.Check_TypeLayout, key)
+                );
+            });
+
             _genericLookupHelpers = new NodeCache<GenericLookupKey, ISymbolNode>(key =>
             {
                 return new DelayLoadHelperImport(
@@ -432,6 +440,13 @@ namespace ILCompiler.DependencyAnalysis
                 isInstantiatingStub: false,
                 isPrecodeImportRequired: false);
             return _delegateCtors.GetOrAdd(ctorKey);
+        }
+
+        private NodeCache<TypeDesc, ISymbolNode> _checkTypeLayoutCache;
+
+        public ISymbolNode CheckTypeLayout(TypeDesc type)
+        {
+            return _checkTypeLayoutCache.GetOrAdd(type);
         }
 
         struct MethodAndCallSite : IEquatable<MethodAndCallSite>

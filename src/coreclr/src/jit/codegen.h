@@ -1028,6 +1028,7 @@ protected:
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
+    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
     void genSSEIntrinsic(GenTreeHWIntrinsic* node);
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
@@ -1047,6 +1048,58 @@ protected:
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(TARGET_XARCH)
+
+#ifdef TARGET_ARM64
+    class HWIntrinsicImmOpHelper final
+    {
+    public:
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+
+        void EmitBegin();
+        void EmitCaseEnd();
+
+        // Returns true after the last call to EmitCaseEnd() (i.e. this signals that code generation is done).
+        bool Done() const
+        {
+            return immValue == immUpperBound;
+        }
+
+        // Returns a value of the immediate operand that should be used for a case.
+        int ImmValue() const
+        {
+            return immValue;
+        }
+
+    private:
+        // Returns true if immOp is non contained immediate (i.e. the value of the immediate operand is enregistered in
+        // nonConstImmReg).
+        bool NonConstImmOp() const
+        {
+            return nonConstImmReg != REG_NA;
+        }
+
+        // Returns true if a non constant immediate operand can be either 0 or 1.
+        bool TestImmOpZeroOrOne() const
+        {
+            assert(NonConstImmOp());
+            return immUpperBound == 2;
+        }
+
+        emitter* GetEmitter() const
+        {
+            return codeGen->GetEmitter();
+        }
+
+        CodeGen* const codeGen;
+        BasicBlock*    endLabel;
+        BasicBlock*    nonZeroLabel;
+        int            immValue;
+        int            immUpperBound;
+        regNumber      nonConstImmReg;
+        regNumber      branchTargetReg;
+    };
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HW_INTRINSICS
 
 #if !defined(TARGET_64BIT)
@@ -1412,11 +1465,13 @@ public:
 
     void instGen_Return(unsigned stkArgSize);
 
-#ifdef TARGET_ARM64
-    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_ISH);
-#else
-    void instGen_MemoryBarrier();
-#endif
+    enum BarrierKind
+    {
+        BARRIER_FULL,      // full barrier
+        BARRIER_LOAD_ONLY, // load barier
+    };
+
+    void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 

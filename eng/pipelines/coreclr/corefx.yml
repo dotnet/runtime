@@ -33,7 +33,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
     # TODO: add Windows_NT_arm64, when we have hardware available. Note: platform-matrix.yml needs to enable a Helix queue for this.

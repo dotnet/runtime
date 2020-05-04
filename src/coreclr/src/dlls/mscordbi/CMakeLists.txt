@@ -55,6 +55,11 @@ if(CLR_CMAKE_HOST_OSX)
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_OSX)
 
+if(CLR_CMAKE_HOST_SUNOS)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+endif(CLR_CMAKE_HOST_SUNOS)
+
 add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
 target_precompile_header(TARGET mscordbi HEADER stdafx.h)
 
@@ -124,24 +129,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 # Create the DBI module index header file containing the DBI build id
 # for xplat and the timestamp/size on Windows.
 if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    set(
-        DBI_MODULE_INDEX_FILE 
-        ${GENERATED_INCLUDE_DIR}/dbimoduleindex.h
-    )
-    add_custom_command(
-        OUTPUT ${DBI_MODULE_INDEX_FILE}
-        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordbi> ${DBI_MODULE_INDEX_FILE}
-        DEPENDS mscordbi
-        COMMENT "Generating DBI module index file -> ${DBI_MODULE_INDEX_FILE}"
-    )
-    set_source_files_properties(
-        ${DBI_MODULE_INDEX_FILE} 
-        PROPERTIES GENERATED TRUE
-    )
-    add_custom_target(
-        dbi_module_index_header
-        DEPENDS ${DBI_MODULE_INDEX_FILE} 
-    )
+    generate_module_index(mscordbi ${GENERATED_INCLUDE_DIR}/dbimoduleindex.h)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets

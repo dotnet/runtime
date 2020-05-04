@@ -151,12 +151,22 @@ namespace System.Globalization
         /// </summary>
         public char ToLower(char c)
         {
-            if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToLowerAsciiInvariant(c);
             }
 
             return ChangeCase(c, toUpper: false);
+        }
+
+        internal static char ToLowerInvariant(char c)
+        {
+            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            {
+                return ToLowerAsciiInvariant(c);
+            }
+
+            return Invariant.ChangeCase(c, toUpper: false);
         }
 
         public string ToLower(string str)
@@ -528,11 +538,13 @@ namespace System.Globalization
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToLowerAsciiInvariant(char c)
         {
-            if ((uint)(c - 'A') <= (uint)('Z' - 'A'))
+            if (UnicodeUtility.IsInRangeInclusive(c, 'A', 'Z'))
             {
-                c = (char)(c | 0x20);
+                // on x86, extending BYTE -> DWORD is more efficient than WORD -> DWORD
+                c = (char)(byte)(c | 0x20);
             }
             return c;
         }
@@ -543,12 +555,22 @@ namespace System.Globalization
         /// </summary>
         public char ToUpper(char c)
         {
-            if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToUpperAsciiInvariant(c);
             }
 
             return ChangeCase(c, toUpper: true);
+        }
+
+        internal static char ToUpperInvariant(char c)
+        {
+            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            {
+                return ToUpperAsciiInvariant(c);
+            }
+
+            return Invariant.ChangeCase(c, toUpper: true);
         }
 
         public string ToUpper(string str)
@@ -566,16 +588,15 @@ namespace System.Globalization
             return ChangeCaseCommon<ToUpperConversion>(str);
         }
 
-        internal static char ToUpperAsciiInvariant(char c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static char ToUpperAsciiInvariant(char c)
         {
-            if ((uint)(c - 'a') <= (uint)('z' - 'a'))
+            if (UnicodeUtility.IsInRangeInclusive(c, 'a', 'z'))
             {
-                c = (char)(c & ~0x20);
+                c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
             return c;
         }
-
-        private static bool IsAscii(char c) => c < 0x80;
 
         private bool IsAsciiCasingSameAsInvariant
         {

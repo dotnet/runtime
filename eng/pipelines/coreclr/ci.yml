@@ -94,7 +94,18 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    testGroup: outerloop
+    jobParameters:
+      liveLibrariesBuildConfig: Release
+      testBuildPhase: targetGeneric
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm
@@ -107,13 +118,14 @@ jobs:
     testGroup: outerloop
     jobParameters:
       liveLibrariesBuildConfig: Release
+      testBuildPhase: targetSpecific
 
 #
 # Checked JIT test runs
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platformGroup: all
     helixQueueGroup: ci
@@ -121,13 +133,14 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
+      testBuildPhased: true
 
 #
 # Checked R2R test runs
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm64
@@ -146,6 +159,7 @@ jobs:
       readyToRun: true
       displayNameArgs: R2R
       liveLibrariesBuildConfig: Release
+      testBuildPhased: true
 
 #
 # Crossgen-comparison jobs

@@ -30,7 +30,7 @@ namespace Internal.TypeSystem.Ecma
 
             public const int AttributeMetadataCache = 0x02000;
             public const int Intrinsic              = 0x04000;
-            public const int NativeCallable         = 0x08000;
+            public const int UnmanagedCallersOnly   = 0x08000;
             public const int RuntimeExport          = 0x10000;
         };
 
@@ -197,9 +197,9 @@ namespace Internal.TypeSystem.Ecma
                     else
                     if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.InteropServices"))
                     {
-                        if (metadataReader.StringComparer.Equals(nameHandle, "NativeCallableAttribute"))
+                        if (metadataReader.StringComparer.Equals(nameHandle, "UnmanagedCallersOnlyAttribute"))
                         {
-                            flags |= MethodFlags.NativeCallable;
+                            flags |= MethodFlags.UnmanagedCallersOnly;
                         }
                     }
                     else
@@ -334,11 +334,11 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override bool IsNativeCallable
+        public override bool IsUnmanagedCallersOnly
         {
             get
             {
-                return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.NativeCallable) & MethodFlags.NativeCallable) != 0;
+                return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.UnmanagedCallersOnly) & MethodFlags.UnmanagedCallersOnly) != 0;
             }
         }
 

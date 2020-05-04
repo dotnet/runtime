@@ -396,7 +396,90 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, int arg)
         {
-            // Puts opcode onto the stream of instructions followed by arg
+            // Special-case several opcodes that have shorter variants for common values.
+            if (opcode.Equals(OpCodes.Ldc_I4))
+            {
+                if (arg >= -1 && arg <= 8)
+                {
+                    opcode = arg switch
+                    {
+                        -1 => OpCodes.Ldc_I4_M1,
+                        0 => OpCodes.Ldc_I4_0,
+                        1 => OpCodes.Ldc_I4_1,
+                        2 => OpCodes.Ldc_I4_2,
+                        3 => OpCodes.Ldc_I4_3,
+                        4 => OpCodes.Ldc_I4_4,
+                        5 => OpCodes.Ldc_I4_5,
+                        6 => OpCodes.Ldc_I4_6,
+                        7 => OpCodes.Ldc_I4_7,
+                        _ => OpCodes.Ldc_I4_8,
+                    };
+                    Emit(opcode);
+                    return;
+                }
+
+                if (arg >= -128 && arg <= 127)
+                {
+                    Emit(OpCodes.Ldc_I4_S, (sbyte)arg);
+                    return;
+                }
+            }
+            else if (opcode.Equals(OpCodes.Ldarg))
+            {
+                if ((uint)arg <= 3)
+                {
+                    Emit(arg switch
+                    {
+                        0 => OpCodes.Ldarg_0,
+                        1 => OpCodes.Ldarg_1,
+                        2 => OpCodes.Ldarg_2,
+                        _ => OpCodes.Ldarg_3,
+                    });
+                    return;
+                }
+
+                if ((uint)arg <= byte.MaxValue)
+                {
+                    Emit(OpCodes.Ldarg_S, (byte)arg);
+                    return;
+                }
+
+                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
+                {
+                    Emit(OpCodes.Ldarg, (short)arg);
+                    return;
+                }
+            }
+            else if (opcode.Equals(OpCodes.Ldarga))
+            {
+                if ((uint)arg <= byte.MaxValue)
+                {
+                    Emit(OpCodes.Ldarga_S, (byte)arg);
+                    return;
+                }
+
+                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
+                {
+                    Emit(OpCodes.Ldarga, (short)arg);
+                    return;
+                }
+            }
+            else if (opcode.Equals(OpCodes.Starg))
+            {
+                if ((uint)arg <= byte.MaxValue)
+                {
+                    Emit(OpCodes.Starg_S, (byte)arg);
+                    return;
+                }
+
+                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
+                {
+                    Emit(OpCodes.Starg, (short)arg);
+                    return;
+                }
+            }
+
+            // For everything else, put the opcode followed by the arg onto the stream of instructions.
             EnsureCapacity(7);
             InternalEmit(opcode);
             PutInteger4(arg);

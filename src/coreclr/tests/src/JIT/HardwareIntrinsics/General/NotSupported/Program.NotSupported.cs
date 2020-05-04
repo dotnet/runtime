@@ -13,6 +13,7 @@ namespace JIT.HardwareIntrinsics.General
         {
             TestList = new Dictionary<string, Action>() {
                 ["Vector64Zero"] = Vector64Zero,
+                ["Vector64AllBitsSet"] = Vector64AllBitsSet,
                 ["Vector64BooleanAsGeneric_Boolean"] = Vector64BooleanAsGeneric_Boolean,
                 ["Vector64ByteAsGeneric_Boolean"] = Vector64ByteAsGeneric_Boolean,
                 ["Vector64DoubleAsGeneric_Boolean"] = Vector64DoubleAsGeneric_Boolean,
@@ -55,6 +56,7 @@ namespace JIT.HardwareIntrinsics.General
                 ["Vector64ToVector128Unsafe"] = Vector64ToVector128Unsafe,
                 ["Vector64ToString"] = Vector64ToString,
                 ["Vector128Zero"] = Vector128Zero,
+                ["Vector128AllBitsSet"] = Vector128AllBitsSet,
                 ["Vector128BooleanAsGeneric_Boolean"] = Vector128BooleanAsGeneric_Boolean,
                 ["Vector128ByteAsGeneric_Boolean"] = Vector128ByteAsGeneric_Boolean,
                 ["Vector128DoubleAsGeneric_Boolean"] = Vector128DoubleAsGeneric_Boolean,
@@ -101,6 +103,7 @@ namespace JIT.HardwareIntrinsics.General
                 ["Vector128ToVector256Unsafe"] = Vector128ToVector256Unsafe,
                 ["Vector128ToString"] = Vector128ToString,
                 ["Vector256Zero"] = Vector256Zero,
+                ["Vector256AllBitsSet"] = Vector256AllBitsSet,
                 ["Vector256BooleanAsGeneric_Boolean"] = Vector256BooleanAsGeneric_Boolean,
                 ["Vector256ByteAsGeneric_Boolean"] = Vector256ByteAsGeneric_Boolean,
                 ["Vector256DoubleAsGeneric_Boolean"] = Vector256DoubleAsGeneric_Boolean,

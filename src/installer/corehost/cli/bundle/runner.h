@@ -27,7 +27,7 @@ namespace bundle
 
         const pal::string_t& extraction_path() const { return m_extraction_path; }
 
-        const file_entry_t *probe(const pal::string_t& path) const;
+        bool probe(const pal::string_t& relative_path, int64_t* offset, int64_t* size) const;
         bool locate(const pal::string_t& relative_path, pal::string_t& full_path) const;
 
         static StatusCode process_manifest_and_extract()
@@ -40,6 +40,7 @@ namespace bundle
     private:
 
         StatusCode extract();
+        const file_entry_t* probe(const pal::string_t& relative_path) const;
 
         manifest_t m_manifest;
         pal::string_t m_extraction_path;

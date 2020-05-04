@@ -79,8 +79,8 @@
   </PropertyGroup>
 
   <Target Name="ResolveRuntimeFilesFromLocalBuild">
-    <Error Condition="!Exists('$(CoreCLRArtifactsPath)') and '$(RuntimeFlavor)' == 'CoreCLR'" Text="The CoreCLR artifacts path does not exist '$(CoreCLRArtifactsPath)'. The CoreCLR subset category must be built before building this project." />
-    <Error Condition="!Exists('$(MonoArtifactsPath)') and '$(RuntimeFlavor)' == 'Mono'" Text="The Mono artifacts path does not exist '$(MonoArtifactsPath)'. The Mono subset category must be built before building this project." />
+    <Error Condition="!Exists('$(CoreCLRArtifactsPath)') and '$(RuntimeFlavor)' == 'CoreCLR'" Text="The CoreCLR artifacts path does not exist '$(CoreCLRArtifactsPath)'. The 'clr' subset must be built before building this project." />
+    <Error Condition="!Exists('$(MonoArtifactsPath)') and '$(RuntimeFlavor)' == 'Mono'" Text="The Mono artifacts path does not exist '$(MonoArtifactsPath)'. The 'mono' subset must be built before building this project." />
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
       <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
@@ -133,18 +133,18 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <MonoCrossFiles Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'"
+      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
         Include="$(MonoArtifactsPath)\cross\*.*" />
-      <MonoIncludeFiles Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'"
+      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
-    <Error Condition="'@(RuntimeFiles)' == ''" Text="The $(RuntimeFlavor) subset category must be built before building this project." />
+    <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
   </Target>
 
   <Target Name="EnsureLocalArtifactsExist">
-    <Error Condition="!Exists('$(LibrariesSharedFrameworkRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkRefArtifactsPath)" />
-    <Error Condition="'$(IncludeOOBLibraries)' == 'true' and !Exists('$(LibrariesAllRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllRefArtifactsPath)" />
+    <Error Condition="!Exists('$(LibrariesSharedFrameworkRefArtifactsPath)')" Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkRefArtifactsPath)" />
+    <Error Condition="'$(IncludeOOBLibraries)' == 'true' and !Exists('$(LibrariesAllRefArtifactsPath)')" Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesAllRefArtifactsPath)" />
   </Target>
 
   <!--
@@ -153,9 +153,9 @@
   -->
   <Target Name="EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist"
           Condition="'$(LibrariesTargetOSConfigurationArchitecture)' != '*'">
-    <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath)" />
-    <Error Condition="'$(IncludeOOBLibraries)' == 'true' and !Exists('$(LibrariesAllBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllBinArtifactsPath)" />
-    <Error Condition="!Exists('$(LibrariesNativeArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesNativeArtifactsPath)" />
+    <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')" Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath)" />
+    <Error Condition="'$(IncludeOOBLibraries)' == 'true' and !Exists('$(LibrariesAllBinArtifactsPath)')" Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesAllBinArtifactsPath)" />
+    <Error Condition="!Exists('$(LibrariesNativeArtifactsPath)')" Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesNativeArtifactsPath)" />
   </Target>
 
   <Target Name="ResolveLibrariesFromLocalBuild"
@@ -184,8 +184,8 @@
         IsNative="true" />
     </ItemGroup>
 
-    <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The libraries subset category must be built before building this project." />
-    <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The libraries subset category must be built before building this project." />
+    <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The 'libs' subset must be built before building this project." />
+    <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The 'libs' subset must be built before building this project." />
   </Target>
 
   <PropertyGroup>

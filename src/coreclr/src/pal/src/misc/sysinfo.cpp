@@ -93,6 +93,10 @@ Revision History:
 
 #include <algorithm>
 
+#if HAVE_SWAPCTL
+#include <sys/swap.h>
+#endif
+
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 #ifndef __APPLE__
@@ -221,6 +225,8 @@ GetSystemInfo(
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAXUSER_ADDRESS;
 #elif defined(__linux__)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ull << 47);
+#elif defined(__sun)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0xfffffd7fffe00000ul;
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
 #elif defined(HOST_64BIT)
@@ -403,6 +409,14 @@ GlobalMemoryStatusEx(
             lpBuffer->ullTotalPageFile += (DWORDLONG)xsw.xsw_nblks * pagesize;
             lpBuffer->ullAvailPageFile += (DWORDLONG)avail * pagesize;
         }
+    }
+#elif HAVE_SWAPCTL
+    struct anoninfo ai;
+    if (swapctl(SC_AINFO, &ai) != -1)
+    {
+        int pagesize = getpagesize();
+        lpBuffer->ullTotalPageFile = ai.ani_max * pagesize;
+        lpBuffer->ullAvailPageFile = ai.ani_free * pagesize;
     }
 #elif HAVE_SYSINFO
     // Linux

@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.IO;
 using System.Text;
+using Xunit;
 
 namespace System.IO.Tests
 {
@@ -91,11 +89,35 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void BinaryWriter_Write7BitEncodedIntTest()
+        {
+            int[] i32arr = new int[]
+            {
+                int.MinValue, int.MaxValue, 0, -10000, 10000, -50, 50,
+                unchecked((int)uint.MinValue), unchecked((int)uint.MaxValue), unchecked((int)(uint.MaxValue - 100))
+            };
+
+            WriteTest(i32arr, (bw, s) => bw.Write7BitEncodedInt(s), (br) => br.Read7BitEncodedInt());
+        }
+
+        [Fact]
         public void BinaryWriter_WriteInt64Test()
         {
             long[] i64arr = new long[] { long.MinValue, long.MaxValue, 0, -10000, 10000, -50, 50 };
 
             WriteTest(i64arr, (bw, s) => bw.Write(s), (br) => br.ReadInt64());
+        }
+
+        [Fact]
+        public void BinaryWriter_Write7BitEncodedInt64Test()
+        {
+            long[] i64arr = new long[]
+            {
+                long.MinValue, long.MaxValue, 0, -10000, 10000, -50, 50,
+                unchecked((long)ulong.MinValue), unchecked((long)ulong.MaxValue), unchecked((long)(ulong.MaxValue - 100))
+            };
+
+            WriteTest(i64arr, (bw, s) => bw.Write7BitEncodedInt64(s), (br) => br.Read7BitEncodedInt64());
         }
 
         [Fact]

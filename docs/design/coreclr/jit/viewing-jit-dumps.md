@@ -98,7 +98,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
 ## Setting configuration variables
 
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
+The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/src/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/src/jit/jitconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
 
 These can be set in one of three ways:
 
@@ -149,6 +149,7 @@ The wildcard character `*` can be used for `<ClassName>` and `<MethodName>`. In 
 Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specify `*` to mean all methods.
 
 * `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
+* `COMPlus_JitDumpASCII`={1 or 0} - Specifies whether the JIT dump should be ASCII only (Defaults to 1). Disabling this generates more readable expression trees.
 * `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
 * `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
 * `COMPlus_JitGCDump`={method-list} – dump the GC information.
