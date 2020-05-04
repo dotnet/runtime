@@ -17,42 +17,42 @@ internal static partial class Interop
     internal static partial class Runtime
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string InvokeJS(string str, out int exceptional_result);
+        internal static extern string InvokeJS(string str, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object CompileFunction(string str, out int exceptional_result);
+        internal static extern object CompileFunction(string str, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeJSWithArgs(int js_obj_handle, string method, object?[] _params, out int exceptional_result);
+        internal static extern object InvokeJSWithArgs(int jsObjHandle, string method, object?[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetObjectProperty(int js_obj_handle, string propertyName, out int exceptional_result);
+        internal static extern object GetObjectProperty(int jsObjHandle, string propertyName, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object SetObjectProperty(int js_obj_handle, string propertyName, object value, bool createIfNotExists, bool hasOwnProperty, out int exceptional_result);
+        internal static extern object SetObjectProperty(int jsObjHandle, string propertyName, object value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetByIndex(int js_obj_handle, int index, out int exceptional_result);
+        internal static extern object GetByIndex(int jsObjHandle, int index, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object SetByIndex(int js_obj_handle, int index, object? value, out int exceptional_result);
+        internal static extern object SetByIndex(int jsObjHandle, int index, object? value, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetGlobalObject(string? globalName, out int exceptional_result);
+        internal static extern object GetGlobalObject(string? globalName, out int exceptionalResult);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object ReleaseHandle(int js_obj_handle, out int exceptional_result);
+        internal static extern object ReleaseHandle(int jsObjHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object ReleaseObject(int js_obj_handle, out int exceptional_result);
+        internal static extern object ReleaseObject(int jsObjHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object NewObjectJS(int js_obj_handle, object[] _params, out int exceptional_result);
+        internal static extern object NewObjectJS(int jsObjHandle, object[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object BindCoreObject(int js_obj_handle, int gc_handle, out int exceptional_result);
+        internal static extern object BindCoreObject(int jsObjHandle, int gcHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object BindHostObject(int js_obj_handle, int gc_handle, out int exceptional_result);
+        internal static extern object BindHostObject(int jsObjHandle, int gcHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object New(string className, object[] _params, out int exceptional_result);
+        internal static extern object New(string className, object[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayToArray(int js_obj_handle, out int exceptional_result);
+        internal static extern object TypedArrayToArray(int jsObjHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayCopyTo(int js_obj_handle, int array_ptr, int begin, int end, int bytes_per_element, out int exceptional_result);
+        internal static extern object TypedArrayCopyTo(int jsObjHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayFrom(int array_ptr, int begin, int end, int bytes_per_element, int type, out int exceptional_result);
+        internal static extern object TypedArrayFrom(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayCopyFrom(int js_obj_handle, int array_ptr, int begin, int end, int bytes_per_element, out int exceptional_result);
+        internal static extern object TypedArrayCopyFrom(int jsObjHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult);
 
         // / <summary>
         // / Execute the provided string in the JavaScript context
@@ -75,98 +75,97 @@ internal static partial class Interop
             return res as Interop.JavaScript.Function;
         }
 
-        private static Dictionary<int, JSObject?> bound_objects = new Dictionary<int, JSObject?>();
-        private static Dictionary<object, JSObject?> raw_to_js = new Dictionary<object, JSObject?>();
+        private static Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
+        private static Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
 
-        public static int New<T>(params object[] _params)
+        public static int New<T>(params object[] parms)
         {
-            var res = New(typeof(T).Name, _params, out int exception);
+            var res = New(typeof(T).Name, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             return (int)res;
         }
 
-        public static int New(string hostClassName, params object[] _params)
+        public static int New(string hostClassName, params object[] parms)
         {
-            var res = New(hostClassName, _params, out int exception);
+            var res = New(hostClassName, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             return (int)res;
         }
 
-        public static JSObject? NewJSObject(JSObject? js_func_ptr = null, params object[] _params)
+        public static JSObject? NewJSObject(JSObject? jsFuncPtr = null, params object[] parms)
         {
-            var res = NewObjectJS(js_func_ptr?.JSHandle ?? 0, _params, out int exception);
+            var res = NewObjectJS(jsFuncPtr?.JSHandle ?? 0, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             return res as JSObject;
         }
 
-        internal static int BindJSObject(int js_id, Type mappedType)
+        internal static int BindJSObject(int jsId, Type mappedType)
         {
-            if (!bound_objects.TryGetValue(js_id, out JSObject? obj))
+            if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
             {
                 if (mappedType != null)
                 {
-                    return BindJSType(js_id, mappedType);
+                    return BindJSType(jsId, mappedType);
                 }
                 else
                 {
-                    bound_objects[js_id] = obj = new JSObject((IntPtr)js_id);
+                    _boundObjects[jsId] = obj = new JSObject((IntPtr)jsId);
                 }
             }
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
-        internal static int BindCoreCLRObject(int js_id, int gcHandle)
+        internal static int BindCoreCLRObject(int jsId, int gcHandle)
         {
-            //Console.WriteLine ($"Registering CLR Object {js_id} with handle {gcHandle}");
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj = h.Target as JSObject;
 
-            if (bound_objects.TryGetValue(js_id, out var existingObj))
+            if (_boundObjects.TryGetValue(jsId, out var existingObj))
             {
                 if (existingObj?.Handle != h && h.IsAllocated)
-                    throw new JSException($"Multiple handles pointing at js_id: {js_id}");
+                    throw new JSException($"Multiple handles pointing at js_id: {jsId}");
 
                 obj = existingObj;
             }
             else
-                bound_objects[js_id] = obj;
+                _boundObjects[jsId] = obj;
 
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
-        internal static int BindJSType(int js_id, Type mappedType)
+        internal static int BindJSType(int jsId, Type mappedType)
         {
-            if (!bound_objects.TryGetValue(js_id, out JSObject? obj))
+            if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
             {
                 var jsobjectnew = mappedType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding,
                         null, new Type[] { typeof(IntPtr) }, null);
-                bound_objects[js_id] = obj = jsobjectnew == null ? null : (JSObject)jsobjectnew.Invoke(new object[] { (IntPtr)js_id });
+                _boundObjects[jsId] = obj = jsobjectnew == null ? null : (JSObject)jsobjectnew.Invoke(new object[] { (IntPtr)jsId });
             }
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
-        internal static int UnBindJSObject(int js_id)
+        internal static int UnBindJSObject(int jsId)
         {
-            if (bound_objects.TryGetValue(js_id, out var obj))
+            if (_boundObjects.TryGetValue(jsId, out var obj))
             {
-                bound_objects.Remove(js_id);
+                _boundObjects.Remove(jsId);
                 return obj == null ? 0 : (int)(IntPtr)obj.Handle;
             }
 
             return 0;
         }
 
-        internal static void UnBindJSObjectAndFree(int js_id)
+        internal static void UnBindJSObjectAndFree(int jsId)
         {
-            if (bound_objects.TryGetValue(js_id, out var obj))
+            if (_boundObjects.TryGetValue(jsId, out var obj))
             {
-                if (bound_objects[js_id] != null)
+                if (_boundObjects[jsId] != null)
                 {
-                    //bound_objects[js_id].RawObject = null;
-                    bound_objects.Remove(js_id);
+                    //bound_objects[jsIs].RawObject = null;
+                    _boundObjects.Remove(jsId);
                 }
                 if (obj != null)
                 {
@@ -187,7 +186,7 @@ internal static partial class Interop
             JSObject? obj = h.Target as JSObject;
             if (obj?.RawObject != null)
             {
-                raw_to_js.Remove(obj.RawObject);
+                _rawToJS.Remove(obj.RawObject);
 
                 int exception;
                 ReleaseHandle(obj.JSHandle, out exception);
@@ -207,10 +206,10 @@ internal static partial class Interop
 
         public static void FreeObject(object obj)
         {
-            if (raw_to_js.TryGetValue(obj, out JSObject? jsobj))
+            if (_rawToJS.TryGetValue(obj, out JSObject? jsobj))
             {
                 //raw_to_js [obj].RawObject = null;
-                raw_to_js.Remove(obj);
+                _rawToJS.Remove(obj);
                 if (jsobj != null)
                 {
                     int exception;
@@ -231,7 +230,7 @@ internal static partial class Interop
             }
         }
 
-        internal static object CreateTaskSource(int js_id)
+        internal static object CreateTaskSource(int jsId)
         {
             return new TaskCompletionSource<object>();
         }
@@ -246,34 +245,34 @@ internal static partial class Interop
             tcs.SetException(new JSException(reason));
         }
 
-        internal static int GetTaskAndBind(TaskCompletionSource<object> tcs, int js_id)
+        internal static int GetTaskAndBind(TaskCompletionSource<object> tcs, int jsId)
         {
-            return BindExistingObject(tcs.Task, js_id);
+            return BindExistingObject(tcs.Task, jsId);
         }
 
-        internal static int BindExistingObject(object raw_obj, int js_id)
+        internal static int BindExistingObject(object rawObj, int jsId)
         {
-            JSObject? obj = raw_obj as JSObject;
+            JSObject? obj = rawObj as JSObject;
 
-            if (obj == null && !raw_to_js.TryGetValue(raw_obj, out obj))
-                raw_to_js[raw_obj] = obj = new JSObject(js_id, raw_obj);
+            if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
+                _rawToJS[rawObj] = obj = new JSObject(jsId, rawObj);
 
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
-        internal static int GetJSObjectId(object raw_obj)
+        internal static int GetJSObjectId(object rawObj)
         {
-            JSObject? obj = raw_obj as JSObject;
+            JSObject? obj = rawObj as JSObject;
 
-            if (obj == null && !raw_to_js.TryGetValue(raw_obj, out obj))
+            if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
                 return -1;
 
             return obj != null ? obj.JSHandle : -1;
         }
 
-        internal static object? GetMonoObject(int gc_handle)
+        internal static object? GetMonoObject(int gcHandle)
         {
-            GCHandle h = (GCHandle)(IntPtr)gc_handle;
+            GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? o = h.Target as JSObject;
             if (o != null && o.RawObject != null)
                 return o.RawObject;
@@ -323,10 +322,10 @@ internal static partial class Interop
             internal RuntimeMethodHandle handle;
         }
 
-        internal static string GetCallSignature(IntPtr method_handle)
+        internal static string GetCallSignature(IntPtr methodHandle)
         {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
-            tmp.ptr = method_handle;
+            tmp.ptr = methodHandle;
 
             var mb = MethodBase.GetMethodFromHandle(tmp.handle);
             if (mb == null)
@@ -394,7 +393,7 @@ internal static partial class Interop
             }
             return new string(res);
         }
-        internal static void SetupJSContinuation(Task task, JSObject cont_obj)
+        internal static void SetupJSContinuation(Task task, JSObject continuationObj)
         {
             if (task.IsCompleted)
                 Complete();
@@ -410,22 +409,22 @@ internal static partial class Interop
                         var resultProperty = task.GetType().GetProperty("Result");
 
                         if (resultProperty == null)
-                            cont_obj.Invoke("resolve", Array.Empty<object>());
+                            continuationObj.Invoke("resolve", Array.Empty<object>());
                         else
-                            cont_obj.Invoke("resolve", resultProperty.GetValue(task) ?? Array.Empty<object>());
+                            continuationObj.Invoke("resolve", resultProperty.GetValue(task) ?? Array.Empty<object>());
                     }
                     else
                     {
-                        cont_obj.Invoke("reject", task.Exception.ToString());
+                        continuationObj.Invoke("reject", task.Exception.ToString());
                     }
                 }
                 catch (Exception e)
                 {
-                    cont_obj.Invoke("reject", e.ToString());
+                    continuationObj.Invoke("reject", e.ToString());
                 }
                 finally
                 {
-                    cont_obj.Dispose();
+                    continuationObj.Dispose();
                     FreeObject(task);
                 }
             }
@@ -496,8 +495,8 @@ internal static partial class Interop
                 var span = new ReadOnlySpan<byte>(p, len);
 
                 // Send it to JS
-                var js_dump = (JSObject)Runtime.GetGlobalObject("Module");
-                //js_dump.SetObjectProperty("aot_profile_data", WebAssembly.Core.Uint8Array.From(span));
+                var jsDump = (JSObject)Runtime.GetGlobalObject("Module");
+                //jsDump.SetObjectProperty("aot_profile_data", WebAssembly.Core.Uint8Array.From(span));
             }
         }
 
@@ -505,8 +504,8 @@ internal static partial class Interop
         internal static void DumpCoverageProfileData(string data, string s)
         {
             // Send it to JS
-            var js_dump = (JSObject)Runtime.GetGlobalObject("Module");
-            js_dump.SetObjectProperty("coverage_profile_data", data);
+            var jsDump = (JSObject)Runtime.GetGlobalObject("Module");
+            jsDump.SetObjectProperty("coverage_profile_data", data);
         }
     }
 }
