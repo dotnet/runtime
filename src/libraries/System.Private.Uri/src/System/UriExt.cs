@@ -602,6 +602,8 @@ namespace System
 
             if (uriParser is null)
             {
+                // Reference Uris are fully initialized after the call to this constructor
+                // Absolute Uris will be initialized with a call to InitializeUri on the newly created instance
                 DebugSetLeftCtor();
             }
         }
