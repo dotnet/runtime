@@ -1442,10 +1442,21 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
     }
 }
 
-IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* object)
+IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(objectPROTECTED));
+    }
+    CONTRACTL_END;
+
+    ASSERT_PROTECTED(objectPROTECTED);
+
     void* context;
-    if ((*object)->GetSyncBlock()->GetInteropInfo()->TryGetExternalComObjectContext(&context))
+    if ((*objectPROTECTED)->GetSyncBlock()->GetInteropInfo()->TryGetExternalComObjectContext(&context))
     {
         return reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
     }

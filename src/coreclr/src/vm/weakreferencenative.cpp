@@ -133,7 +133,7 @@ IWeakReference* GetComWeakReference(OBJECTREF* pObject)
 
     MethodTable* pMT = (*pObject)->GetMethodTable();
 
-    IWeakReferenceSource* pWeakReferenceSourceUnsafe;
+    SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(nullptr);
 
     // If the object is not an RCW, then we do not want to use a native COM weak reference to it
     // If the object is a managed type deriving from a COM type, then we also do not want to use a native COM
@@ -142,7 +142,7 @@ IWeakReference* GetComWeakReference(OBJECTREF* pObject)
     if (pMT->IsComObjectType()
      && (pMT == g_pBaseCOMObject || !pMT->IsExtensibleRCW()))
     {
-        pWeakReferenceSourceUnsafe = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(pObject, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
+        pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(pObject, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
     }
 #ifdef FEATURE_COMWRAPPERS
     else
@@ -155,16 +155,13 @@ IWeakReference* GetComWeakReference(OBJECTREF* pObject)
             return nullptr;
         }
 
-        void* pWeakReferenceSourceMaybe;
-        if(FAILED(unknown->QueryInterface(IID_IWeakReferenceSource, &pWeakReferenceSourceMaybe)))
+        if(FAILED(unknown->QueryInterface(IID_IWeakReferenceSource, (void**)&pWeakReferenceSource)))
         {
             return nullptr;
         }
-        pWeakReferenceSourceUnsafe = reinterpret_cast<IWeakReferenceSource*>(pWeakReferenceSourceMaybe);
     }
 #endif
 
-    SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(pWeakReferenceSourceUnsafe);
     if (pWeakReferenceSource == nullptr)
     {
         return nullptr;
