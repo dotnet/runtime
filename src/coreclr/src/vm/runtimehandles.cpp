@@ -1765,7 +1765,7 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
     // Deferring X86 support until a need is observed or
     // time permits investigation into all the potential issues.
     // https://github.com/dotnet/runtime/issues/33582
-    if (pMethod->HasUnmanagedCallersOnlyAttribute())
+    if (COMDelegate::VerifyUnmanagedCallersOnlySupported(pMethod))
     {
         funcPtr = (void*)COMDelegate::ConvertToCallback(pMethod);
     }

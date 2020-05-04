@@ -2140,6 +2140,33 @@ FCIMPLEND
 
 #endif // CROSSGEN_COMPILE
 
+BOOL COMDelegate::VerifyUnmanagedCallersOnlySupported(MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    BOOL isUnmanagedCallersOnly = pMD->HasUnmanagedCallersOnlyAttribute();
+    if (isUnmanagedCallersOnly)
+    {
+        if (!pMD->IsStatic())
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
+
+        // No generic methods
+        if (pMD->HasClassOrMethodInstantiation())
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
+
+        // Arguments
+        if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
+    }
+
+    return isUnmanagedCallersOnly;
+}
+
 BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
 {
     LIMITED_METHOD_CONTRACT;

@@ -103,7 +103,9 @@ namespace Internal.Runtime.InteropServices
                 IntPtr functionPtr;
                 if (delegateType == null)
                 {
-                    MethodInfo? methodInfo = type.GetMethod(methodName);
+                    // Match search semantics of the CreateDelegate() function below.
+                    BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                    MethodInfo? methodInfo = type.GetMethod(methodName, bindingFlags);
                     if (methodInfo == null)
                         throw new MissingMethodException(typeName, methodName);
 
