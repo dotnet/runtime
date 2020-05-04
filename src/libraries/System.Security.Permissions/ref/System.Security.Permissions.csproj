@@ -12,7 +12,7 @@
     <Compile Include="System.Security.Permissions.cs" />
     <Compile Include="System.Security.Permissions.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="System.Security.Permissions.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
@@ -59,7 +59,7 @@
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <ProjectReference Include="..\..\System.Windows.Extensions\ref\System.Windows.Extensions.csproj" />
   </ItemGroup>
 </Project>

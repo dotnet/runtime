@@ -19,7 +19,7 @@
     <Compile Include="StringValues.cs" />
     <Compile Include="ThrowHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />

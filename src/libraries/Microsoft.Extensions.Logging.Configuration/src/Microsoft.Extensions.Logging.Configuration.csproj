@@ -10,7 +10,7 @@
              Link="Common\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
