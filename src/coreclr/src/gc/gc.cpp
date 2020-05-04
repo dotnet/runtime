@@ -9742,7 +9742,7 @@ size_t gc_heap::get_segment_size_hard_limit (uint32_t* num_heaps, bool should_ad
         }
     }
 
-    size_t seg_size = aligned_hard_limit / *num_heaps;
+    size_t seg_size = aligned_hard_limit / *num_heaps / 3;
     size_t aligned_seg_size = (use_large_pages_p ? align_on_segment_hard_limit (seg_size) : round_up_power2 (seg_size));
 
     assert (g_theGCHeap->IsValidSegmentSize (aligned_seg_size));
