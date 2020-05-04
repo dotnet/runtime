@@ -343,8 +343,7 @@ namespace System.Net.Sockets
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
 
-                            Interop.Sys.SocketEvents events = socketEvent.Events;
-                            events = context.HandleSyncEventsSpeculatively(events);
+                            Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
                             if (events != Interop.Sys.SocketEvents.None)
                             {
                                 var ev = new SocketIOEvent(context, events);
