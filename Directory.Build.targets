@@ -26,4 +26,5 @@
     <LangVersion>preview</LangVersion>
     <LangVersion Condition="'$(Language)' == 'VB'">latest</LangVersion>
   </PropertyGroup>
+
 </Project>

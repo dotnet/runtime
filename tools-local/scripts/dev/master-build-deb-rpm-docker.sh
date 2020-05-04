@@ -62,18 +62,10 @@ package() {
     shift
 
     containerized "$image" bash -c "
-        eng/common/msbuild.sh \
-            tools-local/tasks/installer.tasks/installer.tasks.csproj \
-            /t:Restore /t:Build /t:CreateHostMachineInfoFile \
-            /p:Configuration=Release \
-            /p:TargetOS=Linux \
-            /p:PortableBuild=false \
-            /p:TargetArchitecture=x64 \
-            /bl:artifacts/msbuild.$name.traversaldependencies.binlog;
         ./build.sh \
             --ci \
+            --subset installer
             /p:OfficialBuildId=20190101.1 \
-            /p:Subset=Installer \
             /p:UsePrebuiltPortableBinariesForInstallers=true \
             /p:SharedFrameworkPublishDir=/work/artifacts/obj/linux-x64.Release/sharedFrameworkPublish/ \
             /p:InstallerSourceOSPlatformConfig=linux-x64.Release \

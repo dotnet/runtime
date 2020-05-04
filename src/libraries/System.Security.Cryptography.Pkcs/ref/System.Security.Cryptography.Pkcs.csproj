@@ -13,9 +13,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Pkcs.cs" />
-    <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetStandard)' == 'true'" />
+    <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard'))" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Security" />

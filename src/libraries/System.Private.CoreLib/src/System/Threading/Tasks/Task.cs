@@ -609,7 +609,7 @@ namespace System.Threading.Tasks
                     if (cancellationToken.IsCancellationRequested)
                     {
                         // Fast path for an already-canceled cancellationToken
-                        this.InternalCancel(false);
+                        InternalCancel();
                     }
                     else
                     {
@@ -618,7 +618,7 @@ namespace System.Threading.Tasks
                         if (antecedent == null)
                         {
                             // if no antecedent was specified, use this task's reference as the cancellation state object
-                            ctr = cancellationToken.UnsafeRegister(t => ((Task)t!).InternalCancel(false), this);
+                            ctr = cancellationToken.UnsafeRegister(t => ((Task)t!).InternalCancel(), this);
                         }
                         else
                         {
@@ -635,7 +635,7 @@ namespace System.Threading.Tasks
                                 Task antecedentTask = tuple.Item2;
 
                                 antecedentTask.RemoveContinuation(tuple.Item3);
-                                targetTask.InternalCancel(false);
+                                targetTask.InternalCancel();
                             },
                             new Tuple<Task, Task, TaskContinuation>(this, antecedent, continuation));
                         }
@@ -2896,98 +2896,86 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Cancels the <see cref="Task"/>.
         /// </summary>
-        /// <param name="bCancelNonExecutingOnly">
-        /// Indicates whether we should only cancel non-invoked tasks.
-        /// For the default scheduler this option will only be serviced through TryDequeue.
-        /// For custom schedulers we also attempt an atomic state transition.
-        /// </param>
-        /// <returns>true if the task was successfully canceled; otherwise, false.</returns>
-        internal bool InternalCancel(bool bCancelNonExecutingOnly)
+        internal void InternalCancel()
         {
             Debug.Assert((Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) == 0, "Task.InternalCancel() did not expect promise-style task");
 
-            bool bPopSucceeded = false;
-            bool mustCleanup = false;
-
             TaskSchedulerException? tse = null;
+            bool popped = false;
 
             // If started, and running in a task context, we can try to pop the chore.
             if ((m_stateFlags & TASK_STATE_STARTED) != 0)
             {
                 TaskScheduler? ts = m_taskScheduler;
-
                 try
                 {
-                    bPopSucceeded = (ts != null) && ts.TryDequeue(this);
+                    popped = (ts != null) && ts.TryDequeue(this);
                 }
                 catch (Exception e)
                 {
                     // TryDequeue threw. We don't know whether the task was properly dequeued or not. So we must let the rest of
                     // the cancellation logic run its course (record the request, attempt atomic state transition and do cleanup where appropriate)
                     // Here we will only record a TaskSchedulerException, which will later be thrown at function exit.
-
                     tse = new TaskSchedulerException(e);
-                }
-
-                bool bRequiresAtomicStartTransition = ts != null && ts.RequiresAtomicStartTransition;
-
-                if (!bPopSucceeded && bCancelNonExecutingOnly && bRequiresAtomicStartTransition)
-                {
-                    // The caller requested cancellation of non-invoked tasks only, and TryDequeue was one way of doing it...
-                    // Since that seems to have failed, we should now try an atomic state transition (from non-invoked state to canceled)
-                    // An atomic transition here is only safe if we know we're on a custom task scheduler, which also forces a CAS on ExecuteEntry
-
-                    // Even though this task can't have any children, we should be ready for handling any continuations that
-                    // may be attached to it (although currently
-                    // So we need to remeber whether we actually did the flip, so we can do clean up (finish continuations etc)
-                    mustCleanup = AtomicStateUpdate(TASK_STATE_CANCELED, TASK_STATE_DELEGATE_INVOKED | TASK_STATE_CANCELED);
-
-                    // PS: This is slightly different from the regular cancellation codepath
-                    // since we record the cancellation request *after* doing the state transition.
-                    // However that shouldn't matter too much because the task was never invoked, thus can't have children
                 }
             }
 
-            if (!bCancelNonExecutingOnly || bPopSucceeded || mustCleanup)
+            // Record the cancellation request.
+            RecordInternalCancellationRequest();
+
+            // Determine whether we need to clean up
+            // This will be the case
+            //     1) if we were able to pop, and we are able to update task state to TASK_STATE_CANCELED
+            //     2) if the task seems to be yet unstarted, and we can transition to
+            //        TASK_STATE_CANCELED before anyone else can transition into _STARTED or _CANCELED or
+            //        _RAN_TO_COMPLETION or _FAULTED
+            // Note that we do not check for TASK_STATE_COMPLETION_RESERVED.  That only applies to promise-style
+            // tasks, and a promise-style task should not enter into this codepath.
+            bool mustCleanup = false;
+            if (popped)
             {
-                // Record the cancellation request.
-                RecordInternalCancellationRequest();
+                // Include TASK_STATE_DELEGATE_INVOKED in "illegal" bits to protect against the situation where
+                // TS.TryDequeue() returns true but the task is still left on the queue.
+                mustCleanup = AtomicStateUpdate(TASK_STATE_CANCELED, TASK_STATE_CANCELED | TASK_STATE_DELEGATE_INVOKED);
+            }
+            else if ((m_stateFlags & TASK_STATE_STARTED) == 0)
+            {
+                mustCleanup = AtomicStateUpdate(TASK_STATE_CANCELED,
+                    TASK_STATE_CANCELED | TASK_STATE_STARTED | TASK_STATE_RAN_TO_COMPLETION |
+                    TASK_STATE_FAULTED | TASK_STATE_DELEGATE_INVOKED);
+            }
 
-                // Determine whether we need to clean up
-                // This will be the case
-                //     1) if we were able to pop, and we are able to update task state to TASK_STATE_CANCELED
-                //     2) if the task seems to be yet unstarted, and we can transition to
-                //        TASK_STATE_CANCELED before anyone else can transition into _STARTED or _CANCELED or
-                //        _RAN_TO_COMPLETION or _FAULTED
-                // Note that we do not check for TASK_STATE_COMPLETION_RESERVED.  That only applies to promise-style
-                // tasks, and a promise-style task should not enter into this codepath.
-                if (bPopSucceeded)
-                {
-                    // hitting this would mean something wrong with the AtomicStateUpdate above
-                    Debug.Assert(!mustCleanup, "Possibly an invalid state transition call was made in InternalCancel()");
-
-                    // Include TASK_STATE_DELEGATE_INVOKED in "illegal" bits to protect against the situation where
-                    // TS.TryDequeue() returns true but the task is still left on the queue.
-                    mustCleanup = AtomicStateUpdate(TASK_STATE_CANCELED, TASK_STATE_CANCELED | TASK_STATE_DELEGATE_INVOKED);
-                }
-                else if (!mustCleanup && (m_stateFlags & TASK_STATE_STARTED) == 0)
-                {
-                    mustCleanup = AtomicStateUpdate(TASK_STATE_CANCELED,
-                        TASK_STATE_CANCELED | TASK_STATE_STARTED | TASK_STATE_RAN_TO_COMPLETION |
-                        TASK_STATE_FAULTED | TASK_STATE_DELEGATE_INVOKED);
-                }
-
-                // do the cleanup (i.e. set completion event and finish continuations)
-                if (mustCleanup)
-                {
-                    CancellationCleanupLogic();
-                }
+            // do the cleanup (i.e. set completion event and finish continuations)
+            if (mustCleanup)
+            {
+                CancellationCleanupLogic();
             }
 
             if (tse != null)
+            {
                 throw tse;
-            else
-                return mustCleanup;
+            }
+        }
+
+        /// <summary>
+        /// Cancels a ContinueWith task as part of determining to see whether the continuation should run.
+        /// This is only valid if the ContinueWith has a default token associated with it.
+        /// </summary>
+        internal void InternalCancelContinueWithInitialState()
+        {
+            // There isn't a cancellation token assigned to the task, which means the task is still going to be in its
+            // initial state.  The only way it could have transitioned is if:
+            // - it was Start'd, which isn't valid for a continuation
+            // - it was canceled, which won't have happened without a token
+            // - it was run as a continuation, which won't have happened because this method is only invoked once
+            // As a result, we can take an optimized path that avoids inflating contingent properties.
+            const int IllegalFlags = TASK_STATE_STARTED | TASK_STATE_COMPLETED_MASK | TASK_STATE_DELEGATE_INVOKED;
+            Debug.Assert((m_stateFlags & IllegalFlags) == 0, "The continuation was in an invalid state.");
+            Debug.Assert((m_stateFlags & TASK_STATE_WAITINGFORACTIVATION) != 0, "Expected continuation to be waiting for activation");
+            Debug.Assert(m_contingentProperties is null || m_contingentProperties.m_cancellationToken == default);
+
+            m_stateFlags |= TASK_STATE_CANCELED; // no synchronization necessary, per above comment
+            CancellationCleanupLogic();
         }
 
         // Breaks out logic for recording a cancellation request
@@ -3000,11 +2988,11 @@ namespace System.Threading.Tasks
         // Breaks out logic for recording a cancellation request
         // This overload should only be used for promise tasks where no cancellation token
         // was supplied when the task was created.
-        internal void RecordInternalCancellationRequest(CancellationToken tokenToRecord)
+        internal void RecordInternalCancellationRequest(CancellationToken tokenToRecord, object? cancellationException)
         {
-            RecordInternalCancellationRequest();
-
             Debug.Assert((Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0, "Task.RecordInternalCancellationRequest(CancellationToken) only valid for promise-style task");
+
+            RecordInternalCancellationRequest();
             Debug.Assert(m_contingentProperties!.m_cancellationToken == default);
 
             // Store the supplied cancellation token as this task's token.
@@ -3013,14 +3001,6 @@ namespace System.Threading.Tasks
             {
                 m_contingentProperties.m_cancellationToken = tokenToRecord;
             }
-        }
-
-        // Breaks out logic for recording a cancellation request
-        // This overload should only be used for promise tasks where no cancellation token
-        // was supplied when the task was created.
-        internal void RecordInternalCancellationRequest(CancellationToken tokenToRecord, object? cancellationException)
-        {
-            RecordInternalCancellationRequest(tokenToRecord);
 
             // Store the supplied cancellation exception
             if (cancellationException != null)
@@ -3288,7 +3268,7 @@ namespace System.Threading.Tasks
                         // The continuation was unregistered and null'd out, so just skip it.
                         continue;
                     }
-                    else if (currentContinuation is StandardTaskContinuation stc)
+                    else if (currentContinuation is ContinueWithTaskContinuation stc)
                     {
                         if ((stc.m_options & TaskContinuationOptions.ExecuteSynchronously) == 0)
                         {
@@ -4226,7 +4206,7 @@ namespace System.Threading.Tasks
             Debug.Assert(!continuationTask.IsCompleted, "Did not expect continuationTask to be completed");
 
             // Create a TaskContinuation
-            TaskContinuation continuation = new StandardTaskContinuation(continuationTask, options, scheduler);
+            TaskContinuation continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
 
             // If cancellationToken is cancellable, then assign it.
             if (cancellationToken.CanBeCanceled)

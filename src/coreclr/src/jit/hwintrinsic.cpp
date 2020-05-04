@@ -789,6 +789,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         // to the code generator. May encode the overload info in other way.
                         retNode->AsHWIntrinsic()->gtSIMDBaseType = JITtype2varType(corType);
                     }
+#ifdef TARGET_ARM64
+                if ((intrinsic == NI_AdvSimd_AddWideningUpper) || (intrinsic == NI_AdvSimd_SubtractWideningUpper))
+                {
+                    assert(varTypeIsSIMD(op1->TypeGet()));
+                    retNode->AsHWIntrinsic()->SetOtherBaseType(getBaseTypeOfSIMDType(argClass));
+                }
+#endif
                 break;
             }
 

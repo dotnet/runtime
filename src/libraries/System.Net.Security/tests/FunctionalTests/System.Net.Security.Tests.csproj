@@ -65,7 +65,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="..\..\src\System\Net\Security\SniHelper.cs"
              Link="src\SniHelper.cs" />
     <Compile Include="SniHelperTest.cs" />

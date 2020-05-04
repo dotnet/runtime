@@ -37,10 +37,10 @@
     <Compile Include="System\IO\Pipelines\StreamPipeWriterOptions.cs" />
     <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)'=='true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Compile Include="System\IO\Pipelines\StreamExtensions.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />

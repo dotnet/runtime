@@ -5,7 +5,7 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ApplicationIdentity.cs" />
     <Compile Include="System\Configuration\ConfigurationPermission.cs" />
     <Compile Include="System\Configuration\ConfigurationPermissionAttribute.cs" />
@@ -178,10 +178,10 @@
     <Compile Include="System\Web\AspNetHostingPermissionAttribute.cs" />
     <Compile Include="System\Web\AspNetHostingPermissionLevel.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Compile Include="..\..\System.Private.CoreLib\src\System\Security\IStackWalk.cs"
              Link="System\Security\IStackWalk.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Security\PermissionSet.cs"
@@ -192,7 +192,7 @@
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -208,7 +208,7 @@
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />

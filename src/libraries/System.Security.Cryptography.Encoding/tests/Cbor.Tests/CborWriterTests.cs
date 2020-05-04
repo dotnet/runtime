@@ -23,10 +23,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Fact]
-        public static void ToArray_OnInCompleteValue_ShouldThrowInvalidOperationExceptoin()
+        public static void GetEncoding_OnInCompleteValue_ShouldThrowInvalidOperationExceptoin()
         {
             using var writer = new CborWriter();
-            Assert.Throws<InvalidOperationException>(() => writer.ToArray());
+            Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
         }
 
         [Fact]
@@ -34,7 +34,41 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
             writer.WriteInt64(42);
+            int bytesWritten = writer.BytesWritten;
             Assert.Throws<InvalidOperationException>(() => writer.WriteTextString("lorem ipsum"));
+            Assert.Equal(bytesWritten, writer.BytesWritten);
+        }
+
+        [Theory]
+        [InlineData(1, 2, "0101")]
+        [InlineData(10, 10, "0a0a0a0a0a0a0a0a0a0a")]
+        [InlineData(new object[] { 1, 2 }, 3, "820102820102820102")]
+        public static void CborWriter_MultipleRootLevelValuesAllowed_WritingMultipleRootValues_HappyPath(object value, int repetitions, string expectedHexEncoding)
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+            using var writer = new CborWriter(allowMultipleRootLevelValues: true);
+
+            for (int i = 0; i < repetitions; i++)
+            {
+                Helpers.WriteValue(writer, value);
+            }
+
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+        }
+
+        [Fact]
+        public static void GetEncoding_MultipleRootLevelValuesAllowed_PartialRootValue_ShouldThrowInvalidOperationException()
+        {
+            using var writer = new CborWriter(allowMultipleRootLevelValues: true);
+
+            writer.WriteStartArray(1);
+            writer.WriteDouble(3.14);
+            writer.WriteEndArray();
+            writer.WriteStartArray(1);
+            writer.WriteDouble(3.14);
+            // misses writer.WriteEndArray();
+
+            Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
         }
 
         [Fact]
@@ -46,6 +80,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(5, writer.BytesWritten);
         }
 
+        [Fact]
+        public static void ConformanceLevel_DefaultValue_ShouldEqualLax()
+        {
+            using var writer = new CborWriter();
+            Assert.Equal(CborConformanceLevel.Lax, writer.ConformanceLevel);
+        }
+
         [Theory]
         [MemberData(nameof(EncodedValueInputs))]
         public static void WriteEncodedValue_RootValue_HappyPath(string hexEncodedValue)
@@ -55,8 +96,47 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteEncodedValue(encodedValue);
 
-            string hexResult = writer.ToArray().ByteArrayToHex();
+            string hexResult = writer.GetEncoding().ByteArrayToHex();
             Assert.Equal(hexEncodedValue, hexResult.ToLower());
+        }
+
+
+        [Theory]
+        [InlineData(42)]
+        [InlineData("value1")]
+        [InlineData(new object[] { new object[] { 1, 2, 3 } })]
+        public static void TryWriteEncoding_HappyPath(object value)
+        {
+            using var writer = new CborWriter();
+            Helpers.WriteValue(writer, value);
+
+            byte[] encoding = writer.GetEncoding();
+            byte[] target = new byte[encoding.Length];
+
+            bool result = writer.TryWriteEncoding(target, out int bytesWritten);
+
+            Assert.True(result);
+            Assert.Equal(encoding.Length, bytesWritten);
+            Assert.Equal(encoding, target);
+        }
+
+        [Theory]
+        [InlineData(42)]
+        [InlineData("value1")]
+        [InlineData(new object[] { new object[] { 1, 2, 3 } })]
+        public static void TryWriteEncoding_DestinationTooSmall_ShouldReturnFalse(object value)
+        {
+            using var writer = new CborWriter();
+            Helpers.WriteValue(writer, value);
+
+            byte[] encoding = writer.GetEncoding();
+            byte[] target = new byte[encoding.Length - 1];
+
+            bool result = writer.TryWriteEncoding(target, out int bytesWritten);
+
+            Assert.False(result);
+            Assert.Equal(0, bytesWritten);
+            Assert.All(target, b => Assert.Equal(0, b));
         }
 
         [Theory]
@@ -72,7 +152,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteTextString("");
             writer.WriteEndArray();
 
-            string hexResult = writer.ToArray().ByteArrayToHex();
+            string hexResult = writer.GetEncoding().ByteArrayToHex();
             Assert.Equal("8301" + hexEncodedValue + "60", hexResult.ToLower());
         }
 
@@ -88,39 +168,39 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public static void WriteEncodedValue_ContextScenaria_HappyPath(object value, bool useDefiniteLength, string hexExpectedEncoding)
         {
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: !useDefiniteLength);
 
             Helpers.WriteValue(writer, value, useDefiniteLengthCollections: useDefiniteLength);
 
-            string hexEncoding = writer.ToArray().ByteArrayToHex().ToLower();
+            string hexEncoding = writer.GetEncoding().ByteArrayToHex().ToLower();
             Assert.Equal(hexExpectedEncoding, hexEncoding);
         }
 
         [Fact]
         public static void WriteEncodedValue_IndefiniteLengthTextString_HappyPath()
         {
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
 
-            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteStartTextString();
             writer.WriteTextString("foo");
             writer.WriteEncodedValue("63626172".HexToByteArray());
-            writer.WriteEndTextStringIndefiniteLength();
+            writer.WriteEndTextString();
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             Assert.Equal("7f63666f6f63626172ff", encoding.ByteArrayToHex().ToLower());
         }
 
         [Fact]
         public static void WriteEncodedValue_IndefiniteLengthByteString_HappyPath()
         {
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
 
-            writer.WriteStartByteStringIndefiniteLength();
+            writer.WriteStartByteString();
             writer.WriteByteString(new byte[] { 1, 1, 1 });
             writer.WriteEncodedValue("43020202".HexToByteArray());
-            writer.WriteEndByteStringIndefiniteLength();
+            writer.WriteEndByteString();
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             Assert.Equal("5f4301010143020202ff", encoding.ByteArrayToHex().ToLower());
         }
 
@@ -128,7 +208,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void WriteEncodedValue_BadIndefiniteLengthStringValue_ShouldThrowInvalidOperationException()
         {
             using var writer = new CborWriter();
-            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteStartTextString();
             Assert.Throws<InvalidOperationException>(() => writer.WriteEncodedValue(new byte[] { 0x01 }));
         }
 
@@ -154,6 +234,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
             Assert.Throws<ArgumentException>(() => writer.WriteEncodedValue(new byte[] { 0x01, 0x01 }));
+        }
+
+        [Theory]
+        [InlineData((CborConformanceLevel)(-1))]
+        internal static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceLevel: level));
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        internal static void EncodeIndefiniteLengths_UnsupportedConformanceLevel_ShouldThrowArgumentException(CborConformanceLevel level)
+        {
+            Assert.Throws<ArgumentException>(() => new CborWriter(level, encodeIndefiniteLengths: true));
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });

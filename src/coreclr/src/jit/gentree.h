@@ -814,6 +814,8 @@ public:
 #define GTF_CALL_POP_ARGS           0x04000000 // GT_CALL -- caller pop arguments?
 #define GTF_CALL_HOISTABLE          0x02000000 // GT_CALL -- call is hoistable
 
+#define GTF_MEMORYBARRIER_LOAD      0x40000000 // GT_MEMORYBARRIER -- Load barrier
+
 #define GTF_NOP_DEATH               0x40000000 // GT_NOP -- operand dies here
 
 #define GTF_FLD_VOLATILE            0x40000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE

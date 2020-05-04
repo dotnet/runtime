@@ -375,7 +375,7 @@
   <data name="JsonSerializerDoesNotSupportComments" xml:space="preserve">
     <value>Comments cannot be stored when deserializing objects, only the Skip and Disallow comment handling modes are supported.</value>
   </data>
-  <data name="DeserializeMissingDeserializationConstructor" xml:space="preserve">
+  <data name="DeserializeNoConstructor" xml:space="preserve">
     <value>Deserialization of types without a parameterless constructor, a singular parameterized constructor, or a parameterized constructor annotated with '{0}' is not supported. Type '{1}'.</value>
   </data>
   <data name="DeserializePolymorphicInterface" xml:space="preserve">

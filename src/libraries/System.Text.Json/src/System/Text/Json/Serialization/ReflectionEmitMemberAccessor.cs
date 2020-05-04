@@ -61,9 +61,7 @@ namespace System.Text.Json.Serialization
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            // If ctor is non-public, we've verified upstream that it has the [JsonConstructorAttribute].
-            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Contains(constructor));
+            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Contains(constructor));
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -112,9 +110,7 @@ namespace System.Text.Json.Serialization
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            // If ctor is non-public, we've verified upstream that it has the [JsonConstructorAttribute].
-            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Contains(constructor));
+            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Contains(constructor));
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;

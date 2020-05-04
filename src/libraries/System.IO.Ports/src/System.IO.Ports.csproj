@@ -13,7 +13,7 @@
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsAnyOS)' == 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsAnyOS)' != 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\IO\Ports\Handshake.cs" />
     <Compile Include="System\IO\Ports\InternalResources.cs" />
     <Compile Include="System\IO\Ports\Parity.cs" />
@@ -30,7 +30,7 @@
     <Compile Include="System\IO\Ports\SerialStream.cs" />
     <Compile Include="System\IO\Ports\StopBits.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DCB.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.DCB.cs" />
@@ -101,7 +101,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Ports\SerialPort.Win32.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Win32.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
@@ -140,11 +140,11 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Threading.Tasks" />

@@ -11,7 +11,7 @@
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.cs"
              Link="Common\System\Data\Common\AdapterUtil.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.Drivers.cs"
@@ -117,7 +117,7 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and $(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
@@ -158,7 +158,7 @@
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Transactions.Local" />
   </ItemGroup>
   <ItemGroup>

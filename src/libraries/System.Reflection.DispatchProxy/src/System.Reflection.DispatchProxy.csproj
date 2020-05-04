@@ -11,18 +11,18 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_ReflectionDispatchProxy</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
     <Compile Include="$(CommonPath)System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs"
              Link="Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true' and '$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard')) and !$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Linq" />

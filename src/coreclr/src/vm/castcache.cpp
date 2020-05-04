@@ -160,7 +160,7 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
     {
         CastCacheEntry* pEntry = &Elements(tableData)[index];
 
-        // must read in this order: version -> entry parts -> version
+        // must read in this order: version -> [entry parts] -> version
         // if version is odd or changes, the entry is inconsistent and thus ignored
         DWORD version1 = VolatileLoad(&pEntry->version);
         TADDR entrySource = pEntry->source;
@@ -171,12 +171,14 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
 
         if (entrySource == source)
         {
-            TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
+            TADDR entryTargetAndResult = pEntry->targetAndResult;
             // target never has its lower bit set.
             // a matching entryTargetAndResult would have the same bits, except for the lowest one, which is the result.
             entryTargetAndResult ^= target;
             if (entryTargetAndResult <= 1)
             {
+                // make sure 'version' is loaded after 'source' and 'targetAndResults'
+                VolatileLoadBarrier();
                 if (version1 != pEntry->version)
                 {
                     // oh, so close, the entry is in inconsistent state.

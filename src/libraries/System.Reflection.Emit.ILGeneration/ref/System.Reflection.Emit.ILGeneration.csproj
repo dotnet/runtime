@@ -6,7 +6,7 @@
   <ItemGroup>
     <Compile Include="System.Reflection.Emit.ILGeneration.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Primitives\ref\System.Reflection.Primitives.csproj" />

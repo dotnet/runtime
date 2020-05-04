@@ -7,10 +7,10 @@
   <ItemGroup>
     <Compile Include="System.Threading.Channels.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="System.Threading.Channels.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">

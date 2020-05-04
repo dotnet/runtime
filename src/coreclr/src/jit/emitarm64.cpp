@@ -12512,8 +12512,7 @@ void emitter::emitDispIns(
                 case INS_tbx_3regs:
                 case INS_tbx_4regs:
                     registerListSize = insGetRegisterListSize(ins);
-                    elemsize         = id->idOpSize();
-                    emitDispVectorRegList(id->idReg2(), registerListSize, id->idInsOpt(), true);
+                    emitDispVectorRegList(id->idReg2(), registerListSize, INS_OPTS_16B, true);
                     break;
                 case INS_mov:
                     break;

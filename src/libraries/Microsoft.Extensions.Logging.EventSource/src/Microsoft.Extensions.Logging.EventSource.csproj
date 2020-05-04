@@ -23,7 +23,7 @@
     <Reference Include="System.Text.Json" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.Diagnostics.Tracing" />

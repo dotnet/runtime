@@ -9,6 +9,7 @@
 
 using System;
 using System.Linq;
+using System.Numerics;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -1434,6 +1435,726 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifferenceAdd(uint op1, uint op2, uint op3) => (uint)(op1 + AbsoluteDifference(op2, op3));
 
+        public static ushort AbsoluteDifferenceWidening(sbyte op1, sbyte op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
+
+        public static ushort AbsoluteDifferenceWideningUpper(sbyte[] op1, sbyte[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short AbsoluteDifferenceWideningAndAdd(short op1, sbyte op2, sbyte op3) => (short)(op1 + (short)AbsoluteDifferenceWidening(op2, op3));
+
+        public static short AbsoluteDifferenceWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short AddPairwiseWidening(sbyte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static short AddPairwiseWideningAndAdd(short[] op1, sbyte[] op2, int i) => (short)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static sbyte HighNarrow(short op1, bool round)
+        {
+            ushort roundConst = 0;
+            if (round)
+            {
+                roundConst = (ushort)1 << (8 * sizeof(sbyte) - 1);
+            }
+            return (sbyte)(((ushort)op1 + roundConst) >> (8 * sizeof(sbyte)));
+        }
+
+        public static sbyte AddReturningHighNarrow(short op1, short op2) => HighNarrow((short)(op1 + op2), round: false);
+
+        public static sbyte AddReturningHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static sbyte AddReturningRoundedHighNarrow(short op1, short op2) => HighNarrow((short)(op1 + op2), round: true);
+
+        public static short AddReturningRoundedHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short AddWidening(sbyte op1, sbyte op2) => (short)((short)op1 + (short)op2);
+
+        public static short AddWidening(short op1, sbyte op2) => (short)(op1 + op2);
+
+        public static short AddWideningUpper(sbyte[] op1, sbyte[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short AddWideningUpper(short[] op1, sbyte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static sbyte FusedAddHalving(sbyte op1, sbyte op2) => (sbyte)((ushort)((short)op1 + (short)op2) >> 1);
+
+        public static sbyte FusedAddRoundedHalving(sbyte op1, sbyte op2) => (sbyte)((ushort)((short)op1 + (short)op2 + 1) >> 1);
+
+        public static sbyte FusedSubtractHalving(sbyte op1, sbyte op2) => (sbyte)((ushort)((short)op1 - (short)op2) >> 1);
+
+        public static short MultiplyWidening(sbyte op1, sbyte op2) => (short)((short)op1 * (short)op2);
+
+        public static short MultiplyWideningAndAdd(short op1, sbyte op2, sbyte op3) => (short)(op1 + MultiplyWidening(op2, op3));
+
+        public static short MultiplyWideningAndSubtract(short op1, sbyte op2, sbyte op3) => (short)(op1 - MultiplyWidening(op2, op3));
+
+        public static short MultiplyWideningUpper(sbyte[] op1, sbyte[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short MultiplyWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short MultiplyWideningUpperAndSubtract(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static sbyte SubtractReturningHighNarrow(short op1, short op2) => HighNarrow((short)(op1 - op2), round: false);
+
+        public static short SubtractReturningHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static sbyte SubtractReturningRoundedHighNarrow(short op1, short op2) => HighNarrow((short)(op1 - op2), round: true);
+
+        public static short SubtractReturningRoundedHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short SubtractWidening(sbyte op1, sbyte op2) => (short)((short)op1 - (short)op2);
+
+        public static short SubtractWidening(short op1, sbyte op2) => (short)(op1 - op2);
+
+        public static short SubtractWideningUpper(sbyte[] op1, sbyte[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short SubtractWideningUpper(short[] op1, sbyte[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static uint AbsoluteDifferenceWidening(short op1, short op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
+
+        public static uint AbsoluteDifferenceWideningUpper(short[] op1, short[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int AbsoluteDifferenceWideningAndAdd(int op1, short op2, short op3) => (int)(op1 + (int)AbsoluteDifferenceWidening(op2, op3));
+
+        public static int AbsoluteDifferenceWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static int AddPairwiseWidening(short[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static int AddPairwiseWideningAndAdd(int[] op1, short[] op2, int i) => (int)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static short HighNarrow(int op1, bool round)
+        {
+            uint roundConst = 0;
+            if (round)
+            {
+                roundConst = (uint)1 << (8 * sizeof(short) - 1);
+            }
+            return (short)(((uint)op1 + roundConst) >> (8 * sizeof(short)));
+        }
+
+        public static short AddReturningHighNarrow(int op1, int op2) => HighNarrow((int)(op1 + op2), round: false);
+
+        public static short AddReturningHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short AddReturningRoundedHighNarrow(int op1, int op2) => HighNarrow((int)(op1 + op2), round: true);
+
+        public static int AddReturningRoundedHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int AddWidening(short op1, short op2) => (int)((int)op1 + (int)op2);
+
+        public static int AddWidening(int op1, short op2) => (int)(op1 + op2);
+
+        public static int AddWideningUpper(short[] op1, short[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int AddWideningUpper(int[] op1, short[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static short FusedAddHalving(short op1, short op2) => (short)((uint)((int)op1 + (int)op2) >> 1);
+
+        public static short FusedAddRoundedHalving(short op1, short op2) => (short)((uint)((int)op1 + (int)op2 + 1) >> 1);
+
+        public static short FusedSubtractHalving(short op1, short op2) => (short)((uint)((int)op1 - (int)op2) >> 1);
+
+        public static int MultiplyWidening(short op1, short op2) => (int)((int)op1 * (int)op2);
+
+        public static int MultiplyWideningAndAdd(int op1, short op2, short op3) => (int)(op1 + MultiplyWidening(op2, op3));
+
+        public static int MultiplyWideningAndSubtract(int op1, short op2, short op3) => (int)(op1 - MultiplyWidening(op2, op3));
+
+        public static int MultiplyWideningUpper(short[] op1, short[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int MultiplyWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static int MultiplyWideningUpperAndSubtract(int[] op1, short[] op2, short[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short SubtractReturningHighNarrow(int op1, int op2) => HighNarrow((int)(op1 - op2), round: false);
+
+        public static int SubtractReturningHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short SubtractReturningRoundedHighNarrow(int op1, int op2) => HighNarrow((int)(op1 - op2), round: true);
+
+        public static int SubtractReturningRoundedHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int SubtractWidening(short op1, short op2) => (int)((int)op1 - (int)op2);
+
+        public static int SubtractWidening(int op1, short op2) => (int)(op1 - op2);
+
+        public static int SubtractWideningUpper(short[] op1, short[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int SubtractWideningUpper(int[] op1, short[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static ulong AbsoluteDifferenceWidening(int op1, int op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
+
+        public static ulong AbsoluteDifferenceWideningUpper(int[] op1, int[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long AbsoluteDifferenceWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + (long)AbsoluteDifferenceWidening(op2, op3));
+
+        public static long AbsoluteDifferenceWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long AddPairwiseWidening(int[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static long AddPairwiseWideningAndAdd(long[] op1, int[] op2, int i) => (long)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static int HighNarrow(long op1, bool round)
+        {
+            ulong roundConst = 0;
+            if (round)
+            {
+                roundConst = (ulong)1 << (8 * sizeof(int) - 1);
+            }
+            return (int)(((ulong)op1 + roundConst) >> (8 * sizeof(int)));
+        }
+
+        public static int AddReturningHighNarrow(long op1, long op2) => HighNarrow((long)(op1 + op2), round: false);
+
+        public static int AddReturningHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int AddReturningRoundedHighNarrow(long op1, long op2) => HighNarrow((long)(op1 + op2), round: true);
+
+        public static long AddReturningRoundedHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static long AddWidening(int op1, int op2) => (long)((long)op1 + (long)op2);
+
+        public static long AddWidening(long op1, int op2) => (long)(op1 + op2);
+
+        public static long AddWideningUpper(int[] op1, int[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long AddWideningUpper(long[] op1, int[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static int FusedAddHalving(int op1, int op2) => (int)((ulong)((long)op1 + (long)op2) >> 1);
+
+        public static int FusedAddRoundedHalving(int op1, int op2) => (int)((ulong)((long)op1 + (long)op2 + 1) >> 1);
+
+        public static int FusedSubtractHalving(int op1, int op2) => (int)((ulong)((long)op1 - (long)op2) >> 1);
+
+        public static long MultiplyWidening(int op1, int op2) => (long)((long)op1 * (long)op2);
+
+        public static long MultiplyWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + MultiplyWidening(op2, op3));
+
+        public static long MultiplyWideningAndSubtract(long op1, int op2, int op3) => (long)(op1 - MultiplyWidening(op2, op3));
+
+        public static long MultiplyWideningUpper(int[] op1, int[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long MultiplyWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static int SubtractReturningHighNarrow(long op1, long op2) => HighNarrow((long)(op1 - op2), round: false);
+
+        public static long SubtractReturningHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int SubtractReturningRoundedHighNarrow(long op1, long op2) => HighNarrow((long)(op1 - op2), round: true);
+
+        public static long SubtractReturningRoundedHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static long SubtractWidening(int op1, int op2) => (long)((long)op1 - (long)op2);
+
+        public static long SubtractWidening(long op1, int op2) => (long)(op1 - op2);
+
+        public static long SubtractWideningUpper(int[] op1, int[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long SubtractWideningUpper(long[] op1, int[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static ushort AbsoluteDifferenceWidening(byte op1, byte op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
+
+        public static ushort AbsoluteDifferenceWideningUpper(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ushort AbsoluteDifferenceWideningAndAdd(ushort op1, byte op2, byte op3) => (ushort)(op1 + (ushort)AbsoluteDifferenceWidening(op2, op3));
+
+        public static ushort AbsoluteDifferenceWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ushort AddPairwiseWidening(byte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static ushort AddPairwiseWideningAndAdd(ushort[] op1, byte[] op2, int i) => (ushort)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static byte HighNarrow(ushort op1, bool round)
+        {
+            ushort roundConst = 0;
+            if (round)
+            {
+                roundConst = (ushort)1 << (8 * sizeof(byte) - 1);
+            }
+            return (byte)(((ushort)op1 + roundConst) >> (8 * sizeof(byte)));
+        }
+
+        public static byte AddReturningHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 + op2), round: false);
+
+        public static byte AddReturningHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static byte AddReturningRoundedHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 + op2), round: true);
+
+        public static ushort AddReturningRoundedHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ushort AddWidening(byte op1, byte op2) => (ushort)((ushort)op1 + (ushort)op2);
+
+        public static ushort AddWidening(ushort op1, byte op2) => (ushort)(op1 + op2);
+
+        public static ushort AddWideningUpper(byte[] op1, byte[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ushort AddWideningUpper(ushort[] op1, byte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static byte FusedAddHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 + (ushort)op2) >> 1);
+
+        public static byte FusedAddRoundedHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 + (ushort)op2 + 1) >> 1);
+
+        public static byte FusedSubtractHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 - (ushort)op2) >> 1);
+
+        public static ushort MultiplyWidening(byte op1, byte op2) => (ushort)((ushort)op1 * (ushort)op2);
+
+        public static ushort MultiplyWideningAndAdd(ushort op1, byte op2, byte op3) => (ushort)(op1 + MultiplyWidening(op2, op3));
+
+        public static ushort MultiplyWideningAndSubtract(ushort op1, byte op2, byte op3) => (ushort)(op1 - MultiplyWidening(op2, op3));
+
+        public static ushort MultiplyWideningUpper(byte[] op1, byte[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ushort MultiplyWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ushort MultiplyWideningUpperAndSubtract(ushort[] op1, byte[] op2, byte[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static byte SubtractReturningHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 - op2), round: false);
+
+        public static ushort SubtractReturningHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static byte SubtractReturningRoundedHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 - op2), round: true);
+
+        public static ushort SubtractReturningRoundedHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ushort SubtractWidening(byte op1, byte op2) => (ushort)((ushort)op1 - (ushort)op2);
+
+        public static ushort SubtractWidening(ushort op1, byte op2) => (ushort)(op1 - op2);
+
+        public static ushort SubtractWideningUpper(byte[] op1, byte[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ushort SubtractWideningUpper(ushort[] op1, byte[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static uint AbsoluteDifferenceWidening(ushort op1, ushort op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
+
+        public static uint AbsoluteDifferenceWideningUpper(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static uint AbsoluteDifferenceWideningAndAdd(uint op1, ushort op2, ushort op3) => (uint)(op1 + (uint)AbsoluteDifferenceWidening(op2, op3));
+
+        public static uint AbsoluteDifferenceWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static uint AddPairwiseWidening(ushort[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static uint AddPairwiseWideningAndAdd(uint[] op1, ushort[] op2, int i) => (uint)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static ushort HighNarrow(uint op1, bool round)
+        {
+            uint roundConst = 0;
+            if (round)
+            {
+                roundConst = (uint)1 << (8 * sizeof(ushort) - 1);
+            }
+            return (ushort)(((uint)op1 + roundConst) >> (8 * sizeof(ushort)));
+        }
+
+        public static ushort AddReturningHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 + op2), round: false);
+
+        public static ushort AddReturningHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ushort AddReturningRoundedHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 + op2), round: true);
+
+        public static uint AddReturningRoundedHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static uint AddWidening(ushort op1, ushort op2) => (uint)((uint)op1 + (uint)op2);
+
+        public static uint AddWidening(uint op1, ushort op2) => (uint)(op1 + op2);
+
+        public static uint AddWideningUpper(ushort[] op1, ushort[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static uint AddWideningUpper(uint[] op1, ushort[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static ushort FusedAddHalving(ushort op1, ushort op2) => (ushort)((uint)((uint)op1 + (uint)op2) >> 1);
+
+        public static ushort FusedAddRoundedHalving(ushort op1, ushort op2) => (ushort)((uint)((uint)op1 + (uint)op2 + 1) >> 1);
+
+        public static ushort FusedSubtractHalving(ushort op1, ushort op2) => (ushort)((uint)((uint)op1 - (uint)op2) >> 1);
+
+        public static uint MultiplyWidening(ushort op1, ushort op2) => (uint)((uint)op1 * (uint)op2);
+
+        public static uint MultiplyWideningAndAdd(uint op1, ushort op2, ushort op3) => (uint)(op1 + MultiplyWidening(op2, op3));
+
+        public static uint MultiplyWideningAndSubtract(uint op1, ushort op2, ushort op3) => (uint)(op1 - MultiplyWidening(op2, op3));
+
+        public static uint MultiplyWideningUpper(ushort[] op1, ushort[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static uint MultiplyWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static uint MultiplyWideningUpperAndSubtract(uint[] op1, ushort[] op2, ushort[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ushort SubtractReturningHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 - op2), round: false);
+
+        public static uint SubtractReturningHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ushort SubtractReturningRoundedHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 - op2), round: true);
+
+        public static uint SubtractReturningRoundedHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static uint SubtractWidening(ushort op1, ushort op2) => (uint)((uint)op1 - (uint)op2);
+
+        public static uint SubtractWidening(uint op1, ushort op2) => (uint)(op1 - op2);
+
+        public static uint SubtractWideningUpper(ushort[] op1, ushort[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static uint SubtractWideningUpper(uint[] op1, ushort[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static ulong AbsoluteDifferenceWidening(uint op1, uint op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
+
+        public static ulong AbsoluteDifferenceWideningUpper(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong AbsoluteDifferenceWideningAndAdd(ulong op1, uint op2, uint op3) => (ulong)(op1 + (ulong)AbsoluteDifferenceWidening(op2, op3));
+
+        public static ulong AbsoluteDifferenceWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ulong AddPairwiseWidening(uint[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static ulong AddPairwiseWideningAndAdd(ulong[] op1, uint[] op2, int i) => (ulong)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static uint HighNarrow(ulong op1, bool round)
+        {
+            ulong roundConst = 0;
+            if (round)
+            {
+                roundConst = (ulong)1 << (8 * sizeof(uint) - 1);
+            }
+            return (uint)(((ulong)op1 + roundConst) >> (8 * sizeof(uint)));
+        }
+
+        public static uint AddReturningHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 + op2), round: false);
+
+        public static uint AddReturningHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static uint AddReturningRoundedHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 + op2), round: true);
+
+        public static ulong AddReturningRoundedHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ulong AddWidening(uint op1, uint op2) => (ulong)((ulong)op1 + (ulong)op2);
+
+        public static ulong AddWidening(ulong op1, uint op2) => (ulong)(op1 + op2);
+
+        public static ulong AddWideningUpper(uint[] op1, uint[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong AddWideningUpper(ulong[] op1, uint[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static uint FusedAddHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2) >> 1);
+
+        public static uint FusedAddRoundedHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2 + 1) >> 1);
+
+        public static uint FusedSubtractHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 - (ulong)op2) >> 1);
+
+        public static ulong MultiplyWidening(uint op1, uint op2) => (ulong)((ulong)op1 * (ulong)op2);
+
+        public static ulong MultiplyWideningAndAdd(ulong op1, uint op2, uint op3) => (ulong)(op1 + MultiplyWidening(op2, op3));
+
+        public static ulong MultiplyWideningAndSubtract(ulong op1, uint op2, uint op3) => (ulong)(op1 - MultiplyWidening(op2, op3));
+
+        public static ulong MultiplyWideningUpper(uint[] op1, uint[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong MultiplyWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ulong MultiplyWideningUpperAndSubtract(ulong[] op1, uint[] op2, uint[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static uint SubtractReturningHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 - op2), round: false);
+
+        public static ulong SubtractReturningHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static uint SubtractReturningRoundedHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 - op2), round: true);
+
+        public static ulong SubtractReturningRoundedHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ulong SubtractWidening(uint op1, uint op2) => (ulong)((ulong)op1 - (ulong)op2);
+
+        public static ulong SubtractWidening(ulong op1, uint op2) => (ulong)(op1 - op2);
+
+        public static ulong SubtractWideningUpper(uint[] op1, uint[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong SubtractWideningUpper(ulong[] op1, uint[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        private static bool SatQ(BigInteger i, out sbyte result)
+        {
+            bool saturated = false;
+
+            if (i > sbyte.MaxValue)
+            {
+                result = sbyte.MaxValue;
+                saturated = true;
+            }
+            else if (i < sbyte.MinValue)
+            {
+                result = sbyte.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (sbyte)i;
+            }
+
+            return saturated;
+        }
+
+        public static sbyte AddSaturate(sbyte op1, sbyte op2)
+        {
+            sbyte result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
+        {
+            sbyte result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
+        private static bool SatQ(BigInteger i, out byte result)
+        {
+            bool saturated = false;
+
+            if (i > byte.MaxValue)
+            {
+                result = byte.MaxValue;
+                saturated = true;
+            }
+            else if (i < byte.MinValue)
+            {
+                result = byte.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (byte)i;
+            }
+
+            return saturated;
+        }
+
+        public static byte AddSaturate(byte op1, byte op2)
+        {
+            byte result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static byte SubtractSaturate(byte op1, byte op2)
+        {
+            byte result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
+        private static bool SatQ(BigInteger i, out short result)
+        {
+            bool saturated = false;
+
+            if (i > short.MaxValue)
+            {
+                result = short.MaxValue;
+                saturated = true;
+            }
+            else if (i < short.MinValue)
+            {
+                result = short.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (short)i;
+            }
+
+            return saturated;
+        }
+
+        public static short AddSaturate(short op1, short op2)
+        {
+            short result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static short SubtractSaturate(short op1, short op2)
+        {
+            short result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
+        private static bool SatQ(BigInteger i, out ushort result)
+        {
+            bool saturated = false;
+
+            if (i > ushort.MaxValue)
+            {
+                result = ushort.MaxValue;
+                saturated = true;
+            }
+            else if (i < ushort.MinValue)
+            {
+                result = ushort.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (ushort)i;
+            }
+
+            return saturated;
+        }
+
+        public static ushort AddSaturate(ushort op1, ushort op2)
+        {
+            ushort result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static ushort SubtractSaturate(ushort op1, ushort op2)
+        {
+            ushort result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
+        private static bool SatQ(BigInteger i, out int result)
+        {
+            bool saturated = false;
+
+            if (i > int.MaxValue)
+            {
+                result = int.MaxValue;
+                saturated = true;
+            }
+            else if (i < int.MinValue)
+            {
+                result = int.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (int)i;
+            }
+
+            return saturated;
+        }
+
+        public static int AddSaturate(int op1, int op2)
+        {
+            int result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static int SubtractSaturate(int op1, int op2)
+        {
+            int result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
+        private static bool SatQ(BigInteger i, out uint result)
+        {
+            bool saturated = false;
+
+            if (i > uint.MaxValue)
+            {
+                result = uint.MaxValue;
+                saturated = true;
+            }
+            else if (i < uint.MinValue)
+            {
+                result = uint.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (uint)i;
+            }
+
+            return saturated;
+        }
+
+        public static uint AddSaturate(uint op1, uint op2)
+        {
+            uint result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static uint SubtractSaturate(uint op1, uint op2)
+        {
+            uint result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
+        private static bool SatQ(BigInteger i, out long result)
+        {
+            bool saturated = false;
+
+            if (i > long.MaxValue)
+            {
+                result = long.MaxValue;
+                saturated = true;
+            }
+            else if (i < long.MinValue)
+            {
+                result = long.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (long)i;
+            }
+
+            return saturated;
+        }
+
+        public static long AddSaturate(long op1, long op2)
+        {
+            long result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static long SubtractSaturate(long op1, long op2)
+        {
+            long result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
+        private static bool SatQ(BigInteger i, out ulong result)
+        {
+            bool saturated = false;
+
+            if (i > ulong.MaxValue)
+            {
+                result = ulong.MaxValue;
+                saturated = true;
+            }
+            else if (i < ulong.MinValue)
+            {
+                result = ulong.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (ulong)i;
+            }
+
+            return saturated;
+        }
+
+        public static ulong AddSaturate(ulong op1, ulong op2)
+        {
+            ulong result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static ulong SubtractSaturate(ulong op1, ulong op2)
+        {
+            ulong result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
         public static float FusedMultiplyAdd(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, op1);
@@ -2428,5 +3149,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return TableVectorExtension(i, zeros, indices, table);
         }
+
     }
 }

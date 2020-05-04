@@ -947,6 +947,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_InterlockedCmpXchg32,
     CORINFO_INTRINSIC_InterlockedCmpXchg64,
     CORINFO_INTRINSIC_MemoryBarrier,
+    CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_GetCurrentManagedThread,
     CORINFO_INTRINSIC_GetManagedThreadId,
     CORINFO_INTRINSIC_ByReference_Ctor,

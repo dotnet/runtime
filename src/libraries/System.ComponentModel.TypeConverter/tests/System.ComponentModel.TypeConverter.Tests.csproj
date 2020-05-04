@@ -6,7 +6,7 @@
     <AssemblyVersion>9.9.9.9</AssemblyVersion>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="Drawing\ColorConverterTests.cs" />
     <Compile Include="Drawing\PointConverterTests.cs" />
     <Compile Include="Drawing\RectangleConverterTests.cs" />
