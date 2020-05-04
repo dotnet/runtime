@@ -114,7 +114,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public bool Equals(MethodSignature otherSignature)
+        public bool Equals(MethodSignature otherSignature, bool allowCovariantReturn = false)
         {
             // TODO: Generics, etc.
             if (this._flags != otherSignature._flags)
@@ -124,7 +124,18 @@ namespace Internal.TypeSystem
                 return false;
 
             if (this._returnType != otherSignature._returnType)
-                return false;
+            {
+                if (!allowCovariantReturn)
+                    return false;
+
+                // Casting a struct to an interface it implements is allowed, but these two types are not compatible and
+                // can't be considered a valid covariant return type
+                if (this._returnType.IsValueType && !otherSignature._returnType.IsValueType)
+                    return false;
+
+                if (!this._returnType.CanCastTo(otherSignature._returnType))
+                    return false;
+            }
 
             if (this._parameters.Length != otherSignature._parameters.Length)
                 return false;

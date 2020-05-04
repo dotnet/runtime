@@ -411,5 +411,29 @@ namespace Internal.TypeSystem
                     return false;
             }
         }
+
+        /// <summary>
+        /// Check if MethodImpl requires slot unification.
+        /// </summary>
+        /// <param name="method">Method to check</param>
+        /// <returns>True when the method is a MethodImpl marked with the RequireMethodImplToRemainInEffect custom attribute, false otherwise.</returns>
+        public static bool RequiresSlotUnification(this MethodDesc method)
+        {
+            if (!method.HasCustomAttribute("System.Runtime.CompilerServices", "RequireMethodImplToRemainInEffectAttribute"))
+                return false;
+
+            MetadataType mdType = method.OwningType as MetadataType;
+            if (mdType != null)
+            {
+                foreach (MethodImplRecord methodImplRecord in mdType.VirtualMethodImplsForType)
+                {
+                    // Method is a MethodImpl body record with the attribute
+                    if (method == methodImplRecord.Body)
+                        return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
