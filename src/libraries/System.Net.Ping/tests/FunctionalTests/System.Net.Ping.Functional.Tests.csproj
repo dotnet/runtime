@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <!-- Test APIs introduced after 1.0 -->
   <ItemGroup>
@@ -12,26 +13,19 @@
     <Compile Include="TestSettings.cs" />
     <Compile Include="UnixPingUtilityTests.cs" />
     <!-- System.Net Common -->
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
-      <Link>SocketCommon\Configuration.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Ping.cs">
-      <Link>SocketCommon\Configuration.Ping.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\RawSocketPermissions.cs">
-      <Link>Common\System\Net\RawSocketPermissions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\NetworkInformation\UnixCommandLinePing.cs">
-      <Link>Common\System\Net\NetworkInformation\UnixCommandLinePing.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\Capability.RawSocketPermissions.cs">
-      <Link>Common\System\Net\Capability.RawSocketPermissions.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
+             Link="SocketCommon\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Ping.cs"
+             Link="SocketCommon\Configuration.Ping.cs" />
+    <Compile Include="$(CommonPath)System\Net\RawSocketPermissions.cs"
+             Link="Common\System\Net\RawSocketPermissions.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.ReadLink.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\UnixCommandLinePing.cs"
+             Link="Common\System\Net\NetworkInformation\UnixCommandLinePing.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.RawSocketPermissions.cs"
+             Link="Common\System\Net\Capability.RawSocketPermissions.cs" />
   </ItemGroup>
 </Project>

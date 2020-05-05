@@ -1,5 +1,15 @@
 # Building Mono
 
+## Build Requirements
+
+| Windows  | Linux    | macOS    | FreeBSD  |
+| :------: | :------: | :------: | :------: |
+| [Requirements](../../requirements/windows-requirements.md) | [Requirements](../../requirements/linux-requirements.md) | [Requirements](../../requirements/macos-requirements.md) |
+
+Before proceeding further, please click on the link above that matches your machine and ensure you have installed all the prerequisites for the build to work.
+
+## Concept
+
 To build the Mono runtime, you must first do a complete runtime build (coreclr, libraries, and then mono).  At the repo root, simply execute:
 
 ```bash

@@ -224,17 +224,16 @@ public:
     {
         _ASSERTE(TypeFromToken(mdar) == mdtAssemblyRef);
 
-        // The version of the mscorlib should be 4.0.0.0
         if (m_assemblyRefMscorlib == mdar)
         {
             if (pusMajorVersion != nullptr)
-                *pusMajorVersion = VER_ASSEMBLYMAJORVERSION;
+                *pusMajorVersion = 4;
             if (pusMinorVersion != nullptr)
-                *pusMinorVersion = VER_ASSEMBLYMINORVERSION;
+                *pusMinorVersion = 0;
             if (pusBuildNumber != nullptr)
-                *pusBuildNumber = VER_ASSEMBLYBUILD;
+                *pusBuildNumber = 0;
             if (pusRevisionNumber != nullptr)
-                *pusRevisionNumber = VER_ASSEMBLYBUILD_QFE;
+                *pusRevisionNumber = 0;
 
             // Under CoreCLR, we replace the ECMA key in the mscorlib assembly ref with the CoreCLR platform public key token
             if (ppbPublicKeyOrToken != nullptr)
@@ -279,13 +278,13 @@ public:
                 *pszName = GetExtraAssemblyRefName(mdar);
 
             if (pusMajorVersion != nullptr)
-                *pusMajorVersion = VER_ASSEMBLYMAJORVERSION;
+                *pusMajorVersion = 4;
             if (pusMinorVersion != nullptr)
-                *pusMinorVersion = VER_ASSEMBLYMINORVERSION;
+                *pusMinorVersion = 0;
             if (pusBuildNumber != nullptr)
-                *pusBuildNumber = VER_ASSEMBLYBUILD;
+                *pusBuildNumber = 0;
             if (pusRevisionNumber != nullptr)
-                *pusRevisionNumber = VER_ASSEMBLYBUILD_QFE;
+                *pusRevisionNumber = 0;
 
             if (ppbHashValue)
                 *ppbHashValue = NULL;

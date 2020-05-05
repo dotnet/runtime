@@ -202,5 +202,69 @@ namespace CoreXml.Test.XLinq
             }
         }
 
+        public static IEnumerable<object[]> IsAsync_SaveOptions_Data
+        {
+            get
+            {
+                foreach (bool isAsync in new[] { true, false })
+                    foreach (SaveOptions saveOptions in Enum.GetValues(typeof(SaveOptions)))
+                        yield return new object[] { isAsync, saveOptions };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(IsAsync_SaveOptions_Data))]
+        public async Task SaveAsync_CallsAsyncOnly_SaveSync_CallsSyncOnly(bool isAsync, SaveOptions saveOptions)
+        {
+            XDocument document = XDocument.Parse("<root>Test document async save</root>");
+            var element = new XElement("Test");
+            using (ForceSyncAsyncStream stream = new ForceSyncAsyncStream(isAsync))
+            {
+                if (isAsync)
+                {
+                    await document.SaveAsync(stream, saveOptions, CancellationToken.None);
+                    await element.SaveAsync(stream, saveOptions, CancellationToken.None);
+                }
+                else
+                {
+                    document.Save(stream);
+                    element.Save(stream);
+                }
+            }
+        }
+    }
+
+    public class ForceSyncAsyncStream : MemoryStream
+    {
+        private bool _isAsync;
+
+        public ForceSyncAsyncStream(bool async)
+        {
+            _isAsync = async;
+        }
+
+        public override void Flush()
+        {
+            Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Flush is called");
+            base.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Flush is called");
+            return Task.CompletedTask;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Write is called");
+            base.Write(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
+            return Task.CompletedTask;
+        }
     }
 }

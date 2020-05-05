@@ -2108,7 +2108,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 //  Retrieve the 'this' arg
                 GenTree* thisArg = gtGetThisArg(tree->AsCall());
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
                 if (thisArg == nullptr)
                 {
                     // For tail calls we lose the this pointer in the argument list but that's OK because a null check
@@ -2116,8 +2115,6 @@ void Compiler::optAssertionGen(GenTree* tree)
                     noway_assert(tree->AsCall()->IsTailCall());
                     break;
                 }
-#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM
-                noway_assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, OAK_NOT_EQUAL);
             }
             break;
@@ -2682,6 +2679,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     newTree->ChangeOperConst(GT_CNS_INT);
                     newTree->AsIntCon()->gtIconVal = curAssertion->op2.u1.iconVal;
                     newTree->ClearIconHandleMask();
+                    if (newTree->TypeIs(TYP_STRUCT))
+                    {
+                        // LCL_VAR can be init with a GT_CNS_INT, keep its type INT, not STRUCT.
+                        newTree->ChangeType(TYP_INT);
+                    }
                 }
                 // If we're doing an array index address, assume any constant propagated contributes to the index.
                 if (isArrIndex)

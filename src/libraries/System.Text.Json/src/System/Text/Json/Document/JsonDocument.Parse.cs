@@ -380,31 +380,18 @@ namespace System.Text.Json
                     {
                         long startingOffset = reader.TokenStartIndex;
 
-                        // Placeholder until reader.Skip() is written (https://github.com/dotnet/runtime/issues/27838)
+                        if (!reader.TrySkip())
                         {
-                            int depth = reader.CurrentDepth;
-
-                            // CurrentDepth rises late and falls fast,
-                            // a payload of "[ 1, 2, 3, 4 ]" will report post-Read()
-                            // CurrentDepth values of { 0, 1, 1, 1, 1, 0 },
-                            // Since we're logically at 0 ([), Read() once and keep
-                            // reading until we've come back down to 0 (]).
-                            do
+                            if (shouldThrow)
                             {
-                                if (!reader.Read())
-                                {
-                                    if (shouldThrow)
-                                    {
-                                        ThrowHelper.ThrowJsonReaderException(
-                                            ref reader,
-                                            ExceptionResource.ExpectedJsonTokens);
-                                    }
+                                ThrowHelper.ThrowJsonReaderException(
+                                    ref reader,
+                                    ExceptionResource.ExpectedJsonTokens);
+                            }
 
-                                    reader = restore;
-                                    document = null;
-                                    return false;
-                                }
-                            } while (reader.CurrentDepth > depth);
+                            reader = restore;
+                            document = null;
+                            return false;
                         }
 
                         long totalLength = reader.BytesConsumed - startingOffset;

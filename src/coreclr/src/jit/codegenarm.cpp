@@ -998,13 +998,38 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTree*    data = tree->gtOp1;
-    instruction ins  = ins_Store(targetType);
-    emitAttr    attr = emitTypeSize(targetType);
+    GenTree* data = tree->gtOp1;
 
     assert(!data->isContained());
     genConsumeReg(data);
-    emit->emitIns_S_R(ins, attr, data->GetRegNum(), varNum, offset);
+    regNumber dataReg = data->GetRegNum();
+    if (tree->IsOffsetMisaligned())
+    {
+        // Arm supports unaligned access only for integer types,
+        // convert the storing floating data into 1 or 2 integer registers and write them as int.
+        regNumber addr = tree->ExtractTempReg();
+        emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offset);
+        if (targetType == TYP_FLOAT)
+        {
+            regNumber floatAsInt = tree->GetSingleTempReg();
+            emit->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, floatAsInt, dataReg);
+            emit->emitIns_R_R(INS_str, EA_4BYTE, floatAsInt, addr);
+        }
+        else
+        {
+            regNumber halfdoubleAsInt1 = tree->ExtractTempReg();
+            regNumber halfdoubleAsInt2 = tree->GetSingleTempReg();
+            emit->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, halfdoubleAsInt1, halfdoubleAsInt2, dataReg);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 0);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 4);
+        }
+    }
+    else
+    {
+        emitAttr    attr = emitTypeSize(targetType);
+        instruction ins  = ins_Store(targetType);
+        emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
+    }
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);

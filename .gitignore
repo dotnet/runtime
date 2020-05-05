@@ -348,3 +348,6 @@ linker
 # ln -s $(pwd)/src/libraries/Common/src src/coreclr/src/System.Private.CoreLib/common
 src/coreclr/src/System.Private.CoreLib/shared
 src/coreclr/src/System.Private.CoreLib/common
+
+# The debug directory should not be ignored
+!src/coreclr/src/debug

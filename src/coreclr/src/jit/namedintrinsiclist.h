@@ -29,15 +29,25 @@ enum NamedIntrinsic : unsigned short
 
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    NI_##id,
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
+    NI_##isa##_##name,
 #include "hwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)     \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
     NI_##isa##_##name,
 #include "hwintrinsiclistarm64.h"
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
     NI_HW_INTRINSIC_END,
+
+    NI_SIMD_AS_HWINTRINSIC_START,
+#if defined(TARGET_XARCH)
+#define SIMD_AS_HWINTRINSIC(classId, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag) NI_##classId##_##name,
+#include "simdashwintrinsiclistxarch.h"
+#elif defined(TARGET_ARM64)
+#define SIMD_AS_HWINTRINSIC(classId, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag) NI_##classId##_##name,
+#include "simdashwintrinsiclistarm64.h"
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+    NI_SIMD_AS_HWINTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 
 };

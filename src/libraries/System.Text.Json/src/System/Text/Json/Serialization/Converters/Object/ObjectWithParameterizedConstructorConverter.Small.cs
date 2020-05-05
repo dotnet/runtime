@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Converters
         protected override object CreateObject(ref ReadStackFrame frame)
         {
             var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>)
-                frame.JsonClassInfo.CreateObjectWithParameterizedCtor!;
+                frame.JsonClassInfo.CreateObjectWithArgs!;
             var arguments = (Arguments<TArg0, TArg1, TArg2, TArg3>)frame.CtorArgumentState!.Arguments;
             return createObject!(arguments.Arg0, arguments.Arg1, arguments.Arg2, arguments.Arg3);
         }
@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     break;
                 default:
-                    Debug.Fail("This should never happen.");
+                    Debug.Fail("More than 4 params: we should be in override for LargeObjectWithParameterizedConstructorConverter.");
                     throw new InvalidOperationException();
             }
 
@@ -69,9 +69,9 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
-            if (classInfo.CreateObjectWithParameterizedCtor == null)
+            if (classInfo.CreateObjectWithArgs == null)
             {
-                classInfo.CreateObjectWithParameterizedCtor =
+                classInfo.CreateObjectWithArgs =
                     options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
             }
 
@@ -98,8 +98,8 @@ namespace System.Text.Json.Serialization.Converters
                             arguments.Arg3 = ((JsonParameterInfo<TArg3>)parameterInfo).TypedDefaultValue!;
                             break;
                         default:
-                            Debug.Fail("We should never get here.");
-                            break;
+                            Debug.Fail("More than 4 params: we should be in override for LargeObjectWithParameterizedConstructorConverter.");
+                            throw new InvalidOperationException();
                     }
                 }
             }

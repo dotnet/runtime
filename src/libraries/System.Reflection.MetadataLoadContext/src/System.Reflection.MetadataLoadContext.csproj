@@ -79,8 +79,8 @@
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataTable.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\HashHelpers.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Helpers.cs" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetsNetStandard)' == 'true'" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="$(TargetFramework.StartsWith('netstandard'))" />
     <Compile Include="System\Reflection\TypeLoading\General\MethodSig.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\RoAssemblyName.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Sentinels.cs" />

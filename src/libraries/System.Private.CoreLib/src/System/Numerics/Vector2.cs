@@ -193,17 +193,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Clamp(Vector2 value1, Vector2 min, Vector2 max)
         {
-            // This compare order is very important!!!
             // We must follow HLSL behavior in the case user specified min value is bigger than max value.
-            float x = value1.X;
-            x = (min.X > x) ? min.X : x;  // max(x, minx)
-            x = (max.X < x) ? max.X : x;  // min(x, maxx)
-
-            float y = value1.Y;
-            y = (min.Y > y) ? min.Y : y;  // max(y, miny)
-            y = (max.Y < y) ? max.Y : y;  // min(y, maxy)
-
-            return new Vector2(x, y);
+            return Vector2.Min(Vector2.Max(value1, min), max);
         }
 
         /// <summary>
@@ -216,9 +207,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount)
         {
-            return new Vector2(
-                value1.X + (value2.X - value1.X) * amount,
-                value1.Y + (value2.Y - value1.Y) * amount);
+            return value1 + (value2 - value1) * amount;
         }
 
         /// <summary>

@@ -1120,7 +1120,7 @@
     <value>It is an error for both length and minLength or maxLength to be present.</value>
   </data>
   <data name="Sch_MinLengthGtMaxLength" xml:space="preserve">
-    <value>MinLength is greater than MaxLength.</value>
+    <value>minLength is greater than maxLength.</value>
   </data>
   <data name="Sch_FractionDigitsGtTotalDigits" xml:space="preserve">
     <value>FractionDigits is greater than TotalDigits.</value>
@@ -1396,7 +1396,7 @@
     <value>'all' must have 'minOccurs' value of 0 or 1.</value>
   </data>
   <data name="Sch_InvalidAllMax" xml:space="preserve">
-    <value>'all' must have {max occurs}=1.</value>
+    <value>'all' must have a 'maxOccurs' value of 1.</value>
   </data>
   <data name="Sch_InvalidFacet" xml:space="preserve">
     <value>The 'value' attribute must be present in facet.</value>
@@ -1501,7 +1501,7 @@
     <value>Duplicate ID attribute.</value>
   </data>
   <data name="Sch_InvalidAllElementMax" xml:space="preserve">
-    <value>The {max occurs} of all the particles in the {particles} of an all group must be 0 or 1.</value>
+    <value>The 'maxOccurs' attribute of all the particles of an 'all' group must be 0 or 1.</value>
   </data>
   <data name="Sch_InvalidAny" xml:space="preserve">
     <value>Invalid namespace in 'any'.</value>
@@ -1510,7 +1510,7 @@
     <value>The value of the namespace attribute of the element or attribute wildcard is invalid - {0}</value>
   </data>
   <data name="Sch_InvalidExamplar" xml:space="preserve">
-    <value>Cannot be nominated as the {substitution group affiliation} of any other declaration.</value>
+    <value>Element '{0}' cannot be nominated as the 'substitutionGroup' of any other declaration.</value>
   </data>
   <data name="Sch_NoExamplar" xml:space="preserve">
     <value>Reference to undeclared substitution group affiliation.</value>
@@ -1636,7 +1636,7 @@
     <value>The derived particle cannot have more members than the base particle - All:All,Sequence:Sequence -- Recurse Rule 2 / Choice:Choice -- RecurseLax.</value>
   </data>
   <data name="Sch_GroupBaseRestNotEmptiable" xml:space="preserve">
-    <value>All particles in the {particles} of the base particle which are not mapped to by any particle in the {particles} of the derived particle should be emptiable - All:All,Sequence:Sequence -- Recurse Rule 2 / Choice:Choice -- RecurseLax.</value>
+    <value>All particles in the particles of the base particle which are not mapped to by any particle in the particles of the derived particle should be emptiable - All:All,Sequence:Sequence -- Recurse Rule 2 / Choice:Choice -- RecurseLax.</value>
   </data>
   <data name="Sch_SeqFromAll" xml:space="preserve">
     <value>The derived sequence particle at ({0}, {1}) is not a valid restriction of the base all particle at ({2}, {3}) according to Sequence:All -- RecurseUnordered.</value>
@@ -1654,7 +1654,7 @@
     <value>The group ref to 'all' is not the root particle, or it is being used as an extension.</value>
   </data>
   <data name="Sch_AllRefMinMax" xml:space="preserve">
-    <value>The group ref to 'all' must have {min occurs}= 0 or 1 and {max occurs}=1.</value>
+    <value>The group ref to 'all' must have 'minOccurs' = 0 or 1 and 'maxOccurs' = 1.</value>
   </data>
   <data name="Sch_NotAllAlone" xml:space="preserve">
     <value>'all' is not the only particle in a group, or is being used as an extension.</value>
@@ -1720,16 +1720,16 @@
     <value>Cannot load the schema from the location '{0}' - {1}</value>
   </data>
   <data name="Sch_LengthGtBaseLength" xml:space="preserve">
-    <value>It is an error if 'length' is among the members of {facets} of {base type definition} and {value} is greater than the {value} of the parent 'length'.</value>
+    <value>It is an error if 'length' is among the members of the facets of the base type definition and its value is greater than the value of the parent 'length'.</value>
   </data>
   <data name="Sch_MinLengthGtBaseMinLength" xml:space="preserve">
-    <value>It is an error if 'minLength' is among the members of {facets} of {base type definition} and {value} is less than the {value} of the parent 'minLength'.</value>
+    <value>It is an error if 'minLength' is among the members of the facets of the base type definition and its value is less than the value of the parent 'minLength'.</value>
   </data>
   <data name="Sch_MaxLengthGtBaseMaxLength" xml:space="preserve">
-    <value>It is an error if 'maxLength' is among the members of {facets} of {base type definition} and {value} is greater than the {value} of the parent 'maxLength'.</value>
+    <value>It is an error if 'maxLength' is among the members of the facets of the base type definition and its value is greater than the value of the parent 'maxLength'.</value>
   </data>
   <data name="Sch_MaxMinLengthBaseLength" xml:space="preserve">
-    <value>It is an error for both 'length' and either 'minLength' or 'maxLength' to be members of {facets}, unless they are specified in different derivation steps. In which case the following must be true: the {value} of 'minLength' &lt;= the {value} of 'length' &lt;= the {value} of 'maxLength'.</value>
+    <value>It is an error for both 'length' and either 'minLength' or 'maxLength' to be members of facets, unless they are specified in different derivation steps. In which case the following must be true: the value of 'minLength' &lt;= the value of 'length' &lt;= the value of 'maxLength'.</value>
   </data>
   <data name="Sch_MaxInclusiveMismatch" xml:space="preserve">
     <value>It is an error if the derived 'maxInclusive' facet value is greater than the parent 'maxInclusive' facet value.</value>
@@ -1768,7 +1768,7 @@
     <value>It is an error if the derived 'fractionDigits' facet value is greater than the parent 'fractionDigits' facet value.</value>
   </data>
   <data name="Sch_FacetBaseFixed" xml:space="preserve">
-    <value>Values that are declared as {fixed} in a base type can not be changed in a derived type.</value>
+    <value>Values that are declared with fixed='true' in a base type can not be changed in a derived type.</value>
   </data>
   <data name="Sch_WhiteSpaceRestriction1" xml:space="preserve">
     <value>It is an error if 'whiteSpace' is among the members of {facets} of {base type definition}, {value} is 'replace' or 'preserve', and the {value} of the parent 'whiteSpace' is 'collapse'.</value>

@@ -6988,14 +6988,6 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
         Interval* interval = refPosition->getInterval();
         if (!interval->isLocalVar)
         {
-            // The tmp allocation logic 'normalizes' types to a small number of
-            // types that need distinct stack locations from each other.
-            // Those types are currently gc refs, byrefs, <= 4 byte non-GC items,
-            // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
-            // LSRA is agnostic to those choices but needs
-            // to know what they are here.
-            var_types typ;
-
             GenTree* treeNode = refPosition->treeNode;
             if (treeNode == nullptr)
             {
@@ -7004,46 +6996,36 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             }
             assert(treeNode != nullptr);
 
-            // In case of multi-reg call nodes, we need to use the type
-            // of the return register given by multiRegIdx of the refposition.
-            if (treeNode->IsMultiRegCall())
+            // The tmp allocation logic 'normalizes' types to a small number of
+            // types that need distinct stack locations from each other.
+            // Those types are currently gc refs, byrefs, <= 4 byte non-GC items,
+            // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
+            // LSRA is agnostic to those choices but needs
+            // to know what they are here.
+            var_types type;
+            if (!treeNode->IsMultiRegNode())
             {
-                ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
-                typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
+                type = getDefType(treeNode);
             }
-#if FEATURE_ARG_SPLIT
-            else if (treeNode->OperIsPutArgSplit())
-            {
-                typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
-            }
-#if !defined(TARGET_64BIT)
-            else if (treeNode->OperIsPutArgReg())
-            {
-                // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
-                // However when they get spilled, they should be treated as separated int registers.
-                var_types typNode = treeNode->TypeGet();
-                typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
-            }
-#endif // !TARGET_64BIT
-#endif // FEATURE_ARG_SPLIT
             else
             {
-                typ = treeNode->TypeGet();
+                type = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
             }
-            typ = RegSet::tmpNormalizeType(typ);
+
+            type = RegSet::tmpNormalizeType(type);
 
             if (refPosition->spillAfter && !refPosition->reload)
             {
-                currentSpill[typ]++;
-                if (currentSpill[typ] > maxSpill[typ])
+                currentSpill[type]++;
+                if (currentSpill[type] > maxSpill[type])
                 {
-                    maxSpill[typ] = currentSpill[typ];
+                    maxSpill[type] = currentSpill[type];
                 }
             }
             else if (refPosition->reload)
             {
-                assert(currentSpill[typ] > 0);
-                currentSpill[typ]--;
+                assert(currentSpill[type] > 0);
+                currentSpill[type]--;
             }
             else if (refPosition->RegOptional() && refPosition->assignedReg() == REG_NA)
             {
@@ -7052,10 +7034,10 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 // memory location.  To properly account max spill for typ we
                 // decrement spill count.
                 assert(RefTypeIsUse(refType));
-                assert(currentSpill[typ] > 0);
-                currentSpill[typ]--;
+                assert(currentSpill[type] > 0);
+                currentSpill[type]--;
             }
-            JITDUMP("  Max spill for %s is %d\n", varTypeName(typ), maxSpill[typ]);
+            JITDUMP("  Max spill for %s is %d\n", varTypeName(type), maxSpill[type]);
         }
     }
 }

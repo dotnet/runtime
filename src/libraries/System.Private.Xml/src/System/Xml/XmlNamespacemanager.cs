@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -14,7 +16,7 @@ namespace System.Xml
         private struct NamespaceDeclaration
         {
             public string prefix;
-            public string uri;
+            public string? uri;
             public int scopeId;
             public int previousNsIndex;
 
@@ -28,24 +30,24 @@ namespace System.Xml
         }
 
         // array with namespace declarations
-        private NamespaceDeclaration[] _nsdecls;
+        private NamespaceDeclaration[]? _nsdecls;
 
         // index of last declaration
         private int _lastDecl = 0;
 
         // name table
-        private readonly XmlNameTable _nameTable;
+        private readonly XmlNameTable? _nameTable;
 
         // ID (depth) of the current scope
         private int _scopeId;
 
         // hash table for faster lookup when there is lots of namespaces
-        private Dictionary<string, int> _hashTable;
+        private Dictionary<string, int>? _hashTable;
         private bool _useHashtable;
 
         // atomized prefixes for "xml" and "xmlns"
-        private readonly string _xml;
-        private readonly string _xmlNs;
+        private readonly string? _xml;
+        private readonly string? _xmlNs;
 
         // Constants
         private const int MinDeclsCountForHashtable = 16;
@@ -69,7 +71,7 @@ namespace System.Xml
             _scopeId = 1;
         }
 
-        public virtual XmlNameTable NameTable
+        public virtual XmlNameTable? NameTable
         {
             get
             {
@@ -81,7 +83,7 @@ namespace System.Xml
         {
             get
             {
-                string defaultNs = LookupNamespace(string.Empty);
+                string? defaultNs = LookupNamespace(string.Empty);
                 return (defaultNs == null) ? string.Empty : defaultNs;
             }
         }
@@ -98,15 +100,21 @@ namespace System.Xml
             {
                 return false;
             }
+
+            Debug.Assert(_nsdecls != null);
+
             while (_nsdecls[decl].scopeId == _scopeId)
             {
                 if (_useHashtable)
                 {
+                    Debug.Assert(_hashTable != null);
                     _hashTable[_nsdecls[decl].prefix] = _nsdecls[decl].previousNsIndex;
                 }
+
                 decl--;
                 Debug.Assert(decl >= 2);
             }
+
             _lastDecl = decl;
             _scopeId--;
             return true;
@@ -120,6 +128,8 @@ namespace System.Xml
             if (prefix == null)
                 throw new ArgumentNullException(nameof(prefix));
 
+            Debug.Assert(_nameTable != null);
+            Debug.Assert(_nsdecls != null);
             prefix = _nameTable.Add(prefix);
             uri = _nameTable.Add(uri);
 
@@ -162,6 +172,7 @@ namespace System.Xml
             // add to hashTable
             if (_useHashtable)
             {
+                Debug.Assert(_hashTable != null);
                 _hashTable[prefix] = _lastDecl;
             }
             // or create a new hashTable if the threshold has been reached
@@ -174,6 +185,7 @@ namespace System.Xml
                 {
                     _hashTable[_nsdecls[i].prefix] = i;
                 }
+
                 _useHashtable = true;
             }
         }
@@ -189,6 +201,8 @@ namespace System.Xml
                 throw new ArgumentNullException(nameof(prefix));
             }
 
+            Debug.Assert(_nsdecls != null);
+
             int declIndex = LookupNamespaceDecl(prefix);
             while (declIndex != -1)
             {
@@ -202,6 +216,8 @@ namespace System.Xml
 
         public virtual IEnumerator GetEnumerator()
         {
+            Debug.Assert(_nsdecls != null);
+
             Dictionary<string, string> prefixes = new Dictionary<string, string>(_lastDecl + 1);
             for (int thisDecl = 0; thisDecl <= _lastDecl; thisDecl++)
             {
@@ -216,8 +232,10 @@ namespace System.Xml
         // This pragma disables a warning that the return type is not CLS-compliant, but generics are part of CLS in Whidbey.
 #pragma warning disable 3002
         public virtual IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
-        {
 #pragma warning restore 3002
+        {
+            Debug.Assert(_nsdecls != null);
+
             int i = 0;
             switch (scope)
             {
@@ -241,8 +259,8 @@ namespace System.Xml
             Dictionary<string, string> dict = new Dictionary<string, string>(_lastDecl - i + 1);
             for (; i <= _lastDecl; i++)
             {
-                string prefix = _nsdecls[i].prefix;
-                string uri = _nsdecls[i].uri;
+                string? prefix = _nsdecls[i].prefix;
+                string? uri = _nsdecls[i].uri;
                 Debug.Assert(prefix != null);
 
                 if (uri != null)
@@ -258,19 +276,24 @@ namespace System.Xml
                     }
                 }
             }
+
             return dict;
         }
 
-        public virtual string LookupNamespace(string prefix)
+        public virtual string? LookupNamespace(string prefix)
         {
+            Debug.Assert(_nsdecls != null);
             int declIndex = LookupNamespaceDecl(prefix);
             return (declIndex == -1) ? null : _nsdecls[declIndex].uri;
         }
 
         private int LookupNamespaceDecl(string prefix)
         {
+            Debug.Assert(_nsdecls != null);
+
             if (_useHashtable)
             {
+                Debug.Assert(_hashTable != null);
                 int declIndex;
                 if (_hashTable.TryGetValue(prefix, out declIndex))
                 {
@@ -305,8 +328,10 @@ namespace System.Xml
             return -1;
         }
 
-        public virtual string LookupPrefix(string uri)
+        public virtual string? LookupPrefix(string uri)
         {
+            Debug.Assert(_nsdecls != null);
+
             // Don't assume that prefix is atomized
             for (int thisDecl = _lastDecl; thisDecl >= 0; thisDecl--)
             {
@@ -324,12 +349,14 @@ namespace System.Xml
 
         public virtual bool HasNamespace(string prefix)
         {
+            Debug.Assert(_nsdecls != null);
+
             // Don't assume that prefix is atomized
             for (int thisDecl = _lastDecl; _nsdecls[thisDecl].scopeId == _scopeId; thisDecl--)
             {
                 if (string.Equals(_nsdecls[thisDecl].prefix, prefix) && _nsdecls[thisDecl].uri != null)
                 {
-                    if (prefix.Length > 0 || _nsdecls[thisDecl].uri.Length > 0)
+                    if (prefix.Length > 0 || _nsdecls[thisDecl].uri!.Length > 0)
                     {
                         return true;
                     }
@@ -339,7 +366,7 @@ namespace System.Xml
             return false;
         }
 
-        internal bool GetNamespaceDeclaration(int idx, out string prefix, out string uri)
+        internal bool GetNamespaceDeclaration(int idx, [NotNullWhen(true)] out string? prefix, out string? uri)
         {
             idx = _lastDecl - idx;
             if (idx < 0)
@@ -348,6 +375,7 @@ namespace System.Xml
                 return false;
             }
 
+            Debug.Assert(_nsdecls != null);
             prefix = _nsdecls[idx].prefix;
             uri = _nsdecls[idx].uri;
 
