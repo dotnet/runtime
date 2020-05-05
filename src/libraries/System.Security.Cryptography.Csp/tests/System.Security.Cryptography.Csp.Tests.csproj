@@ -29,7 +29,7 @@
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="AesCryptoServiceProviderTests.cs" />
     <Compile Include="DESCryptoServiceProviderProvider.cs" />
     <Compile Include="DESCryptoServiceProviderTests.cs" />

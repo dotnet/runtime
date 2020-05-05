@@ -11,7 +11,7 @@
     <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_ServiceController</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' == 'true')">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) or ($(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' == 'true')">
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -75,11 +75,11 @@
   <ItemGroup>
     <Reference Include="System.Diagnostics.EventLog" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' == 'true')">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) or ($(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' == 'true')">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />

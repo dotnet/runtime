@@ -2665,8 +2665,8 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 
     if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
     {
-        // issue a INS_BARRIER_ISHLD after a volatile CpObj operation
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
+        // issue a load barrier after a volatile CpObj operation
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
     }
 
     // Clear the gcInfo for REG_WRITE_BARRIER_SRC_BYREF and REG_WRITE_BARRIER_DST_BYREF.
@@ -2775,7 +2775,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 assert(!"Unexpected treeNode->gtOper");
         }
 
-        instGen_MemoryBarrier(INS_BARRIER_ISH);
+        instGen_MemoryBarrier();
     }
     else
     {
@@ -2855,7 +2855,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
-        instGen_MemoryBarrier(INS_BARRIER_ISH);
+        instGen_MemoryBarrier();
 
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
@@ -2904,7 +2904,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         }
         GetEmitter()->emitIns_R_R_R(INS_casal, dataSize, targetReg, dataReg, addrReg);
 
-        instGen_MemoryBarrier(INS_BARRIER_ISH);
+        instGen_MemoryBarrier();
     }
     else
     {
@@ -2984,7 +2984,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         genDefineTempLabel(labelCompareFail);
 
-        instGen_MemoryBarrier(INS_BARRIER_ISH);
+        instGen_MemoryBarrier();
 
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }

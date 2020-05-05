@@ -30,10 +30,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <HostMachineInfoProps>$(ArtifactsObjDir)HostMachineInfo.props</HostMachineInfoProps>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <NETCoreAppFrameworkIdentifier>.NETCoreApp</NETCoreAppFrameworkIdentifier>
     <NETCoreAppFrameworkMoniker>$(NETCoreAppFrameworkIdentifier),Version=v$(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkMoniker>
     <NETCoreAppFrameworkBrandName>.NET $(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkBrandName>
@@ -80,11 +76,8 @@
     <ExeSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.exe</ExeSuffix>
   </PropertyGroup>
 
-  <Import Project="$(HostMachineInfoProps)"
-          Condition="Exists('$(HostMachineInfoProps)')" />
-
-  <PropertyGroup Condition="'$(OutputRid)' == '' and '$(HostMachineRid)' != ''">
-    <OutputRid>$(HostMachineRid.Remove($(HostMachineRid.LastIndexOf('-'))))-$(TargetArchitecture)</OutputRid>
+  <PropertyGroup Condition="'$(OutputRid)' == '' and '$(HostRuntimeIdentifier)' != ''">
+    <OutputRid>$(HostRuntimeIdentifier.Remove($(HostRuntimeIdentifier.LastIndexOf('-'))))-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <!-- Portable -->
@@ -302,9 +295,9 @@
       </PropertyGroup>
       <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
         <HostMachineRidTargetsDebianPackages Condition="
-          $(HostMachineRid.StartsWith('debian')) or
-          $(HostMachineRid.StartsWith('ubuntu')) or
-          $(HostMachineRid.StartsWith('linuxmint'))">true</HostMachineRidTargetsDebianPackages>
+          $(HostRuntimeIdentifier.StartsWith('debian')) or
+          $(HostRuntimeIdentifier.StartsWith('ubuntu')) or
+          $(HostRuntimeIdentifier.StartsWith('linuxmint'))">true</HostMachineRidTargetsDebianPackages>
         <!-- If the build machine isn't known to be Debian-based, try to build RPM packages. -->
         <HostMachineRidTargetsRpmPackages Condition="'$(HostMachineRidTargetsDebianPackages)' != 'true'">true</HostMachineRidTargetsRpmPackages>
       </PropertyGroup>

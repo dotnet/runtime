@@ -62,7 +62,7 @@ namespace System.Reflection
         {
             RuntimeAssembly? retAssembly = null;
             GetExecutingAssemblyNative(new StackCrawlMarkHandle(ref stackMark), ObjectHandleOnStack.Create(ref retAssembly));
-            return retAssembly;
+            return retAssembly!;
         }
 
         // Get the assembly that the current code is running from.

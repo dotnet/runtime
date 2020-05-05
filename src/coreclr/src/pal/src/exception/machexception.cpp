@@ -840,6 +840,11 @@ HijackFaultingThread(
         ts64.__rflags &= ~EFL_TF;
     }
 
+    if (fIsStackOverflow)
+    {
+        exceptionRecord.ExceptionCode = EXCEPTION_STACK_OVERFLOW;
+    }
+
     exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
     exceptionRecord.ExceptionRecord = NULL;
     exceptionRecord.ExceptionAddress = (void *)ts64.__rip;

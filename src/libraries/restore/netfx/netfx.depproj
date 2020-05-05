@@ -49,12 +49,12 @@
 
   <ItemGroup>
     <!-- For things not .NETFramework binplace to the NETFX ref path -->
-    <BinPlaceTargetFrameworks Condition="'$(TargetsNetFx)' != 'true'" Include="$(TargetFramework)">
+    <BinPlaceTargetFrameworks Condition="!$(TargetFramework.StartsWith('net4'))" Include="$(TargetFramework)">
       <RefPath>$(NetFxRefPath)</RefPath>
     </BinPlaceTargetFrameworks>
 
     <!-- For things .NETFramework binplace to refpath -->
-    <BinPlaceTargetFrameworks Condition="'$(TargetsNetFx)' == 'true'" Include="$(TargetFramework)">
+    <BinPlaceTargetFrameworks Condition="$(TargetFramework.StartsWith('net4'))" Include="$(TargetFramework)">
       <RefPath>$(RefPath)</RefPath>
     </BinPlaceTargetFrameworks>
   </ItemGroup>

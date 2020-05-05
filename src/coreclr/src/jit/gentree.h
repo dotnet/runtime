@@ -745,7 +745,7 @@ public:
 
 #define GTF_UNSIGNED    0x00008000 // With GT_CAST:   the source operand is an unsigned type
                                    // With operators: the specified node is an unsigned operator
-                                   // 
+                                   //
 #define GTF_LATE_ARG    0x00010000 // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
 #define GTF_SPILL       0x00020000 // Needs to be spilled here
 
@@ -813,6 +813,8 @@ public:
 #define GTF_CALL_NULLCHECK          0x08000000 // GT_CALL -- must check instance pointer for null
 #define GTF_CALL_POP_ARGS           0x04000000 // GT_CALL -- caller pop arguments?
 #define GTF_CALL_HOISTABLE          0x02000000 // GT_CALL -- call is hoistable
+
+#define GTF_MEMORYBARRIER_LOAD      0x40000000 // GT_MEMORYBARRIER -- Load barrier
 
 #define GTF_NOP_DEATH               0x40000000 // GT_NOP -- operand dies here
 
@@ -912,6 +914,9 @@ public:
 
 #define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
                                                //            even if they have been retyped as SIMD16.
+
+#define GTF_SIMDASHW_OP             0x80000000 // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
+                                               //                   rarther than from gtGetStructHandleForHWSIMD.
 
 //---------------------------------------------------------------------
 //

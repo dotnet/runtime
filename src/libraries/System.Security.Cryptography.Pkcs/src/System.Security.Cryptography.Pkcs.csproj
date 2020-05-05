@@ -319,7 +319,7 @@
     <Reference Include="mscorlib" />
     <Reference Include="System.Security" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) or '$(TargetFramework)' == 'netstandard2.1'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Collections" />
@@ -582,7 +582,7 @@
     <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoCollection.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoEnumerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) or '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DigestInfoAsn.xml">

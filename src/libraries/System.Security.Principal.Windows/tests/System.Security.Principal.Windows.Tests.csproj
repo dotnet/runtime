@@ -7,7 +7,7 @@
     <Compile Include="NTAccount.cs" />
     <Compile Include="SecurityIdentifierTests.cs" />
     <Compile Include="WindowsIdentityTests.cs" />
-    <Compile Include="WindowsIdentityImpersonatedTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="WindowsIdentityImpersonatedTests.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="WindowsPrincipalTests.cs" />
     <Compile Include="WellKnownSidTypeTests.cs" />
   </ItemGroup>

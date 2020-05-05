@@ -50,7 +50,7 @@ extern void mono_wasm_add_func_var (const char*, const char*, guint64);
 extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
 extern void mono_wasm_set_is_async_method (guint64);
-extern void mono_wasm_add_typed_value (const char *type, const char *str_value, int int_value);
+extern void mono_wasm_add_typed_value (const char *type, const char *str_value, double value);
 
 G_END_DECLS
 

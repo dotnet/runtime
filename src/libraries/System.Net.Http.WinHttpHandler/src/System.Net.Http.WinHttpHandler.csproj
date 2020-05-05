@@ -90,7 +90,7 @@
     <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Memory" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Net.Http" />

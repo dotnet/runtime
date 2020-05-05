@@ -9,7 +9,7 @@
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ServiceModel\Channels\UriGenerator.cs" />
     <Compile Include="System\ServiceModel\Syndication\App10Constants.cs" />
     <Compile Include="System\ServiceModel\Syndication\Atom10Constants.cs" />
@@ -53,7 +53,7 @@
     <Compile Include="System\ServiceModel\Syndication\XmlUriData.cs" />
     <Compile Include="System\ServiceModel\XmlBuffer.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
