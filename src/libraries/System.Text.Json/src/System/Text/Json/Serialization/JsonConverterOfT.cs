@@ -313,47 +313,29 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
-            bool success;
             JsonDictionaryConverter<T> dictionaryConverter = (JsonDictionaryConverter<T>)this;
 
-            if (ClassType == ClassType.Value)
+            bool isContinuation = state.IsContinuation;
+            bool success;
+
+            state.Push();
+
+            if (!isContinuation)
             {
-                Debug.Assert(!state.IsContinuation);
-
-                int originalPropertyDepth = writer.CurrentDepth;
-
-                // Ignore the naming policy for extension data.
-                state.Current.IgnoreDictionaryKeyPolicy = true;
-
-                success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
-                if (success)
-                {
-                    VerifyWrite(originalPropertyDepth, writer);
-                }
+                Debug.Assert(state.Current.OriginalDepth == 0);
+                state.Current.OriginalDepth = writer.CurrentDepth;
             }
-            else
+
+            // Ignore the naming policy for extension data.
+            state.Current.IgnoreDictionaryKeyPolicy = true;
+
+            success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
+            if (success)
             {
-                bool isContinuation = state.IsContinuation;
-
-                state.Push();
-
-                if (!isContinuation)
-                {
-                    Debug.Assert(state.Current.OriginalDepth == 0);
-                    state.Current.OriginalDepth = writer.CurrentDepth;
-                }
-
-                // Ignore the naming policy for extension data.
-                state.Current.IgnoreDictionaryKeyPolicy = true;
-
-                success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
-                if (success)
-                {
-                    VerifyWrite(state.Current.OriginalDepth, writer);
-                }
-
-                state.Pop(success);
+                VerifyWrite(state.Current.OriginalDepth, writer);
             }
+
+            state.Pop(success);
 
             return success;
         }

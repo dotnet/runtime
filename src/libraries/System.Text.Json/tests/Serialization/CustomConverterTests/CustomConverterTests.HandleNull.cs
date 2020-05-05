@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -373,11 +375,17 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new BadUriConverter());
             options.Converters.Add(new BadObjectConverter());
 
+            // Using serializer overload in Release mode uses a writer with SkipValidation = true.
             var writerOptions = new JsonWriterOptions { SkipValidation = false };
-            using Utf8JsonWriter writer = new Utf8JsonWriter(new ArrayBufferWriter<byte>(), writerOptions);
+            using (Utf8JsonWriter writer = new Utf8JsonWriter(new ArrayBufferWriter<byte>(), writerOptions))
+            {
+                Assert.Throws<JsonException>(() => JsonSerializer.Serialize(writer, new ClassWithUri(), options));
+            }
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(writer, new ClassWithUri(), options));
-            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(writer, new StructWithObject(), options));
+            using (Utf8JsonWriter writer = new Utf8JsonWriter(new ArrayBufferWriter<byte>(), writerOptions))
+            {
+                Assert.Throws<JsonException>(() => JsonSerializer.Serialize(new StructWithObject(), options));
+            }
         }
 
         private class BadUriConverter : UriNullConverter_NullOptIn
@@ -394,8 +402,9 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
-                writer.WriteNullValue();
+                writer.WriteStartObject();
                 writer.WritePropertyName("hello");
+                writer.WriteNullValue();
             }
 
             public override bool HandleNull => true;
@@ -410,6 +419,66 @@ namespace System.Text.Json.Serialization.Tests
         private class StructWithObject
         {
             public object MyObj { get; set; }
+        }
+
+        [Fact]
+        public static void ObjectAsRootValue()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new ObjectConverter());
+
+            object obj = null;
+            Assert.Equal(@"""NullObject""", JsonSerializer.Serialize(obj, options));
+            Assert.Equal("NullObject", JsonSerializer.Deserialize<object>("null", options));
+
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new BadObjectConverter());
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(obj, options));
+        }
+
+        [Fact]
+        public static void ObjectAsCollectionElement()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new ObjectConverter());
+
+            List<object> list = new List<object> {  null };
+            Assert.Equal(@"[""NullObject""]", JsonSerializer.Serialize(list, options));
+
+            list = JsonSerializer.Deserialize<List<object>>("[null]", options);
+            Assert.Equal("NullObject", list[0]);
+
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new BadObjectConverter());
+
+            list[0] = null;
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(list, options));
+        }
+
+        public class ObjectConverter : JsonConverter<object>
+        {
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.Null)
+                {
+                    return "NullObject";
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+            {
+                if (value == null)
+                {
+                    writer.WriteStringValue("NullObject");
+                    return;
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public override bool HandleNull => true;
         }
     }
 }
