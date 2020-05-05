@@ -6376,6 +6376,7 @@ enum CorGCReferenceType
         CorHandleStrongDependent	= ( 1 << 6 ) ,
         CorHandleStrongAsyncPinned	= ( 1 << 7 ) ,
         CorHandleStrongSizedByref	= ( 1 << 8 ) ,
+        CorHandleWeakWinRT	= ( 1 << 9 ) ,
         CorHandleWeakNativeCom	= ( 1 << 9 ) ,
         CorReferenceStack	= 0x80000001,
         CorReferenceFinalizer	= 80000002,
