@@ -31808,11 +31808,11 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #endif //!MULTIPLE_HEAPS
 
     // this is how much we are going to allocate in gen 0
-    ptrdiff_t desired_allocation = dd_desired_allocation (dd0);
+    ptrdiff_t desired_allocation = dd_desired_allocation (dd0) + loh_size_threshold;
 
     // estimate how we are going to need in gen 1 - estimate half the free list space gets used
     dynamic_data* dd1 = dynamic_data_of (1);
-    ptrdiff_t desired_allocation_1 = dd_new_allocation (dd1) + (generation_free_list_space (generation_of (1)) / 2);
+    ptrdiff_t desired_allocation_1 = dd_new_allocation (dd1) - (generation_free_list_space (generation_of (1)) / 2);
     if (desired_allocation_1 > 0)
     {
         desired_allocation += desired_allocation_1;
@@ -31885,7 +31885,7 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
         GCToOSInterface::DebugBreak();
     }
     uint8_t* decommit_target = heap_segment_decommit_target (ephemeral_heap_segment);
-    size_t EXTRA_SPACE = loh_size_threshold + 4 * OS_PAGE_SIZE;
+    size_t EXTRA_SPACE = 4 * OS_PAGE_SIZE;
     decommit_target += EXTRA_SPACE;
     uint8_t* committed = heap_segment_committed (ephemeral_heap_segment);
     if (decommit_target < committed)
