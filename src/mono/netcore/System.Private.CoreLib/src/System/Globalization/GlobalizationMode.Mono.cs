@@ -7,9 +7,9 @@ namespace System.Globalization
     internal static partial class GlobalizationMode
     {
         private static bool GetInvariantSwitchValue() =>
-            GetSwitchValue("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+            GetSwitchValue("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
 
-        private static bool GetSwitchValue(string switchName, string envVariable)
+        private static bool GetSwitchValue(string envVariable)
         {
             bool ret = false;
             string? switchValue = Environment.GetEnvironmentVariable(envVariable);
