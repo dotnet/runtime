@@ -6984,7 +6984,6 @@ void CodeGen::genArm64EmitterUnitTests()
     genDefineTempLabel(genCreateTempLabel());
 
     theEmitter->emitIns_R(INS_br, EA_PTRSIZE, REG_R8);
-    theEmitter->emitIns_R(INS_blr, EA_PTRSIZE, REG_R9);
     theEmitter->emitIns_R(INS_ret, EA_PTRSIZE, REG_R8);
     theEmitter->emitIns_R(INS_ret, EA_PTRSIZE, REG_LR);
 
@@ -7329,6 +7328,10 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_movi, EA_16BYTE, REG_V29, 0x00FFFF0000FFFF00, INS_OPTS_2D);
     theEmitter->emitIns_R_I(INS_movi, EA_8BYTE, REG_V30, 0xFF000000FF000000);
     theEmitter->emitIns_R_I(INS_movi, EA_16BYTE, REG_V31, 0x0, INS_OPTS_2D);
+
+    // We were not encoding immediate of movi that was int.MaxValue or int.MaxValue / 2.
+    theEmitter->emitIns_R_I(INS_movi, EA_8BYTE, REG_V16, 0x7fffffff, INS_OPTS_2S);
+    theEmitter->emitIns_R_I(INS_movi, EA_8BYTE, REG_V16, 0x3fffffff, INS_OPTS_2S);
 
     theEmitter->emitIns_R_I(INS_mvni, EA_8BYTE, REG_V0, 0x0022, INS_OPTS_4H);
     theEmitter->emitIns_R_I(INS_mvni, EA_8BYTE, REG_V1, 0x2200, INS_OPTS_4H); // LSL  8
