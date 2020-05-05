@@ -118,29 +118,29 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>205a003b723482863e26e9d29eb7c8513ae3ded1</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20224.3">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20254.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>0f783cfd29f6b25f6105536b7b2283d6eaaa2a7f</Sha>
+      <Sha>e5fd1614a244e8441b2d79eb3ebb044d26ec63b2</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20224.3">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20254.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>0f783cfd29f6b25f6105536b7b2283d6eaaa2a7f</Sha>
+      <Sha>e5fd1614a244e8441b2d79eb3ebb044d26ec63b2</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20224.3">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20254.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>0f783cfd29f6b25f6105536b7b2283d6eaaa2a7f</Sha>
+      <Sha>e5fd1614a244e8441b2d79eb3ebb044d26ec63b2</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20224.3">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20254.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>0f783cfd29f6b25f6105536b7b2283d6eaaa2a7f</Sha>
+      <Sha>e5fd1614a244e8441b2d79eb3ebb044d26ec63b2</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20224.3">
+    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20254.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>0f783cfd29f6b25f6105536b7b2283d6eaaa2a7f</Sha>
+      <Sha>e5fd1614a244e8441b2d79eb3ebb044d26ec63b2</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20224.3">
+    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20254.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>0f783cfd29f6b25f6105536b7b2283d6eaaa2a7f</Sha>
+      <Sha>e5fd1614a244e8441b2d79eb3ebb044d26ec63b2</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-preview.4.20202.18">
       <Uri>https://github.com/dotnet/runtime</Uri>
