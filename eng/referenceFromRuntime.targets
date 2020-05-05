@@ -111,6 +111,15 @@
     <Error Condition="'@(_missingReferenceFromRuntime)' != ''"
            Text="Could not resolve ReferenceFromRuntime item(s) '%(_missingReferenceFromRuntime.OriginalReferenceFromRuntime)' from '$(RuntimeProjectFile)'." />
   </Target>
+
+  <Target Name="SetGenApiProperties"
+          BeforeTargets="GenerateReferenceAssemblySource"
+          Condition="'@(ReferenceFromRuntime)' != ''">
+    <PropertyGroup>
+      <GenAPILibPath>$(RuntimePath.Trim('\/'));$(CoreCLRArtifactsPath.Trim('\/'))</GenAPILibPath>
+      <GenAPIAdditionalParameters>$(GenAPIAdditionalParameters) --follow-type-forwards</GenAPIAdditionalParameters>
+    </PropertyGroup>
+  </Target>
   
   <Target Name="RemoveAliasedReferenceFromRuntime"
           AfterTargets="CoreCompile"
