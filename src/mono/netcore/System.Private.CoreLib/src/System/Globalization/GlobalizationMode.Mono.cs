@@ -6,8 +6,6 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
-
         private static bool GetInvariantSwitchValue()
         {
             string? val = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");

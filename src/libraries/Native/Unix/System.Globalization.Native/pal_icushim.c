@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#include <stdlib.h>
 #include "pal_icushim_internal.h"
 
 #if defined(TARGET_UNIX)
@@ -12,7 +13,6 @@
 #include <libloaderapi.h>
 #include <errhandlingapi.h>
 #endif
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
