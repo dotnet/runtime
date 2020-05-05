@@ -4,11 +4,6 @@
     <Optimize>false</Optimize>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
-    <!-- Test failing on tip
-         Test was introcudec while most CLR tests were not running in CI.
-         When reenabling the CLR tests this test was failing
-    -->
-    <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="stackoverflowtester.cs" />
