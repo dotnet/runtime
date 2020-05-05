@@ -207,6 +207,8 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize,
             case NI_AdvSimd_ExtractVector64:
             case NI_AdvSimd_Insert:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+            case NI_Vector64_GetElement:
+            case NI_Vector128_GetElement:
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType);
                 break;
 

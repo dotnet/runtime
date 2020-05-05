@@ -460,6 +460,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_AdvSimd_Extract:
+            case NI_Vector64_GetElement:
+            case NI_Vector128_GetElement:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
