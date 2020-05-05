@@ -10,7 +10,7 @@ using System.Numerics;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
@@ -477,7 +477,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [MemberData(nameof(SupportedConformanceTaggedValues))]
-        internal static void ReadTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        public static void ReadTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object expectedValue, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), level);
             Helpers.VerifyValue(reader, expectedValue);
@@ -490,7 +490,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [MemberData(nameof(UnsupportedConformanceTaggedValues))]
-        internal static void ReadTaggedValue_UnsupportedConformance_ShouldThrowFormatException(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        public static void ReadTaggedValue_UnsupportedConformance_ShouldThrowFormatException(CborConformanceLevel level, object expectedValue, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), level);
             Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, expectedValue));
@@ -504,7 +504,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [MemberData(nameof(TaggedValuesAnyConformance))]
-        internal static void PeekTag_UnsupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void PeekTag_UnsupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), level);
             reader.PeekTag();
@@ -517,7 +517,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [MemberData(nameof(UnsupportedConformanceInvalidTypes))]
-        internal static void PeekTag_InvalidType_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level, string hexEncoding)
+        public static void PeekTag_InvalidType_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), level);
             Assert.Throws<InvalidOperationException>(() => reader.PeekTag());

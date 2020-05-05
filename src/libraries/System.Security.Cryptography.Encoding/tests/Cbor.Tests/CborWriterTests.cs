@@ -9,7 +9,7 @@ using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborWriterTests
     {
@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [InlineData((CborConformanceLevel)(-1))]
-        internal static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
+        public static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceLevel: level));
         }
@@ -246,7 +246,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Rfc7049Canonical)]
         [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        internal static void EncodeIndefiniteLengths_UnsupportedConformanceLevel_ShouldThrowArgumentException(CborConformanceLevel level)
+        public static void EncodeIndefiniteLengths_UnsupportedConformanceLevel_ShouldThrowArgumentException(CborConformanceLevel level)
         {
             Assert.Throws<ArgumentException>(() => new CborWriter(level, encodeIndefiniteLengths: true));
         }
