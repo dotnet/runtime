@@ -416,21 +416,29 @@ namespace Internal.TypeSystem
         /// Check if MethodImpl requires slot unification.
         /// </summary>
         /// <param name="method">Method to check</param>
-        /// <returns>True when the method is a MethodImpl marked with the RequireMethodImplToRemainInEffect custom attribute, false otherwise.</returns>
+        /// <returns>True when the method is marked with the RequireMethodImplToRemainInEffect custom attribute, false otherwise.</returns>
         public static bool RequiresSlotUnification(this MethodDesc method)
         {
-            if (!method.HasCustomAttribute("System.Runtime.CompilerServices", "RequireMethodImplToRemainInEffectAttribute"))
-                return false;
-
-            MetadataType mdType = method.OwningType as MetadataType;
-            if (mdType != null)
+            if (method.HasCustomAttribute("System.Runtime.CompilerServices", "RequireMethodImplToRemainInEffectAttribute"))
             {
-                foreach (MethodImplRecord methodImplRecord in mdType.VirtualMethodImplsForType)
+#if DEBUG
+                // We shouldn't be calling this for non-MethodImpls, so verify that the method being checked is really a MethodImpl
+                MetadataType mdType = method.OwningType as MetadataType;
+                if (mdType != null)
                 {
-                    // Method is a MethodImpl body record with the attribute
-                    if (method == methodImplRecord.Body)
-                        return true;
+                    bool isMethodImpl = false;
+                    foreach (MethodImplRecord methodImplRecord in mdType.VirtualMethodImplsForType)
+                    {
+                        if (method == methodImplRecord.Body)
+                        {
+                            isMethodImpl = true;
+                            break;
+                        }
+                    }
+                    Debug.Assert(isMethodImpl);
                 }
+#endif
+                return true;
             }
 
             return false;

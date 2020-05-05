@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Internal.TypeSystem
 {
@@ -89,6 +90,21 @@ namespace Internal.TypeSystem
                 }
             }
 
+            public struct Enumerable
+            {
+                private readonly MethodDesc[] _arrayToEnumerate;
+
+                public Enumerable(MethodDesc[] arrayToEnumerate)
+                {
+                    _arrayToEnumerate = arrayToEnumerate;
+                }
+
+                public Enumerator GetEnumerator()
+                {
+                    return new Enumerator(_arrayToEnumerate);
+                }
+            }
+
             public UnificationGroup(MethodDesc definingMethod)
             {
                 DefiningMethod = definingMethod;
@@ -97,23 +113,9 @@ namespace Internal.TypeSystem
 
             public MethodDesc DefiningMethod;
 
-            public Enumerator GetEnumerator()
-            {
-                return new Enumerator(_members);
-            }
+            public Enumerable Members => new Enumerable(_members);
 
-            public IEnumerable<MethodDesc> MethodsRequiringSlotUnification
-            {
-                get
-                {
-                    foreach (var method in _methodsRequiringSlotUnification)
-                    {
-                        if (method == null)
-                            yield break;
-                        yield return method;
-                    }
-                }
-            }
+            public Enumerable MethodsRequiringSlotUnification => new Enumerable(_methodsRequiringSlotUnification);
 
             public void AddMethodRequiringSlotUnification(MethodDesc method)
             {
@@ -460,7 +462,7 @@ namespace Internal.TypeSystem
             // Start with removing methods that seperated themselves from the group via name/sig matches
             MethodDescHashtable separatedMethods = null;
 
-            foreach (MethodDesc memberMethod in unificationGroup)
+            foreach (MethodDesc memberMethod in unificationGroup.Members)
             {
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
                 if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
@@ -495,7 +497,7 @@ namespace Internal.TypeSystem
 
                     if (unificationGroup.RequiresSlotUnification(declSlot) || implSlot.RequiresSlotUnification())
                     {
-                        if (implSlot.Signature.Equals(unificationGroup.DefiningMethod.Signature, true))
+                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
                         {
                             unificationGroup.AddMethodRequiringSlotUnification(declSlot);
                             unificationGroup.AddMethodRequiringSlotUnification(implSlot);
@@ -516,7 +518,7 @@ namespace Internal.TypeSystem
                         FindBaseUnificationGroup(baseType, addDeclGroup);
                         Debug.Assert(
                             addDeclGroup.IsInGroupOrIsDefiningSlot(declSlot) ||
-                            (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.Equals(declSlot.Signature, true)));
+                            (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.EqualsWithCovariantReturnType(declSlot.Signature)));
 
                         foreach(MethodDesc methodImplRequiredToRemainInEffect in addDeclGroup.MethodsRequiringSlotUnification)
                         {
@@ -530,7 +532,7 @@ namespace Internal.TypeSystem
                             unificationGroup.AddToGroup(addDeclGroup.DefiningMethod);
                         }
 
-                        foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup)
+                        foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup.Members)
                         {
                             if (separatedMethods == null || !separatedMethods.Contains(addDeclGroupMemberMethod))
                             {
@@ -550,7 +552,7 @@ namespace Internal.TypeSystem
                     }
                     else if (unificationGroup.RequiresSlotUnification(declSlot))
                     {
-                        if (implSlot.Signature.Equals(unificationGroup.DefiningMethod.Signature, true))
+                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
                         {
                             unificationGroup.AddMethodRequiringSlotUnification(implSlot);
                             unificationGroup.SetDefiningMethod(implSlot);

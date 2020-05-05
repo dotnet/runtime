@@ -46,9 +46,7 @@ namespace Internal.TypeSystem
         {
             var sb = new StringBuilder();
 
-            sb.Append(Signature.ReturnType);
-            sb.Append(" ");
-
+            // (Skipping return type to keep things short)
             sb.Append(OwningType);
             sb.Append('.');
             sb.Append(DiagnosticName);
