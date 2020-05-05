@@ -54,16 +54,21 @@ namespace System.Net.Sockets
 
         private static readonly object s_lock = new object();
 
-        // In debug builds, force there to be 2 engines. In release builds, use half the number of processors when
-        // there are at least 6. The lower bound is to avoid using multiple engines on systems which aren't servers.
-#pragma warning disable CA1802 // const works for debug, but needs to be static readonly for release
-        private static readonly int s_engineCount =
+        private static readonly int s_engineCount = GetEnginesCount();
+
+        private static int GetEnginesCount()
+        {
+            if (uint.TryParse(Environment.GetEnvironmentVariable("SYSTEM_NET_SOCKETS_ENGINE_COUNT"), out uint count))
+            {
+                return (int)count;
+            }
+
 #if DEBUG
-            2;
+            return 2; // use two engines to make sure that this code path is covered with tests
 #else
-            Environment.ProcessorCount >= 6 ? Environment.ProcessorCount / 2 : 1;
+            return 1; // having a single epoll thread is optimal
 #endif
-#pragma warning restore CA1802
+        }
 
         //
         // The current engines. We replace an engine when it runs out of "handle" values.
