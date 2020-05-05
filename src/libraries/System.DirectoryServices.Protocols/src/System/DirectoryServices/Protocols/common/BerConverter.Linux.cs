@@ -16,7 +16,7 @@ namespace System.DirectoryServices.Protocols
             int error = 0;
             // return berval
             byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', ref error);
-            if (!LdapPal.IsBerDecodeError(error))
+            if (!BerPal.IsBerDecodeError(error))
             {
                 // add result to the list
                 resultList.Add(byteArray);

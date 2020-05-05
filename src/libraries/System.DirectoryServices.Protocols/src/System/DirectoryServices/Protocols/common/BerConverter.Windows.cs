@@ -16,9 +16,9 @@ namespace System.DirectoryServices.Protocols
             // return a bitstring and its length
             IntPtr ptrResult = IntPtr.Zero;
             int length = 0;
-            error = LdapPal.BerScanfBitstring(berElement, "B", ref ptrResult, ref length);
+            error = BerPal.BerScanfBitstring(berElement, "B", ref ptrResult, ref length);
 
-            if (!LdapPal.IsBerDecodeError(error))
+            if (!BerPal.IsBerDecodeError(error))
             {
                 byte[] byteArray = null;
                 if (ptrResult != IntPtr.Zero)

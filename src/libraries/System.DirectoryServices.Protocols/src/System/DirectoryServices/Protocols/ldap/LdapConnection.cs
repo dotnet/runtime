@@ -1774,7 +1774,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (address != IntPtr.Zero)
                 {
-                    LdapPal.BerFree(address, 0);
+                    BerPal.BerFree(address, 0);
                     address = IntPtr.Zero;
                 }
 
@@ -1794,7 +1794,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (address != IntPtr.Zero)
                 {
-                    LdapPal.BerFree(address, 0);
+                    BerPal.BerFree(address, 0);
                 }
             }
         }
