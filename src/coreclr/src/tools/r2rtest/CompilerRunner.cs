@@ -83,12 +83,18 @@ namespace R2RTest
         public const int R2RDumpTimeoutMilliseconds = 60 * 1000;
 
         protected readonly BuildOptions _options;
-        protected readonly IEnumerable<string> _referenceFolders;
-
-        public CompilerRunner(BuildOptions options, IEnumerable<string> referenceFolders)
+        protected readonly List<string> _referenceFolders = new List<string>();
+        public CompilerRunner(BuildOptions options, IEnumerable<string> references)
         {
             _options = options;
-            _referenceFolders = referenceFolders;
+
+            foreach (var reference in references)
+            {
+                if (Directory.Exists(reference))
+                {
+                    _referenceFolders.Add(reference);
+                }
+            }
         }
 
         public IEnumerable<string> ReferenceFolders => _referenceFolders;
