@@ -208,6 +208,7 @@ namespace System.Net.Sockets
             IntPtr handle = _nextHandle;
             lock (_handleToContextMap)
             {
+                Debug.Assert(handle != ShutdownHandle, "ShutdownHandle must not be added to the dictionary");
                 _handleToContextMap.TryAdd(handle, new SocketAsyncContextWrapper(context));
             }
 
@@ -366,6 +367,9 @@ namespace System.Net.Sockets
                                     ev = default;
                                 }
 
+                                // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                                // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                                // such code may keep the stack location live for longer than necessary
                                 context = null;
                             }
                             else if (handle == shutdownHandle)
