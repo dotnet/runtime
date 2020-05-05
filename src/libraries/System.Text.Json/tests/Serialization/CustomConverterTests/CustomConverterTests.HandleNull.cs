@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Tests;
+using System.Buffers;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -373,8 +373,11 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new BadUriConverter());
             options.Converters.Add(new BadObjectConverter());
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(new ClassWithIgnoredUri(), options));
-            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(new StructWithObject(), options));
+            var writerOptions = new JsonWriterOptions { SkipValidation = false };
+            using Utf8JsonWriter writer = new Utf8JsonWriter(new ArrayBufferWriter<byte>(), writerOptions);
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(writer, new ClassWithUri(), options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(writer, new StructWithObject(), options));
         }
 
         private class BadUriConverter : UriNullConverter_NullOptIn
@@ -397,6 +400,12 @@ namespace System.Text.Json.Serialization.Tests
 
             public override bool HandleNull => true;
         }
+
+        private class ClassWithUri
+        {
+            public Uri MyUri { get; set; }
+        }
+
 
         private class StructWithObject
         {

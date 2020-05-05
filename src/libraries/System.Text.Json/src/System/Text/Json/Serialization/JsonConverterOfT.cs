@@ -254,15 +254,12 @@ namespace System.Text.Json.Serialization
                     }
                 }
             }
-            else
+            else if (value == null && !HandleNull)
             {
                 // We do not pass null values to converters unless HandleNull is true. Null values for properties were
                 // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
-                if (value == null && !HandleNull)
-                {
-                    writer.WriteNullValue();
-                    return true;
-                }
+                writer.WriteNullValue();
+                return true;
             }
 
             if (ClassType == ClassType.Value)
@@ -273,7 +270,6 @@ namespace System.Text.Json.Serialization
 
                 Write(writer, value, options);
                 VerifyWrite(originalPropertyDepth, writer);
-
                 return true;
             }
 
