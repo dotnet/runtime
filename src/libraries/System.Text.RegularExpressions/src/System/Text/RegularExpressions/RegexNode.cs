@@ -1643,7 +1643,7 @@ namespace System.Text.RegularExpressions
                     case Lazyloop:
                     case Loop:
                         // A node graph repeated at least M times.
-                        return node.M * ComputeMinLength(node.Child(0), maxDepth - 1);
+                        return (int)Math.Min(int.MaxValue, (long)node.M * ComputeMinLength(node.Child(0), maxDepth - 1));
 
                     case Alternate:
                         // The minimum required length for any of the alternation's branches.
@@ -1661,13 +1661,13 @@ namespace System.Text.RegularExpressions
                     case Concatenate:
                         // The sum of all of the concatenation's children.
                         {
-                            int sum = 0;
+                            long sum = 0;
                             int childCount = node.ChildCount();
                             for (int i = 0; i < childCount; i++)
                             {
                                 sum += ComputeMinLength(node.Child(i), maxDepth - 1);
                             }
-                            return sum;
+                            return (int)Math.Min(int.MaxValue, sum);
                         }
 
                     case Atomic:
@@ -1681,7 +1681,7 @@ namespace System.Text.RegularExpressions
                     case Nothing:
                     case UpdateBumpalong:
                     // Nothing to match. In the future, we could potentially use Nothing to say that the min length
-                    // is infinite, but that would require a different structure, as that would only applies if the
+                    // is infinite, but that would require a different structure, as that would only apply if the
                     // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
                     case Beginning:
                     case Bol:
@@ -1709,7 +1709,7 @@ namespace System.Text.RegularExpressions
 #if DEBUG
                         Debug.Fail($"Unknown node: {node.TypeName}");
 #endif
-                        return 0;
+                        goto case Empty;
                 }
             }
         }
