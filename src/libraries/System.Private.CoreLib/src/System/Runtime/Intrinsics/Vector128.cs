@@ -584,60 +584,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="e15">The value that element 15 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi8</remarks>
         /// <returns>A new <see cref="Vector128{Byte}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
         {
-            if (Sse41.IsSupported)
-            {
-                Vector128<byte> result = CreateScalarUnsafe(e0);                                    // <  0, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e1, 1);                                               // <  0,  1, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e2, 2);                                               // <  0,  1,  2, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e3, 3);                                               // <  0,  1,  2,  3, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e4, 4);                                               // <  0,  1,  2,  3,  4, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e5, 5);                                               // <  0,  1,  2,  3,  4,  5, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e6, 6);                                               // <  0,  1,  2,  3,  4,  5,  6, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e7, 7);                                               // <  0,  1,  2,  3,  4,  5,  6,  7, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e8, 8);                                               // <  0,  1,  2,  3,  4,  5,  6,  7,  8, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e9, 9);                                               // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e10, 10);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e11, 11);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e12, 12);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, ??, ??, ?? >
-                result = Sse41.Insert(result, e13, 13);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, ??, ?? >
-                result = Sse41.Insert(result, e14, 14);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, ?? >
-                return Sse41.Insert(result, e15, 15);                                               // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 >
-            }
-
             if (Sse2.IsSupported)
             {
-                // We deal with the elements in order, unpacking the ordered pairs of bytes into vectors. We then treat those vectors as ushort and
-                // unpack them again, then again treating those results as uint, and a final time treating them as ulong. This efficiently gets all
-                // bytes ordered into the result.
-
-                Vector128<ushort> lo16, hi16;
-                Vector128<uint> lo32, hi32;
-                Vector128<ulong> lo64, hi64;
-
-                lo16 = Sse2.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1)).AsUInt16();   // <  0,  1, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi16 = Sse2.UnpackLow(CreateScalarUnsafe(e2), CreateScalarUnsafe(e3)).AsUInt16();   // <  2,  3, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                lo32 = Sse2.UnpackLow(lo16, hi16).AsUInt32();                                       // <  0,  1,  2,  3, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                lo16 = Sse2.UnpackLow(CreateScalarUnsafe(e4), CreateScalarUnsafe(e5)).AsUInt16();   // <  4,  5, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi16 = Sse2.UnpackLow(CreateScalarUnsafe(e6), CreateScalarUnsafe(e7)).AsUInt16();   // <  6,  7, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi32 = Sse2.UnpackLow(lo16, hi16).AsUInt32();                                       // <  4,  5,  6,  7, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                lo64 = Sse2.UnpackLow(lo32, hi32).AsUInt64();                                       // <  0,  1,  2,  3,  4,  5,  6,  7, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                lo16 = Sse2.UnpackLow(CreateScalarUnsafe(e8), CreateScalarUnsafe(e9)).AsUInt16();   // <  8,  9, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi16 = Sse2.UnpackLow(CreateScalarUnsafe(e10), CreateScalarUnsafe(e11)).AsUInt16(); // < 10, 11, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                lo32 = Sse2.UnpackLow(lo16, hi16).AsUInt32();                                       // <  8,  9, 10, 11, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                lo16 = Sse2.UnpackLow(CreateScalarUnsafe(e12), CreateScalarUnsafe(e13)).AsUInt16(); // < 12, 13, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi16 = Sse2.UnpackLow(CreateScalarUnsafe(e14), CreateScalarUnsafe(e15)).AsUInt16(); // < 14, 15, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi32 = Sse2.UnpackLow(lo16, hi16).AsUInt32();                                       // < 12, 13, 14, 15, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                hi64 = Sse2.UnpackLow(lo32, hi32).AsUInt64();                                       // <  8,  9, 10, 11, 12, 13, 14, 15, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                return Sse2.UnpackLow(lo64, hi64).AsByte();                                         // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 >
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
@@ -673,15 +625,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128d _mm_setr_pd</remarks>
         /// <returns>A new <see cref="Vector128{Double}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<double> Create(double e0, double e1)
         {
             if (Sse2.IsSupported)
             {
-                // Treating the value as a set of singles and emitting MoveLowToHigh is more efficient than dealing with the elements directly as double
-                // However, we still need to check if Sse2 is supported since CreateScalarUnsafe needs it to for movsd, when value is not already in register
-
-                return Sse.MoveLowToHigh(CreateScalarUnsafe(e0).AsSingle(), CreateScalarUnsafe(e1).AsSingle()).AsDouble();
+                return Create(e0, e1);
             }
 
             return SoftwareFallback(e0, e1);
@@ -709,19 +658,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="e7">The value that element 7 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi16</remarks>
         /// <returns>A new <see cref="Vector128{Int16}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<short> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
         {
             if (Sse2.IsSupported)
             {
-                Vector128<short> result = CreateScalarUnsafe(e0);                                   // < 0, ?, ?, ?, ?, ?, ?, ? >
-                result = Sse2.Insert(result, e1, 1);                                                // < 0, 1, ?, ?, ?, ?, ?, ? >
-                result = Sse2.Insert(result, e2, 2);                                                // < 0, 1, 2, ?, ?, ?, ?, ? >
-                result = Sse2.Insert(result, e3, 3);                                                // < 0, 1, 2, 3, ?, ?, ?, ? >
-                result = Sse2.Insert(result, e4, 4);                                                // < 0, 1, 2, 3, 4, ?, ?, ? >
-                result = Sse2.Insert(result, e5, 5);                                                // < 0, 1, 2, 3, 4, 5, ?, ? >
-                result = Sse2.Insert(result, e6, 6);                                                // < 0, 1, 2, 3, 4, 5, 6, ? >
-                return Sse2.Insert(result, e7, 7);                                                  // < 0, 1, 2, 3, 4, 5, 6, 7 >
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
@@ -751,26 +693,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="e3">The value that element 3 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi32</remarks>
         /// <returns>A new <see cref="Vector128{Int32}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<int> Create(int e0, int e1, int e2, int e3)
         {
-            if (Sse41.IsSupported)
-            {
-                Vector128<int> result = CreateScalarUnsafe(e0);                                     // < 0, ?, ?, ? >
-                result = Sse41.Insert(result, e1, 1);                                               // < 0, 1, ?, ? >
-                result = Sse41.Insert(result, e2, 2);                                               // < 0, 1, 2, ? >
-                return Sse41.Insert(result, e3, 3);                                                 // < 0, 1, 2, 3 >
-            }
-
             if (Sse2.IsSupported)
             {
-                // We deal with the elements in order, unpacking the ordered pairs of int into vectors. We then treat those vectors as ulong and
-                // unpack them again. This efficiently gets all ints ordered into the result.
-
-                Vector128<long> lo64, hi64;
-                lo64 = Sse2.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1)).AsInt64();    // < 0, 1, ?, ? >
-                hi64 = Sse2.UnpackLow(CreateScalarUnsafe(e2), CreateScalarUnsafe(e3)).AsInt64();    // < 2, 3, ?, ? >
-                return Sse2.UnpackLow(lo64, hi64).AsInt32();                                        // < 0, 1, 2, 3 >
+                return Create(e0, e1, e2, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -794,18 +722,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi64x</remarks>
         /// <returns>A new <see cref="Vector128{Int64}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<long> Create(long e0, long e1)
         {
-            if (Sse41.X64.IsSupported)
-            {
-                Vector128<long> result = CreateScalarUnsafe(e0);                                    // < 0, ? >
-                return Sse41.X64.Insert(result, e1, 1);                                             // < 0, 1 >
-            }
-
             if (Sse2.X64.IsSupported)
             {
-                return Sse2.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1));              // < 0, 1 >
+                return Create(e0, e1);
             }
 
             return SoftwareFallback(e0, e1);
@@ -841,61 +763,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="e15">The value that element 15 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi8</remarks>
         /// <returns>A new <see cref="Vector128{SByte}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
         {
-            if (Sse41.IsSupported)
-            {
-                Vector128<sbyte> result = CreateScalarUnsafe(e0);                                   // <  0, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e1, 1);                                               // <  0,  1, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e2, 2);                                               // <  0,  1,  2, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e3, 3);                                               // <  0,  1,  2,  3, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e4, 4);                                               // <  0,  1,  2,  3,  4, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e5, 5);                                               // <  0,  1,  2,  3,  4,  5, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e6, 6);                                               // <  0,  1,  2,  3,  4,  5,  6, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e7, 7);                                               // <  0,  1,  2,  3,  4,  5,  6,  7, ??, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e8, 8);                                               // <  0,  1,  2,  3,  4,  5,  6,  7,  8, ??, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e9, 9);                                               // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, ??, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e10, 10);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, ??, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e11, 11);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, ??, ??, ??, ?? >
-                result = Sse41.Insert(result, e12, 12);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, ??, ??, ?? >
-                result = Sse41.Insert(result, e13, 13);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, ??, ?? >
-                result = Sse41.Insert(result, e14, 14);                                             // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, ?? >
-                return Sse41.Insert(result, e15, 15);                                               // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 >
-            }
-
             if (Sse2.IsSupported)
             {
-                // We deal with the elements in order, unpacking the ordered pairs of bytes into vectors. We then treat those vectors as ushort and
-                // unpack them again, then again treating those results as uint, and a final time treating them as ulong. This efficiently gets all
-                // bytes ordered into the result.
-
-                Vector128<short> lo16, hi16;
-                Vector128<int> lo32, hi32;
-                Vector128<long> lo64, hi64;
-
-                lo16 = Sse2.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1)).AsInt16();    // <  0,  1, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi16 = Sse2.UnpackLow(CreateScalarUnsafe(e2), CreateScalarUnsafe(e3)).AsInt16();    // <  2,  3, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                lo32 = Sse2.UnpackLow(lo16, hi16).AsInt32();                                        // <  0,  1,  2,  3, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                lo16 = Sse2.UnpackLow(CreateScalarUnsafe(e4), CreateScalarUnsafe(e5)).AsInt16();    // <  4,  5, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi16 = Sse2.UnpackLow(CreateScalarUnsafe(e6), CreateScalarUnsafe(e7)).AsInt16();    // <  6,  7, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi32 = Sse2.UnpackLow(lo16, hi16).AsInt32();                                        // <  4,  5,  6,  7, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                lo64 = Sse2.UnpackLow(lo32, hi32).AsInt64();                                        // <  0,  1,  2,  3,  4,  5,  6,  7, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                lo16 = Sse2.UnpackLow(CreateScalarUnsafe(e8), CreateScalarUnsafe(e9)).AsInt16();    // <  8,  9, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi16 = Sse2.UnpackLow(CreateScalarUnsafe(e10), CreateScalarUnsafe(e11)).AsInt16();  // < 10, 11, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                lo32 = Sse2.UnpackLow(lo16, hi16).AsInt32();                                        // <  8,  9, 10, 11, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                lo16 = Sse2.UnpackLow(CreateScalarUnsafe(e12), CreateScalarUnsafe(e13)).AsInt16();  // < 12, 13, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi16 = Sse2.UnpackLow(CreateScalarUnsafe(e14), CreateScalarUnsafe(e15)).AsInt16();  // < 14, 15, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-                hi32 = Sse2.UnpackLow(lo16, hi16).AsInt32();                                        // < 12, 13, 14, 15, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                hi64 = Sse2.UnpackLow(lo32, hi32).AsInt64();                                        // <  8,  9, 10, 11, 12, 13, 14, 15, ??, ??, ??, ??, ??, ??, ??, ?? >
-
-                return Sse2.UnpackLow(lo64, hi64).AsSByte();                                        // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 >
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
@@ -933,23 +807,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="e3">The value that element 3 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128 _mm_setr_ps</remarks>
         /// <returns>A new <see cref="Vector128{Single}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<float> Create(float e0, float e1, float e2, float e3)
         {
-            if (Sse41.IsSupported)
-            {
-                Vector128<float> result = CreateScalarUnsafe(e0);                                   // < 0, ?, ?, ? >
-                result = Sse41.Insert(result, CreateScalarUnsafe(e1), 0x10);                        // < 0, 1, ?, ? >
-                result = Sse41.Insert(result, CreateScalarUnsafe(e2), 0x20);                        // < 0, 1, 2, ? >
-                return Sse41.Insert(result, CreateScalarUnsafe(e3), 0x30);                          // < 0, 1, 2, 3 >
-            }
-
             if (Sse.IsSupported)
             {
-                Vector128<float> lo64, hi64;
-                lo64 = Sse.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1));               // < 0, 1, ?, ? >
-                hi64 = Sse.UnpackLow(CreateScalarUnsafe(e2), CreateScalarUnsafe(e3));               // < 2, 3, ?, ? >
-                return Sse.MoveLowToHigh(lo64, hi64);                                               // < 0, 1, 2, 3 >
+                return Create(e0, e1, e2, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -979,20 +842,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="e7">The value that element 7 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi16</remarks>
         /// <returns>A new <see cref="Vector128{UInt16}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7)
         {
             if (Sse2.IsSupported)
             {
-                Vector128<ushort> result = CreateScalarUnsafe(e0);                                  // < 0, ?, ?, ?, ?, ?, ?, ? >
-                result = Sse2.Insert(result, e1, 1);                                                // < 0, 1, ?, ?, ?, ?, ?, ? >
-                result = Sse2.Insert(result, e2, 2);                                                // < 0, 1, 2, ?, ?, ?, ?, ? >
-                result = Sse2.Insert(result, e3, 3);                                                // < 0, 1, 2, 3, ?, ?, ?, ? >
-                result = Sse2.Insert(result, e4, 4);                                                // < 0, 1, 2, 3, 4, ?, ?, ? >
-                result = Sse2.Insert(result, e5, 5);                                                // < 0, 1, 2, 3, 4, 5, ?, ? >
-                result = Sse2.Insert(result, e6, 6);                                                // < 0, 1, 2, 3, 4, 5, 6, ? >
-                return Sse2.Insert(result, e7, 7);                                                  // < 0, 1, 2, 3, 4, 5, 6, 7 >
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
@@ -1022,27 +878,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="e3">The value that element 3 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi32</remarks>
         /// <returns>A new <see cref="Vector128{UInt32}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(uint e0, uint e1, uint e2, uint e3)
         {
-            if (Sse41.IsSupported)
-            {
-                Vector128<uint> result = CreateScalarUnsafe(e0);                                    // < 0, ?, ?, ? >
-                result = Sse41.Insert(result, e1, 1);                                               // < 0, 1, ?, ? >
-                result = Sse41.Insert(result, e2, 2);                                               // < 0, 1, 2, ? >
-                return Sse41.Insert(result, e3, 3);                                                 // < 0, 1, 2, 3 >
-            }
-
             if (Sse2.IsSupported)
             {
-                // We deal with the elements in order, unpacking the ordered pairs of int into vectors. We then treat those vectors as ulong and
-                // unpack them again. This efficiently gets all ints ordered into the result.
-
-                Vector128<ulong> lo64, hi64;
-                lo64 = Sse2.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1)).AsUInt64();   // < 0, 1, ?, ? >
-                hi64 = Sse2.UnpackLow(CreateScalarUnsafe(e2), CreateScalarUnsafe(e3)).AsUInt64();   // < 2, 3, ?, ? >
-                return Sse2.UnpackLow(lo64, hi64).AsUInt32();                                       // < 0, 1, 2, 3 >
+                return Create(e0, e1, e2, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -1066,19 +908,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi64x</remarks>
         /// <returns>A new <see cref="Vector128{UInt64}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(ulong e0, ulong e1)
         {
-            if (Sse41.X64.IsSupported)
-            {
-                Vector128<ulong> result = CreateScalarUnsafe(e0);                                   // < 0, ? >
-                return Sse41.X64.Insert(result, e1, 1);                                             // < 0, 1 >
-            }
-
             if (Sse2.X64.IsSupported)
             {
-                return Sse2.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1));              // < 0, 1 >
+                return Create(e0, e1);
             }
 
             return SoftwareFallback(e0, e1);
