@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<annotations>
+  <assembly fullname="Test">
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.XmlAnnotations">
+      <field name="_typeWithDefaultConstructor">
+        <attribute fullname="System.DoesNotExistattribute">
+          <argument>0</argument>
+        </attribute>
+        <attribute fullname="System.Runtime.CompilerServices.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+        </attribute>
+      </field>
+      <method signature="System.Void TwoAnnotatedParameters(System.Type,System.Type)">
+        <parameter name="type">
+          <attribute fullname="System.Runtime.CompilerServices.DynamicallyAccessedMembers">
+              <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+        <parameter name="type2">
+          <attribute fullname="System.Runtime.CompilerServices.DynamicallyAccessedMembers">
+              <argument>PublicConstructors</argument>
+          </attribute>
+        </parameter>
+      </method>
+      <method name="ReturnConstructorsFailure">
+        <returnparameter>
+          <attribute fullname="System.Runtime.CompilerServices.DynamicallyAccessedMembers">
+              <argument>DefaultConstructor</argument>
+          </attribute>
+        </returnparameter>
+      </method>
+      <property name="PropertyWithDefaultConstructor">
+        <attribute fullname="System.Runtime.CompilerServices.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+        </attribute>
+      </property>
+      <type name="NestedType">
+        <field name="_typeWithDefaultConstructor">
+          <attribute fullname="System.Runtime.CompilerServices.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </field>
+      </type>
+    </type>
+  </assembly>
+</annotations>
