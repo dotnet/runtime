@@ -25,8 +25,6 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private long _lastConnectionCloseSent;
 
-        private readonly QuicClientConnectionOptions? _clientOpts;
-
         private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[3]
         {
             new PacketNumberSpace(), new PacketNumberSpace(), new PacketNumberSpace()
@@ -88,8 +86,6 @@ namespace System.Net.Quic.Implementations.Managed
         ///     QUIC transport parameters used for this endpoint.
         /// </summary>
         private readonly TransportParameters _localTransportParameters;
-
-        private readonly QuicListenerOptions? _serverOpts;
 
         private readonly Tls _tls;
 
@@ -172,12 +168,12 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Error received via CONNECTION_CLOSE frame to be reported to the user.
         /// </summary>
-        private QuicError? inboundError;
+        private QuicError? _inboundError;
 
         /// <summary>
         ///     Error to send in next packet in a CONNECTION_CLOSE frame.
         /// </summary>
-        private QuicError? outboundError;
+        private QuicError? _outboundError;
 
         /// <summary>
         ///     Version of the QUIC protocol used for this connection.
@@ -207,7 +203,6 @@ namespace System.Net.Quic.Implementations.Managed
         public ManagedQuicConnection(QuicClientConnectionOptions options)
         {
             _isServer = false;
-            _clientOpts = options;
 
             _remoteEndpoint = options.RemoteEndPoint!;
 
@@ -237,7 +232,6 @@ namespace System.Net.Quic.Implementations.Managed
             IPEndPoint remoteEndpoint)
         {
             _isServer = true;
-            _serverOpts = options;
             _socketContext = socketContext;
             _localEndpoint = options.ListenEndPoint;
             _remoteEndpoint = remoteEndpoint;
@@ -347,7 +341,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // if pending errors, send them in appropriate epoch,
-            if (outboundError != null && outboundError.IsQuicError)
+            if (_outboundError != null && _outboundError.IsQuicError)
             {
                 EncryptionLevel desiredLevel = _tls.WriteLevel;
                 if (!Connected && desiredLevel == EncryptionLevel.Application)
@@ -431,7 +425,7 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, string? reason,
             FrameType frameType = FrameType.Padding)
         {
-            outboundError = new QuicError(errorCode, reason, frameType);
+            _outboundError = new QuicError(errorCode, reason, frameType);
             return ProcessPacketResult.Error;
         }
 
@@ -608,7 +602,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (IsClosed) return;
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            outboundError = new QuicError((TransportErrorCode)errorCode, null, FrameType.Padding, false);
+            _outboundError = new QuicError((TransportErrorCode)errorCode, null, FrameType.Padding, false);
             _socketContext.Ping();
 
             await _closeTcs.GetTask().ConfigureAwait(false);
@@ -627,9 +621,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void ThrowIfError()
         {
-            if (inboundError != null)
+            if (_inboundError != null)
             {
-                throw new QuicErrorException(inboundError!);
+                throw new QuicErrorException(_inboundError!);
             }
         }
 
@@ -667,7 +661,7 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: data race with user who is trying to open a new stream?
             foreach (var stream in _streams.AllStreams)
             {
-                stream.OnConnectionClosed(inboundError!);
+                stream.OnConnectionClosed(_inboundError!);
             }
         }
 

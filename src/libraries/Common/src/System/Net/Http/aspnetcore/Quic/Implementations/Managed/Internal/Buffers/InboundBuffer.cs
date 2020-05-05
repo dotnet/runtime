@@ -282,7 +282,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         public void OnConnectionError(QuicError error)
         {
-            _deliverableChannel.Writer.Complete(new QuicErrorException(error));
+            _deliverableChannel.Writer.TryComplete(new QuicErrorException(error));
         }
     }
 }

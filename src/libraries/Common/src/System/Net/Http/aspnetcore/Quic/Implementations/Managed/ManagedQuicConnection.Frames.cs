@@ -133,8 +133,8 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     case ProcessPacketResult.Ok:
                         continue;
-                    case ProcessPacketResult.Error when outboundError == null:
-                        outboundError = new QuicError(TransportErrorCode.FrameEncodingError,
+                    case ProcessPacketResult.Error when _outboundError == null:
+                        _outboundError = new QuicError(TransportErrorCode.FrameEncodingError,
                             QuicError.UnableToDeserialize, frameType);
                         break;
                 }
@@ -279,9 +279,9 @@ namespace System.Net.Quic.Implementations.Managed
                 return ProcessPacketResult.Error;
 
             // keep only the first error
-            if (inboundError == null)
+            if (_inboundError == null)
             {
-                inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.ReasonPhrase,
+                _inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.ReasonPhrase,
                     frame.FrameType, frame.IsQuicError);
 
                 if (_closingPeriodEnd == null)
@@ -289,11 +289,11 @@ namespace System.Net.Quic.Implementations.Managed
                     StartClosing(context.Timestamp);
                 }
 
-                if (outboundError == null)
+                if (_outboundError == null)
                 {
                     // From RFC: An endpoint that receives a CONNECTION_CLOSE frame MAY send a single packet containing a
                     // CONNECTION_CLOSE frame before entering the draining state, using NO_ERROR code if appropriate.
-                    outboundError = new QuicError(TransportErrorCode.NoError);
+                    _outboundError = new QuicError(TransportErrorCode.NoError);
                     // draining state will be entered once the error is sent.
                 }
                 else
@@ -302,7 +302,7 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 // connection will not succeed
-                _connectTcs.TryCompleteException(new QuicErrorException(inboundError));
+                _connectTcs.TryCompleteException(new QuicErrorException(_inboundError));
             }
 
             return ProcessPacketResult.Ok; //TODO-RZ: Draining/closing state management
@@ -499,7 +499,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void WriteConnectionCloseFrame(QuicWriter writer, QuicSocketContext.SendContext context)
         {
-            if (outboundError == null)
+            if (_outboundError == null)
             {
                 // nothing to send
                 return;
@@ -519,10 +519,10 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            var frame = new ConnectionCloseFrame((long)outboundError.ErrorCode,
-                outboundError.IsQuicError,
-                outboundError.FrameType,
-                outboundError.ReasonPhrase);
+            var frame = new ConnectionCloseFrame((long)_outboundError.ErrorCode,
+                _outboundError.IsQuicError,
+                _outboundError.FrameType,
+                _outboundError.ReasonPhrase);
 
             if (frame.GetSerializedLength() > writer.BytesAvailable)
             {
@@ -533,7 +533,7 @@ namespace System.Net.Quic.Implementations.Managed
             ConnectionCloseFrame.Write(writer, frame);
             _lastConnectionCloseSent = context.Timestamp;
 
-            if (inboundError != null)
+            if (_inboundError != null)
             {
                 // RFC allows sending one packet to hasten up the closing, but otherwise we should be draining
                 StartDraining();
