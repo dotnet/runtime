@@ -749,6 +749,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector128_Create:
+        case NI_Vector256_Create:
         {
 #if defined(TARGET_X86)
             if (varTypeIsLong(baseType))
@@ -763,7 +764,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             // We shouldn't handle this as an intrinsic if the
             // respective ISAs have been disabled by the user.
 
-            if (baseType == TYP_FLOAT)
+            if (intrinsic == NI_Vector256_Create)
+            {
+                if (!compExactlyDependsOn(InstructionSet_AVX))
+                {
+                    break;
+                }
+            }
+            else if (baseType == TYP_FLOAT)
             {
                 if (!compExactlyDependsOn(InstructionSet_SSE))
                 {

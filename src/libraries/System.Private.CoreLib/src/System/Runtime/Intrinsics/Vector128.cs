@@ -330,7 +330,7 @@ namespace System.Runtime.Intrinsics
         {
             if (Sse2.IsSupported)
             {
-                return Create(Value);
+                return Create(value);
             }
 
             return SoftwareFallback(value);
