@@ -6,18 +6,18 @@
       AssemblyFile="$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\publish\WasmAppBuilder.dll"/>
 
   <PropertyGroup>
-	<WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
+    <WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
   </PropertyGroup>
 
   <ItemGroup>
-	<WasmPInvokeModules Include="libSystem.Native"/>
-	<WasmPInvokeAssemblies Include="$(MonoArtifactsPath)/System.Private.CoreLib.dll"/>
+    <WasmPInvokeModules Include="libSystem.Native"/>
+    <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)/System.Private.CoreLib.dll"/>
   </ItemGroup>
 
   <Target Name="CheckEnv">
-	<Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
-	<Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
-	<Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
+    <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
+    <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
+    <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
 
   <Target Name="BuildWasmAppBuilder">
@@ -28,15 +28,15 @@
 
   <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;BuildWasmAppBuilder">
     <MakeDir Directories="$(MonoObjDir)wasm"/>
-	<WasmAppBuilder
-	  PInvokeModules="@(WasmPInvokeModules)"
-	  PInvokeAssemblies="@(WasmPInvokeAssemblies)"
-	  PInvokeTablePath="$(WasmPInvokeTablePath)"
-	  />
+    <WasmAppBuilder
+      PInvokeModules="@(WasmPInvokeModules)"
+      PInvokeAssemblies="@(WasmPInvokeAssemblies)"
+      PInvokeTablePath="$(WasmPInvokeTablePath)"
+      />
   </Target>
 
   <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable">
-	<Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <Target Name="Build" DependsOnTargets="BuildWasmRuntimes"/>

@@ -24,7 +24,7 @@ EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(CURDIR)/emsdk_env.sh && emcc
 
 emsdk:
-	git clone https://github.com/juj/emsdk.git $(EMSDK_PATH)
+	git clone https://github.com/emscripten-core/emsdk $(EMSDK_PATH)
 
 $(EMSDK_PATH)/.emscripten: | $(EMSDK_PATH)
 	touch $@
