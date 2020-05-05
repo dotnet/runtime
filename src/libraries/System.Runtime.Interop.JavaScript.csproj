@@ -23,7 +23,7 @@
   <!-- Browser specific implementation -->
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.Api.cs" Link="Common\Interop\Browser\Interop.Runtime.Api.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.Bridge.cs" Link="Common\Interop\Browser\Interop.Runtime.Bridge.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSException.cs" Link="Common\Interop\Browser\Interop.JavaScript.JSException.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSObject.cs" Link="Common\Interop\Browser\Interop.JavaScript.JSObject.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8Array.cs" Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
