@@ -23,14 +23,14 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        // This helper is used in lieu of SDK support for publishing apps using the static_apphost.
-        // It replaces the apphost with static_apphost, and along with appropeiate app.dll updates in the host.
+        // This helper is used in lieu of SDK support for publishing apps using the singlefilehost.
+        // It replaces the apphost with singlefilehost, and along with appropeiate app.dll updates in the host.
         // For now, we heave behind the hostpolicy and hostfxr DLLs in the publish directory, because
         // removing them requires deps.json update.
         void ReplaceApphostWithStaticHost(TestProjectFixture fixture)
         {
             var staticHost = Path.Combine(fixture.RepoDirProvider.HostArtifacts,
-                                          RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("static_apphost"));
+                                          RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("singlefilehost"));
             HostWriter.CreateAppHost(staticHost,
                                      BundleHelper.GetHostPath(fixture),
                                      BundleHelper.GetAppPath(fixture));

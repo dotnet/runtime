@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifndef __HOSTFXR_IFACE_H__
-#define __HOSTFXR_IFACE_H__
+#ifndef __HOSTFXR_RESOLVER_T_H__
+#define __HOSTFXR_RESOLVER_T_H__
 
 #include "hostfxr.h"
 #include "pal.h"
@@ -37,4 +37,4 @@ class hostfxr_resolver_t
         StatusCode m_status_code;
 };
 
-#endif // __HOSTFXR_IFACE_H__
+#endif // __HOSTFXR_RESOLVER_T_H__
