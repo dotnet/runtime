@@ -462,8 +462,9 @@ DEFINE_CLASS(CUSTOMQUERYINTERFACERESULT,  Interop,          CustomQueryInterface
 DEFINE_CLASS(COMWRAPPERS,                 Interop,          ComWrappers)
 DEFINE_CLASS(CREATECOMINTERFACEFLAGS,     Interop,          CreateComInterfaceFlags)
 DEFINE_CLASS(CREATEOBJECTFLAGS,           Interop,          CreateObjectFlags)
-DEFINE_METHOD(COMWRAPPERS,                COMPUTE_VTABLES,  CallComputeVtables,         SM_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid)
-DEFINE_METHOD(COMWRAPPERS,                CREATE_OBJECT,    CallCreateObject,           SM_ComWrappers_IntPtr_CreateFlags_RetObj)
+DEFINE_CLASS(COMWRAPPERSSCENARIO,         Interop,          ComWrappersScenario)
+DEFINE_METHOD(COMWRAPPERS,                COMPUTE_VTABLES,  CallComputeVtables,         SM_Scenario_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid)
+DEFINE_METHOD(COMWRAPPERS,                CREATE_OBJECT,    CallCreateObject,           SM_Scenario_ComWrappers_IntPtr_CreateFlags_RetObj)
 DEFINE_METHOD(COMWRAPPERS,                RELEASE_OBJECTS,  CallReleaseObjects,         SM_ComWrappers_IEnumerable_RetVoid)
 DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_Obj_RefGuid_RefIntPtr_RetInt)
 #endif //FEATURE_COMINTEROP

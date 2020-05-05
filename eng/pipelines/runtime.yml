@@ -780,6 +780,9 @@ jobs:
     buildConfig: Release
     platforms:
     - Windows_NT_x86
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - Windows_NT_arm
+      - Windows_NT_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false

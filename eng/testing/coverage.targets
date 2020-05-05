@@ -37,14 +37,14 @@
           Condition="'$(Coverage)' == 'true' and '$(SkipCoverageReport)' != 'true'"
           AfterTargets="VSTest">
     <ItemGroup Condition="'$(CoverageReportInputPath)' == ''">
-      <CoverageOutputFile Include="$(OutDir)*\coverage.opencover.xml" />
+      <CoverageOutputFile Include="$(OutDir)TestResults\*\coverage.opencover.xml" />
     </ItemGroup>
 
     <PropertyGroup>
       <CoverageReportInputPath Condition="'$(CoverageReportInputPath)' == ''">%(CoverageOutputFile.Identity)</CoverageReportInputPath>
       <CoverageReportTypes Condition="'$(CoverageReportTypes)' == ''">Html</CoverageReportTypes>
       <CoverageReportVerbosity Condition="'$(CoverageReportVerbosity)' == ''">Info</CoverageReportVerbosity>
-      <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'report'))</CoverageReportDir>
+      <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'TestResults', 'report'))</CoverageReportDir>
       <CoverageReportCommand>"$(DotNetTool)" tool run reportgenerator "-reports:$(CoverageReportInputPath)" "-targetdir:$(CoverageReportDir.TrimEnd('\/'))" "-reporttypes:$(CoverageReportTypes)" "-verbosity:$(CoverageReportVerbosity)"</CoverageReportCommand>
     </PropertyGroup>
 
