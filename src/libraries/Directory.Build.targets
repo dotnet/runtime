@@ -165,6 +165,12 @@
     <GenAPIAdditionalParameters Condition="Exists('$(_ExcludeAPIList)')">$(GenAPIAdditionalParameters) --exclude-api-list "$(_ExcludeAPIList)"</GenAPIAdditionalParameters>
     <GenAPIAdditionalParameters>$(GenAPIAdditionalParameters) --header-file "$(_LicenseHeaderTxtPath)"</GenAPIAdditionalParameters>
     <GenAPIAdditionalParameters Condition="'$(LangVersion)' != ''">$(GenAPIAdditionalParameters) --lang-version "$(LangVersion)"</GenAPIAdditionalParameters> 
+    <ReferenceFromRuntimeCount>@(ReferenceFromRuntime->Count())</ReferenceFromRuntimeCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ReferenceFromRuntimeCount)' != '0'">
+    <GenAPILibPath>$(RuntimePath.Trim('\/'));$(CoreCLRArtifactsPath.Trim('\/'))</GenAPILibPath>
+    <GenAPIAdditionalParameters>$(GenAPIAdditionalParameters) --follow-type-forwards</GenAPIAdditionalParameters>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
