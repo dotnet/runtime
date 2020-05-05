@@ -282,13 +282,6 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 	if (tid != mono_native_thread_id_get ())
 		return;
 
-	/*
-	 * Ignore requests to set the main thread name because
-	 * it causes the value returned by Process.ProcessName to change.
-	 */
-	if (tid == getpid())
-		return;
-
 	if (!name) {
 		pthread_setname_np ("");
 	} else {
