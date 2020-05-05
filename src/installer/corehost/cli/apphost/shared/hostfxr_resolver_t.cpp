@@ -7,33 +7,33 @@
 #include "pal.h"
 #include "fxr_resolver.h"
 #include "trace.h"
-#include "hostfxr_iface.h"
+#include "hostfxr_resolver_t.h"
 
-hostfxr_main_bundle_startupinfo_fn hostfxr::resolve_main_bundle_startupinfo()
+hostfxr_main_bundle_startupinfo_fn hostfxr_resolver_t::resolve_main_bundle_startupinfo()
 {
     assert(m_hostfxr_dll != nullptr);
     return reinterpret_cast<hostfxr_main_bundle_startupinfo_fn>(pal::get_symbol(m_hostfxr_dll, "hostfxr_main_bundle_startupinfo"));
 }
 
-hostfxr_set_error_writer_fn hostfxr::resolve_set_error_writer()
+hostfxr_set_error_writer_fn hostfxr_resolver_t::resolve_set_error_writer()
 {
     assert(m_hostfxr_dll != nullptr);
     return reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(m_hostfxr_dll, "hostfxr_set_error_writer"));
 }
 
-hostfxr_main_startupinfo_fn hostfxr::resolve_main_startupinfo()
+hostfxr_main_startupinfo_fn hostfxr_resolver_t::resolve_main_startupinfo()
 {
     assert(m_hostfxr_dll != nullptr);
     return reinterpret_cast<hostfxr_main_startupinfo_fn>(pal::get_symbol(m_hostfxr_dll, "hostfxr_main_startupinfo"));
 }
 
-hostfxr_main_fn hostfxr::resolve_main_v1()
+hostfxr_main_fn hostfxr_resolver_t::resolve_main_v1()
 {
     assert(m_hostfxr_dll != nullptr);
     return reinterpret_cast<hostfxr_main_fn>(pal::get_symbol(m_hostfxr_dll, "hostfxr_main"));
 }
 
-hostfxr::hostfxr(const pal::string_t& app_root)
+hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
 {
     if (!fxr_resolver::try_get_path(app_root, &m_dotnet_root, &m_fxr_path))
     {
@@ -52,7 +52,7 @@ hostfxr::hostfxr(const pal::string_t& app_root)
     }
 }
 
-hostfxr::~hostfxr()
+hostfxr_resolver_t::~hostfxr_resolver_t()
 {
     if (m_hostfxr_dll != nullptr)
     {

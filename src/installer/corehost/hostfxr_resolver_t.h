@@ -9,11 +9,11 @@
 #include "pal.h"
 #include "error_codes.h"
 
-class hostfxr
+class hostfxr_resolver_t
 {
     public:
-        hostfxr(const pal::string_t& app_root);
-        ~hostfxr();
+        hostfxr_resolver_t(const pal::string_t& app_root);
+        ~hostfxr_resolver_t();
 
         StatusCode status_code() const { return m_status_code; }
 
