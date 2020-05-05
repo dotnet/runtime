@@ -301,9 +301,9 @@ stages:
     channelName: 'General Testing'
     akaMSChannelName: 'generaltesting'
     channelId: ${{ parameters.GeneralTestingChannelId }}
-    transportFeed: 'https://pkgs.dev.azure.com/dnceng/public/_packaging/general-testing/nuget/v3/index.json'
-    shippingFeed: 'https://pkgs.dev.azure.com/dnceng/public/_packaging/general-testing/nuget/v3/index.json'
-    symbolsFeed: 'https://pkgs.dev.azure.com/dnceng/public/_packaging/general-testing-symbols/nuget/v3/index.json'
+    transportFeed: 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json'
+    shippingFeed: 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json'
+    symbolsFeed: 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng-symbols/nuget/v3/index.json'
 
 - template: \eng\common\templates\post-build\channels\generic-public-channel.yml
   parameters:
