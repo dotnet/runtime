@@ -2684,7 +2684,7 @@ public:
     fgArgTabEntry* gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
     static GenTree* gtArgNodeByLateArgInx(GenTreeCall* call, unsigned lateArgInx);
 
-    GenTree* gtNewAssignNode(GenTree* dst, GenTree* src);
+    GenTreeOp* gtNewAssignNode(GenTree* dst, GenTree* src);
 
     GenTree* gtNewTempAssign(unsigned    tmp,
                              GenTree*    val,
@@ -9146,6 +9146,11 @@ public:
 #else  // !TARGET_AMD64
         return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
 #endif // !TARGET_AMD64
+    }
+
+    bool compDoOldStructRetyping()
+    {
+        return JitConfig.JitDoOldStructRetyping();
     }
 
     // Returns true if the method returns a value in more than one return register
