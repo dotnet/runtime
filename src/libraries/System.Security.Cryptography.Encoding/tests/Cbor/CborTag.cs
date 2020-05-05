@@ -5,7 +5,7 @@
 namespace System.Formats.Cbor
 {
     // https://tools.ietf.org/html/rfc7049#section-2.4
-    internal enum CborTag : ulong
+    public enum CborTag : ulong
     {
         DateTimeString = 0,
         UnixTimeSeconds = 1,
@@ -29,7 +29,7 @@ namespace System.Formats.Cbor
     }
 
     // https://tools.ietf.org/html/rfc7049#section-2.3
-    internal enum CborSimpleValue : byte
+    public enum CborSimpleValue : byte
     {
         False = 20,
         True = 21,

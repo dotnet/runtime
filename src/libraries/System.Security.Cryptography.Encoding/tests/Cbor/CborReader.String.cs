@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 

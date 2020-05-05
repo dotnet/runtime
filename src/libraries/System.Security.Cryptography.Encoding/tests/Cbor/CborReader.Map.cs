@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         private KeyEncodingComparer? _keyEncodingComparer;
         private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;

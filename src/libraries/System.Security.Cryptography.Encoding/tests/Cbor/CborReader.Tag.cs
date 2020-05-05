@@ -7,7 +7,7 @@ using System.Numerics;
 
 namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         public CborTag ReadTag()
         {

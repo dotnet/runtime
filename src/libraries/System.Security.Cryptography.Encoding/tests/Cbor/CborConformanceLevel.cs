@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
-    internal enum CborConformanceLevel
+    public enum CborConformanceLevel
     {
         Lax = 0,
         Strict = 1,

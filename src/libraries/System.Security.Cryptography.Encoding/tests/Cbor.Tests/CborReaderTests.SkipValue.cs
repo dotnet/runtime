@@ -106,7 +106,7 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [MemberData(nameof(NonConformingSkipValueEncodings))]
-        internal static void SkipValue_NonConformingValues_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void SkipValue_NonConformingValues_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -117,7 +117,7 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [MemberData(nameof(NonConformingSkipValueEncodings))]
-        internal static void SkipValue_ValidationEnabled_NonConformingValues_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void SkipValue_ValidationEnabled_NonConformingValues_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -140,7 +140,7 @@ namespace System.Formats.Cbor.Tests
             }.Select(l => new object[] { l.Level, l.Encoding });
 
         [Fact]
-        internal static void SkipValue_SkippedValueFollowedByNonConformingValue_ShouldThrowFormatException()
+        public static void SkipValue_SkippedValueFollowedByNonConformingValue_ShouldThrowFormatException()
         {
             byte[] encoding = "827fff7fff".HexToByteArray();
             var reader = new CborReader(encoding, CborConformanceLevel.Ctap2Canonical);

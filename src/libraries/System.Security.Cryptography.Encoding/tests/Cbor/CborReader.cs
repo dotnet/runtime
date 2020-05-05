@@ -5,11 +5,10 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace System.Formats.Cbor
 {
-    internal enum CborReaderState
+    public enum CborReaderState
     {
         Unknown = 0,
         UnsignedInteger,
@@ -37,7 +36,7 @@ namespace System.Formats.Cbor
         FormatError,
     }
 
-    internal partial class CborReader
+    public partial class CborReader
     {
         private readonly ReadOnlyMemory<byte> _originalBuffer;
         private ReadOnlyMemory<byte> _buffer;
@@ -62,7 +61,7 @@ namespace System.Formats.Cbor
         // keeps a cached copy of the reader state; 'Unknown' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.Unknown;
 
-        internal CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
+        public CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 

@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         public void SkipValue(bool validateConformance = false) => SkipToAncestor(0, validateConformance);
         public void SkipToParent(bool validateConformance = false)

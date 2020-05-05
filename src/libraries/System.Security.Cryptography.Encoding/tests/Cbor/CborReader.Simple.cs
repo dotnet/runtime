@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 
 namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         public float ReadSingle()
         {
