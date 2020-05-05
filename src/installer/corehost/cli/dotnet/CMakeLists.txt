@@ -11,7 +11,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 list(APPEND SOURCES
-    ../apphost/shared/hostfxr_iface.cpp
+    ../apphost/shared/hostfxr_resolver_t.cpp
 )
 
 include(../exe.cmake)

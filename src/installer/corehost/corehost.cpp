@@ -9,7 +9,7 @@
 #include "fx_ver.h"
 #include "trace.h"
 #include "utils.h"
-#include "hostfxr_iface.h"
+#include "hostfxr_resolver_t.h"
 
 #if defined(FEATURE_APPHOST)
 #include "bundle_marker.h"
@@ -177,7 +177,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     app_path.append(_X(".dll"));
 #endif
 
-    hostfxr fxr{app_root};
+    hostfxr_resolver_t fxr{app_root};
 
     // Obtain the entrypoints.
     int rc = fxr.status_code();
