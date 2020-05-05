@@ -3,4 +3,4 @@
 # See the LICENSE file in the project root for more information.
 
 add_subdirectory(static)
-add_subdirectory(shared)
+add_subdirectory(standalone)
