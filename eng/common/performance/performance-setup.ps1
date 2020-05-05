@@ -59,12 +59,12 @@ if($MonoDotnet -ne "")
     if($ExtraBenchmarkDotNetArguments -eq "")
     {
         #FIX ME: We need to block these tests as they don't run on mono for now
-        $ExtraBenchmarkDotNetArguments = "--exclusion-filter *Perf_Image*"
+        $ExtraBenchmarkDotNetArguments = "--exclusion-filter *Perf_Image* *Perf_NamedPipeStream*"
     }
     else
     {
         #FIX ME: We need to block these tests as they don't run on mono for now
-        $ExtraBenchmarkDotNetArguments += " --exclusion-filter *Perf_Image*"
+        $ExtraBenchmarkDotNetArguments += " --exclusion-filter *Perf_Image* *Perf_NamedPipeStream*"
     }
 }
 
