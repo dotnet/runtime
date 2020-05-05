@@ -33,7 +33,7 @@
     <Compile Remove="Linker.Steps\ResolveFromXApiStep.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+   <ItemGroup>
     <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" />
     <PackageReference Include="System.Text.Json" Version="4.7.1" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
