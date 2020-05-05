@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class LdapConnectionTests
     {
         [Theory]

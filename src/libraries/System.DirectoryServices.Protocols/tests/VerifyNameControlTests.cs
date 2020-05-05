@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class VerifyNameControlTests
     {
         [Fact]
@@ -20,14 +21,14 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1338", control.Type);
 
-            var expected = (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 };
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 };
             Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_ServerName_Data()
         {
-            yield return new object[] { "", (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 } };
-            yield return new object[] { "S", (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 7, 2, 1, 0, 4, 2, 83, 0 } : new byte[] { 48, 7, 2, 1, 0, 4, 2, 83, 0 } };
+            yield return new object[] { "", (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 } };
+            yield return new object[] { "S", (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 7, 2, 1, 0, 4, 2, 83, 0 } : new byte[] { 48, 7, 2, 1, 0, 4, 2, 83, 0 } };
         }
 
         [Theory]
@@ -46,8 +47,8 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Ctor_ServerName_Flag_Data()
         {
-            yield return new object[] { "", -1, (PlatformDetection.IsWindows) ?  new byte[] { 48, 132, 0, 0, 0, 8, 2, 4, 255, 255, 255, 255, 4, 0 } : new byte[] { 48, 5, 2, 1, 255, 4, 0 } };
-            yield return new object[] { "S", 10, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 7, 2, 1, 10, 4, 2, 83, 0 } : new byte[] { 48, 7, 2, 1, 10, 4, 2, 83, 0 } };
+            yield return new object[] { "", -1, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ?  new byte[] { 48, 132, 0, 0, 0, 8, 2, 4, 255, 255, 255, 255, 4, 0 } : new byte[] { 48, 5, 2, 1, 255, 4, 0 } };
+            yield return new object[] { "S", 10, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 7, 2, 1, 10, 4, 2, 83, 0 } : new byte[] { 48, 7, 2, 1, 10, 4, 2, 83, 0 } };
         }
 
         [Theory]

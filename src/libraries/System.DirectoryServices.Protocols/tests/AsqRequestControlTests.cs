@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class AsqRequestControlTests
     {
         [Fact]
@@ -19,14 +20,14 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1504", control.Type);
 
-            var expected = (Environment.OSVersion.Platform == PlatformID.Win32NT) ? new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } : new byte[] { 48, 2, 4, 0 };
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } : new byte[] { 48, 2, 4, 0 };
 
             Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_String_Test_data()
         {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 yield return new object[] { null, new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } };
                 yield return new object[] { "", new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } };

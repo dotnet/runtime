@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class SortRequestControlTests
     {
         [Theory]
@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols.Tests
             }
 
             control.IsCritical = critical;
-            var expected = (Environment.OSVersion.Platform == PlatformID.Win32NT) ?
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ?
                 new byte[] { 48, 132, 0, 0, 0, 43, 48, 132, 0, 0, 0, 17, 4, 5,110,
                 97, 109, 101, 49, 128, 5, 114, 117, 108, 101, 49, 129,
                 1, 255, 48, 132, 0, 0, 0, 14, 4, 5, 110, 97, 109, 101,
