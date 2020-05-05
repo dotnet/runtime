@@ -1052,6 +1052,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/**">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler/**">
+            <Issue>https://github.com/dotnet/runtime/issues/34374</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/LayoutClass/LayoutClassTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
