@@ -96,6 +96,35 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { Case(@"a[^wyz]*w"), "abczw", RegexOptions.IgnoreCase, 0, 0, false, string.Empty };
             }
 
+            // Loops at beginning of expressions
+            yield return new object[] { @"a+", "aaa", RegexOptions.None, 0, 3, true, "aaa" };
+            yield return new object[] { @"a+\d+", "a1", RegexOptions.None, 0, 2, true, "a1" };
+            yield return new object[] { @".+\d+", "a1", RegexOptions.None, 0, 2, true, "a1" };
+            yield return new object[] { ".+\nabc", "a\nabc", RegexOptions.None, 0, 5, true, "a\nabc" };
+            yield return new object[] { @"\d+", "abcd123efg", RegexOptions.None, 0, 10, true, "123" };
+            yield return new object[] { @"\d+\d+", "abcd123efg", RegexOptions.None, 0, 10, true, "123" };
+            yield return new object[] { @"\w+123\w+", "abcd123efg", RegexOptions.None, 0, 10, true, "abcd123efg" };
+            yield return new object[] { @"\d+\w+", "abcd123efg", RegexOptions.None, 0, 10, true, "123efg" };
+            yield return new object[] { @"\w+@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{3,}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{4,}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, false, string.Empty };
+            yield return new object[] { @"\w{2,5}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{3}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{0,3}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{0,2}c@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w*@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"(\w+)@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"((\w+))@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"(\w+)c@\w+.com", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.com" };
+            yield return new object[] { @"(\w+)c@\w+.com\1", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.comab" };
+            yield return new object[] { @"(\w+)@def.com\1", "abc@def.comab", RegexOptions.None, 0, 13, false, string.Empty };
+            yield return new object[] { @"(\w+)@def.com\1", "abc@def.combc", RegexOptions.None, 0, 13, true, "bc@def.combc" };
+            yield return new object[] { @"(\w*)@def.com\1", "abc@def.com", RegexOptions.None, 0, 11, true, "@def.com" };
+            yield return new object[] { @"\w+(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty };
+            yield return new object[] { @"\w+(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
+            yield return new object[] { @"(?>\w+)(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty };
+            yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
+
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz" };
             yield return new object[] { @"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.IgnoreCase, 0, 4, false, string.Empty };
