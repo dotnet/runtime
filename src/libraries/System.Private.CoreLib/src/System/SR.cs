@@ -19,7 +19,6 @@ namespace System
         // Marked as NoInlining because if this is used in an AoT compiled app that is not compiled into a single file, the user
         // could compile each module with a different setting for this. We want to make sure there's a consistent behavior
         // that doesn't depend on which native module this method got inlined into.
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool UsingResourceKeys()
         {
