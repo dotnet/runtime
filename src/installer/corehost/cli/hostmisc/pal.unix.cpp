@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if defined(TARGET_FREEBSD)
+#define _WITH_GETLINE
+#endif
+
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"
@@ -13,6 +17,8 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <ctime>
+#include <locale>
+#include <codecvt>
 #include <pwd.h>
 #include "config.h"
 
@@ -34,8 +40,6 @@
 #define DT_REG 8
 #define DT_LNK 10
 #endif
-
-pal::string_t pal::to_string(int value) { return std::to_string(value); }
 
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
@@ -248,6 +252,16 @@ void pal::unload_library(dll_t library)
 int pal::xtoi(const char_t* input)
 {
     return atoi(input);
+}
+
+bool pal::unicode_palstring(const char16_t* str, pal::string_t* out)
+{
+    out->clear();
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conversion;
+    out->assign(conversion.to_bytes(str));
+
+    return true;
 }
 
 bool pal::is_path_rooted(const pal::string_t& path)

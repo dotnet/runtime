@@ -372,6 +372,11 @@ MONO_API MONO_RT_EXTERNAL_ONLY uint32_t     mono_gchandle_new_weakref (MonoObjec
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*  mono_gchandle_get_target  (uint32_t gchandle);
 MONO_API MONO_RT_EXTERNAL_ONLY void         mono_gchandle_free        (uint32_t gchandle);
 
+MONO_API MONO_RT_EXTERNAL_ONLY MonoGCHandle mono_gchandle_new_v2         (MonoObject *obj, mono_bool pinned);
+MONO_API MONO_RT_EXTERNAL_ONLY MonoGCHandle mono_gchandle_new_weakref_v2 (MonoObject *obj, mono_bool track_resurrection);
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*  mono_gchandle_get_target_v2  (MonoGCHandle gchandle);
+MONO_API MONO_RT_EXTERNAL_ONLY void         mono_gchandle_free_v2        (MonoGCHandle gchandle);
+
 /* Reference queue support
  *
  * A reference queue is used to get notifications of when objects are collected.

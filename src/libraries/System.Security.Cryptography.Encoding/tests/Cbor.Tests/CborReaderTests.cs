@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void Peek_EmptyBuffer_ShouldReturnEof()
         {
             var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
-            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
+            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
         }
 
         [Fact]
@@ -51,6 +51,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(0, reader.BytesRemaining);
         }
 
+        [Fact]
+        public static void ConformanceLevel_DefaultValue_ShouldEqualLax()
+        {
+            var reader = new CborReader(Array.Empty<byte>());
+            Assert.Equal(CborConformanceLevel.Lax, reader.ConformanceLevel);
+        }
+
         [Theory]
         [InlineData(CborMajorType.UnsignedInteger, CborReaderState.UnsignedInteger)]
         [InlineData(CborMajorType.NegativeInteger, CborReaderState.NegativeInteger)]
@@ -59,22 +66,75 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborMajorType.Array, CborReaderState.StartArray)]
         [InlineData(CborMajorType.Map, CborReaderState.StartMap)]
         [InlineData(CborMajorType.Tag, CborReaderState.Tag)]
-        [InlineData(CborMajorType.Special, CborReaderState.SpecialValue)]
+        [InlineData(CborMajorType.Simple, CborReaderState.SpecialValue)]
         internal static void Peek_SingleByteBuffer_ShouldReturnExpectedState(CborMajorType majorType, CborReaderState expectedResult)
         {
             ReadOnlyMemory<byte> buffer = new byte[] { (byte)((byte)majorType << 5) };
             var reader = new CborReader(buffer);
-            Assert.Equal(expectedResult, reader.Peek());
+            Assert.Equal(expectedResult, reader.PeekState());
         }
 
         [Fact]
-        public static void CborReader_ReadingTwoPrimitiveValues_ShouldThrowInvalidOperationException()
+        public static void Read_EmptyBuffer_ShouldThrowFormatException()
+        {
+            var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
+            Assert.Throws<FormatException>(() => reader.ReadInt64());
+        }
+
+        [Fact]
+        public static void Read_BeyondEndOfFirstValue_ShouldThrowInvalidOperationException()
+        {
+            var reader = new CborReader("01".HexToByteArray());
+            reader.ReadInt64();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+        }
+
+        [Fact]
+        public static void CborReader_ReadingTwoRootLevelValues_ShouldThrowInvalidOperationException()
         {
             ReadOnlyMemory<byte> buffer = new byte[] { 0, 0 };
             var reader = new CborReader(buffer);
             reader.ReadInt64();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Equal(CborReaderState.FinishedWithTrailingBytes, reader.PeekState());
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+        }
+
+        [Theory]
+        [InlineData(1, 2, "0101")]
+        [InlineData(10, 10, "0a0a0a0a0a0a0a0a0a0a")]
+        [InlineData(new object[] { 1, 2 }, 3, "820102820102820102")]
+        public static void CborReader_MultipleRootValuesAllowed_ReadingMultipleValues_HappyPath(object expectedValue, int repetitions, string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray(), allowMultipleRootLevelValues: true);
+
+            for (int i = 0; i < repetitions; i++)
+            {
+                Helpers.VerifyValue(reader, expectedValue);
+            }
+
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Fact]
+        public static void CborReader_MultipleRootValuesAllowed_ReadingBeyondEndOfBuffer_ShouldThrowInvalidOperationException()
+        {
+            string hexEncoding = "810102";
+            var reader = new CborReader(hexEncoding.HexToByteArray(), allowMultipleRootLevelValues: true);
+
+            Assert.Equal(CborReaderState.StartArray, reader.PeekState());
+            reader.ReadStartArray();
+            reader.ReadInt32();
+            reader.ReadEndArray();
+
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
+            reader.ReadInt32();
+
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
         }
 
         [Theory]
@@ -109,8 +169,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-
             Assert.Throws<FormatException>(() => reader.ReadEncodedValue());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+        }
+
+        [Theory]
+        [InlineData((CborConformanceLevel)(-1))]
+        internal static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborReader(Array.Empty<byte>(), conformanceLevel: level));
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new[] { x });

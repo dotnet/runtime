@@ -23,6 +23,16 @@
 #pragma pack(push, 1)
 // since we are placing code, we want byte packing of the structs
 
+// Codes of the instruction in the stub where the instruction access violation
+// is converted to NullReferenceException at the caller site.
+#ifdef UNIX_AMD64_ABI
+#define X64_INSTR_CMP_IND_THIS_REG_RAX 0x073948
+#define X64_INSTR_MOV_RAX_IND_THIS_REG 0x078b48
+#else // UNIX_AMD64_ABI
+#define X64_INSTR_CMP_IND_THIS_REG_RAX 0x013948
+#define X64_INSTR_MOV_RAX_IND_THIS_REG 0x018b48
+#endif // UNIX_AMD64_ABI
+
 #define USES_LOOKUP_STUBS       1
 
 /*********************************************************************************************
@@ -594,13 +604,9 @@ void DispatchHolder::InitializeStatic()
     dispatchInit._entryPoint [0]      = 0x48;
     dispatchInit._entryPoint [1]      = 0xB8;
     dispatchInit._expectedMT          = 0xcccccccccccccccc;
-    dispatchInit.part1 [0]            = 0x48;
-    dispatchInit.part1 [1]            = 0x39;
-#ifdef UNIX_AMD64_ABI
-    dispatchInit.part1 [2]            = 0x07; // RDI
-#else
-    dispatchInit.part1 [2]            = 0x01; // RCX
-#endif
+    dispatchInit.part1 [0]            = X64_INSTR_CMP_IND_THIS_REG_RAX & 0xff;
+    dispatchInit.part1 [1]            = (X64_INSTR_CMP_IND_THIS_REG_RAX >> 8) & 0xff;
+    dispatchInit.part1 [2]            = (X64_INSTR_CMP_IND_THIS_REG_RAX >> 16) & 0xff;
     dispatchInit.nopOp                = 0x90;
 
     // Short dispatch stub initialization
@@ -686,13 +692,9 @@ void ResolveHolder::InitializeStatic()
     resolveInit._resolveEntryPoint [1] = 0x49;
     resolveInit._resolveEntryPoint [2] = 0xBA;
     resolveInit._cacheAddress          = 0xcccccccccccccccc;
-    resolveInit.part1 [ 0]             = 0x48;
-    resolveInit.part1 [ 1]             = 0x8B;
-#ifdef UNIX_AMD64_ABI
-    resolveInit.part1 [ 2]             = 0x07; // RDI
-#else
-    resolveInit.part1 [ 2]             = 0x01; // RCX
-#endif
+    resolveInit.part1 [ 0]             = X64_INSTR_MOV_RAX_IND_THIS_REG & 0xff;
+    resolveInit.part1 [ 1]             = (X64_INSTR_MOV_RAX_IND_THIS_REG >> 8) & 0xff;
+    resolveInit.part1 [ 2]             = (X64_INSTR_MOV_RAX_IND_THIS_REG >> 16) & 0xff;
     resolveInit.part1 [ 3]             = 0x48;
     resolveInit.part1 [ 4]             = 0x8B;
     resolveInit.part1 [ 5]             = 0xD0;

@@ -20,15 +20,7 @@
 #include "posterror.h"
 #include "mdfileformat.h"
 #include "sstring.h"
-
-//#CLRRuntimeHostInternal_GetImageVersionString
-// External implementation of call to code:ICLRRuntimeHostInternal::GetImageVersionString.
-// Implemented in clr.dll and mscordbi.dll.
-HRESULT
-CLRRuntimeHostInternal_GetImageVersionString(
-  __out_ecount(*pcchBuffer)
-    LPWSTR  wszBuffer,
-    DWORD * pcchBuffer);
+#include "clrversion.h"
 
 TiggerStorage::TiggerStorage() :
     m_pStgIO(0),
@@ -134,42 +126,7 @@ HRESULT
 TiggerStorage::GetDefaultVersion(
     LPCSTR *ppVersion)
 {
-    static LPSTR g_pDefaultVersion;
-
-    if (g_pDefaultVersion == NULL)
-    {
-#ifndef DACCESS_COMPILE
-        HRESULT hr;
-
-        WCHAR wszVersion[_MAX_PATH];
-        DWORD cchVersion = _MAX_PATH;
-        //#CallTo_CLRRuntimeHostInternal_GetImageVersionString
-        IfFailRet(CLRRuntimeHostInternal_GetImageVersionString(wszVersion, &cchVersion));
-
-        CHAR szVersion[_MAX_PATH];
-        DWORD dwSize = WszWideCharToMultiByte(CP_UTF8, 0, wszVersion, -1, szVersion, _MAX_PATH, NULL, NULL);
-        if (dwSize == 0)
-        {
-            _ASSERTE_MSG(FALSE, "WideCharToMultiByte conversion failed");
-            szVersion[0] = 0;
-            dwSize = 1;
-        }
-
-        NewArrayHolder<CHAR> pVersion = new (nothrow) CHAR[dwSize];
-        IfNullRet(pVersion);
-
-        memcpy(pVersion, szVersion, dwSize);
-
-        if (InterlockedCompareExchangeT<CHAR *>(&g_pDefaultVersion, pVersion, NULL) == NULL)
-        {   // We won the initialization race
-            pVersion.SuppressRelease();
-        }
-#else
-        DacNotImpl();
-#endif //DACCESS_COMPILE
-    }
-
-    *ppVersion = g_pDefaultVersion;
+    *ppVersion = CLR_METADATA_VERSION;
     return S_OK;
 } // TiggerStorage::GetDefaultVersion
 

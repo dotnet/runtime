@@ -67,11 +67,11 @@
         <TargetPath>tools</TargetPath>
       </RuntimeFiles>
 
-      <RuntimeFiles Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'"
+      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="@(MonoCrossFiles)">
         <TargetPath>runtimes/$(PackageRID)/native/cross</TargetPath>
       </RuntimeFiles>
-      <RuntimeFiles Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'"
+      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="@(MonoIncludeFiles)">
         <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.InteropServices;
 
 namespace System.Xml
@@ -60,6 +61,7 @@ namespace System.Xml
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             int len = key.Length;
             if (len == 0)
             {
@@ -75,6 +77,7 @@ namespace System.Xml
                     return e.str;
                 }
             }
+
             return AddEntry(key, hashCode);
         }
 
@@ -112,18 +115,20 @@ namespace System.Xml
                     return e.str;
                 }
             }
+
             return AddEntry(new string(key, start, len), hashCode);
         }
 
         /// <devdoc>
         ///      Find the matching string in the NameTable.
         /// </devdoc>
-        public override string Get(string value)
+        public override string? Get(string value)
         {
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
+
             if (value.Length == 0)
             {
                 return string.Empty;
@@ -138,6 +143,7 @@ namespace System.Xml
                     return e.str;
                 }
             }
+
             return null;
         }
 
@@ -145,7 +151,7 @@ namespace System.Xml
         ///      Find the matching string atom given a range of
         ///      characters.
         /// </devdoc>
-        public override string Get(char[] key, int start, int len)
+        public override string? Get(char[] key, int start, int len)
         {
             if (len == 0)
             {
@@ -172,6 +178,7 @@ namespace System.Xml
                     return e.str;
                 }
             }
+
             return null;
         }
 
@@ -203,10 +210,12 @@ namespace System.Xml
             int index = hashCode & _mask;
             Entry e = new Entry(str, hashCode, _entries[index]);
             _entries[index] = e;
+
             if (_count++ == _mask)
             {
                 Grow();
             }
+
             return e.str;
         }
 
@@ -240,6 +249,7 @@ namespace System.Xml
             {
                 return false;
             }
+
             // use array.Length to eliminate the range check
             for (int i = 0; i < str1.Length; i++)
             {
@@ -250,6 +260,7 @@ namespace System.Xml
             }
             return true;
         }
+
         private static int ComputeHash32(char[] key, int start, int len)
         {
             ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<char>(key, start, len));

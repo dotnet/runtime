@@ -132,6 +132,10 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
+#if !HAVE_NON_LEGACY_STATFS
+        return 0;
+#else
+
         struct statfs stats;
         int result = statfs("/sys/fs/cgroup", &stats);
         if (result != 0)
@@ -145,6 +149,7 @@ private:
                 assert(!"Unexpected file system type for /sys/fs/cgroup");
                 return 0;
         }
+#endif
     }
 
     static bool IsCGroup1MemorySubsystem(const char *strTok){

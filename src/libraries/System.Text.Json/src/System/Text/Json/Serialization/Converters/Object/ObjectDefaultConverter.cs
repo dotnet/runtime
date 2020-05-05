@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.Current.JsonClassInfo.CreateObject == null)
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(state.Current.JsonClassInfo.Type);
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(state.Current.JsonClassInfo.Type, ref reader, ref state);
                 }
 
                 obj = state.Current.JsonClassInfo.CreateObject!()!;
@@ -74,13 +74,13 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (state.Current.ObjectState < StackFrameObjectState.MetadataPropertyValue)
+                if (state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (shouldReadPreservedReferences)
                     {
                         if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                         {
-                            if (state.Current.ObjectState == StackFrameObjectState.MetadataRefPropertyEndObject)
+                            if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                             {
                                 value = (T)state.Current.ReturnValue!;
                                 return true;
@@ -93,14 +93,14 @@ namespace System.Text.Json.Serialization.Converters
                         }
                     }
 
-                    state.Current.ObjectState = StackFrameObjectState.MetadataPropertyValue;
+                    state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
                     if (state.Current.JsonClassInfo.CreateObject == null)
                     {
-                        ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(state.Current.JsonClassInfo.Type);
+                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(state.Current.JsonClassInfo.Type, ref reader, ref state);
                     }
 
                     obj = state.Current.JsonClassInfo.CreateObject!()!;

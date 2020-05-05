@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NETStandardVersion Condition="'$(TargetsNetStandard)' == 'true'">$(TargetFramework.SubString(11))</NETStandardVersion>
+    <NETStandardVersion Condition="$(TargetFramework.StartsWith('netstandard'))">$(TargetFramework.SubString(11))</NETStandardVersion>
     <IsNETStandard1x Condition="$(NETStandardVersion.StartsWith('1.'))">true</IsNETStandard1x>
     <IsNETStandard2x Condition="$(NETStandardVersion.StartsWith('2.'))">true</IsNETStandard2x>
     <BinPlaceRef>true</BinPlaceRef>

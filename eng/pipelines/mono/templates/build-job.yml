@@ -74,13 +74,13 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'Android') }}:
       - name: osOverride
         value: -os Android
-    - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+    - ${{ if eq(parameters.osGroup, 'Browser') }}:
       - name: EMSDK_PATH
         value: /usr/local/emscripten
       - name: archType
         value: wasm
       - name: osOverride
-        value: '-os WebAssembly'
+        value: '-os Browser'
     - ${{ parameters.variables }}
 
     steps:
@@ -97,13 +97,25 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage before Build
+
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
+
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
 
     # Publish product output directory for consumption by tests.
     - template: /eng/pipelines/common/upload-artifact-step.yml

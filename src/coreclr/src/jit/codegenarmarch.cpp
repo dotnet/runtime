@@ -189,6 +189,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode);
             break;
 
+#if defined(TARGET_ARM64)
+        case GT_BSWAP:
+        case GT_BSWAP16:
+            genCodeForBswap(treeNode);
+            break;
+#endif // defined(TARGET_ARM64)
+
         case GT_MOD:
         case GT_UMOD:
         case GT_DIV:
@@ -391,8 +398,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_MEMORYBARRIER:
-            instGen_MemoryBarrier();
+        {
+            CodeGen::BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+
+            instGen_MemoryBarrier(barrierKind);
             break;
+        }
 
 #ifdef TARGET_ARM64
         case GT_XCHG:
@@ -468,7 +480,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LABEL:
             genPendingCallLabel = genCreateTempLabel();
+#if defined(TARGET_ARM)
+            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
+#else
             emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#endif
             break;
 
         case GT_STORE_OBJ:
@@ -1775,12 +1791,40 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     NYI_IF(targetType == TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
     assert(targetReg != REG_NA);
 
-    emitAttr size   = emitTypeSize(targetType);
     unsigned offs   = tree->GetLclOffs();
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-    emit->emitIns_R_S(ins_Load(targetType), emitActualTypeSize(targetType), targetReg, varNum, offs);
+#ifdef TARGET_ARM
+    if (tree->IsOffsetMisaligned())
+    {
+        // Arm supports unaligned access only for integer types,
+        // load the floating data as 1 or 2 integer registers and convert them to float.
+        regNumber addr = tree->ExtractTempReg();
+        emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offs);
+
+        if (targetType == TYP_FLOAT)
+        {
+            regNumber floatAsInt = tree->GetSingleTempReg();
+            emit->emitIns_R_R(INS_ldr, EA_4BYTE, floatAsInt, addr);
+            emit->emitIns_R_R(INS_vmov_i2f, EA_4BYTE, targetReg, floatAsInt);
+        }
+        else
+        {
+            regNumber halfdoubleAsInt1 = tree->ExtractTempReg();
+            regNumber halfdoubleAsInt2 = tree->GetSingleTempReg();
+            emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, halfdoubleAsInt1, addr, 0);
+            emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, halfdoubleAsInt2, addr, 4);
+            emit->emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, targetReg, halfdoubleAsInt1, halfdoubleAsInt2);
+        }
+    }
+    else
+#endif // TARGET_ARM
+    {
+        emitAttr    attr = emitActualTypeSize(targetType);
+        instruction ins  = ins_Load(targetType);
+        emit->emitIns_R_S(ins, attr, targetReg, varNum, offs);
+    }
 
     genProduceReg(tree);
 }
@@ -1905,11 +1949,9 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (emitBarrier)
     {
-#ifdef TARGET_ARM64
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
-#else
-        instGen_MemoryBarrier();
-#endif
+        // when INS_ldar* could not be used for a volatile load,
+        // we use an ordinary load followed by a load barrier.
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
     }
 
     genProduceReg(tree);
@@ -1941,13 +1983,8 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 
     if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
-#ifdef TARGET_ARM64
-        // issue a INS_BARRIER_ISHLD after a volatile CpBlk operation
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
-#else
-        // issue a full memory barrier after a volatile CpBlk operation
-        instGen_MemoryBarrier();
-#endif // TARGET_ARM64
+        // issue a load barrier after a volatile CpBlk operation
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
     }
 }
 
@@ -2168,6 +2205,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (node->IsVolatile())
     {
+        // issue a full memory barrier before a volatile CpBlk operation
         instGen_MemoryBarrier();
     }
 
@@ -2265,11 +2303,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (node->IsVolatile())
     {
-#ifdef TARGET_ARM64
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
-#else
-        instGen_MemoryBarrier();
-#endif
+        // issue a load barrier after a volatile CpBlk operation
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
     }
 }
 
@@ -2692,7 +2727,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // if it was a pinvoke we may have needed to get the address of a label
     if (genPendingCallLabel)
     {
-        assert(call->IsUnmanaged());
         genDefineInlineTempLabel(genPendingCallLabel);
         genPendingCallLabel = nullptr;
     }

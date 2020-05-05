@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <!-- Generate Mono corelib version file -->
   <Import Project="GenerateMonoCoreLibVersionFile.targets" />
 

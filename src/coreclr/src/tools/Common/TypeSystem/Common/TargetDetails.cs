@@ -316,14 +316,15 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Maximum number of elements in a HFA type.
+        /// Maximum number of elements in a homogeneous aggregate type.
         /// </summary>
-        public int MaximumHfaElementCount
+        public int MaxHomogeneousAggregateElementCount
         {
             get
             {
-                // There is a hard limit of 4 elements on an HFA type, see
+                // There is a hard limit of 4 elements on an HFA/HVA type, see
                 // https://devblogs.microsoft.com/cppblog/introducing-vector-calling-convention/
+                // and Procedure Call Standard for the Arm 64-bit Architecture.
                 Debug.Assert(Architecture == TargetArchitecture.ARM ||
                     Architecture == TargetArchitecture.ARM64 ||
                     Architecture == TargetArchitecture.X64 ||

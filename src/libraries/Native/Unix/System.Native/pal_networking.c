@@ -23,6 +23,10 @@
 #elif HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
+#if HAVE_SYS_PROCINFO_H
+#include <sys/proc_info.h>
+#include <libproc.h>
+#endif
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -678,7 +682,7 @@ int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t sock
 
     if (!TryConvertAddressFamilyPlatformToPal(sockAddr->sa_family, addressFamily))
     {
-        return Error_EAFNOSUPPORT;
+        *addressFamily = AddressFamily_AF_UNKNOWN;
     }
 
     return Error_SUCCESS;
@@ -1906,7 +1910,7 @@ int32_t SystemNative_GetSockOpt(
     int fd = ToFileDescriptor(socket);
 
     //
-    // Handle some special cases for compatibility with Windows
+    // Handle some special cases for compatibility with Windows and OSX
     //
     if (socketOptionLevel == SocketOptionLevel_SOL_SOCKET)
     {
@@ -1943,6 +1947,25 @@ int32_t SystemNative_GetSockOpt(
 #endif
             return Error_SUCCESS;
         }
+#if defined(__APPLE__) && HAVE_SYS_PROCINFO_H
+        // OSX does not have SO_ACCEPTCONN getsockopt.
+        else if (socketOptionName == SocketOptionName_SO_ACCEPTCONN)
+        {
+            if (*optionLen != sizeof(int32_t))
+            {
+                return Error_EINVAL;
+            }
+
+            struct socket_fdinfo fdi;
+            if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+            {
+                return SystemNative_ConvertErrorPlatformToPal(errno);
+            }
+            int value = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
+            *(int32_t*)optionValue = value;
+            return Error_SUCCESS;
+        }
+#endif
     }
 
     int optLevel, optName;
@@ -2422,15 +2445,39 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     return Error_SUCCESS;
 }
 
-int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType)
+int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
 {
-    if (addressFamily == NULL || socketType == NULL || protocolType == NULL)
+    if (addressFamily == NULL || socketType == NULL || protocolType == NULL || isListening == NULL)
     {
         return Error_EFAULT;
     }
 
     int fd = ToFileDescriptor(socket);
 
+#if HAVE_SYS_PROCINFO_H
+    struct socket_fdinfo fdi;
+    if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+    {
+        return Error_EFAULT;
+    }
+
+    if (!TryConvertAddressFamilyPlatformToPal((sa_family_t)fdi.psi.soi_family, addressFamily))
+    {
+        *addressFamily = AddressFamily_AF_UNKNOWN;
+    }
+
+    if (!TryConvertSocketTypePlatformToPal(fdi.psi.soi_type, socketType))
+    {
+        *socketType = SocketType_UNKNOWN;
+    }
+
+    if (!TryConvertProtocolTypePlatformToPal(*addressFamily, fdi.psi.soi_protocol, protocolType))
+    {
+        *protocolType = ProtocolType_PT_UNKNOWN;
+    }
+
+    *isListening = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
+#else
 #ifdef SO_DOMAIN
     int domainValue;
     socklen_t domainLength = sizeof(int);
@@ -2461,6 +2508,17 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
         *protocolType = ProtocolType_PT_UNKNOWN;
     }
 
+    int listeningValue;
+    socklen_t listeningLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &listeningValue, &listeningLength) == 0)
+    {
+        *isListening = (listeningValue != 0);
+    }
+    else
+    {
+        *isListening = 0;
+    }
+#endif
     return Error_SUCCESS;
 }
 
@@ -2968,6 +3026,11 @@ void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, i
     *pathOffset = offsetof(struct sockaddr_un, sun_path);
     *pathSize = sizeof(domainSocket.sun_path);
     *addressSize = sizeof(domainSocket);
+}
+
+int32_t SystemNative_GetMaximumAddressSize(void)
+{
+    return sizeof(struct sockaddr_storage);
 }
 
 int32_t SystemNative_Disconnect(intptr_t socket)

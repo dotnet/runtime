@@ -21,8 +21,7 @@
 
 
 // Get version numbers for IPCHeader stamp
-#include "ndpversion.h"
-
+#include "clrversion.h"
 #include "dbgappdomain.h"
 
 #include "./common.h"
