@@ -91,7 +91,7 @@ jobs:
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           # Download full product dependencies for mono or test
           - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
 
