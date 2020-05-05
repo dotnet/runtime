@@ -3438,13 +3438,13 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 #if defined(ENABLE_HYBRID_SUSPEND) || defined(ENABLE_COOP_SUSPEND)
 	mono_threads_safepoint ();
 #endif
+main_loop:
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
 	 * but it may be useful for debug
 	 */
 	while (1) {
 		MintOpcode opcode;
-main_loop:
 		/* g_assert (sp >= frame->stack); */
 		/* g_assert(vt_sp - vtalloc <= frame->imethod->vt_stack_size); */
 		DUMP_INSTR();

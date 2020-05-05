@@ -17,7 +17,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.cs" />
@@ -75,7 +75,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
@@ -87,7 +87,7 @@
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Reference Include="System.Runtime" />
     <Reference Include="System.IO" />
     <Reference Include="System.Threading.Tasks" />

@@ -215,7 +215,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        emitSize = EA_SIZE(node->gtSIMDSize);
+        emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->gtSIMDSize));
         opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
 
         if ((opt == INS_OPTS_1D) && (intrin.category == HW_Category_SimpleSIMD))

@@ -11,7 +11,7 @@
     <Compile Include="CtorsStreamTests.cs" />
     <Compile Include="DelimiterWriteMethodTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="ConsoleTraceListenerTests.cs" />
     <Compile Include="XmlWriterTraceListenerTests.cs" />
   </ItemGroup>

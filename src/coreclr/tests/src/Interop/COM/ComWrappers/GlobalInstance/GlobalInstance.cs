@@ -12,7 +12,7 @@ namespace ComWrappersTests.GlobalInstance
     using ComWrappersTests.Common;
     using TestLibrary;
 
-    class Program
+    partial class Program
     {
         struct MarshalInterface
         {
@@ -105,7 +105,7 @@ namespace ComWrappersTests.GlobalInstance
 
             public bool ReturnInvalid { get; set; }
 
-            public object LastComputeVtablesObject { get; private set; }
+            public object LastComputeVtablesObject { get; private set; } = null;
 
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
@@ -227,23 +227,43 @@ namespace ComWrappersTests.GlobalInstance
             }
         }
 
-        private static void ValidateRegisterAsGlobalInstance()
+        private static void ValidateRegisterForMarshalling()
         {
-            Console.WriteLine($"Running {nameof(ValidateRegisterAsGlobalInstance)}...");
+            Console.WriteLine($"Running {nameof(ValidateRegisterForMarshalling)}...");
 
             var wrappers1 = GlobalComWrappers.Instance;
-            wrappers1.RegisterAsGlobalInstance();
+            ComWrappers.RegisterForMarshalling(wrappers1);
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    wrappers1.RegisterAsGlobalInstance();
+                    ComWrappers.RegisterForMarshalling(wrappers1);
                 }, "Should not be able to re-register for global ComWrappers");
 
             var wrappers2 = new GlobalComWrappers();
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    wrappers2.RegisterAsGlobalInstance();
+                    ComWrappers.RegisterForMarshalling(wrappers2);
+                }, "Should not be able to reset for global ComWrappers");
+        }
+
+        private static void ValidateRegisterForTrackerSupport()
+        {
+            Console.WriteLine($"Running {nameof(ValidateRegisterForTrackerSupport)}...");
+
+            var wrappers1 = GlobalComWrappers.Instance;
+            ComWrappers.RegisterForTrackerSupport(wrappers1);
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    ComWrappers.RegisterForTrackerSupport(wrappers1);
+                }, "Should not be able to re-register for global ComWrappers");
+
+            var wrappers2 = new GlobalComWrappers();
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    ComWrappers.RegisterForTrackerSupport(wrappers2);
                 }, "Should not be able to reset for global ComWrappers");
         }
 
@@ -417,34 +437,6 @@ namespace ComWrappersTests.GlobalInstance
             // Trigger the thread lifetime end API and verify the callback occurs.
             int hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
             Assert.AreEqual(GlobalComWrappers.ReleaseObjectsCallAck, hr);
-        }
-
-        static int Main(string[] doNotUse)
-        {
-            try
-            {
-                // The first test registereds a global ComWrappers instance
-                // Subsequents tests assume the global instance has already been registered.
-                ValidateRegisterAsGlobalInstance();
-
-                ValidateMarshalAPIs(validateUseRegistered: true);
-                ValidateMarshalAPIs(validateUseRegistered: false);
-
-                ValidatePInvokes(validateUseRegistered: true);
-                ValidatePInvokes(validateUseRegistered: false);
-
-                ValidateComActivation(validateUseRegistered: true);
-                ValidateComActivation(validateUseRegistered: false);
-
-                ValidateNotifyEndOfReferenceTrackingOnThread();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Test Failure: {e}");
-                return 101;
-            }
-
-            return 100;
         }
     }
 }

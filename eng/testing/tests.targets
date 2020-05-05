@@ -1,7 +1,5 @@
 <Project>
   <PropertyGroup>
-    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
-
     <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">AppleRunnerTemplate.sh</RunScriptInputName>
@@ -18,7 +16,6 @@
 
     <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
     <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
-
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
@@ -38,13 +35,11 @@
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunArguments Condition="'$(TargetOS)' == 'Windows_NT'">$(RunArguments) %RSP_FILE%</RunArguments>
-      <RunArguments Condition="'$(TargetOS)' != 'Windows_NT'">$(RunArguments) $RSP_FILE</RunArguments>
+      <RunScriptCommand Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
 
-      <!-- Escape arguments with user inputs. -->
-      <RunArguments>$([MSBuild]::Escape('$(RunArguments)'))</RunArguments>
-
-      <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(RunCommand) $(RunArguments)</RunScriptCommand>
+      <!-- Escape potential user input. -->
+      <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
     </PropertyGroup>
 
     <!-- Set $(TestDebugger) to eg c:\debuggers\windbg.exe to run tests under a debugger. -->
@@ -74,28 +69,10 @@
                        TemplatePath="$(RunScriptInputPath)"
                        OutputPath="$(RunScriptOutputPath)" />
 
-    <Exec Condition="'$(TargetOS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
-
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
   </Target>
 
-  <Target Name="ValidateTestPlatform">
-    <ItemGroup>
-      <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <TestDisabled Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)' or '$(ConfigurationErrorMsg)' != ''">true</TestDisabled>
-    </PropertyGroup>
-
-    <Message Text="ValidateTestPlatform found TargetOS of [$(TargetOS)]." Importance="Low" />
-
-    <Message Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)'"
-             Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
-  </Target>
-
-  <Target Name="RunTests"
-          Condition="'$(TestDisabled)' != 'true'"
-          DependsOnTargets="ValidateTestPlatform">
+  <Target Name="RunTests">
     <PropertyGroup>
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
@@ -111,7 +88,7 @@
     </Exec>
 
     <PropertyGroup Condition="'$(TestRunExitCode)' != '0'">
-      <TestResultsPath>$(RunWorkingDirectory)$(TestResultsName)</TestResultsPath>
+      <TestResultsPath>$(OutputPath)$(TestResultsName)</TestResultsPath>
       <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
       <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
     </PropertyGroup>
@@ -231,6 +208,7 @@
     <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
 
+  <Import Project="$(MSBuildThisFileDirectory)runsettings.targets" />
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
 
   <!-- Main test targets -->

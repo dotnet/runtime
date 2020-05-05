@@ -7,7 +7,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <DefaultReferenceExclusions Include="System.Diagnostics.Debug" />
     <DefaultReferenceExclusions Include="System.Runtime.Extensions" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
@@ -22,7 +22,7 @@
     <Compile Include="EmptyAttributeTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="DebuggerTests.cs" />
     <Compile Include="DebugTests.cs" />
     <Compile Include="DebugTestsNoListeners.cs" />

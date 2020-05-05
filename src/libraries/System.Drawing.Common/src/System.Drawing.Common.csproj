@@ -164,7 +164,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <!-- Windows-specific -->
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="SRDescriptionAttribute.cs" />
     <Compile Include="System\Drawing\Bitmap.Windows.cs" />
     <Compile Include="System\Drawing\BitmapSelector.cs" />

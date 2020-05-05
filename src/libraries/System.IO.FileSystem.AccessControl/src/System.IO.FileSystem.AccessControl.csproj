@@ -11,11 +11,11 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
   </ItemGroup>
   <!-- Source includes -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and !$(TargetFramework.StartsWith('net4'))">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
@@ -95,22 +95,22 @@
     <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs"
              Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\IO\FileSystemAclExtensions.net46.cs" />
   </ItemGroup>
   <!-- Reference includes -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and !$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />

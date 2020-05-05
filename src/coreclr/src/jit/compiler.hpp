@@ -702,6 +702,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
 
     if (varTypeIsStruct(type))
     {
+        assert(typeClass != nullptr);
         size = info.compCompHnd->getClassSize(typeClass);
         if (forReturn)
         {
@@ -1807,8 +1808,11 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
     //
     // Increment counts on the local itself.
     //
-    if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    if ((lvType != TYP_STRUCT) || (promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT))
     {
+        // We increment ref counts of this local for primitive types, including structs that have been retyped as their
+        // only field, as well as for structs whose fields are not independently promoted.
+
         //
         // Increment lvRefCnt
         //

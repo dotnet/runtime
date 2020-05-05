@@ -95,14 +95,14 @@
     <Compile Include="System\Reflection\Internal\Utilities\BitArithmetic.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\StringUtils.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EmptyArray.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" Condition="'$(TargetsNetCoreApp)' != 'true'" />
-    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" Condition="!$(TargetFramework.StartsWith('netcoreapp'))" />
+    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.netstandard1.1.cs" Condition="'$(TargetFramework)' == 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\Hash.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableByteArrayInterop.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" Condition="'$(TargetsNetCoreApp)' != 'true'" />
+    <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" Condition="!$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.netstandard1.1.cs" Condition="'$(TargetFramework)' == 'netstandard1.1'" />
@@ -261,6 +261,6 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.IO.MemoryMappedFiles" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
-    <Reference Include="System.Buffers" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Reference Include="System.Buffers" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
   </ItemGroup>
 </Project>

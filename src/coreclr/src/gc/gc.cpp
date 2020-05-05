@@ -15020,11 +15020,12 @@ size_t gc_heap::get_total_allocated_since_last_gc()
 // Gets what's allocated on both SOH, LOH, etc that hasn't been collected.
 size_t gc_heap::get_current_allocated()
 {
-    size_t current_alloc = 0;
-    for (int i = max_generation; i < total_generation_count; i++)
+    dynamic_data* dd = dynamic_data_of (0);
+    size_t current_alloc = dd_desired_allocation (dd) - dd_new_allocation (dd);
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
     {
         dynamic_data* dd = dynamic_data_of (i);
-        current_alloc = dd_desired_allocation (dd) - dd_new_allocation (dd);
+        current_alloc += dd_desired_allocation (dd) - dd_new_allocation (dd);
     }
     return current_alloc;
 }

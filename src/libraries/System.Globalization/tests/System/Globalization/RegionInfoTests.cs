@@ -52,8 +52,9 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("name", () => new RegionInfo(name));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        public void CurrentRegion_Icu()
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CurrentRegion_Unix()
         {
             using (new ThreadCultureChange("en-US"))
             {
@@ -63,8 +64,9 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
-        public void TestCurrentRegion_Nls()
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CurrentRegion_Windows()
         {
             RemoteExecutor.Invoke(() =>
             {

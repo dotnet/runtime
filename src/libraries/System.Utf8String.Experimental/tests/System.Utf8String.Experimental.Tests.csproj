@@ -38,13 +38,13 @@
     <Compile Include="Xunit\SpanAssert.cs" />
     <Compile Include="System\Utf8TestUtilities.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND $(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="System\MemoryTests.netcoreapp.cs" />
     <Compile Include="System\ReflectionTests.netcoreapp.cs" />
     <Compile Include="System\Utf8ExtensionsTests.netcoreapp.cs" />
     <Compile Include="System\Utf8StringTests.Ctor.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\MemoryTests.netfx.cs" />
   </ItemGroup>
 </Project>

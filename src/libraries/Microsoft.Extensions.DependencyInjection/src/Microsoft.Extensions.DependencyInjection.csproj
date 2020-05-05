@@ -20,19 +20,19 @@
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true' Or '$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) Or '$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.ComponentModel" />

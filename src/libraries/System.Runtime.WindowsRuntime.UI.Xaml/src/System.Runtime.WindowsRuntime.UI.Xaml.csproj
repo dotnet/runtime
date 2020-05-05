@@ -10,7 +10,7 @@
     <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="System\Runtime\InteropServices\HResults.cs" />
     <Compile Include="System\Windows\CornerRadius.cs" />
     <Compile Include="System\Windows\Duration.cs" />
@@ -29,13 +29,13 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs"
              Link="Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime.WindowsRuntime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Reference Include="System.Runtime" />
     <Reference Include="System.IO" />
     <Reference Include="System.Threading.Tasks" />

@@ -121,12 +121,8 @@
   </Target>
 
   <Target Name="DetermineTestOutputDirectory">
-    <GetTargetMachineInfo>
-      <Output TaskParameter="RuntimeIdentifier" PropertyName="_HostRid" />
-    </GetTargetMachineInfo>
-
     <PropertyGroup>
-      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(_HostRid)</TestTargetRid>
+      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(HostRuntimeIdentifier)</TestTargetRid>
       <TestsOutputName Condition="'$(TestsOutputName)' == ''">$(MSBuildProjectName)</TestsOutputName>
 
       <TestsOutputRootDir Condition="'$(TestsOutputRootDir)' == ''">$(ArtifactsDir)tests/$(Configuration)/</TestsOutputRootDir>
