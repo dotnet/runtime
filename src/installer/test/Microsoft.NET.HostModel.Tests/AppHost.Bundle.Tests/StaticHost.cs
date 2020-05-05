@@ -24,8 +24,8 @@ namespace AppHost.Bundle.Tests
         }
 
         // This helper is used in lieu of SDK support for publishing apps using the singlefilehost.
-        // It replaces the apphost with singlefilehost, and along with appropeiate app.dll updates in the host.
-        // For now, we heave behind the hostpolicy and hostfxr DLLs in the publish directory, because
+        // It replaces the apphost with singlefilehost, and along with appropriate app.dll updates in the host.
+        // For now, we leave behind the hostpolicy and hostfxr DLLs in the publish directory, because
         // removing them requires deps.json update.
         void ReplaceApphostWithStaticHost(TestProjectFixture fixture)
         {
@@ -82,7 +82,7 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
+                TestFixture = new TestProjectFixture("StaticHostApp", RepoDirectories);
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid, 
