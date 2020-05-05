@@ -14,9 +14,5 @@ namespace System.Globalization
                 return !Invariant && Interop.Globalization.LoadICU() == 0;
             }
         }
-        private static bool GetGlobalizationInvariantMode()
-        {
-            return Invariant;
-        }
     }
 }
