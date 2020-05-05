@@ -53,7 +53,7 @@
     <Compile Include="XmlLicenseEncryptedRef.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="KeyInfo_ArbitraryElements.cs" />
     <Compile Include="Reference_ArbitraryElements.cs" />
     <Compile Include="Signature_ArbitraryElements.cs" />

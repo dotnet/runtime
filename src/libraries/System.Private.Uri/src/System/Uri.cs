@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Diagnostics;
-using System.Threading;
 using Internal.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Threading;
 
 namespace System
 {
@@ -108,7 +108,6 @@ namespace System
             RestUnicodeNormalized = 0x800000000,
             UnicodeHost = 0x1000000000,
             IntranetUri = 0x2000000000,
-            UseOrigUncdStrOffset = 0x4000000000,
             // Is this component Iri canonical
             UserIriCanonical = 0x8000000000,
             PathIriCanonical = 0x10000000000,
@@ -251,11 +250,8 @@ namespace System
         //
         // Checks if Iri parsing is allowed by the syntax & by config
         //
-        private bool _iriParsing;
+        private bool IriParsing => IriParsingStatic(_syntax);
 
-        //
-        // Statically checks if Iri parsing is allowed by the syntax & by config
-        //
         internal static bool IriParsingStatic(UriParser? syntax)
         {
             return syntax is null || syntax.InFact(UriSyntaxFlags.AllowIriParsing);
@@ -332,7 +328,7 @@ namespace System
                 {
                     /* Optimization for a canonical DNS name
                     *  ATTN: the host string won't be created,
-                    *  Hence ALL m_Info.Host callers first call EnsureHostString(false)
+                    *  Hence ALL _info.Host callers first call EnsureHostString(false)
                     *  For example IsLoopBack property is one of such callers.
                     */
                     return;
@@ -938,7 +934,7 @@ namespace System
                 Debug.Assert(_info.Host != null);
                 int start;
 
-                // Do we have a valid local path right in m_string?
+                // Do we have a valid local path right in _string?
                 if (NotAny(Flags.HostNotCanonical | Flags.PathNotCanonical | Flags.ShouldBeCompressed))
                 {
                     start = IsUncPath ? _info.Offset.Host - 2 : _info.Offset.Path;
@@ -1111,27 +1107,11 @@ namespace System
         }
 
         //
-        //  Was the original string switched from m_String to m_OriginalUnicodeString
-        //  Will happen when Iri is turned on and we have unicode chars or of idn is
-        //  is on and we have an idn or unicode host.
+        //  Gets the exact string passed by a user.
+        //  The original string will switched from _string to _originalUnicodeString if
+        //  iri is turned on and we have non-ascii chars
         //
-        private bool OriginalStringSwitched
-        {
-            get
-            {
-                return (_iriParsing && InFact(Flags.HasUnicode));
-            }
-        }
-
-        //
-        //    Gets the exact string passed by a user.
-        public string OriginalString
-        {
-            get
-            {
-                return OriginalStringSwitched ? _originalUnicodeString : _string;
-            }
-        }
+        public string OriginalString => _originalUnicodeString ?? _string;
 
         //
         //    Gets the host string that is unescaped and if it's Ipv6 host,
@@ -1149,7 +1129,7 @@ namespace System
 
                 EnsureHostString(false);
 
-                if (!string.IsNullOrEmpty(_info.DnsSafeHost))
+                if (_info.DnsSafeHost != null)
                 {
                     // Cached
                     return _info.DnsSafeHost;
@@ -1559,13 +1539,13 @@ namespace System
         {
             if (_syntax == null)
             {
-                return (_iriParsing && InFact(Flags.HasUnicode)) ? _string : OriginalString;
+                return _string;
             }
 
             EnsureUriInfo();
-            if ((object?)_info.String == null)
+            if (_info.String is null)
             {
-                if (Syntax!.IsSimple)
+                if (_syntax.IsSimple)
                     _info.String = GetComponentsHelper(UriComponents.AbsoluteUri, V1ToStringUnescape);
                 else
                     _info.String = GetParts(UriComponents.AbsoluteUri, UriFormat.SafeUnescaped);
@@ -1667,19 +1647,19 @@ namespace System
 
             if (NotAny(Flags.AllUriInfoSet) || obj.NotAny(Flags.AllUriInfoSet))
             {
-                // Try raw compare for m_Strings as the last chance to keep the working set small
+                // Try raw compare for _strings as the last chance to keep the working set small
                 if (!IsUncOrDosPath)
                 {
                     if (_string.Length == obj._string.Length)
                     {
                         unsafe
                         {
-                            // Try case sensitive compare on m_Strings
+                            // Try case sensitive compare on _strings
                             fixed (char* selfPtr = _string)
                             {
                                 fixed (char* otherPtr = obj._string)
                                 {
-                                    // This will never go negative since m_String is checked to be a valid URI
+                                    // This will never go negative since _string is checked to be a valid URI
                                     int i = (_string.Length - 1);
                                     for (; i >= 0; --i)
                                     {
@@ -1704,7 +1684,7 @@ namespace System
             }
 
             // Note that equality test will bring the working set of both
-            // objects up to creation of m_Info.MoreInfo member
+            // objects up to creation of _info.MoreInfo member
             EnsureUriInfo();
             obj.EnsureUriInfo();
 
@@ -1784,7 +1764,7 @@ namespace System
                 }
                 unsafe
                 {
-                    // Try case sensitive compare on m_Strings
+                    // Try case sensitive compare on _strings
                     fixed (char* seltPtr = selfUrl)
                     {
                         fixed (char* otherPtr = otherUrl)
@@ -1951,9 +1931,7 @@ namespace System
 
             //STEP2: Parse up to the port
 
-            fixed (char* pUriString = ((_iriParsing &&
-                                        ((_flags & Flags.HasUnicode) != 0) &&
-                                        ((_flags & Flags.HostUnicodeNormalized) == 0)) ? _originalUnicodeString : _string))
+            fixed (char* pUriString = (_flags & Flags.HostUnicodeNormalized) == 0 ? OriginalString : _string)
             {
                 // Cut trailing spaces in _string
                 if (length > idx && UriHelper.IsLWS(pUriString[length - 1]))
@@ -2082,7 +2060,7 @@ namespace System
                     else if (_syntax.NotAny(UriSyntaxFlags.MailToLikeUri))
                     {
                         // By now we know the URI has no Authority, so if the URI must be normalized, initialize it without one.
-                        if (_iriParsing && (_flags & Flags.HasUnicode) != 0 && (_flags & Flags.HostUnicodeNormalized) == 0)
+                        if ((_flags & (Flags.HasUnicode | Flags.HostUnicodeNormalized)) == Flags.HasUnicode)
                         {
                             _string = _string.Substring(0, idx);
                         }
@@ -2100,7 +2078,7 @@ namespace System
                 else if (_syntax.NotAny(UriSyntaxFlags.MailToLikeUri))
                 {
                     // By now we know the URI has no Authority, so if the URI must be normalized, initialize it without one.
-                    if (_iriParsing && (_flags & Flags.HasUnicode) != 0 && (_flags & Flags.HostUnicodeNormalized) == 0)
+                    if ((_flags & (Flags.HasUnicode | Flags.HostUnicodeNormalized)) == Flags.HasUnicode)
                     {
                         _string = _string.Substring(0, idx);
                     }
@@ -2157,18 +2135,10 @@ namespace System
                 // is not created/canonicalized at this point.
             }
 
-            if (_iriParsing)
+            if (IriParsing && newHost != null)
             {
                 // we have a new host!
-                if (newHost != null)
-                    _string = newHost;
-
-                // Indicate to createuriinfo that offset is in m_originalUnicodeString
-                if (_iriParsing && ((_flags & Flags.HasUnicode) != 0))
-                {
-                    // offset in Flags.IndexMask refers to m_originalUnicodeString
-                    _flags |= Flags.UseOrigUncdStrOffset;
-                }
+                _string = newHost;
             }
 
             return ParsingError.None;
@@ -2176,15 +2146,15 @@ namespace System
 
         //
         //
-        // The method is called when we have to access m_Info members.
-        // This will create the m_Info based on the copied parser context.
+        // The method is called when we have to access _info members.
+        // This will create the _info based on the copied parser context.
         // If multi-threading, this method may do duplicated yet harmless work.
         //
         private unsafe void CreateUriInfo(Flags cF)
         {
             UriInfo info = new UriInfo();
 
-            // This will be revisited in ParseRemaining but for now just have it at least m_String.Length
+            // This will be revisited in ParseRemaining but for now just have it at least _string.Length
             info.Offset.End = (ushort)_string.Length;
 
             if (UserDrivenParsing)
@@ -2193,7 +2163,7 @@ namespace System
             int idx;
             bool notCanonicalScheme = false;
 
-            // The m_String may have leading spaces, figure that out
+            // The _string may have leading spaces, figure that out
             // plus it will set idx value for next steps
             if ((cF & Flags.ImplicitFile) != 0)
             {
@@ -2315,18 +2285,14 @@ namespace System
             // Note we already checked on general port syntax in ParseMinimal()
 
             // If iri parsing is on with unicode chars then the end of parsed host
-            // points to m_orig string and not m_String
+            // points to _originalUnicodeString and not _string
 
-            bool UseOrigUnicodeStrOffset = ((cF & Flags.UseOrigUncdStrOffset) != 0);
-            // This should happen only once. Reset it
-            cF &= ~Flags.UseOrigUncdStrOffset;
-
-            if (UseOrigUnicodeStrOffset)
+            if ((cF & Flags.HasUnicode) != 0)
                 info.Offset.End = (ushort)_originalUnicodeString.Length;
 
             if (idx < info.Offset.End)
             {
-                fixed (char* userString = UseOrigUnicodeStrOffset ? _originalUnicodeString : _string)
+                fixed (char* userString = OriginalString)
                 {
                     if (userString[idx] == ':')
                     {
@@ -2446,7 +2412,7 @@ namespace System
 
                     if ((result & (Check.EscapedCanonical | Check.BackslashInPath)) != Check.EscapedCanonical)
                     {
-                        // we will make a canonical host in m_Info.Host, but mark that m_String holds wrong data
+                        // we will make a canonical host in _info.Host, but mark that _string holds wrong data
                         flags |= Flags.E_HostNotCanonical;
                         if (NotAny(Flags.UserEscaped))
                         {
@@ -2460,7 +2426,7 @@ namespace System
                 }
                 else if (NotAny(Flags.CanonicalDnsHost))
                 {
-                    // Check to see if we can take the canonical host string out of m_String
+                    // Check to see if we can take the canonical host string out of _string
                     if ((object?)_info.ScopeId != null)
                     {
                         // IPv6 ScopeId is included when serializing a Uri
@@ -2715,7 +2681,7 @@ namespace System
             EnsureHostString(false);
             string stemp = (parts & UriComponents.Host) == 0 ? string.Empty : _info.Host!;
             // we reserve more space than required because a canonical Ipv6 Host
-            // may take more characters than in original m_String
+            // may take more characters than in original _string
             // Also +3 is for :// and +1 is for absent first slash
             // Also we may escape every character, hence multiplying by 12
             // UTF-8 can use up to 4 bytes per char * 3 chars per byte (%A4) = 12 encoded chars
@@ -2852,7 +2818,7 @@ namespace System
             {
                 if ((nonCanonical & (ushort)UriComponents.Port) == 0)
                 {
-                    //take it from m_String
+                    //take it from _string
                     if (InFact(Flags.NotDefaultPort))
                     {
                         int start = _info.Offset.Path;
@@ -3203,7 +3169,7 @@ namespace System
 
         //
         //This method does:
-        //  - Creates m_Info member
+        //  - Creates _info member
         //  - checks all components up to path on their canonical representation
         //  - continues parsing starting the path position
         //  - Sets the offsets of remaining components
@@ -3221,7 +3187,7 @@ namespace System
                 goto Done;
 
             // Do we have to continue building Iri'zed string from original string
-            bool buildIriStringFromPath = _iriParsing && ((_flags & Flags.HasUnicode) != 0) && ((_flags & Flags.RestUnicodeNormalized) == 0);
+            bool buildIriStringFromPath = (_flags & (Flags.HasUnicode | Flags.RestUnicodeNormalized)) == Flags.HasUnicode;
 
             int origIdx; // stores index to switched original string
             int idx = _info.Offset.Scheme;
@@ -3229,7 +3195,7 @@ namespace System
             Check result = Check.None;
             UriSyntaxFlags syntaxFlags = _syntax.Flags;
 
-            // m_Info.Offset values may be parsed twice but we lock only on m_Flags update.
+            // _info.Offset values may be parsed twice but we lock only on _flags update.
 
             fixed (char* str = _string)
             {
@@ -3271,7 +3237,7 @@ namespace System
                     {
                         cF |= Flags.E_UserNotCanonical;
                     }
-                    if (_iriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                    if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
                                                     | Check.FoundNonAscii | Check.NotIriCanonical))
                                                     == (Check.DisplayCanonical | Check.FoundNonAscii)))
                     {
@@ -3293,8 +3259,8 @@ namespace System
             // Parsing the Path if any
             //
 
-            // For iri parsing if we found unicode the idx has offset into m_orig string..
-            // so restart parsing from there and make m_Info.Offset.Path as m_string.length
+            // For iri parsing if we found unicode the idx has offset into _originalUnicodeString..
+            // so restart parsing from there and make _info.Offset.Path as _string.Length
 
             idx = _info.Offset.Path;
             origIdx = _info.Offset.Path;
@@ -3304,7 +3270,7 @@ namespace System
             //    so both '?' and '#' will work as delimiters
             if (buildIriStringFromPath)
             {
-                // Dos paths have no host.  Other schemes cleared/set m_String with host information in PrivateParseMinimal.
+                // Dos paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
                 if (IsDosPath)
                 {
                     if (IsImplicitFile)
@@ -3467,7 +3433,7 @@ namespace System
                 cF |= Flags.E_PathNotCanonical;
             }
 
-            if (_iriParsing && !nonCanonical & ((result & (Check.DisplayCanonical | Check.EscapedCanonical
+            if (IriParsing && !nonCanonical & ((result & (Check.DisplayCanonical | Check.EscapedCanonical
                             | Check.FoundNonAscii | Check.NotIriCanonical))
                             == (Check.DisplayCanonical | Check.FoundNonAscii)))
             {
@@ -3542,7 +3508,7 @@ namespace System
                         cF |= Flags.E_QueryNotCanonical;
                     }
 
-                    if (_iriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                    if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
                                 | Check.FoundNonAscii | Check.NotIriCanonical))
                                 == (Check.DisplayCanonical | Check.FoundNonAscii)))
                     {
@@ -3606,7 +3572,7 @@ namespace System
                         cF |= Flags.E_FragmentNotCanonical;
                     }
 
-                    if (_iriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                    if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
                                 | Check.FoundNonAscii | Check.NotIriCanonical))
                                 == (Check.DisplayCanonical | Check.FoundNonAscii)))
                     {
@@ -4006,7 +3972,7 @@ namespace System
         //
         // Checks the syntax of an authority component. It may also get a userInfo if present
         // Returns an error if no/mailformed authority found
-        // Does not NOT touch m_Info
+        // Does not NOT touch _info
         // Returns position of the Path component
         //
         // Must be called in the ctor only
@@ -4023,7 +3989,7 @@ namespace System
             bool justNormalized = false;
             bool iriParsing = IriParsingStatic(syntax);
             bool hasUnicode = ((flags & Flags.HasUnicode) != 0);
-            bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0);
+            bool hostNotUnicodeNormalized = hasUnicode && ((flags & Flags.HostUnicodeNormalized) == 0);
             UriSyntaxFlags syntaxFlags = syntax.Flags;
 
             Debug.Assert((_flags & Flags.HasUserInfo) == 0 && (_flags & Flags.HostTypeMask) == 0);
@@ -4042,7 +4008,7 @@ namespace System
                 else
                     err = ParsingError.BadHostName;
 
-                if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                if (hostNotUnicodeNormalized)
                 {
                     flags |= Flags.HostUnicodeNormalized; // no host
                 }
@@ -4051,7 +4017,7 @@ namespace System
             }
 
             // need to build new Iri'zed string
-            if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+            if (hostNotUnicodeNormalized)
             {
                 newHost = _originalUnicodeString.Substring(0, startInput);
             }
@@ -4076,7 +4042,7 @@ namespace System
                         // Iri'ze userinfo
                         if (iriParsing)
                         {
-                            if (iriParsing && hasUnicode && hostNotUnicodeNormalized)
+                            if (hostNotUnicodeNormalized)
                             {
                                 // Normalize user info
                                 userInfoString = IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, UriComponents.UserInfo);
@@ -4109,9 +4075,7 @@ namespace System
             {
                 flags |= Flags.IPv6HostType;
 
-                _iriParsing = IriParsingStatic(syntax);
-
-                if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                if (hostNotUnicodeNormalized)
                 {
                     newHost += new string(pString, start, end - start);
                     flags |= Flags.HostUnicodeNormalized;
@@ -4123,7 +4087,7 @@ namespace System
             {
                 flags |= Flags.IPv4HostType;
 
-                if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                if (hostNotUnicodeNormalized)
                 {
                     newHost += new string(pString, start, end - start);
                     flags |= Flags.HostUnicodeNormalized;
@@ -4142,8 +4106,7 @@ namespace System
                 }
             }
             else if (((syntaxFlags & UriSyntaxFlags.AllowDnsHost) != 0)
-                    && ((syntax.InFact(UriSyntaxFlags.AllowIriParsing) && hostNotUnicodeNormalized)
-                            || syntax.InFact(UriSyntaxFlags.AllowIdn))
+                    && (hostNotUnicodeNormalized || syntax.InFact(UriSyntaxFlags.AllowIdn))
                     && DomainNameHelper.IsValidByIri(pString, start, ref end, ref dnsNotCanonical,
                                             StaticNotAny(flags, Flags.ImplicitFile)))
             {
@@ -4160,7 +4123,7 @@ namespace System
                     if (end - start <= UncNameHelper.MaximumInternetNameLength)
                     {
                         flags |= Flags.UncHostType;
-                        if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                        if (hostNotUnicodeNormalized)
                         {
                             newHost += new string(pString, start, end - start);
                             flags |= Flags.HostUnicodeNormalized;
@@ -4234,7 +4197,7 @@ namespace System
                         }
                     }
 
-                    if (iriParsing && hasUnicode && justNormalized)
+                    if (hasUnicode && justNormalized)
                     {
                         newHost += new string(pString, startPort, idx - startPort);
                     }
@@ -4262,8 +4225,23 @@ namespace System
                             break;
                         }
                     }
-                    CheckAuthorityHelperHandleAnyHostIri(pString, startInput, end, iriParsing, hasUnicode,
-                                                            ref flags, ref newHost, ref err);
+
+                    if (hostNotUnicodeNormalized)
+                    {
+                        // Normalize any other host or do idn
+                        string user = new string(pString, startInput, end - startInput);
+
+                        try
+                        {
+                            newHost += user.Normalize(NormalizationForm.FormC);
+                        }
+                        catch (ArgumentException)
+                        {
+                            err = ParsingError.BadHostName;
+                        }
+
+                        flags |= Flags.HostUnicodeNormalized;
+                    }
                 }
                 else
                 {
@@ -4296,8 +4274,7 @@ namespace System
                         //success
                         flags |= Flags.BasicHostType;
 
-                        if (iriParsing && hasUnicode
-                            && StaticNotAny(flags, Flags.HostUnicodeNormalized))
+                        if (hostNotUnicodeNormalized)
                         {
                             // Normalize any other host
                             string user = new string(pString, startOtherHost, end - startOtherHost);
@@ -4350,28 +4327,6 @@ namespace System
             flags |= Flags.HostUnicodeNormalized;
         }
 
-        private unsafe void CheckAuthorityHelperHandleAnyHostIri(char* pString, int startInput, int end,
-                                            bool iriParsing, bool hasUnicode,
-                                            ref Flags flags, ref string? newHost, ref ParsingError err)
-        {
-            if (StaticNotAny(flags, Flags.HostUnicodeNormalized) && (iriParsing && hasUnicode))
-            {
-                // Normalize any other host or do idn
-                string user = new string(pString, startInput, end - startInput);
-
-                try
-                {
-                    newHost += user.Normalize(NormalizationForm.FormC);
-                }
-                catch (ArgumentException)
-                {
-                    err = ParsingError.BadHostName;
-                }
-
-                flags |= Flags.HostUnicodeNormalized;
-            }
-        }
-
         //
         // The method checks whether a string needs transformation before going to display or wire
         //
@@ -4409,8 +4364,9 @@ namespace System
             Check res = Check.None;
             bool needsEscaping = false;
             bool foundEscaping = false;
+            bool iriParsing = IriParsing;
 
-            char c = c_DummyChar;
+            char c;
             int i = idx;
             for (; i < end; ++i)
             {
@@ -4424,7 +4380,7 @@ namespace System
                 }
                 else if (c > '~')
                 {
-                    if (_iriParsing)
+                    if (iriParsing)
                     {
                         bool valid = false;
                         res |= Check.FoundNonAscii;
@@ -4505,7 +4461,7 @@ namespace System
                     // conclude that we have a valid canonical IRI.
                     // If we have an IRI with Flags.HasUnicode, we need to set Check.NotIriCanonical so that the
                     // path, query, and fragment will be validated.
-                    if ((_flags & Flags.HasUnicode) != 0 && _iriParsing)
+                    if ((_flags & Flags.HasUnicode) != 0)
                     {
                         res |= Check.NotIriCanonical;
                     }

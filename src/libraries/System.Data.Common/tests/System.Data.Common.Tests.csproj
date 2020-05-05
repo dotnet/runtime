@@ -57,7 +57,7 @@
     <Compile Include="System\Data\DataSetWriteXMLTest.cs" />
     <Compile Include="System\Data\DataTableCollectionTest.cs" />
     <Compile Include="System\Data\DataTableCollectionTest2.cs" />
-    <Compile Include="System\Data\DataTableExtensionsTest.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Data\DataTableExtensionsTest.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Data\DataTableLoadRowTest.cs" />
     <Compile Include="System\Data\DataTableReaderTest.cs" />
     <Compile Include="System\Data\DataTableReadWriteXmlTest.cs" />

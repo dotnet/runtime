@@ -5157,6 +5157,7 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
     return g_fEEStarted && (
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT ||
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
+        exceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW ||
         (IsSafeToCallExecutionManager() && ExecutionManager::IsManagedCode(controlPc)) ||
         IsIPinVirtualStub(controlPc) ||  // access violation comes from DispatchStub of Interface call
         IsIPInMarkedJitHelper(controlPc));
@@ -5192,6 +5193,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
     if (ex->GetExceptionRecord()->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
     {
         GetThread()->SetExecutingOnAltStack();
+        Thread::VirtualUnwindToFirstManagedCallFrame(ex->GetContextRecord());
         EEPolicy::HandleFatalStackOverflow(&ex->ExceptionPointers, FALSE);
         UNREACHABLE();
     }

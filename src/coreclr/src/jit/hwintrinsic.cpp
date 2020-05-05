@@ -495,16 +495,17 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 }
 
 //------------------------------------------------------------------------
-// // getArgForHWIntrinsic: pop an argument from the stack and validate its type
+// getArgForHWIntrinsic: pop an argument from the stack and validate its type
 //
 // Arguments:
-//    argType   -- the required type of argument
-//    argClass  -- the class handle of argType
+//    argType    -- the required type of argument
+//    argClass   -- the class handle of argType
+//    expectAddr --  if true indicates we are expecting type stack entry to be a TYP_BYREF.
 //
 // Return Value:
 //     the validated argument
 //
-GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass)
+GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr)
 {
     GenTree* arg = nullptr;
     if (argType == TYP_STRUCT)
@@ -512,9 +513,9 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
         unsigned int argSizeBytes;
         var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
         argType           = getSIMDTypeForSize(argSizeBytes);
-        assert((argType == TYP_SIMD8) || (argType == TYP_SIMD16) || (argType == TYP_SIMD32));
-        arg = impSIMDPopStack(argType);
-        assert((arg->TypeGet() == TYP_SIMD8) || (arg->TypeGet() == TYP_SIMD16) || (arg->TypeGet() == TYP_SIMD32));
+        assert(varTypeIsSIMD(argType));
+        arg = impSIMDPopStack(argType, expectAddr);
+        assert(varTypeIsSIMD(arg->TypeGet()));
     }
     else
     {

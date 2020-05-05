@@ -460,7 +460,6 @@ jobs:
       # independent installers on this leg, but we need to do it somewhere.)
       - template: steps/build-linux-package.yml
         parameters:
-          buildTraversalBuildDependencies: true
           distroRid: ${{ packageBuild.imageRid }}
           image: ${{ packageBuild.image }}
           packageStepDescription: Runtime Deps, Runtime, Framework Packs installers

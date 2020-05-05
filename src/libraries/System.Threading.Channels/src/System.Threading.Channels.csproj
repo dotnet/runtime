@@ -8,16 +8,16 @@
     <Compile Include="System\VoidResult.cs" />
     <Compile Include="System\Collections\Generic\Deque.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs" Condition="'$(TargetsNetCoreApp)' != 'true'" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs" Condition="!$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
     <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
     <Compile Include="System\Threading\Channels\Channel.cs" />
     <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
-    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.cs" />
-    <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
     <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
     <Compile Include="System\Threading\Channels\Channel_1.cs" />
@@ -38,7 +38,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.ThreadPool" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Reference Include="System.Threading.ThreadPool" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
