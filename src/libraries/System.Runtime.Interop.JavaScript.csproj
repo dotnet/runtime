@@ -11,7 +11,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <DefineConstants>$(DefineConstants);TargetsBrowser</DefineConstants>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="System.Runtime\ref\System.Runtime.csproj" />
