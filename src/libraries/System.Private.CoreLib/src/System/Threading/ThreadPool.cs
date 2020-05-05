@@ -45,6 +45,9 @@ namespace System.Threading
     [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
     internal sealed class ThreadPoolWorkQueue
     {
+        private static long s_queueFullyDrainedCount;
+        private static long s_spuriousWakeUpCount;
+
         internal static class WorkStealingQueueList
         {
 #pragma warning disable CA1825 // avoid the extra generic instantation for Array.Empty<T>(); this is the only place we'll ever create this array
@@ -542,6 +545,9 @@ namespace System.Threading
         }
 
         public long GlobalCount => workItems.Count;
+        public static long QueueFullyDrainedCount => s_queueFullyDrainedCount;
+        public static long SpuriousWakeUpCount => s_spuriousWakeUpCount;
+
 
         /// <summary>
         /// Dispatches work items to this thread.
@@ -591,6 +597,7 @@ namespace System.Threading
                 currentThread._executionContext = null;
                 currentThread._synchronizationContext = null;
 
+                bool foundWork = false;
                 //
                 // Loop until our quantum expires or there is no work.
                 //
@@ -605,6 +612,23 @@ namespace System.Threading
                         //
                         // No work.
                         // If we missed a steal, though, there may be more work in the queue.
+
+                        if (!missedSteal)
+                        {
+                            if (foundWork)
+                            {
+                                // If we previously found work in the loop,
+                                // exiting here means we have fully drained the ThreadPool queues.
+                                Interlocked.Increment(ref s_queueFullyDrainedCount);
+                            }
+                            else
+                            {
+                                // If we haven't found any work at all,
+                                // exiting here means we were woken up for no work, so it is a spurious wakeup.
+                                Interlocked.Increment(ref s_spuriousWakeUpCount);
+                            }
+                        }
+
                         // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
                         // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
                         // which will be more efficient than this thread doing it anyway.
@@ -614,6 +638,8 @@ namespace System.Threading
                         // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
                         return true;
                     }
+
+                    foundWork = true;
 
                     if (workQueue.loggingEnabled)
                         System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
@@ -1271,6 +1297,16 @@ namespace System.Threading
 
         internal static object[] GetLocallyQueuedWorkItemsForDebugger() =>
             ToObjectArray(GetLocallyQueuedWorkItems());
+
+        /// <summary>
+        /// Gets the number of times a ThreadPool thread performed work and finished dispatching because the queues were empty.
+        /// </summary>
+        internal static long QueueFullyDrainedCount => ThreadPoolWorkQueue.QueueFullyDrainedCount;
+
+        /// <summary>
+        /// Gets the number of times a ThreadPool thread was woken up to execute, however there was no work in the queues to perform.
+        /// </summary>
+        internal static long SpuriousWakeUpCount => ThreadPoolWorkQueue.SpuriousWakeUpCount;
 
         /// <summary>
         /// Gets the number of work items that are currently queued to be processed.
