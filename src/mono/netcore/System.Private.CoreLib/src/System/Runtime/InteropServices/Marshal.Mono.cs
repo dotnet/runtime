@@ -356,7 +356,7 @@ namespace System.Runtime.InteropServices
                 return BufferToBSTR(fixed_s, s.Length);
         }
 
-        internal class MarshalerInstanceKeyComparer : IEqualityComparer<(Type, string)>
+        private sealed class MarshalerInstanceKeyComparer : IEqualityComparer<(Type, string)>
         {
             public bool Equals((Type, string) lhs, (Type, string) rhs)
             {
@@ -369,7 +369,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
+        private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
         internal static ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
         {
