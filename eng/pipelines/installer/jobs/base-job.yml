@@ -13,6 +13,7 @@ parameters:
   variables: []
   name: ''
   displayName: ''
+  runtimeVariant: ''
   pool: ''
 
   packageDistroList:

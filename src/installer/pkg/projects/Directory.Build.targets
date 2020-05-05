@@ -29,6 +29,9 @@
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono.LLVM</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
 
   <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the
