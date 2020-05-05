@@ -341,7 +341,7 @@ jobs:
     # - Windows_NT_arm
     # - Windows_NT_arm64
     jobParameters:
-      llvm: true
+      runtimeVariant: LLVMJIT
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -369,7 +369,7 @@ jobs:
     # - Windows_NT_arm
     # - Windows_NT_arm64
     jobParameters:
-      llvm: true
+      runtimeVariant: LLVMJIT
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),

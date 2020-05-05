@@ -9,7 +9,7 @@ parameters:
   liveLibrariesBuildConfig: ''
   strategy: ''
   pool: ''
-  llvm: false
+  runtimeVariant: ''
   liveRuntimeBuildConfig: 'release'
 
   # arcade-specific parameters
@@ -35,7 +35,7 @@ jobs:
     container: ${{ parameters.container }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
-    llvm: ${{ parameters.llvm }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -55,10 +55,7 @@ jobs:
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).${{ parameters.liveRuntimeBuildConfig }}'
 
     - name: buildProductArtifactName
-      ${{ if ne(parameters.llvm, true) }}:
-        value: 'MonoProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-      ${{ if eq(parameters.llvm, true) }}:
-        value: 'MonoProduct_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'MonoProduct_$(runtimeVariant)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
