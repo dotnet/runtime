@@ -121,7 +121,7 @@ namespace ComWrappersTests
         {
             try
             {
-                TestComWrappers.Instance.RegisterAsGlobalInstance();
+                ComWrappers.RegisterForTrackerSupport(TestComWrappers.Instance);
                 ValidateNativeWeakReference();
             }
             catch (Exception e)

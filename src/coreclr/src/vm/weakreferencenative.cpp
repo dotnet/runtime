@@ -280,9 +280,7 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
     if (!pTargetIdentity.IsNull())
     {
         // Try the global COM wrappers first before falling back to the built-in system.
-        // TODO: Switch this to use the reference-tracking global instance once
-        // the reference-tracking and marshalling global instances can be different.
-        if (!GlobalComWrappers::TryGetOrCreateObjectForComInstance(pTargetIdentity, 0, &gc.rcw))
+        if (!GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(pTargetIdentity, &gc.rcw))
         {
             GetObjectRefFromComIP(&gc.rcw, pTargetIdentity);
         }

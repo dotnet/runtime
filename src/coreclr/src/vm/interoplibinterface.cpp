@@ -401,7 +401,8 @@ namespace
     Volatile<ExtObjCxtCache*> ExtObjCxtCache::g_Instance;
 
     // Indicator for if a ComWrappers implementation is globally registered
-    bool g_IsGlobalComWrappersRegistered;
+    bool g_IsGlobalComWrappersRegisteredForMarshalling;
+    bool g_IsGlobalComWrappersRegisteredForTrackerSupport;
 
     // Defined handle types for the specific object uses.
     const HandleType InstanceHandleType{ HNDTYPE_STRONG };
@@ -1387,15 +1388,15 @@ void QCALLTYPE GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMa
     // QCALL contracts are not used here because the managed declaration
     // uses the SuppressGCTransition attribute
 
-    _ASSERTE(!g_IsGlobalComWrappersRegistered);
-    g_IsGlobalComWrappersRegistered = true;
+    _ASSERTE(!g_IsGlobalComWrappersRegisteredForMarshalling);
+    g_IsGlobalComWrappersRegisteredForMarshalling = true;
 }
 
 bool GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(
     _In_ OBJECTREF instance,
     _Outptr_ void** wrapperRaw)
 {
-    if (!g_IsGlobalComWrappersRegistered)
+    if (!g_IsGlobalComWrappersRegisteredForMarshalling)
         return false;
 
     // Switch to Cooperative mode since object references
@@ -1420,7 +1421,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     _In_ INT32 objFromComIPFlags,
     _Out_ OBJECTREF* objRef)
 {
-    if (!g_IsGlobalComWrappersRegistered)
+    if (!g_IsGlobalComWrappersRegisteredForMarshalling)
         return false;
 
     // Determine the true identity of the object
@@ -1447,6 +1448,69 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
             identity,
             (CreateObjectFlags)flags,
             ComWrappersScenario::MarshallingGlobalInstance,
+            NULL /*wrapperMaybe*/,
+            objRef);
+    }
+}
+
+void QCALLTYPE GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport()
+{
+    // QCALL contracts are not used here because the managed declaration
+    // uses the SuppressGCTransition attribute
+
+    _ASSERTE(!g_IsGlobalComWrappersRegisteredForTrackerSupport);
+    g_IsGlobalComWrappersRegisteredForTrackerSupport = true;
+}
+
+bool GlobalComWrappersForTrackerSupport::TryGetOrCreateComInterfaceForObject(
+    _In_ OBJECTREF instance,
+    _Outptr_ void** wrapperRaw)
+{
+    if (!g_IsGlobalComWrappersRegisteredForTrackerSupport)
+        return false;
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+
+        // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
+        return TryGetOrCreateComInterfaceForObjectInternal(
+            NULL,
+            instance,
+            CreateComInterfaceFlags::CreateComInterfaceFlags_TrackerSupport,
+            ComWrappersScenario::TrackerSupportGlobalInstance,
+            wrapperRaw);
+    }
+}
+
+bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
+    _In_ IUnknown* externalComObject,
+    _Out_ OBJECTREF* objRef)
+{
+    if (!g_IsGlobalComWrappersRegisteredForTrackerSupport)
+        return false;
+
+    // Determine the true identity of the object
+    SafeComHolder<IUnknown> identity;
+    {
+        GCX_PREEMP();
+
+        HRESULT hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
+        _ASSERTE(hr == S_OK);
+    }
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+
+        // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
+        return TryGetOrCreateObjectForComInstanceInternal(
+            NULL /*comWrappersImpl*/,
+            identity,
+            CreateObjectFlags::CreateObjectFlags_TrackerObject,
+            ComWrappersScenario::TrackerSupportGlobalInstance,
             NULL /*wrapperMaybe*/,
             objRef);
     }
