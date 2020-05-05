@@ -2,7 +2,7 @@
   <Import Project="Directory.Build.props" />
   <Import Project="Directory.Build.targets" />
 
-  <UsingTask TaskName="WasmAppBuilder"
+  <UsingTask TaskName="PInvokeTableGenerator"
       AssemblyFile="$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\publish\WasmAppBuilder.dll"/>
 
   <PropertyGroup>
@@ -28,10 +28,10 @@
 
   <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;BuildWasmAppBuilder">
     <MakeDir Directories="$(MonoObjDir)wasm"/>
-    <WasmAppBuilder
-      PInvokeModules="@(WasmPInvokeModules)"
-      PInvokeAssemblies="@(WasmPInvokeAssemblies)"
-      PInvokeTablePath="$(WasmPInvokeTablePath)"
+    <PInvokeTableGenerator
+      Modules="@(WasmPInvokeModules)"
+      Assemblies="@(WasmPInvokeAssemblies)"
+      OutputPath="$(WasmPInvokeTablePath)"
       />
   </Target>
 

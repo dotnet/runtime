@@ -15,19 +15,17 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class WasmAppBuilder : Task
+public class PInvokeTableGenerator : Task
 {
-    public ITaskItem[] PInvokeModules { get; set; }
-    public ITaskItem[] PInvokeAssemblies { get; set; }
-
-    public string PInvokeTablePath { get; set; }
+    [Required]
+    public ITaskItem[] Modules { get; set; }
+    [Required]
+    public ITaskItem[] Assemblies { get; set; }
+    [Required]
+    public string OutputPath { get; set; }
 
     public override bool Execute () {
-        if (PInvokeTablePath == null)
-            throw new ArgumentException("Only PInvokeTablePath=true is supported right now.");
-
-        GenPInvokeTable (PInvokeModules.Select (item => item.ItemSpec).ToArray (), PInvokeAssemblies.Select (item => item.ItemSpec).ToArray ());
-
+        GenPInvokeTable (Modules.Select (item => item.ItemSpec).ToArray (), Assemblies.Select (item => item.ItemSpec).ToArray ());
         return true;
     }
 
@@ -46,9 +44,9 @@ public class WasmAppBuilder : Task
                 CollectPInvokes (pinvokes, type);
         }
 
-        Log.LogMessage (MessageImportance.Normal, $"Generating pinvoke table to '{PInvokeTablePath}'.");
+        Log.LogMessage (MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
 
-        using (var w = File.CreateText (PInvokeTablePath)) {
+        using (var w = File.CreateText (OutputPath)) {
             EmitPInvokeTable (w, modules, pinvokes);
         }
     }
