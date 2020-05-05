@@ -366,7 +366,7 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 
 #endif
 
-void ValidateICUDataCanLoad()
+static void ValidateICUDataCanLoad()
 {
     UVersionInfo version;
     UErrorCode err = U_ZERO_ERROR;
