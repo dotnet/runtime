@@ -56,4 +56,45 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Reader\CborReader.SkipValue.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.SkipValue.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Reader\CborReader.Simple.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Simple.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Reader\CborReader.Tag.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Tag.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Reader\CborReader.Array.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Array.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Reader\CborReader.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Reader\CborReader.Integer.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Integer.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Reader\CborReader.Map.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Map.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Reader\CborReader.String.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.String.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Writer\CborWriter.Array.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Array.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Writer\CborWriter.Map.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Map.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Writer\CborWriter.Simple.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Simple.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Writer\CborWriter.String.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.String.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Writer\CborWriter.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Writer\CborWriter.Integer.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Integer.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\Writer\CborWriter.Tag.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Tag.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\CborConformanceLevel.cs" Link="Common\System\Formats\Cbor\CborConformanceLevel.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\CborInitialByte.cs" Link="Common\System\Formats\Cbor\CborInitialByte.cs" />
+    <Compile Include="..\src\System\Formats\Cbor\CborTag.cs" Link="Common\System\Formats\Cbor\CborTag.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Cbor\Reader\CborReaderTests.cs" />
+    <Compile Include="Cbor\Reader\CborReaderTests.String.cs" />
+    <Compile Include="Cbor\Reader\CborReaderTests.Integer.cs" />
+    <Compile Include="Cbor\Reader\CborReaderTests.Helpers.cs" />
+    <Compile Include="Cbor\Reader\CborReaderTests.Map.cs" />
+    <Compile Include="Cbor\Reader\CborReaderTests.SkipValue.cs" />
+    <Compile Include="Cbor\Reader\CborReaderTests.Simple.cs" />
+    <Compile Include="Cbor\Reader\CborReaderTests.Tag.cs" />
+    <Compile Include="Cbor\Reader\CborReaderTests.Array.cs" />
+    <Compile Include="Cbor\Writer\CborWriterTests.Helpers.cs" />
+    <Compile Include="Cbor\Writer\CborWriterTests.Array.cs" />
+    <Compile Include="Cbor\Writer\CborWriterTests.cs" />
+    <Compile Include="Cbor\Writer\CborWriterTests.Map.cs" />
+    <Compile Include="Cbor\Writer\CborWriterTests.Simple.cs" />
+    <Compile Include="Cbor\Writer\CborWriterTests.Tag.cs" />
+    <Compile Include="Cbor\Writer\CborWriterTests.Integer.cs" />
+    <Compile Include="Cbor\Writer\CborWriterTests.String.cs" />
+    <Compile Include="Cbor\CborRoundtripTests.cs" />
+  </ItemGroup>
 </Project>

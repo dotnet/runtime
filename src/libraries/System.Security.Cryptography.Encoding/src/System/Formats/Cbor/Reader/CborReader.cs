@@ -505,7 +505,7 @@ namespace System.Formats.Cbor
                 Debug.Assert(
                     (stackOffset == 0) ?
                     _frameOffset == checkpoint.FrameOffset :
-                    _nestedDataItems.ToArray()[stackOffset].FrameOffset == checkpoint.FrameOffset,
+                    _nestedDataItems.ToArray()[stackOffset - 1].FrameOffset == checkpoint.FrameOffset,
                     "Attempting to restore checkpoint outside of its original context.");
 
                 // pop any nested data items introduced after the checkpoint
