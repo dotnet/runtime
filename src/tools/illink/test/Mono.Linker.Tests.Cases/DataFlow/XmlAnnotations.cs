@@ -12,25 +12,29 @@ using System.Text;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
-	[SetupLinkerAttributeDefinitionsFile ("JsonAnnotations.json")]
-	class JsonAnnotations
+	[SetupLinkerAttributeDefinitionsFile ("XmlAnnotations.xml")]
+	class XmlAnnotations
 	{
 		public static void Main ()
 		{
-			var instance = new JsonAnnotations ();
+			var instance = new XmlAnnotations ();
 
 			instance.ReadFromInstanceField ();
 			instance.TwoAnnotatedParameters (typeof (TestType), typeof (TestType));
 			instance.ReturnConstructorsFailure (null);
 			instance.ReadFromInstanceProperty ();
+
+			var nestedinstance = new NestedType ();
+
+			nestedinstance.ReadFromInstanceField ();
 		}
 
 		Type _typeWithDefaultConstructor;
 
 		Type PropertyWithDefaultConstructor { get; set; }
 
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceField ()
 		{
 			RequireDefaultConstructor (_typeWithDefaultConstructor);
@@ -38,7 +42,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireConstructors (_typeWithDefaultConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		private void TwoAnnotatedParameters (
 			Type type,
 			Type type2)
@@ -49,15 +53,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicConstructors (type2);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (ReturnConstructorsFailure), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (ReturnConstructorsFailure), new Type[] { typeof (Type) })]
 		private Type ReturnConstructorsFailure (
 			Type defaultConstructorType)
 		{
 			return defaultConstructorType;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceProperty ()
 		{
 			RequireDefaultConstructor (PropertyWithDefaultConstructor);
@@ -84,5 +88,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		class TestType { }
+
+		class NestedType
+		{
+			Type _typeWithDefaultConstructor;
+
+			[UnrecognizedReflectionAccessPattern (typeof (NestedType), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+			[UnrecognizedReflectionAccessPattern (typeof (NestedType), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+			[RecognizedReflectionAccessPattern]
+			public void ReadFromInstanceField ()
+			{
+				RequireDefaultConstructor (_typeWithDefaultConstructor);
+				RequirePublicConstructors (_typeWithDefaultConstructor);
+				RequireConstructors (_typeWithDefaultConstructor);
+			}
+
+			private static void RequireDefaultConstructor (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			Type type)
+			{
+			}
+
+			private static void RequirePublicConstructors (
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
+			Type type)
+			{
+			}
+
+			private static void RequireConstructors (
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			Type type)
+			{
+			}
+		}
 	}
 }
