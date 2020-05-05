@@ -62,7 +62,12 @@ namespace System.Runtime.InteropServices
 
         protected abstract void ReleaseObjects(IEnumerable objects);
 
-        public void RegisterAsGlobalInstance()
+        public static void RegisterForTrackerSupport(ComWrappers instance)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void RegisterForMarshalling(ComWrappers instance)
         {
             throw new PlatformNotSupportedException();
         }
