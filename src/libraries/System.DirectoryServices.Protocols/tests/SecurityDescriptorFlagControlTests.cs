@@ -7,10 +7,9 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
     public class SecurityDescriptorFlagControlTests
     {
-        public static bool RunningOnWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;
-
         [Fact]
         public void Ctor_Default()
         {
@@ -20,14 +19,14 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.801", control.Type);
 
-            var expected = (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 0 } : new byte[] { 48, 3, 2, 1, 0 };
+            var expected = (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 0 } : new byte[] { 48, 3, 2, 1, 0 };
             Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_Flags_Data()
         {
-            yield return new object[] { SecurityMasks.Group, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 2 } : new byte[] { 48, 3, 2, 1, 2 } };
-            yield return new object[] { SecurityMasks.None - 1, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 4, 255, 255, 255, 255 } : new byte[] { 48, 3, 2, 1, 255 } };
+            yield return new object[] { SecurityMasks.Group, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 2 } : new byte[] { 48, 3, 2, 1, 2 } };
+            yield return new object[] { SecurityMasks.None - 1, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 4, 255, 255, 255, 255 } : new byte[] { 48, 3, 2, 1, 255 } };
         }
 
         [Theory]

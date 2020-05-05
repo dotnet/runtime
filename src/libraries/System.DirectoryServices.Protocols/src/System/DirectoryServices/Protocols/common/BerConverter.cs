@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Collections;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
-using System.Runtime.CompilerServices;
 
 namespace System.DirectoryServices.Protocols
 {
-    public static class BerConverter
+    public static partial class BerConverter
     {
         public static byte[] Encode(string format, params object[] value)
         {
@@ -363,26 +361,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (fmt == 'B')
                 {
-                    // return a bitstring and its length
-                    IntPtr ptrResult = IntPtr.Zero;
-                    int length = 0;
-                    error = LdapPal.BerScanfBitstring(berElement, "B", ref ptrResult, ref length);
-
-                    if (!LdapPal.IsBerDecodeError(error))
-                    {
-                        byte[] byteArray = null;
-                        if (ptrResult != IntPtr.Zero)
-                        {
-                            byteArray = new byte[length];
-                            Marshal.Copy(ptrResult, byteArray, 0, length);
-                        }
-                        resultList.Add(byteArray);
-                    }
-                    else
-                        Debug.WriteLine("ber_scanf for format character 'B' failed");
-
-                    // no need to free memory as wldap32 returns the original pointer instead of a duplicating memory pointer that
-                    // needs to be freed
+                    error = DecodeBitStringHelper(resultList, berElement);
                 }
                 else if (fmt == 'v')
                 {

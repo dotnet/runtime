@@ -7,10 +7,9 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
     public class PageResultRequestControlTests
     {
-        public static bool RunningOnWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;
-
         [Fact]
         public void Ctor_Default()
         {
@@ -21,14 +20,14 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(512, control.PageSize);
             Assert.Equal("1.2.840.113556.1.4.319", control.Type);
 
-            var expected = (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 };
+            var expected = (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 };
             Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_PageSize_Data()
         {
-            yield return new object[] { 0, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 } };
-            yield return new object[] { 10, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 10, 4, 0 } : new byte[] { 48, 5, 2, 1, 10, 4, 0 } };
+            yield return new object[] { 0, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 } };
+            yield return new object[] { 10, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 10, 4, 0 } : new byte[] { 48, 5, 2, 1, 10, 4, 0 } };
         }
 
         [Theory]
@@ -53,9 +52,9 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Ctor_Cookie_Data()
         {
-            yield return new object[] { null, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 } };
-            yield return new object[] { new byte[0], (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 } };
-            yield return new object[] { new byte[] { 1, 2, 3, }, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 9, 2, 2, 2, 0, 4, 3, 1, 2, 3 } : new byte[] { 48, 9, 2, 2, 2, 0, 4, 3, 1, 2, 3 } };
+            yield return new object[] { null, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 } };
+            yield return new object[] { new byte[0], (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 1, 2, 3, }, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 9, 2, 2, 2, 0, 4, 3, 1, 2, 3 } : new byte[] { 48, 9, 2, 2, 2, 0, 4, 3, 1, 2, 3 } };
         }
 
         [Theory]

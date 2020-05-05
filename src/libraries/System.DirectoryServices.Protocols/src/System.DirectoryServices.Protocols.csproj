@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.DirectoryServices.Protocols</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -40,6 +40,7 @@
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Windows.cs" />
@@ -55,6 +56,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />

@@ -7,10 +7,9 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
     public class VlvRequestControlTests
     {
-        public static bool RunningOnWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;
-
         [Fact]
         public void Ctor_Default()
         {
@@ -25,14 +24,14 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("2.16.840.1.113730.3.4.9", control.Type);
 
-            var expected = (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 };
+            var expected = (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 };
             Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_BeforeCount_AfterCount_Offset_Data()
         {
-            yield return new object[] { 0, 0, 0, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
-            yield return new object[] { 10, 10, 10, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 10, 2, 1, 10, 160, 132, 0, 0, 0, 6, 2, 1, 10, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 10, 2, 1, 10, 160, 6, 2, 1, 10, 2, 1, 0 } };
+            yield return new object[] { 0, 0, 0, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, 10, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 10, 2, 1, 10, 160, 132, 0, 0, 0, 6, 2, 1, 10, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 10, 2, 1, 10, 160, 6, 2, 1, 10, 2, 1, 0 } };
         }
 
         [Theory]
@@ -55,8 +54,8 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Ctor_BeforeCount_AfterCount_StringTarget_Data()
         {
-            yield return new object[] { 0, 0, null, new byte[0], (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
-            yield return new object[] { 10, 10, "abc", new byte[] { 97, 98, 99 }, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 10, 2, 1, 10, 129, 3, 97, 98, 99 } : new byte[] { 48, 11, 2, 1, 10, 2, 1, 10, 129, 3, 97, 98, 99 } };
+            yield return new object[] { 0, 0, null, new byte[0], (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, "abc", new byte[] { 97, 98, 99 }, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 10, 2, 1, 10, 129, 3, 97, 98, 99 } : new byte[] { 48, 11, 2, 1, 10, 2, 1, 10, 129, 3, 97, 98, 99 } };
         }
 
         [Theory]
@@ -80,8 +79,8 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Ctor_BeforeCount_AfterCount_ByteArrayTarget_Data()
         {
-            yield return new object[] { 0, 0, null, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
-            yield return new object[] { 10, 10, new byte[] { 1, 2, 3 }, (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 10, 2, 1, 10, 129, 3, 1, 2, 3 } : new byte[] { 48, 11, 2, 1, 10, 2, 1, 10, 129, 3, 1, 2, 3 } };
+            yield return new object[] { 0, 0, null, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, new byte[] { 1, 2, 3 }, (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 10, 2, 1, 10, 129, 3, 1, 2, 3 } : new byte[] { 48, 11, 2, 1, 10, 2, 1, 10, 129, 3, 1, 2, 3 } };
         }
 
         [Theory]
@@ -147,7 +146,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.NotSame(contextId, control.ContextId);
             Assert.Equal(contextId, control.ContextId);
 
-            var expected = (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 23, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0, 4, 3, 1, 2, 3 } : new byte[] { 48, 19, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0, 4, 3, 1, 2, 3 };
+            var expected = (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 23, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0, 4, 3, 1, 2, 3 } : new byte[] { 48, 19, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0, 4, 3, 1, 2, 3 };
             Assert.Equal(expected, control.GetValue());
         }
     }

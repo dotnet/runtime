@@ -8,10 +8,9 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
     public class LdapSessionOptionsTests
     {
-        public static bool RunningOnWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;
-
         [Theory]
         [InlineData(ReferralChasingOptions.None)]
         [InlineData(ReferralChasingOptions.External)]
@@ -48,7 +47,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.ReferralChasing = ReferralChasingOptions.All);
         }
 
-        [ConditionalTheory(nameof(RunningOnWindows))]
+        [ConditionalTheory(nameof(PlatformDetection.IsWindows))]
         [InlineData(true)]
         [InlineData(false)]
         public void SecureSocketLayer_Set_GetReturnsExpected(bool value)
@@ -63,7 +62,7 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void SecureSocketLayer_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var connection = new LdapConnection("server");
@@ -73,7 +72,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.SecureSocketLayer = true);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void ReferralHopLimit_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -169,7 +168,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.HostName = null);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void DomainName_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -195,7 +194,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.DomainName = null);
         }
 
-        [ConditionalTheory(nameof(RunningOnWindows))]
+        [ConditionalTheory(nameof(PlatformDetection.IsWindows))]
         [InlineData(LocatorFlags.AvoidSelf)]
         [InlineData(LocatorFlags.None - 1)]
         public void LocatorFlag_Set_GetReturnsExpected(LocatorFlags value)
@@ -220,7 +219,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.LocatorFlag = LocatorFlags.AvoidSelf);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void HostReachable_Get_ReturnsTrue()
         {
             using (var connection = new LdapConnection("server"))
@@ -239,7 +238,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.HostReachable);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void PingKeepAliveTimeout_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -273,7 +272,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.PingKeepAliveTimeout = TimeSpan.Zero);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void PingLimit_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -305,7 +304,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.PingLimit = 10);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void PingWaitTimeout_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -339,7 +338,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.PingWaitTimeout = TimeSpan.Zero);
         }
 
-        [ConditionalTheory(nameof(RunningOnWindows))]
+        [ConditionalTheory(nameof(PlatformDetection.IsWindows))]
         [InlineData(true)]
         [InlineData(false)]
         public void AutoReconnect_Set_GetReturnsExpected(bool value)
@@ -499,7 +498,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.SaslMethod = null);
         }
 
-        [ConditionalTheory(nameof(RunningOnWindows))]
+        [ConditionalTheory(nameof(PlatformDetection.IsWindows))]
         [InlineData(true)]
         [InlineData(false)]
         public void RootDseCache_Set_GetReturnsExpected(bool value)
@@ -524,7 +523,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.RootDseCache = false);
         }
 
-        [ConditionalTheory(nameof(RunningOnWindows))]
+        [ConditionalTheory(nameof(PlatformDetection.IsWindows))]
         [InlineData(true)]
         [InlineData(false)]
         public void TcpKeepAlive_Set_GetReturnsExpected(bool value)
@@ -549,7 +548,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.TcpKeepAlive = false);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void SendTimeout_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -596,7 +595,7 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void ReferralCallback_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -626,7 +625,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.ReferralCallback = null);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void QueryClientCertificate_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -654,7 +653,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.QueryClientCertificate = null);
         }
 
-        [ConditionalFact(nameof(RunningOnWindows))]
+        [ConditionalFact(nameof(PlatformDetection.IsWindows))]
         public void VerifyServerCertificate_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))

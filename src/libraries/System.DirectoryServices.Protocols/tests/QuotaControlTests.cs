@@ -8,10 +8,9 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSUSE))]
     public class QuotaControlTests
     {
-        public static bool RunningOnWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;
-
         [Fact]
         public void Ctor_Default()
         {
@@ -21,7 +20,7 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1852", control.Type);
 
-            var expected = (RunningOnWindows) ? new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } : new byte[] { 48, 2, 4, 0 };
+            var expected = (PlatformDetection.IsWindows) ? new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } : new byte[] { 48, 2, 4, 0 };
             Assert.Equal(expected, control.GetValue());
         }
 
@@ -31,7 +30,7 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { null, new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } };
         }
 
-        [ConditionalTheory(nameof(RunningOnWindows))] //Security Identifiers only work on Windows
+        [ConditionalTheory(nameof(PlatformDetection.IsWindows))] //Security Identifiers only work on Windows
         [MemberData(nameof(Ctor_QuerySid_TestData))]
         public void Ctor_QuerySid_Test(SecurityIdentifier querySid, byte[] expectedValue)
         {
