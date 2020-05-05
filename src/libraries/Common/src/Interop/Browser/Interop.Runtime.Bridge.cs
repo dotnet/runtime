@@ -38,7 +38,7 @@ internal static partial class Interop
         internal static int BindCoreCLRObject(int jsId, int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            JSObject? obj = h.Target as JSObject;
+            JSObject? obj;
 
             if (_boundObjects.TryGetValue(jsId, out var existingObj))
             {
@@ -48,7 +48,7 @@ internal static partial class Interop
                 obj = existingObj;
             }
             else
-                _boundObjects[jsId] = obj;
+                obj = h.Target as JSObject;
 
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
@@ -331,10 +331,6 @@ internal static partial class Interop
                 throw new ArgumentNullException(nameof(dtv), "Value can not be null");
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
-            {
-                throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
-            }
-            var dt = (DateTime)dtv;
             if (dt.Kind == DateTimeKind.Local)
                 dt = dt.ToUniversalTime();
             else if (dt.Kind == DateTimeKind.Unspecified)
