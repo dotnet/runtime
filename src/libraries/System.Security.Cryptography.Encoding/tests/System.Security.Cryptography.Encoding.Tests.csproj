@@ -56,25 +56,25 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
   </ItemGroup>
-  <Import Project="System\Formats\Cbor\System.Formats.Cbor.Shared.projitems" />
+  <Import Project="Cbor\System.Formats.Cbor.Shared.projitems" />
   <ItemGroup>
-    <Compile Include="Cbor\Reader\CborReaderTests.cs" />
-    <Compile Include="Cbor\Reader\CborReaderTests.String.cs" />
-    <Compile Include="Cbor\Reader\CborReaderTests.Integer.cs" />
-    <Compile Include="Cbor\Reader\CborReaderTests.Helpers.cs" />
-    <Compile Include="Cbor\Reader\CborReaderTests.Map.cs" />
-    <Compile Include="Cbor\Reader\CborReaderTests.SkipValue.cs" />
-    <Compile Include="Cbor\Reader\CborReaderTests.Simple.cs" />
-    <Compile Include="Cbor\Reader\CborReaderTests.Tag.cs" />
-    <Compile Include="Cbor\Reader\CborReaderTests.Array.cs" />
-    <Compile Include="Cbor\Writer\CborWriterTests.Helpers.cs" />
-    <Compile Include="Cbor\Writer\CborWriterTests.Array.cs" />
-    <Compile Include="Cbor\Writer\CborWriterTests.cs" />
-    <Compile Include="Cbor\Writer\CborWriterTests.Map.cs" />
-    <Compile Include="Cbor\Writer\CborWriterTests.Simple.cs" />
-    <Compile Include="Cbor\Writer\CborWriterTests.Tag.cs" />
-    <Compile Include="Cbor\Writer\CborWriterTests.Integer.cs" />
-    <Compile Include="Cbor\Writer\CborWriterTests.String.cs" />
-    <Compile Include="Cbor\CborRoundtripTests.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.String.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Integer.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Helpers.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Map.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.SkipValue.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Simple.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Tag.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Array.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Helpers.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Array.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Map.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Simple.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Tag.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Integer.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.String.cs" />
+    <Compile Include="Cbor.Tests\CborRoundtripTests.cs" />
   </ItemGroup>
 </Project>
