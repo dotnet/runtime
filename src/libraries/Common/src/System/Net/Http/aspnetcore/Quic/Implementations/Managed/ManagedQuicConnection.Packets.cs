@@ -21,7 +21,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void ReceiveData(QuicReader reader, IPEndPoint sender, QuicSocketContext.RecvContext ctx)
         {
-            if (_closingPeriodEnd != null)
+            if (_isDraining)
             {
                 // discard any incoming data
                 return;

@@ -100,6 +100,7 @@ namespace System.Net.Quic.Implementations.Managed
                     GetPacketNumberSpace(GetEncryptionLevel(packetType)).AckElicited = true;
                 }
 
+                // TODO-RZ: don't process anything except connection close frames when closing
                 ProcessPacketResult result = frameType switch
                 {
                     FrameType.Padding => DiscardPadding(reader),
@@ -283,7 +284,10 @@ namespace System.Net.Quic.Implementations.Managed
                 inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.ReasonPhrase,
                     frame.FrameType, frame.IsQuicError);
 
-                StartClosing(context.Timestamp);
+                if (_closingPeriodEnd == null)
+                {
+                    StartClosing(context.Timestamp);
+                }
 
                 if (outboundError == null)
                 {
