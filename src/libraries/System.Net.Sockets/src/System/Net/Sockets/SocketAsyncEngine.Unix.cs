@@ -58,7 +58,7 @@ namespace System.Net.Sockets
 
         private static int GetEnginesCount()
         {
-            if (uint.TryParse(Environment.GetEnvironmentVariable("SYSTEM_NET_SOCKETS_ENGINE_COUNT"), out uint count))
+            if (uint.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT"), out uint count))
             {
                 return (int)count;
             }
@@ -236,7 +236,7 @@ namespace System.Net.Sockets
 
                 lock (_handleToContextMap)
                 {
-                    removed = _handleToContextMap.Remove(handle, out _);
+                    removed = _handleToContextMap.Remove(handle);
                 }
 
                 if (removed)
