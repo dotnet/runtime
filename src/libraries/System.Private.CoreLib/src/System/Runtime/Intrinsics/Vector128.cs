@@ -259,30 +259,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi8</remarks>
         /// <returns>A new <see cref="Vector128{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<byte> Create(byte value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<byte> result = CreateScalarUnsafe(value);                         // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector128(result);                             // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
-            }
-
-            if (Ssse3.IsSupported)
-            {
-                Vector128<byte> result = CreateScalarUnsafe(value);                         // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Ssse3.Shuffle(result, Vector128<byte>.Zero);                         // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
-            }
-
             if (Sse2.IsSupported)
             {
-                // We first unpack as bytes to duplicate value into the lower 2 bytes, then we treat it as a ushort and unpack again to duplicate those
-                // bits into the lower 2 words, we can finally treat it as a uint and shuffle the lower dword to duplicate value across the entire result
-
-                Vector128<byte> result = CreateScalarUnsafe(value);                         // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                result = Sse2.UnpackLow(result, result);                                    // < v, v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                result = Sse2.UnpackLow(result.AsUInt16(), result.AsUInt16()).AsByte();     // < v, v, v, v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Sse2.Shuffle(result.AsUInt32(), 0x00).AsByte();                      // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -317,22 +299,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128d _mm_set1_pd</remarks>
         /// <returns>A new <see cref="Vector128{Double}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<double> Create(double value)
         {
-            if (Sse3.IsSupported)
-            {
-                Vector128<double> result = CreateScalarUnsafe(value);                       // < v, ? >
-                return Sse3.MoveAndDuplicate(result);                                       // < v, v >
-            }
-
             if (Sse2.IsSupported)
             {
-                // Treating the value as a set of singles and emitting MoveLowToHigh is more efficient than dealing with the elements directly as double
-                // However, we still need to check if Sse2 is supported since CreateScalarUnsafe needs it to for movsd, when value is not already in register
-
-                Vector128<double> result = CreateScalarUnsafe(value);                       // < v, ? >
-                return Sse.MoveLowToHigh(result.AsSingle(), result.AsSingle()).AsDouble();  // < v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -353,23 +325,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi16</remarks>
         /// <returns>A new <see cref="Vector128{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<short> Create(short value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<short> result = CreateScalarUnsafe(value);                        // < v, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector128(result);                             // < v, v, v, v, v, v, v, v >
-            }
-
             if (Sse2.IsSupported)
             {
-                // We first unpack as ushort to duplicate value into the lower 2 words, then we can treat it as a uint and shuffle the lower dword to
-                // duplicate value across the entire result
-
-                Vector128<short> result = CreateScalarUnsafe(value);                        // < v, ?, ?, ?, ?, ?, ?, ? >
-                result = Sse2.UnpackLow(result, result);                                    // < v, v, ?, ?, ?, ?, ?, ? >
-                return Sse2.Shuffle(result.AsInt32(), 0x00).AsInt16();                      // < v, v, v, v, v, v, v, v >
+                return Create(Value);
             }
 
             return SoftwareFallback(value);
@@ -396,19 +357,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi32</remarks>
         /// <returns>A new <see cref="Vector128{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<int> Create(int value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<int> result = CreateScalarUnsafe(value);                          // < v, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector128(result);                             // < v, v, v, v >
-            }
-
             if (Sse2.IsSupported)
             {
-                Vector128<int> result = CreateScalarUnsafe(value);                          // < v, ?, ?, ? >
-                return Sse2.Shuffle(result, 0x00);                                          // < v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -431,21 +385,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi64x</remarks>
         /// <returns>A new <see cref="Vector128{Int64}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<long> Create(long value)
         {
             if (Sse2.X64.IsSupported)
             {
-                if (Avx2.IsSupported)
-                {
-                    Vector128<long> result = CreateScalarUnsafe(value);                     // < v, ? >
-                    return Avx2.BroadcastScalarToVector128(result);                         // < v, v >
-                }
-                else
-                {
-                    Vector128<long> result = CreateScalarUnsafe(value);                     // < v, ? >
-                    return Sse2.UnpackLow(result, result);                                  // < v, v >
-                }
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -466,31 +411,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi8</remarks>
         /// <returns>A new <see cref="Vector128{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> Create(sbyte value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<sbyte> result = CreateScalarUnsafe(value);                        // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector128(result);                             // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
-            }
-
-            if (Ssse3.IsSupported)
-            {
-                Vector128<sbyte> result = CreateScalarUnsafe(value);                        // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Ssse3.Shuffle(result, Vector128<sbyte>.Zero);                        // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
-            }
-
             if (Sse2.IsSupported)
             {
-                // We first unpack as bytes to duplicate value into the lower 2 bytes, then we treat it as a ushort and unpack again to duplicate those
-                // bits into the lower 2 words, we can finally treat it as a uint and shuffle the lower dword to duplicate value across the entire result
-
-                Vector128<sbyte> result = CreateScalarUnsafe(value);                        // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                result = Sse2.UnpackLow(result, result);                                    // < v, v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                result = Sse2.UnpackLow(result.AsInt16(), result.AsInt16()).AsSByte();      // < v, v, v, v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Sse2.Shuffle(result.AsInt32(), 0x00).AsSByte();                      // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -525,25 +452,12 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128 _mm_set1_ps</remarks>
         /// <returns>A new <see cref="Vector128{Single}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<float> Create(float value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<float> result = CreateScalarUnsafe(value);                        // < v, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector128(result);                             // < v, v, v, v >
-            }
-
-            if (Avx.IsSupported)
-            {
-                Vector128<float> result = CreateScalarUnsafe(value);                        // < v, ?, ?, ? >
-                return Avx.Permute(result, 0x00);                                           // < v, v, v, v >
-            }
-
             if (Sse.IsSupported)
             {
-                Vector128<float> result = CreateScalarUnsafe(value);                        // < v, ?, ?, ? >
-                return Sse.Shuffle(result, result, 0x00);                                   // < v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -566,24 +480,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi16</remarks>
         /// <returns>A new <see cref="Vector128{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> Create(ushort value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<ushort> result = CreateScalarUnsafe(value);                       // < v, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector128(result);                             // < v, v, v, v, v, v, v, v >
-            }
-
             if (Sse2.IsSupported)
             {
-                // We first unpack as ushort to duplicate value into the lower 2 words, then we can treat it as a uint and shuffle the lower dword to
-                // duplicate value across the entire result
-
-                Vector128<ushort> result = CreateScalarUnsafe(value);                       // < v, ?, ?, ?, ?, ?, ?, ? >
-                result = Sse2.UnpackLow(result, result);                                    // < v, v, ?, ?, ?, ?, ?, ? >
-                return Sse2.Shuffle(result.AsUInt32(), 0x00).AsUInt16();                    // < v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -610,20 +513,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi32</remarks>
         /// <returns>A new <see cref="Vector128{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(uint value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<uint> result = CreateScalarUnsafe(value);                         // < v, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector128(result);                             // < v, v, v, v >
-            }
-
             if (Sse2.IsSupported)
             {
-                Vector128<uint> result = CreateScalarUnsafe(value);                         // < v, ?, ?, ? >
-                return Sse2.Shuffle(result, 0x00);                                          // < v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -646,22 +542,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi64x</remarks>
         /// <returns>A new <see cref="Vector128{UInt64}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(ulong value)
         {
             if (Sse2.X64.IsSupported)
             {
-                if (Avx2.IsSupported)
-                {
-                    Vector128<ulong> result = CreateScalarUnsafe(value);                    // < v, ? >
-                    return Avx2.BroadcastScalarToVector128(result);                         // < v, v >
-                }
-                else
-                {
-                    Vector128<ulong> result = CreateScalarUnsafe(value);                    // < v, ? >
-                    return Sse2.UnpackLow(result, result);                                  // < v, v >
-                }
+                return Create(value);
             }
 
             return SoftwareFallback(value);

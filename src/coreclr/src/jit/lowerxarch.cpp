@@ -929,6 +929,14 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (node->gtHWIntrinsicId)
     {
+        case NI_Vector128_Create:
+        {
+            LowerHWIntrinsicCreate(node);
+            assert(!node->OperIsHWIntrinsic() || (node->gtHWIntrinsicId != NI_Vector128_Create));
+            LowerNode(node);
+            return;
+        }
+
         case NI_SSE2_CompareGreaterThan:
         {
             if (node->gtSIMDBaseType != TYP_DOUBLE)
@@ -1080,6 +1088,453 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     ContainCheckHWIntrinsic(node);
+}
+
+union VectorConstant {
+    int8_t   i8[16];
+    uint8_t  u8[16];
+    int16_t  i16[8];
+    uint16_t u16[8];
+    int32_t  i32[4];
+    uint32_t u32[4];
+    int64_t  i64[2];
+    uint64_t u64[2];
+    float    f32[4];
+    double   f64[2];
+};
+
+//----------------------------------------------------------------------------------------------
+// ProcessArgForHWIntrinsicCreate: Processes an argument for the Lowering::LowerHWIntrinsicCreate method
+//
+//  Arguments:
+//     arg      - The argument to process
+//     argIdx   - The index of the argument being processed
+//     vecCns   - The vector constant being constructed
+//     baseType - The base type of the vector constant
+//
+//  Returns:
+//     true if arg was a constant; otherwise, false
+static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConstant& vecCns, var_types baseType)
+{
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            if (arg->IsCnsIntOrI())
+            {
+                vecCns.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
+                return true;
+            }
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            if (arg->IsCnsIntOrI())
+            {
+                vecCns.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
+                return true;
+            }
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            if (arg->IsCnsIntOrI())
+            {
+                vecCns.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
+                return true;
+            }
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            if (arg->OperIs(GT_CNS_LNG))
+            {
+                vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsLngCon()->gtLconVal);
+                return true;
+            }
+            break;
+        }
+
+        case TYP_FLOAT:
+        {
+            if (arg->IsCnsFltOrDbl())
+            {
+                vecCns.f32[argIdx] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                return true;
+            }
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            if (arg->IsCnsFltOrDbl())
+            {
+                vecCns.f64[argIdx] = static_cast<double>(arg->AsDblCon()->gtDconVal);
+                return true;
+            }
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCreate: Lowers a Vector64, Vector128, or Vector256 Create call
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    var_types      simdType    = node->gtType;
+    var_types      baseType    = node->gtSIMDBaseType;
+    unsigned       simdSize    = node->gtSIMDSize;
+    VectorConstant vecCns      = {};
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(baseType));
+    assert(simdSize != 0);
+
+    GenTreeArgList* argList = nullptr;
+    GenTree*        op1     = node->gtGetOp1();
+    GenTree*        op2     = node->gtGetOp2();
+    GenTree*        idx     = nullptr;
+
+    assert(op1 != nullptr);
+
+    int argCnt    = 0;
+    int cnsArgCnt = 0;
+
+    if (op1->OperIsList())
+    {
+        assert(op2 == nullptr);
+
+        for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
+        {
+            if (HandleArgForHWIntrinsicCreate(argList->Current(), argCnt, vecCns, baseType))
+            {
+                cnsArgCnt += 1;
+            }
+            argCnt += 1;
+        }
+    }
+    else
+    {
+        if (HandleArgForHWIntrinsicCreate(op1, argCnt, vecCns, baseType))
+        {
+            cnsArgCnt += 1;
+        }
+        argCnt += 1;
+
+        if (op2 != nullptr)
+        {
+            if (HandleArgForHWIntrinsicCreate(op2, argCnt, vecCns, baseType))
+            {
+                cnsArgCnt += 1;
+            }
+            argCnt += 1;
+        }
+        else if (cnsArgCnt == 1)
+        {
+            // These intrinsics are meant to set the same value to every element
+            // so we'll just specially handle it here and copy it into the remaining
+            // indices.
+
+            for (unsigned i = 1; i < simdSize / genTypeSize(baseType); i++)
+            {
+                HandleArgForHWIntrinsicCreate(op1, i, vecCns, baseType);
+            }
+        }
+    }
+
+    if (argCnt == cnsArgCnt)
+    {
+        if (op1->OperIsList())
+        {
+            for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
+            {
+                BlockRange().Remove(argList->Current());
+            }
+        }
+        else
+        {
+            BlockRange().Remove(op1);
+
+            if (op2 != nullptr)
+            {
+                BlockRange().Remove(op2);
+            }
+        }
+
+        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, simdSize, emitDataAlignment::Required);
+        GenTree* clsVarAddr      = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+        BlockRange().InsertBefore(node, clsVarAddr);
+
+        node->ChangeOper(GT_IND);
+        node->gtOp1 = clsVarAddr;
+
+        return;
+    }
+    else if (argCnt == 1)
+    {
+        // We have the following:
+        //
+        // /--*  <value>
+        // *  HWINTRINSIC simd16 T Create
+
+        // We will be constructing the following parts:
+        //
+        //      /--*  <value>
+        // t1 = *  HWINTRINSIC simd16 ubyte CreateScalarUnsafe
+        // ...
+        op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, NI_Vector128_CreateScalarUnsafe, baseType, simdSize);
+        BlockRange().InsertBefore(node, op1);
+        LowerNode(op1);
+
+        if ((baseType != TYP_DOUBLE) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            //      /--*  <value>
+            // t1 = *  HWINTRINSIC simd16 T CreateScalarUnsafe
+            //      /--*  t1     simd16
+            // t0 = *  HWINTRINSIC simd16 T BroadcastScalarToVector128
+
+            node->gtOp1 = op1;
+            node->gtOp2 = nullptr;
+
+            node->gtHWIntrinsicId = NI_AVX2_BroadcastScalarToVector128;
+            return;
+        }
+
+        switch (baseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                {
+                    // ...
+                    // t2 =   HWINTRINSIC simd16 ubyte get_Zero
+                    //      /--*  t1     simd16
+                    //      +--*  t2     simd16
+                    // t0 = *  HWINTRINSIC simd16 ubyte Shuffle
+
+                    op2 = comp->gtNewSimdHWIntrinsicNode(simdType, NI_Vector128_get_Zero, TYP_UBYTE, simdSize);
+                    BlockRange().InsertBefore(node, op2);
+                    LowerNode(op2);
+
+                    node->gtOp1 = op1;
+                    node->gtOp2 = op2;
+
+                    node->gtHWIntrinsicId = NI_SSSE3_Shuffle;
+                    break;
+                }
+
+                // ...
+                //      /--*  t1     simd16
+                //      *  STORE_LCL_VAR simd16<Vector128`1>
+                // t3 =    LCL_VAR   simd16<Vector128`1>
+                // t4 =    LCL_VAR   simd16<Vector128`1>
+                //      /--*  t3     simd16
+                //      +--*  t4     simd16
+                // t2 = *  HWINTRINSIC simd16 ubyte UnpackLow
+                // ...
+
+                op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, nullptr, NI_SSE2_UnpackLow, TYP_UBYTE, simdSize);
+                BlockRange().InsertBefore(node, op1);
+
+                LIR::Use op1Use(BlockRange(), &op1->AsOp()->gtOp1, op1);
+                ReplaceWithLclVar(op1Use);
+
+                op1->AsOp()->gtOp2 = comp->gtClone(op1->AsOp()->gtOp1);
+                BlockRange().InsertBefore(op1, op1->AsOp()->gtOp2);
+                LowerNode(op1);
+
+                __fallthrough;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                // ...
+                //      /--*  t2     simd16
+                //      *  STORE_LCL_VAR simd16<Vector128`1>
+                // t6 =    LCL_VAR   simd16<Vector128`1>
+                // t7 =    LCL_VAR   simd16<Vector128`1>
+                //      /--*  t6     simd16
+                //      +--*  t7     simd16
+                // t5 = *  HWINTRINSIC simd16 ushort UnpackLow
+                // ...
+
+                op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, nullptr, NI_SSE2_UnpackLow, TYP_USHORT, simdSize);
+                BlockRange().InsertBefore(node, op1);
+
+                LIR::Use op1Use(BlockRange(), &op1->AsOp()->gtOp1, op1);
+                ReplaceWithLclVar(op1Use);
+
+                op1->AsOp()->gtOp2 = comp->gtClone(op1->AsOp()->gtOp1);
+                BlockRange().InsertBefore(op1, op1->AsOp()->gtOp2);
+                LowerNode(op1);
+
+                __fallthrough;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                // ...
+                // t8 =    CNS_INT   int    0
+                //      /--*  t5     simd16
+                //      +--*  t8     int
+                // t0 = *  HWINTRINSIC simd16 uint Shuffle
+
+                idx = comp->gtNewIconNode(0x00, TYP_INT);
+                BlockRange().InsertBefore(node, idx);
+
+                node->gtOp1 = op1;
+                node->gtOp2 = idx;
+
+                node->gtHWIntrinsicId = NI_SSE2_Shuffle;
+                node->gtSIMDBaseType  = TYP_UINT;
+
+                break;
+            }
+
+#if defined(TARGET_AMD64)
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                // ...
+                //      *  STORE_LCL_VAR simd16<Vector128`1>
+                // t2 =    LCL_VAR   simd16<Vector128`1>
+                // t3 =    LCL_VAR   simd16<Vector128`1>
+                //      /--*  t2     simd16
+                //      +--*  t3     simd16
+                // t0 = *  HWINTRINSIC simd16 ulong UnpackLow
+
+                node->gtOp1 = op1;
+
+                LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(op1Use);
+
+                node->gtOp2 = comp->gtClone(node->gtOp1);
+                BlockRange().InsertBefore(node, node->gtOp2);
+
+                node->gtHWIntrinsicId = NI_SSE2_UnpackLow;
+                break;
+            }
+#endif // TARGET_AMD64
+
+            case TYP_FLOAT:
+            {
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    // ...
+                    // t2 =    CNS_INT   int    0
+                    //      /--*  t1     simd16
+                    //      +--*  t2     int
+                    // t0 = *  HWINTRINSIC simd16 float Permute
+
+                    idx = comp->gtNewIconNode(0x00, TYP_INT);
+                    BlockRange().InsertBefore(node, idx);
+
+                    node->gtOp1 = op1;
+                    node->gtOp2 = idx;
+
+                    node->gtHWIntrinsicId = NI_AVX_Permute;
+                    break;
+                }
+
+                // ...
+                //      *  STORE_LCL_VAR simd16<Vector128`1>
+                // t2 =    LCL_VAR   simd16<Vector128`1>
+                // t3 =    LCL_VAR   simd16<Vector128`1>
+                // t4 =    CNS_INT   int    0
+                //      /--*  t2     simd16
+                //      +--*  t3     simd16
+                //      +--*  t4     int
+                // t0 = *  HWINTRINSIC simd16 float Shuffle
+
+                node->gtOp1 = op1;
+
+                LIR::Use t1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(t1Use);
+
+                node->gtOp2 = comp->gtClone(node->gtOp1);
+                BlockRange().InsertBefore(node, node->gtOp2);
+
+                idx = comp->gtNewIconNode(0x00, TYP_INT);
+                BlockRange().InsertBefore(node, idx);
+
+                node->gtOp1 = comp->gtNewArgList(node->gtOp1, node->gtOp2, idx);
+                node->gtOp2 = nullptr;
+
+                node->gtHWIntrinsicId = NI_SSE_Shuffle;
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
+                {
+                    //      /--*  <value>
+                    // t1 = *  HWINTRINSIC simd16 double CreateScalarUnsafe
+                    //      /--*  t1     simd16
+                    // t0 = *  HWINTRINSIC simd16 double MoveAndDuplicate
+
+                    node->gtOp1 = op1;
+                    node->gtOp2 = nullptr;
+
+                    node->gtHWIntrinsicId = NI_SSE3_MoveAndDuplicate;
+                    break;
+                }
+
+                //      /--*  <value>
+                // t1 = *  HWINTRINSIC simd16 double CreateScalarUnsafe
+                //      *  STORE_LCL_VAR simd16<Vector128`1>
+                // t2 =    LCL_VAR   simd16<Vector128`1>
+                // t3 =    LCL_VAR   simd16<Vector128`1>
+                //      /--*  t2     simd16
+                //      +--*  t3     simd16
+                // t0 = *  HWINTRINSIC simd16 float MoveLowToHigh
+
+                node->gtOp1 = op1;
+
+                LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(op1Use);
+
+                node->gtOp2 = comp->gtClone(node->gtOp1);
+                BlockRange().InsertBefore(node, node->gtOp2);
+
+                node->gtHWIntrinsicId = NI_SSE_MoveLowToHigh;
+                node->gtSIMDBaseType  = TYP_FLOAT;
+
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        return;
+    }
+
+    unreached();
 }
 #endif // FEATURE_HW_INTRINSICS
 
