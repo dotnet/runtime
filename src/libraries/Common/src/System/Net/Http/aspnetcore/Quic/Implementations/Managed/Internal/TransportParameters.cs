@@ -180,15 +180,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 switch (name)
                 {
                     case TransportParameterName.OriginalConnectionId:
-                        parameters.OriginalConnectionId = new ConnectionId(data.ToArray());
+                        parameters.OriginalConnectionId = new ConnectionId(data.ToArray(), 0, Internal.StatelessResetToken.Random());
                         break;
                     case TransportParameterName.MaxIdleTimeout:
                         if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.MaxIdleTimeout = varIntValue;
                         break;
                     case TransportParameterName.StatelessResetToken:
-                        if (data.Length != Frames.StatelessResetToken.Length) goto Error;
-                        parameters.StatelessResetToken = Frames.StatelessResetToken.FromSpan(data);
+                        if (data.Length != Internal.StatelessResetToken.Length) goto Error;
+                        parameters.StatelessResetToken = Internal.StatelessResetToken.FromSpan(data);
                         break;
                     case TransportParameterName.MaxPacketSize:
                         if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
@@ -288,8 +288,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 Debug.Assert(isServer, "Trying to send server-only parameter as a client.");
                 writer.WriteTransportParameterName(TransportParameterName.StatelessResetToken);
-                writer.WriteVarInt(Frames.StatelessResetToken.Length);
-                Frames.StatelessResetToken.ToSpan(writer.GetWritableSpan(Frames.StatelessResetToken.Length),
+                writer.WriteVarInt(Internal.StatelessResetToken.Length);
+                Internal.StatelessResetToken.ToSpan(writer.GetWritableSpan(Internal.StatelessResetToken.Length),
                     parameters.StatelessResetToken.Value);
             }
 

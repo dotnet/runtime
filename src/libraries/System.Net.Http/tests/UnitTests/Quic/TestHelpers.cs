@@ -23,7 +23,14 @@ namespace System.Net.Quic.Tests
         public static TFrame ShouldHaveFrame<TFrame>(this OneRttPacket packet) where TFrame : FrameBase
         {
             var frame = packet.Frames.OfType<TFrame>().SingleOrDefault();
-            Assert.True(frame != null, $"Packet does not contain {typeof(TFrame).Name}s.");
+            Assert.True(frame != null, $"Packet does not contain {typeof(TFrame).Name}s, but was expected to.");
+            return frame!;
+        }
+
+        public static TFrame ShouldNotHaveFrame<TFrame>(this OneRttPacket packet) where TFrame : FrameBase
+        {
+            var frame = packet.Frames.OfType<TFrame>().SingleOrDefault();
+            Assert.True(frame == null, $"Packet does contain {typeof(TFrame).Name}, but was expected not to.");
             return frame!;
         }
 

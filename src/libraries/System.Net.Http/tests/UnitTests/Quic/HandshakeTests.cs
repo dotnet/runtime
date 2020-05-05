@@ -12,8 +12,6 @@ namespace System.Net.Quic.Tests
     {
         private readonly ITestOutputHelper output;
 
-        private readonly QuicClientConnectionOptions _clientOpts;
-        private readonly QuicListenerOptions _serverOpts;
         private readonly ManagedQuicConnection _client;
         private readonly ManagedQuicConnection _server;
 
@@ -24,18 +22,7 @@ namespace System.Net.Quic.Tests
         public HandshakeTests(ITestOutputHelper output)
         {
             this.output = output;
-            // this is safe as tests within the same class will not run parallel to each other.
-            Console.SetOut(new XUnitTextWriter(output));
-            _clientOpts = new QuicClientConnectionOptions();
-            _serverOpts = new QuicListenerOptions
-            {
-                CertificateFilePath = TestHarness.CertificateFilePath,
-                PrivateKeyFilePath = TestHarness.PrivateKeyFilePath
-            };
-            _client = TestHarness.CreateClient(_clientOpts);
-            _server = TestHarness.CreateServer(_serverOpts);
-
-            _harness = new TestHarness(output, _client);
+            (_client, _server, _harness) = TestHarness.InitConnection(output);
         }
 
         [Fact]

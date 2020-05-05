@@ -112,7 +112,10 @@ namespace System.Net.Quic.Implementations.Managed
                     if (header.PacketType == PacketType.Initial && !_isServer)
                     {
                         // protection keys are not affected by this change
-                        DestinationConnectionId = new ConnectionId(header.SourceConnectionId.ToArray());
+                        DestinationConnectionId = new ConnectionId(
+                            header.SourceConnectionId.ToArray(),
+                            DestinationConnectionId!.SequenceNumber,
+                            DestinationConnectionId.StatelessResetToken);
                     }
 
                     // total length of the packet is known and checked during header parsing.
@@ -169,8 +172,8 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     // initialize protection keys
                     // clients destination connection Id is ours source connection Id
-                    SourceConnectionId = new ConnectionId(header.DestinationConnectionId.ToArray());
-                    DestinationConnectionId = new ConnectionId(header.SourceConnectionId.ToArray());
+                    SourceConnectionId = new ConnectionId(header.DestinationConnectionId.ToArray(), 0, StatelessResetToken.Random());
+                    DestinationConnectionId = new ConnectionId(header.SourceConnectionId.ToArray(), 0, StatelessResetToken.Random());
 
                     _localConnectionIdCollection.Add(SourceConnectionId);
                     DeriveInitialProtectionKeys(SourceConnectionId.Data);
@@ -216,7 +219,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (header.KeyPhaseBit != _currentKeyPhase && false)
             {
-                // TODO-RZ: Remember old protection keys
+                // TODO-RZ: Key phase is protected by header protection, for key phase implementation,
+                // we need to separate removing header protection and packet payload decryption
+
                 // An endpoint SHOULD retain old keys so that packets sent by its peer
                 // prior to receiving the key update can be processed.  Discarding old
                 // keys too early can cause delayed packets to be discarded.  Discarding

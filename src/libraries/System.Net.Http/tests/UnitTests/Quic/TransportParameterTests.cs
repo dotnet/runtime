@@ -30,7 +30,7 @@ namespace System.Net.Quic.Tests
                 MaxAckDelay = 10,
                 MaxIdleTimeout = 100,
                 MaxPacketSize = 2034,
-                OriginalConnectionId = new ConnectionId(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0}),
+                OriginalConnectionId = new ConnectionId(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 0, StatelessResetToken.Random()),
                 StatelessResetToken = new StatelessResetToken(3412414, 1231231),
                 ActiveConnectionIdLimit = 399,
                 InitialMaxStreamsBidi = 10,

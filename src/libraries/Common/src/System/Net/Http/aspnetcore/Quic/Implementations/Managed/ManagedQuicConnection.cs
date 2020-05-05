@@ -145,6 +145,11 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly ConnectionIdCollection _localConnectionIdCollection = new ConnectionIdCollection();
 
         /// <summary>
+        ///     Collection of local connection ids used by remote endpoint.
+        /// </summary>
+        private readonly ConnectionIdCollection _remoteConnectionIdCollection = new ConnectionIdCollection();
+
+        /// <summary>
         ///     Flow control limits set by this endpoint for the peer for the entire connection.
         /// </summary>
         private ConnectionFlowControlLimits _localLimits = default;

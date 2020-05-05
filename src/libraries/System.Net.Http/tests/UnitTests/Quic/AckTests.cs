@@ -11,8 +11,6 @@ namespace System.Net.Quic.Tests
 {
     public class AckTests
     {
-        private readonly QuicClientConnectionOptions _clientOpts;
-        private readonly QuicListenerOptions _serverOpts;
         private readonly ManagedQuicConnection _client;
         private readonly ManagedQuicConnection _server;
 
@@ -20,17 +18,7 @@ namespace System.Net.Quic.Tests
 
         public AckTests(ITestOutputHelper output)
         {
-            _clientOpts = new QuicClientConnectionOptions();
-            _serverOpts = new QuicListenerOptions
-            {
-                CertificateFilePath = TestHarness.CertificateFilePath,
-                PrivateKeyFilePath = TestHarness.PrivateKeyFilePath
-            };
-            _client = TestHarness.CreateClient(_clientOpts);
-            _server = TestHarness.CreateServer(_serverOpts);
-
-            _harness = new TestHarness(output, _client);
-
+            (_client, _server, _harness) = TestHarness.InitConnection(output);
             _harness.EstablishConnection(_client, _server);
         }
 

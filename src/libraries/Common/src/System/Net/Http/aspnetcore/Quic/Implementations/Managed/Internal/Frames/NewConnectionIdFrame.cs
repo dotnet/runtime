@@ -2,48 +2,9 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 {
-    /// <summary>
-    ///     Token used to authorize a Connection id when attempting to connect to a known host.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal readonly struct StatelessResetToken
-    {
-        /// <summary>
-        ///     Length of the reset token.
-        /// </summary>
-        internal const int Length = 128/8;
-
-        /// <summary>
-        ///     First 8 bytes of the reset token.
-        /// </summary>
-        internal readonly long LowerHalf;
-
-        /// <summary>
-        ///     Second 8 bytes of the reset token.
-        /// </summary>
-        internal readonly long UpperHalf;
-
-        public StatelessResetToken(long lowerHalf, long upperHalf)
-        {
-            LowerHalf = lowerHalf;
-            UpperHalf = upperHalf;
-        }
-
-        internal static StatelessResetToken FromSpan(ReadOnlySpan<byte> token)
-        {
-            return MemoryMarshal.Read<StatelessResetToken>(token);
-        }
-
-        internal static void ToSpan(Span<byte> destination, in StatelessResetToken token)
-        {
-            MemoryMarshal.AsRef<StatelessResetToken>(destination) = token;
-        }
-    }
-
     /// <summary>
     ///     Provides peer with an alternative connection IDs that can be used to break linkability when migrating connections.
     /// </summary>

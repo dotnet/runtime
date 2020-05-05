@@ -119,7 +119,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public void SerializeShortPacketHeader()
         {
-            var dcid = new ConnectionId(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
+            var dcid = new ConnectionId(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 0, StatelessResetToken.Random());
             var idCollection = new ConnectionIdCollection();
             idCollection.Add(dcid);
 

@@ -3,11 +3,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal class ConnectionId : IEquatable<ConnectionId>
     {
+        public static readonly Comparer<ConnectionId> SequenceNumberComparer = Comparer<ConnectionId>.Create((l,r) => l.SequenceNumber.CompareTo(r.SequenceNumber));
+
         private static Random _random = new Random(41);
 
         internal const int DefaultCidSize = 20;
@@ -16,20 +19,37 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             Debug.Assert((uint) length <= 20, "Maximum connection id length is 20");
             var bytes = new byte[length];
+
             lock (_random)
             {
                 _random.NextBytes(bytes);
             }
 
-            return new ConnectionId(bytes);
+            // TODO-RZ: generate stateless reset deterministically so it can be checked without state
+            return new ConnectionId(bytes, 0, StatelessResetToken.Random());
         }
 
-        public ConnectionId(byte[] data)
+        public ConnectionId(byte[] data, long sequenceNumber, StatelessResetToken statelessResetToken)
         {
             Data = data;
+            SequenceNumber = sequenceNumber;
+            StatelessResetToken = statelessResetToken;
         }
 
+        /// <summary>
+        ///     Raw data of the connection id.
+        /// </summary>
         internal byte[] Data { get; }
+
+        /// <summary>
+        ///     The sequence number of the connection id.
+        /// </summary>
+        internal long SequenceNumber { get; }
+
+        /// <summary>
+        ///     Stateless reset token to be used for this connection id.
+        /// </summary>
+        internal StatelessResetToken StatelessResetToken { get; }
 
         public bool Equals(ConnectionId? other)
         {

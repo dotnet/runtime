@@ -19,8 +19,7 @@ namespace System.Net.Quic.Tests.Harness
         {
             Sender = sender;
             _sealMap = sealMap;
-            ConnectionIdCollection.Add(sender.SourceConnectionId);
-            ConnectionIdCollection.Add(sender.DestinationConnectionId);
+            ConnectionIdCollection.Add(sender.DestinationConnectionId!);
         }
 
         private readonly Dictionary<(ManagedQuicConnection, PacketType), CryptoSeal> _sealMap;

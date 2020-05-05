@@ -56,7 +56,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     // TODO-RZ: This normally shouldn't race with Detach method (that can only be called from
                     // other thread for connected connections), but there is very improbable scenario when the connection
                     // was detached and we received delayed Initial/Handshake packet.
-                    connectionId = new ConnectionId(header.DestinationConnectionId.ToArray());
+                    connectionId = new ConnectionId(header.DestinationConnectionId.ToArray(), 0, StatelessResetToken.Random());
                     _connectionIds.Add(connectionId!);
 
                     connection = new ManagedQuicConnection(_listenerOptions!, this, remoteEp);

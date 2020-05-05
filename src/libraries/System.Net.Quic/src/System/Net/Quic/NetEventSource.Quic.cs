@@ -19,6 +19,7 @@ namespace System.Net
         private const int SetEncryptionSecretsId = PacketDroppedId + 1;
         private const int DatagramSentId = SetEncryptionSecretsId + 1;
         private const int DatagramRecvId = DatagramSentId + 1;
+        private const int NewConnectionIdReceivedId = DatagramRecvId + 1;
 
         [NonEvent]
         public static void NewClientConnection(ManagedQuicConnection connection, byte[] scid, byte[] dcid)
@@ -139,6 +140,21 @@ namespace System.Net
         private void DatagramSent(string connection, byte[] datagram)
         {
             WriteEvent(DatagramSentId, connection, datagram);
+        }
+
+        [NonEvent]
+        public static void NewConnectionIdReceived(ManagedQuicConnection connection, byte[] connectionId)
+        {
+            if (IsEnabled)
+            {
+                Log.NewConnectionIdReceived(IdOf(connection), connectionId);
+            }
+        }
+
+        [Event(NewConnectionIdReceivedId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
+        private void NewConnectionIdReceived(string connection, byte[] connectionId)
+        {
+            WriteEvent(NewConnectionIdReceivedId, connection, connectionId);
         }
     }
 }

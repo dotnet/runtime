@@ -42,6 +42,22 @@ namespace System.Net.Quic.Tests
             return new ManagedQuicConnection(options, DummySocketContet, IpAnyEndpoint);
         }
 
+        internal static (ManagedQuicConnection client, ManagedQuicConnection server, TestHarness harness) InitConnection(ITestOutputHelper output)
+        {
+            var clientOpts = new QuicClientConnectionOptions();
+            var serverOpts = new QuicListenerOptions
+            {
+                CertificateFilePath = CertificateFilePath,
+                PrivateKeyFilePath = PrivateKeyFilePath
+            };
+            var client = CreateClient(clientOpts);
+            var server = CreateServer(serverOpts);
+
+            var harness = new TestHarness(output, client);
+
+            return (client, server, harness);
+        }
+
         public TestHarness(ITestOutputHelper output, ManagedQuicConnection client)
         {
             _output = output;

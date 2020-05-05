@@ -2,23 +2,25 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal class ConnectionIdCollection
     {
-        private ImmutableList<ConnectionId> _connectionIds;
+        // _lookup of connection ids based on the sequence number
+        private ImmutableDictionary<long, ConnectionId> _connectionIds;
 
         public ConnectionIdCollection()
         {
-            _connectionIds = ImmutableList<ConnectionId>.Empty;
+            _connectionIds = ImmutableDictionary<long, ConnectionId>.Empty;
         }
 
         public void Add(ConnectionId connectionId)
         {
             var originalValue = Volatile.Read(ref _connectionIds);
-            foreach (var id in originalValue)
+            foreach (var (_, id) in originalValue)
             {
                 if (id.Data.AsSpan().StartsWith(connectionId.Data))
                 {
@@ -26,14 +28,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
             }
 
-            bool success;
-            do
-            {
-                var updated = originalValue.Add(connectionId);
-                var interlockedResult = Interlocked.CompareExchange(ref _connectionIds, updated, originalValue);
-                success = originalValue == interlockedResult;
-                originalValue = interlockedResult;
-            } while (!success);
+            ImmutableInterlocked.TryAdd(ref _connectionIds, connectionId.SequenceNumber, connectionId);
+        }
+
+        public ConnectionId? FindBySequenceNumber(long sequenceNumber)
+        {
+            _connectionIds.TryGetValue(sequenceNumber, out var connectionId);
+            return connectionId;
         }
 
         /// <summary>
@@ -43,8 +44,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <returns></returns>
         public ConnectionId? Find(in ReadOnlySpan<byte> dcidSpan)
         {
-            // TODO-RZ Aho-Corassick might be more efficient
-            foreach (var connectionId in _connectionIds)
+            // TODO-RZ Aho-Corassick might be more efficient here
+            foreach (var (_, connectionId) in _connectionIds)
             {
                 if (dcidSpan.StartsWith(connectionId.Data))
                 {
@@ -57,16 +58,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public void Remove(ConnectionId connectionId)
         {
-            var originalValue = Volatile.Read(ref _connectionIds);
-
-            bool success;
-            do
-            {
-                var updated = originalValue.Remove(connectionId);
-                var interlockedResult = Interlocked.CompareExchange(ref _connectionIds, updated, originalValue);
-                success = originalValue == interlockedResult;
-                originalValue = interlockedResult;
-            } while (!success);
+            ImmutableInterlocked.TryRemove(ref _connectionIds, connectionId.SequenceNumber, out var removed);
+            Debug.Assert(removed.Equals(connectionId));
         }
     }
 }

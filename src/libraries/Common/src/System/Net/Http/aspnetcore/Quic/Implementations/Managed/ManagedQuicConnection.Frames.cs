@@ -117,7 +117,7 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.StreamDataBlocked => throw new NotImplementedException(),
                     FrameType.StreamsBlockedBidirectional => throw new NotImplementedException(),
                     FrameType.StreamsBlockedUnidirectional => throw new NotImplementedException(),
-                    FrameType.NewConnectionId => throw new NotImplementedException(),
+                    FrameType.NewConnectionId => ProcessNewConnectionIdFrame(reader),
                     FrameType.RetireConnectionId => throw new NotImplementedException(),
                     FrameType.PathChallenge => throw new NotImplementedException(),
                     FrameType.PathResponse => throw new NotImplementedException(),
@@ -207,6 +207,15 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
+        private ProcessPacketResult ProcessMaxDataFrame(QuicReader reader)
+        {
+            if (!MaxDataFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            _peerLimits.UpdateMaxData(frame.MaximumData);
+            return ProcessPacketResult.Ok;
+        }
+
         private ProcessPacketResult ProcessMaxStreamsFrame(QuicReader reader)
         {
             if (!MaxStreamsFrame.Read(reader, out var frame))
@@ -220,12 +229,46 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
-        private ProcessPacketResult ProcessMaxDataFrame(QuicReader reader)
+        private ProcessPacketResult ProcessNewConnectionIdFrame(QuicReader reader)
         {
-            if (!MaxDataFrame.Read(reader, out var frame))
+            if (!NewConnectionIdFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
-            _peerLimits.UpdateMaxData(frame.MaximumData);
+            if (DestinationConnectionId!.Data.Length == 0)
+            {
+                return CloseConnection(TransportErrorCode.ProtocolViolation,
+                    QuicError.NewConnectionIdFrameWhenZeroLengthCIDUsed, FrameType.NewConnectionId);
+            }
+
+            // RFC: If an endpoint receives a NEW_CONNECTION_ID frame that repeats a
+            // previously issued connection ID with a different Stateless Reset
+            // Token or a different sequence number, or if a sequence number is used
+            // for different connection IDs, the endpoint MAY treat that receipt as
+            // a connection error of type PROTOCOL_VIOLATION.
+
+            var existingCid = _remoteConnectionIdCollection.FindBySequenceNumber(frame.SequenceNumber);
+
+            if (!ReferenceEquals(_remoteConnectionIdCollection.Find(frame.ConnectionId), existingCid) ||
+                 existingCid != null && existingCid.StatelessResetToken != frame.StatelessResetToken)
+            {
+                return CloseConnection(TransportErrorCode.ProtocolViolation,
+                    QuicError.InconsistentNewConnectionIdFrame, FrameType.NewConnectionId);
+            }
+
+            if (existingCid == null)
+            {
+                var connectionId = new ConnectionId(
+                    frame.ConnectionId.ToArray(),
+                    frame.SequenceNumber,
+                    frame.StatelessResetToken);
+
+                _remoteConnectionIdCollection.Add(connectionId);
+                if (NetEventSource.IsEnabled) NetEventSource.NewConnectionIdReceived(this, connectionId.Data);
+            }
+
+            if (frame.RetirePriorTo > 0)
+                throw new NotImplementedException("Retiring connection ids is not implemented");
+
             return ProcessPacketResult.Ok;
         }
 

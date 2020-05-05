@@ -11,6 +11,7 @@ namespace System.Net.Quic.Tests
     {
         private readonly QuicClientConnectionOptions _clientOpts;
         private readonly QuicListenerOptions _serverOpts;
+
         private readonly ManagedQuicConnection _client;
         private readonly ManagedQuicConnection _server;
 

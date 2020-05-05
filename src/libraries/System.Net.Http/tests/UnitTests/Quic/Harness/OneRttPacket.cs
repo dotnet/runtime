@@ -21,7 +21,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal override void Serialize(QuicWriter writer, ITestHarnessContext context)
         {
-            ShortPacketHeader.Write(writer, new ShortPacketHeader(SpinBit, KeyPhase, PacketNumberLength, new ConnectionId(DestinationConnectionId)));
+            ShortPacketHeader.Write(writer, new ShortPacketHeader(SpinBit, KeyPhase, PacketNumberLength, new ConnectionId(DestinationConnectionId, 0, StatelessResetToken.Random())));
 
             SerializePayloadWithFrames(writer, context, Frames);
         }

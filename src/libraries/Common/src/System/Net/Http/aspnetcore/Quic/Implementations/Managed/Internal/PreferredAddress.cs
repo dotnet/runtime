@@ -44,7 +44,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 !reader.TryReadInt16(out short ipv6Port) ||
                 !reader.TryReadUInt8(out byte cidLength) ||
                 !reader.TryReadSpan(cidLength, out var cid) ||
-                !reader.TryReadSpan(Frames.StatelessResetToken.Length, out var token))
+                !reader.TryReadSpan(StatelessResetToken.Length, out var token))
             {
                 address = default;
                 return false;
