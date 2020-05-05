@@ -55,7 +55,7 @@ jobs:
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).${{ parameters.liveRuntimeBuildConfig }}'
 
     - name: buildProductArtifactName
-      value: 'MonoProduct_$(runtimeVariant)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
