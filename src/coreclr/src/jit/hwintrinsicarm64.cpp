@@ -374,6 +374,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(numArgs == 0);
 
             retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
+            break;
         }
         default:
         {

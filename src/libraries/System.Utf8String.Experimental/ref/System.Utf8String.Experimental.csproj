@@ -18,7 +18,7 @@
     <Compile Include="System.Utf8String.Experimental.Rune.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Compile Include="System.Utf8String.Experimental.netcoreapp5.0.cs" />
+    <Compile Include="System.Utf8String.Experimental.net5.0.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Memory" />

@@ -3,15 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Buffers;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Threading;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter
+    public partial class CborWriter
     {
         private KeyEncodingComparer? _keyEncodingComparer;
         private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;
@@ -152,7 +149,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (_pooledKeyEncodingRangeSets != null &&
                 _pooledKeyEncodingRangeSets.TryPop(out HashSet<(int Offset, int Length)>? result))
-            { 
+            {
                 result.Clear();
                 return _keyEncodingRanges = result;
             }

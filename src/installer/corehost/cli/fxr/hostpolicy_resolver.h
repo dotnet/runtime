@@ -20,6 +20,10 @@ struct hostpolicy_contract_t
     // 3.0+ contracts
     corehost_set_error_writer_fn set_error_writer;
     corehost_initialize_fn initialize;
+
+    // 5.0+ contracts
+    corehost_main_fn corehost_main;
+    corehost_main_with_output_buffer_fn corehost_main_with_output_buffer;
 };
 
 namespace hostpolicy_resolver

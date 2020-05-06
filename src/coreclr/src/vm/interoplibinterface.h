@@ -39,14 +39,15 @@ public: // COM activation
     static void MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe);
 };
 
-class GlobalComWrappers
+class GlobalComWrappersForMarshalling
 {
 public:
-    // Native QCall for the ComWrappers managed type to indicate a global instance is registered
-    // This should be set if the private static member representing the global instance on ComWrappers is non-null.
-    static void QCALLTYPE SetGlobalInstanceRegistered();
+    // Native QCall for the ComWrappers managed type to indicate a global instance
+    // is registered for marshalling. This should be set if the private static member
+    // representing the global instance for marshalling on ComWrappers is non-null.
+    static void QCALLTYPE SetGlobalInstanceRegisteredForMarshalling();
 
-public: // Functions operating on a registered global instance
+public: // Functions operating on a registered global instance for marshalling
     static bool TryGetOrCreateComInterfaceForObject(
         _In_ OBJECTREF instance,
         _Outptr_ void** wrapperRaw);

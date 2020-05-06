@@ -14,7 +14,7 @@
     <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" /> 
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />

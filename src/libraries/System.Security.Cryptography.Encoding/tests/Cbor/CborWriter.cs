@@ -8,9 +8,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter : IDisposable
+    public partial class CborWriter : IDisposable
     {
         // TODO : determine if CryptoPool is more appropriate
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();

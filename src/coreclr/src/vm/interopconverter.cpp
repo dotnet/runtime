@@ -28,7 +28,7 @@ namespace
         _Outptr_ IUnknown** wrapperRaw)
     {
 #ifdef FEATURE_COMWRAPPERS
-        return GlobalComWrappers::TryGetOrCreateComInterfaceForObject(instance, (void**)wrapperRaw);
+        return GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(instance, (void**)wrapperRaw);
 #else
         return false;
 #endif // FEATURE_COMWRAPPERS
@@ -40,7 +40,7 @@ namespace
         _Out_ OBJECTREF *pObjOut)
     {
 #ifdef FEATURE_COMWRAPPERS
-        return GlobalComWrappers::TryGetOrCreateObjectForComInstance(pUnknown, dwFlags, pObjOut);
+        return GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(pUnknown, dwFlags, pObjOut);
 #else
         return false;
 #endif // FEATURE_COMWRAPPERS
