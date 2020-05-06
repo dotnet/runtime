@@ -87,9 +87,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 
 #ifndef CROSSGEN_COMPILE
 
-    // Not expected to be called for array EEClass
-    _ASSERTE(!pOwningMT->IsArray());
-
 #ifdef _DEBUG
     _ASSERTE(!IsDestroyed());
     SetDestroyed();

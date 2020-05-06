@@ -26,9 +26,8 @@
     <Compile Include="System\Composition\TypedParts\ImportInfo.cs" />
     <Compile Include="System\Composition\TypedParts\TypedPartExportDescriptorProvider.cs" />
     <Compile Include="System\Composition\TypedParts\Util\DirectAttributeContext.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
-      <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
+             Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />

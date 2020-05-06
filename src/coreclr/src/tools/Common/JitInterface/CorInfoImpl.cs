@@ -79,7 +79,7 @@ namespace Internal.JitInterface
         }
 
         [DllImport(JitSupportLibrary)]
-        private extern static CorJitResult JitCompileMethod(out IntPtr exception, 
+        private extern static CorJitResult JitCompileMethod(out IntPtr exception,
             IntPtr jit, IntPtr thisHandle, IntPtr callbacks,
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
@@ -108,8 +108,6 @@ namespace Internal.JitInterface
 
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
-
-        private static readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public static void Startup()
         {
@@ -492,7 +490,7 @@ namespace Internal.JitInterface
 
                 if (method.IsArrayAddressMethod())
                     hasHiddenParameter = true;
-                
+
                 // We only populate sigInst for intrinsic methods because most of the time,
                 // JIT doesn't care what the instantiation is and this is expensive.
                 Instantiation owningTypeInst = method.OwningType.Instantiation;
@@ -534,9 +532,9 @@ namespace Internal.JitInterface
 
             sig->args = (CORINFO_ARG_LIST_STRUCT_*)0; // CORINFO_ARG_LIST_STRUCT_ is argument index
 
-            sig->sigInst.classInst = null; // Not used by the JIT 
-            sig->sigInst.classInstCount = 0; // Not used by the JIT 
-            sig->sigInst.methInst = null; // Not used by the JIT 
+            sig->sigInst.classInst = null; // Not used by the JIT
+            sig->sigInst.classInstCount = 0; // Not used by the JIT
+            sig->sigInst.methInst = null; // Not used by the JIT
             sig->sigInst.methInstCount = (uint)signature.GenericParameterCount;
 
             sig->pSig = (byte*)ObjectToHandle(signature);
@@ -874,7 +872,7 @@ namespace Internal.JitInterface
             {
                 if (impl.OwningType.IsValueType)
                 {
-                    impl = _unboxingThunkFactory.GetUnboxingMethod(impl);
+                    impl = getUnboxingThunk(impl);
                 }
 
                 return ObjectToHandle(impl);
@@ -1010,8 +1008,8 @@ namespace Internal.JitInterface
         private object GetRuntimeDeterminedObjectForToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             // Since RyuJIT operates on canonical types (as opposed to runtime determined ones), but the
-            // dependency analysis operates on runtime determined ones, we convert the resolved token 
-            // to the runtime determined form (e.g. Foo<__Canon> becomes Foo<T__Canon>). 
+            // dependency analysis operates on runtime determined ones, we convert the resolved token
+            // to the runtime determined form (e.g. Foo<__Canon> becomes Foo<T__Canon>).
 
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
             var typeOrMethodContext = HandleToObject((IntPtr)pResolvedToken.tokenContext);
@@ -1237,7 +1235,7 @@ namespace Internal.JitInterface
                 *namespaceName = null;
             return null;
         }
-        
+
         private CORINFO_CLASS_STRUCT_* getTypeInstantiationArgument(CORINFO_CLASS_STRUCT_* cls, uint index)
         {
             TypeDesc type = HandleToObject(cls);
@@ -1688,7 +1686,7 @@ namespace Internal.JitInterface
             else
             {
                 // This optimization may cause static fields in reference types to be accessed without cctor being triggered
-                // for NULL "this" object. It does not conform with what the spec says. However, we have been historically 
+                // for NULL "this" object. It does not conform with what the spec says. However, we have been historically
                 // doing it for perf reasons.
                 if (!typeToInit.IsValueType && ! typeToInit.IsInterface && !typeToInit.IsBeforeFieldInit)
                 {
@@ -1699,7 +1697,7 @@ namespace Internal.JitInterface
                     }
                 }
 
-                // If we are currently compiling the class constructor for this static field access then we can skip the initClass 
+                // If we are currently compiling the class constructor for this static field access then we can skip the initClass
                 if (MethodBeingCompiled.OwningType == typeToInit && MethodBeingCompiled.IsStaticConstructor)
                 {
                     // The class will be initialized by the time we access the field.
@@ -2540,11 +2538,11 @@ namespace Internal.JitInterface
         private void MethodCompileComplete(CORINFO_METHOD_STRUCT_* methHnd)
         { throw new NotImplementedException("MethodCompileComplete"); }
 
-        private void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
+        private bool getTailCallHelpers(ref CORINFO_RESOLVED_TOKEN callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, ref CORINFO_TAILCALL_HELPERS pResult)
         {
             // Slow tailcalls are not supported yet
-            // https://github.com/dotnet/corert/issues/1683
-            return null;
+            // https://github.com/dotnet/runtime/issues/35423
+            throw new NotImplementedException(nameof(getTailCallHelpers));
         }
 
         private byte[] _code;
@@ -2625,7 +2623,7 @@ namespace Internal.JitInterface
 
             if (funcKind == CorJitFuncKind.CORJIT_FUNC_ROOT)
             {
-                if (this.MethodBeingCompiled.IsNativeCallable)
+                if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
                     flags |= FrameInfoFlags.ReversePInvoke;
             }
 
@@ -2914,12 +2912,12 @@ namespace Internal.JitInterface
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
 
-            if (this.MethodBeingCompiled.IsNativeCallable)
+            if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
 #if READYTORUN
                 if (targetArchitecture == TargetArchitecture.X86)
                 {
-                    throw new RequiresRuntimeJitException("ReadyToRun: Methods with NativeCallableAttribute not implemented");
+                    throw new RequiresRuntimeJitException("ReadyToRun: Methods with UnmanagedCallersOnlyAttribute not implemented");
                 }
 #endif
 

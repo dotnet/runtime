@@ -1087,7 +1087,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
     // MethodDesc. If, however, this is an IL method, then we are at risk to have another thread backpatch the call
     // here, so we'd miss if we patched the prestub. Therefore, we go right to the IL method and patch IL offset 0
     // by using TRACE_UNJITTED_METHOD.
-    if (!pMD->IsIL())
+    if (!pMD->IsIL() && !pMD->IsILStub())
     {
         trace->InitForStub(GetPreStubEntryPoint());
     }
@@ -2349,6 +2349,8 @@ BOOL DelegateInvokeStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestinatio
 #endif // DACCESS_COMPILE
 
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+
 #if !defined(DACCESS_COMPILE)
 
 // static
@@ -2365,7 +2367,7 @@ void TailCallStubManager::Init()
     StubManager::AddStubManager(new TailCallStubManager());
 }
 
-bool TailCallStubManager::IsTailCallStubHelper(PCODE code)
+bool TailCallStubManager::IsTailCallJitHelper(PCODE code)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2381,7 +2383,7 @@ BOOL TailCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     bool fIsStub = false;
 
 #if !defined(DACCESS_COMPILE)
-    fIsStub = IsTailCallStubHelper(stubStartAddress);
+    fIsStub = IsTailCallJitHelper(stubStartAddress);
 #endif // !DACCESS_COMPILE
 
     return fIsStub;
@@ -2389,10 +2391,8 @@ BOOL TailCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
 #if !defined(DACCESS_COMPILE)
 
-#if defined(TARGET_X86)
 EXTERN_C void STDCALL JIT_TailCallLeave();
 EXTERN_C void STDCALL JIT_TailCallVSDLeave();
-#endif // TARGET_X86
 
 BOOL TailCallStubManager::TraceManager(Thread * pThread,
                                        TraceDestination * pTrace,
@@ -2400,7 +2400,6 @@ BOOL TailCallStubManager::TraceManager(Thread * pThread,
                                        BYTE ** ppRetAddr)
 {
     WRAPPER_NO_CONTRACT;
-#if defined(TARGET_X86)
     TADDR esp = GetSP(pContext);
     TADDR ebp = GetFP(pContext);
 
@@ -2449,27 +2448,6 @@ BOOL TailCallStubManager::TraceManager(Thread * pThread,
         pTrace->InitForStub((PCODE)*reinterpret_cast<SIZE_T *>(esp));
         return TRUE;
     }
-
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM)
-
-    _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(JIT_TailCall));
-
-    // The target address is the second argument
-#ifdef TARGET_AMD64
-    PCODE target = (PCODE)pContext->Rdx;
-#else
-    PCODE target = (PCODE)pContext->R1;
-#endif
-    *ppRetAddr = reinterpret_cast<BYTE *>(target);
-    pTrace->InitForStub(target);
-    return TRUE;
-
-#else  // !TARGET_X86 && !TARGET_AMD64 && !TARGET_ARM
-
-    _ASSERTE(!"TCSM::TM - TailCallStubManager should not be necessary on this platform");
-    return FALSE;
-
-#endif // TARGET_X86 || TARGET_AMD64
 }
 
 #endif // !DACCESS_COMPILE
@@ -2490,6 +2468,8 @@ BOOL TailCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *
     LOG_TRACE_DESTINATION(trace, stubStartAddress, "TailCallStubManager::DoTraceStub");
     return fResult;
 }
+
+#endif // TARGET_X86 && !UNIX_X86_ABI
 
 
 #ifdef DACCESS_COMPILE
@@ -2582,6 +2562,7 @@ VirtualCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     GetCacheEntryRangeList()->EnumMemoryRegions(flags);
 }
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
@@ -2589,6 +2570,7 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p TailCallStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif
 
 #endif // #ifdef DACCESS_COMPILE
 

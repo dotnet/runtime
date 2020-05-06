@@ -8924,6 +8924,7 @@ calli_end:
 			MonoInst *val;
 			MonoClass *enum_class;
 			MonoMethod *has_flag;
+			MonoMethodSignature *has_flag_sig;
 
 			--sp;
 			val = *sp;
@@ -8977,8 +8978,9 @@ calli_end:
 			    (has_flag = mini_get_method (cfg, method, callvirt_token, NULL, generic_context)) &&
 			    has_flag->klass == mono_defaults.enum_class &&
 			    !strcmp (has_flag->name, "HasFlag") &&
-			    has_flag->signature->hasthis &&
-			    has_flag->signature->param_count == 1) {
+			    (has_flag_sig = mono_method_signature_internal (has_flag)) &&
+			    has_flag_sig->hasthis &&
+			    has_flag_sig->param_count == 1) {
 				CHECK_TYPELOAD (enum_class);
 
 				if (enum_class == klass) {

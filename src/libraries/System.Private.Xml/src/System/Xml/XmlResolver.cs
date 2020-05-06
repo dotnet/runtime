@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml
 {
     using System;
@@ -11,6 +12,7 @@ namespace System.Xml
     using System.Net;
     using System.Threading.Tasks;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
 
     /// <devdoc>
     ///    <para>Resolves external XML resources named by a Uniform
@@ -24,24 +26,25 @@ namespace System.Xml
         ///       URI to an Object containing the actual resource.</para>
         /// </devdoc>
 
-        public abstract object GetEntity(Uri absoluteUri,
-                                         string role,
-                                         Type ofObjectToReturn);
+        public abstract object? GetEntity(Uri absoluteUri,
+                                          string? role,
+                                          Type? ofObjectToReturn);
 
 
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public virtual Uri ResolveUri(Uri baseUri, string relativeUri)
+        public virtual Uri ResolveUri(Uri? baseUri, string? relativeUri)
         {
             if (baseUri == null || (!baseUri.IsAbsoluteUri && baseUri.OriginalString.Length == 0))
             {
-                Uri uri = new Uri(relativeUri, UriKind.RelativeOrAbsolute);
+                Uri uri = new Uri(relativeUri!, UriKind.RelativeOrAbsolute);
                 if (!uri.IsAbsoluteUri && uri.OriginalString.Length > 0)
                 {
-                    uri = new Uri(Path.GetFullPath(relativeUri));
+                    uri = new Uri(Path.GetFullPath(relativeUri!));
                 }
+
                 return uri;
             }
             else
@@ -50,11 +53,13 @@ namespace System.Xml
                 {
                     return baseUri;
                 }
+
                 // relative base Uri
                 if (!baseUri.IsAbsoluteUri)
                 {
                     throw new NotSupportedException(SR.Xml_RelativeUriNotSupported);
                 }
+
                 return new Uri(baseUri, relativeUri);
             }
         }

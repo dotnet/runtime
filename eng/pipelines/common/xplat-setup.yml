@@ -11,9 +11,9 @@ parameters:
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
       runtimeFlavorDisplayName: 'CoreCLR'
-    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
       runtimeFlavorDisplayName: 'Mono'
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
@@ -67,10 +67,6 @@ jobs:
         # This is only required for cross builds.
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
-
-      - ${{ if eq(parameters.osGroup, 'Android') }}:
-        - name: ANDROID_NDK_HOME
-          value: /usr/local/ndk
 
       - name: runtimeFlavorName
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:

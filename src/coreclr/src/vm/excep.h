@@ -36,26 +36,6 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
-//******************************************************************************
-//
-//  SwallowUnhandledExceptions
-//
-//   Consult the EE policy and the app config to determine if the runtime should "swallow" unhandled exceptions.
-//   Swallow if: the EEPolicy->UnhandledExceptionPolicy is "eHostDeterminedPolicy"
-//           or: the app config value LegacyUnhandledExceptionPolicy() is set.
-//
-//  Parameters:
-//    none
-//
-//  Return value:
-//    true - the runtime should "swallow" unhandled exceptions
-//
-inline bool SwallowUnhandledExceptions()
-{
-    return (eHostDeterminedPolicy == GetEEPolicy()->GetUnhandledExceptionPolicy()) ||
-           g_pConfig->LegacyUnhandledExceptionPolicy();
-}
-
 // Enums
 // return values of LookForHandler
 enum LFH {
@@ -217,12 +197,20 @@ enum UnhandledExceptionLocation
                             FatalExecutionEngineException
 };
 
+#ifdef HOST_WINDOWS
+void InitializeCrashDump();
+bool GenerateCrashDump(LPCWSTR dumpName, int dumpType, bool diag);
+void CreateCrashDumpIfEnabled();
+#endif
+
+// Generates crash dumps if enabled for both Windows and Linux
+void CrashDumpAndTerminateProcess(UINT exitCode);
+
 struct ThreadBaseExceptionFilterParam
 {
     UnhandledExceptionLocation location;
 };
 
-LONG ThreadBaseExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 
@@ -829,10 +817,10 @@ LONG ReflectionInvocationExceptionFilter(
 class CEHelper
 {
     BOOL static IsMethodInPreV4Assembly(PTR_MethodDesc pMethodDesc);
-    BOOL static CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity, BOOL fCalculateSecurityInfo = TRUE);
+    BOOL static CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity);
 
 public:
-    BOOL static CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc, BOOL fCalculateSecurityInfo = TRUE);
+    BOOL static CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc);
     BOOL static CanIDispatchTargetHandleException();
     BOOL static IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
     BOOL static IsProcessCorruptedStateException(OBJECTREF oThrowable);

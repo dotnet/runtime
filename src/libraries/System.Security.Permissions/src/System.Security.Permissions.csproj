@@ -182,15 +182,12 @@
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\IStackWalk.cs">
-      <Link>System\Security\IStackWalk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\PermissionSet.cs">
-      <Link>System\Security\PermissionSet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\Permissions\PermissionState.cs">
-      <Link>System\Security\Permissions\PermissionState.cs</Link>
-    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\IStackWalk.cs"
+             Link="System\Security\IStackWalk.cs" />
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\PermissionSet.cs"
+             Link="System\Security\PermissionSet.cs" />
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\Permissions\PermissionState.cs"
+             Link="System\Security\Permissions\PermissionState.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />

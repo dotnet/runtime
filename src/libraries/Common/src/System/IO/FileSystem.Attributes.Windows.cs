@@ -81,7 +81,7 @@ namespace System.IO
                         )
                     {
                         // Assert so we can track down other cases (if any) to add to our test suite
-                        Debug.Assert(errorCode == Interop.Errors.ERROR_ACCESS_DENIED || errorCode == Interop.Errors.ERROR_SHARING_VIOLATION,
+                        Debug.Assert(errorCode == Interop.Errors.ERROR_ACCESS_DENIED || errorCode == Interop.Errors.ERROR_SHARING_VIOLATION || errorCode == Interop.Errors.ERROR_SEM_TIMEOUT,
                             $"Unexpected error code getting attributes {errorCode} from path {path}");
 
                         // Files that are marked for deletion will not let you GetFileAttributes,

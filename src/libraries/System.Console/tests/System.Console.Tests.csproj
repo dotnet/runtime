@@ -23,12 +23,10 @@
     <Compile Include="TermInfo.cs" />
     <Compile Include="RedirectedStream.cs" />
     <Compile Include="ReadKey.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\InterceptStreamWriter.cs">
-      <Link>Common\System\IO\InterceptStreamWriter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\InterceptStreamWriter.cs"
+             Link="Common\System\IO\InterceptStreamWriter.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
     <Compile Include="WindowAndCursorProps.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -42,11 +40,9 @@
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="CancelKeyPress.Unix.cs" />
     <Compile Include="NonStandardConfiguration.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Fcntl.cs" />
   </ItemGroup>
 </Project>

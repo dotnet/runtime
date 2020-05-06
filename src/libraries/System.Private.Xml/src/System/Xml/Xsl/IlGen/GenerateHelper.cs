@@ -609,30 +609,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public void LoadInteger(int intVal)
         {
-            OpCode opcode;
-
-            if (intVal >= -1 && intVal < 9)
-            {
-                switch (intVal)
-                {
-                    case -1: opcode = OpCodes.Ldc_I4_M1; break;
-                    case 0: opcode = OpCodes.Ldc_I4_0; break;
-                    case 1: opcode = OpCodes.Ldc_I4_1; break;
-                    case 2: opcode = OpCodes.Ldc_I4_2; break;
-                    case 3: opcode = OpCodes.Ldc_I4_3; break;
-                    case 4: opcode = OpCodes.Ldc_I4_4; break;
-                    case 5: opcode = OpCodes.Ldc_I4_5; break;
-                    case 6: opcode = OpCodes.Ldc_I4_6; break;
-                    case 7: opcode = OpCodes.Ldc_I4_7; break;
-                    case 8: opcode = OpCodes.Ldc_I4_8; break;
-                    default: Debug.Fail($"Unexpected int val {intVal}"); return;
-                }
-                Emit(opcode);
-            }
-            else if (intVal >= -128 && intVal <= 127)
-                Emit(OpCodes.Ldc_I4_S, (sbyte)intVal);
-            else
-                Emit(OpCodes.Ldc_I4, intVal);
+            Emit(OpCodes.Ldc_I4, intVal);
         }
 
         public void LoadBoolean(bool boolVal)
@@ -697,26 +674,13 @@ namespace System.Xml.Xsl.IlGen
 
         public void LoadParameter(int paramPos)
         {
-            switch (paramPos)
+            if (paramPos <= ushort.MaxValue)
             {
-                case 0: Emit(OpCodes.Ldarg_0); break;
-                case 1: Emit(OpCodes.Ldarg_1); break;
-                case 2: Emit(OpCodes.Ldarg_2); break;
-                case 3: Emit(OpCodes.Ldarg_3); break;
-                default:
-                    if (paramPos <= 255)
-                    {
-                        Emit(OpCodes.Ldarg_S, (byte)paramPos);
-                    }
-                    else if (paramPos <= ushort.MaxValue)
-                    {
-                        Emit(OpCodes.Ldarg, paramPos);
-                    }
-                    else
-                    {
-                        throw new XslTransformException(SR.XmlIl_TooManyParameters);
-                    }
-                    break;
+                Emit(OpCodes.Ldarg, paramPos);
+            }
+            else
+            {
+                throw new XslTransformException(SR.XmlIl_TooManyParameters);
             }
         }
 
@@ -724,11 +688,7 @@ namespace System.Xml.Xsl.IlGen
         {
             int paramPos = (int)paramId;
 
-            if (paramPos <= 255)
-            {
-                Emit(OpCodes.Starg_S, (byte)paramPos);
-            }
-            else if (paramPos <= ushort.MaxValue)
+            if (paramPos <= ushort.MaxValue)
             {
                 Emit(OpCodes.Starg, (int)paramPos);
             }
