@@ -12,7 +12,6 @@
 #include <mono/jit/mono-private-unstable.h>
 
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
