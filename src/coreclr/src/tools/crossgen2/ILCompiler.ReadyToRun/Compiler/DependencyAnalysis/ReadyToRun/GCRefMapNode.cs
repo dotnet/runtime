@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
-            _methods.ParallelSort(new CompilerComparer());
+            _methods.MergeSort(new CompilerComparer());
             GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly);
             builder.Builder.RequireInitialAlignment(4);
             builder.Builder.AddSymbol(this);

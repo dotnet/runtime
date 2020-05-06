@@ -13,10 +13,24 @@ namespace ILCompiler.Sorting.Implementation
         where TComparer:IComparer<T>
         where TCompareAsEqualAction : ICompareAsEqualAction
     {
-        internal const int ParallelSortThreshold = MergeSortApi.ParallelSortThreshold;
+        internal const int ParallelSortThreshold = 4000; // Number empirically measured by compiling
+                                                         // a large composite binary
+
+        public static void ParallelSortApi(TDataStructure arrayToSort, TComparer comparer)
+        {
+            TDataStructureAccessor accessor = default(TDataStructureAccessor);
+            if (accessor.GetLength(arrayToSort) < ParallelSortThreshold)
+            {
+                // If the array is sufficiently small as to not need parallel sorting
+                // call the sequential algorithm directly, as the parallel api will create
+                // an unnecessary Task object to wait on
+                SequentialSort(arrayToSort, 0, accessor.GetLength(arrayToSort), comparer);
+            }
+            ParallelSort(arrayToSort, 0, accessor.GetLength(arrayToSort), comparer).Wait();
+        }
 
         // Parallelized merge sort algorithm. Uses Task infrastructure to spread sort across available resources
-        public static async Task ParallelSort(TDataStructure arrayToSort, int index, int length, TComparer comparer)
+        private static async Task ParallelSort(TDataStructure arrayToSort, int index, int length, TComparer comparer)
         {
             if (length < ParallelSortThreshold)
             {
@@ -44,7 +58,7 @@ namespace ILCompiler.Sorting.Implementation
 
         // Normal non-parallel merge sort
         // Allocates length/2 in scratch space
-        public static void SequentialSort(TDataStructure arrayToSort, int index, int length, TComparer comparer)
+        private static void SequentialSort(TDataStructure arrayToSort, int index, int length, TComparer comparer)
         {
             TDataStructureAccessor accessor = default(TDataStructureAccessor);
             T[] scratchSpace = new T[accessor.GetLength(arrayToSort) / 2];
