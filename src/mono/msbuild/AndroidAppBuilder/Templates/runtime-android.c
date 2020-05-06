@@ -186,12 +186,6 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 }
 
 int
-tkill(pid_t tid, int sig)
-{
-    return syscall(__NR_tkill, tid, sig);
-}
-
-int
 Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir)
 {
     char file_dir[2048];
