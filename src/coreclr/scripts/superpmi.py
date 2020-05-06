@@ -588,6 +588,7 @@ class SuperPMICollect:
             env_copy["SuperPMIShimLogPath"] = self.temp_location
             env_copy["SuperPMIShimPath"] = self.jit_path
             env_copy["COMPlus_AltJit"] = "*"
+            env_copy["COMPlus_AltJitNgen"] = "*"
             env_copy["COMPlus_AltJitName"] = self.collection_shim_name
             env_copy["COMPlus_EnableExtraSuperPmiQueries"] = "1"
 
@@ -600,6 +601,7 @@ class SuperPMICollect:
             print_platform_specific_environment_vars(self.coreclr_args, "SuperPMIShimPath", self.jit_path)
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJit", "*")
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJitName", self.collection_shim_name)
+            print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJitNgen", "*")
             print("")
 
             if self.collection_command != None:
