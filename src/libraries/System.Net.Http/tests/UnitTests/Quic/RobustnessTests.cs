@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Tests.Harness;
@@ -8,30 +7,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    public class RobustnessTests
+    public class RobustnessTests : ManualTransmissionQuicTestBase
     {
-        private readonly ITestOutputHelper output;
-
-        private readonly ManagedQuicConnection _client;
-        private readonly ManagedQuicConnection _server;
-
-        private readonly TestHarness _harness;
-
         public RobustnessTests(ITestOutputHelper output)
+            : base(output)
         {
-            this.output = output;
-
-            // TODO-RZ: remove console logging for tests
-            Console.SetOut(new XUnitTextWriter(output));
-
-            _client = TestHarness.CreateClient(new QuicClientConnectionOptions());
-            _server = TestHarness.CreateServer(new QuicListenerOptions
-            {
-                CertificateFilePath = TestHarness.CertificateFilePath,
-                PrivateKeyFilePath = TestHarness.PrivateKeyFilePath
-            });
-
-            _harness = new TestHarness(output, _client);
         }
 
         [Theory]
@@ -46,14 +26,14 @@ namespace System.Net.Quic.Tests
             long rttTime = Timestamp.FromMilliseconds(rtt);
 
             // start the process
-            flights.Enqueue(_harness.GetFlightToSend(_client));
+            flights.Enqueue(GetFlightToSend(Client));
 
             void CollectPackets(ManagedQuicConnection sender)
             {
                 // TODO-RZ: this is safe only when no data are sent, otherwise number of packets is not limited
                 do
                 {
-                    var response = _harness.GetFlightToSend(sender);
+                    var response = GetFlightToSend(sender);
 
                     if (response.UdpDatagramSize == 0)
                     {
@@ -66,18 +46,18 @@ namespace System.Net.Quic.Tests
 
             for (int i = 0; i < 1000; i++)
             {
-                if (_client.Connected && _server.Connected)
+                if (Client.Connected && Server.Connected)
                     break;
 
-                var timeoutConnection = _client.GetNextTimerTimestamp() < _server.GetNextTimerTimestamp()
-                    ? _client
-                    : _server;
+                var timeoutConnection = Client.GetNextTimerTimestamp() < Server.GetNextTimerTimestamp()
+                    ? Client
+                    : Server;
 
                 Assert.False(flights.Count == 0 && timeoutConnection.GetNextTimerTimestamp() == long.MaxValue &&
-                    !_client.Connected && !_server.Connected,
+                             !Client.Connected && !Server.Connected,
                     "Deadlock reached");
 
-                output.WriteLine($"Event {i}:");
+                Output.WriteLine($"Event {i}:");
                 if (flights.Count > 0 && flights.Peek().TimeSent + rttTime < timeoutConnection.GetNextTimerTimestamp())
                 {
                     var flight = flights.Dequeue();
@@ -85,21 +65,21 @@ namespace System.Net.Quic.Tests
                     // decide whether packet arrives
                     if (rand.NextDouble() < 0.5)
                     {
-                        _harness.Timestamp = flight.TimeSent + rttTime;
-                        var receiver = flight.Sender == _client ? _server : _client;
-                        _harness.SendFlight(flight.Sender, receiver, flight.Packets);
+                        CurrentTimestamp = flight.TimeSent + rttTime;
+                        var receiver = flight.Sender == Client ? Server : Client;
+                        SendFlight(flight.Sender, receiver, flight.Packets);
 
                         // record any responses
                         CollectPackets(receiver);
                     }
                     else
                     {
-                        _harness.LogFlightPackets(flight, true);
+                        LogFlightPackets(flight, true);
                     }
                 }
                 else if (timeoutConnection.GetNextTimerTimestamp() < long.MaxValue)
                 {
-                    _harness.Timestamp = timeoutConnection.GetNextTimerTimestamp();
+                    CurrentTimestamp = timeoutConnection.GetNextTimerTimestamp();
 
                     // maxValue here would lead to deadlock during connection establishment
                     CollectPackets(timeoutConnection);
@@ -110,7 +90,7 @@ namespace System.Net.Quic.Tests
                 }
             }
 
-            Assert.True(_client.Connected && _server.Connected);
+            Assert.True(Client.Connected && Server.Connected);
         }
     }
 }

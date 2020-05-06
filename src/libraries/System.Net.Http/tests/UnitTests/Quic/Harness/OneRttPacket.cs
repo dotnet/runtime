@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Net.Quic.Tests.Harness
 {
-    internal class OneRttPacket : PacketBase
+    internal class OneRttPacket : PacketBase, IFramePacket
     {
         internal override PacketType PacketType => PacketType.OneRtt;
 
@@ -15,7 +15,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal bool SpinBit;
 
-        internal List<FrameBase> Frames { get; } = new List<FrameBase>();
+        public List<FrameBase> Frames { get; } = new List<FrameBase>();
 
         protected override string GetAdditionalInfo() => $": {string.Join(", ", Frames)}";
 

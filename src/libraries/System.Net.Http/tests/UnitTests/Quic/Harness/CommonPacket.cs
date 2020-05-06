@@ -21,11 +21,11 @@ namespace System.Net.Quic.Tests.Harness
         internal override PacketType PacketType => PacketType.ZeroRtt;
     }
 
-    internal abstract class CommonPacket : LongHeaderPacket
+    internal abstract class CommonPacket : LongHeaderPacket, IFramePacket
     {
         internal byte[] Token;
 
-        internal List<FrameBase> Frames { get; } = new List<FrameBase>();
+        public List<FrameBase> Frames { get; } = new List<FrameBase>();
 
         internal long Length;
 

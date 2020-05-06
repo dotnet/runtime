@@ -6,33 +6,30 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    public class NewConnectionIdFrameTests
+    public class NewConnectionIdFrameTests : ManualTransmissionQuicTestBase
     {
-        private readonly ManagedQuicConnection _client;
-        private readonly ManagedQuicConnection _server;
-
-        private readonly TestHarness _harness;
-
         public NewConnectionIdFrameTests(ITestOutputHelper output)
+            : base(output)
         {
-            (_client, _server, _harness) = TestHarness.InitConnection(output);
-            _harness.EstablishConnection(_client, _server);
+            // all tests start after connection has been established
+            EstablishConnection();
         }
 
         private void SendNewConnectionIdFrame(ManagedQuicConnection source, ManagedQuicConnection destination,
             byte[] cid, long sequenceNumber, StatelessResetToken token)
         {
             source.Ping(); // ensure a frame is indeed sent
-            _harness.Intercept1Rtt(source, destination, packet =>
-            {
-                packet.Frames.Add(new NewConnectionIdFrame()
+            Intercept1Rtt(source, destination,
+                packet =>
                 {
-                    ConnectionId = cid,
-                    SequenceNumber = sequenceNumber,
-                    RetirePriorTo = 0,
-                    StatelessResetToken = token
+                    packet.Frames.Add(new NewConnectionIdFrame()
+                    {
+                        ConnectionId = cid,
+                        SequenceNumber = sequenceNumber,
+                        RetirePriorTo = 0,
+                        StatelessResetToken = token
+                    });
                 });
-            });
         }
 
         [Fact]
@@ -40,16 +37,16 @@ namespace System.Net.Quic.Tests
         {
             byte[] cid = {1, 2, 3, 4, 5, 6, 6, 8};
             StatelessResetToken token = StatelessResetToken.Random();
-            SendNewConnectionIdFrame(_server, _client, cid, 1, token);
+            SendNewConnectionIdFrame(Server, Client, cid, 1, token);
 
             // everything okay still
-            _harness.Send1Rtt(_client, _server).ShouldNotHaveFrame<ConnectionCloseFrame>();
+            Send1Rtt(Client, Server).ShouldNotHaveFrame<ConnectionCloseFrame>();
 
             // send same connection id with different sequence number
-            SendNewConnectionIdFrame(_server, _client, cid, 2, token);
+            SendNewConnectionIdFrame(Server, Client, cid, 2, token);
 
             // now we are in trouble
-            _harness.Send1Rtt(_client, _server).ShouldContainConnectionClose(
+            Send1Rtt(Client, Server).ShouldHaveConnectionClose(
                 TransportErrorCode.ProtocolViolation,
                 QuicError.InconsistentNewConnectionIdFrame,
                 FrameType.NewConnectionId);
@@ -60,16 +57,16 @@ namespace System.Net.Quic.Tests
         {
             byte[] cid = {1, 2, 3, 4, 5, 6, 6, 8};
             StatelessResetToken token = StatelessResetToken.Random();
-            SendNewConnectionIdFrame(_server, _client, cid, 1, token);
+            SendNewConnectionIdFrame(Server, Client, cid, 1, token);
 
             // everything okay still
-            _harness.Send1Rtt(_client, _server).ShouldNotHaveFrame<ConnectionCloseFrame>();
+            Send1Rtt(Client, Server).ShouldNotHaveFrame<ConnectionCloseFrame>();
 
             // send same connection id with different stateless reset token
-            SendNewConnectionIdFrame(_server, _client, cid, 1, StatelessResetToken.Random());
+            SendNewConnectionIdFrame(Server, Client, cid, 1, StatelessResetToken.Random());
 
             // now we are in trouble
-            _harness.Send1Rtt(_client, _server).ShouldContainConnectionClose(
+            Send1Rtt(Client, Server).ShouldHaveConnectionClose(
                 TransportErrorCode.ProtocolViolation,
                 QuicError.InconsistentNewConnectionIdFrame,
                 FrameType.NewConnectionId);

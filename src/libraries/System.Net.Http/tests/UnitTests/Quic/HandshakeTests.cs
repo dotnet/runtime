@@ -8,54 +8,43 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    public class HandshakeTests
+    public class HandshakeTests : ManualTransmissionQuicTestBase
     {
-        private readonly ITestOutputHelper output;
-
-        private readonly ManagedQuicConnection _client;
-        private readonly ManagedQuicConnection _server;
-
-        private readonly TestHarness _harness;
-
-        private static readonly IPEndPoint IpEndPoint = new IPEndPoint(IPAddress.Any, 1010);
-
         public HandshakeTests(ITestOutputHelper output)
+            : base(output)
         {
-            this.output = output;
-            (_client, _server, _harness) = TestHarness.InitConnection(output);
         }
 
         [Fact]
         public void SendsConnectionCloseOnSmallClientInitial()
         {
-            var flight = _harness.GetFlightToSend(_client);
+            InterceptFlight(Client, Server, flight =>
+            {
+                // remove all padding, leading to a very short client initial packet.
+                var initial = Assert.IsType<InitialPacket>(flight.Packets[0]);
+                initial.Frames.RemoveAll(f => f.FrameType == FrameType.Padding);
+            });
 
-            // remove all padding, leading to a very short client initial packet.
-            var initial = Assert.IsType<InitialPacket>(flight.Packets[0]);
-            initial.Frames.RemoveAll(f => f.FrameType == FrameType.Padding);
-            _harness.SendFlight(_client, _server, flight.Packets);
+            // response should contain only initial packet
+            InterceptInitial(Server, Client, initial =>
+            {
+                Assert.Single(initial.Frames);
 
-            var response = _harness.SendFlight(_server, _client);
-            initial = Assert.IsType<InitialPacket>(response.Packets[0]);
-
-            // there should be a single frame only
-            var closeFrame = Assert.IsType<ConnectionCloseFrame>(Assert.Single(initial.Frames));
-
-            Assert.Equal(TransportErrorCode.ProtocolViolation, closeFrame.ErrorCode);
-            Assert.True(closeFrame.IsQuicError);
-            Assert.Equal(FrameType.Padding, closeFrame.ErrorFrameType); // 0x00
-            Assert.Equal(QuicError.InitialPacketTooShort, closeFrame.ReasonPhrase);
+                initial.ShouldHaveConnectionClose(
+                    TransportErrorCode.ProtocolViolation,
+                    QuicError.InitialPacketTooShort);
+            });
         }
 
         [Fact]
         public void SendsProbeTimeoutIfInitialLost()
         {
             // first packet lost
-            _harness.GetInitialToSend(_client);
-            Assert.NotEqual(long.MaxValue, _client.GetNextTimerTimestamp());
+            GetInitialToSend(Client);
+            Assert.NotEqual(long.MaxValue, Client.GetNextTimerTimestamp());
 
-            _harness.Timestamp = _client.GetNextTimerTimestamp();
-            var flight = _harness.GetFlightToSend(_client);
+            CurrentTimestamp = Client.GetNextTimerTimestamp();
+            var flight = GetFlightToSend(Client);
             var packet = Assert.IsType<InitialPacket>(Assert.Single(flight.Packets));
 
             // it is still initial packet, so minimum size applies
@@ -82,31 +71,34 @@ namespace System.Net.Quic.Tests
 
             // client:
             // Initial[0]: CRYPTO[CH] ->
+            InterceptFlight(Client, Server, flight =>
             {
-                var flight = _harness.SendFlight(_client, _server);
                 Assert.Equal(QuicConstants.MinimumClientInitialDatagramSize, flight.UdpDatagramSize);
 
                 // client: single initial packet
                 Assert.Single(flight.Packets);
                 var initialPacket = Assert.IsType<InitialPacket>(flight.Packets[0]);
                 Assert.Equal(0u, initialPacket.PacketNumber);
-                Assert.IsType<CryptoFrame>(initialPacket.Frames[0]);
-                // only other frames allowed in first client initial are padding
+                initialPacket.ShouldHaveFrame<CryptoFrame>();
+
+                // crypto frame is first, the only other frames in the first client initial are padding
                 Assert.Empty(initialPacket.Frames.Skip(1).Where(f => f.FrameType != FrameType.Padding));
-            }
+            });
 
             // server:
             //                                  Initial[0]: CRYPTO[SH] ACK[0]
             //                     <- Handshake[0]: CRYPTO[EE, CERT, CV, FIN]
+            InterceptFlight(Server, Client, flight =>
             {
-                var flight = _harness.SendFlight(_server, _client);
                 Assert.Equal(2, flight.Packets.Count);
 
                 var initialPacket = Assert.IsType<InitialPacket>(flight.Packets[0]);
                 Assert.Equal(0u, initialPacket.PacketNumber);
                 Assert.Equal(2, initialPacket.Frames.Count);
-                Assert.Single(initialPacket.Frames.OfType<CryptoFrame>());
-                var ackFrame = Assert.Single(initialPacket.Frames.OfType<AckFrame>());
+
+                initialPacket.ShouldHaveFrame<CryptoFrame>();
+
+                var ackFrame = initialPacket.ShouldHaveFrame<AckFrame>();
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);
                 Assert.Equal(0u, ackFrame.FirstAckRange);
                 Assert.Empty(ackFrame.AckRanges);
@@ -114,13 +106,13 @@ namespace System.Net.Quic.Tests
                 var handshakePacket = Assert.IsType<HandShakePacket>(flight.Packets[1]);
                 Assert.Equal(0u, handshakePacket.PacketNumber);
                 Assert.True(handshakePacket.Frames.All(f => f.FrameType == FrameType.Crypto));
-            }
+            });
 
             // client:
             // Initial[1]: ACK[0]
             // Handshake[0]: CRYPTO[FIN], ACK[0] ->
+            InterceptFlight(Client, Server, flight =>
             {
-                var flight = _harness.SendFlight(_client, _server);
                 Assert.Equal(2, flight.Packets.Count);
 
                 Assert.True(QuicConstants.MinimumClientInitialDatagramSize <= flight.UdpDatagramSize);
@@ -129,43 +121,47 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(1u, initialPacket.PacketNumber);
 
                 // no padding frames in this packet
-                var ackFrame = Assert.Single(initialPacket.Frames.OfType<AckFrame>());
+                var ackFrame = initialPacket.ShouldHaveFrame<AckFrame>();
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);
                 Assert.Equal(0u, ackFrame.FirstAckRange);
                 Assert.Empty(ackFrame.AckRanges);
 
                 var handshakePacket = Assert.IsType<HandShakePacket>(flight.Packets[1]);
                 Assert.Equal(0u, handshakePacket.PacketNumber);
-                Assert.Single(handshakePacket.Frames.OfType<CryptoFrame>());
-                ackFrame = Assert.Single(handshakePacket.Frames.OfType<AckFrame>());
+
+                handshakePacket.ShouldHaveFrame<CryptoFrame>();
+
+                ackFrame = handshakePacket.ShouldHaveFrame<AckFrame>();
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);
                 Assert.Equal(0u, ackFrame.FirstAckRange);
                 Assert.Empty(ackFrame.AckRanges);
+            });
 
-                // after this, the TLS handshake should be complete, but not yet confirmed on the client
-                Assert.True(_server.Connected);
-                Assert.False(_client.Connected);
-            }
+            // after this, the TLS handshake should be complete, but not yet confirmed on the client
+            Assert.True(Server.Connected);
+            Assert.False(Client.Connected);
 
             // server:
             //                                           Handshake[1]: ACK[0]
             //                                    <- OneRtt[0]: HandshakeDone
+            InterceptFlight(Server, Client, flight =>
             {
-                var flight = _harness.SendFlight(_server, _client);
                 var handshakePacket = Assert.IsType<HandShakePacket>(flight.Packets[0]);
 
                 Assert.Equal(1u, handshakePacket.PacketNumber);
-                var ackFrame = Assert.IsType<AckFrame>(Assert.Single(handshakePacket.Frames.Where(f => f.FrameType != FrameType.Padding)));
+                var ackFrame =
+                    Assert.IsType<AckFrame>(
+                        Assert.Single(handshakePacket.Frames.Where(f => f.FrameType != FrameType.Padding)));
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);
                 Assert.Equal(0u, ackFrame.FirstAckRange);
                 Assert.Empty(ackFrame.AckRanges);
 
                 var oneRtt = Assert.IsType<OneRttPacket>(flight.Packets[1]);
                 Assert.Contains(oneRtt.Frames, f => f.FrameType == FrameType.HandshakeDone);
+            });
 
-                // handshake confirmed on the client
-                Assert.True(_client.Connected);
-            }
+            // handshake is now confirmed on the client
+            Assert.True(Client.Connected);
         }
     }
 }
