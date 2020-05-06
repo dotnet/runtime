@@ -2071,9 +2071,9 @@ namespace System.Net.Sockets
 
     // struct wrapper is used in order to improve the performance of the epoll thread hot path by up to 3% of some TechEmpower benchmarks
     // the goal is to have a dedicated generic instantiation and using:
-    // System.Collections.Dictionary`2[System.IntPtr,System.Net.Sockets.SocketAsyncContextWrapper]::TryGetValueInternal(!0,int32,!1&)
+    // System.Collections.Concurrent.ConcurrentDictionary`2[System.IntPtr,System.Net.Sockets.SocketAsyncContextWrapper]::TryGetValueInternal(!0,int32,!1&)
     // instead of:
-    // System.Collections.Dictionary`2[System.IntPtr,System.__Canon]::TryGetValueInternal(!0,int32,!1&)
+    // System.Collections.Concurrent.ConcurrentDictionary`2[System.IntPtr,System.__Canon]::TryGetValueInternal(!0,int32,!1&)
     internal readonly struct SocketAsyncContextWrapper
     {
         public SocketAsyncContextWrapper(SocketAsyncContext context) => Context = context;
