@@ -617,8 +617,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 case NI_Vector64_ToScalar:
                 case NI_Vector128_ToScalar:
-                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
-                                                INS_OPTS_NONE);
+                    // For float/double, no-op if targetReg==op1Reg
+                    if (!varTypeIsFloating(intrin.baseType) || targetReg != op1Reg)
+                    {
+                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
+                                                    INS_OPTS_NONE);
+                    }
 
                     break;
 
