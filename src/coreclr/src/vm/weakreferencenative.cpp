@@ -429,7 +429,8 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
     // Create the handle.
 #ifdef FEATURE_COMINTEROP
     IWeakReference* pRawComWeakReference = nullptr;
-    if (gc.pTarget != NULL && gc.pTarget->PassiveGetSyncBlock() != nullptr && gc.pTarget->PassiveGetSyncBlock()->GetInteropInfoNoCreate() != nullptr)
+    SyncBlock* pSyncBlock = gc.pTarget != NULL ? gc.pTarget->PassiveGetSyncBlock() : nullptr;
+    if (gc.pTarget != NULL && pSyncBlock && pSyncBlock->GetInteropInfoNoCreate() != nullptr)
     {
         pRawComWeakReference = GetComWeakReference(&gc.pTarget);
     }
@@ -477,7 +478,9 @@ FCIMPL3(void, WeakReferenceOfTNative::Create, WeakReferenceObject * pThisUNSAFE,
     // Create the handle.
 #ifdef FEATURE_COMINTEROP
     IWeakReference* pRawComWeakReference = nullptr;
-    if (gc.pTarget != NULL && gc.pTarget->PassiveGetSyncBlock() != nullptr && gc.pTarget->PassiveGetSyncBlock()->GetInteropInfoNoCreate() != nullptr)
+
+    SyncBlock* pSyncBlock = gc.pTarget != NULL ? gc.pTarget->PassiveGetSyncBlock() : nullptr;
+    if (gc.pTarget != NULL && pSyncBlock && pSyncBlock->GetInteropInfoNoCreate() != nullptr)
     {
         pRawComWeakReference = GetComWeakReference(&gc.pTarget);
     }
