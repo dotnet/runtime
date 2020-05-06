@@ -180,13 +180,7 @@ internal static partial class Interop
 
         internal static bool IsSimpleArray(object a)
         {
-            if (a is Array arr)
-            {
-                if (arr.Rank == 1 && arr.GetLowerBound(0) == 0)
-                    return true;
-            }
-            return false;
-
+            return a is Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
         internal static object? GetCoreType(string coreObj)
         {
