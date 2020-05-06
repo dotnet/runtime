@@ -304,7 +304,7 @@ namespace System.Net.Security
             AuthenticateAsClient(options);
         }
 
-        private void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
+        public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
@@ -337,7 +337,7 @@ namespace System.Net.Security
             AuthenticateAsServer(options);
         }
 
-        private void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        public void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
