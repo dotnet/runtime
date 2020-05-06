@@ -460,8 +460,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_AdvSimd_Extract:
-            case NI_Vector64_GetElement:
-            case NI_Vector128_GetElement:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
@@ -615,16 +613,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
-                case NI_Vector64_ToScalar:
-                case NI_Vector128_ToScalar:
-                    // For float/double, no-op if targetReg==op1Reg
-                    if (!varTypeIsFloating(intrin.baseType) || targetReg != op1Reg)
-                    {
-                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
-                                                    INS_OPTS_NONE);
-                    }
+            case NI_Vector64_GetElement:
+            case NI_Vector128_GetElement:
+            case NI_Vector64_ToScalar:
+            case NI_Vector128_ToScalar:
+            {
+                ssize_t indexValue = 0;
+                if (intrin.id == NI_Vector64_GetElement || intrin.id == NI_Vector128_GetElement)
+                {
+                    assert(intrin.op2->IsCnsIntOrI());
+                    indexValue = intrin.op2->AsIntCon()->gtIconVal;
+                }
 
-                    break;
+                // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
+                if (!(varTypeIsFloating(intrin.baseType) && targetReg == op1Reg && indexValue == 0))
+                {
+                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
+                                                INS_OPTS_NONE);
+                }
+            }
+            break;
 
             default:
                 unreached();
