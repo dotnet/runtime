@@ -658,9 +658,63 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
         retType  = getSIMDTypeForSize(sizeBytes);
         assert(sizeBytes != 0);
+
+        // Immediately return if this is non-arithmetic type.
+        if (!varTypeIsArithmetic(baseType))
+        {
+#ifdef TARGET_XARCH
+            assert(intrinsic == NI_Vector128_As || intrinsic == NI_Vector128_get_AllBitsSet ||
+                   intrinsic == NI_Vector128_get_Zero || intrinsic == NI_Vector128_WithElement ||
+                   intrinsic == NI_Vector128_ToVector256 || intrinsic == NI_Vector128_ToVector256Unsafe ||
+                   intrinsic == NI_Vector256_get_Zero || intrinsic == NI_Vector256_get_AllBitsSet ||
+                   intrinsic == NI_Vector256_As || intrinsic == NI_Vector256_WithElement ||
+                   intrinsic == NI_Vector256_GetLower);
+#else
+            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As) ||
+                   (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_get_AllBitsSet) ||
+                   (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_get_AllBitsSet));
+#endif
+            return nullptr;
+        }
     }
 
-    baseType          = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+    baseType = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+
+    if (baseType == TYP_UNKNOWN)
+    {
+        if (category != HW_Category_Scalar)
+        {
+            unsigned int sizeBytes;
+            baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
+            assert(category == HW_Category_Special || sizeBytes != 0);
+        }
+        else
+        {
+            baseType = retType;
+        }
+    }
+
+    // Immediately return if this is non-arithmetic type and category is other than scalar/special.
+    if (!varTypeIsArithmetic(baseType) && category != HW_Category_Special && category != HW_Category_Scalar)
+    {
+#ifdef TARGET_XARCH
+        assert((intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
+               (intrinsic == NI_Vector128_GetElement || intrinsic == NI_Vector128_get_Count ||
+                intrinsic == NI_Vector128_ToScalar) ||
+               (intrinsic >= NI_Vector256_As && intrinsic <= NI_Vector256_AsUInt64) ||
+               (intrinsic == NI_Vector256_GetElement || intrinsic == NI_Vector256_get_Count ||
+                intrinsic == NI_Vector256_ToScalar));
+#else
+        assert((intrinsic >= NI_Vector64_AsByte && intrinsic <= NI_Vector64_AsUInt32) ||
+               (intrinsic == NI_Vector64_GetElement || intrinsic == NI_Vector64_get_Count ||
+                intrinsic == NI_Vector64_ToScalar) ||
+               (intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
+               (intrinsic == NI_Vector128_GetElement || intrinsic == NI_Vector128_get_Count ||
+                intrinsic == NI_Vector128_ToScalar));
+#endif
+        return nullptr;
+    }
+
     unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
 
     GenTree* immOp = nullptr;
