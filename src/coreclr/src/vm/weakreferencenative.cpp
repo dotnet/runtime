@@ -428,7 +428,12 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
 
     // Create the handle.
 #ifdef FEATURE_COMINTEROP
-    IWeakReference* pRawComWeakReference = GetComWeakReference(&gc.pTarget);
+    IWeakReference* pRawComWeakReference = nullptr;
+    if (gc.pTarget != NULL && gc.pTarget->PassiveGetSyncBlock() != nullptr && gc.pTarget->PassiveGetSyncBlock()->GetInteropInfoNoCreate() != nullptr)
+    {
+        pRawComWeakReference = GetComWeakReference(&gc.pTarget);
+    }
+
     if (pRawComWeakReference != nullptr)
     {
         SafeComHolder<IWeakReference> pComWeakReferenceHolder(pRawComWeakReference);

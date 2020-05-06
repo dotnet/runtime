@@ -1531,7 +1531,6 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
 
     ASSERT_PROTECTED(objectPROTECTED);
 
-    void* context;
     SyncBlock* syncBlock = (*objectPROTECTED)->PassiveGetSyncBlock();
     if (syncBlock == nullptr)
     {
@@ -1539,12 +1538,12 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
     }
 
     InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfoNoCreate();
-
     if (interopInfo == nullptr)
     {
         return nullptr;
     }
 
+    void* context;
     if (interopInfo->TryGetExternalComObjectContext(&context))
     {
         IUnknown* identity = reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
