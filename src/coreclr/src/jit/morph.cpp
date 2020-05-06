@@ -13095,8 +13095,8 @@ DONE_MORPHING_CHILDREN:
                 op2 = tree->AsOp()->gtOp2;
             }
 
-            // See if we can fold floating point operations
-            if (varTypeIsFloating(tree->TypeGet()) && !optValnumCSE_phase)
+            // See if we can fold floating point operations (can regress minopts mode)
+            if (opts.OptimizationEnabled() && varTypeIsFloating(tree->TypeGet()) && !optValnumCSE_phase)
             {
                 if ((oper == GT_MUL) && !op1->IsCnsFltOrDbl() && op2->IsCnsFltOrDbl())
                 {
