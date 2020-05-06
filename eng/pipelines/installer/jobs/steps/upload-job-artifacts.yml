@@ -1,7 +1,7 @@
 parameters:
   name: ''
   runtimeFlavor: 'coreclr'
-
+  skipTests: false
   isOfficialBuild: false
 
 steps:
