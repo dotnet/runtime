@@ -3,18 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Security;
+
+internal static partial class Interop
+{
+    public const int SEC_WINNT_AUTH_IDENTITY_UNICODE = 0x2;
+    public const int SEC_WINNT_AUTH_IDENTITY_VERSION = 0x200;
+    public const string MICROSOFT_KERBEROS_NAME_W = "Kerberos";
+}
 
 namespace System.DirectoryServices.Protocols
 {
-    internal static class AuthConstants
-    {
-        public const int SEC_WINNT_AUTH_IDENTITY_UNICODE = 0x2;
-        public const int SEC_WINNT_AUTH_IDENTITY_VERSION = 0x200;
-        public const string MICROSOFT_KERBEROS_NAME_W = "Kerberos";
-        public const string LDAP_SASL_AUTOMATIC = "0";
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal class Luid
     {
@@ -123,17 +121,15 @@ namespace System.DirectoryServices.Protocols
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class SafeBerval
+    internal struct SafeBerval
     {
-        public int bv_len = 0;
-        public IntPtr bv_val = IntPtr.Zero;
+        public int bv_len;
+        public IntPtr bv_val;
 
-        ~SafeBerval()
+        public SafeBerval(int length, IntPtr value)
         {
-            if (bv_val != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(bv_val);
-            }
+            bv_len = length;
+            bv_val = value;
         }
     }
 

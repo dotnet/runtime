@@ -305,7 +305,7 @@ namespace System.DirectoryServices.Protocols
                 }
 
                 var secInfo = new SecurityPackageContextConnectionInformation();
-                int error = LdapPal.LdapGetOptionSecInfo(_connection._ldapHandle, LdapOption.LDAP_OPT_SSL_INFO, secInfo);
+                int error = LdapPal.GetSecInfoOption(_connection._ldapHandle, LdapOption.LDAP_OPT_SSL_INFO, secInfo);
                 ErrorChecking.CheckAndSetLdapError(error);
 
                 return secInfo;
@@ -323,7 +323,7 @@ namespace System.DirectoryServices.Protocols
 
                 SecurityHandle tempHandle = default;
 
-                int error = LdapPal.LdapGetOptionSechandle(_connection._ldapHandle, LdapOption.LDAP_OPT_SECURITY_CONTEXT, ref tempHandle);
+                int error = LdapPal.GetSecurityHandleOption(_connection._ldapHandle, LdapOption.LDAP_OPT_SECURITY_CONTEXT, ref tempHandle);
                 ErrorChecking.CheckAndSetLdapError(error);
 
                 return tempHandle;
@@ -475,7 +475,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (value != null)
                 {
-                    int certError = LdapPal.LdapSetOptionClientCert(_connection._ldapHandle, LdapOption.LDAP_OPT_CLIENT_CERTIFICATE, _connection._clientCertificateRoutine);
+                    int certError = LdapPal.SetClientCertOption(_connection._ldapHandle, LdapOption.LDAP_OPT_CLIENT_CERTIFICATE, _connection._clientCertificateRoutine);
                     if (certError != (int)ResultCode.Success)
                     {
                         if (Utility.IsLdapError((LdapError)certError))
@@ -517,7 +517,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (value != null)
                 {
-                    int error = LdapPal.LdapSetOptionServercert(_connection._ldapHandle, LdapOption.LDAP_OPT_SERVER_CERTIFICATE, _serverCertificateRoutine);
+                    int error = LdapPal.SetServerCertOption(_connection._ldapHandle, LdapOption.LDAP_OPT_SERVER_CERTIFICATE, _serverCertificateRoutine);
                     ErrorChecking.CheckAndSetLdapError(error);
                 }
 
@@ -551,7 +551,7 @@ namespace System.DirectoryServices.Protocols
 
             // Do the fast concurrent bind.
             int inValue = 1;
-            int error = LdapPal.LdapSetOptionInt(_connection._ldapHandle, LdapOption.LDAP_OPT_FAST_CONCURRENT_BIND, ref inValue);
+            int error = LdapPal.SetIntOption(_connection._ldapHandle, LdapOption.LDAP_OPT_FAST_CONCURRENT_BIND, ref inValue);
             ErrorChecking.CheckAndSetLdapError(error);
         }
 
@@ -611,11 +611,11 @@ namespace System.DirectoryServices.Protocols
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
-                int error = LdapPal.LdapStartTls(_connection._ldapHandle, ref serverError, ref ldapResult, serverControlArray, clientControlArray);
+                int error = LdapPal.StartTls(_connection._ldapHandle, ref serverError, ref ldapResult, serverControlArray, clientControlArray);
                 if (ldapResult != IntPtr.Zero)
                 {
                     // Parse the referral.
-                    int resultError = LdapPal.LdapParseResultReferral(_connection._ldapHandle, ldapResult, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, ref referral, IntPtr.Zero, 0 /* not free it */);
+                    int resultError = LdapPal.ParseResultReferral(_connection._ldapHandle, ldapResult, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, ref referral, IntPtr.Zero, 0 /* not free it */);
                     if (resultError == 0 && referral != IntPtr.Zero)
                     {
                         char** referralPtr = (char**)referral;
@@ -634,7 +634,7 @@ namespace System.DirectoryServices.Protocols
                         // Free heap memory.
                         if (referral != IntPtr.Zero)
                         {
-                            LdapPal.LdapValueFree(referral);
+                            LdapPal.FreeValue(referral);
                             referral = IntPtr.Zero;
                         }
 
@@ -741,7 +741,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (referral != IntPtr.Zero)
                 {
-                    LdapPal.LdapValueFree(referral);
+                    LdapPal.FreeValue(referral);
                 }
             }
         }
@@ -753,7 +753,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            byte result = LdapPal.LdapStopTls(_connection._ldapHandle);
+            byte result = LdapPal.StopTls(_connection._ldapHandle);
             if (result == 0)
             {
                 throw new TlsOperationException(null, SR.TLSStopFailure);
@@ -768,7 +768,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             int outValue = 0;
-            int error = LdapPal.LdapGetOptionInt(_connection._ldapHandle, option, ref outValue);
+            int error = LdapPal.GetIntOption(_connection._ldapHandle, option, ref outValue);
             ErrorChecking.CheckAndSetLdapError(error);
 
             return outValue;
@@ -782,7 +782,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             int temp = value;
-            int error = LdapPal.LdapSetOptionInt(_connection._ldapHandle, option, ref temp);
+            int error = LdapPal.SetIntOption(_connection._ldapHandle, option, ref temp);
 
             ErrorChecking.CheckAndSetLdapError(error);
         }
@@ -795,7 +795,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             IntPtr outValue = new IntPtr(0);
-            int error = LdapPal.LdapGetOptionPtr(_connection._ldapHandle, option, ref outValue);
+            int error = LdapPal.GetPtrOption(_connection._ldapHandle, option, ref outValue);
             ErrorChecking.CheckAndSetLdapError(error);
 
             string stringValue = null;
@@ -806,7 +806,7 @@ namespace System.DirectoryServices.Protocols
 
             if (releasePtr)
             {
-                LdapPal.LdapMemfree(outValue);
+                LdapPal.FreeMemory(outValue);
             }
 
             return stringValue;
@@ -827,7 +827,7 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                int error = LdapPal.LdapSetOptionPtr(_connection._ldapHandle, option, ref inValue);
+                int error = LdapPal.SetPtrOption(_connection._ldapHandle, option, ref inValue);
                 ErrorChecking.CheckAndSetLdapError(error);
             }
             finally
@@ -848,7 +848,7 @@ namespace System.DirectoryServices.Protocols
                 notify = tempCallback.NotifyNewConnection == null ? null : _notifiyDelegate,
                 dereference = tempCallback.DereferenceConnection == null ? null : _dereferenceDelegate
             };
-            int error = LdapPal.LdapSetOptionReferral(_connection._ldapHandle, LdapOption.LDAP_OPT_REFERRAL_CALLBACK, ref value);
+            int error = LdapPal.SetReferralOption(_connection._ldapHandle, LdapOption.LDAP_OPT_REFERRAL_CALLBACK, ref value);
             ErrorChecking.CheckAndSetLdapError(error);
         }
 

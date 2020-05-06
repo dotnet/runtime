@@ -36,7 +36,7 @@ namespace System.DirectoryServices.Protocols
                 if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n')
                 {
                     // no argument needed
-                    error = BerPal.BerPrintfEmptyarg(berElement, new string(fmt, 1));
+                    error = BerPal.PrintEmptyArgument(berElement, new string(fmt, 1));
                 }
                 else if (fmt == 't' || fmt == 'i' || fmt == 'e')
                 {
@@ -55,7 +55,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // one int argument
-                    error = BerPal.BerPrintfInt(berElement, new string(fmt, 1), (int)value[valueCount]);
+                    error = BerPal.PrintInt(berElement, new string(fmt, 1), (int)value[valueCount]);
 
                     // increase the value count
                     valueCount++;
@@ -77,7 +77,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // one int argument
-                    error = BerPal.BerPrintfInt(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0);
+                    error = BerPal.PrintInt(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0);
 
                     // increase the value count
                     valueCount++;
@@ -219,7 +219,7 @@ namespace System.DirectoryServices.Protocols
             {
                 // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
                 // deallocation, wldap has special check. So have to use IntPtr directly here.
-                error = BerPal.BerFlatten(berElement, ref flattenptr);
+                error = BerPal.FlattenBerElement(berElement, ref flattenptr);
 
                 if (error == -1)
                 {
@@ -246,7 +246,7 @@ namespace System.DirectoryServices.Protocols
             finally
             {
                 if (flattenptr != IntPtr.Zero)
-                    BerPal.BerBvfree(flattenptr);
+                    BerPal.FreeBerval(flattenptr);
             }
 
             return encodingResult;
@@ -262,7 +262,7 @@ namespace System.DirectoryServices.Protocols
                 throw new BerConversionException();
         }
 
-        internal static unsafe object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
+        internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
         {
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
@@ -306,7 +306,7 @@ namespace System.DirectoryServices.Protocols
                 char fmt = format[formatCount];
                 if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n' || fmt == 'x')
                 {
-                    error = BerPal.BerScanf(berElement, new string(fmt, 1));
+                    error = BerPal.ScanNext(berElement, new string(fmt, 1));
 
                     if (BerPal.IsBerDecodeError(error))
                         Debug.WriteLine("ber_scanf for {, }, [, ], n or x failed");
@@ -314,7 +314,7 @@ namespace System.DirectoryServices.Protocols
                 else if (fmt == 'i' || fmt == 'e' || fmt == 'b')
                 {
                     int result = 0;
-                    error = BerPal.BerScanfInt(berElement, new string(fmt, 1), ref result);
+                    error = BerPal.ScanNextInt(berElement, new string(fmt, 1), ref result);
 
                     if (!BerPal.IsBerDecodeError(error))
                     {
@@ -434,12 +434,12 @@ namespace System.DirectoryServices.Protocols
                 IntPtr tmp = Marshal.AllocHGlobal(tempValue.Length);
                 Marshal.Copy(tempValue, 0, tmp, tempValue.Length);
                 HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
-                error = BerPal.BerPrintfBytearray(berElement, new string(fmt, 1), memHandle, tempValue.Length);
+                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, tempValue.Length);
             }
             else
             {
                 HGlobalMemHandle memHandle = new HGlobalMemHandle(HGlobalMemHandle._dummyPointer);
-                error = BerPal.BerPrintfBytearray(berElement, new string(fmt, 1), memHandle, 0);
+                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, 0);
             }
 
             return error;
@@ -454,7 +454,7 @@ namespace System.DirectoryServices.Protocols
 
             // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
             // deallocation, wldap has special check. So have to use IntPtr directly here.
-            error = BerPal.BerScanfPtr(berElement, new string(fmt, 1), ref result);
+            error = BerPal.ScanNextPtr(berElement, new string(fmt, 1), ref result);
 
             try
             {
@@ -474,7 +474,7 @@ namespace System.DirectoryServices.Protocols
             finally
             {
                 if (result != IntPtr.Zero)
-                    BerPal.BerBvfree(result);
+                    BerPal.FreeBerval(result);
             }
 
             return byteArray;
@@ -501,14 +501,9 @@ namespace System.DirectoryServices.Protocols
                         byte[] byteArray = tempValue[i];
 
                         // construct the managed berval
-                        managedBerVal[i] = new SafeBerval();
+                        managedBerVal[i] = new SafeBerval(0, IntPtr.Zero);
 
-                        if (byteArray == null)
-                        {
-                            managedBerVal[i].bv_len = 0;
-                            managedBerVal[i].bv_val = IntPtr.Zero;
-                        }
-                        else
+                        if (byteArray != null)
                         {
                             managedBerVal[i].bv_len = byteArray.Length;
                             managedBerVal[i].bv_val = Marshal.AllocHGlobal(byteArray.Length);
@@ -527,9 +522,7 @@ namespace System.DirectoryServices.Protocols
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
-                error = BerPal.BerPrintfBerarray(berElement, new string(fmt, 1), berValArray);
-
-                GC.KeepAlive(managedBerVal);
+                error = BerPal.PrintBerArray(berElement, new string(fmt, 1), berValArray);
             }
             finally
             {
@@ -542,6 +535,16 @@ namespace System.DirectoryServices.Protocols
                             Marshal.FreeHGlobal(ptr);
                     }
                     Marshal.FreeHGlobal(berValArray);
+                }
+                if (managedBerVal != null)
+                {
+                    foreach (SafeBerval berval in managedBerVal)
+                    {
+                        if (berval.bv_val != IntPtr.Zero)
+                        {
+                            Marshal.FreeHGlobal(berval.bv_val);
+                        }
+                    }
                 }
             }
 
@@ -560,7 +563,7 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                error = BerPal.BerScanfPtr(berElement, new string(fmt, 1), ref ptrResult);
+                error = BerPal.ScanNextPtr(berElement, new string(fmt, 1), ref ptrResult);
 
                 if (!BerPal.IsBerDecodeError(error))
                 {
@@ -595,7 +598,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (ptrResult != IntPtr.Zero)
                 {
-                    BerPal.BerBvecfree(ptrResult);
+                    BerPal.FreeBervalArray(ptrResult);
                 }
             }
 

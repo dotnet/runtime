@@ -729,7 +729,7 @@ namespace System.DirectoryServices.Protocols
                 Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
 
                 bool critical = IsCritical;
-                int error = LdapPal.LdapCreateSortControl(UtilityHandle.GetHandle(), memHandle, critical ? (byte)1 : (byte)0, ref control);
+                int error = LdapPal.CreateDirectorySortControl(UtilityHandle.GetHandle(), memHandle, critical ? (byte)1 : (byte)0, ref control);
 
                 if (error != 0)
                 {
@@ -759,7 +759,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (control != IntPtr.Zero)
                 {
-                    LdapPal.LdapControlFree(control);
+                    LdapPal.FreeDirectoryControl(control);
                 }
 
                 if (memHandle != IntPtr.Zero)
