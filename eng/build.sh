@@ -109,11 +109,20 @@ while [[ $# > 0 ]]; do
       ;;
 
      -subset|-s)
-      arguments="$arguments /p:Subset=$2"
-      shift 2
+      if [ -z ${2+x} ]; then 
+        arguments="$arguments /p:Subset=help"
+        shift 1
+      else 
+        arguments="$arguments /p:Subset=$2"
+        shift 2
+      fi
       ;;
 
      -arch)
+      if [ -z ${2+x} ]; then 
+        echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
+        exit 1
+      fi
       declare -l passedArch=$2
       case "$passedArch" in
         x64|x86|arm|armel|arm64|wasm)
@@ -129,6 +138,10 @@ while [[ $# > 0 ]]; do
       ;;
 
      -configuration|-c)
+      if [ -z ${2+x} ]; then 
+        echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
+        exit 1
+      fi
       declare -l passedConfig=$2
       case "$passedConfig" in
         debug|release|checked)
@@ -145,12 +158,20 @@ while [[ $# > 0 ]]; do
       ;;
 
      -framework|-f)
+      if [ -z ${2+x} ]; then 
+        echo "No framework supplied. See help (--help) for supported frameworks." 1>&2
+        exit 1
+      fi
       val="$(echo "$2" | awk '{print tolower($0)}')"
       arguments="$arguments /p:BuildTargetFramework=$val"
       shift 2
       ;;
 
      -os)
+      if [ -z ${2+x} ]; then 
+        echo "No target operating system supplied. See help (--help) for supported target operating systems." 1>&2
+        exit 1
+      fi
       declare -l passedOS=$2
       case "$passedOS" in
         windows_nt)
@@ -187,13 +208,17 @@ while [[ $# > 0 ]]; do
       ;;
 
      -testscope)
+      if [ -z ${2+x} ]; then 
+        echo "No test scope supplied. See help (--help) for supported test scope values." 1>&2
+        exit 1
+      fi
       arguments="$arguments /p:TestScope=$2"
       shift 2
       ;;
 
      -testnobuild)
-      arguments="$arguments /p:TestNoBuild=$2"
-      shift 2
+      arguments="$arguments /p:TestNoBuild=true"
+      shift 1
       ;;
 
      -coverage)
@@ -202,6 +227,10 @@ while [[ $# > 0 ]]; do
       ;;
 
      -runtimeconfiguration|-rc)
+      if [ -z ${2+x} ]; then 
+        echo "No runtime configuration supplied. See help (--help) for supported runtime configurations." 1>&2
+        exit 1
+      fi
       declare -l passedRuntimeConf=$2
       case "$passedRuntimeConf" in
         debug|release|checked)
@@ -218,6 +247,10 @@ while [[ $# > 0 ]]; do
       ;;
 
      -librariesconfiguration|-lc)
+      if [ -z ${2+x} ]; then 
+        echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
+        exit 1
+      fi
       declare -l passedLibConf=$2
       case "$passedLibConf" in
         debug|release)
@@ -245,6 +278,10 @@ while [[ $# > 0 ]]; do
       ;;
 
      -cmakeargs)
+      if [ -z ${2+x} ]; then 
+        echo "No cmake args supplied." 1>&2
+        exit 1
+      fi
       cmakeargs="${cmakeargs} ${opt} $2"
       shift 2
       ;;
