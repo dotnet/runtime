@@ -55,7 +55,7 @@ MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
 BUILDS_BIN_DIR=$(MONO_BIN_DIR)/wasm/runtimes
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
 
-EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'addFunction']" -s USE_ZLIB=1 -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -s WASM_OBJECT_FILES=0 -s FORCE_FILESYSTEM=1
+EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -s WASM_OBJECT_FILES=0 -s FORCE_FILESYSTEM=1
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1
 EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 --llvm-lto 1 -DENABLE_NETCORE=1
 
@@ -75,17 +75,14 @@ $(BUILDS_BIN_DIR)/$(1)/:
 $(BUILDS_OBJ_DIR)/$(1)/:
 	mkdir -p $$@
 
-$(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(BUILDS_OBJ_DIR)/$(1)/zlib-helper.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
-	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(BUILDS_OBJ_DIR)/$(1)/zlib-helper.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
+$(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
+	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
 $(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -DPINVOKE_TABLE=\"$(PINVOKE_TABLE)\" -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/$(1)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(3) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
-
-$(BUILDS_OBJ_DIR)/$(1)/zlib-helper.o: runtime/zlib-helper.c | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
-	$(EMCC) $(3) -Oz -I$(MONO_INCLUDE_DIR) -s USE_ZLIB=1 runtime/zlib-helper.c -c -o $$@
 
 build-native: $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
