@@ -588,6 +588,7 @@ class SuperPMICollect:
             env_copy["SuperPMIShimLogPath"] = self.temp_location
             env_copy["SuperPMIShimPath"] = self.jit_path
             env_copy["COMPlus_AltJit"] = "*"
+            env_copy["COMPlus_AltJitNgen"] = "*"
             env_copy["COMPlus_AltJitName"] = self.collection_shim_name
             env_copy["COMPlus_EnableExtraSuperPmiQueries"] = "1"
 
