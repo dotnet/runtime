@@ -64,8 +64,6 @@
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="..\..\src\System\Net\Security\SniHelper.cs"
              Link="src\SniHelper.cs" />
     <Compile Include="SniHelperTest.cs" />

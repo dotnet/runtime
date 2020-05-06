@@ -7,7 +7,7 @@ using System;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(float.PositiveInfinity, "fa7f800000")]
         [InlineData(float.NegativeInfinity, "faff800000")]
         [InlineData(float.NaN, "fa7fc00000")]
-        internal static void ReadSingle_SingleValue_HappyPath(float expectedResult, string hexEncoding)
+        public static void ReadSingle_SingleValue_HappyPath(float expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(double.PositiveInfinity, "fb7ff0000000000000")]
         [InlineData(double.NegativeInfinity, "fbfff0000000000000")]
         [InlineData(double.NaN, "fb7ff8000000000000")]
-        internal static void ReadDouble_SingleValue_HappyPath(double expectedResult, string hexEncoding)
+        public static void ReadDouble_SingleValue_HappyPath(double expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(double.PositiveInfinity, "fa7f800000")]
         [InlineData(double.NegativeInfinity, "faff800000")]
         [InlineData(double.NaN, "fa7fc00000")]
-        internal static void ReadDouble_SinglePrecisionValue_ShouldCoerceToDouble(double expectedResult, string hexEncoding)
+        public static void ReadDouble_SinglePrecisionValue_ShouldCoerceToDouble(double expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(double.PositiveInfinity, "f97c00")]
         [InlineData(double.NaN, "f97e00")]
         [InlineData(double.NegativeInfinity, "f9fc00")]
-        internal static void ReadDouble_HalfPrecisionValue_ShouldCoerceToDouble(double expectedResult, string hexEncoding)
+        public static void ReadDouble_HalfPrecisionValue_ShouldCoerceToDouble(double expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(float.PositiveInfinity, "f97c00")]
         [InlineData(float.NaN, "f97e00")]
         [InlineData(float.NegativeInfinity, "f9fc00")]
-        internal static void ReadSingle_HalfPrecisionValue_ShouldCoerceToSingle(float expectedResult, string hexEncoding)
+        public static void ReadSingle_HalfPrecisionValue_ShouldCoerceToSingle(float expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Fact]
-        internal static void ReadNull_SingleValue_HappyPath()
+        public static void ReadNull_SingleValue_HappyPath()
         {
             byte[] encoding = "f6".HexToByteArray();
             var reader = new CborReader(encoding);
@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(false, "f4")]
         [InlineData(true, "f5")]
-        internal static void ReadBoolean_SingleValue_HappyPath(bool expectedResult, string hexEncoding)
+        public static void ReadBoolean_SingleValue_HappyPath(bool expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborSimpleValue.Undefined, "f7")]
         [InlineData((CborSimpleValue)32, "f820")]
         [InlineData((CborSimpleValue)255, "f8ff")]
-        internal static void ReadSimpleValue_SingleValue_HappyPath(CborSimpleValue expectedResult, string hexEncoding)
+        public static void ReadSimpleValue_SingleValue_HappyPath(CborSimpleValue expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);

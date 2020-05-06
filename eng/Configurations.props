@@ -19,7 +19,7 @@
   <PropertyGroup>
     <NETCoreAppCurrentVersion>5.0</NETCoreAppCurrentVersion>
     <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
-    <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <NetCoreAppCurrent>net$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
     <NetFrameworkCurrent>net472</NetFrameworkCurrent>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
   </PropertyGroup>

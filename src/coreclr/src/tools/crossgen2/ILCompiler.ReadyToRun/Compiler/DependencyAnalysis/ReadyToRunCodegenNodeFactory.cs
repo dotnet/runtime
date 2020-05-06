@@ -67,15 +67,12 @@ namespace ILCompiler.DependencyAnalysis
             _markingComplete = true;
         }
 
-        public IMethodNode MethodEntrypoint(MethodDesc method)
+        public IMethodNode CompiledMethodNode(MethodDesc method)
         {
             EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
             ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
-            return MethodEntrypoint(
-                new MethodWithToken(method, moduleToken, constrainedType: null),
-                isUnboxingStub: false,
-                isInstantiatingStub: false,
-                isPrecodeImportRequired: false);
+
+            return CreateMethodEntrypointNodeHelper(new MethodWithToken(method, moduleToken, constrainedType: null));
         }
 
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
@@ -427,7 +424,10 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
-                IMethodNode methodNodeDebug = MethodEntrypoint(method);
+                EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
+
+                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null), false, false, false);
                 MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
                 if (methodCodeNodeDebug == null && methodNodeDebug is LocalMethodImport localMethodImport)
                 {

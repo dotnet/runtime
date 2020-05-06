@@ -8,7 +8,7 @@ using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Lax, "bfff")]
         [InlineData(CborConformanceLevel.Strict, "bfff")]
-        internal static void ReadMap_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadMap_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, "bfff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "bfff")]
-        internal static void ReadMap_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void ReadMap_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, "b90000")]
         [InlineData(CborConformanceLevel.Strict, "ba00000000")]
         [InlineData(CborConformanceLevel.Strict, "bb0000000000000000")]
-        internal static void ReadMap_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadMap_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Ctap2Canonical, "b90000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "ba00000000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "bb0000000000000000")]
-        internal static void ReadMap_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void ReadMap_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 255, 0, "", 0 }, "a218ff006000")]
-        internal static void ReadMap_SimpleValues_ShouldAcceptKeysSortedAccordingToConformanceLevel(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        public static void ReadMap_SimpleValues_ShouldAcceptKeysSortedAccordingToConformanceLevel(CborConformanceLevel level, object expectedValue, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 }, "a52000a30303020201010061610019010000a20202010100")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, -1, 0, "a", 0, 256, 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5200061610019010000a20101020200a301010202030300")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 256, 0, -1, 0, "a", 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5190100002000616100a20101020200a301010202030300")]
-        internal static void ReadMap_NestedValues_ShouldAcceptKeysSortedAccordingToConformanceLevel(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        public static void ReadMap_NestedValues_ShouldAcceptKeysSortedAccordingToConformanceLevel(CborConformanceLevel level, object expectedValue, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
-        internal static void ReadMap_DuplicateKeys_StrictConformance_ShouldThrowFormatException(CborConformanceLevel level, object dupeKey, string hexEncoding)
+        public static void ReadMap_DuplicateKeys_StrictConformance_ShouldThrowFormatException(CborConformanceLevel level, object dupeKey, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), level);
             reader.ReadStartMap();
@@ -209,7 +209,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
         [InlineData(CborConformanceLevel.Lax, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
         [InlineData(CborConformanceLevel.Strict, new object[] { 1, 25, "", "a", 2 }, "a5010018190060006161000200")]
-        internal static void ReadMap_UnsortedKeys_ConformanceNotRequiringSortedKeys_ShouldSucceed(CborConformanceLevel level, object[] keySequence, string hexEncoding)
+        public static void ReadMap_UnsortedKeys_ConformanceNotRequiringSortedKeys_ShouldSucceed(CborConformanceLevel level, object[] keySequence, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), level);
             reader.ReadStartMap();
@@ -227,7 +227,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { 1, 25, "", "a", 2 }, "a5010018190060006161000200")]
-        internal static void ReadMap_UnsortedKeys_ConformanceRequiringSortedKeys_ShouldThrowFormatException(CborConformanceLevel level, object[] keySequence, string hexEncoding)
+        public static void ReadMap_UnsortedKeys_ConformanceRequiringSortedKeys_ShouldThrowFormatException(CborConformanceLevel level, object[] keySequence, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), level);
             reader.ReadStartMap();

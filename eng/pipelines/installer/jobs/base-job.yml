@@ -69,6 +69,13 @@ jobs:
       eq(parameters.isOfficialBuild, true),
       ne(parameters.crossrootfsDir, '')) }}
 
+  - name: BuildAction
+    value: -test
+
+  - ${{ if eq(variables.SkipTests, true) }}:
+    - name: BuildAction
+      value: ''
+
   - name: SignType
     value: test
 
@@ -108,7 +115,8 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        build.cmd -subset installer -test -ci
+        build.cmd -subset installer -ci
+        $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -124,7 +132,8 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer -test -ci
+        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -139,7 +148,8 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer --ci --test
+        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(BuildAction)
         -configuration $(_BuildConfig)
         -os ${{ parameters.osGroup }}
         -arch ${{ parameters.archType }}
@@ -199,7 +209,8 @@ jobs:
 
     - name: BuildArguments
       value: >-
-        -subset installer -test -ci
+        -subset installer -ci
+        $(BuildAction)
         /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)

@@ -196,8 +196,11 @@ namespace ILCompiler
             public void AddCompilationRoot(MethodDesc method, string reason)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
-                _rootAdder(methodEntryPoint, reason);
+                if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
+                {
+                    IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    _rootAdder(methodEntryPoint, reason);
+                }
             }
         }
     }

@@ -41,4 +41,15 @@
       <RunSettingsFilePath>$(RunSettingsOutputFilePath)</RunSettingsFilePath>
     </PropertyGroup>
   </Target>
+
+  <!--
+    Clean the test results directory to guarantee that a report is generated from the
+    newest coverage results file.
+    Tracking issue https://github.com/microsoft/vstest/issues/2378.
+  -->
+  <Target Name="ClearTestResults"
+          BeforeTargets="VSTest"
+          Condition="'$(Coverage)' == 'true'">
+    <RemoveDir Directories="$(OutDir)TestResults" />
+  </Target>
 </Project>
