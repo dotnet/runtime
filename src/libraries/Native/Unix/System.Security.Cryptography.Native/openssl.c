@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include "pal_err.h"
 #include "pal_types.h"
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
@@ -1263,6 +1264,21 @@ done:
     #define OPENSSL_INIT_NO_ATEXIT 0x00080000L
 #endif
 
+int volatile g_str_read_count = 0;
+int volatile g_err_unloaded = 0;
+
+static void HandleShutdown()
+{
+    // Set this first, which stops new callers from using the error string tables.
+    g_err_unloaded = 1;
+
+    // Now, spin until existing calls all finish, and we can move on with shutdown.
+    int x;
+    while ((x = __atomic_load_n(&g_str_read_count, __ATOMIC_SEQ_CST)))
+    {
+    }
+}
+
 static int32_t EnsureOpenSsl11Initialized()
 {
     // In OpenSSL 1.0 we call OPENSSL_add_all_algorithms_conf() and ERR_load_crypto_strings(),
@@ -1279,6 +1295,10 @@ static int32_t EnsureOpenSsl11Initialized()
             OPENSSL_INIT_LOAD_SSL_STRINGS,
         NULL);
 
+    // As a fallback for when the NO_ATEXIT isn't respected, register a later
+    // atexit handler, so we will indicate that we're in the shutdown state
+    // and stop asking problematic questions from other threads.
+    atexit(HandleShutdown);
     return 0;
 }
 

@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include "opensslshim.h"
 
+#ifdef NEED_OPENSSL_1_1
+extern int volatile g_str_read_count;
+extern int volatile g_err_unloaded;
+#endif
+
 /*
 Shims the ERR_clear_error method.
 */
