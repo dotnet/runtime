@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// When overridden, create the collection. It may be a temporary collection or the final collection.
         /// </summary>
-        protected virtual void CreateCollection(ref ReadStack state) { }
+        protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state) { }
 
         internal override Type ElementType => typeof(TValue);
 
@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }
 
-                CreateCollection(ref state);
+                CreateCollection(ref reader, ref state);
 
                 JsonConverter<TValue> elementConverter = GetElementConverter(ref state);
                 if (elementConverter.CanUseDirectReadOrWrite)
@@ -96,10 +96,8 @@ namespace System.Text.Json.Serialization.Converters
                             break;
                         }
 
-                        if (reader.TokenType != JsonTokenType.PropertyName)
-                        {
-                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-                        }
+                        // Read method would have thrown if otherwise.
+                        Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
                         state.Current.JsonPropertyNameAsString = reader.GetString();
 
@@ -122,10 +120,8 @@ namespace System.Text.Json.Serialization.Converters
                             break;
                         }
 
-                        if (reader.TokenType != JsonTokenType.PropertyName)
-                        {
-                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-                        }
+                        // Read method would have thrown if otherwise.
+                        Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
                         state.Current.JsonPropertyNameAsString = reader.GetString();
 
@@ -152,11 +148,11 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (shouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.MetadataPropertyValue)
+                if (shouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                     {
-                        if (state.Current.ObjectState == StackFrameObjectState.MetadataRefPropertyEndObject)
+                        if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
                             value = (TCollection)state.Current.ReturnValue!;
                             return true;
@@ -172,7 +168,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Create the dictionary.
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
-                    CreateCollection(ref state);
+                    CreateCollection(ref reader, ref state);
 
                     if (state.Current.MetadataId != null)
                     {
@@ -212,10 +208,8 @@ namespace System.Text.Json.Serialization.Converters
                             break;
                         }
 
-                        if (reader.TokenType != JsonTokenType.PropertyName)
-                        {
-                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-                        }
+                        // Read method would have thrown if otherwise.
+                        Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
                         state.Current.PropertyState = StackFramePropertyState.Name;
 

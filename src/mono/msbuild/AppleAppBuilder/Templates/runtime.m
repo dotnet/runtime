@@ -212,19 +212,12 @@ mono_ios_runtime_init (void)
     // setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     // setenv ("MONO_LOG_MASK", "all", TRUE);
 
-    bool auto_exit = FALSE;
     id args_array = [[NSProcessInfo processInfo] arguments];
     assert ([args_array count] <= 128);
     const char *managed_argv [128];
     int argi;
     for (argi = 0; argi < [args_array count]; argi++) {
         NSString* arg = [args_array objectAtIndex: argi];
-        assert ([arg length] >= 3);
-        if ([arg hasPrefix:@"--setenv="]) {
-            // TODO: setenv
-        } else if ([arg isEqualToString:@"--auto-exit"]) {
-            auto_exit = TRUE;
-        }
         managed_argv[argi] = [arg UTF8String];
     }
 
@@ -273,6 +266,5 @@ mono_ios_runtime_init (void)
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
 
-    if (auto_exit)
-        exit (res);
+    exit (res);
 }

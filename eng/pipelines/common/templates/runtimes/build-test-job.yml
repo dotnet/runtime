@@ -20,6 +20,7 @@ parameters:
   stagedBuild: false
   variables: {}
   pool: ''
+  runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
 
 ### Build managed test components (native components are getting built as part
@@ -63,12 +64,12 @@ jobs:
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
-        name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
-        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
-        name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
-        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
@@ -112,29 +113,29 @@ jobs:
           artifactName: '$(librariesBuildArtifactName)'
           displayName: 'live-built libraries'
 
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:  
-      # We need to explictly download CoreCLR for Mono because the CoreCLR tests depend on it
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(coreClrProductRootFolderPath)
-          artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
-          artifactName: '$(coreClrProductArtifactName)'
-          displayName: 'CoreCLR product build for Mono'
-
-
-    # Download product binaries directory
+    # We need to explictly download CoreCLR, even if building Mono because the CoreCLR tests depend on it
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'product build'
+        unpackFolder: $(coreClrProductRootFolderPath)
+        artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
+        artifactName: '$(coreClrProductArtifactName)'
+        displayName: 'CoreCLR product build'
 
-
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage before Build
+    
     # Build managed test components
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) ${{ parameters.testBuildPhase }} skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
 
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml

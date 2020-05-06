@@ -526,6 +526,15 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    assert(node->TypeGet() != TYP_SIMD32);
+
+    if (node->TypeGet() == TYP_SIMD12)
+    {
+        // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
+        // produces a TYP_SIMD16 result
+        node->gtType = TYP_SIMD16;
+    }
+
     ContainCheckHWIntrinsic(node);
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -914,7 +923,29 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
             break;
+        case NI_Vector64_CreateScalarUnsafe:
+        case NI_Vector128_CreateScalarUnsafe:
+            if (intrin.op1->IsCnsIntOrI())
+            {
+                const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
 
+                if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(intrin.baseType)))
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+            }
+            else if (intrin.op1->IsCnsFltOrDbl())
+            {
+                assert(varTypeIsFloating(intrin.baseType));
+
+                const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+
+                if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+            }
+            break;
         default:
             unreached();
     }

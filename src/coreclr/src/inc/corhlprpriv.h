@@ -507,7 +507,6 @@ public:
     using CQuickArray<T>::AllocNoThrow;
     using CQuickArray<T>::ReSizeNoThrow;
     using CQuickArray<T>::MaxSize;
-    using CQuickArray<T>::Ptr;
 
     CQuickArrayList()
         : m_curSize(0)

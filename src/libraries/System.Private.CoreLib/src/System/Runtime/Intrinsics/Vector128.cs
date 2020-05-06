@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 
@@ -1369,6 +1370,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<byte> CreateScalar(byte value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<byte>.Zero, 0, value);
+            }
+
             if (Sse2.IsSupported)
             {
                 // ConvertScalarToVector128 only deals with 32/64-bit inputs and we need to ensure all upper-bits are zeroed, so we call
@@ -1392,6 +1398,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<double> CreateScalar(double value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<double>.Zero, 0, value);
+            }
+
             if (Sse2.IsSupported)
             {
                 return Sse2.MoveScalar(Vector128<double>.Zero, CreateScalarUnsafe(value));
@@ -1413,6 +1424,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<short> CreateScalar(short value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<short>.Zero, 0, value);
+            }
+
             if (Sse2.IsSupported)
             {
                 // ConvertScalarToVector128 only deals with 32/64-bit inputs and we need to ensure all upper-bits are zeroed, so we cast
@@ -1436,6 +1452,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<int> CreateScalar(int value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<int>.Zero, 0, value);
+            }
+
             if (Sse2.IsSupported)
             {
                 return Sse2.ConvertScalarToVector128Int32(value);
@@ -1456,6 +1477,11 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector128{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector128<long> CreateScalar(long value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<long>.Zero, 0, value);
+            }
+
             if (Sse2.X64.IsSupported)
             {
                 return Sse2.X64.ConvertScalarToVector128Int64(value);
@@ -1478,6 +1504,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> CreateScalar(sbyte value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<sbyte>.Zero, 0, value);
+            }
+
             if (Sse2.IsSupported)
             {
                 // ConvertScalarToVector128 only deals with 32/64-bit inputs and we need to ensure all upper-bits are zeroed, so we cast
@@ -1501,6 +1532,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<float> CreateScalar(float value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<float>.Zero, 0, value);
+            }
+
             if (Sse.IsSupported)
             {
                 return Sse.MoveScalar(Vector128<float>.Zero, CreateScalarUnsafe(value));
@@ -1523,6 +1559,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> CreateScalar(ushort value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<ushort>.Zero, 0, value);
+            }
+
             if (Sse2.IsSupported)
             {
                 // ConvertScalarToVector128 only deals with 32/64-bit inputs and we need to ensure all upper-bits are zeroed, so we call
@@ -1547,6 +1588,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> CreateScalar(uint value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<uint>.Zero, 0, value);
+            }
+
             if (Sse2.IsSupported)
             {
                 return Sse2.ConvertScalarToVector128UInt32(value);
@@ -1569,6 +1615,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> CreateScalar(ulong value)
         {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector128<ulong>.Zero, 0, value);
+            }
+
             if (Sse2.X64.IsSupported)
             {
                 return Sse2.X64.ConvertScalarToVector128UInt64(value);

@@ -21,7 +21,11 @@ parameters:
   runInUnloadableContext: false
   variables: {}
   pool: ''
+  runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
+  # If true, tests were built in two phases
+  # We will depend on both the TargetGeneric tests which are for AnyOS AnyCPU
+  # as well as the TargetSpecific test.  Both sets of tests will be run
   testBuildPhased : false
 
 ### Test run job
@@ -59,10 +63,11 @@ jobs:
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if eq(parameters.testBuildPhased, true) }}:
+        # Also depend on AnyOS AnyCPU tests
         - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-          - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
         - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-          - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
       - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
@@ -195,6 +200,7 @@ jobs:
 
     # Download and unzip managed test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
+      # First download and unzip AnyOS AnyCPU test (if needed)
       - ${{ if eq(parameters.testBuildPhased, true) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
@@ -202,6 +208,8 @@ jobs:
             artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
             artifactName: '$(managedGenericTestArtifactName)'
             displayName: 'generic managed test artifacts'
+
+      # Download and unzip target specific tests
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'
@@ -227,14 +235,6 @@ jobs:
           artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
-
-      - script: $(_msbuildCommand)
-                $(Build.SourcesDirectory)/src/mono/mono.proj
-                /t:PatchCoreClrCoreRoot
-                /p:Configuration=$(buildConfig)
-                /p:TargetArchitecture=$(archType)
-        displayName: "Patch dotnet with mono"
-
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
@@ -283,6 +283,14 @@ jobs:
       - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Crossgen framework assemblies
 
+    # Overwrite coreclr runtime binaries with mono ones
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      - script: $(_msbuildCommand)
+                $(Build.SourcesDirectory)/src/mono/mono.proj
+                /t:PatchCoreClrCoreRoot
+                /p:Configuration=$(buildConfig)
+                /p:TargetArchitecture=$(archType)
+        displayName: "Patch dotnet with mono"
 
     # Send tests to Helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml

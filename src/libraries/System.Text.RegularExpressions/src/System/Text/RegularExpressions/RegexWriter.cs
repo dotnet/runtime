@@ -518,6 +518,7 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Start:
                 case RegexNode.EndZ:
                 case RegexNode.End:
+                case RegexNode.UpdateBumpalong:
                     Emit(node.Type);
                     break;
 

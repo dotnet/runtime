@@ -26,7 +26,9 @@
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>
 
-  <Import Project="$(RuntimePropsFile)" Condition="Exists('$(RuntimePropsFile)')"/>
+  <PropertyGroup>
+    <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(HostRuntimeIdentifier)' != ''">$(HostRuntimeIdentifier.Remove($(HostRuntimeIdentifier.LastIndexOf('-'))))</RuntimeOS>
+  </PropertyGroup>
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
   
@@ -55,10 +57,9 @@
 
     <IsTestSupportProject>false</IsTestSupportProject>
     <IsTestSupportProject Condition="($(MSBuildProjectFullPath.Contains('\tests\')) or $(MSBuildProjectFullPath.Contains('/tests/'))) and '$(IsTestProject)' != 'true'">true</IsTestSupportProject>
-    <IsTestProject Condition="'$(IsTestSupportProject)' == 'true'">true</IsTestProject>
 
     <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
-    <IsShipping Condition="'$(IsTestProject)' == 'true'">false</IsShipping>
+    <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">false</IsShipping>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -181,13 +182,10 @@
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
-    <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(TargetOS)' == 'Windows_NT'" />
+    <DebugType Condition="$(TargetFramework.StartsWith('net4')) and '$(TargetOS)' == 'Windows_NT'" />
 
     <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
-
-    <!-- TODO-NULLABLE: Remove once netstandard has annotations for Debug.Assert, string.IsNullOrEmpty, etc. -->
-    <NoWarn Condition="'$(TargetsNetFx)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -307,7 +305,7 @@
     <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
     <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
 
-    <BinPlaceTestRuntimePack Condition="'$(TargetsMobile)' == 'true'">true</BinPlaceTestRuntimePack>
+    <BinPlaceTestRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono'">true</BinPlaceTestRuntimePack>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
@@ -317,35 +315,33 @@
     <PlatformManifestFile Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(TestHostRuntimePath)PlatformManifest.txt</PlatformManifestFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(PlatformManifestFile)' != '' and '$(IsTestProject)' == 'true'">
+  <ItemGroup Condition="'$(PlatformManifestFile)' != '' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true')">
     <PackageConflictPlatformManifests Include="$(PlatformManifestFile)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <EnableTestSupport>true</EnableTestSupport>
-    <EnableCoverageSupport Condition="'$(Coverage)' == 'true' and '$(CoverageSupported)' != 'false'">true</EnableCoverageSupport>
-    <EnableLaunchSettings Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">true</EnableLaunchSettings>
+    <EnableCoverageSupport>true</EnableCoverageSupport>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)testing\coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
   <!-- Use msbuild path functions as that property is used in bash scripts. -->
   <ItemGroup>
-    <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Common', 'src', 'System', 'SR.*'))" />
-    <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Common', 'src', 'System', 'NotImplemented.cs'))" />
+    <CoverageExcludeByFile Include="$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Common', 'src', 'System', 'SR.*'))" />
+    <CoverageExcludeByFile Include="$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Common', 'src', 'System', 'NotImplemented.cs'))" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Link to the testhost folder to probe additional assemblies. -->
-    <CoverageProbePath Include="shared\Microsoft.NETCore.App\$(ProductVersion)" />
+    <CoverageIncludeDirectory Include="shared\Microsoft.NETCore.App\$(ProductVersion)" />
   </ItemGroup>
 
-  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true'">
+  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
     <!-- Project references for non-test assemblies should never be copied to the output. -->
     <ProjectReference>
       <Private>false</Private>
@@ -357,12 +353,12 @@
     feature unless they explicitly opt in to it. (Source projects explicitly reference their dependencies,
     so they can't inadvertently take a dependency on it.)
   -->
-  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IncludeUtf8StringAsmRef)' != 'true'">
+  <ItemGroup Condition="('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and '$(IncludeUtf8StringAsmRef)' != 'true'">
     <DefaultReferenceExclusions Include="System.Utf8String.Experimental" />
   </ItemGroup>
 
   <PropertyGroup>
-    <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' == 'true'">false</CLSCompliant>
+    <CLSCompliant Condition="'$(CLSCompliant)' == '' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true')">false</CLSCompliant>
     <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
   </PropertyGroup>
 </Project>

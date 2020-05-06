@@ -38,7 +38,11 @@ namespace System.Net.Http.Json
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
+#if NETCOREAPP
+                contentStream = Encoding.CreateTranscodingStream(contentStream, innerStreamEncoding: sourceEncoding, outerStreamEncoding: Encoding.UTF8);
+#else
                 contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
+#endif
             }
 
             using (contentStream)
@@ -54,7 +58,11 @@ namespace System.Net.Http.Json
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
+#if NETCOREAPP
+                contentStream = Encoding.CreateTranscodingStream(contentStream, innerStreamEncoding: sourceEncoding, outerStreamEncoding: Encoding.UTF8);
+#else
                 contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
+#endif
             }
 
             using (contentStream)

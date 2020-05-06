@@ -58,13 +58,5 @@ namespace Internal.TypeSystem
 
             return canonicalType.ValueTypeShapeCharacteristics;
         }
-
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            RuntimeDeterminedType runtimeDeterminedType = (RuntimeDeterminedType)type;
-            DefType canonicalType = runtimeDeterminedType.CanonicalType;
-
-            return canonicalType.HfaElementType;
-        }
     }
 }

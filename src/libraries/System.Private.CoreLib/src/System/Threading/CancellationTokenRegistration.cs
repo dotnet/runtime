@@ -53,11 +53,12 @@ namespace System.Threading
                 default;
         }
 
-        /// <summary>
-        /// Gets the <see cref="CancellationToken"/> with which this registration is associated.  If the
-        /// registration isn't associated with a token (such as after the registration has been disposed),
+        /// <summary>Gets the <see cref="CancellationToken"/> with which this registration is associated.</summary>
+        /// <remarks>
+        /// If the registration isn't associated with a token (such as for a registration returned from a call
+        /// to <see cref="CancellationToken.Register"/> on a token that already had cancellation requested),
         /// this will return a default token.
-        /// </summary>
+        /// </remarks>
         public CancellationToken Token
         {
             get

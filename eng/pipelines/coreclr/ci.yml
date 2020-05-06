@@ -102,6 +102,7 @@ jobs:
     jobParameters:
       liveLibrariesBuildConfig: Release
       testBuildPhase: targetGeneric
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml

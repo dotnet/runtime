@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -492,7 +491,6 @@ namespace System.Collections.Immutable
             /// <returns>
             ///   <c>true</c> if the tree contains the specified key; otherwise, <c>false</c>.
             /// </returns>
-            [Pure]
             internal bool Contains(T key, IComparer<T> comparer)
             {
                 Requires.NotNull(comparer, nameof(comparer));
@@ -520,7 +518,6 @@ namespace System.Collections.Immutable
             /// <param name="key">The key to search for.</param>
             /// <param name="comparer">The comparer.</param>
             /// <returns>The matching node, or <see cref="EmptyNode"/> if no match was found.</returns>
-            [Pure]
             internal Node Search(T key, IComparer<T> comparer)
             {
                 Requires.NotNull(comparer, nameof(comparer));
@@ -553,7 +550,6 @@ namespace System.Collections.Immutable
             /// <param name="key">The key to search for.</param>
             /// <param name="comparer">The comparer.</param>
             /// <returns>The matching node, or <see cref="EmptyNode"/> if no match was found.</returns>
-            [Pure]
             internal int IndexOf(T key, IComparer<T> comparer)
             {
                 Requires.NotNull(comparer, nameof(comparer));
@@ -602,7 +598,6 @@ namespace System.Collections.Immutable
             /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}"/>
             /// in reverse order.
             /// </returns>
-            [Pure]
             internal IEnumerator<T> Reverse()
             {
                 return new Enumerator(this, reverse: true);
@@ -691,7 +686,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="tree">The tree.</param>
             /// <returns>0 if the tree is in balance, a positive integer if the right side is heavy, or a negative integer if the left side is heavy.</returns>
-            [Pure]
             private static int Balance(Node tree)
             {
                 Requires.NotNull(tree, nameof(tree));
@@ -707,7 +701,6 @@ namespace System.Collections.Immutable
             /// <returns>
             /// <c>true</c> if [is right heavy] [the specified tree]; otherwise, <c>false</c>.
             /// </returns>
-            [Pure]
             private static bool IsRightHeavy(Node tree)
             {
                 Requires.NotNull(tree, nameof(tree));
@@ -718,7 +711,6 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Determines whether the specified tree is left heavy.
             /// </summary>
-            [Pure]
             private static bool IsLeftHeavy(Node tree)
             {
                 Requires.NotNull(tree, nameof(tree));
@@ -731,7 +723,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="tree">The tree.</param>
             /// <returns>A balanced tree.</returns>
-            [Pure]
             private static Node MakeBalanced(Node tree)
             {
                 Requires.NotNull(tree, nameof(tree));
@@ -759,7 +750,6 @@ namespace System.Collections.Immutable
             /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
-            [Pure]
             internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
             {
                 Requires.NotNull(items, nameof(items));

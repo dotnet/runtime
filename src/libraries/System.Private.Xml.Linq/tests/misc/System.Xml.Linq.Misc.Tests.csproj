@@ -11,7 +11,7 @@
     <Compile Include="XLinqErrata4.cs" />
     <Compile Include="XNameAPI.cs" />
     <Compile Include="XAttribute.cs" />
-    <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="LoadSaveAsyncTests.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />

@@ -1106,10 +1106,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
 
     assert(!fgCheapPredsValid);
 
-    flowList* flow;
-
     // Keep the predecessor list in lowest to highest bbNum order. This allows us to discover the loops in
     // optFindNaturalLoops from innermost to outermost.
+    //
+    // If we are initializing preds, we rely on the fact that we are adding references in increasing
+    // order of blockPred->bbNum to avoid searching the list.
     //
     // TODO-Throughput: Inserting an edge for a block in sorted order requires searching every existing edge.
     // Thus, inserting all the edges for a block is quadratic in the number of edges. We need to either
@@ -1117,17 +1118,47 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     // optFindNaturalLoops not depend on order. This also requires ensuring that nobody else has taken a
     // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a flDupCount
     // count of duplication. This also necessitates walking the flow list for every edge we add.
-
+    //
+    flowList*  flow  = nullptr;
     flowList** listp = &block->bbPreds;
-    while ((*listp != nullptr) && ((*listp)->flBlock->bbNum < blockPred->bbNum))
+
+    if (initializingPreds)
     {
-        listp = &(*listp)->flNext;
+        // List is sorted order and we're adding references in
+        // increasing blockPred->bbNum order. The only possible
+        // dup list entry is the last one.
+        //
+        flowList* flowLast = block->bbLastPred;
+        if (flowLast != nullptr)
+        {
+            listp = &flowLast->flNext;
+
+            assert(flowLast->flBlock->bbNum <= blockPred->bbNum);
+
+            if (flowLast->flBlock == blockPred)
+            {
+                flow = flowLast;
+            }
+        }
+    }
+    else
+    {
+        // References are added randomly, so we have to search.
+        //
+        while ((*listp != nullptr) && ((*listp)->flBlock->bbNum < blockPred->bbNum))
+        {
+            listp = &(*listp)->flNext;
+        }
+
+        if ((*listp != nullptr) && ((*listp)->flBlock == blockPred))
+        {
+            flow = *listp;
+        }
     }
 
-    if ((*listp != nullptr) && ((*listp)->flBlock == blockPred))
+    if (flow != nullptr)
     {
         // The predecessor block already exists in the flow list; simply add to its duplicate count.
-        flow = *listp;
         noway_assert(flow->flDupCount > 0);
         flow->flDupCount++;
     }
@@ -1149,6 +1180,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
 
         flow->flBlock    = blockPred;
         flow->flDupCount = 1;
+
+        if (initializingPreds)
+        {
+            block->bbLastPred = flow;
+        }
 
         if (fgHaveValidEdgeWeights)
         {
@@ -2986,6 +3022,9 @@ void Compiler::fgRemoveCheapPred(BasicBlock* block, BasicBlock* blockPred)
     }
 }
 
+//------------------------------------------------------------------------
+// fgRemovePreds - remove all pred information from blocks
+//
 void Compiler::fgRemovePreds()
 {
     C_ASSERT(offsetof(BasicBlock, bbPreds) ==
@@ -3001,10 +3040,13 @@ void Compiler::fgRemovePreds()
     fgCheapPredsValid  = false;
 }
 
-/*****************************************************************************
- *
- *  Function called to compute the bbPreds lists.
- */
+//------------------------------------------------------------------------
+// fgComputePreds - compute the bbPreds lists
+//
+// Notes:
+//   Resets and then fills in the list of predecessors for each basic
+//   block. Assumes blocks (via bbNext) are in increasing bbNum order.
+//
 void Compiler::fgComputePreds()
 {
     noway_assert(fgFirstBB);
@@ -3020,20 +3062,19 @@ void Compiler::fgComputePreds()
     }
 #endif // DEBUG
 
-    // reset the refs count for each basic block
-
-    for (block = fgFirstBB; block; block = block->bbNext)
+    // Reset everything pred related
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        block->bbRefs = 0;
+        block->bbPreds    = nullptr;
+        block->bbLastPred = nullptr;
+        block->bbRefs     = 0;
     }
 
-    /* the first block is always reachable! */
+    // the first block is always reachable
     fgFirstBB->bbRefs = 1;
 
-    /* Treat the initial block as a jump target */
+    // Treat the initial block as a jump target
     fgFirstBB->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
-
-    fgRemovePreds();
 
     for (block = fgFirstBB; block; block = block->bbNext)
     {
@@ -6011,7 +6052,14 @@ void Compiler::fgFindBasicBlocks()
             {
                 // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
                 lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
-                lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
+                if (compDoOldStructRetyping())
+                {
+                    lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
+                }
+                else
+                {
+                    lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
+                }
 
                 // If the method returns a ref class, set the class of the spill temp
                 // to the method's return value. We may update this later if it turns
@@ -6948,7 +6996,7 @@ PhaseStatus Compiler::fgImport()
         if ((block->bbFlags & BBF_IMPORTED) != 0)
         {
             // Assume if we generate any IR for the block we generate IR for the entire block.
-            if (!block->isEmpty())
+            if (block->firstStmt() != nullptr)
             {
                 IL_OFFSET beginOffset = block->bbCodeOffs;
                 IL_OFFSET endOffset   = block->bbCodeOffsEnd;
@@ -8636,7 +8684,18 @@ private:
 
             if (comp->compMethodReturnsNativeScalarType())
             {
-                returnLocalDsc.lvType = genActualType(comp->info.compRetNativeType);
+                if (!comp->compDoOldStructRetyping())
+                {
+                    returnLocalDsc.lvType = genActualType(comp->info.compRetType);
+                    if (varTypeIsStruct(returnLocalDsc.lvType))
+                    {
+                        comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, false);
+                    }
+                }
+                else
+                {
+                    returnLocalDsc.lvType = genActualType(comp->info.compRetNativeType);
+                }
             }
             else if (comp->compMethodReturnsRetBufAddr())
             {
@@ -22257,12 +22316,11 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
  */
 GenTree* Compiler::fgGetStructAsStructPtr(GenTree* tree)
 {
-    noway_assert((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_FIELD) || (tree->gtOper == GT_IND) ||
-                 (tree->gtOper == GT_BLK) || (tree->gtOper == GT_OBJ) || tree->OperIsSIMD() ||
-                 // tree->gtOper == GT_CALL     || cannot get address of call.
-                 // tree->gtOper == GT_MKREFANY || inlining should've been aborted due to mkrefany opcode.
-                 // tree->gtOper == GT_RET_EXPR || cannot happen after fgUpdateInlineReturnExpressionPlaceHolder
-                 (tree->gtOper == GT_COMMA));
+    noway_assert(tree->OperIs(GT_LCL_VAR, GT_FIELD, GT_IND, GT_BLK, GT_OBJ, GT_COMMA) || tree->OperIsSIMD() ||
+                 tree->OperIsHWIntrinsic());
+    // GT_CALL,     cannot get address of call.
+    // GT_MKREFANY, inlining should've been aborted due to mkrefany opcode.
+    // GT_RET_EXPR, cannot happen after fgUpdateInlineReturnExpressionPlaceHolder
 
     switch (tree->OperGet())
     {
@@ -25866,6 +25924,10 @@ PhaseStatus Compiler::fgTailMergeThrows()
         JITDUMP("Method does not have multiple noreturn calls.\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
+    else
+    {
+        JITDUMP("Scanning the %u candidates\n", optNoReturnCallCount);
+    }
 
     // This transformation requires block pred lists to be built
     // so that flow can be safely updated.
@@ -25931,11 +25993,16 @@ PhaseStatus Compiler::fgTailMergeThrows()
             continue;
         }
 
-        // For throw helpers the block should have exactly one statement....
-        // (this isn't guaranteed, but seems likely)
-        Statement* stmt = block->firstStmt();
+        // We only look at the first statement for throw helper calls.
+        // Remainder of the block will be dead code.
+        //
+        // Throw helper calls could show up later in the block; we
+        // won't try merging those as we'd need to match up all the
+        // prior statements or split the block at this point, etc.
+        //
+        Statement* const stmt = block->firstStmt();
 
-        if ((stmt == nullptr) || (stmt->GetNextStmt() != nullptr))
+        if (stmt == nullptr)
         {
             continue;
         }
@@ -25997,13 +26064,14 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // We walk the map rather than the block list, to save a bit of time.
     BlockToBlockMap::KeyIterator iter(blockMap.Begin());
     BlockToBlockMap::KeyIterator end(blockMap.End());
-    int                          updateCount = 0;
+    unsigned                     updateCount = 0;
 
     for (; !iter.Equal(end); iter++)
     {
         BasicBlock* const nonCanonicalBlock = iter.Get();
         BasicBlock* const canonicalBlock    = iter.GetValue();
         flowList*         nextPredEdge      = nullptr;
+        bool              updated           = false;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
@@ -26017,14 +26085,14 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 case BBJ_NONE:
                 {
                     fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
                 case BBJ_ALWAYS:
                 {
                     fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -26040,7 +26108,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                     {
                         fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
                     }
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -26048,7 +26116,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 {
                     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
                     fgReplaceSwitchJumpTarget(predBlock, canonicalBlock, nonCanonicalBlock);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -26058,6 +26126,11 @@ PhaseStatus Compiler::fgTailMergeThrows()
                     break;
             }
         }
+
+        if (updated)
+        {
+            updateCount++;
+        }
     }
 
     if (updateCount == 0)
@@ -26065,13 +26138,18 @@ PhaseStatus Compiler::fgTailMergeThrows()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // TODO: Update the count of noreturn call sites -- this feeds a heuristic in morph
+    // to determine if these noreturn calls should be tail called.
+    //
+    // Updating the count does not lead to better results, so deferring for now.
+    //
+    JITDUMP("Made %u updates\n", updateCount);
+    assert(updateCount < optNoReturnCallCount);
+
     // If we altered flow, reset fgModified. Given where we sit in the
     // phase list, flow-dependent side data hasn't been built yet, so
     // nothing needs invalidation.
     //
-    // Note we could invoke a cleanup pass here, but optOptimizeFlow
-    // seems to be missing some safety checks and doesn't expect to
-    // see an already cleaned-up flow graph.
     assert(fgModified);
     fgModified = false;
     return PhaseStatus::MODIFIED_EVERYTHING;

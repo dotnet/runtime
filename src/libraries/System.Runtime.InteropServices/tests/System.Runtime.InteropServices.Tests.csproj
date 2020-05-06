@@ -101,7 +101,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringAutoTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringBSTR.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUniTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUTF8Tests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUTF8Tests.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReAllocHGlobalTests.cs" />
@@ -117,7 +117,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemAutoTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUniTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUTF8Tests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUTF8Tests.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalUniTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalAutoTests.cs" />
@@ -127,7 +127,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\ThrowExceptionForHRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUnicodeTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUTF8Tests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUTF8Tests.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocUnicodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.cs" />

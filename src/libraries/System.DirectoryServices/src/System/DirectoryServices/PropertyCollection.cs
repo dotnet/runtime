@@ -110,7 +110,7 @@ namespace System.DirectoryServices
             DirectoryEntry entryToUse = _entry.CloneBrowsable();
             entryToUse.FillCache("");
 
-            UnsafeNativeMethods.IAdsPropertyList propList = (UnsafeNativeMethods.IAdsPropertyList)entryToUse.AdsObject;
+            _ = (UnsafeNativeMethods.IAdsPropertyList)entryToUse.AdsObject;
 
             entryToUse.propertiesAlreadyEnumerated = true;
             return new PropertyEnumerator(_entry, entryToUse);

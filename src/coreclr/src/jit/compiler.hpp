@@ -702,6 +702,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
 
     if (varTypeIsStruct(type))
     {
+        assert(typeClass != nullptr);
         size = info.compCompHnd->getClassSize(typeClass);
         if (forReturn)
         {
@@ -1130,6 +1131,28 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 #endif
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+// gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
+//
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+
+inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
+                                                               GenTree*                ctxTree,
+                                                               void*                   compileTimeHandle)
+{
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
+    GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
+
+    return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
 }
 
 //------------------------------------------------------------------------
@@ -1785,8 +1808,11 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
     //
     // Increment counts on the local itself.
     //
-    if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    if ((lvType != TYP_STRUCT) || (promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT))
     {
+        // We increment ref counts of this local for primitive types, including structs that have been retyped as their
+        // only field, as well as for structs whose fields are not independently promoted.
+
         //
         // Increment lvRefCnt
         //

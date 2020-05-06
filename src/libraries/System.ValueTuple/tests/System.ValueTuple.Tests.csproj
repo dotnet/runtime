@@ -6,7 +6,7 @@
   <ItemGroup>
     <Compile Include="TupleElementNamesTests.cs" />
     <Compile Include="ExtensionsTests.cs" />
-    <Compile Include="TupleTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="TupleTests.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="ValueTupleTests.cs" />
   </ItemGroup>
 </Project>

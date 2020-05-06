@@ -3,28 +3,38 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Buffers.Binary;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
-        public ulong? ReadStartArray()
+        public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                PushDataItem(CborMajorType.Array, null);
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items are not supported under the current conformance level.");
+                }
+
                 AdvanceBuffer(1);
+                PushDataItem(CborMajorType.Array, null);
                 return null;
             }
             else
             {
                 ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
-                PushDataItem(CborMajorType.Array, arrayLength);
+
+                if (arrayLength > (ulong)_buffer.Length)
+                {
+                    throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
+                }
+
                 AdvanceBuffer(1 + additionalBytes);
-                return arrayLength;
+                PushDataItem(CborMajorType.Array, (int)arrayLength);
+                return (int)arrayLength;
             }
         }
 
