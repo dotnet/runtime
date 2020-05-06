@@ -1693,6 +1693,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+<<<<<<< HEAD
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportAttribute/DllImportPath/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1913,6 +1914,16 @@
 	<ExcludeList Include = "$(XunitTestBinBase)tracing/eventsource/eventsourcetrace/eventsourcetrace/**">
 	    <Issue>needs triage</Issue>
 	</ExcludeList>
+=======
+
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportAttribute/DllImportPath/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Generics/GenericsTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+>>>>>>> 85bc1ebaa57... Updates to issues.targets.
     </ItemGroup>
 
 </Project>
