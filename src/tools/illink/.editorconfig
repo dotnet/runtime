@@ -1,8 +1,9 @@
 # top-most EditorConfig file
 root = true
-end_of_line = "lf"
+end_of_line = lf
 
 [*.cs]
+end_of_line = lf
 indent_style = tab
 indent_size = 4
 csharp_new_line_before_open_brace = types,methods
