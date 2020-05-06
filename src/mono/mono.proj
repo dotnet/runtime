@@ -928,7 +928,7 @@
 
 
   <Target Name="BuildAppleAppBuilder">
-    <MSBuild Projects="$(MonoProjectRoot)msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
+    <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
              Properties="Configuration=$(Configuration);Platform=$(HostArch)"
              Targets="Restore;Build" />
     <MSBuild Projects="$(AppleTestRunnerProjDirectory)AppleTestRunner.csproj"

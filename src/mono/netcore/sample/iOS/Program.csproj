@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <Target Name="RebuildAppleAppBuilder">
-    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
+    <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
              Properties="Configuration=$(Configuration)" Targets="Restore;Build" />
   </Target>
 

@@ -104,6 +104,7 @@
 
   <!-- Paths for Mobile App Projects  -->
   <PropertyGroup>
+    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'msbuild', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
     <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'msbuild', 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
   </PropertyGroup>
 </Project>
