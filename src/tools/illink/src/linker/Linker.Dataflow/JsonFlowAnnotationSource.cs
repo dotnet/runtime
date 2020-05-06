@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Mono.Cecil;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json;
+using Mono.Cecil;
 
 namespace Mono.Linker.Dataflow
 {
@@ -16,20 +17,20 @@ namespace Mono.Linker.Dataflow
 	class JsonFlowAnnotationSource : IFlowAnnotationSource
 	{
 		readonly Dictionary<MethodDefinition, AnnotatedMethod> _methods = new Dictionary<MethodDefinition, AnnotatedMethod> ();
-		readonly Dictionary<PropertyDefinition, DynamicallyAccessedMemberKinds> _properties = new Dictionary<PropertyDefinition, DynamicallyAccessedMemberKinds> ();
-		readonly Dictionary<FieldDefinition, DynamicallyAccessedMemberKinds> _fields = new Dictionary<FieldDefinition, DynamicallyAccessedMemberKinds> ();
+		readonly Dictionary<PropertyDefinition, DynamicallyAccessedMemberTypes> _properties = new Dictionary<PropertyDefinition, DynamicallyAccessedMemberTypes> ();
+		readonly Dictionary<FieldDefinition, DynamicallyAccessedMemberTypes> _fields = new Dictionary<FieldDefinition, DynamicallyAccessedMemberTypes> ();
 
 		public JsonFlowAnnotationSource (LinkContext context, string jsonFile)
 		{
 			Initialize (context, jsonFile);
 		}
 
-		public DynamicallyAccessedMemberKinds GetFieldAnnotation (FieldDefinition field)
+		public DynamicallyAccessedMemberTypes GetFieldAnnotation (FieldDefinition field)
 		{
-			return _fields.TryGetValue (field, out var ann) ? ann : 0;
+			return _fields.TryGetValue (field, out var ann) ? ann : DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberKinds GetParameterAnnotation (MethodDefinition method, int index)
+		public DynamicallyAccessedMemberTypes GetParameterAnnotation (MethodDefinition method, int index)
 		{
 			if (_methods.TryGetValue (method, out var ann) && ann.ParameterAnnotations != null) {
 				string paramName = method.Parameters[index].Name;
@@ -39,20 +40,20 @@ namespace Mono.Linker.Dataflow
 						return Annotation;
 			}
 
-			return 0;
+			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberKinds GetPropertyAnnotation (PropertyDefinition property)
+		public DynamicallyAccessedMemberTypes GetPropertyAnnotation (PropertyDefinition property)
 		{
-			return _properties.TryGetValue (property, out var ann) ? ann : 0;
+			return _properties.TryGetValue (property, out var ann) ? ann : DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberKinds GetReturnParameterAnnotation (MethodDefinition method)
+		public DynamicallyAccessedMemberTypes GetReturnParameterAnnotation (MethodDefinition method)
 		{
-			return _methods.TryGetValue (method, out var ann) ? ann.ReturnAnnotation : 0;
+			return _methods.TryGetValue (method, out var ann) ? ann.ReturnAnnotation : DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberKinds GetThisParameterAnnotation (MethodDefinition method)
+		public DynamicallyAccessedMemberTypes GetThisParameterAnnotation (MethodDefinition method)
 		{
 			if (_methods.TryGetValue (method, out var ann) && ann.ParameterAnnotations != null) {
 
@@ -61,24 +62,24 @@ namespace Mono.Linker.Dataflow
 						return Annotation;
 			}
 
-			return 0;
+			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		static DynamicallyAccessedMemberKinds ParseKinds (JsonElement attributes)
+		static DynamicallyAccessedMemberTypes ParseKinds (JsonElement attributes)
 		{
 			foreach (var attribute in attributes.EnumerateObject ()) {
-				if (attribute.Name == "System.Runtime.CompilerServices.DynamicallyAccessedMembers") {
+				if (attribute.Name == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers") {
 					string value = attribute.Value.GetString ();
 
 					// Enum.Parse accepts a comma as a separator for Flags
-					return (DynamicallyAccessedMemberKinds) Enum.Parse (typeof (DynamicallyAccessedMemberKinds), value);
+					return (DynamicallyAccessedMemberTypes) Enum.Parse (typeof (DynamicallyAccessedMemberTypes), value);
 				}
 			}
 
-			return 0;
+			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		private void Initialize (LinkContext context, string jsonFile)
+		void Initialize (LinkContext context, string jsonFile)
 		{
 			// Need "using" because JsonDocument won't close this as part of Dispose().
 			using FileStream jsonFileStream = File.OpenRead (jsonFile);
@@ -163,19 +164,19 @@ namespace Mono.Linker.Dataflow
 									continue;
 								}
 
-								DynamicallyAccessedMemberKinds returnAnnotation = 0;
-								var parameterAnnotations = new ArrayBuilder<(string ParamName, DynamicallyAccessedMemberKinds Annotation)> ();
+								DynamicallyAccessedMemberTypes returnAnnotation = DynamicallyAccessedMemberTypes.None;
+								var parameterAnnotations = new ArrayBuilder<(string ParamName, DynamicallyAccessedMemberTypes Annotation)> ();
 								foreach (var parameter in member.Value.EnumerateObject ()) {
 									if (parameter.Name == "return") {
 										returnAnnotation = ParseKinds (parameter.Value);
 									} else {
-										DynamicallyAccessedMemberKinds paramAnnotation = ParseKinds (parameter.Value);
-										if (paramAnnotation != 0)
+										DynamicallyAccessedMemberTypes paramAnnotation = ParseKinds (parameter.Value);
+										if (paramAnnotation != DynamicallyAccessedMemberTypes.None)
 											parameterAnnotations.Add ((parameter.Name, paramAnnotation));
 									}
 								}
 
-								if (returnAnnotation != 0 || parameterAnnotations.Count > 0)
+								if (returnAnnotation != DynamicallyAccessedMemberTypes.None || parameterAnnotations.Count > 0)
 									_methods[method] = new AnnotatedMethod (returnAnnotation, parameterAnnotations.ToArray ());
 							} else {
 								// This is a field or property
@@ -190,9 +191,9 @@ namespace Mono.Linker.Dataflow
 								}
 
 								if (field != null) {
-									DynamicallyAccessedMemberKinds fieldAnnotation = ParseKinds (member.Value);
+									DynamicallyAccessedMemberTypes fieldAnnotation = ParseKinds (member.Value);
 
-									if (fieldAnnotation != 0)
+									if (fieldAnnotation != DynamicallyAccessedMemberTypes.None)
 										_fields[field] = fieldAnnotation;
 									continue;
 								}
@@ -208,9 +209,9 @@ namespace Mono.Linker.Dataflow
 								}
 
 								if (property != null) {
-									DynamicallyAccessedMemberKinds propertyAnnotation = ParseKinds (member.Value);
+									DynamicallyAccessedMemberTypes propertyAnnotation = ParseKinds (member.Value);
 
-									if (propertyAnnotation != 0)
+									if (propertyAnnotation != DynamicallyAccessedMemberTypes.None)
 										_properties[property] = propertyAnnotation;
 								}
 
@@ -224,13 +225,13 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		private struct AnnotatedMethod
+		struct AnnotatedMethod
 		{
-			public readonly DynamicallyAccessedMemberKinds ReturnAnnotation;
-			public readonly (string ParamName, DynamicallyAccessedMemberKinds Annotation)[] ParameterAnnotations;
+			public readonly DynamicallyAccessedMemberTypes ReturnAnnotation;
+			public readonly (string ParamName, DynamicallyAccessedMemberTypes Annotation)[] ParameterAnnotations;
 
-			public AnnotatedMethod (DynamicallyAccessedMemberKinds returnAnnotation,
-				(string ParamName, DynamicallyAccessedMemberKinds Annotation)[] paramAnnotations)
+			public AnnotatedMethod (DynamicallyAccessedMemberTypes returnAnnotation,
+				(string ParamName, DynamicallyAccessedMemberTypes Annotation)[] paramAnnotations)
 				=> (ReturnAnnotation, ParameterAnnotations) = (returnAnnotation, paramAnnotations);
 		}
 	}

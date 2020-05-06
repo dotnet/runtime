@@ -5,9 +5,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -22,58 +22,61 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			PropagateToThisWithSetters ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (TypeTest.RequireThisMethods), new Type[] { },
-			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithPublicMethods()' " +
-			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the implicit 'this' parameter of method 'System.Void System.TypeTest::RequireThisMethods()' " +
-			"which requires dynamically accessed member kinds `Methods`. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Methods'.")]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (TypeTest.RequireThisPublicMethods), new Type[] { },
+			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithNonPublicMethods()' " +
+			"with dynamically accessed member kinds 'NonPublicMethods' " +
+			"is passed into the implicit 'this' parameter of method 'System.Void System.TypeTest::RequireThisPublicMethods()' " +
+			"which requires dynamically accessed member kinds 'PublicMethods'. " +
+			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (TypeTest.RequireThisNonPublicMethods), new Type[] { })]
 		static void PropagateToThis ()
 		{
 			GetWithPublicMethods ().RequireThisPublicMethods ();
-			GetWithMethods ().RequireThisPublicMethods ();
+			GetWithNonPublicMethods ().RequireThisPublicMethods ();
 
-			GetWithPublicMethods ().RequireThisMethods ();
-			GetWithMethods ().RequireThisMethods ();
+			GetWithPublicMethods ().RequireThisNonPublicMethods ();
+			GetWithNonPublicMethods ().RequireThisNonPublicMethods ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "get_" + nameof (TypeTest.PropertyRequireThisMethods), new Type[] { },
- 			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithPublicMethods()' " +
- 			"with dynamically accessed member kinds 'PublicMethods' " +
- 			"is passed into the implicit 'this' parameter of method 'System.Object System.TypeTest::get_PropertyRequireThisMethods()' " +
- 			"which requires dynamically accessed member kinds `Methods`. " +
- 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Methods'.")]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "get_" + nameof (TypeTest.PropertyRequireThisPublicMethods), new Type[] { },
+			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithNonPublicMethods()' " +
+			"with dynamically accessed member kinds 'NonPublicMethods' " +
+			"is passed into the implicit 'this' parameter of method 'System.Object System.TypeTest::get_PropertyRequireThisPublicMethods()' " +
+			"which requires dynamically accessed member kinds 'PublicMethods'. " +
+			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "get_" + nameof (TypeTest.PropertyRequireThisNonPublicMethods), new Type[] { })]
 		static void PropagateToThisWithGetters ()
 		{
 			_ = GetWithPublicMethods ().PropertyRequireThisPublicMethods;
-			_ = GetWithMethods ().PropertyRequireThisPublicMethods;
+			_ = GetWithNonPublicMethods ().PropertyRequireThisPublicMethods;
 
-			_ = GetWithPublicMethods ().PropertyRequireThisMethods;
-			_ = GetWithMethods ().PropertyRequireThisMethods;
+			_ = GetWithPublicMethods ().PropertyRequireThisNonPublicMethods;
+			_ = GetWithNonPublicMethods ().PropertyRequireThisNonPublicMethods;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "set_" + nameof (TypeTest.PropertyRequireThisMethods), new Type[] { typeof (Object) },
- 			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithPublicMethods()' " +
- 			"with dynamically accessed member kinds 'PublicMethods' " +
- 			"is passed into the implicit 'this' parameter of method 'System.Void System.TypeTest::set_PropertyRequireThisMethods(System.Object)' " +
- 			"which requires dynamically accessed member kinds `Methods`. " +
- 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Methods'.")]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "set_" + nameof (TypeTest.PropertyRequireThisPublicMethods), new Type[] { typeof (Object) },
+			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithNonPublicMethods()' " +
+			"with dynamically accessed member kinds 'NonPublicMethods' " +
+			"is passed into the implicit 'this' parameter of method 'System.Void System.TypeTest::set_PropertyRequireThisPublicMethods(System.Object)' " +
+			"which requires dynamically accessed member kinds 'PublicMethods'. " +
+			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "set_" + nameof (TypeTest.PropertyRequireThisNonPublicMethods), new Type[] { typeof (Object) })]
 		static void PropagateToThisWithSetters ()
 		{
 			GetWithPublicMethods ().PropertyRequireThisPublicMethods = null;
-			GetWithMethods ().PropertyRequireThisPublicMethods = null;
-			GetWithPublicMethods ().PropertyRequireThisMethods = null; // should error.
-			GetWithMethods ().PropertyRequireThisMethods = null;
+			GetWithNonPublicMethods ().PropertyRequireThisPublicMethods = null;
+			GetWithPublicMethods ().PropertyRequireThisNonPublicMethods = null;
+			GetWithNonPublicMethods ().PropertyRequireThisNonPublicMethods = null;
 		}
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicMethods)]
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		static TypeTest GetWithPublicMethods ()
 		{
 			return null;
 		}
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Methods)]
-		static TypeTest GetWithMethods ()
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
+		static TypeTest GetWithNonPublicMethods ()
 		{
 			return null;
 		}
@@ -84,56 +87,57 @@ namespace System
 {
 	class TypeTest : Type
 	{
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicMethods)]
-		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (RequireMethods), new Type[] { typeof (Type) },
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (RequireNonPublicMethods), new Type[] { typeof (Type) },
 			"The implicit 'this' parameter of method 'System.Void System.TypeTest::RequireThisPublicMethods()' " +
 			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the parameter 'type' of method 'System.Void System.TypeTest::RequireMethods(System.Type)' " +
-			"which requires dynamically accessed member kinds `Methods`. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Methods'.")]
+			"is passed into the parameter 'type' of method 'System.Void System.TypeTest::RequireNonPublicMethods(System.Type)' " +
+			"which requires dynamically accessed member kinds 'NonPublicMethods'. " +
+			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'NonPublicMethods'.")]
 		public void RequireThisPublicMethods ()
 		{
 			RequirePublicMethods (this);
-			RequireMethods (this);
+			RequireNonPublicMethods (this);
 		}
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Methods)]
-		public void RequireThisMethods ()
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (RequirePublicMethods), new Type[] { typeof (Type) })]
+		public void RequireThisNonPublicMethods ()
 		{
 			RequirePublicMethods (this);
-			RequireMethods (this);
+			RequireNonPublicMethods (this);
 		}
 
 		public object PropertyRequireThisPublicMethods {
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicMethods)]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			get {
 				return null;
 			}
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicMethods)]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			set {
 				return;
 			}
 		}
 
-		public object PropertyRequireThisMethods {
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Methods)] // applies to this
+		public object PropertyRequireThisNonPublicMethods {
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			get {
 				return null;
 			}
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Methods)]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			set {
 				return;
 			}
 		}
 
 		private static void RequirePublicMethods (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicMethods)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
 			Type type)
 		{
 		}
 
-		private static void RequireMethods (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Methods)]
+		private static void RequireNonPublicMethods (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			Type type)
 		{
 		}

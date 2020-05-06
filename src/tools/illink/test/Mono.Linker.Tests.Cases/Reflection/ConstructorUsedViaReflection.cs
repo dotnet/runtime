@@ -19,8 +19,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[RecognizedReflectionAccessPattern (
-					   typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) },
-					   typeof (IntegerParameterConstructor), ".ctor", new Type[0])]
+			typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) },
+			typeof (IntegerParameterConstructor), ".ctor", new Type[0])]
 		[Kept]
 		static void TestWithIntegerParameter ()
 		{
@@ -106,11 +106,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public IntegerParameterConstructor (int i)
 			{ }
 
-			[Kept]
 			private IntegerParameterConstructor (string foo)
 			{ }
 
-			[Kept]
 			protected IntegerParameterConstructor (string foo, string bar)
 			{ }
 		}

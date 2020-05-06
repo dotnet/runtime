@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -30,12 +30,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		Type PropertyWithDefaultConstructor { get; set; }
 
 		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceField ()
 		{
 			RequireDefaultConstructor (_typeWithDefaultConstructor);
 			RequirePublicConstructors (_typeWithDefaultConstructor);
-			RequireConstructors (_typeWithDefaultConstructor);
+			RequireNonPublicConstructors (_typeWithDefaultConstructor);
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
@@ -58,28 +58,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceProperty ()
 		{
 			RequireDefaultConstructor (PropertyWithDefaultConstructor);
 			RequirePublicConstructors (PropertyWithDefaultConstructor);
-			RequireConstructors (PropertyWithDefaultConstructor);
+			RequireNonPublicConstructors (PropertyWithDefaultConstructor);
 		}
 
 		private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type)
 		{
 		}
 
 		private static void RequirePublicConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type type)
 		{
 		}
 
-		private static void RequireConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+		private static void RequireNonPublicConstructors (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
 		{
 		}

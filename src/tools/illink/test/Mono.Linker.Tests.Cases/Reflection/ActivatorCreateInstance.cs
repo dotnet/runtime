@@ -1,7 +1,7 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -32,8 +32,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			// Direct call to instance method with a parameter
 			p.FromParameterOnInstanceMethod (typeof (FromParameterOnInstanceMethodType));
 
-			// All constructors required
-			FromParameterWithConstructors (typeof (FromParameterWithConstructorsType));
+			// Non-public constructors required
+			FromParameterWithNonPublicConstructors (typeof (FromParameterWithNonPublicConstructorsType));
 
 			// Public contructors required
 			FromParameterWithPublicConstructors (typeof (FromParameterWithPublicConstructorsType));
@@ -99,7 +99,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		private static void FromParameterOnStaticMethod (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{
@@ -134,7 +134,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo) })]
 		[Kept]
 		private void FromParameterOnInstanceMethod (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{
@@ -153,35 +153,34 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public FromParameterOnInstanceMethodType (int arg, int arg2) { }
 		}
 
-		[RecognizedReflectionAccessPattern]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (object[]) })]
 		[Kept]
-		private static void FromParameterWithConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+		private static void FromParameterWithNonPublicConstructors (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 
 		{
-			// All ctors are required by the parameter, so all cases should work
+			// Only the explicitly non-public call will work
 			Activator.CreateInstance (type);
 			Activator.CreateInstance (type, new object[] { 1 });
-			Activator.CreateInstance (type, BindingFlags.NonPublic, new object[] { 1, 2 });
+			Activator.CreateInstance (type, BindingFlags.NonPublic, null, new object[] { 1, 2 }, null);
 		}
 
 		[Kept]
-		class FromParameterWithConstructorsType
+		class FromParameterWithNonPublicConstructorsType
 		{
+			public FromParameterWithNonPublicConstructorsType () { }
+			public FromParameterWithNonPublicConstructorsType (int arg) { }
 			[Kept]
-			public FromParameterWithConstructorsType () { }
-			[Kept]
-			public FromParameterWithConstructorsType (int arg) { }
-			[Kept]
-			private FromParameterWithConstructorsType (int arg, int arg2) { }
+			private FromParameterWithNonPublicConstructorsType (int arg, int arg2) { }
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo) })]
 		[Kept]
 		private static void FromParameterWithPublicConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{

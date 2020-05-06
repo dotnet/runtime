@@ -2,21 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-using Mono.Linker.Steps;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
+using Mono.Linker.Steps;
+
+using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Mono.Linker.Dataflow
 {
-	internal class ReflectionMethodBodyScanner : Dataflow.MethodBodyScanner
+	class ReflectionMethodBodyScanner : MethodBodyScanner
 	{
-		private readonly LinkContext _context;
-		private readonly MarkStep _markStep;
-		private readonly FlowAnnotations _flowAnnotations;
+		readonly LinkContext _context;
+		readonly MarkStep _markStep;
+		readonly FlowAnnotations _flowAnnotations;
 
 		public static bool RequiresReflectionMethodBodyScanner (FlowAnnotations flowAnnotations, MethodReference method)
 		{
@@ -88,7 +91,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		private ValueNode GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
+		ValueNode GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
 		{
 			ValueNode valueNode;
 			if (argument.Type.Name == "Type") {
@@ -113,7 +116,7 @@ namespace Mono.Linker.Dataflow
 
 		protected override ValueNode GetMethodParameterValue (MethodDefinition method, int parameterIndex)
 		{
-			DynamicallyAccessedMemberKinds memberKinds = _flowAnnotations.GetParameterAnnotation (method, parameterIndex);
+			DynamicallyAccessedMemberTypes memberKinds = _flowAnnotations.GetParameterAnnotation (method, parameterIndex);
 			return new MethodParameterValue (parameterIndex, memberKinds) {
 				SourceContext = method
 			};
@@ -121,7 +124,7 @@ namespace Mono.Linker.Dataflow
 
 		protected override ValueNode GetFieldValue (MethodDefinition method, FieldDefinition field)
 		{
-			DynamicallyAccessedMemberKinds memberKinds = _flowAnnotations.GetFieldAnnotation (field);
+			DynamicallyAccessedMemberTypes memberKinds = _flowAnnotations.GetFieldAnnotation (field);
 			return new LoadFieldValue (field, memberKinds) {
 				SourceContext = method
 			};
@@ -394,7 +397,7 @@ namespace Mono.Linker.Dataflow
 		{
 			var reflectionContext = new ReflectionPatternContext (_context, callingMethodBody.Method, calledMethod.Resolve (), operation);
 
-			DynamicallyAccessedMemberKinds returnValueDynamicallyAccessedMemberKinds = 0;
+			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberKinds = 0;
 
 			methodReturnValue = null;
 
@@ -458,24 +461,24 @@ namespace Mono.Linker.Dataflow
 					|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty: {
 
 						reflectionContext.AnalyzingPattern ();
-						DynamicallyAccessedMemberKinds? memberKind = null;
+						DynamicallyAccessedMemberTypes? memberKind = null;
 						BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 
 						switch (getRuntimeMember) {
 						case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
-							memberKind = DynamicallyAccessedMemberKinds.PublicEvents;
+							memberKind = DynamicallyAccessedMemberTypes.PublicEvents;
 							break;
 
 						case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
-							memberKind = DynamicallyAccessedMemberKinds.PublicFields;
+							memberKind = DynamicallyAccessedMemberTypes.PublicFields;
 							break;
 
 						case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
-							memberKind = DynamicallyAccessedMemberKinds.PublicMethods;
+							memberKind = DynamicallyAccessedMemberTypes.PublicMethods;
 							break;
 
 						case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
-							memberKind = DynamicallyAccessedMemberKinds.PublicProperties;
+							memberKind = DynamicallyAccessedMemberTypes.PublicProperties;
 							break;
 
 						default:
@@ -492,19 +495,19 @@ namespace Mono.Linker.Dataflow
 								foreach (var stringParam in methodParams[1].UniqueValues ()) {
 									if (stringParam is KnownStringValue stringValue) {
 										switch (memberKind) {
-										case DynamicallyAccessedMemberKinds.PublicEvents:
+										case DynamicallyAccessedMemberTypes.PublicEvents:
 											MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, e => e.Name == stringValue.Contents, bindingFlags);
 											reflectionContext.RecordHandledPattern ();
 											break;
-										case DynamicallyAccessedMemberKinds.PublicFields:
+										case DynamicallyAccessedMemberTypes.PublicFields:
 											MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, f => f.Name == stringValue.Contents, bindingFlags);
 											reflectionContext.RecordHandledPattern ();
 											break;
-										case DynamicallyAccessedMemberKinds.PublicMethods:
+										case DynamicallyAccessedMemberTypes.PublicMethods:
 											MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
 											reflectionContext.RecordHandledPattern ();
 											break;
-										case DynamicallyAccessedMemberKinds.PublicProperties:
+										case DynamicallyAccessedMemberTypes.PublicProperties:
 											MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, p => p.Name == stringValue.Contents, bindingFlags);
 											reflectionContext.RecordHandledPattern ();
 											break;
@@ -512,11 +515,11 @@ namespace Mono.Linker.Dataflow
 											throw new MarkException (string.Format ("Error processing reflection call: '{0}' inside {1}. Unexpected member kind.", calledMethod.FullName, callingMethodBody.Method.FullName));
 										}
 									} else {
-										RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds) memberKind, value, calledMethod.Parameters[0]);
+										RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberTypes) memberKind, value, calledMethod.Parameters[0]);
 									}
 								}
 							} else {
-								RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds) memberKind, value, calledMethod.Parameters[0]);
+								RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberTypes) memberKind, value, calledMethod.Parameters[0]);
 							}
 						}
 					}
@@ -540,11 +543,19 @@ namespace Mono.Linker.Dataflow
 										MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
 										reflectionContext.RecordHandledPattern ();
 									} else {
-										RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.Methods, value, calledMethod.Parameters[0]);
+										RequireDynamicallyAccessedMembers (
+											ref reflectionContext,
+											GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags),
+											value,
+											calledMethod.Parameters[0]);
 									}
 								}
 							} else {
-								RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.Methods, value, calledMethod.Parameters[0]);
+								RequireDynamicallyAccessedMembers (
+									ref reflectionContext,
+									GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags),
+									value,
+									calledMethod.Parameters[0]);
 							}
 						}
 					}
@@ -558,7 +569,9 @@ namespace Mono.Linker.Dataflow
 				//
 				case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property: {
 						reflectionContext.AnalyzingPattern ();
-						DynamicallyAccessedMemberKinds memberKind = fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property ? DynamicallyAccessedMemberKinds.Properties : DynamicallyAccessedMemberKinds.Fields;
+						DynamicallyAccessedMemberTypes memberKind = fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property
+							? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties
+							: DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields;
 
 						foreach (var value in methodParams[1].UniqueValues ()) {
 							if (value is SystemTypeValue systemTypeValue) {
@@ -567,7 +580,7 @@ namespace Mono.Linker.Dataflow
 										BindingFlags bindingFlags = methodParams[0].Kind == ValueNodeKind.Null ? BindingFlags.Static : BindingFlags.Default;
 										// TODO: Change this as needed after deciding if we are to keep all fields/properties on a type
 										// that is accessed via reflection. For now, let's only keep the field/property that is retrieved.
-										if (memberKind is DynamicallyAccessedMemberKinds.Properties) {
+										if (fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property) {
 											MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
 										} else {
 											MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
@@ -598,7 +611,7 @@ namespace Mono.Linker.Dataflow
 								MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, null, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 								reflectionContext.RecordHandledPattern ();
 							} else {
-								RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, value, calledMethod.Parameters[0]);
+								RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberTypes.DefaultConstructor, value, calledMethod.Parameters[0]);
 							}
 						}
 					}
@@ -654,7 +667,7 @@ namespace Mono.Linker.Dataflow
 						reflectionContext.AnalyzingPattern ();
 
 						var parameters = calledMethod.Parameters;
-						BindingFlags bindingFlags = BindingFlags.Default;
+						BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance;
 						if (parameters.Count > 1) {
 							if (methodParams[1].AsConstInt () != null)
 								bindingFlags |= (BindingFlags) methodParams[1].AsConstInt ();
@@ -666,9 +679,8 @@ namespace Mono.Linker.Dataflow
 								reflectionContext.RecordHandledPattern ();
 							} else {
 								// Otherwise fall back to the bitfield requirements
-								var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
-										? DynamicallyAccessedMemberKinds.PublicConstructors
-										: DynamicallyAccessedMemberKinds.Constructors;
+								var requiredMemberKinds = bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicConstructors : DynamicallyAccessedMemberTypes.None;
+								requiredMemberKinds |= bindingFlags.HasFlag (BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicConstructors : DynamicallyAccessedMemberTypes.None;
 								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
 							}
 						}
@@ -690,13 +702,14 @@ namespace Mono.Linker.Dataflow
 				case IntrinsicId.Type_GetMethod: {
 						reflectionContext.AnalyzingPattern ();
 
-						BindingFlags bindingFlags = BindingFlags.Default;
+						BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 						if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters[1].ParameterType.Name == "BindingFlags" && methodParams[2].AsConstInt () != null) {
-							bindingFlags |= (BindingFlags) methodParams[2].AsConstInt ();
+							bindingFlags = (BindingFlags) methodParams[2].AsConstInt ();
 						} else if (calledMethod.Parameters.Count > 2 && calledMethod.Parameters[2].ParameterType.Name == "BindingFlags" && methodParams[3].AsConstInt () != null) {
-							bindingFlags |= (BindingFlags) methodParams[3].AsConstInt ();
+							bindingFlags = (BindingFlags) methodParams[3].AsConstInt ();
 						}
 
+						var requiredMemberKinds = GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags);
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue systemTypeValue) {
 								foreach (var stringParam in methodParams[1].UniqueValues ()) {
@@ -705,17 +718,11 @@ namespace Mono.Linker.Dataflow
 										reflectionContext.RecordHandledPattern ();
 									} else {
 										// Otherwise fall back to the bitfield requirements
-										var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
-												? DynamicallyAccessedMemberKinds.PublicMethods
-												: DynamicallyAccessedMemberKinds.Methods;
 										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
 									}
 								}
 							} else {
 								// Otherwise fall back to the bitfield requirements
-								var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
-										? DynamicallyAccessedMemberKinds.PublicMethods
-										: DynamicallyAccessedMemberKinds.Methods;
 								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
 							}
 						}
@@ -742,31 +749,31 @@ namespace Mono.Linker.Dataflow
 					&& calledMethod.HasThis: {
 
 						reflectionContext.AnalyzingPattern ();
-						DynamicallyAccessedMemberKinds memberKind = fieldPropertyOrEvent switch
+						BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+						if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters[1].ParameterType.Name == "BindingFlags" && methodParams[2].AsConstInt () != null) {
+							bindingFlags = (BindingFlags) methodParams[2].AsConstInt ();
+						}
+
+						DynamicallyAccessedMemberTypes memberKind = fieldPropertyOrEvent switch
 						{
-							IntrinsicId.Type_GetEvent => DynamicallyAccessedMemberKinds.Events,
-							IntrinsicId.Type_GetField => DynamicallyAccessedMemberKinds.Fields,
-							IntrinsicId.Type_GetProperty => DynamicallyAccessedMemberKinds.Properties,
+							IntrinsicId.Type_GetEvent => GetDynamicallyAccessedMemberTypesFromBindingFlagsForEvents (bindingFlags),
+							IntrinsicId.Type_GetField => GetDynamicallyAccessedMemberTypesFromBindingFlagsForFields (bindingFlags),
+							IntrinsicId.Type_GetProperty => GetDynamicallyAccessedMemberTypesFromBindingFlagsForProperties (bindingFlags),
 							_ => throw new ArgumentException ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type."),
 						};
-
-						BindingFlags bindingFlags = BindingFlags.Default;
-						if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters[1].ParameterType.Name == "BindingFlags" && methodParams[2].AsConstInt () != null) {
-							bindingFlags |= (BindingFlags) methodParams[2].AsConstInt ();
-						}
 
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue systemTypeValue) {
 								foreach (var stringParam in methodParams[1].UniqueValues ()) {
 									if (stringParam is KnownStringValue stringValue) {
-										switch (memberKind) {
-										case DynamicallyAccessedMemberKinds.Events:
+										switch (fieldPropertyOrEvent) {
+										case IntrinsicId.Type_GetEvent:
 											MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: e => e.Name == stringValue.Contents, bindingFlags);
 											break;
-										case DynamicallyAccessedMemberKinds.Fields:
+										case IntrinsicId.Type_GetField:
 											MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
 											break;
-										case DynamicallyAccessedMemberKinds.Properties:
+										case IntrinsicId.Type_GetProperty:
 											MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
 											break;
 										default:
@@ -850,10 +857,8 @@ namespace Mono.Linker.Dataflow
 							} else {
 								// Otherwise fall back to the bitfield requirements
 								var requiredMemberKinds = ctorParameterCount == 0
-									? DynamicallyAccessedMemberKinds.DefaultConstructor
-									: ((bindingFlags & BindingFlags.NonPublic) == 0)
-										? DynamicallyAccessedMemberKinds.PublicConstructors
-										: DynamicallyAccessedMemberKinds.Constructors;
+									? DynamicallyAccessedMemberTypes.DefaultConstructor
+									: GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
 								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
 							}
 						}
@@ -939,7 +944,7 @@ namespace Mono.Linker.Dataflow
 				//
 				case IntrinsicId.Assembly_CreateInstance:
 					//
-					// TODO: This could be supported for `this` only calls
+					// TODO: This could be supported for "this" only calls
 					//
 					reflectionContext.AnalyzingPattern ();
 					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.SourceMethod.FullName}' is not yet supported");
@@ -1075,7 +1080,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		void RequireDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberKinds requiredMemberKinds, ValueNode value, IMetadataTokenProvider targetContext)
+		void RequireDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberTypes requiredMemberKinds, ValueNode value, IMetadataTokenProvider targetContext)
 		{
 			foreach (var uniqueValue in value.UniqueValues ()) {
 				if (uniqueValue is LeafValueWithDynamicallyAccessedMemberNode valueWithDynamicallyAccessedMember) {
@@ -1083,7 +1088,7 @@ namespace Mono.Linker.Dataflow
 						reflectionContext.RecordUnrecognizedPattern ($"The {GetValueDescriptionForErrorMessage (valueWithDynamicallyAccessedMember)} " +
 							$"with dynamically accessed member kinds '{GetDynamicallyAccessedMemberKindsDescription (valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberKinds)}' " +
 							$"is passed into the {GetMetadataTokenDescriptionForErrorMessage (targetContext)} " +
-							$"which requires dynamically accessed member kinds `{GetDynamicallyAccessedMemberKindsDescription (requiredMemberKinds)}`. " +
+							$"which requires dynamically accessed member kinds '{GetDynamicallyAccessedMemberKindsDescription (requiredMemberKinds)}'. " +
 							$"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds '{GetDynamicallyAccessedMemberKindsDescription (requiredMemberKinds)}'.");
 					} else {
 						reflectionContext.RecordHandledPattern ();
@@ -1103,7 +1108,7 @@ namespace Mono.Linker.Dataflow
 				} else {
 					reflectionContext.RecordUnrecognizedPattern ($"A {GetValueDescriptionForErrorMessage (uniqueValue)} " +
 						$"is passed into the {GetMetadataTokenDescriptionForErrorMessage (targetContext)} " +
-						$"which requires dynamically accessed member kinds `{GetDynamicallyAccessedMemberKindsDescription (requiredMemberKinds)}`. " +
+						$"which requires dynamically accessed member kinds '{GetDynamicallyAccessedMemberKindsDescription (requiredMemberKinds)}'. " +
 						$"It's not possible to guarantee that these requirements are met by the application.");
 				}
 			}
@@ -1111,47 +1116,52 @@ namespace Mono.Linker.Dataflow
 			reflectionContext.RecordHandledPattern ();
 		}
 
-		void MarkTypeForDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberKinds requiredMemberKinds)
+		void MarkTypeForDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberKinds)
 		{
-			// Note that it's important to first test for the widest selector (Constructors > PublicConstructors > DefaultConstructor)
-			// as the wider ones include the narrower ones in the bitfield values.
-			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Constructors)) {
-				MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: null);
-			} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors)) {
+			if (requiredMemberKinds == DynamicallyAccessedMemberTypes.All) {
+				var sourceMethod = reflectionContext.SourceMethod;
+				reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseTypes: true, new DependencyInfo (DependencyKind.AccessedViaReflection, sourceMethod)));
+				return;
+			}
+
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicConstructors))
+				MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.NonPublic);
+
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
 				MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
-			} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor)) {
+
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.DefaultConstructor))
 				MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.IsPublic && m.Parameters.Count == 0);
-			}
 
-			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods)) {
-				MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
-			} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicMethods)) {
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicMethods))
+				MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.NonPublic);
+
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicMethods))
 				MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
-			}
 
-			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Fields)) {
-				MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
-			} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicFields)) {
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicFields))
+				MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.NonPublic);
+
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicFields))
 				MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
-			}
 
-			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.NestedTypes)) {
-				MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: null);
-			} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicNestedTypes)) {
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicNestedTypes))
+				MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: t => !t.IsNestedPublic);
+
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicNestedTypes))
 				MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: t => t.IsNestedPublic);
-			}
 
-			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Properties)) {
-				MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
-			} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicProperties)) {
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicProperties))
+				MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.NonPublic);
+
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicProperties))
 				MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
-			}
 
-			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Events)) {
-				MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
-			} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicEvents)) {
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicEvents))
+				MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.NonPublic);
+
+			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicEvents))
 				MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
-			}
 		}
 
 		void MarkConstructorsOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter, BindingFlags? bindingFlags = null)
@@ -1425,45 +1435,74 @@ namespace Mono.Linker.Dataflow
 			;
 		}
 
-		string GetDynamicallyAccessedMemberKindsDescription (DynamicallyAccessedMemberKinds memberKinds)
+		string GetDynamicallyAccessedMemberKindsDescription (DynamicallyAccessedMemberTypes memberKinds)
 		{
-			var results = new List<DynamicallyAccessedMemberKinds> ();
-			if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Constructors))
-				results.Add (DynamicallyAccessedMemberKinds.Constructors);
-			else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors))
-				results.Add (DynamicallyAccessedMemberKinds.PublicConstructors);
-			else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor))
-				results.Add (DynamicallyAccessedMemberKinds.DefaultConstructor);
+			if (memberKinds == DynamicallyAccessedMemberTypes.All)
+				return DynamicallyAccessedMemberTypes.All.ToString ();
 
-			if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods))
-				results.Add (DynamicallyAccessedMemberKinds.Methods);
-			else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicMethods))
-				results.Add (DynamicallyAccessedMemberKinds.PublicMethods);
+			var results = new List<DynamicallyAccessedMemberTypes> ();
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicConstructors))
+				results.Add (DynamicallyAccessedMemberTypes.NonPublicConstructors);
 
-			if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Properties))
-				results.Add (DynamicallyAccessedMemberKinds.Properties);
-			else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicProperties))
-				results.Add (DynamicallyAccessedMemberKinds.PublicProperties);
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
+				results.Add (DynamicallyAccessedMemberTypes.PublicConstructors);
+			else if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.DefaultConstructor))
+				results.Add (DynamicallyAccessedMemberTypes.DefaultConstructor);
 
-			if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Fields))
-				results.Add (DynamicallyAccessedMemberKinds.Fields);
-			else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicFields))
-				results.Add (DynamicallyAccessedMemberKinds.PublicFields);
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicMethods))
+				results.Add (DynamicallyAccessedMemberTypes.NonPublicMethods);
 
-			if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Events))
-				results.Add (DynamicallyAccessedMemberKinds.Events);
-			else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicEvents))
-				results.Add (DynamicallyAccessedMemberKinds.PublicEvents);
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicMethods))
+				results.Add (DynamicallyAccessedMemberTypes.PublicMethods);
 
-			if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.NestedTypes))
-				results.Add (DynamicallyAccessedMemberKinds.NestedTypes);
-			else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicNestedTypes))
-				results.Add (DynamicallyAccessedMemberKinds.PublicNestedTypes);
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicProperties))
+				results.Add (DynamicallyAccessedMemberTypes.NonPublicProperties);
+
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicProperties))
+				results.Add (DynamicallyAccessedMemberTypes.PublicProperties);
+
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicFields))
+				results.Add (DynamicallyAccessedMemberTypes.NonPublicFields);
+
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicFields))
+				results.Add (DynamicallyAccessedMemberTypes.PublicFields);
+
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicEvents))
+				results.Add (DynamicallyAccessedMemberTypes.NonPublicEvents);
+
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicEvents))
+				results.Add (DynamicallyAccessedMemberTypes.PublicEvents);
+
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicNestedTypes))
+				results.Add (DynamicallyAccessedMemberTypes.NonPublicNestedTypes);
+
+			if (memberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicNestedTypes))
+				results.Add (DynamicallyAccessedMemberTypes.PublicNestedTypes);
 
 			if (results.Count == 0)
-				return "None";
+				return DynamicallyAccessedMemberTypes.None.ToString ();
 
 			return string.Join (" | ", results.Select (r => r.ToString ()));
 		}
+
+		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (BindingFlags bindingFlags) =>
+			(bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicConstructors : DynamicallyAccessedMemberTypes.None) |
+			(bindingFlags.HasFlag (BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicConstructors : DynamicallyAccessedMemberTypes.None);
+
+		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (BindingFlags bindingFlags) =>
+			(bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicMethods : DynamicallyAccessedMemberTypes.None) |
+			(bindingFlags.HasFlag (BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicMethods : DynamicallyAccessedMemberTypes.None);
+
+		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForFields (BindingFlags bindingFlags) =>
+			(bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicFields : DynamicallyAccessedMemberTypes.None) |
+			(bindingFlags.HasFlag (BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicFields : DynamicallyAccessedMemberTypes.None);
+
+		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForProperties (BindingFlags bindingFlags) =>
+			(bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicProperties : DynamicallyAccessedMemberTypes.None) |
+			(bindingFlags.HasFlag (BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicProperties : DynamicallyAccessedMemberTypes.None);
+
+		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForEvents (BindingFlags bindingFlags) =>
+			(bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicEvents : DynamicallyAccessedMemberTypes.None) |
+			(bindingFlags.HasFlag (BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicEvents : DynamicallyAccessedMemberTypes.None);
 	}
 }

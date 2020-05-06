@@ -10,26 +10,26 @@
 
         "_typeWithDefaultConstructor": {
           "System.DoesNotExistAttribute": "0",
-          "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+          "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers": "DefaultConstructor"
         },
 
         "TwoAnnotatedParameters(System.Type,System.Type)": {
           "type": {
-            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+            "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers": "DefaultConstructor"
           },
           "type2": {
-            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "PublicConstructors"
+            "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers": "PublicConstructors"
           }
         },
 
         "ReturnConstructorsFailure(System.Type)": {
           "return": {
-            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+            "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers": "DefaultConstructor"
           }
         },
 
         "PropertyWithDefaultConstructor": {
-          "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+          "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers": "DefaultConstructor"
         }
       }
     }

@@ -1,6 +1,6 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using System;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -30,7 +30,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			t = typeof (BranchMergeGotoType2);
 
 		End:
-			RequireFields (t); // keeps fields for both types
+			RequirePublicFields (t); // keeps fields for both types
 		}
 
 		[Kept]
@@ -54,7 +54,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			if (String.Empty.Length == 0)
 				t = typeof (BranchMergeIfType2);
 
-			RequireFields (t); // keeps fields for both types
+			RequirePublicFields (t); // keeps fields for both types
 		}
 
 		[Kept]
@@ -80,7 +80,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			} else {
 				t = typeof (BranchMergeIfElseType2);
 			}
-			RequireFields (t); // keeps fields for both types
+			RequirePublicFields (t); // keeps fields for both types
 		}
 
 		[Kept]
@@ -118,7 +118,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t = typeof (BranchMergeSwitchType3);
 				break;
 			}
-			RequireFields (t); // keeps fields for all types
+			RequirePublicFields (t); // keeps fields for all types
 		}
 
 		[Kept]
@@ -128,7 +128,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			if (String.Empty.Length == 0)
 				goto End;
 			t = typeof (BranchGotoType2);
-			RequireFields (t);
+			RequirePublicFields (t);
 		End:
 			return;
 		}
@@ -153,7 +153,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type t = typeof (BranchIfType1);
 			if (String.Empty.Length == 0) {
 				t = typeof (BranchIfType2);
-				RequireFields (t);
+				RequirePublicFields (t);
 			}
 		}
 
@@ -178,11 +178,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			if (String.Empty.Length == 0) {
 				// because this branch *happens* to come first in IL, we will only see one value
 				t = typeof (BranchIfElseTypeWithMethods);
-				RequireMethods (t); // this works
+				RequirePublicMethods (t); // this works
 			} else {
 				// because this branch *happens* to come second in IL, we will see the merged value for str
 				t = typeof (BranchIfElseTypeWithFields);
-				RequireFields (t); // keeps field on BranchIfElseTypeWithMethods
+				RequirePublicFields (t); // keeps field on BranchIfElseTypeWithMethods
 			}
 		}
 
@@ -233,17 +233,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
 		[Kept]
-		public static void RequireFields (
+		public static void RequirePublicFields (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Fields)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
 			Type type)
 		{
 		}
 
 		[Kept]
-		public static void RequireMethods (
+		public static void RequirePublicMethods (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Methods)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
 			Type type)
 		{
 		}

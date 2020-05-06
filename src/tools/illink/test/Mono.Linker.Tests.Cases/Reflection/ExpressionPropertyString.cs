@@ -1,8 +1,8 @@
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
-using System.Runtime.CompilerServices;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -76,7 +76,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Properties)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			static Type GetType ()
 			{
 				return typeof (UnknownType);

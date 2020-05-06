@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public static void Main ()
 		{
 			TestName ();
+			TestNamePrivate ();
 			TestNameAndExplicitBindingFlags ();
 			TestNameAndType ();
 			TestNameBindingFlagsAndParameterModifier ();
@@ -39,13 +40,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var method = typeof (MethodUsedViaReflection).GetMethod ("OnlyCalledViaReflection");
 			method.Invoke (null, new object[] { });
 		}
+
+		[Kept]
+		static void TestNamePrivate ()
+		{
+			var method = typeof (MethodUsedViaReflection).GetMethod ("PrivateMethod");
+			method.Invoke (null, new object[] { });
+		}
+
 		[Kept]
 		[RecognizedReflectionAccessPattern (
 			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags) },
 			typeof (TestNameAndExplicitBindingClass), nameof (TestNameAndExplicitBindingClass.OnlyCalledViaReflection), new Type[0])]
 		static void TestNameAndExplicitBindingFlags ()
 		{
-			var method = typeof (TestNameAndExplicitBindingClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.NonPublic);
+			var method = typeof (TestNameAndExplicitBindingClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.Public);
 			method.Invoke (null, new object[] { });
 		}
 
@@ -79,7 +88,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		[RecognizedReflectionAccessPattern (
 			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (int), typeof (Type []) },
-			typeof (TestNameWithIntAndTypeClass), nameof (TestNameWithIntAndTypeClass.OnlyCalledViaReflection), new Type [0])]
+			typeof (TestNameWithIntAndTypeClass), nameof (TestNameWithIntAndTypeClass.OnlyCalledViaReflection), new Type[] { typeof (int), typeof (int) } )]
 		static void TestNameWithIntAndType ()
 		{
 			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof (int) });
@@ -126,7 +135,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestNullType ()
 		{
 			Type type = null;
-			var method = type.GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.NonPublic);
+			var method = type.GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.Public);
 		}
 
 		[Kept]
@@ -141,7 +150,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
-			var method = type.GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.NonPublic);
+			var method = type.GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.Public);
 		}
 
 		[Kept]
@@ -193,20 +202,28 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		private static int OnlyCalledViaReflection ()
+		public static int OnlyCalledViaReflection ()
 		{
 			return 42;
 		}
+
+		private static int PrivateMethod ()
+		{
+			return 42;
+		}
+
 		[Kept]
-		private int OnlyCalledViaReflection (int foo)
+		public int OnlyCalledViaReflection (int foo)
 		{
 			return 43;
 		}
-		[Kept]
-		public int OnlyCalledViaReflection (int foo, int bar)
+
+		// This one will not be kept as we're only ever ask for public methods of this name
+		int OnlyCalledViaReflection (int foo, int bar)
 		{
 			return 44;
 		}
+
 		[Kept]
 		public static int OnlyCalledViaReflection (int foo, int bar, int baz)
 		{
@@ -216,7 +233,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private class TestNameAndExplicitBindingClass
 		{
 			[Kept]
-			private static int OnlyCalledViaReflection ()
+			public static int OnlyCalledViaReflection ()
 			{
 				return 42;
 			}
@@ -231,6 +248,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				return 44;
 			}
 
+			[Kept]
 			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
 			{
 				return 45;
@@ -241,11 +259,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private class TestNameAndTypeClass
 		{
 			[Kept]
-			private static int OnlyCalledViaReflection ()
+			public static int OnlyCalledViaReflection ()
 			{
 				return 42;
 			}
-			[Kept]
 			private int OnlyCalledViaReflection (int foo)
 			{
 				return 43;
@@ -312,12 +329,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class TestNameWithIntAndTypeClass
 		{
-			[Kept]
 			private static int OnlyCalledViaReflection ()
 			{
 				return 42;
 			}
-			[Kept]
 			private int OnlyCalledViaReflection (int foo)
 			{
 				return 43;
