@@ -34,6 +34,15 @@
     <RemoveDir Directories="$(BundleDir)" />
     <Copy SourceFiles="@(AppBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
+    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
+          SourceFiles="$(AndroidOpenSslCryptoLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
+          SourceFiles="$(AndroidOpenSslLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+
     <AndroidAppBuilderTask 
         Abi="$(AndroidAbi)"
         ProjectName="HelloAndroid"
