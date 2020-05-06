@@ -20,6 +20,10 @@
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <AppleTestRunner>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner'))</AppleTestRunner>
+  </PropertyGroup>
+
   <!-- Set env variable to use the local netfx assemblies instead of the ones in the GAC. -->
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />

@@ -166,7 +166,6 @@
     <PropertyGroup>
       <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
       <BundleDir>$(OutDir)\Bundle</BundleDir>
-      <AppleTestRunner>$(ArtifactsBinDir)AppleTestRunner</AppleTestRunner>
     </PropertyGroup>
     <!-- We need to copy additional stuff into $(OutDir)\Bundle
          1) The whole BCL
@@ -196,7 +195,7 @@
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
         CrossCompiler="$(RuntimePackDir)\native\cross\mono-aot-cross"
-        MainLibraryFileName="AppleTestRunner.dll"
+        MainLibraryFileName="$(AppleTestRunner)\$(HostArch)\$(Configuration)\AppleTestRunner.dll"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"

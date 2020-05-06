@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner'))</OutputPath>
+    <OutputPath>$(AppleTestRunner)</OutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
