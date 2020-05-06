@@ -166,7 +166,7 @@
     <PropertyGroup>
       <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
       <BundleDir>$(OutDir)\Bundle</BundleDir>
-      <AppleTestRunner>$(RepoRoot)\src\mono\msbuild\AppleTestRunner\bin</AppleTestRunner>
+      <AppleTestRunner>$(ArtifactsBinDir)AppleTestRunner</AppleTestRunner>
     </PropertyGroup>
     <!-- We need to copy additional stuff into $(OutDir)\Bundle
          1) The whole BCL
