@@ -23,6 +23,8 @@ parameters:
   pool: ''
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
+  runtimeMode: ''
+  runtimeModeDisplayName: ''
   # If true, tests were built in two phases
   # We will depend on both the TargetGeneric tests which are for AnyOS AnyCPU
   # as well as the TargetSpecific test.  Both sets of tests will be run
@@ -75,12 +77,12 @@ jobs:
 
     # Compute job name from template parameters
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      name: 'run_test_p0_${{ parameters.runtimeFlavor }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }}  Pri0 Test Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeMode }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeModeDisplayName}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Pri1 Test Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeModeDisplayName }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
     - name: testhostArg
@@ -114,6 +116,10 @@ jobs:
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
+
+    - ${{ if eq(parameters.runtimeMode, 'interpreter') }}:
+      - name: RuntimeModeDisplayName
+        value: 'Interpreter' 
 
     # Set job timeouts
     #
@@ -473,6 +479,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeMode }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()
