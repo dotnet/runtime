@@ -31739,33 +31739,12 @@ void gc_heap::trim_youngest_desired_low_memory()
 
 void gc_heap::decommit_ephemeral_segment_pages()
 {
-    if (settings.concurrent)
+    if (settings.concurrent || use_large_pages_p)
     {
         return;
     }
 
-    size_t slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment);
-
     dynamic_data* dd0 = dynamic_data_of (0);
-
-#ifndef MULTIPLE_HEAPS
-    size_t extra_space = (g_low_memory_status ? 0 : (512 * 1024));
-    size_t decommit_timeout = (g_low_memory_status ? 0 : GC_EPHEMERAL_DECOMMIT_TIMEOUT);
-    size_t ephemeral_elapsed = dd_time_clock(dd0) - gc_last_ephemeral_decommit_time;
-
-    if (dd_desired_allocation (dd0) > gc_gen0_desired_high)
-    {
-        gc_gen0_desired_high = dd_desired_allocation (dd0) + extra_space;
-    }
-
-    if (ephemeral_elapsed >= decommit_timeout)
-    {
-        slack_space = min (slack_space, gc_gen0_desired_high);
-
-        gc_last_ephemeral_decommit_time = dd_time_clock(dd0);
-        gc_gen0_desired_high = 0;
-    }
-#endif //!MULTIPLE_HEAPS
 
     // this is how much we are going to allocate in gen 0
     ptrdiff_t desired_allocation = dd_desired_allocation (dd0) + loh_size_threshold;
@@ -31778,46 +31757,54 @@ void gc_heap::decommit_ephemeral_segment_pages()
         desired_allocation += desired_allocation_1;
     }
 
-    if (settings.condemned_generation >= (max_generation-1))
-    {
-        size_t new_slack_space =
+    size_t slack_space =
 #ifdef HOST_64BIT
-                    max(min(min(soh_segment_size/32, dd_max_size (dd0)), (generation_size (max_generation) / 10)), (size_t)desired_allocation);
+                max(min(min(soh_segment_size/32, dd_max_size (dd0)), (generation_size (max_generation) / 10)), (size_t)desired_allocation);
 #else
 #ifdef FEATURE_CORECLR
-                    desired_allocation;
+                desired_allocation;
 #else
-                    dd_max_size (dd);
+                dd_max_size (dd);
 #endif //FEATURE_CORECLR
 #endif // HOST_64BIT
 
-        slack_space = min (slack_space, new_slack_space);
-#ifdef MULTIPLE_HEAPS
-        uint8_t *decommit_target = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
-        if ((decommit_target < heap_segment_committed (ephemeral_heap_segment)) && !use_large_pages_p)
-        {
-            gradual_decommit_in_progress_p = TRUE;
-            heap_segment_decommit_target (ephemeral_heap_segment) = decommit_target;
-        }
-        else
-        {
-            heap_segment_decommit_target (ephemeral_heap_segment) = heap_segment_reserved (ephemeral_heap_segment);
-        }
-#endif //MULTIPLE_HEAPS
-    }
-#ifdef MULTIPLE_HEAPS
-    else
+    uint8_t *decommit_target = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
+    if (decommit_target < heap_segment_decommit_target (ephemeral_heap_segment))
     {
-        // for a gen 0, revise the decommit target if it's lower than what we think we'll need
-        slack_space = desired_allocation;
-        if (heap_segment_decommit_target (ephemeral_heap_segment) < heap_segment_allocated (ephemeral_heap_segment) + slack_space)
-            heap_segment_decommit_target (ephemeral_heap_segment) = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
+        // we used to have a higher target - do exponential smoothing by computing
+        // essentially decommit_target = 1/3*decommit_target + 2/3*previous_decommit_target
+        // computation below is slightly different to avoid overflow
+        ptrdiff_t target_decrease = heap_segment_decommit_target (ephemeral_heap_segment) - decommit_target;
+        decommit_target += target_decrease * 2 / 3;
     }
-    ephemeral_heap_segment->saved_committed = heap_segment_committed (ephemeral_heap_segment);
-    ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation (dd0);
-#endif //MULTIPLE_HEAPS
+
+    heap_segment_decommit_target(ephemeral_heap_segment) = decommit_target;
+
+#ifdef MULTIPLE_HEAPS
+    if (decommit_target < heap_segment_committed (ephemeral_heap_segment))
+    {
+        gradual_decommit_in_progress_p = TRUE;
+    }
+    // these are only for checking against logic errors
+    ephemeral_heap_segment->saved_committed = heap_segment_committed(ephemeral_heap_segment);
+    ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation(dd0);
+#endif // MULTIPLE_HEAPS
 
 #ifndef MULTIPLE_HEAPS
+    // we want to limit the amount of decommit we do per time to indirectly
+    // limit the amount of time spent in recommit and page faults
+    size_t ephemeral_elapsed = dd_time_clock (dd0) - gc_last_ephemeral_decommit_time;
+    gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
+
+    // this is the amount we were planning to decommit
+    ptrdiff_t decommit_size = heap_segment_committed (ephemeral_heap_segment) - decommit_target;
+
+    // we do a max of 160 kB per millisecond (160 MB per second) of pause time
+    // we don't want to take large pause times too seriously - limit to 10 seconds
+    ptrdiff_t max_decommit_size = min(ephemeral_elapsed, 10*1000) * 160 * 1024;
+    decommit_size = min(decommit_size, max_decommit_size);
+
+    slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment) - decommit_size;
     decommit_heap_segment_pages (ephemeral_heap_segment, slack_space);
 #endif // !MULTIPLE_HEAPS
 
@@ -31826,8 +31813,13 @@ void gc_heap::decommit_ephemeral_segment_pages()
 }
 
 #ifdef MULTIPLE_HEAPS
+// return true if we actually decommitted anything
 bool gc_heap::decommit_step ()
 {
+    // should never get here for large pages because decommit_ephemeral_segment_pages
+    // will not do anything if use_large_pages_p is true
+    assert(!use_large_pages_p);
+
     size_t decommit_size = 0;
     for (int i = 0; i < n_heaps; i++)
     {
@@ -31837,6 +31829,7 @@ bool gc_heap::decommit_step ()
     return (decommit_size != 0);
 }
 
+// return the decommitted size
 size_t gc_heap::decommit_ephemeral_segment_pages_step ()
 {
     // we rely on desired allocation not being changed outside of GC

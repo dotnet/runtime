@@ -4702,10 +4702,10 @@ public:
     uint8_t*        background_allocated;
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
-    uint8_t*        decommit_target;
     uint8_t*        saved_committed;
     size_t          saved_desired_allocation;
 #endif //MULTIPLE_HEAPS
+    uint8_t*        decommit_target;
     uint8_t*        plan_allocated;
     uint8_t*        saved_bg_allocated;
 
@@ -4741,13 +4741,11 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
 {
   return inst->committed;
 }
-#ifdef MULTIPLE_HEAPS
 inline
 uint8_t*& heap_segment_decommit_target (heap_segment* inst)
 {
     return inst->decommit_target;
 }
-#endif //MULTIPLE_HEAPS
 inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {
