@@ -20,6 +20,14 @@ using Function = Interop.JavaScript.Function;
 
 namespace System.Net.Http
 {
+
+    // **Note** on `Task.ConfigureAwait(continueOnCapturedContext: true)` for the WebAssembly Browser.
+    // The current implementation of WebAssembly for the Browser does not have a SynchronizationContext nor a Scheduler
+    // thus forcing the callbacks to run on the main browser thread.  When threading is eventually implemented using
+    // emscripten's threading model of remote worker threads, via SharedArrayBuffer, any API calls will have to be
+    // remoted back to the main thread.  Most APIs only work on the main browser thread.
+    // During discussions the concensus has been that it will not matter right now which value is used for ConfigureAwait
+    // we should put this in place now.
     internal partial class BrowserHttpHandler : HttpMessageHandler
     {
         // This partial implementation contains members common to Browser WebAssembly running on .NET Core.
@@ -186,14 +194,14 @@ namespace System.Net.Http
                     {
                         if (request.Content is StringContent)
                         {
-                            requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(false));
+                            requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(continueOnCapturedContext: true));
                         }
                         else
                         {
                             // 2.1.801 seems to have a problem with the line
                             // using (var uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync ()))
                             // so we split it up into two lines.
-                            var byteAsync = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                            var byteAsync = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(continueOnCapturedContext: true);
                             using (Uint8Array uint8Buffer = Uint8Array.From(byteAsync))
                             {
                                 requestObject.SetObjectProperty("body", uint8Buffer);
@@ -261,7 +269,7 @@ namespace System.Net.Http
                     if (response == null)
                         throw new Exception("Internal error marshalling the response Promise from `fetch`.");
 
-                    JSObject t = (JSObject)await response.ConfigureAwait(false);
+                    JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
                     var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
 
@@ -324,7 +332,7 @@ namespace System.Net.Http
                 {
                     tcs.SetException(exception);
                 }
-                return await tcs.Task.ConfigureAwait(false);
+                return await tcs.Task.ConfigureAwait(continueOnCapturedContext: true);
             }
         }
 
@@ -400,7 +408,7 @@ namespace System.Net.Http
                     return _data;
                 }
 
-                using (Interop.JavaScript.ArrayBuffer dataBuffer = (Interop.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(false))
+                using (Interop.JavaScript.ArrayBuffer dataBuffer = (Interop.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
                 {
                     using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
                     {
@@ -414,14 +422,14 @@ namespace System.Net.Http
 
             protected override async Task<Stream> CreateContentReadStreamAsync()
             {
-                byte[] data = await GetResponseData().ConfigureAwait(false);
+                byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
                 return new MemoryStream(data, writable: false);
             }
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             {
-                byte[] data = await GetResponseData().ConfigureAwait(false);
-                await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+                byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
+                await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(continueOnCapturedContext: true);
             }
 
             protected internal override bool TryComputeLength(out long length)
@@ -511,7 +519,7 @@ namespace System.Net.Http
                 try
                 {
                     var t = (Task<object>)_reader.Invoke("read");
-                    using (var read = (JSObject)await t.ConfigureAwait(false))
+                    using (var read = (JSObject)await t.ConfigureAwait(continueOnCapturedContext: true))
                     {
                         if ((bool)read.GetObjectProperty("done"))
                         {
