@@ -1546,6 +1546,7 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
     if (interopInfo->TryGetExternalComObjectContext(&context))
     {
         IUnknown* identity = reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
+        GCX_PREEMP();
         IUnknown* result;
         if (SUCCEEDED(identity->QueryInterface(riid, (void**)&result)))
         {
