@@ -12,6 +12,7 @@
 #include <mono/jit/mono-private-unstable.h>
 
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -182,6 +183,12 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
     strncpy (buff, copy_buff, nbuff);
     if (isCopy)
         (*env)->ReleaseStringUTFChars (env, str, copy_buff);
+}
+
+int
+tkill(pid_t tid, int sig)
+{
+    return syscall(__NR_tkill, tid, sig);
 }
 
 int
