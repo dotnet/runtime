@@ -1,5 +1,0 @@
-<Project>
-  <Import Project="..\..\..\Directory.Build.targets" />
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-</Project>
