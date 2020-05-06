@@ -18,6 +18,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StreamTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public static async Task HandleCollectionsAsync()
         {
             await RunTest<string>();
