@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -62,11 +63,24 @@ namespace System.Net.Sockets
                 return (int)count;
             }
 
-#if DEBUG
-            return 2; // use two engines to make sure that this code path is covered with tests
-#else
-            return 1; // having a single epoll thread is optimal
-#endif
+            // the data that stands behind this heuristic can be found at https://github.com/dotnet/runtime/pull/35800#issuecomment-624719500
+            // the goal is to have a single epoll thread per every 28 cores
+            const int coresPerSingleEpollThread = 28;
+            int result = Environment.ProcessorCount / coresPerSingleEpollThread;
+
+            // and "round" it up, in a way that 29 cores gets 2 epoll threads
+            if (Environment.ProcessorCount % coresPerSingleEpollThread != 0)
+            {
+                result += 1;
+            }
+
+            // and double that for ARM where some operations like memory barriers are more expensive and we need more producer threads
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm)
+            {
+                result *= 2;
+            }
+
+            return Math.Min(result, Environment.ProcessorCount / 2);
         }
 
         //
