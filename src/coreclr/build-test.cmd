@@ -112,8 +112,7 @@ if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!pro
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
-if /i "%1" == "targetGeneric"         (set "__BuildNeedTargetArg=/p:CLRTestNeedTargetToBuild=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "targetSpecific"        (set "__BuildNeedTargetArg=/p:CLRTestNeedTargetToBuild=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "allTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -611,8 +610,7 @@ echo -priority=^<N^> : specify a set of tests that will be built and run, with p
 echo     0: Build only priority 0 cases as essential testcases (default)
 echo     1: Build all tests with priority 0 and 1
 echo     666: Build all tests with priority 0, 1 ... 666
-echo targetGeneric: Only build tests which run on any target platform.
-echo targetSpecific: Only build tests which run on a specific target platform.
+echo allTargets: Build managed tests for all target platforms.
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1
 

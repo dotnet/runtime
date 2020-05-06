@@ -33,7 +33,6 @@ jobs:
     buildConfig: checked
     platforms:
     - OSX_x64
-    - Windows_NT_x64
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release

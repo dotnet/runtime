@@ -3,8 +3,6 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  managedTestBuildOsGroup: ''
-  managedTestBuildOsSubgroup: ''
   container: ''
   testGroup: ''
   crossrootfsDir: ''
@@ -38,8 +36,6 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
-    managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
@@ -57,9 +53,9 @@ jobs:
     dependsOn:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
       - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
@@ -199,9 +195,9 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'
-          artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
-          artifactName: '$(managedTestArtifactName)'
-          displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+          artifactName: '$(managedGenericTestArtifactName)'
+          displayName: 'generic managed test artifacts'
 
 
     # Download product binaries directory
@@ -222,13 +218,14 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
+
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(microsoftNetSdkIlFolderPath)'
-          artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
+          artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
           artifactName: '$(microsoftNetSdkIlArtifactName)'
           displayName: 'Microsoft.NET.Sdk.IL package'
 

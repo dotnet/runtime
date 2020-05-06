@@ -19,10 +19,4 @@
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestNeedTarget>1</CLRTestNeedTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <TraitTags Include="OsSpecific" />
-  </ItemGroup>
 </Project>
