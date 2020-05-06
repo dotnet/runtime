@@ -405,7 +405,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
 
-        public MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod)
+        private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod)
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
 
