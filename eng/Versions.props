@@ -59,7 +59,6 @@
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20255.6</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.20255.6</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkSdk>5.0.0-beta.20201.2</MicrosoftDotNetBuildTasksTargetFrameworkSdk>
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20255.6</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>5.0.0-beta.20255.6</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.20255.6</MicrosoftDotNetGenFacadesVersion>
