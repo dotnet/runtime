@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization
         // Provide a default implementation for value converters.
         internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
         {
-            value = Read(ref reader, typeToConvert, options)!;
+            value = Read(ref reader, typeToConvert, options);
             return true;
         }
 

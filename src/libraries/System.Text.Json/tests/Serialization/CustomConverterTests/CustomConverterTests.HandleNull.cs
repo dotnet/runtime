@@ -49,6 +49,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new Int32NullConverter_OptOut());
 
+            // Serializer sets default value (doesn't fallback to built-in converter).
             Assert.Equal(0, JsonSerializer.Deserialize<int>("null", options));
         }
 
@@ -217,10 +218,13 @@ namespace System.Text.Json.Serialization.Tests
 
             // Per null handling default value for reference types (false), serializer handles null.
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new Int32NullConverter_SpecialCaseNull());
+            options.Converters.Add(new UriNullConverter_SpecialCaseNull());
 
+            // Serializer sets default value.
             val = JsonSerializer.Deserialize<Uri>("null", options);
             Assert.Null(val);
+
+            // Serializer serializes null.
             Assert.Equal("null", JsonSerializer.Serialize(val, options));
         }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -77,7 +78,7 @@ namespace System.Text.Json
             return success;
         }
 
-        public bool ReadJsonTyped(ref ReadStack state, ref Utf8JsonReader reader, out T value)
+        public bool ReadJsonTyped(ref ReadStack state, ref Utf8JsonReader reader, [MaybeNull] out T value)
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
@@ -93,7 +94,7 @@ namespace System.Text.Json
                 // Optimize for internal converters by avoiding the extra call to TryRead.
                 if (_converter.CanUseDirectReadOrWrite)
                 {
-                    value = _converter.Read(ref reader, _runtimePropertyType, Options)!;
+                    value = _converter.Read(ref reader, _runtimePropertyType, Options);
                     return true;
                 }
                 else

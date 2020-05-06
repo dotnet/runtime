@@ -176,10 +176,10 @@ namespace System.Text.Json
                 if (Converter.CanUseDirectReadOrWrite)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options)!;
+                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     if (!IgnoreNullValues || (!isNullToken && fastvalue != null))
                     {
-                        Set!(obj, fastvalue);
+                        Set!(obj, fastvalue!);
                     }
 
                     return true;
