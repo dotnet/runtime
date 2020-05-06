@@ -47,7 +47,7 @@ namespace Mono.Linker.Steps
 		}
 	}
 
-	public class ResolveFromXmlStep : ResolveStep
+	public class ResolveFromXmlStep : BaseStep
 	{
 
 		static readonly string _signature = "signature";
@@ -356,7 +356,7 @@ namespace Mono.Linker.Steps
 		{
 			FieldDefinition field = GetField (type, signature);
 			if (field == null) {
-				AddUnresolveMarker (string.Format ("T: {0}; F: {1}", type, signature));
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find field '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2016));
 				return;
 			}
 
@@ -422,13 +422,13 @@ namespace Mono.Linker.Steps
 
 		void ProcessMethodSignature (TypeDefinition type, string signature, bool required)
 		{
-			MethodDefinition meth = GetMethod (type, signature);
-			if (meth == null) {
-				AddUnresolveMarker (string.Format ("T: {0}; M: {1}", type, signature));
+			MethodDefinition method = GetMethod (type, signature);
+			if (method == null) {
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find method '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2017));
 				return;
 			}
 
-			MarkMethod (type, meth, required);
+			MarkMethod (type, method, required);
 		}
 
 		void MarkMethod (TypeDefinition type, MethodDefinition method, bool required)
@@ -522,7 +522,7 @@ namespace Mono.Linker.Steps
 		{
 			EventDefinition @event = GetEvent (type, signature);
 			if (@event == null) {
-				AddUnresolveMarker (string.Format ("T: {0}; E: {1}", type, signature));
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find event '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2018));
 				return;
 			}
 
@@ -594,7 +594,7 @@ namespace Mono.Linker.Steps
 		{
 			PropertyDefinition property = GetProperty (type, signature);
 			if (property == null) {
-				AddUnresolveMarker (string.Format ("T: {0}; P: {1}", type, signature));
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find property '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2019));
 				return;
 			}
 
@@ -622,12 +622,12 @@ namespace Mono.Linker.Steps
 			if (property.GetMethod != null && Array.IndexOf (accessors, "get") >= 0)
 				MarkMethod (type, property.GetMethod, required);
 			else if (property.GetMethod == null)
-				AddUnresolveMarker (string.Format ("T: {0}' M: {1} get_{2}", type, property.PropertyType, property.Name));
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find the get accessor of property '{property.Name}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2020));
 
 			if (property.SetMethod != null && Array.IndexOf (accessors, "set") >= 0)
 				MarkMethod (type, property.SetMethod, required);
 			else if (property.SetMethod == null)
-				AddUnresolveMarker (string.Format ("T: {0}' M: System.Void set_{2} ({1})", type, property.PropertyType, property.Name));
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find the set accessor of property '{property.Name}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2021));
 		}
 
 		void ProcessPropertyName (TypeDefinition type, string name, string[] accessors, bool required)

@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -11,10 +11,10 @@ namespace Mono.Linker.Tests.Cases.Logging
 	[SetupCompileArgument ("/debug:full")]
 	[LogContains ("(35,4): Unrecognized reflection pattern warning IL2006: The return value of method 'System.Type Mono.Linker.Tests.Cases.Logging.SourceLines::GetUnknownType()' " +
 		"with dynamically accessed member kinds 'None' is passed into the field 'System.Type Mono.Linker.Tests.Cases.Logging.SourceLines::type' which requires dynamically " +
-		"accessed member kinds `Constructors`. To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Constructors'.")]
+		"accessed member kinds 'PublicConstructors'. To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
 	[LogContains ("(36,4): Unrecognized reflection pattern warning IL2006: The return value of method 'System.Type Mono.Linker.Tests.Cases.Logging.SourceLines::GetUnknownType()' " +
 		"with dynamically accessed member kinds 'None' is passed into the field 'System.Type Mono.Linker.Tests.Cases.Logging.SourceLines::type' which requires dynamically " +
-		"accessed member kinds `Constructors`. To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Constructors'.")]
+		"accessed member kinds 'PublicConstructors'. To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
 	public class SourceLines
 	{
 		public static void Main ()
@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.Logging
 			UnrecognizedReflectionPattern ();
 		}
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		private static Type type;
 
 		private static Type GetUnknownType ()
