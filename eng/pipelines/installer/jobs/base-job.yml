@@ -529,6 +529,7 @@ jobs:
     parameters:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
 
