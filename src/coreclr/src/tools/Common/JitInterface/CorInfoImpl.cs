@@ -2597,8 +2597,7 @@ namespace Internal.JitInterface
 
                 _roData = new byte[roDataSize];
 
-                _roDataBlob = _compilation.NodeFactory.SettableReadOnlyDataBlob(
-                    "__readonlydata_" + _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled));
+                _roDataBlob = _compilation.NodeFactory.SettableReadOnlyDataBlob(MethodBeingCompiled);
 
                 roDataBlock = (void*)GetPin(_roData);
             }

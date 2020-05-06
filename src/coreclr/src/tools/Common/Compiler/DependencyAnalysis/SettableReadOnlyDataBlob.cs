@@ -12,13 +12,13 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class SettableReadOnlyDataBlob : ObjectNode, ISymbolDefinitionNode
     {
-        private Utf8String _name;
+        private MethodDesc _owningMethod;
         private ObjectNodeSection _section;
         private ObjectData _data;
 
-        public SettableReadOnlyDataBlob(Utf8String name, ObjectNodeSection section)
+        public SettableReadOnlyDataBlob(MethodDesc owningMethod, ObjectNodeSection section)
         {
-            _name = name;
+            _owningMethod = owningMethod;
             _section = section;
         }
 
@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(_name);
+            sb.Append("__readonlydata_" + nameMangler.GetMangledMethodName(_owningMethod));
         }
         public int Offset => 0;
         public override bool IsShareable => true;
@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _name.CompareTo(((SettableReadOnlyDataBlob)other)._name);
+            return comparer.Compare(_owningMethod, ((SettableReadOnlyDataBlob)other)._owningMethod);
         }
 #endif
     }
