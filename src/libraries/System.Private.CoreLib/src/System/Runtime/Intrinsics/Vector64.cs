@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.Arm;
 
 namespace System.Runtime.Intrinsics
@@ -157,6 +157,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi8</remarks>
         /// <returns>A new <see cref="Vector64{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
         public static unsafe Vector64<byte> Create(byte value)
         {
             byte* pResult = stackalloc byte[8]
@@ -177,6 +178,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Double}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
         public static unsafe Vector64<double> Create(double value)
         {
             return Unsafe.As<double, Vector64<double>>(ref value);
@@ -186,6 +188,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi16</remarks>
         /// <returns>A new <see cref="Vector64{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
         public static unsafe Vector64<short> Create(short value)
         {
             short* pResult = stackalloc short[4]
@@ -203,6 +206,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi32</remarks>
         /// <returns>A new <see cref="Vector64{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
         public static unsafe Vector64<int> Create(int value)
         {
             int* pResult = stackalloc int[2]
@@ -217,6 +221,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int64}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
         public static unsafe Vector64<long> Create(long value)
         {
             return Unsafe.As<long, Vector64<long>>(ref value);
@@ -227,6 +232,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi8</remarks>
         /// <returns>A new <see cref="Vector64{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector64<sbyte> Create(sbyte value)
         {
             sbyte* pResult = stackalloc sbyte[8]
@@ -247,6 +253,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
         public static unsafe Vector64<float> Create(float value)
         {
             float* pResult = stackalloc float[2]
@@ -263,6 +270,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi16</remarks>
         /// <returns>A new <see cref="Vector64{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector64<ushort> Create(ushort value)
         {
             ushort* pResult = stackalloc ushort[4]
@@ -281,6 +289,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi32</remarks>
         /// <returns>A new <see cref="Vector64{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector64<uint> Create(uint value)
         {
             uint* pResult = stackalloc uint[2]
@@ -296,6 +305,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt64}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector64<ulong> Create(ulong value)
         {
             return Unsafe.As<ulong, Vector64<ulong>>(ref value);
@@ -314,6 +324,18 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Byte}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
         {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<byte> result = Vector64.CreateScalarUnsafe(e0);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                result = AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 4, e4);
+                result = AdvSimd.Insert(result, 5, e5);
+                result = AdvSimd.Insert(result, 6, e6);
+                return AdvSimd.Insert(result, 7, e7);
+            }
+
             byte* pResult = stackalloc byte[8]
             {
                 e0,
@@ -338,6 +360,14 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int16}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<short> Create(short e0, short e1, short e2, short e3)
         {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<short> result = Vector64.CreateScalarUnsafe(e0);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                return AdvSimd.Insert(result, 3, e3);
+            }
+
             short* pResult = stackalloc short[4]
             {
                 e0,
@@ -356,6 +386,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int32}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<int> Create(int e0, int e1)
         {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<int> result = Vector64.CreateScalarUnsafe(e0);
+                return AdvSimd.Insert(result, 1, e1);
+            }
+
             int* pResult = stackalloc int[2]
             {
                 e0,
@@ -379,6 +415,18 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
         {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<sbyte> result = Vector64.CreateScalarUnsafe(e0);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                result = AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 4, e4);
+                result = AdvSimd.Insert(result, 5, e5);
+                result = AdvSimd.Insert(result, 6, e6);
+                return AdvSimd.Insert(result, 7, e7);
+            }
+
             sbyte* pResult = stackalloc sbyte[8]
             {
                 e0,
@@ -400,6 +448,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Single}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<float> Create(float e0, float e1)
         {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<float> result = Vector64.CreateScalarUnsafe(e0);
+                return AdvSimd.Insert(result, 1, e1);
+            }
+
             float* pResult = stackalloc float[2]
             {
                 e0,
@@ -419,6 +473,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
         {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<ushort> result = Vector64.CreateScalarUnsafe(e0);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                return AdvSimd.Insert(result, 3, e3);
+            }
+
             ushort* pResult = stackalloc ushort[4]
             {
                 e0,
@@ -438,6 +500,12 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> Create(uint e0, uint e1)
         {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<uint> result = Vector64.CreateScalarUnsafe(e0);
+                return AdvSimd.Insert(result, 1, e1);
+            }
+
             uint* pResult = stackalloc uint[2]
             {
                 e0,

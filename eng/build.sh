@@ -42,7 +42,7 @@ usage()
   echo ""
 
   echo "Libraries settings:"
-  echo "  --framework                Build framework: netcoreapp5.0 or net472 (short: -f)"
+  echo "  --framework                Build framework: net5.0 or net472 (short: -f)"
   echo "  --coverage                 Collect code coverage when testing"
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
   echo "  --testnobuild              Skip building tests when invoking -test"

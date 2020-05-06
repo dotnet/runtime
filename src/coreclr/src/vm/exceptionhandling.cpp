@@ -241,9 +241,6 @@ void InitializeExceptionHandling()
     // Register handler for termination requests (e.g. SIGTERM)
     PAL_SetTerminationRequestHandler(HandleTerminationRequest);
 #endif // TARGET_UNIX
-#ifdef HOST_WINDOWS
-    InitializeCrashDump();
-#endif // HOST_WINDOWS
 }
 
 struct UpdateObjectRefInResumeContextCallbackState

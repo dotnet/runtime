@@ -191,7 +191,7 @@ namespace System.Reflection.Emit
                                   new StackCrawlMarkHandle(ref stackMark),
                                   (int)access,
                                   ObjectHandleOnStack.Create(ref retAssembly));
-            _internalAssemblyBuilder = (InternalAssemblyBuilder)retAssembly;
+            _internalAssemblyBuilder = (InternalAssemblyBuilder)retAssembly!;
 
             _assemblyData = new AssemblyBuilderData(_internalAssemblyBuilder, access);
 
