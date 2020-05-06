@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -16,9 +17,9 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal override bool CanHaveIdMetadata => false;
 
-        protected override void Add(TElement value, ref ReadStack state)
+        protected override void Add([AllowNull] TElement value, ref ReadStack state)
         {
-            ((List<TElement>)state.Current.ReturnValue!).Add(value);
+            ((List<TElement>)state.Current.ReturnValue!).Add(value!);
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)

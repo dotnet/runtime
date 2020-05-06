@@ -83,7 +83,7 @@ namespace System.Text.Json.Serialization
         }
 
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
+        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
         {
             value = Read(ref reader, typeToConvert, options)!;
             return true;
@@ -102,7 +102,7 @@ namespace System.Text.Json.Serialization
         [return: MaybeNull]
         public abstract T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T value)
+        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
         {
             if (ClassType == ClassType.Value)
             {
@@ -112,7 +112,7 @@ namespace System.Text.Json.Serialization
                 // For perf and converter simplicity, handle null here instead of forwarding to the converter.
                 if (reader.TokenType == JsonTokenType.Null && !HandleNull)
                 {
-                    value = default!;
+                    value = default;
                     return true;
                 }
 
@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    value = Read(ref reader, typeToConvert, options)!;
+                    value = Read(ref reader, typeToConvert, options);
                 }
                 else
 #endif
@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    value = Read(ref reader, typeToConvert, options)!;
+                    value = Read(ref reader, typeToConvert, options);
                     VerifyRead(
                         originalPropertyTokenType,
                         originalPropertyDepth,
@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization
                 if (reader.TokenType == JsonTokenType.Null && !HandleNull && !wasContinuation)
                 {
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
-                    value = default!;
+                    value = default;
                     success = true;
                 }
                 else
@@ -171,7 +171,7 @@ namespace System.Text.Json.Serialization
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
                     if (reader.TokenType == JsonTokenType.Null && !HandleNull)
                     {
-                        value = default!;
+                        value = default;
                         state.Pop(true);
                         return true;
                     }
@@ -183,7 +183,7 @@ namespace System.Text.Json.Serialization
                     state.Current.OriginalDepth = reader.CurrentDepth;
                 }
 
-                success = OnTryRead(ref reader, typeToConvert, options, ref state, out value!);
+                success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 if (success)
                 {
                     if (state.IsContinuation)

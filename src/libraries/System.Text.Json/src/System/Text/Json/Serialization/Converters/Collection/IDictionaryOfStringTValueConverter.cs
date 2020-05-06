@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -14,10 +15,10 @@ namespace System.Text.Json.Serialization.Converters
         : DictionaryDefaultConverter<TCollection, TValue>
         where TCollection : IDictionary<string, TValue>
     {
-        protected override void Add(TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add([AllowNull] TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             string key = state.Current.JsonPropertyNameAsString!;
-            ((TCollection)state.Current.ReturnValue!)[key] = value;
+            ((TCollection)state.Current.ReturnValue!)[key] = value!;
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)

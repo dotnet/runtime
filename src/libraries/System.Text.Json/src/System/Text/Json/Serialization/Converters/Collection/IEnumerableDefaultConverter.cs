@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     internal abstract class IEnumerableDefaultConverter<TCollection, TElement>
         : JsonCollectionConverter<TCollection, TElement>
     {
-        protected abstract void Add(TElement value, ref ReadStack state);
+        protected abstract void Add([AllowNull] TElement value, ref ReadStack state);
         protected abstract void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options);
         protected virtual void ConvertCollection(ref ReadStack state, JsonSerializerOptions options) { }
 

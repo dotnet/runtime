@@ -191,7 +191,7 @@ namespace System.Text.Json
                     {
                         if (!IgnoreNullValues || (!isNullToken && value != null))
                         {
-                            Set!(obj, value);
+                            Set!(obj, value!);
                         }
                     }
                 }
