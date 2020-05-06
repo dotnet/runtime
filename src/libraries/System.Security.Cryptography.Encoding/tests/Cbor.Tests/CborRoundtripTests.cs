@@ -11,7 +11,7 @@ using Xunit;
 using FsCheck.Xunit;
 #endif
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborRoundtripTests
     {

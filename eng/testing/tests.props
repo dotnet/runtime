@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <!-- Set env variable to use the local netfx assemblies instead of the ones in the GAC. -->
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
   </ItemGroup>
 

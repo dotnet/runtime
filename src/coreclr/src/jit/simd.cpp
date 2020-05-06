@@ -162,11 +162,13 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
         if (typeHnd == m_simdHandleCache->SIMDFloatHandle)
         {
             simdBaseType = TYP_FLOAT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<Float>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDIntHandle)
         {
             simdBaseType = TYP_INT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<Int>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDVector2Handle)
@@ -192,46 +194,55 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
         }
         else if (typeHnd == m_simdHandleCache->SIMDVectorHandle)
         {
+            size = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type Vector\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDUShortHandle)
         {
             simdBaseType = TYP_USHORT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<ushort>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDUByteHandle)
         {
             simdBaseType = TYP_UBYTE;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<ubyte>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDDoubleHandle)
         {
             simdBaseType = TYP_DOUBLE;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<Double>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDLongHandle)
         {
             simdBaseType = TYP_LONG;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<Long>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDShortHandle)
         {
             simdBaseType = TYP_SHORT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<short>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDByteHandle)
         {
             simdBaseType = TYP_BYTE;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<byte>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDUIntHandle)
         {
             simdBaseType = TYP_UINT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<uint>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDULongHandle)
         {
             simdBaseType = TYP_ULONG;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<ulong>\n");
         }
 
@@ -253,6 +264,8 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             {
                 if (wcsncmp(&(className[16]), W("Vector`1["), 9) == 0)
                 {
+                    size = getSIMDVectorRegisterByteLength();
+
                     if (wcsncmp(&(className[25]), W("System.Single"), 13) == 0)
                     {
                         m_simdHandleCache->SIMDFloatHandle = typeHnd;
@@ -348,6 +361,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                 else if (wcsncmp(&(className[16]), W("Vector"), 6) == 0)
                 {
                     m_simdHandleCache->SIMDVectorHandle = typeHnd;
+                    size                                = getSIMDVectorRegisterByteLength();
                     JITDUMP(" Found type Vector\n");
                 }
                 else
@@ -355,18 +369,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                     JITDUMP("  Unknown SIMD Type\n");
                 }
             }
-        }
-        if (simdBaseType != TYP_UNKNOWN && sizeBytes != nullptr)
-        {
-            // If not a fixed size vector then its size is same as SIMD vector
-            // register length in bytes
-            if (size == 0)
-            {
-                size = getSIMDVectorRegisterByteLength();
-            }
-
-            *sizeBytes = size;
-            setUsesSIMDTypes(true);
         }
     }
 #ifdef FEATURE_HW_INTRINSICS
@@ -776,18 +778,18 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             simdBaseType = TYP_UNKNOWN;
         }
 #endif // TARGET_XARCH
-
-        if (sizeBytes != nullptr)
-        {
-            *sizeBytes = size;
-        }
-
-        if (simdBaseType != TYP_UNKNOWN)
-        {
-            setUsesSIMDTypes(true);
-        }
     }
 #endif // FEATURE_HW_INTRINSICS
+
+    if (sizeBytes != nullptr)
+    {
+        *sizeBytes = size;
+    }
+
+    if (simdBaseType != TYP_UNKNOWN)
+    {
+        setUsesSIMDTypes(true);
+    }
 
     return simdBaseType;
 }

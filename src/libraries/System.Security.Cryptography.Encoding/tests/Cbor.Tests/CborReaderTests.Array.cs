@@ -7,7 +7,7 @@ using System;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, "990000")]
         [InlineData(CborConformanceLevel.Strict, "9a00000000")]
         [InlineData(CborConformanceLevel.Strict, "9b0000000000000000")]
-        internal static void ReadArray_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadArray_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Ctap2Canonical, "990000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "9a00000000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "9b0000000000000000")]
-        internal static void ReadArray_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void ReadArray_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Lax, "9fff")]
         [InlineData(CborConformanceLevel.Strict, "9fff")]
-        internal static void ReadArray_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadArray_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, "9fff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "9fff")]
-        internal static void ReadArray_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void ReadArray_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);

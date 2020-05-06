@@ -12,7 +12,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and $(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(TargetsAnyOS)' == 'true' and $(TargetFramework.StartsWith('netstandard'))">$(NoWarn);CS0618</NoWarn>  
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
@@ -97,11 +97,11 @@
       <LogicalName>System.Data.OleDb.OleDbMetaData.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System.Data" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Configuration.ConfigurationManager" />

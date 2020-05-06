@@ -20,12 +20,29 @@ namespace R2RTest
         protected override string CompilerRelativePath => "";
 
         protected override string CompilerFileName => "corerun".AppendOSExeSuffix();
+        protected readonly List<string> _referenceFiles = new List<string>();
 
         private string Crossgen2Path => Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");
 
-        public CpaotRunner(BuildOptions options, IEnumerable<string> referencePaths)
-            : base(options, referencePaths)
+        public CpaotRunner(BuildOptions options, IEnumerable<string> references)
+            : base(options, references)
         {
+            // Some scenarios are easier to express when we give Crossgen2 a list of reference assemblies instead of directories,
+            // so allow an override here.
+            foreach (var reference in references)
+            {
+                if (File.Exists(reference))
+                {
+                    if (_referenceFolders.Count > 0)
+                    {
+                        // There's nothing wrong with this per se, but none of our current scenarios need it, so this is 
+                        // just a consistency check.
+                        throw new ArgumentException($"A mix of files and directories was found in {references}");
+                    }
+                    _referenceFiles.Add(reference);
+                }
+            }
+
             // Set R2RTest parallelism to a low enough value that ensures that each Crossgen2 invocation gets to use its parallelism
             if (options.DegreeOfParallelism == 0)
                 options.DegreeOfParallelism = 2;
@@ -94,20 +111,34 @@ namespace R2RTest
                 }
             }
 
-            StringComparer pathComparer = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-            HashSet<string> uniqueFolders = new HashSet<string>(pathComparer);
-
-            foreach (string assemblyFileName in assemblyFileNames)
+            if (_referenceFiles.Count == 0)
             {
-                uniqueFolders.Add(Path.GetDirectoryName(assemblyFileName));
+                // Use reference folders and find the managed assemblies we want to reference from them.
+                // This is the standard path when we want to compile folders and compare crossgen1 and crossgen2.
+                StringComparer pathComparer = PathExtensions.OSPathCaseComparer;
+                HashSet<string> uniqueFolders = new HashSet<string>(pathComparer);
+
+                foreach (string assemblyFileName in assemblyFileNames)
+                {
+                    uniqueFolders.Add(Path.GetDirectoryName(assemblyFileName));
+                }
+
+                uniqueFolders.UnionWith(_referenceFolders);
+                uniqueFolders.Remove(frameworkFolder);
+
+                foreach (string reference in ResolveReferences(uniqueFolders, _options.Composite ? 'u' : 'r'))
+                {
+                    yield return reference;
+                }
             }
-
-            uniqueFolders.UnionWith(_referenceFolders);
-            uniqueFolders.Remove(frameworkFolder);
-
-            foreach (string reference in ResolveReferences(uniqueFolders, _options.Composite ? 'u' : 'r'))
+            else
             {
-                yield return reference;
+                // Use an explicit set of reference assemblies.
+                // This is useful for crossgen2-specific scenarios since crossgen2 expects a list of files unlike crossgen1
+                foreach (var reference in _referenceFiles)
+                {
+                    yield return (_options.Composite ? "-u:" : "-r:") + reference;
+                }
             }
         }
 

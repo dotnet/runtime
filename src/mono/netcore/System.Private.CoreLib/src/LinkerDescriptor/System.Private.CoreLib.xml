@@ -14,7 +14,8 @@
 		</type>
 
 		<!-- assembly-load-context.c: -->
-		<type fullname="System.Runtime.Loader.AssemblyLoadContext">
+		<!-- object-internals.h: MonoManagedAssemblyLoadContext -->
+		<type fullname="System.Runtime.Loader.AssemblyLoadContext" preserve="fields">
 		  <!-- assembly-load-context.c: mono_alc_invoke_resolve_using_load -->
 		  <method name="MonoResolveUsingLoad" />
 		  <!-- assembly-load-context.c: mono_alc_invoke_resolve_using_resolving_event -->

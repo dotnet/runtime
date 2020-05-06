@@ -9,7 +9,7 @@ using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
@@ -59,17 +59,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData(CborMajorType.UnsignedInteger, CborReaderState.UnsignedInteger)]
-        [InlineData(CborMajorType.NegativeInteger, CborReaderState.NegativeInteger)]
-        [InlineData(CborMajorType.ByteString, CborReaderState.ByteString)]
-        [InlineData(CborMajorType.TextString, CborReaderState.TextString)]
-        [InlineData(CborMajorType.Array, CborReaderState.StartArray)]
-        [InlineData(CborMajorType.Map, CborReaderState.StartMap)]
-        [InlineData(CborMajorType.Tag, CborReaderState.Tag)]
-        [InlineData(CborMajorType.Simple, CborReaderState.SpecialValue)]
-        internal static void Peek_SingleByteBuffer_ShouldReturnExpectedState(CborMajorType majorType, CborReaderState expectedResult)
+        [InlineData(0, CborReaderState.UnsignedInteger)]
+        [InlineData(1, CborReaderState.NegativeInteger)]
+        [InlineData(2, CborReaderState.ByteString)]
+        [InlineData(3, CborReaderState.TextString)]
+        [InlineData(4, CborReaderState.StartArray)]
+        [InlineData(5, CborReaderState.StartMap)]
+        [InlineData(6, CborReaderState.Tag)]
+        [InlineData(7, CborReaderState.SpecialValue)]
+        public static void Peek_SingleByteBuffer_ShouldReturnExpectedState(byte majorType, CborReaderState expectedResult)
         {
-            ReadOnlyMemory<byte> buffer = new byte[] { (byte)((byte)majorType << 5) };
+            ReadOnlyMemory<byte> buffer = new byte[] { (byte)(majorType << 5) };
             var reader = new CborReader(buffer);
             Assert.Equal(expectedResult, reader.PeekState());
         }
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [InlineData((CborConformanceLevel)(-1))]
-        internal static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
+        public static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new CborReader(Array.Empty<byte>(), conformanceLevel: level));
         }

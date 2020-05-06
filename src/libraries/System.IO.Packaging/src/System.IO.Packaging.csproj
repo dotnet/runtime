@@ -53,7 +53,7 @@
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
     <Compile Condition="'$(TargetFramework)' != 'netstandard1.3'" Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="WindowsBase" />
   </ItemGroup>

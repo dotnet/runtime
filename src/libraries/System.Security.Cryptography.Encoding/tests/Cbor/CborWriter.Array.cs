@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Text;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter
+    public partial class CborWriter
     {
         public void WriteStartArray(int definiteLength)
         {
