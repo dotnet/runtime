@@ -181,7 +181,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Theory]
-        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         [MemberData(nameof(Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously_MemberData))]
         public async Task Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously(
             int numContinuations, bool runContinuationsAsynchronously, bool valueTask, object scheduler)
