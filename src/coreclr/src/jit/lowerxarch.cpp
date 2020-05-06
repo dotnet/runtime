@@ -920,8 +920,61 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 //
 void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    if (node->TypeGet() == TYP_SIMD12)
+    {
+        // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
+        // produces a TYP_SIMD16 result
+        node->gtType = TYP_SIMD16;
+    }
+
     switch (node->gtHWIntrinsicId)
     {
+        case NI_SSE2_CompareGreaterThan:
+        {
+            if (node->gtSIMDBaseType != TYP_DOUBLE)
+            {
+                assert(varTypeIsIntegral(node->gtSIMDBaseType));
+                break;
+            }
+
+            __fallthrough;
+        }
+
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE2_CompareGreaterThanOrEqual:
+        case NI_SSE2_CompareNotGreaterThan:
+        case NI_SSE2_CompareNotGreaterThanOrEqual:
+        {
+            assert((node->gtSIMDBaseType == TYP_FLOAT) || (node->gtSIMDBaseType == TYP_DOUBLE));
+
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                break;
+            }
+
+            // pre-AVX doesn't actually support these intrinsics in hardware so we need to swap the operands around
+            std::swap(node->gtOp1, node->gtOp2);
+            break;
+        }
+
+        case NI_SSE2_CompareLessThan:
+        case NI_SSE42_CompareLessThan:
+        case NI_AVX2_CompareLessThan:
+        {
+            if (node->gtSIMDBaseType == TYP_DOUBLE)
+            {
+                break;
+            }
+            assert(varTypeIsIntegral(node->gtSIMDBaseType));
+
+            // this isn't actually supported in hardware so we need to swap the operands around
+            std::swap(node->gtOp1, node->gtOp2);
+            break;
+        }
+
         case NI_SSE_CompareScalarOrderedEqual:
             LowerHWIntrinsicCC(node, NI_SSE_COMISS, GenCondition::FEQ);
             break;
@@ -2655,7 +2708,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             switch (containingIntrinsicId)
             {
                 case NI_SSE_Shuffle:
-                case NI_SSE2_CompareLessThan:
                 case NI_SSE2_ShiftLeftLogical:
                 case NI_SSE2_ShiftRightArithmetic:
                 case NI_SSE2_ShiftRightLogical:
@@ -2975,6 +3027,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
     var_types           baseType    = node->gtSIMDBaseType;
+    unsigned            simdSize    = node->gtSIMDSize;
 
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
@@ -2990,6 +3043,24 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             MakeSrcContained(node, lastOp);
         }
         // Exit early if containment isn't supported
+        return;
+    }
+
+    if (HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_IMM)
+    {
+        GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
+        assert(lastOp != nullptr);
+
+        if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
+        {
+            MakeSrcContained(node, lastOp);
+        }
+    }
+
+    if ((node->gtSIMDSize == 8) || (node->gtSIMDSize == 12))
+    {
+        // TODO-XArch-CQ: Ideally we would key this off of the size containingNode
+        // expects vs the size node actually is or would be if spilled to the stack
         return;
     }
 
@@ -3270,28 +3341,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                case HW_Category_Special:
-                {
-                    if (intrinsicId == NI_SSE2_CompareLessThan)
-                    {
-                        bool supportsRegOptional = false;
-
-                        if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                        {
-                            MakeSrcContained(node, op2);
-                        }
-                        else if (supportsRegOptional)
-                        {
-                            op2->SetRegOptional();
-                        }
-                    }
-                    else
-                    {
-                        unreached();
-                    }
-                    break;
-                }
-
                 default:
                 {
                     unreached();
@@ -3478,17 +3527,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         else
         {
             unreached();
-        }
-
-        if (HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_IMM)
-        {
-            GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
-            assert(lastOp != nullptr);
-
-            if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
-            {
-                MakeSrcContained(node, lastOp);
-            }
         }
     }
 }

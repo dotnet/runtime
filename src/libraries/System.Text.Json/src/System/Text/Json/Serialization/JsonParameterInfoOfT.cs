@@ -14,7 +14,6 @@ namespace System.Text.Json
     internal class JsonParameterInfo<T> : JsonParameterInfo
     {
         private JsonConverter<T> _converter = null!;
-        private bool _ignoreNullValues;
         private Type _runtimePropertyType = null!;
 
         public override JsonConverter ConverterBase => _converter;
@@ -36,7 +35,6 @@ namespace System.Text.Json
                 options);
 
             _converter = (JsonConverter<T>)matchingProperty.ConverterBase;
-            _ignoreNullValues = matchingProperty.IgnoreNullValues;
             _runtimePropertyType = runtimePropertyType;
 
             if (parameterInfo.HasDefaultValue)

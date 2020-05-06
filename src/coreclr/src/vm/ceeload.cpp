@@ -3374,15 +3374,29 @@ BOOL Module::IsInSameVersionBubble(Module *target)
         return FALSE;
     }
 
-    // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
-    COUNT_T cMeta=0;
-    const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
-    if (pMeta == NULL)
-    {
-        return FALSE;
-    }
+    NativeImage *nativeImage = this->GetCompositeNativeImage();
+    IMDInternalImport* pMdImport = NULL;
 
-    IMDInternalImport* pMdImport = GetNativeAssemblyImport();
+    if (nativeImage != NULL)
+    {
+        if (nativeImage == target->GetCompositeNativeImage())
+        {
+            // Fast path for modules contained within the same native image
+            return TRUE;
+        }
+        pMdImport = nativeImage->GetManifestMetadata();
+    }
+    else
+    {
+        // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
+        COUNT_T cMeta=0;
+        const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
+        if (pMeta == NULL)
+        {
+            return FALSE;
+        }
+        pMdImport = GetNativeAssemblyImport();
+    }
 
     LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
 

@@ -19,7 +19,7 @@
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="System\Numerics\BitOperations.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Compile Include="System\Net\WebSockets\ManagedWebSocketExtensions.netstandard.cs" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>

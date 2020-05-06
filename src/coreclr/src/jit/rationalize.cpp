@@ -768,6 +768,32 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         break;
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwIntrinsicNode = node->AsHWIntrinsic();
+
+            if (!hwIntrinsicNode->isSIMD())
+            {
+                break;
+            }
+
+            noway_assert(comp->supportSIMDTypes());
+
+            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
+            // structs that are passed or returned in a different register type than their enregistered
+            // type(s).
+            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->gtSIMDSize == TARGET_POINTER_SIZE))
+            {
+                // This happens when it is consumed by a GT_RET_EXPR.
+                // It can only be a Vector2f or Vector2i.
+                assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
+                hwIntrinsicNode->gtType = TYP_SIMD8;
+            }
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         default:
             // These nodes should not be present in HIR.
             assert(!node->OperIs(GT_CMP, GT_SETCC, GT_JCC, GT_JCMP, GT_LOCKADD));

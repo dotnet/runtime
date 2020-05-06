@@ -29,6 +29,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Drawing.Tests
@@ -804,6 +805,40 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetHicon());
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In .NET Framework we use GDI 1.0")]
+        public void SaveWmfAsPngDoesntChangeImageBoundaries()
+        {
+            if (PlatformDetection.IsWindows7)
+            {
+                throw new SkipTestException("GDI+ 1.1 is not supported");
+            }
+
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                // https://github.com/dotnet/runtime/issues/28859
+                throw new SkipTestException("Arm precision");
+            }
+
+            string output = GetTestFilePath() + ".png";
+            using Stream wmfStream = File.OpenRead(Helpers.GetTestBitmapPath("gdiwmfboundariesbug.wmf"));
+            using Image bitmapFromWmf = Bitmap.FromStream(wmfStream);
+            bitmapFromWmf.Save(output, ImageFormat.Png);
+
+            using Stream expectedPngStream = File.OpenRead(Helpers.GetTestBitmapPath("gdiwmfboundariesbug-output.png"));
+            using Image expectedPngBitmap = Bitmap.FromStream(expectedPngStream);
+            using MemoryStream expectedMemoryStream = new MemoryStream();
+            expectedPngBitmap.Save(expectedMemoryStream, ImageFormat.Png);
+
+            using Stream outputPngStream = File.OpenRead(output);
+            using Image outputPngBitmap = Bitmap.FromStream(outputPngStream);
+            using MemoryStream outputMemoryStream = new MemoryStream();
+            outputPngBitmap.Save(outputMemoryStream, ImageFormat.Png);
+
+            Assert.Equal(expectedMemoryStream.ToArray(), outputMemoryStream.ToArray());
+        }
+
         // This test causes an AV on Linux
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -1091,7 +1126,7 @@ namespace System.Drawing.Tests
         public static IEnumerable<object[]> LockBits_NotUnix_TestData()
         {
             Bitmap bitmap() => new Bitmap(2, 2, PixelFormat.Format32bppArgb);
-            yield return new object[] { bitmap(), new Rectangle(1, 1, 1,1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb, 8, 1 };
+            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb, 8, 1 };
             yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb, 8, 3 };
             yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb, 8, 2 };
 

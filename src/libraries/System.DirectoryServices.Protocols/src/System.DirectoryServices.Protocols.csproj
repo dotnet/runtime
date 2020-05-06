@@ -11,7 +11,7 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.DirectoryServicesProtocols_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <Compile Include="System\DirectoryServices\Protocols\common\AuthTypes.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\DereferenceAlias.cs" />
@@ -43,7 +43,7 @@
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />

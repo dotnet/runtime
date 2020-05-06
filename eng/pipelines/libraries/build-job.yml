@@ -157,12 +157,6 @@ jobs:
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
             condition: and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true))
 
-          - task: CopyFiles@2
-            displayName: Prepare tmp assets to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/tmp
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/tmp
-
           - template: /eng/pipelines/common/upload-artifact-step.yml
             parameters:
               rootFolder: $(Build.ArtifactStagingDirectory)/artifacts

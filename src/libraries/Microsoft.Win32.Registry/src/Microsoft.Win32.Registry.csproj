@@ -14,7 +14,7 @@
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and $(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsAnyOS)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsAnyOS)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegistryConstants.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.RegistryConstants.cs" />
     <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs"
@@ -30,7 +30,7 @@
     <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
     <Compile Include="System\Security\AccessControl\RegistrySecurity.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
@@ -75,10 +75,10 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.FileSystem.cs" />
     <Compile Include="System\Security\AccessControl\RegistrySecurity.FileSystem.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />

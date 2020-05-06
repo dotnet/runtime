@@ -43,7 +43,7 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Libraries settings:"
-  Write-Host "  -framework              Build framework: netcoreapp5.0 or net472 (short: -f)"
+  Write-Host "  -framework              Build framework: net5.0 or net472 (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
   Write-Host "  -testnobuild            Skip building tests when invoking -test"
@@ -84,7 +84,7 @@ if ($vs) {
     $archTestHost = if ($arch) { $arch } else { "x64" }
 
     # This tells .NET Core to use the same dotnet.exe that build scripts use
-    $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
+    $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\net5.0-Windows_NT-$configuration-$archTestHost";
     $env:DEVPATH="$PSScriptRoot\..\artifacts\bin\testhost\net472-Windows_NT-$configuration-$archTestHost";
   }
 

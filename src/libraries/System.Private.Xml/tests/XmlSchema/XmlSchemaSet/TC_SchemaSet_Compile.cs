@@ -152,6 +152,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void FractionDigitsMismatch_Throws()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>
@@ -159,7 +160,7 @@ namespace System.Xml.Tests
            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
     <xs:simpleType name='foo'>
         <xs:restriction base='xs:decimal'>
-            <xs:fractionDigits value='8' fixed='true'/>
+            <xs:fractionDigits value='8'/>
         </xs:restriction>
     </xs:simpleType>
     <xs:simpleType name='bar'>
@@ -178,6 +179,32 @@ namespace System.Xml.Tests
             Assert.DoesNotContain("totalDigits", ex.Message);
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void FractionDigitsFacetBaseFixed_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:decimal'>
+            <xs:fractionDigits value='8' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:fractionDigits value='7'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+";
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+            Assert.Contains("fixed", ex.Message);
+        }
+        
         [Fact]
         public void MinLengthLtBaseMinLength_Throws()
         {
