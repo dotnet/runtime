@@ -2477,6 +2477,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> Add(Vector128<ulong> left, Vector128<ulong> right) => Add(left, right);
 
         /// <summary>
+        /// uint8x8_t vaddhn_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VADDHN.I16 Dd, Qn, Qm
+        ///   A64: ADDHN Vd.8B, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector64<byte> AddHighNarrowLower(Vector128<ushort> left, Vector128<ushort> right) => AddHighNarrowLower(left, right);
+
+        /// <summary>
+        /// int16x4_t vaddhn_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VADDHN.I32 Dd, Qn, Qm
+        ///   A64: ADDHN Vd.4H, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector64<short> AddHighNarrowLower(Vector128<int> left, Vector128<int> right) => AddHighNarrowLower(left, right);
+
+        /// <summary>
+        /// int32x2_t vaddhn_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VADDHN.I64 Dd, Qn, Qm
+        ///   A64: ADDHN Vd.2S, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector64<int> AddHighNarrowLower(Vector128<long> left, Vector128<long> right) => AddHighNarrowLower(left, right);
+
+        /// <summary>
+        /// int8x8_t vaddhn_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VADDHN.I16 Dd, Qn, Qm
+        ///   A64: ADDHN Vd.8B, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector64<sbyte> AddHighNarrowLower(Vector128<short> left, Vector128<short> right) => AddHighNarrowLower(left, right);
+
+        /// <summary>
+        /// uint16x4_t vaddhn_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VADDHN.I32 Dd, Qn, Qm
+        ///   A64: ADDHN Vd.4H, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector64<ushort> AddHighNarrowLower(Vector128<uint> left, Vector128<uint> right) => AddHighNarrowLower(left, right);
+
+        /// <summary>
+        /// uint32x2_t vaddhn_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VADDHN.I64 Dd, Qn, Qm
+        ///   A64: ADDHN Vd.2S, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector64<uint> AddHighNarrowLower(Vector128<ulong> left, Vector128<ulong> right) => AddHighNarrowLower(left, right);
+
+        /// <summary>
+        /// uint8x16_t vaddhn_high_u16 (uint8x8_t r, uint16x8_t a, uint16x8_t b)
+        ///   A32: VADDHN.I16 Dd+1, Qn, Qm
+        ///   A64: ADDHN2 Vd.16B, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<byte> AddHighNarrowUpper(Vector64<byte> lower, Vector128<ushort> left, Vector128<ushort> right) => AddHighNarrowUpper(lower, left, right);
+
+        /// <summary>
+        /// int16x8_t vaddhn_high_s32 (int16x4_t r, int32x4_t a, int32x4_t b)
+        ///   A32: VADDHN.I32 Dd+1, Qn, Qm
+        ///   A64: ADDHN2 Vd.8H, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<short> AddHighNarrowUpper(Vector64<short> lower, Vector128<int> left, Vector128<int> right) => AddHighNarrowUpper(lower, left, right);
+
+        /// <summary>
+        /// int32x4_t vaddhn_high_s64 (int32x2_t r, int64x2_t a, int64x2_t b)
+        ///   A32: VADDHN.I64 Dd+1, Qn, Qm
+        ///   A64: ADDHN2 Vd.4S, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<int> AddHighNarrowUpper(Vector64<int> lower, Vector128<long> left, Vector128<long> right) => AddHighNarrowUpper(lower, left, right);
+
+        /// <summary>
+        /// int8x16_t vaddhn_high_s16 (int8x8_t r, int16x8_t a, int16x8_t b)
+        ///   A32: VADDHN.I16 Dd+1, Qn, Qm
+        ///   A64: ADDHN2 Vd.16B, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<sbyte> AddHighNarrowUpper(Vector64<sbyte> lower, Vector128<short> left, Vector128<short> right) => AddHighNarrowUpper(lower, left, right);
+
+        /// <summary>
+        /// uint16x8_t vaddhn_high_u32 (uint16x4_t r, uint32x4_t a, uint32x4_t b)
+        ///   A32: VADDHN.I32 Dd+1, Qn, Qm
+        ///   A64: ADDHN2 Vd.8H, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<ushort> AddHighNarrowUpper(Vector64<ushort> lower, Vector128<uint> left, Vector128<uint> right) => AddHighNarrowUpper(lower, left, right);
+
+        /// <summary>
+        /// uint32x4_t vaddhn_high_u64 (uint32x2_t r, uint64x2_t a, uint64x2_t b)
+        ///   A32: VADDHN.I64 Dd+1, Qn, Qm
+        ///   A64: ADDHN2 Vd.4S, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<uint> AddHighNarrowUpper(Vector64<uint> lower, Vector128<ulong> left, Vector128<ulong> right) => AddHighNarrowUpper(lower, left, right);
+
+        /// <summary>
         /// uint8x8_t vpadd_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VPADD.I8 Dd, Dn, Dm
         ///   A64: ADDP Vd.8B, Vn.8B, Vm.8B
@@ -2694,172 +2778,88 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<ulong> AddPairwiseWideningScalar(Vector64<uint> value) => AddPairwiseWideningScalar(value);
 
         /// <summary>
-        /// uint8x8_t vaddhn_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VADDHN.I16 Dd, Qn, Qm
-        ///   A64: ADDHN Vd.8B, Vn.8H, Vm.8H
-        /// </summary>
-        public static Vector64<byte> AddReturningHighNarrowLower(Vector128<ushort> left, Vector128<ushort> right) => AddReturningHighNarrowLower(left, right);
-
-        /// <summary>
-        /// int16x4_t vaddhn_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VADDHN.I32 Dd, Qn, Qm
-        ///   A64: ADDHN Vd.4H, Vn.4S, Vm.4S
-        /// </summary>
-        public static Vector64<short> AddReturningHighNarrowLower(Vector128<int> left, Vector128<int> right) => AddReturningHighNarrowLower(left, right);
-
-        /// <summary>
-        /// int32x2_t vaddhn_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VADDHN.I64 Dd, Qn, Qm
-        ///   A64: ADDHN Vd.2S, Vn.2D, Vm.2D
-        /// </summary>
-        public static Vector64<int> AddReturningHighNarrowLower(Vector128<long> left, Vector128<long> right) => AddReturningHighNarrowLower(left, right);
-
-        /// <summary>
-        /// int8x8_t vaddhn_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VADDHN.I16 Dd, Qn, Qm
-        ///   A64: ADDHN Vd.8B, Vn.8H, Vm.8H
-        /// </summary>
-        public static Vector64<sbyte> AddReturningHighNarrowLower(Vector128<short> left, Vector128<short> right) => AddReturningHighNarrowLower(left, right);
-
-        /// <summary>
-        /// uint16x4_t vaddhn_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VADDHN.I32 Dd, Qn, Qm
-        ///   A64: ADDHN Vd.4H, Vn.4S, Vm.4S
-        /// </summary>
-        public static Vector64<ushort> AddReturningHighNarrowLower(Vector128<uint> left, Vector128<uint> right) => AddReturningHighNarrowLower(left, right);
-
-        /// <summary>
-        /// uint32x2_t vaddhn_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VADDHN.I64 Dd, Qn, Qm
-        ///   A64: ADDHN Vd.2S, Vn.2D, Vm.2D
-        /// </summary>
-        public static Vector64<uint> AddReturningHighNarrowLower(Vector128<ulong> left, Vector128<ulong> right) => AddReturningHighNarrowLower(left, right);
-
-        /// <summary>
-        /// uint8x16_t vaddhn_high_u16 (uint8x8_t r, uint16x8_t a, uint16x8_t b)
-        ///   A32: VADDHN.I16 Dd+1, Qn, Qm
-        ///   A64: ADDHN2 Vd.16B, Vn.8B, Vm.8H
-        /// </summary>
-        public static Vector128<byte> AddReturningHighNarrowUpper(Vector64<byte> lower, Vector128<ushort> left, Vector128<ushort> right) => AddReturningHighNarrowUpper(lower, left, right);
-
-        /// <summary>
-        /// int16x8_t vaddhn_high_s32 (int16x4_t r, int32x4_t a, int32x4_t b)
-        ///   A32: VADDHN.I32 Dd+1, Qn, Qm
-        ///   A64: ADDHN2 Vd.8H, Vn.4H, Vm.4S
-        /// </summary>
-        public static Vector128<short> AddReturningHighNarrowUpper(Vector64<short> lower, Vector128<int> left, Vector128<int> right) => AddReturningHighNarrowUpper(lower, left, right);
-
-        /// <summary>
-        /// int32x4_t vaddhn_high_s64 (int32x2_t r, int64x2_t a, int64x2_t b)
-        ///   A32: VADDHN.I64 Dd+1, Qn, Qm
-        ///   A64: ADDHN2 Vd.4S, Vn.2S, Vm.2D
-        /// </summary>
-        public static Vector128<int> AddReturningHighNarrowUpper(Vector64<int> lower, Vector128<long> left, Vector128<long> right) => AddReturningHighNarrowUpper(lower, left, right);
-
-        /// <summary>
-        /// int8x16_t vaddhn_high_s16 (int8x8_t r, int16x8_t a, int16x8_t b)
-        ///   A32: VADDHN.I16 Dd+1, Qn, Qm
-        ///   A64: ADDHN2 Vd.16B, Vn.8B, Vm.8H
-        /// </summary>
-        public static Vector128<sbyte> AddReturningHighNarrowUpper(Vector64<sbyte> lower, Vector128<short> left, Vector128<short> right) => AddReturningHighNarrowUpper(lower, left, right);
-
-        /// <summary>
-        /// uint16x8_t vaddhn_high_u32 (uint16x4_t r, uint32x4_t a, uint32x4_t b)
-        ///   A32: VADDHN.I32 Dd+1, Qn, Qm
-        ///   A64: ADDHN2 Vd.8H, Vn.4H, Vm.4S
-        /// </summary>
-        public static Vector128<ushort> AddReturningHighNarrowUpper(Vector64<ushort> lower, Vector128<uint> left, Vector128<uint> right) => AddReturningHighNarrowUpper(lower, left, right);
-
-        /// <summary>
-        /// uint32x4_t vaddhn_high_u64 (uint32x2_t r, uint64x2_t a, uint64x2_t b)
-        ///   A32: VADDHN.I64 Dd+1, Qn, Qm
-        ///   A64: ADDHN2 Vd.4S, Vn.2S, Vm.2D
-        /// </summary>
-        public static Vector128<uint> AddReturningHighNarrowUpper(Vector64<uint> lower, Vector128<ulong> left, Vector128<ulong> right) => AddReturningHighNarrowUpper(lower, left, right);
-
-        /// <summary>
         /// uint8x8_t vraddhn_u16 (uint16x8_t a, uint16x8_t b)
         ///   A32: VRADDHN.I16 Dd, Qn, Qm
         ///   A64: RADDHN Vd.8B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector64<byte> AddReturningRoundedHighNarrowLower(Vector128<ushort> left, Vector128<ushort> right) => AddReturningRoundedHighNarrowLower(left, right);
+        public static Vector64<byte> AddRoundedHighNarrowLower(Vector128<ushort> left, Vector128<ushort> right) => AddRoundedHighNarrowLower(left, right);
 
         /// <summary>
         /// int16x4_t vraddhn_s32 (int32x4_t a, int32x4_t b)
         ///   A32: VRADDHN.I32 Dd, Qn, Qm
         ///   A64: RADDHN Vd.4H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector64<short> AddReturningRoundedHighNarrowLower(Vector128<int> left, Vector128<int> right) => AddReturningRoundedHighNarrowLower(left, right);
+        public static Vector64<short> AddRoundedHighNarrowLower(Vector128<int> left, Vector128<int> right) => AddRoundedHighNarrowLower(left, right);
 
         /// <summary>
         /// int32x2_t vraddhn_s64 (int64x2_t a, int64x2_t b)
         ///   A32: VRADDHN.I64 Dd, Qn, Qm
         ///   A64: RADDHN Vd.2S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector64<int> AddReturningRoundedHighNarrowLower(Vector128<long> left, Vector128<long> right) => AddReturningRoundedHighNarrowLower(left, right);
+        public static Vector64<int> AddRoundedHighNarrowLower(Vector128<long> left, Vector128<long> right) => AddRoundedHighNarrowLower(left, right);
 
         /// <summary>
         /// int8x8_t vraddhn_s16 (int16x8_t a, int16x8_t b)
         ///   A32: VRADDHN.I16 Dd, Qn, Qm
         ///   A64: RADDHN Vd.8B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector64<sbyte> AddReturningRoundedHighNarrowLower(Vector128<short> left, Vector128<short> right) => AddReturningRoundedHighNarrowLower(left, right);
+        public static Vector64<sbyte> AddRoundedHighNarrowLower(Vector128<short> left, Vector128<short> right) => AddRoundedHighNarrowLower(left, right);
 
         /// <summary>
         /// uint16x4_t vraddhn_u32 (uint32x4_t a, uint32x4_t b)
         ///   A32: VRADDHN.I32 Dd, Qn, Qm
         ///   A64: RADDHN Vd.4H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector64<ushort> AddReturningRoundedHighNarrowLower(Vector128<uint> left, Vector128<uint> right) => AddReturningRoundedHighNarrowLower(left, right);
+        public static Vector64<ushort> AddRoundedHighNarrowLower(Vector128<uint> left, Vector128<uint> right) => AddRoundedHighNarrowLower(left, right);
 
         /// <summary>
         /// uint32x2_t vraddhn_u64 (uint64x2_t a, uint64x2_t b)
         ///   A32: VRADDHN.I64 Dd, Qn, Qm
         ///   A64: RADDHN Vd.2S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector64<uint> AddReturningRoundedHighNarrowLower(Vector128<ulong> left, Vector128<ulong> right) => AddReturningRoundedHighNarrowLower(left, right);
+        public static Vector64<uint> AddRoundedHighNarrowLower(Vector128<ulong> left, Vector128<ulong> right) => AddRoundedHighNarrowLower(left, right);
 
         /// <summary>
         /// uint8x16_t vraddhn_high_u16 (uint8x8_t r, uint16x8_t a, uint16x8_t b)
         ///   A32: VRADDHN.I16 Dd+1, Qn, Qm
-        ///   A64: RADDHN2 Vd.16B, Vn.8B, Vm.8H
+        ///   A64: RADDHN2 Vd.16B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector128<byte> AddReturningRoundedHighNarrowUpper(Vector64<byte> lower, Vector128<ushort> left, Vector128<ushort> right) => AddReturningRoundedHighNarrowUpper(lower, left, right);
+        public static Vector128<byte> AddRoundedHighNarrowUpper(Vector64<byte> lower, Vector128<ushort> left, Vector128<ushort> right) => AddRoundedHighNarrowUpper(lower, left, right);
 
         /// <summary>
         /// int16x8_t vraddhn_high_s32 (int16x4_t r, int32x4_t a, int32x4_t b)
         ///   A32: VRADDHN.I32 Dd+1, Qn, Qm
-        ///   A64: RADDHN2 Vd.8H, Vn.4H, Vm.4S
+        ///   A64: RADDHN2 Vd.8H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<short> AddReturningRoundedHighNarrowUpper(Vector64<short> lower, Vector128<int> left, Vector128<int> right) => AddReturningRoundedHighNarrowUpper(lower, left, right);
+        public static Vector128<short> AddRoundedHighNarrowUpper(Vector64<short> lower, Vector128<int> left, Vector128<int> right) => AddRoundedHighNarrowUpper(lower, left, right);
 
         /// <summary>
         /// int32x4_t vraddhn_high_s64 (int32x2_t r, int64x2_t a, int64x2_t b)
         ///   A32: VRADDHN.I64 Dd+1, Qn, Qm
-        ///   A64: RADDHN2 Vd.4S, Vn.2S, Vm.2D
+        ///   A64: RADDHN2 Vd.4S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector128<int> AddReturningRoundedHighNarrowUpper(Vector64<int> lower, Vector128<long> left, Vector128<long> right) => AddReturningRoundedHighNarrowUpper(lower, left, right);
+        public static Vector128<int> AddRoundedHighNarrowUpper(Vector64<int> lower, Vector128<long> left, Vector128<long> right) => AddRoundedHighNarrowUpper(lower, left, right);
 
         /// <summary>
         /// int8x16_t vraddhn_high_s16 (int8x8_t r, int16x8_t a, int16x8_t b)
         ///   A32: VRADDHN.I16 Dd+1, Qn, Qm
-        ///   A64: RADDHN2 Vd.16B, Vn.8B, Vm.8H
+        ///   A64: RADDHN2 Vd.16B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector128<sbyte> AddReturningRoundedHighNarrowUpper(Vector64<sbyte> lower, Vector128<short> left, Vector128<short> right) => AddReturningRoundedHighNarrowUpper(lower, left, right);
+        public static Vector128<sbyte> AddRoundedHighNarrowUpper(Vector64<sbyte> lower, Vector128<short> left, Vector128<short> right) => AddRoundedHighNarrowUpper(lower, left, right);
 
         /// <summary>
         /// uint16x8_t vraddhn_high_u32 (uint16x4_t r, uint32x4_t a, uint32x4_t b)
         ///   A32: VRADDHN.I32 Dd+1, Qn, Qm
-        ///   A64: RADDHN2 Vd.8H, Vn.4H, Vm.4S
+        ///   A64: RADDHN2 Vd.8H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<ushort> AddReturningRoundedHighNarrowUpper(Vector64<ushort> lower, Vector128<uint> left, Vector128<uint> right) => AddReturningRoundedHighNarrowUpper(lower, left, right);
+        public static Vector128<ushort> AddRoundedHighNarrowUpper(Vector64<ushort> lower, Vector128<uint> left, Vector128<uint> right) => AddRoundedHighNarrowUpper(lower, left, right);
 
         /// <summary>
         /// uint32x4_t vraddhn_high_u64 (uint32x2_t r, uint64x2_t a, uint64x2_t b)
         ///   A32: VRADDHN.I64 Dd+1, Qn, Qm
-        ///   A64: RADDHN2 Vd.4S, Vn.2S, Vm.2D
+        ///   A64: RADDHN2 Vd.4S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector128<uint> AddReturningRoundedHighNarrowUpper(Vector64<uint> lower, Vector128<ulong> left, Vector128<ulong> right) => AddReturningRoundedHighNarrowUpper(lower, left, right);
+        public static Vector128<uint> AddRoundedHighNarrowUpper(Vector64<uint> lower, Vector128<ulong> left, Vector128<ulong> right) => AddRoundedHighNarrowUpper(lower, left, right);
 
         /// <summary>
         /// uint8x8_t vqadd_u8 (uint8x8_t a, uint8x8_t b)
