@@ -4,11 +4,16 @@
 
 #pragma warning disable 0618 // use of obsolete methods
 
+using System.IO;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace System.Net.NameResolution.Tests
 {
+
+
     public class GetHostByNameTest
     {
         [Fact]
@@ -102,20 +107,20 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.IPv6Loopback, entry.AddressList[0]);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [Fact]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
         {
+            NameResolutionTestHelper.EnsureOsNameResolutionWorks("");
             IPHostEntry entry = Dns.GetHostByName("");
 
             // DNS labels should be compared as case insensitive for ASCII characters. See RFC 4343.
             Assert.Contains(Dns.GetHostName(), entry.HostName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [Fact]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
+            NameResolutionTestHelper.EnsureOsNameResolutionWorks("");
             IPHostEntry entry = Dns.EndGetHostByName(Dns.BeginGetHostByName("", null, null));
 
             // DNS labels should be compared as case insensitive for ASCII characters. See RFC 4343.
