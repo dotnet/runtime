@@ -4,4 +4,4 @@
 
 using Xunit;
 
-[assembly: ActiveIssue("<coming soon>", TestRuntimes.Mono)]
+[assembly: ActiveIssue("<coming soon>", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
