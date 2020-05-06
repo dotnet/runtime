@@ -870,6 +870,8 @@ public:
     {
         BaseT::m_value = std::move(other.BaseT::m_value);
         BaseT::m_acquired = std::move(other.BaseT::m_acquired);
+        other.BaseT::m_value = nullptr;
+        other.BaseT::m_acquired = FALSE;
         return *this;
     }
 
