@@ -19,9 +19,11 @@ namespace System.Net.Security.Tests
 
     public class SslStreamAllowRenegotiationTests
     {
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [OuterLoop] // Test hits external azure server.
-        public async Task SslStream_AllowRenegotiation_True_Succeeds()
+        public async Task SslStream_AllowRenegotiation_True_Succeeds(bool async)
         {
             int validationCount = 0;
 
@@ -49,7 +51,7 @@ namespace System.Net.Security.Tests
                 };
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(options, CancellationToken.None);
+                await ssl.AuthenticateAsClientAsync(options, async);
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
@@ -67,9 +69,11 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [OuterLoop] // Test hits external azure server.
-        public async Task SslStream_AllowRenegotiation_False_Throws()
+        public async Task SslStream_AllowRenegotiation_False_Throws(bool async)
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
@@ -89,7 +93,7 @@ namespace System.Net.Security.Tests
                 };
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(options, CancellationToken.None);
+                await ssl.AuthenticateAsClientAsync(options, async);
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 

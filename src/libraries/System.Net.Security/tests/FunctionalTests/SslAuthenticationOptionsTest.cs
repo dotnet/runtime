@@ -16,8 +16,10 @@ namespace System.Net.Security.Tests
 
     public class SslClientAuthenticationOptionsTest
     {
-        [Fact]
-        public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication(bool async)
         {
             using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             using (X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate())
@@ -74,9 +76,9 @@ namespace System.Net.Security.Tests
                     };
 
                     // Authenticate
-                    Task clientTask = client.AuthenticateAsClientAsync(clientOptions, default);
-                    Task serverTask = server.AuthenticateAsServerAsync(serverOptions, default);
-                    await new[] { clientTask, serverTask }.WhenAllOrAnyFailed();
+                    Task clientTask = client.AuthenticateAsClientAsync(clientOptions, async);
+                    Task serverTask = server.AuthenticateAsServerAsync(serverOptions, async);
+                    await new[] {clientTask, serverTask}.WhenAllOrAnyFailed();
 
                     // Validate that client options are unchanged
                     Assert.Equal(clientAllowRenegotiation, clientOptions.AllowRenegotiation);
