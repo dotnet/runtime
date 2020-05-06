@@ -123,7 +123,7 @@ while [[ $# > 0 ]]; do
         echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
         exit 1
       fi
-      declare -l passedArch=$2
+      passedArch="$(echo "$2" | awk '{print tolower($0)}')"
       case "$passedArch" in
         x64|x86|arm|armel|arm64|wasm)
           arch=$passedArch
@@ -142,7 +142,7 @@ while [[ $# > 0 ]]; do
         echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
         exit 1
       fi
-      declare -l passedConfig=$2
+      passedConfig="$(echo "$2" | awk '{print tolower($0)}')"
       case "$passedConfig" in
         debug|release|checked)
           val="$(tr '[:lower:]' '[:upper:]' <<< ${passedConfig:0:1})${passedConfig:1}"
@@ -172,7 +172,7 @@ while [[ $# > 0 ]]; do
         echo "No target operating system supplied. See help (--help) for supported target operating systems." 1>&2
         exit 1
       fi
-      declare -l passedOS=$2
+      passedOS="$(echo "$2" | awk '{print tolower($0)}')"
       case "$passedOS" in
         windows_nt)
           os="Windows_NT" ;;
@@ -231,7 +231,7 @@ while [[ $# > 0 ]]; do
         echo "No runtime configuration supplied. See help (--help) for supported runtime configurations." 1>&2
         exit 1
       fi
-      declare -l passedRuntimeConf=$2
+      passedRuntimeConf="$(echo "$2" | awk '{print tolower($0)}')"
       case "$passedRuntimeConf" in
         debug|release|checked)
           val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeConf:0:1})${passedRuntimeConf:1}"
@@ -251,7 +251,7 @@ while [[ $# > 0 ]]; do
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
         exit 1
       fi
-      declare -l passedLibConf=$2
+      passedLibConf="$(echo "$2" | awk '{print tolower($0)}')"
       case "$passedLibConf" in
         debug|release)
           val="$(tr '[:lower:]' '[:upper:]' <<< ${passedLibConf:0:1})${passedLibConf:1}"
