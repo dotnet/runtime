@@ -32,7 +32,6 @@ $(EMSDK_PATH)/.emscripten: | $(EMSDK_PATH)
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION): .stamp-wasm-checkout-and-update-emsdk $(EMSDK_PATH)/.emscripten
 	cd emsdk && ./emsdk install $(EMSCRIPTEN_VERSION)
 	cd emsdk && ./emsdk activate --embedded $(EMSCRIPTEN_VERSION)
-	cd emsdk/upstream/emscripten && (patch -N -p1 < $(TOP)/src/mono/wasm/fix-emscripten-8511.diff; exit 0)
 	touch $@
 
 .stamp-wasm-checkout-and-update-emsdk: | $(EMSDK_PATH)
