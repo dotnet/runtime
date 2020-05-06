@@ -27,9 +27,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/*">
             <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
