@@ -73,6 +73,10 @@ jobs:
   - name: SignType
     value: test
 
+  - ${{ if startsWith(parameters.runtimeVariant, 'llvm') }}:
+    - name: llvmParameter
+      value: /p:MonoEnableLLVM=true
+
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - name: SignType
@@ -99,6 +103,7 @@ jobs:
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+        $(llvmParameter)
         $(OfficialBuildArg)
     - name: MsbuildSigningArguments
       value: >-
@@ -122,6 +127,7 @@ jobs:
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+        $(llvmParameter)
 
     - name: BaseJobBuildCommand
       value: >-
@@ -137,6 +143,7 @@ jobs:
       value: >-
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
+        $(llvmParameter)
 
     - name: BaseJobBuildCommand
       value: >-
@@ -186,6 +193,7 @@ jobs:
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         $(OfficialBuildArg)
+        $(llvmParameter)
 
     - name: _PortableBuild
       value: ${{ eq(parameters.osSubgroup, '') }}
