@@ -132,12 +132,7 @@ stages:
           command: 'custom'
           custom: 'tool'
           arguments: 'restore'
-      - task: DotNetCoreCLI@2
-        displayName: 'Lint ILLinker'
-        inputs:
-          command: 'custom'
-          custom: 'tool'
-          arguments: 'run dotnet-format --dry-run --check --verbosity diagnostic -f . --exclude src/analyzer,src/tuner,external'
+      - script: ./lint.sh --dry-run
 
   - ${{ if eq(variables.officialBuild, 'false') }}:
     - job: Linux_Mono
