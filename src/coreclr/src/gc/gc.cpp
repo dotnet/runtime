@@ -34925,9 +34925,19 @@ HRESULT GCHeap::Initialize()
     g_num_processors = GCToOSInterface::GetTotalProcessorCount();
     assert(g_num_processors != 0);
 
+    bool should_get_physical_mem = true;
     bool is_restricted;
     gc_heap::total_physical_mem = (size_t)GCConfig::GetGCTotalPhysicalMemory();
-    if (!(gc_heap::total_physical_mem))
+    if (gc_heap::total_physical_mem)
+    {
+        if (GCToOSInterface::SetRestrictedPhysicalMemoryLimit(gc_heap::total_physical_mem))
+        {
+            is_restricted = true;
+            should_get_physical_mem = false;
+        }
+    }
+
+    if (should_get_physical_mem)
     {
         gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted);
     }

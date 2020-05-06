@@ -433,10 +433,15 @@ public:
     // Remarks:
     //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
     //  specified, it returns amount of actual physical memory.
-    //
-    // PERF TODO: Requires more work to not treat the restricted case to be special.
-    // To be removed before 3.0 ships.
     static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL);
+
+    // Set the total physical memory that this process is allowed to use.
+    // Remarks:
+    //  A process can use a GC config (GCTotalPhysicalMemory) to specify the amount of physicla memory
+    //  it's allowed to use. And if no hardlimit (specified with the GCHeapHardLimit config) is specified,
+    //  this is treated as the restricted environment so the hardlimit will be calcuated accordingly, ie,
+    //  max (75% of the total physical memory, 20mb).
+    static bool SetRestrictedPhysicalMemoryLimit(uint64_t totalPhysicalMemory);
 
     // Get memory status
     // Parameters:

@@ -1141,6 +1141,20 @@ uint64_t GetAvailablePageFile()
     return available;
 }
 
+// Set the total physical memory that this process is allowed to use.
+// Remarks:
+//  A process can use a GC config (GCTotalPhysicalMemory) to specify the amount of physicla memory
+//  it's allowed to use. And if no hardlimit (specified with the GCHeapHardLimit config) is specified,
+//  this is treated as the restricted environment so the hardlimit will be calcuated accordingly, ie,
+//  max (75% of the total physical memory, 20mb).
+bool GCToOSInterface::SetRestrictedPhysicalMemoryLimit(uint64_t totalPhysicalMemory)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    VolatileStore (&g_RestrictedPhysicalMemoryLimit, (size_t)totalPhysicalMemory);
+    return true;
+}
+
 // Get memory status
 // Parameters:
 //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory

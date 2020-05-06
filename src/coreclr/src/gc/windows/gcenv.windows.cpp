@@ -377,7 +377,6 @@ exit:
         if (hinstKernel32 != 0)
         {
             FreeLibrary(hinstKernel32);
-            hinstKernel32 = 0;
             GCGetProcessMemoryInfo = 0;
         }
     }
@@ -1077,6 +1076,52 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     GetProcessMemoryLoad(&memStatus);
     assert(memStatus.ullTotalPhys != 0);
     return memStatus.ullTotalPhys;
+}
+
+// Set the total physical memory that this process is allowed to use.
+// Remarks:
+//  A process can use a GC config (GCTotalPhysicalMemory) to specify the amount of physicla memory
+//  it's allowed to use. And if no hardlimit (specified with the GCHeapHardLimit config) is specified,
+//  this is treated as the restricted environment so the hardlimit will be calcuated accordingly, ie,
+//  max (75% of the total physical memory, 20mb).
+bool GCToOSInterface::SetRestrictedPhysicalMemoryLimit(uint64_t totalPhysicalMemory)
+{
+    LIMITED_METHOD_CONTRACT;
+    HINSTANCE hinstKernel32 = 0;
+
+    MEMORYSTATUSEX ms;
+    GetProcessMemoryLoad (&ms);
+    uint64_t total_virtual = ms.ullTotalVirtual;
+
+    if (total_virtual < totalPhysicalMemory)
+    {
+        g_UseRestrictedVirtualMemory = true;
+        totalPhysicalMemory = total_virtual;
+    }
+
+    if (!g_UseRestrictedVirtualMemory)
+    {
+        hinstKernel32 = LoadLibraryEx(L"kernel32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (!hinstKernel32)
+            goto exit;
+
+        GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstKernel32, "K32GetProcessMemoryInfo");
+
+        if (!GCGetProcessMemoryInfo)
+            goto exit;
+    }
+
+    VolatileStore(&g_RestrictedPhysicalMemoryLimit, (size_t)totalPhysicalMemory);
+    return true;
+
+exit:
+    if (hinstKernel32 != 0)
+    {
+        FreeLibrary(hinstKernel32);
+        GCGetProcessMemoryInfo = 0;
+    }
+
+    return false;
 }
 
 // Get memory status
