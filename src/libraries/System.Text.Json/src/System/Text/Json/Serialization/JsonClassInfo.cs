@@ -104,7 +104,7 @@ namespace System.Text.Json
 
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
-                            foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+                            foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                             {
                                 // Ignore indexers
                                 if (propertyInfo.GetIndexParameters().Length > 0)
