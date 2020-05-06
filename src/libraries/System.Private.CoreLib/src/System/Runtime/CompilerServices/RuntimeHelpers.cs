@@ -31,7 +31,8 @@ namespace System.Runtime.CompilerServices
 
             if (typeof(T).IsValueType || typeof(T[]) == array.GetType())
             {
-                // We know the type of the array to be exactly T[].
+                // We know the type of the array to be exactly T[] or an array variance
+                // compatible value type substitution like int[] <-> uint[].
 
                 if (length == 0)
                 {

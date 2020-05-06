@@ -67,7 +67,7 @@ namespace System
                 // other way around), we can use Buffer.Memmove here.
 
                 T[] newArray = new T[newSize];
-                Buffer.Memmove(
+                Buffer.Memmove<T>(
                     ref MemoryMarshal.GetArrayDataReference(newArray),
                     ref MemoryMarshal.GetArrayDataReference(larray),
                     (uint)Math.Min(newSize, larray.Length));
