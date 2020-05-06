@@ -1,10 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AssemblyName>dotnet-pgo</AssemblyName>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetFramework Condition="'$(BuildingInsideVisualStudio)' == 'true'">netcoreapp3.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>8.0</LangVersion>
     <OutputPath>$(BinDir)/dotnet-pgo</OutputPath>

@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -21,7 +20,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets an empty set that retains the same sort or unordered semantics that this instance has.
         /// </summary>
-        [Pure]
         IImmutableSet<T> Clear();
 
         /// <summary>
@@ -31,7 +29,6 @@ namespace System.Collections.Immutable
         /// <returns>
         ///   <c>true</c> if the set contains the specified value; otherwise, <c>false</c>.
         /// </returns>
-        [Pure]
         bool Contains(T value);
 
         /// <summary>
@@ -39,7 +36,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The value to add.</param>
         /// <returns>A new set with the element added, or this set if the element is already in this set.</returns>
-        [Pure]
         IImmutableSet<T> Add(T value);
 
         /// <summary>
@@ -47,7 +43,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The value to remove.</param>
         /// <returns>A new set with the element removed, or this set if the element is not in this set.</returns>
-        [Pure]
         IImmutableSet<T> Remove(T value);
 
         /// <summary>
@@ -62,7 +57,6 @@ namespace System.Collections.Immutable
         /// a value that has more complete data than the value you currently have, although their
         /// comparer functions indicate they are equal.
         /// </remarks>
-        [Pure]
         bool TryGetValue(T equalValue, out T actualValue);
 
         /// <summary>
@@ -70,7 +64,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The set to intersect with this one.</param>
         /// <returns>A new set that contains any elements that exist in both sets.</returns>
-        [Pure]
         IImmutableSet<T> Intersect(IEnumerable<T> other);
 
         /// <summary>
@@ -78,7 +71,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The items to remove from this set.</param>
         /// <returns>The new set with the items removed; or the original set if none of the items were in the set.</returns>
-        [Pure]
         IImmutableSet<T> Except(IEnumerable<T> other);
 
         /// <summary>
@@ -86,7 +78,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The other sequence of items.</param>
         /// <returns>The new set.</returns>
-        [Pure]
         IImmutableSet<T> SymmetricExcept(IEnumerable<T> other);
 
         /// <summary>
@@ -94,7 +85,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The items to add.</param>
         /// <returns>The new set with the items added; or the original set if all the items were already in the set.</returns>
-        [Pure]
         IImmutableSet<T> Union(IEnumerable<T> other);
 
         /// <summary>
@@ -102,7 +92,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The sequence of items to check against this set.</param>
         /// <returns>A value indicating whether the sets are equal.</returns>
-        [Pure]
         bool SetEquals(IEnumerable<T> other);
 
         /// <summary>
@@ -110,7 +99,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a correct subset of other; otherwise, false.</returns>
-        [Pure]
         bool IsProperSubsetOf(IEnumerable<T> other);
 
         /// <summary>
@@ -118,7 +106,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a correct superset of other; otherwise, false.</returns>
-        [Pure]
         bool IsProperSupersetOf(IEnumerable<T> other);
 
         /// <summary>
@@ -126,7 +113,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a subset of other; otherwise, false.</returns>
-        [Pure]
         bool IsSubsetOf(IEnumerable<T> other);
 
         /// <summary>
@@ -134,7 +120,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a superset of other; otherwise, false.</returns>
-        [Pure]
         bool IsSupersetOf(IEnumerable<T> other);
 
         /// <summary>
@@ -142,7 +127,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set and other share at least one common element; otherwise, false.</returns>
-        [Pure]
         bool Overlaps(IEnumerable<T> other);
     }
 }

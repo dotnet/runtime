@@ -31,6 +31,7 @@
 #include "ex.h"
 #include "dbginterface.h"
 #include "finalizerthread.h"
+#include "clrversion.h"
 
 #define Win32EventWrite EventWrite
 
@@ -4238,9 +4239,6 @@ VOID EtwCallbackCommon(
     static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
     static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
 #endif // !defined(HOST_UNIX)
-    GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-    GCEventLevel level = static_cast<GCEventLevel>(Level);
-    GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
 
     DOTNET_TRACE_CONTEXT * ctxToUpdate;
     switch(ProviderIndex)
@@ -4269,6 +4267,26 @@ VOID EtwCallbackCommon(
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
+    }
+
+    if (
+#if !defined(HOST_UNIX)
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
+#endif
+        (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
+    {
+#if !defined(HOST_UNIX)
+        // On Windows, consolidate level and keywords across event pipe and ETW contexts -
+        // ETW may still want to see events that event pipe doesn't care about and vice versa
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask |
+                                                              ctxToUpdate->EtwProvider->MatchAnyKeyword);
+        GCEventLevel level = static_cast<GCEventLevel>(max(ctxToUpdate->EventPipeProvider.Level,
+                                                           ctxToUpdate->EtwProvider->Level));
+#else
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
+        GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
+#endif
+        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -4487,10 +4505,6 @@ extern "C"
         BOOLEAN bIsPrivateTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimePrivateHandle);
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
-
-        GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-        GCEventLevel level = static_cast<GCEventLevel>(Level);
-        GCHeapUtilities::RecordEventStateChange(!!bIsPublicTraceHandle, keywords, level);
 
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
@@ -4934,17 +4948,17 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             PathString dllPath;
             UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 
-            //version info for clr.dll
-            USHORT vmMajorVersion = CLR_MAJOR_VERSION;
-            USHORT vmMinorVersion = CLR_MINOR_VERSION;
-            USHORT vmBuildVersion = CLR_BUILD_VERSION;
-            USHORT vmQfeVersion = CLR_BUILD_VERSION_QFE;
+            //version info for coreclr.dll
+            USHORT vmMajorVersion = RuntimeFileMajorVersion;
+            USHORT vmMinorVersion = RuntimeFileMinorVersion;
+            USHORT vmBuildVersion = RuntimeFileBuildVersion;
+            USHORT vmRevisionVersion = RuntimeFileRevisionVersion;
 
-            //version info for mscorlib.dll
-            USHORT bclMajorVersion = VER_ASSEMBLYMAJORVERSION;
-            USHORT bclMinorVersion = VER_ASSEMBLYMINORVERSION;
-            USHORT bclBuildVersion = VER_ASSEMBLYBUILD;
-            USHORT bclQfeVersion = VER_ASSEMBLYBUILD_QFE;
+            //version info for System.Private.CoreLib.dll
+            USHORT bclMajorVersion = RuntimeProductMajorVersion;
+            USHORT bclMinorVersion = RuntimeProductMinorVersion;
+            USHORT bclBuildVersion = RuntimeProductPatchVersion;
+            USHORT bclRevisionVersion = 0;
 
             LPCGUID comGUID=&IID_NULL;
 
@@ -4964,11 +4978,11 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                   bclMajorVersion,
                                                   bclMinorVersion,
                                                   bclBuildVersion,
-                                                  bclQfeVersion,
+                                                  bclRevisionVersion,
                                                   vmMajorVersion,
                                                   vmMinorVersion,
                                                   vmBuildVersion,
-                                                  vmQfeVersion,
+                                                  vmRevisionVersion,
                                                   startupFlags,
                                                   startupMode,
                                                   lpwszCommandLine,
@@ -4982,11 +4996,11 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                 bclMajorVersion,
                                                 bclMinorVersion,
                                                 bclBuildVersion,
-                                                bclQfeVersion,
+                                                bclRevisionVersion,
                                                 vmMajorVersion,
                                                 vmMinorVersion,
                                                 vmBuildVersion,
-                                                vmQfeVersion,
+                                                vmRevisionVersion,
                                                 startupFlags,
                                                 startupMode,
                                                 lpwszCommandLine,

@@ -13,6 +13,7 @@
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxByteCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxCharCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingTests.cs" />
+    <Compile Include="CustomEncoderReplacementFallback.cs" />
     <Compile Include="Decoder\DecoderSpanTests.cs" />
     <Compile Include="Decoder\DecoderConvert2.cs" />
     <Compile Include="Decoder\DecoderCtor.cs" />
@@ -33,6 +34,7 @@
     <Compile Include="Encoding\EncodingGetEncodingTests.cs" />
     <Compile Include="Encoding\EncodingConvertTests.cs" />
     <Compile Include="Encoding\EncodingVirtualTests.cs" />
+    <Compile Include="Encoding\TranscodingStreamTests.cs" />
     <Compile Include="Fallback\DecoderReplacementFallbackTests.cs" />
     <Compile Include="Fallback\EncoderReplacementFallbackTests.cs" />
     <Compile Include="Fallback\EncoderExceptionFallbackTests.cs" />
@@ -75,5 +77,8 @@
     <Compile Include="UnicodeEncoding\UnicodeEncoding.cs" />
     <Compile Include="Decoder\Decoder.cs" />
     <Compile Include="Encoder\Encoder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
 </Project>

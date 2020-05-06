@@ -13,6 +13,7 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
+    <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard'">$(NoWarn);nullable</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <FileAlignment Condition="'$(FileAlignment)' == '512'" />
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
@@ -26,7 +27,7 @@
          Tests which wish to control this should set TestStrongNameKeyId. -->
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
-    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisDirectory)intellisense.targets" Condition="'$(DesignTimeBuild)' == 'true'" />
@@ -46,7 +47,7 @@
 
   <!-- Corefx-specific binplacing properties -->
   <PropertyGroup>
-    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' and '$(IsReferenceAssembly)' != 'true' and '$(BinPlaceRef)' != 'true' and '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' and '$(IsReferenceAssembly)' != 'true' and '$(BinPlaceRef)' != 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">true</IsRuntimeAssembly>
     <!-- Try to determine if this is a simple library without a ref project.
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)') and !Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)/ref') and !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
@@ -102,6 +103,12 @@
       <RuntimePath>$(NETCoreAppRuntimePackNativePath)</RuntimePath>
       <ItemName>NativeBinPlaceItem</ItemName>
     </BinPlaceTargetFrameworks>
+    <!-- Corresponding libMono and system.native libraries are added to testhost shared framework -->
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(TargetsMobile)' != 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
+      <RuntimePath>$(TestHostRuntimePath)</RuntimePath>
+      <ItemName>TestHostBinPlaceItem</ItemName>
+    </BinPlaceTargetFrameworks>
+
 
     <!-- binplace targeting packs which may be different from Build TargetFramework -->
     <BinPlaceTargetFrameworks Include="netstandard2.0">
@@ -131,7 +138,6 @@
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
-  <Import Project="$(RepositoryEngineeringDir)testing\launchSettings.targets" Condition="'$(EnableLaunchSettings)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
@@ -217,7 +223,7 @@
 
   <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
   <Choose>
-    <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetsNetFx)' == 'true')">
+    <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetFrameworkIdentifier)' == '.NETFramework')">
       <PropertyGroup>
         <DefineConstants>$(DefineConstants),INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
       </PropertyGroup>

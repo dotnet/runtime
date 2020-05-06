@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -431,7 +430,6 @@ namespace System.Collections.Immutable
             /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}.Builder"/>
             /// in reverse order.
             /// </returns>
-            [Pure]
             public IEnumerable<T> Reverse()
             {
                 return new ReverseEnumerable(_root);

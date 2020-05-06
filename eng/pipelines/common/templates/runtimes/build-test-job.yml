@@ -1,0 +1,160 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  testGroup: ''
+  liveRuntimeBuildConfig: ''
+
+  # When set to a non-empty value (Debug / Release), it determines libraries
+  # build configuration to use for the tests. Setting this property implies
+  # a dependency of this job on the appropriate libraries build and is used
+  # to construct the name of the Azure artifact representing libraries build
+  # to use for building the tests.
+  liveLibrariesBuildConfig: ''
+
+  displayNameArgs: ''
+  condition: true
+  stagedBuild: false
+  variables: {}
+  pool: ''
+  runtimeFlavor: 'coreclr'
+  runtimeFlavorDisplayName: 'CoreCLR'
+
+### Build managed test components (native components are getting built as part
+### of the the product build job).
+
+### TODO: As of today, build of managed test components requires the product build
+### as a prerequisite due to dependency on System.Private.Corelib. After switching
+### over to its reference assembly we should be able to remove this dependency and
+### run managed test builds in parallel with the product build job.
+
+
+jobs:
+- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    managedTestBuildOsGroup: ${{ parameters.osGroup }}
+    managedTestBuildOsSubgroup: ${{ parameters.osSubgroup }}
+    container: ${{ parameters.container }}
+    testGroup: ${{ parameters.testGroup }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    variables: ${{ parameters.variables }}
+    pool: ${{ parameters.pool }}
+
+    # Test jobs should continue on error for internal builds
+    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      continueOnError: true
+
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+
+    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+
+    # Since the condition is being altered, merge the default with the additional conditions.
+    # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
+    condition: and(succeeded(), ${{ parameters.condition }})
+
+    # TODO: Build of managed test components currently depends on the corresponding build job
+    # because it needs System.Private.Corelib; we should be able to remove this dependency
+    # by switching over to using reference assembly.
+    ${{ if ne(parameters.stagedBuild, true) }}:
+      dependsOn:
+      - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
+      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+
+
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      timeoutInMinutes: 90
+
+    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      timeoutInMinutes: 160
+
+    steps:
+
+    # Install test build dependencies
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+        displayName: Install native dependencies
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      # Necessary to install correct cmake version
+      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+        displayName: Install native dependencies
+
+
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
+          displayName: 'live-built libraries'
+
+    # We need to explictly download CoreCLR, even if building Mono because the CoreCLR tests depend on it
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(coreClrProductRootFolderPath)
+        artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
+        artifactName: '$(coreClrProductArtifactName)'
+        displayName: 'CoreCLR product build'
+
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage before Build
+    
+    # Build managed test components
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+      displayName: Build managed test components
+
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
+
+    # Zip and publish managed test components
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(managedTestArtifactRootFolderPath)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: $(managedTestArtifactName)
+        displayName: 'managed test components'
+
+
+    # Publish .packages/microsoft.net.sdk.il needed for traversing
+    # test projects during the copynativeonly command in run test job.
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(microsoftNetSdkIlFolderPath)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: $(microsoftNetSdkIlArtifactName)
+        displayName: 'Microsoft.NET.Sdk.IL package'
+
+
+    # Publish Logs
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+      continueOnError: true
+      condition: always()

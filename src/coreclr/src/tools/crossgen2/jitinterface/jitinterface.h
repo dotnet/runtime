@@ -161,7 +161,7 @@ struct JitInterfaceCallbacks
     void (* addActiveDependency)(void * thisHandle, CorInfoException** ppException, void* moduleFrom, void* moduleTo);
     void* (* GetDelegateCtor)(void * thisHandle, CorInfoException** ppException, void* methHnd, void* clsHnd, void* targetMethodHnd, void* pCtorData);
     void (* MethodCompileComplete)(void * thisHandle, CorInfoException** ppException, void* methHnd);
-    void* (* getTailCallCopyArgsThunk)(void * thisHandle, CorInfoException** ppException, void* pSig, int flags);
+    bool (* getTailCallHelpers)(void * thisHandle, CorInfoException** ppException, void* callToken, void* sig, int flags, void* pResult);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool mustConvert);
     void (* notifyInstructionSetUsage)(void * thisHandle, CorInfoException** ppException, int instructionSet, bool supportEnabled);
     void (* allocMem)(void * thisHandle, CorInfoException** ppException, unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock);
@@ -1493,10 +1493,10 @@ public:
             throw pException;
     }
 
-    virtual void* getTailCallCopyArgsThunk(void* pSig, int flags)
+    virtual bool getTailCallHelpers(void* callToken, void* sig, int flags, void* pResult)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _callbacks->getTailCallCopyArgsThunk(_thisHandle, &pException, pSig, flags);
+        bool _ret = _callbacks->getTailCallHelpers(_thisHandle, &pException, callToken, sig, flags, pResult);
         if (pException != nullptr)
             throw pException;
         return _ret;

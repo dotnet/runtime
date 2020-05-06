@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml
 {
     /// <devdoc>
@@ -17,7 +18,7 @@ namespace System.Xml
         ///    <para>Gets the atomized String object containing the same
         ///       chars as the specified range of chars in the given char array.</para>
         /// </devdoc>
-        public abstract string Get(char[] array, int offset, int length);
+        public abstract string? Get(char[] array, int offset, int length);
 
         /// <devdoc>
         ///    <para>
@@ -25,7 +26,7 @@ namespace System.Xml
         ///       value as the specified string.
         ///    </para>
         /// </devdoc>
-        public abstract string Get(string array);
+        public abstract string? Get(string array);
 
         /// <devdoc>
         ///    <para>Creates a new atom for the characters at the specified range

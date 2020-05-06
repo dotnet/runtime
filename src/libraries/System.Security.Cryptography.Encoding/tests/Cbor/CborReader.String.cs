@@ -6,12 +6,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        // stores a reusable List allocation for keeping ranges in the buffer
+        private List<(int Offset, int Length)>? _indefiniteLengthStringRangeAllocation = null;
 
         // Implements major type 2 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public byte[] ReadByteString()
@@ -20,6 +24,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                }
+
                 return ReadChunkedByteStringConcatenated();
             }
 
@@ -38,6 +47,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                }
+
                 return TryReadChunkedByteStringConcatenated(destination, out bytesWritten);
             }
 
@@ -65,6 +79,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                }
+
                 return ReadChunkedTextStringConcatenated();
             }
 
@@ -93,6 +112,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                }
+
                 return TryReadChunkedTextStringConcatenated(destination, out charsWritten);
             }
 
@@ -125,9 +149,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            AdvanceDataItemCounters();
-            AdvanceBuffer(1);
+            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+            }
 
+            AdvanceBuffer(1);
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
         }
 
@@ -135,6 +162,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             ReadNextIndefiniteLengthBreakByte();
             PopDataItem(CborMajorType.TextString);
+            AdvanceDataItemCounters();
             AdvanceBuffer(1);
         }
 
@@ -147,9 +175,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            AdvanceDataItemCounters();
-            AdvanceBuffer(1);
+            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+            }
 
+            AdvanceBuffer(1);
             PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
         }
 
@@ -157,12 +188,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             ReadNextIndefiniteLengthBreakByte();
             PopDataItem(CborMajorType.ByteString);
+            AdvanceDataItemCounters();
             AdvanceBuffer(1);
         }
 
         private bool TryReadChunkedByteStringConcatenated(Span<byte> destination, out int bytesWritten)
         {
-            List<(int offset, int length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
+            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
 
             if (concatenatedBufferSize > destination.Length)
             {
@@ -181,13 +213,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             bytesWritten = concatenatedBufferSize;
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
-            ReturnRangeList(ranges);
+            ReturnIndefiniteLengthStringRangeList(ranges);
             return true;
         }
 
         private bool TryReadChunkedTextStringConcatenated(Span<char> destination, out int charsWritten)
         {
-            List<(int offset, int length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int _);
+            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int _);
             ReadOnlySpan<byte> buffer = _buffer.Span;
 
             int concatenatedStringSize = 0;
@@ -211,13 +243,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             charsWritten = concatenatedStringSize;
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
-            ReturnRangeList(ranges);
+            ReturnIndefiniteLengthStringRangeList(ranges);
             return true;
         }
 
         private byte[] ReadChunkedByteStringConcatenated()
         {
-            List<(int offset, int length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
+            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
             var output = new byte[concatenatedBufferSize];
 
             ReadOnlySpan<byte> source = _buffer.Span;
@@ -232,13 +264,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Debug.Assert(target.IsEmpty);
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
-            ReturnRangeList(ranges);
+            ReturnIndefiniteLengthStringRangeList(ranges);
             return output;
         }
 
         private string ReadChunkedTextStringConcatenated()
         {
-            List<(int offset, int length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
+            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
             ReadOnlySpan<byte> buffer = _buffer.Span;
             int concatenatedStringSize = 0;
 
@@ -251,10 +283,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
-            ReturnRangeList(ranges);
+            ReturnIndefiniteLengthStringRangeList(ranges);
             return output;
 
-            static void BuildString(Span<char> target, (List<(int offset, int length)> ranges, ReadOnlyMemory<byte> source) input)
+            static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source) input)
             {
                 ReadOnlySpan<byte> source = input.source.Span;
 
@@ -270,9 +302,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         // reads a buffer starting with an indefinite-length string,
         // performing validation and returning a list of ranges containing the individual chunk payloads
-        private List<(int offset, int length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
+        private List<(int Offset, int Length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
-            var ranges = AcquireRangeList();
+            List<(int Offset, int Length)> ranges = AcquireIndefiniteLengthStringRangeList();
             ReadOnlySpan<byte> buffer = _buffer.Span;
             concatenatedBufferSize = 0;
 
@@ -319,8 +351,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + byteLength);
 
-            // force any utf8 decoding errors if text string
-            if (type == CborMajorType.TextString)
+            // Force any UTF8 decoding errors if text string
+            if (_isConformanceLevelCheckEnabled && type == CborMajorType.TextString)
             {
                 ReadOnlySpan<byte> encodedSlice = buffer.Slice(1 + additionalBytes, byteLength);
                 ValidateUtf8AndGetCharCount(encodedSlice);
@@ -340,6 +372,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 throw new FormatException("Text string payload is not a valid UTF8 string.", e);
             }
+        }
+
+        private List<(int Offset, int Length)> AcquireIndefiniteLengthStringRangeList()
+        {
+            List<(int Offset, int Length)>? ranges = Interlocked.Exchange(ref _indefiniteLengthStringRangeAllocation, null);
+
+            if (ranges != null)
+            {
+                ranges.Clear();
+                return ranges;
+            }
+
+            return new List<(int Offset, int Length)>();
+        }
+
+        private void ReturnIndefiniteLengthStringRangeList(List<(int Offset, int Length)> ranges)
+        {
+            _indefiniteLengthStringRangeAllocation = ranges;
         }
     }
 }

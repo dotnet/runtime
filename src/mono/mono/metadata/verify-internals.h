@@ -12,6 +12,7 @@
 
 typedef enum {
 	MONO_VERIFIER_MODE_OFF,
+	MONO_VERIFIER_PE_ONLY,
 	MONO_VERIFIER_MODE_VALID,
 	MONO_VERIFIER_MODE_VERIFIABLE,
 	MONO_VERIFIER_MODE_STRICT
@@ -23,6 +24,7 @@ void mono_verifier_enable_verify_all (void);
 gboolean mono_verifier_is_enabled_for_image (MonoImage *image);
 gboolean mono_verifier_is_enabled_for_method (MonoMethod *method);
 gboolean mono_verifier_is_enabled_for_class (MonoClass *klass);
+gboolean mono_verifier_is_enabled_for_pe_only (void);
 
 gboolean mono_verifier_is_method_full_trust (MonoMethod *method);
 gboolean mono_verifier_is_class_full_trust (MonoClass *klass);

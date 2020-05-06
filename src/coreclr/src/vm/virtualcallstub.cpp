@@ -1912,9 +1912,22 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
                         if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
                         {
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                            MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
+                            size_t stackArgumentsSize;
+                            {
+                                ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+                                stackArgumentsSize = pMD->SizeOfArgStack();
+                            }
+#endif // TARGET_X86 && !UNIX_X86_ABI
+
                             pResolveHolder = GenerateResolveStub(pResolverFcn,
                                                              pBackPatchFcn,
-                                                             token.To_SIZE_T());
+                                                             token.To_SIZE_T()
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                                                             , stackArgumentsSize
+#endif
+                                                             );
 
                             // Add the resolve entrypoint into the cache.
                             //@TODO: Can we store a pointer to the holder rather than the entrypoint?
@@ -2848,7 +2861,11 @@ addrOfPatcher is who to call if the fail piece is being called too often by disp
 */
 ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addrOfResolver,
                                                            PCODE            addrOfPatcher,
-                                                           size_t           dispatchToken)
+                                                           size_t           dispatchToken
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                                                           , size_t         stackArgumentsSize
+#endif
+                                                           )
 {
     CONTRACT (ResolveHolder*) {
         THROWS;
@@ -2912,7 +2929,11 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 
     holder->Initialize(addrOfResolver, addrOfPatcher,
                        dispatchToken, DispatchCache::HashToken(dispatchToken),
-                       g_resolveCache->GetCacheBaseAddr(), counterAddr);
+                       g_resolveCache->GetCacheBaseAddr(), counterAddr
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                       , stackArgumentsSize
+#endif
+                       );
     ClrFlushInstructionCache(holder->stub(), holder->stub()->size());
 
     AddToCollectibleVSDRangeList(holder);

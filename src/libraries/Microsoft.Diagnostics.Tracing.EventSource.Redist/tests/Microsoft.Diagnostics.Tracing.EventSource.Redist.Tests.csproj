@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);FEATURE_ETLEVENTS;FEATURE_EVENTCOUNTER_DISPOSE</DefineConstants>
     <DefineConstants>$(DefineConstants);USE_MDT_EVENTSOURCE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetFrameworkCurrent)</TargetFrameworks>

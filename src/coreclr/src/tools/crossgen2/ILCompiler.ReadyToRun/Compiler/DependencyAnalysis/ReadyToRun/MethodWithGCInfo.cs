@@ -124,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return null;
             }
 
-            fixupCells.Sort(FixupCell.Comparer);
+            fixupCells.MergeSortAllowDuplicates(FixupCell.Comparer);
 
             // Deduplicate fixupCells
             int j = 0;
@@ -303,5 +303,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
         public override bool IsShareable => throw new NotImplementedException();
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
     }
 }

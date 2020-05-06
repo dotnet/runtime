@@ -13,15 +13,15 @@
     <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
     <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
     <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
-    <RuntimePropsFile>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'tmp', '$(Configuration)', 'RuntimeOS.props'))</RuntimePropsFile>
   </PropertyGroup>
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
     <NETCoreAppCurrentVersion>5.0</NETCoreAppCurrentVersion>
     <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
-    <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <NetCoreAppCurrent>net$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
     <NetFrameworkCurrent>net472</NetFrameworkCurrent>
+    <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
   </PropertyGroup>
 
   <!-- Honor the generic RuntimeConfiguration property. -->
@@ -37,6 +37,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <HostRuntimeIdentifier Condition="'$(HostRuntimeIdentifier)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</HostRuntimeIdentifier>
+    <HostRuntimeIdentifier Condition="'$(HostRuntimeIdentifier)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</HostRuntimeIdentifier>
+
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</TargetOS>
@@ -45,6 +48,10 @@
     <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
     <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
     <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'">true</TargetsMobile>
   </PropertyGroup>
 
   <!--Feature switches -->

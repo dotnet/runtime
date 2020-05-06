@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -164,34 +165,14 @@ namespace System.Globalization
             }
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/8890:
-        // This method shouldn't be necessary, as we should be able to just use the overload
-        // that takes two spans.  But due to this issue, that's adding significant overhead.
-        private unsafe int IcuCompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(string2 != null);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            // Unlike NLS, ICU (ucol_getSortKey) allows passing nullptr for either of the source arguments
-            // as long as the corresponding length parameter is 0.
-
-            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
-            fixed (char* pString2 = &string2.GetRawStringData())
-            {
-                return Interop.Globalization.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
-            }
-        }
-
         private unsafe int IcuCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            // Unlike NLS, ICU (ucol_getSortKey) allows passing nullptr for either of the source arguments
-            // as long as the corresponding length parameter is 0.
+            // GetReference may return nullptr if the input span is defaulted. The native layer handles
+            // this appropriately; no workaround is needed on the managed side.
 
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
@@ -200,42 +181,10 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int IcuIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(target != null);
-            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-            Debug.Assert((options & CompareOptions.Ordinal) == 0);
-
-            int index;
-
-            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
-            {
-                if ((options & CompareOptions.IgnoreCase) != 0)
-                    index = IndexOfOrdinalIgnoreCaseHelper(source.AsSpan(startIndex, count), target.AsSpan(), options, matchLengthPtr, fromBeginning: true);
-                else
-                    index = IndexOfOrdinalHelper(source.AsSpan(startIndex, count), target.AsSpan(), options, matchLengthPtr, fromBeginning: true);
-            }
-            else
-            {
-                fixed (char* pSource = source)
-                fixed (char* pTarget = target)
-                {
-                    index = Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource + startIndex, count, options, matchLengthPtr);
-                }
-            }
-
-            return index != -1 ? index + startIndex : -1;
-        }
-
         private unsafe int IcuIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(source.Length != 0);
             Debug.Assert(target.Length != 0);
 
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
@@ -247,13 +196,16 @@ namespace System.Globalization
             }
             else
             {
+                // GetReference may return nullptr if the input span is defaulted. The native layer handles
+                // this appropriately; no workaround is needed on the managed side.
+
                 fixed (char* pSource = &MemoryMarshal.GetReference(source))
                 fixed (char* pTarget = &MemoryMarshal.GetReference(target))
                 {
                     if (fromBeginning)
                         return Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
                     else
-                        return Interop.Globalization.LastIndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options);
+                        return Interop.Globalization.LastIndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
         }
@@ -363,7 +315,7 @@ namespace System.Globalization
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
                 else
-                    return Interop.Globalization.LastIndexOf(_sortHandle, b, target.Length, a, source.Length, options);
+                    return Interop.Globalization.LastIndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
             }
         }
 
@@ -456,60 +408,14 @@ namespace System.Globalization
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
                 else
-                    return Interop.Globalization.LastIndexOf(_sortHandle, b, target.Length, a, source.Length, options);
+                    return Interop.Globalization.LastIndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
             }
-        }
-
-        private unsafe int IcuLastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(target != null);
-            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-
-            // startIndex points to the final char to include in the search space.
-            // empty target strings trivially occur at the end of the search space.
-
-            if (target.Length == 0)
-            {
-                return startIndex + 1;
-            }
-
-            if (options == CompareOptions.Ordinal)
-            {
-                return IcuLastIndexOfOrdinalCore(source, target, startIndex, count, ignoreCase: false);
-            }
-
-            // startIndex is the index into source where we start search backwards from. leftStartIndex is the index into source
-            // of the start of the string that is count characters away from startIndex.
-            int leftStartIndex = (startIndex - count + 1);
-
-            int lastIndex;
-
-            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
-            {
-                if ((options & CompareOptions.IgnoreCase) != 0)
-                    lastIndex = IndexOfOrdinalIgnoreCaseHelper(source.AsSpan(leftStartIndex, count), target.AsSpan(), options, matchLengthPtr: null, fromBeginning: false);
-                else
-                    lastIndex = IndexOfOrdinalHelper(source.AsSpan(leftStartIndex, count), target.AsSpan(), options, matchLengthPtr: null, fromBeginning: false);
-            }
-            else
-            {
-                fixed (char* pSource = source)
-                fixed (char* pTarget = target)
-                {
-                    lastIndex = Interop.Globalization.LastIndexOf(_sortHandle, pTarget, target.Length, pSource + (startIndex - count + 1), count, options);
-                }
-            }
-
-            return lastIndex != -1 ? lastIndex + leftStartIndex : -1;
         }
 
         private unsafe bool IcuStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             Debug.Assert(!prefix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -726,10 +632,29 @@ namespace System.Globalization
                         continue;
                     }
 
+                    // The match may be affected by special character. Verify that the preceding character is regular ASCII.
+                    if (a > ap && *(a - 1) >= 0x80)
+                        goto InteropCall;
+                    if (b > bp && *(b - 1) >= 0x80)
+                        goto InteropCall;
                     return false;
                 }
 
-                return (source.Length >= suffix.Length);
+                // The match may be affected by special character. Verify that the preceding character is regular ASCII.
+
+                if (source.Length < suffix.Length)
+                {
+                    if (*b >= 0x80)
+                        goto InteropCall;
+                    return false;
+                }
+
+                if (source.Length > suffix.Length)
+                {
+                    if (*a >= 0x80)
+                        goto InteropCall;
+                }
+                return true;
 
             InteropCall:
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options);
@@ -766,10 +691,29 @@ namespace System.Globalization
                         continue;
                     }
 
+                    // The match may be affected by special character. Verify that the preceding character is regular ASCII.
+                    if (a > ap && *(a - 1) >= 0x80)
+                        goto InteropCall;
+                    if (b > bp && *(b - 1) >= 0x80)
+                        goto InteropCall;
                     return false;
                 }
 
-                return (source.Length >= suffix.Length);
+                // The match may be affected by special character. Verify that the preceding character is regular ASCII.
+
+                if (source.Length < suffix.Length)
+                {
+                    if (*b >= 0x80)
+                        goto InteropCall;
+                    return false;
+                }
+
+                if (source.Length > suffix.Length)
+                {
+                    if (*a >= 0x80)
+                        goto InteropCall;
+                }
+                return true;
 
             InteropCall:
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options);
@@ -806,44 +750,76 @@ namespace System.Globalization
             return new SortKey(this, source, options, keyData);
         }
 
-        private static unsafe bool IcuIsSortable(char *text, int length)
+        private unsafe int IcuGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
 
-            int index = 0;
-            UnicodeCategory uc;
+            // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
 
-            while (index < length)
+            int actualSortKeyLength;
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
             {
-                if (char.IsHighSurrogate(text[index]))
-                {
-                    if (index == length - 1 || !char.IsLowSurrogate(text[index+1]))
-                        return false; // unpaired surrogate
-
-                    uc = CharUnicodeInfo.GetUnicodeCategory(char.ConvertToUtf32(text[index], text[index+1]));
-                    if (uc == UnicodeCategory.PrivateUse || uc == UnicodeCategory.OtherNotAssigned)
-                        return false;
-
-                    index += 2;
-                    continue;
-                }
-
-                if (char.IsLowSurrogate(text[index]))
-                {
-                    return false; // unpaired surrogate
-                }
-
-                uc = CharUnicodeInfo.GetUnicodeCategory(text[index]);
-                if (uc == UnicodeCategory.PrivateUse || uc == UnicodeCategory.OtherNotAssigned)
-                {
-                    return false;
-                }
-
-                index++;
+                actualSortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pDest, destination.Length, options);
             }
 
-            return true;
+            // The check below also handles errors due to negative values / overflow being returned.
+
+            if ((uint)actualSortKeyLength > (uint)destination.Length)
+            {
+                if (actualSortKeyLength > destination.Length)
+                {
+                    ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
+            }
+
+            return actualSortKeyLength;
+        }
+
+        private unsafe int IcuGetSortKeyLength(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            {
+                return Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+            }
+        }
+
+        private static bool IcuIsSortable(ReadOnlySpan<char> text)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(!text.IsEmpty);
+
+            do
+            {
+                if (Rune.DecodeFromUtf16(text, out Rune result, out int charsConsumed) != OperationStatus.Done)
+                {
+                    return false; // found an unpaired surrogate somewhere in the text
+                }
+
+                UnicodeCategory category = Rune.GetUnicodeCategory(result);
+                if (category == UnicodeCategory.PrivateUse || category == UnicodeCategory.OtherNotAssigned)
+                {
+                    return false; // can't sort private use or unassigned code points
+                }
+
+                text = text.Slice(charsConsumed);
+            } while (!text.IsEmpty);
+
+            return true; // saw no unsortable data in the buffer
         }
 
         // -----------------------------

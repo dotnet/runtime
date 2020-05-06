@@ -72,6 +72,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private OperatingSystem _operatingSystem;
         private Machine _machine;
         private Architecture _architecture;
+        private int _pointerSize;
         private bool _composite;
         private ulong _imageBase;
         private int _readyToRunHeaderRVA;
@@ -171,6 +172,18 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureHeader();
                 return _architecture;
+            }
+        }
+
+        /// <summary>
+        /// Size of a pointer on the architecture
+        /// </summary>
+        public int TargetPointerSize
+        {
+            get
+            {
+                EnsureHeader();
+                return _pointerSize;
             }
         }
 
@@ -476,20 +489,24 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 case Machine.I386:
                     _architecture = Architecture.X86;
+                    _pointerSize = 4;
                     break;
 
                 case Machine.Amd64:
                     _architecture = Architecture.X64;
+                    _pointerSize = 8;
                     break;
 
                 case Machine.Arm:
                 case Machine.Thumb:
                 case Machine.ArmThumb2:
                     _architecture = Architecture.Arm;
+                    _pointerSize = 4;
                     break;
 
                 case Machine.Arm64:
                     _architecture = Architecture.Arm64;
+                    _pointerSize = 8;
                     break;
 
                 default:
@@ -712,7 +729,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                 {
                     mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
-                    if (_composite)
+                    if ((_composite) && mdReader == null)
                     {
                         // The only types that don't have module overrides on them in composite images are primitive types within the system module
                         mdReader = GetSystemModuleMetadataReader();
