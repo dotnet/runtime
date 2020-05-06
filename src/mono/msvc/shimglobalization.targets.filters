@@ -81,9 +81,7 @@
     </ClInclude>                        
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization">
-    </Filter>
-    <Filter Include="Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization">
-    </Filter>
+    <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization"/>
+    <Filter Include="Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization"/>
   </ItemGroup>
 </Project>
