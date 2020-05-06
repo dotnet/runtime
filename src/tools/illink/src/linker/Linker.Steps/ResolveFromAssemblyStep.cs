@@ -32,7 +32,7 @@ using Mono.Collections.Generic;
 namespace Mono.Linker.Steps
 {
 
-	public class ResolveFromAssemblyStep : ResolveStep
+	public class ResolveFromAssemblyStep : BaseStep
 	{
 
 		readonly AssemblyDefinition _assembly;
