@@ -21,6 +21,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <AppleAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder'))</AppleAppBuilder>
     <AppleTestRunner>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner'))</AppleTestRunner>
   </PropertyGroup>
 
