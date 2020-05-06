@@ -1466,28 +1466,36 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateComInterfaceForObject(
     _In_ OBJECTREF instance,
     _Outptr_ void** wrapperRaw)
 {
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if (!g_IsGlobalComWrappersRegisteredForTrackerSupport)
         return false;
 
-    // Switch to Cooperative mode since object references
-    // are being manipulated.
-    {
-        GCX_COOP();
-
-        // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
-        return TryGetOrCreateComInterfaceForObjectInternal(
-            NULL,
-            instance,
-            CreateComInterfaceFlags::CreateComInterfaceFlags_TrackerSupport,
-            ComWrappersScenario::TrackerSupportGlobalInstance,
-            wrapperRaw);
-    }
+    // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
+    return TryGetOrCreateComInterfaceForObjectInternal(
+        NULL,
+        instance,
+        CreateComInterfaceFlags::CreateComInterfaceFlags_TrackerSupport,
+        ComWrappersScenario::TrackerSupportGlobalInstance,
+        wrapperRaw);
 }
 
 bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
     _In_ IUnknown* externalComObject,
     _Out_ OBJECTREF* objRef)
 {
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if (!g_IsGlobalComWrappersRegisteredForTrackerSupport)
         return false;
 
@@ -1500,20 +1508,14 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
         _ASSERTE(hr == S_OK);
     }
 
-    // Switch to Cooperative mode since object references
-    // are being manipulated.
-    {
-        GCX_COOP();
-
-        // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
-        return TryGetOrCreateObjectForComInstanceInternal(
-            NULL /*comWrappersImpl*/,
-            identity,
-            CreateObjectFlags::CreateObjectFlags_TrackerObject,
-            ComWrappersScenario::TrackerSupportGlobalInstance,
-            NULL /*wrapperMaybe*/,
-            objRef);
-    }
+    // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
+    return TryGetOrCreateObjectForComInstanceInternal(
+        NULL /*comWrappersImpl*/,
+        identity,
+        CreateObjectFlags::CreateObjectFlags_TrackerObject,
+        ComWrappersScenario::TrackerSupportGlobalInstance,
+        NULL /*wrapperMaybe*/,
+        objRef);
 }
 
 IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid)
