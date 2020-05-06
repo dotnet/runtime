@@ -287,7 +287,7 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 	 * Ignore requests to set the main thread name because
 	 * it causes the value returned by Process.ProcessName to change.
 	 */
-	if (tid == (guint64)getpid ())
+	if (mono_native_thread_os_id_get () == (guint64)getpid ())
 		return;
 #endif
 
