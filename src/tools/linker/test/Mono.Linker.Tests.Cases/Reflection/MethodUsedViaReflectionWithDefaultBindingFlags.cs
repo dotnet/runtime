@@ -15,13 +15,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptMember (".ctor()")]
 		class Foo
 		{
-			[Kept]
 			private static int OnlyCalledViaReflection ()
 			{
 				return 42;
 			}
 
-			[Kept]
 			private int OnlyCalledViaReflection (int foo)
 			{
 				return 43;

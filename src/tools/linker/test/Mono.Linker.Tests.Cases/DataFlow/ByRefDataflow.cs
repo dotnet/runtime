@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -37,7 +37,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
 		static Type s_typeWithDefaultConstructor;
 
 		[Kept]
@@ -57,7 +57,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		public static void MethodWithRefParameter (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicMethods)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
 			ref Type type)
 		{
 			type = typeof (ClassReturnedAsRefFromMethodTakingTypeByRef);

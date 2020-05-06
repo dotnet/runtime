@@ -5,8 +5,8 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -35,7 +35,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			public Type Type;
 		}
 
@@ -46,7 +46,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public KeepsPublicMethodsAttribute (
 				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicMethods)]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				string type)
 			{
 			}

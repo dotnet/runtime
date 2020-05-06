@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -642,7 +643,7 @@ namespace Mono.Linker.Dataflow
 		/// <summary>
 		/// The bitfield of dynamically accessed member kinds the node guarantees
 		/// </summary>
-		public DynamicallyAccessedMemberKinds DynamicallyAccessedMemberKinds { get; protected set; }
+		public DynamicallyAccessedMemberTypes DynamicallyAccessedMemberKinds { get; protected set; }
 	}
 
 	/// <summary>
@@ -650,7 +651,7 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodParameterValue (int parameterIndex, DynamicallyAccessedMemberKinds dynamicallyAccessedMemberKinds)
+		public MethodParameterValue (int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberKinds)
 		{
 			Kind = ValueNodeKind.MethodParameter;
 			ParameterIndex = parameterIndex;
@@ -686,7 +687,7 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodReturnValue (DynamicallyAccessedMemberKinds dynamicallyAccessedMemberKinds)
+		public MethodReturnValue (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberKinds)
 		{
 			Kind = ValueNodeKind.MethodReturn;
 			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
@@ -926,7 +927,7 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class LoadFieldValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public LoadFieldValue (FieldDefinition fieldToLoad, DynamicallyAccessedMemberKinds dynamicallyAccessedMemberKinds)
+		public LoadFieldValue (FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberKinds)
 		{
 			Kind = ValueNodeKind.LoadField;
 			Field = fieldToLoad;
