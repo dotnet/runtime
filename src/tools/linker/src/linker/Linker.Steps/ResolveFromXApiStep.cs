@@ -33,7 +33,7 @@ using Mono.Cecil;
 namespace Mono.Linker.Steps
 {
 
-	public class ResolveFromXApiStep : ResolveStep, IXApiVisitor
+	public class ResolveFromXApiStep : BaseStep, IXApiVisitor
 	{
 
 		static readonly string _name = "name";

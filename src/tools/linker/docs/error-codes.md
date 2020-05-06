@@ -73,3 +73,27 @@ error and warning codes.
 #### `IL2015`: Invalid value for 'field': 'value'
 
 - The value 'value' used in the substitution XML for field 'field' is not a built-in type, or does not match the type of 'field'.
+
+#### `IL2016`: Could not find field 'field' in type 'type' specified in 'XML document location'
+
+- The XML descriptor preserves field 'field' on type 'type', but the field was not found.
+
+#### `IL2017`: Could not find method 'method' in type 'type' specified in 'XML document location'
+
+- The XML descriptor preserves method 'method' on type 'type', but the method was not found.
+
+#### `IL2018`: Could not find event 'event' in type 'type' specified in 'XML document location'
+
+- The XML descriptor preserves event 'event' on type 'type', but the event was not found.
+
+#### `IL2019`: Could not find property 'property' in type 'type' specified in 'XML document location'
+
+- The XML descriptor preserves property 'property' on type 'type', but the property was not found.
+
+#### `IL2020`: Could not find the get accessor of property 'property' in type 'type' specified in 'XML document location'
+
+- The XML descriptor preserves the get accessor of property 'property' on type 'type', but the accessor was not found.
+
+#### `IL2021`: Could not find the set accessor of property 'property' in type 'type' specified in 'XML document location'
+
+- The XML descriptor preserves the set accessor of property 'property' on type 'type', but the accessor was not found.

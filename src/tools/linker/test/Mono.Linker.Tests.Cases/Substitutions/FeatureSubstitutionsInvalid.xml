@@ -5,5 +5,13 @@
         <method signature="System.Boolean NonBooleanFeatureMethod()" body="stub" value="false" feature="NonBooleanFeature" featurevalue="nonboolean" />
         <method signature="System.Boolean BooleanFeatureMethod()" body="stub" value="false" feature="BooleanFeature" featurevalue="true" />
       </type>
+      <type fullname="Mono.Linker.Tests.Cases.Substitutions.FeatureSubstitutionsInvalid/Foo">
+        <field signature="NonExistentField" />
+        <method signature="NonExistentMethod" />
+        <event signature="NonExistentEvent" />
+        <property signature="NonExistentProperty" />
+        <property signature="System.Int32 NoSetter" accessors="set" />
+        <property signature="System.Int32 NoGetter" accessors="get" />
+      </type>
     </assembly>
 </linker>
