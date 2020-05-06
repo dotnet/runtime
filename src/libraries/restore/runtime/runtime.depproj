@@ -74,7 +74,8 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Copy SourceFiles="@(HostPolicyFile)"
+    <Copy Condition="'$(RuntimeFlavor)' == 'Mono'"
+          SourceFiles="@(HostPolicyFile)"
           DestinationFolder="$(TestHostRootPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
