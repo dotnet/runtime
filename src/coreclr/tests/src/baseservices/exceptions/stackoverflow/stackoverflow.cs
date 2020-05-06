@@ -111,21 +111,24 @@ namespace TestStackOverflow
             }
         }
 
+        static void SecondaryThreadStart(bool smallframe)
+        {
+            if (smallframe)
+            {
+                InfiniteRecursionA();
+            }
+            else
+            {
+                InfiniteRecursionA2();
+            }
+        }
+
         static void SecondaryThreadsTest(bool smallframe)
         {
             Thread[] threads = new Thread[32];
             for (int i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Thread(() => {
-                    if (smallframe)
-                    {
-                        InfiniteRecursionA();
-                    }
-                    else
-                    {
-                        InfiniteRecursionA2();
-                    }
-                });
+                threads[i] = new Thread(() => SecondaryThreadStart(smallframe));
                 threads[i].Start();
             }
 

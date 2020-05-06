@@ -147,9 +147,9 @@ namespace TestStackOverflow
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "smallframe secondary", out lines))
             {
-                if (!lines[lines.Count - 1].EndsWith("at System.Threading.ThreadHelper.ThreadStart()"))
+                if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.SecondaryThreadStart(Boolean)")))
                 {
-                    Console.WriteLine("Missing \"System.Threading.ThreadHelper.ThreadStart\" method frame at the last line");
+                    Console.WriteLine("Missing \"TestStackOverflow.Program.SecondaryThreadStart\" method frame");
                     return false;
                 }
 
@@ -182,9 +182,9 @@ namespace TestStackOverflow
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "largeframe secondary", out lines))
             {
-                if (!lines[lines.Count - 1].EndsWith("at System.Threading.ThreadHelper.ThreadStart()"))
+                if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.SecondaryThreadStart(Boolean)")))
                 {
-                    Console.WriteLine("Missing \"System.Threading.ThreadHelper.ThreadStart\" method frame at the last line");
+                    Console.WriteLine("Missing \"TestStackOverflow.Program.SecondaryThreadStart\" method frame");
                     return false;
                 }
 
