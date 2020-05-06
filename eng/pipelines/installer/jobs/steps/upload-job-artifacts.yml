@@ -20,7 +20,7 @@ steps:
     mergeTestResults: true
     testRunTitle: Installer-${{ parameters.runtimeFlavor }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
-  condition: eq(variables.SkipTests, false)
+  condition: eq(parameters.skipTests, false)
 
 - task: CopyFiles@2
   displayName: Prepare BuildLogs staging directory
