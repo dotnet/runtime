@@ -1,7 +1,7 @@
 parameters:
   name: ''
   runtimeFlavor: 'coreclr'
-  skipTests: false
+
   isOfficialBuild: false
 
 steps:
@@ -20,7 +20,7 @@ steps:
     mergeTestResults: true
     testRunTitle: Installer-${{ parameters.runtimeFlavor }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
-  condition: eq(parameters.skipTests, false)
+  condition: eq(variables.SkipTests, false)
 
 - task: CopyFiles@2
   displayName: Prepare BuildLogs staging directory
