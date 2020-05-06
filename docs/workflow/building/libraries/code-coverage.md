@@ -36,7 +36,7 @@ This runs the tests and generates the full code coverage report. The resulting i
 
 You can also build and test with code coverage for a particular test project rather than for the whole repo with the `/p:Coverage=true` property:
 
-    dotnet test -f net5.0 /p:Coverage=true
+    dotnet build /t:Test /p:Coverage=true
 
 The results for this one library will then be available in this index.htm file, where $(OutDir) is the directory where the binaries were generated.
 
@@ -44,7 +44,7 @@ The results for this one library will then be available in this index.htm file, 
 
 For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
 
-    dotnet test src\libraries\System.Diagnostics.Debug -f net5.0 /p:Coverage=true
+    dotnet build src\System.Diagnostics.Debug\tests /t:Test /p:Coverage=true
 
 And then once the run completes:
 
