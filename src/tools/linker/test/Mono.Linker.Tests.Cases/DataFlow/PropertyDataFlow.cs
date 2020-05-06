@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -28,68 +28,70 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			_ = instance.PropertyDefaultConstructorWithExplicitAccessors;
 			_ = instance.PropertyPublicConstructorsWithExplicitAccessors;
-			_ = instance.PropertyConstructorsWithExplicitAccessors;
+			_ = instance.PropertyNonPublicConstructorsWithExplicitAccessors;
 			instance.PropertyDefaultConstructorWithExplicitAccessors = null;
 			instance.PropertyPublicConstructorsWithExplicitAccessors = null;
-			instance.PropertyConstructorsWithExplicitAccessors = null;
+			instance.PropertyNonPublicConstructorsWithExplicitAccessors = null;
 		}
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		Type PropertyWithPublicConstructor { get; set; }
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		static Type StaticPropertyWithPublicConstructor { get; set; }
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceProperty ()
 		{
 			RequireDefaultConstructor (PropertyWithPublicConstructor);
 			RequirePublicConstructors (PropertyWithPublicConstructor);
-			RequireConstructors (PropertyWithPublicConstructor);
+			RequireNonPublicConstructors (PropertyWithPublicConstructor);
 			RequireNothing (PropertyWithPublicConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromStaticProperty ()
 		{
 			RequireDefaultConstructor (StaticPropertyWithPublicConstructor);
 			RequirePublicConstructors (StaticPropertyWithPublicConstructor);
-			RequireConstructors (StaticPropertyWithPublicConstructor);
+			RequireNonPublicConstructors (StaticPropertyWithPublicConstructor);
 			RequireNothing (StaticPropertyWithPublicConstructor);
 		}
 
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		private void WriteToInstanceProperty ()
 		{
 			PropertyWithPublicConstructor = GetTypeWithDefaultConstructor ();
 			PropertyWithPublicConstructor = GetTypeWithPublicConstructors ();
-			PropertyWithPublicConstructor = GetTypeWithConstructors ();
+			PropertyWithPublicConstructor = GetTypeWithNonPublicConstructors ();
 			PropertyWithPublicConstructor = GetUnkownType ();
 		}
 
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		private void WriteToStaticProperty ()
 		{
 			StaticPropertyWithPublicConstructor = GetTypeWithDefaultConstructor ();
 			StaticPropertyWithPublicConstructor = GetTypeWithPublicConstructors ();
-			StaticPropertyWithPublicConstructor = GetTypeWithConstructors ();
+			StaticPropertyWithPublicConstructor = GetTypeWithNonPublicConstructors ();
 			StaticPropertyWithPublicConstructor = GetUnkownType ();
 		}
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		Type _fieldWithPublicConstructors;
 
 		Type PropertyPublicConstructorsWithExplicitAccessors {
 			[RecognizedReflectionAccessPattern]
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			get {
 				return _fieldWithPublicConstructors;
 			}
 
 			[RecognizedReflectionAccessPattern]
-			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			set {
 				_fieldWithPublicConstructors = value;
 			}
@@ -97,65 +99,65 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		Type PropertyDefaultConstructorWithExplicitAccessors {
 			[RecognizedReflectionAccessPattern]
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			get {
 				return _fieldWithPublicConstructors;
 			}
 
 			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (_fieldWithPublicConstructors))]
-			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			set {
 				_fieldWithPublicConstructors = value;
 			}
 		}
 
-		Type PropertyConstructorsWithExplicitAccessors {
-			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "get_" + nameof (PropertyConstructorsWithExplicitAccessors),
+		Type PropertyNonPublicConstructorsWithExplicitAccessors {
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "get_" + nameof (PropertyNonPublicConstructorsWithExplicitAccessors),
 				new Type[] { }, returnType: typeof (Type))]
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			get {
 				return _fieldWithPublicConstructors;
 			}
 
-			[RecognizedReflectionAccessPattern]
-			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (_fieldWithPublicConstructors))]
+			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			set {
 				_fieldWithPublicConstructors = value;
 			}
 		}
 
 		private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type)
 		{
 		}
 
 		private static void RequirePublicConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type type)
 		{
 		}
 
-		private static void RequireConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+		private static void RequireNonPublicConstructors (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
 		{
 		}
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
 		private static Type GetTypeWithDefaultConstructor ()
 		{
 			return null;
 		}
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		private static Type GetTypeWithPublicConstructors ()
 		{
 			return null;
 		}
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
-		private static Type GetTypeWithConstructors ()
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+		private static Type GetTypeWithNonPublicConstructors ()
 		{
 			return null;
 		}

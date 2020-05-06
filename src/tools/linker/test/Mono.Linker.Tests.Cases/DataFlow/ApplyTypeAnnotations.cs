@@ -5,7 +5,7 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -104,10 +104,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		private static void RequireCombination (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers(
-				DynamicallyAccessedMemberKinds.DefaultConstructor |
-				DynamicallyAccessedMemberKinds.PublicFields |
-				DynamicallyAccessedMemberKinds.PublicMethods |
-				DynamicallyAccessedMemberKinds.PublicProperties)]
+				DynamicallyAccessedMemberTypes.DefaultConstructor |
+				DynamicallyAccessedMemberTypes.PublicFields |
+				DynamicallyAccessedMemberTypes.PublicMethods |
+				DynamicallyAccessedMemberTypes.PublicProperties)]
 			Type type)
 		{
 		}
@@ -116,10 +116,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		private static void RequireCombinationOnString (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers(
-				DynamicallyAccessedMemberKinds.DefaultConstructor |
-				DynamicallyAccessedMemberKinds.PublicFields |
-				DynamicallyAccessedMemberKinds.PublicMethods |
-				DynamicallyAccessedMemberKinds.PublicProperties)]
+				DynamicallyAccessedMemberTypes.DefaultConstructor |
+				DynamicallyAccessedMemberTypes.PublicFields |
+				DynamicallyAccessedMemberTypes.PublicMethods |
+				DynamicallyAccessedMemberTypes.PublicProperties)]
 			string typeName)
 		{
 		}

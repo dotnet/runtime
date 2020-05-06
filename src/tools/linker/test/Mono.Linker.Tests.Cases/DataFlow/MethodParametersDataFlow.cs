@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			DefaultConstructorParameter (typeof (TestType));
 			PublicConstructorsParameter (typeof (TestType));
-			ConstructorsParameter (typeof (TestType));
+			NonPublicConstructorsParameter (typeof (TestType));
 			WriteToParameterOnStaticMethod (null);
 			LongWriteToParameterOnStaticMethod (0, 0, 0, 0, null);
 			instance.InstanceMethod (typeof (TestType));
@@ -42,41 +42,42 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			"The parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::DefaultConstructorParameter(System.Type)' " +
 			"with dynamically accessed member kinds 'DefaultConstructor' is passed into the parameter 'type' " +
 			"of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::RequirePublicConstructors(System.Type)' " +
-			"which requires dynamically accessed member kinds `PublicConstructors`. " +
+			"which requires dynamically accessed member kinds 'PublicConstructors'. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private static void DefaultConstructorParameter (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type)
 		{
 			RequireDefaultConstructor (type);
 			RequirePublicConstructors (type);
-			RequireConstructors (type);
+			RequireNonPublicConstructors (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private static void PublicConstructorsParameter (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type type)
 		{
 			RequireDefaultConstructor (type);
 			RequirePublicConstructors (type);
-			RequireConstructors (type);
+			RequireNonPublicConstructors (type);
 		}
 
-		[RecognizedReflectionAccessPattern]
-		private static void ConstructorsParameter (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireDefaultConstructor), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		private static void NonPublicConstructorsParameter (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
 		{
 			RequireDefaultConstructor (type);
 			RequirePublicConstructors (type);
-			RequireConstructors (type);
+			RequireNonPublicConstructors (type);
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		private void InstanceMethod (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type)
 		{
 			RequireDefaultConstructor (type);
@@ -85,7 +86,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
 		private void WriteToParameterOnInstanceMethod (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
 		{
 			type = ReturnThingsWithDefaultConstructor ();
@@ -93,7 +94,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
 		private static void WriteToParameterOnStaticMethod (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
 		{
 			type = ReturnThingsWithDefaultConstructor ();
@@ -102,7 +103,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
 		private void LongWriteToParameterOnInstanceMethod (
 			int a, int b, int c, int d,
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
 		{
 			type = ReturnThingsWithDefaultConstructor ();
@@ -111,13 +112,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
 		private static void LongWriteToParameterOnStaticMethod (
 			int a, int b, int c, int d,
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
 		{
 			type = ReturnThingsWithDefaultConstructor ();
 		}
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
 		static private Type ReturnThingsWithDefaultConstructor ()
 		{
 			return null;
@@ -125,9 +126,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		private void TwoAnnotatedParameters (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type,
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type type2)
 		{
 			RequireDefaultConstructor (type);
@@ -138,9 +139,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		private void TwoAnnotatedParametersIntoOneValue (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type,
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type type2)
 		{
 			Type t = type == null ? type : type2;
@@ -153,7 +154,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			"The parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::NoAnnotation(System.Type)' " +
 			"with dynamically accessed member kinds 'None' is passed into " +
 			"the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::RequireDefaultConstructor(System.Type)' " +
-			"which requires dynamically accessed member kinds `DefaultConstructor`. " +
+			"which requires dynamically accessed member kinds 'DefaultConstructor'. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'DefaultConstructor'.")]
 		private void NoAnnotation (Type type)
 		{
@@ -164,7 +165,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireDefaultConstructor), new Type[] { typeof (Type) },
 			"A value from unknown source is passed " +
 			"into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::RequireDefaultConstructor(System.Type)' " +
-			"which requires dynamically accessed member kinds `DefaultConstructor`. " +
+			"which requires dynamically accessed member kinds 'DefaultConstructor'. " +
 			"It's not possible to guarantee that these requirements are met by the application.")]
 		private void UnknownValue ()
 		{
@@ -175,7 +176,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[RecognizedReflectionAccessPattern]
 		private void AnnotatedValueToUnAnnotatedParameter (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type)
 		{
 			RequireNothing (type);
@@ -194,19 +195,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type)
 		{
 		}
 
 		private static void RequirePublicConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type type)
 		{
 		}
 
-		private static void RequireConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+		private static void RequireNonPublicConstructors (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
 		{
 		}
@@ -216,7 +217,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		private static void RequireDefaultConstructorAndNothing (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
 			Type type,
 			Type type2)
 		{
