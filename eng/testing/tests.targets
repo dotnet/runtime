@@ -133,6 +133,14 @@
     <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
+    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
+          SourceFiles="$(AndroidOpenSslCryptoLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
+          SourceFiles="$(AndroidOpenSslLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+
     <WriteLinesToFile File="$(BundleDir)\xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
 
     <AndroidAppBuilderTask 
