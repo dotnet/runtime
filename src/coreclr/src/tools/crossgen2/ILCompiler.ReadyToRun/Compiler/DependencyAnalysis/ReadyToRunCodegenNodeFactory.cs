@@ -99,13 +99,6 @@ namespace ILCompiler.DependencyAnalysis
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
-        private NodeCache<MethodDesc, MethodReadOnlyDataNode> _readOnlyDataBlobs;
-
-        public MethodReadOnlyDataNode SettableReadOnlyDataBlob(MethodDesc owningMethod)
-        {
-            return _readOnlyDataBlobs.GetOrAdd(owningMethod);
-        }
-
         private struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
         {
             public readonly object Target;
@@ -212,11 +205,6 @@ namespace ILCompiler.DependencyAnalysis
                     TypeSignature(
                         ReadyToRunFixupKind.Invalid,
                         (TypeDesc)helperKey.Target));
-            });
-
-            _readOnlyDataBlobs = new NodeCache<MethodDesc, MethodReadOnlyDataNode>(key =>
-            {
-                return new MethodReadOnlyDataNode(key);
             });
 
             _constructedHelpers = new NodeCache<ReadyToRunHelper, Import>(helperId =>
