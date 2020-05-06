@@ -74,12 +74,4 @@
       </PropertyGroup>
     </When>
   </Choose>
-  <PropertyGroup>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)\</IntermediateOutputPath>
-    <!-- setting the output paths -->
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</OutputPath>
-    <OutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseOutputPath)$(TargetFramework)-$(Configuration)\</OutputPath>
-  </PropertyGroup>
-
 </Project>
