@@ -516,11 +516,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (varTypeIsFloating(intrin.baseType))
                 {
-                    if (targetReg != op1Reg)
-                    {
-                        // fmov reg1, reg2
-                        GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, INS_OPTS_NONE);
-                    }
+                    // fmov reg1, reg2
+                    GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, INS_OPTS_NONE);
                 }
                 else
                 {
@@ -555,6 +552,31 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector128_get_Zero:
             case NI_Vector128_get_AllBitsSet:
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
+                break;
+
+            case NI_Vector64_Create:
+            case NI_Vector128_Create:
+                if (intrin.op1->isContainedFltOrDblImmed())
+                {
+                    const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                    GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
+                }
+                else if (varTypeIsFloating(intrin.baseType))
+                {
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 0, opt);
+                }
+                else
+                {
+                    if (intrin.op1->isContainedIntOrIImmed())
+                    {
+                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                        GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                }
                 break;
 
             default:
