@@ -4,7 +4,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
-  framework: netcoreapp5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
+  framework: net5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
   liveLibrariesBuildConfig: ''
   variables: {}
   pool: ''

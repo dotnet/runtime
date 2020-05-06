@@ -11,7 +11,7 @@
   <ItemGroup>
     <Compile Include="System.ServiceModel.Syndication.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.1'">
     <Compile Include="System.ServiceModel.Syndication.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

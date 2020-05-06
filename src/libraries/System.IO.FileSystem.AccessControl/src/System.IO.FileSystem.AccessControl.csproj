@@ -11,7 +11,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
   </ItemGroup>
   <!-- Source includes -->
