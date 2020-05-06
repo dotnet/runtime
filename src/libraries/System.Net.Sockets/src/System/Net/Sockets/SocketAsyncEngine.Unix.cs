@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
@@ -366,6 +363,7 @@ namespace System.Net.Sockets
                             // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
                             // such code may keep the stack location live for longer than necessary
                             context = null;
+                            contextWrapper = default;
                         }
                         else if (handle == shutdownHandle)
                         {
@@ -491,6 +489,18 @@ namespace System.Net.Sockets
             error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, Interop.Sys.SocketEvents.None,
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, handle);
             return error == Interop.Error.SUCCESS;
+        }
+
+        // struct wrapper is used in order to improve the performance of the epoll thread hot path by up to 3% of some TechEmpower benchmarks
+        // the goal is to have a dedicated generic instantiation and using:
+        // System.Collections.Concurrent.ConcurrentDictionary`2[System.IntPtr,System.Net.Sockets.SocketAsyncContextWrapper]::TryGetValueInternal(!0,int32,!1&)
+        // instead of:
+        // System.Collections.Concurrent.ConcurrentDictionary`2[System.IntPtr,System.__Canon]::TryGetValueInternal(!0,int32,!1&)
+        private readonly struct SocketAsyncContextWrapper
+        {
+            public SocketAsyncContextWrapper(SocketAsyncContext context) => Context = context;
+
+            internal SocketAsyncContext Context { get; }
         }
 
         private readonly struct SocketIOEvent
