@@ -10,19 +10,17 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class SettableReadOnlyDataBlob : ObjectNode, ISymbolDefinitionNode
+    public class MethodReadOnlyDataNode : ObjectNode, ISymbolDefinitionNode
     {
         private MethodDesc _owningMethod;
-        private ObjectNodeSection _section;
         private ObjectData _data;
 
-        public SettableReadOnlyDataBlob(MethodDesc owningMethod, ObjectNodeSection section)
+        public MethodReadOnlyDataNode(MethodDesc owningMethod)
         {
             _owningMethod = owningMethod;
-            _section = section;
         }
 
-        public override ObjectNodeSection Section => _section;
+        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
         public override bool StaticDependenciesAreComputed => _data != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -50,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(_owningMethod, ((SettableReadOnlyDataBlob)other)._owningMethod);
+            return comparer.Compare(_owningMethod, ((MethodReadOnlyDataNode)other)._owningMethod);
         }
 #endif
     }

@@ -99,9 +99,9 @@ namespace ILCompiler.DependencyAnalysis
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
-        private NodeCache<MethodDesc, SettableReadOnlyDataBlob> _readOnlyDataBlobs;
+        private NodeCache<MethodDesc, MethodReadOnlyDataNode> _readOnlyDataBlobs;
 
-        public SettableReadOnlyDataBlob SettableReadOnlyDataBlob(MethodDesc owningMethod)
+        public MethodReadOnlyDataNode SettableReadOnlyDataBlob(MethodDesc owningMethod)
         {
             return _readOnlyDataBlobs.GetOrAdd(owningMethod);
         }
@@ -214,9 +214,9 @@ namespace ILCompiler.DependencyAnalysis
                         (TypeDesc)helperKey.Target));
             });
 
-            _readOnlyDataBlobs = new NodeCache<MethodDesc, SettableReadOnlyDataBlob>(key =>
+            _readOnlyDataBlobs = new NodeCache<MethodDesc, MethodReadOnlyDataNode>(key =>
             {
-                return new SettableReadOnlyDataBlob(key, ObjectNodeSection.ReadOnlyDataSection);
+                return new MethodReadOnlyDataNode(key);
             });
 
             _constructedHelpers = new NodeCache<ReadyToRunHelper, Import>(helperId =>
