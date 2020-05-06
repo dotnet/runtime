@@ -23,6 +23,10 @@
     <BaseOutputPath>$(RepoRoot)/artifacts/tests/coreclr/$(OSPlatformConfig)/$(BuildProjectRelativeDir)</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
 
+    <TargetBits>32</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
+
   </PropertyGroup>
   
   <PropertyGroup>

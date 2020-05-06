@@ -26,12 +26,22 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
+    - OSX_x64
     jobParameters:
       testGroup: outerloop
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: outerloop
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm
@@ -41,7 +51,6 @@ jobs:
     - Windows_NT_x86
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    managedOsxBuild: false
     jobParameters:
       testGroup: outerloop
       readyToRun: true

@@ -3,7 +3,6 @@
     <AssemblyName>TestLibrary</AssemblyName>
     <OutputType>Library</OutputType>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <DefineConstants>$(DefineConstants);$([System.String]::Copy('$(TargetArchitecture)').ToUpper())</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRunScript>false</GenerateRunScript>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
