@@ -3,7 +3,10 @@
           BeforeTargets="BeforeCompile"
           Condition="'$(DotNetBuildFromSource)' == 'true' and
                      ('$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != '')">
-                     
+
+    <PropertyGroup>
+      <DotNetSourceBuildIntermediatePath>$(IntermediateOutputPath)</DotNetSourceBuildIntermediatePath>
+    </PropertyGroup>    
     <Error Condition="'$(DotNetSourceBuildIntermediatePath)' == ''" 
            Text="'DotNetSourceBuildIntermediatePath' must be specified when 'DotNetBuildFromSource' is true" />
 
