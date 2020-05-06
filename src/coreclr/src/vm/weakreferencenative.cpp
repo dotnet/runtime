@@ -147,18 +147,7 @@ IWeakReference* GetComWeakReference(OBJECTREF* pObject)
 #ifdef FEATURE_COMWRAPPERS
     else
     {
-
-        IUnknown* unknown = ComWrappersNative::GetIdentityForObject(pObject);
-
-        if (unknown == nullptr)
-        {
-            return nullptr;
-        }
-
-        if(FAILED(unknown->QueryInterface(IID_IWeakReferenceSource, (void**)&pWeakReferenceSource)))
-        {
-            return nullptr;
-        }
+        pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(pObject, IID_IWeakReferenceSource));
     }
 #endif
 

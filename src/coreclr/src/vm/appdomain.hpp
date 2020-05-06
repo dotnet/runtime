@@ -1110,10 +1110,10 @@ public:
         return ::CreateRefcountedHandle(m_handleStore, object);
     }
 
-    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, IWeakReference* pWinRTWeakReference)
+    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, IWeakReference* pComWeakReference)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateNativeComWeakHandle(m_handleStore, object, pWinRTWeakReference);
+        return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakReference);
     }
 #endif // FEATURE_COMINTEROP
 

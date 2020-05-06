@@ -1516,12 +1516,12 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
     }
 }
 
-IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED)
+IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(objectPROTECTED));
     }
@@ -1530,9 +1530,27 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
     ASSERT_PROTECTED(objectPROTECTED);
 
     void* context;
-    if ((*objectPROTECTED)->GetSyncBlock()->GetInteropInfo()->TryGetExternalComObjectContext(&context))
+    SyncBlock* syncBlock = (*objectPROTECTED)->PassiveGetSyncBlock();
+    if (syncBlock == nullptr)
     {
-        return reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
+        return nullptr;
+    }
+
+    InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfoNoCreate();
+
+    if (interopInfo == nullptr)
+    {
+        return nullptr;
+    }
+
+    if (interopInfo->TryGetExternalComObjectContext(&context))
+    {
+        IUnknown* identity = reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
+        IUnknown* result;
+        if (SUCCEEDED(identity->QueryInterface(riid, (void**)&result)))
+        {
+            return result;
+        }
     }
     return nullptr;
 }

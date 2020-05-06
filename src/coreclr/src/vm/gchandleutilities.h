@@ -201,9 +201,9 @@ inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
 // Special handle creation convenience functions
 
 #ifdef FEATURE_COMINTEROP
-inline OBJECTHANDLE CreateNativeComWeakHandle(IGCHandleStore* store, OBJECTREF object, IWeakReference* pWinRTWeakReference)
+inline OBJECTHANDLE CreateNativeComWeakHandle(IGCHandleStore* store, OBJECTREF object, IWeakReference* pComWeakReference)
 {
-    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_WEAK_NATIVE_COM, (void*)pWinRTWeakReference);
+    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_WEAK_NATIVE_COM, (void*)pComWeakReference);
     if (!hnd)
     {
         COMPlusThrowOM();
