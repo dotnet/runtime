@@ -284,12 +284,17 @@ internal static partial class Interop
                 {
                     if (task.Exception == null)
                     {
-                        var resultProperty = task.GetType().GetProperty("Result");
-
-                        if (resultProperty == null)
-                            continuationObj.Invoke("resolve", Array.Empty<object>());
+                        object? result;
+                        Type task_type = task.GetType();
+                        if (task_type == typeof(Task))
+                        {
+                            result = Array.Empty<object>();
+                        }
                         else
-                            continuationObj.Invoke("resolve", resultProperty.GetValue(task) ?? Array.Empty<object>());
+                        {
+                            result = task_type.GetMethod("get_Result")?.Invoke(task, Array.Empty<object>());
+                        }
+                        continuationObj.Invoke("resolve", result);
                     }
                     else
                     {
