@@ -39,8 +39,8 @@ parameters:
   platforms: []
 
 jobs:
-- job: ${{ format('installer_{0}_{1}_{2}', parameters.runtimeFlavor, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-  displayName: ${{ format('Installer Build and Test {0} {1} {2}', parameters.runtimeFlavor, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+- job: ${{ format('installer_{0}_{1}_{2}_{3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+  displayName: ${{ format('Installer Build and Test {0} {1} {2} {3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
