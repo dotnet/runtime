@@ -843,7 +843,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context)
+            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false)
             {
                 AsyncOperation op;
                 using (Lock())
@@ -860,8 +860,16 @@ namespace System.Net.Sockets
 
                         case QueueState.Waiting:
                             Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
-                            _state = QueueState.Processing;
                             op = _tail.Next;
+                            Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
+                            if (skipAsyncEvents && !_isNextOperationSynchronous)
+                            {
+                                // Return the operation to indicate that the async operation was not processed, without making
+                                // any state changes because async operations are being skipped
+                                return op;
+                            }
+
+                            _state = QueueState.Processing;
                             // Break out and release lock
                             break;
 
@@ -892,6 +900,7 @@ namespace System.Net.Sockets
                 else
                 {
                     // Async operation.  The caller will figure out how to process the IO.
+                    Debug.Assert(!skipAsyncEvents);
                     return op;
                 }
             }
@@ -1998,14 +2007,14 @@ namespace System.Net.Sockets
 
             if ((events & Interop.Sys.SocketEvents.Read) != 0 &&
                 _receiveQueue.IsNextOperationSynchronous_Speculative &&
-                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this) == null)
+                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, skipAsyncEvents: true) == null)
             {
                 events ^= Interop.Sys.SocketEvents.Read;
             }
 
             if ((events & Interop.Sys.SocketEvents.Write) != 0 &&
                 _sendQueue.IsNextOperationSynchronous_Speculative &&
-                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this) == null)
+                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, skipAsyncEvents: true) == null)
             {
                 events ^= Interop.Sys.SocketEvents.Write;
             }
