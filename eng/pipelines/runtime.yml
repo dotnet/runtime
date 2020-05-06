@@ -555,6 +555,18 @@ jobs:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    jobParameters:
+      runtimeVariant: LLVMJIT
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+
 #
 # Libraries Test Build
 # Only when CoreCLR, Mono or Libraries is changed
