@@ -31,10 +31,11 @@
     <Compile Include="SignedCms\SignedDocuments.cs" />
     <Compile Include="SignedCms\SignerInfoTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="AlgorithmIdentifierTest.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
     <Compile Include="Pkcs12\CertBagTests.cs" />
@@ -61,10 +62,7 @@
     <Compile Include="Pkcs8PrivateKeyInfoTests.cs" />
     <Compile Include="PrivateKeyHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('net4'))">
-    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and $(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and $(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" />
   </ItemGroup>
 </Project>

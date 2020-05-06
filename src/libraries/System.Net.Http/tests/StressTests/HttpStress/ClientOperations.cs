@@ -29,6 +29,8 @@ namespace HttpStress
 
         public RequestContext(Configuration config, HttpClient httpClient, Random random, CancellationToken globalToken, int taskNum)
         {
+            Debug.Assert(httpClient.BaseAddress != null);
+
             _random = random;
             _client = httpClient;
             _globalToken = globalToken;
@@ -47,7 +49,7 @@ namespace HttpStress
         public int MaxRequestHeaderCount => _config.MaxRequestHeaderCount;
         public int MaxRequestHeaderTotalSize => _config.MaxRequestHeaderTotalSize;
         public int MaxContentLength => _config.MaxContentLength;
-        public Uri BaseAddress => _client.BaseAddress;
+        public Uri BaseAddress => _client.BaseAddress!;
 
         // HttpClient.SendAsync() wrapper that wires randomized cancellation
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption httpCompletion = HttpCompletionOption.ResponseContentRead, CancellationToken? token = null)
@@ -190,7 +192,7 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req);
                     
                     ValidateStatusCode(m);
-                    ValidateServerContent(await m.Content.ReadAsStringAsync(), expectedLength);
+                    ValidateServerContent(await m.Content!.ReadAsStringAsync(), expectedLength);
                 }),
 
                 ("GET Partial",
@@ -202,7 +204,7 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
 
-                    using (Stream s = await m.Content.ReadAsStreamAsync())
+                    using (Stream s = await m.Content!.ReadAsStreamAsync())
                     {
                         s.ReadByte(); // read single byte from response and throw the rest away
                     }
@@ -219,22 +221,21 @@ namespace HttpStress
 
                     ValidateStatusCode(res);
 
-                    await res.Content.ReadAsStringAsync();
+                    await res.Content!.ReadAsStringAsync();
 
                     bool isValidChecksum = ValidateServerChecksum(res.Headers, expectedChecksum);
-                    string GetFailureDetails() => isValidChecksum ? "server checksum matches client checksum" : "server checksum mismatch";
+                    string failureDetails = isValidChecksum ? "server checksum matches client checksum" : "server checksum mismatch";
 
                     // Validate that request headers are being echoed
                     foreach (KeyValuePair<string, IEnumerable<string>> reqHeader in req.Headers)
                     {
-                        if (!res.Headers.TryGetValues(reqHeader.Key, out IEnumerable<string> values))
+                        if (!res.Headers.TryGetValues(reqHeader.Key, out IEnumerable<string>? values))
                         {
-                            throw new Exception($"Expected response header name {reqHeader.Key} missing. {GetFailureDetails()}");
+                            throw new Exception($"Expected response header name {reqHeader.Key} missing. {failureDetails}");
                         }
                         else if (!reqHeader.Value.SequenceEqual(values))
                         {
-                            string FmtValues(IEnumerable<string> values) => string.Join(", ", values.Select(x => $"\"{x}\""));
-                            throw new Exception($"Unexpected values for header {reqHeader.Key}. Expected {FmtValues(reqHeader.Value)} but got {FmtValues(values)}. {GetFailureDetails()}");
+                            throw new Exception($"Unexpected values for header {reqHeader.Key}. Expected {FmtValues(reqHeader.Value)} but got {FmtValues(values)}. {failureDetails}");
                         }
                     }
 
@@ -243,14 +244,13 @@ namespace HttpStress
                     {
                         foreach (KeyValuePair<string, IEnumerable<string>> reqHeader in req.Headers)
                         {
-                            if (!res.TrailingHeaders.TryGetValues(reqHeader.Key + "-trailer", out IEnumerable<string> values))
+                            if (!res.TrailingHeaders.TryGetValues(reqHeader.Key + "-trailer", out IEnumerable<string>? values))
                             {
-                                throw new Exception($"Expected trailing header name {reqHeader.Key}-trailer missing. {GetFailureDetails()}");
+                                throw new Exception($"Expected trailing header name {reqHeader.Key}-trailer missing. {failureDetails}");
                             }
                             else if (!reqHeader.Value.SequenceEqual(values))
                             {
-                                string FmtValues(IEnumerable<string> values) => string.Join(", ", values.Select(x => $"\"{x}\""));
-                                throw new Exception($"Unexpected values for trailing header {reqHeader.Key}-trailer. Expected {FmtValues(reqHeader.Value)} but got {FmtValues(values)}. {GetFailureDetails()}");
+                                throw new Exception($"Unexpected values for trailing header {reqHeader.Key}-trailer. Expected {FmtValues(reqHeader.Value)} but got {FmtValues(values)}. {failureDetails}");
                             }
                         }
                     }
@@ -260,6 +260,8 @@ namespace HttpStress
                         // Should not reach this block unless there's a bug in checksum validation logic. Do throw now
                         throw new Exception("server checksum mismatch");
                     }
+
+                    static string FmtValues(IEnumerable<string> values) => string.Join(", ", values.Select(x => $"\"{x}\""));
                 }),
 
                 ("GET Parameters",
@@ -271,7 +273,7 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req);
 
                     ValidateStatusCode(m);
-                    ValidateContent(expectedResponse, await m.Content.ReadAsStringAsync(), $"Uri: {uri}");
+                    ValidateContent(expectedResponse, await m.Content!.ReadAsStringAsync(), $"Uri: {uri}");
                 }),
 
                 ("GET Aborted",
@@ -330,7 +332,7 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
                     string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
-                    ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
+                    ValidateContent(content, await m.Content!.ReadAsStringAsync(), checksumMessage);
                 }),
 
                 ("POST Multipart Data",
@@ -344,7 +346,7 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
                     string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
-                    ValidateContent(formData.expected, await m.Content.ReadAsStringAsync(), checksumMessage);
+                    ValidateContent(formData.expected, await m.Content!.ReadAsStringAsync(), checksumMessage);
                 }),
 
                 ("POST Duplex",
@@ -357,7 +359,7 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
                     ValidateStatusCode(m);
-                    string response = await m.Content.ReadAsStringAsync();
+                    string response = await m.Content!.ReadAsStringAsync();
 
                     string checksumMessage = ValidateServerChecksum(m.TrailingHeaders, checksum, required: false) ? "server checksum matches client checksum" : "server checksum mismatch";
                     ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
@@ -374,7 +376,7 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
                     ValidateStatusCode(m);
-                    string response = await m.Content.ReadAsStringAsync();
+                    string response = await m.Content!.ReadAsStringAsync();
 
                     // trailing headers not supported for all servers, so do not require checksums
                     bool isValidChecksum = ValidateServerChecksum(m.TrailingHeaders, checksum, required: false);
@@ -414,7 +416,7 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
                     string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
-                    ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
+                    ValidateContent(content, await m.Content!.ReadAsStringAsync(), checksumMessage);
                 }),
 
                 ("HEAD",
@@ -426,7 +428,7 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
 
-                    if (m.Content.Headers.ContentLength != expectedLength)
+                    if (m.Content!.Headers.ContentLength != expectedLength)
                     {
                         throw new Exception($"Expected {expectedLength}, got {m.Content.Headers.ContentLength}");
                     }
@@ -444,7 +446,7 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
 
-                    string r = await m.Content.ReadAsStringAsync();
+                    string r = await m.Content!.ReadAsStringAsync();
                     if (r != "") throw new Exception($"Got unexpected response: {r}");
                 }),
 
@@ -458,7 +460,7 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
 
-                    string r = await m.Content.ReadAsStringAsync();
+                    string r = await m.Content!.ReadAsStringAsync();
                     if (r != "") throw new Exception($"Got unexpected response: {r}");
                 }),
 
@@ -470,7 +472,7 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req);
 
                     ValidateStatusCode(m);
-                    ValidateServerContent(await m.Content.ReadAsStringAsync(), expectedLength);
+                    ValidateServerContent(await m.Content!.ReadAsStringAsync(), expectedLength);
                 }),
             };
 
@@ -573,7 +575,7 @@ namespace HttpStress
 
         private static bool ValidateServerChecksum(HttpResponseHeaders headers, ulong expectedChecksum, bool required = true)
         {
-            if (headers.TryGetValues("crc32", out IEnumerable<string> values) &&
+            if (headers.TryGetValues("crc32", out IEnumerable<string>? values) &&
                 uint.TryParse(values.First(), out uint serverChecksum))
             {
                 return serverChecksum == expectedChecksum;
@@ -595,7 +597,7 @@ namespace HttpStress
 
             public StringDuplexContent(string value) => _data = Encoding.UTF8.GetBytes(value);
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
                 stream.WriteAsync(_data, 0, _data.Length);
 
             protected override bool TryComputeLength(out long length)
@@ -612,7 +614,7 @@ namespace HttpStress
 
             public ByteAtATimeNoLengthContent(byte[] buffer) => _buffer = buffer;
 
-            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             {
                 for (int i = 0; i < _buffer.Length; i++)
                 {

@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetFramework Condition="'$(BuildingInsideVisualStudio)' == 'true'">netcoreapp3.0</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>

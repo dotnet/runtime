@@ -8,7 +8,6 @@
     <AssemblyKey>Open</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetFramework Condition="'$(BuildingInsideVisualStudio)' == 'true'">netcoreapp3.0</TargetFramework>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
