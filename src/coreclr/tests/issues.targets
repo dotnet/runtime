@@ -11,6 +11,25 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
             <Issue>https://github.com/dotnet/runtime/issues/13703</Issue>
         </ExcludeList>
+        <!-- Test regressions during CI coverage outage -->
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/ReversePInvoke/ReversePInvokeTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/*">
+            <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->

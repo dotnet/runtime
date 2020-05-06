@@ -109,7 +109,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryEntry serverEntry = directoryEntryMgr.GetCachedDirectoryEntry(serverName);
 
                     // force binding (needed otherwise S.DS throw an exception while releasing the COM interface pointer)
-                    string dn = (string)PropertyManager.GetPropertyValue(context, serverEntry, PropertyManager.DistinguishedName);
+                    _ = (string)PropertyManager.GetPropertyValue(context, serverEntry, PropertyManager.DistinguishedName);
 
                     // move the object to the servers container of the target site
                     serverEntry.MoveTo(newParentEntry);

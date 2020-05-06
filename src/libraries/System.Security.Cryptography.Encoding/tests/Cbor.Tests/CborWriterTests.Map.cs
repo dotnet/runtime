@@ -6,9 +6,9 @@
 using System;
 using Test.Cryptography;
 using Xunit;
-//using static W = System.Security.Cryptography.Encoding.Tests.Cbor.CborWriterHelpers;
+//using static W = System.Formats.Cbor.Tests.CborWriterHelpers;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborWriterTests
     {
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "", 0, 255, 0 }, "a218ff006000")]
-        internal static void WriteMap_SimpleValues_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)
+        public static void WriteMap_SimpleValues_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter(level);
@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("a52000a30303020201010061610019010000a20202010100", CborConformanceLevel.Strict)]
         [InlineData("a5200061610019010000a20101020200a301010202030300", CborConformanceLevel.Rfc7049Canonical)]
         [InlineData("a5190100002000616100a20101020200a301010202030300", CborConformanceLevel.Ctap2Canonical)]
-        internal static void WriteMap_NestedValues_ShouldSortKeysAccordingToConformanceLevel(string expectedHexEncoding, CborConformanceLevel level)
+        public static void WriteMap_NestedValues_ShouldSortKeysAccordingToConformanceLevel(string expectedHexEncoding, CborConformanceLevel level)
         {
             object[] value = new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 };
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } })]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { new object[] { "x", "y" } })]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
-        internal static void WriteMap_DuplicateKeys_StrictConformance_ShouldFail(CborConformanceLevel level, object dupeKey)
+        public static void WriteMap_DuplicateKeys_StrictConformance_ShouldFail(CborConformanceLevel level, object dupeKey)
         {
             using var writer = new CborWriter(level);
             writer.WriteStartMap(2);
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } })]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { new object[] { "x", "y" } })]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
-        internal static void WriteMap_DuplicateKeys_StrictConformance_ShouldBeRecoverableError(CborConformanceLevel level, object dupeKey)
+        public static void WriteMap_DuplicateKeys_StrictConformance_ShouldBeRecoverableError(CborConformanceLevel level, object dupeKey)
         {
             byte[] expected = PerformWrite(attemptDuplicateWrite: false);
             byte[] actual = PerformWrite(attemptDuplicateWrite: true);

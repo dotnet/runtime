@@ -2864,12 +2864,11 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
  *         'size' specifies the size of the result (16 or 32 bits)
  */
 
-/*static*/ INT32 emitter::emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size)
+/*static*/ UINT32 emitter::emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size)
 {
     bool     onesShift = (bsImm.immOnes == 1);
-    unsigned bySh      = bsImm.immBY;         // Num Bytes to shift 0,1,2,3
-    INT32    val       = (INT32)bsImm.immVal; // 8-bit immediate
-    INT32    result    = val;
+    unsigned bySh      = bsImm.immBY;          // Num Bytes to shift 0,1,2,3
+    UINT32   result    = (UINT32)bsImm.immVal; // 8-bit immediate
 
     if (bySh > 0)
     {

@@ -8,9 +8,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         private KeyEncodingComparer? _keyEncodingComparer;
         private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;
