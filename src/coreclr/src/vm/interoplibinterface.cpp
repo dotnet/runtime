@@ -1523,7 +1523,7 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(objectPROTECTED));
     }
