@@ -89,6 +89,7 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
+    <Compile Include="System\Threading\AsyncMutex.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
@@ -437,7 +438,7 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
              Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="System\System\Threading\Tasks\TaskToApm.cs" />
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs"
              Link="Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs"
