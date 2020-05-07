@@ -59,18 +59,6 @@ class InteropSyncBlockInfo;
 
 #endif //FEATURE_COMINTEROP
 
-#if FEATURE_COMINTEROP
-#include <restrictederrorInfo.h>
-#endif
-#ifndef __IRestrictedErrorInfo_INTERFACE_DEFINED__
-DEFINE_GUID(IID_IRestrictedErrorInfo, 0x82BA7092,0x4C88,0x427D,0xA7,0xBC,0x16,0xDD,0x93,0xFE,0xB6,0x7E);
-MIDL_INTERFACE("82BA7092-4C88-427D-A7BC-16DD93FEB67E")
-IRestrictedErrorInfo : public IUnknown
-{
-public:
-};
-#endif // !__IRestrictedErrorInfo_INTERFACE_DEFINED__
-
 class FieldDesc;
 struct ExceptionData;
 
@@ -80,8 +68,6 @@ struct ExceptionData;
 #ifdef FEATURE_COMINTEROP
 HRESULT SetupErrorInfo(OBJECTREF pThrownObject, ComCallMethodDesc *pCMD);
 BOOL IsManagedObject(IUnknown *pErrInfo);
-HRESULT GetRestrictedErrorDetails(IRestrictedErrorInfo *pRestrictedErrorInfo, BSTR *perrorDescription, BSTR *pErrorRestrictedDescription, HRESULT *hr, BSTR *pErrorCapabilitySid);
-
 #endif // FEATURE_COMINTEROP
 
 HRESULT SetupErrorInfo(OBJECTREF pThrownObject, BOOL bIsWinRTScenario = FALSE);

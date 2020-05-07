@@ -945,7 +945,7 @@ FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
                 // Check to see if the component supports error information for this interface.
                 IID ItfIID;
                 pItfMT->GetGuid(&ItfIID, TRUE);
-                pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID, FALSE);
+                pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID);
 
                 DWORD cbRef = SafeRelease(pUnk);
                 LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");

@@ -1968,14 +1968,6 @@ EECOMException::EECOMException(EXCEPINFO *pExcepInfo)
     m_ED.dwHelpContext = pExcepInfo->dwHelpContext;
     m_ED.guid = GUID_NULL;
 
-#ifdef FEATURE_COMINTEROP
-    m_ED.bstrReference = NULL;
-    m_ED.bstrRestrictedError = NULL;
-    m_ED.bstrCapabilitySid = NULL;
-    m_ED.pRestrictedErrorInfo = NULL;
-    m_ED.bHasLanguageRestrictedErrorInfo = FALSE;
-#endif
-
     // Zero the EXCEPINFO.
     memset(pExcepInfo, NULL, sizeof(EXCEPINFO));
 }
@@ -2025,42 +2017,10 @@ BOOL EECOMException::GetThrowableMessage(SString &result)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
-    if (m_ED.bstrDescription != NULL || m_ED.bstrRestrictedError != NULL)
-    {
-        // For cross language WinRT exceptions, general information will be available in the bstrDescription,
-        // which is populated from IErrorInfo::GetDescription and more specific information will be available
-        // in the bstrRestrictedError which comes from the IRestrictedErrorInfo.  If both are available, we
-        // need to concatinate them to produce the final exception message.
-
-        result.Clear();
-
-        // If we have a restricted description, start our message with that
-        if (m_ED.bstrDescription != NULL)
-        {
-            SString generalInformation(m_ED.bstrDescription, SysStringLen(m_ED.bstrDescription));
-            result.Append(generalInformation);
-
-            // If we're also going to have a specific error message, append a newline to separate the two
-            if (m_ED.bstrRestrictedError != NULL)
-            {
-                result.Append(W("\r\n"));
-            }
-        }
-
-        // If we have additional error information, attach it to the end of the string
-        if (m_ED.bstrRestrictedError != NULL)
-        {
-            SString restrictedDescription(m_ED.bstrRestrictedError, SysStringLen(m_ED.bstrRestrictedError));
-            result.Append(restrictedDescription);
-        }
-    }
-#else // !FEATURE_COMINTEROP
     if (m_ED.bstrDescription != NULL)
     {
         result.Set(m_ED.bstrDescription, SysStringLen(m_ED.bstrDescription));
     }
-#endif // FEATURE_COMINTEROP
     else
     {
         GenerateTopLevelHRExceptionMessage(GetHR(), result);
@@ -2132,80 +2092,6 @@ OBJECTREF EECOMException::CreateThrowable()
         sourceStr = StringObject::GetEmptyString();
     }
     ((EXCEPTIONREF)throwable)->SetSource(sourceStr);
-
-#ifdef FEATURE_COMINTEROP
-    //
-    // Support for WinRT interface IRestrictedErrorInfo
-    //
-    if (m_ED.pRestrictedErrorInfo)
-    {
-
-        struct _gc {
-            STRINGREF RestrictedErrorRef;
-            STRINGREF ReferenceRef;
-            STRINGREF RestrictedCapabilitySidRef;
-            OBJECTREF RestrictedErrorInfoObjRef;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        EX_TRY
-        {
-            gc.RestrictedErrorRef = StringObject::NewString(
-                m_ED.bstrRestrictedError,
-                SysStringLen(m_ED.bstrRestrictedError)
-                );
-            gc.ReferenceRef = StringObject::NewString(
-                m_ED.bstrReference,
-                SysStringLen(m_ED.bstrReference)
-                );
-
-            gc.RestrictedCapabilitySidRef = StringObject::NewString(
-                m_ED.bstrCapabilitySid,
-                SysStringLen(m_ED.bstrCapabilitySid)
-                );
-
-            // Convert IRestrictedErrorInfo into a managed object - don't care whether it is a RCW/CCW
-            GetObjectRefFromComIP(
-                &gc.RestrictedErrorInfoObjRef,
-                m_ED.pRestrictedErrorInfo,      // IUnknown *
-                NULL,                           // ClassMT
-                NULL,                           // ItfMT
-                ObjFromComIP::CLASS_IS_HINT | ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING
-                );
-
-            //
-            // Call Exception.AddExceptionDataForRestrictedErrorInfo and put error information
-            // from IRestrictedErrorInfo on Exception.Data
-            //
-            MethodDescCallSite addExceptionDataForRestrictedErrorInfo(
-                METHOD__EXCEPTION__ADD_EXCEPTION_DATA_FOR_RESTRICTED_ERROR_INFO,
-                &throwable
-                );
-
-            ARG_SLOT Args[] =
-            {
-                ObjToArgSlot(throwable),
-                ObjToArgSlot(gc.RestrictedErrorRef),
-                ObjToArgSlot(gc.ReferenceRef),
-                ObjToArgSlot(gc.RestrictedCapabilitySidRef),
-                ObjToArgSlot(gc.RestrictedErrorInfoObjRef),
-                BoolToArgSlot(m_ED.bHasLanguageRestrictedErrorInfo)
-            };
-
-            addExceptionDataForRestrictedErrorInfo.Call(Args);
-
-        }
-        EX_CATCH
-        {
-            // IDictionary.Add may throw. Ignore all non terminal exceptions
-        }
-        EX_END_CATCH(RethrowTerminalExceptions)
-
-        GCPROTECT_END();
-    }
-#endif // FEATURE_COMINTEROP
 
     GCPROTECT_END();
 

@@ -362,9 +362,6 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable);
 HRESULT GetHRFromThrowable(OBJECTREF throwable);
 
-#if FEATURE_COMINTEROP
-IRestrictedErrorInfo* GetRestrictedErrorInfoFromErrorObject(OBJECTREF throwable);
-#endif
 //==========================================================================
 // Throw an ArithmeticException
 //==========================================================================

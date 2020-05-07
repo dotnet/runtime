@@ -402,14 +402,6 @@ struct ExceptionData
     BSTR    bstrHelpFile;
     DWORD   dwHelpContext;
     GUID    guid;
-#ifdef FEATURE_COMINTEROP
-    BSTR      bstrRestrictedError;              // Returned from IRestrictedErrorInfo::GetErrorDetails
-    BSTR      bstrReference;                    // Returned from IRestrictedErrorInfo::GetReference
-    BSTR      bstrCapabilitySid;                // Returned from IRestrictedErrorInfo::GetErrorDetails
-    IUnknown *pRestrictedErrorInfo;             // AddRef-ed RestrictedErrorInfo pointer
-                                                // We need to keep this alive as long as user need the reference
-    BOOL      bHasLanguageRestrictedErrorInfo;
-#endif // FEATURE_COMINTEROP
 };
 
 class EECOMException : public EEException

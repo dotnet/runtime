@@ -39,7 +39,6 @@
 #include "cominterfacemarshaler.h"
 #include "eecontract.h"
 #include "stdinterfaces_internal.h"
-#include <restrictederrorinfo.h>        // IRestrictedErrorInfo
 #include "interoputil.inl"
 
 
@@ -55,10 +54,6 @@
 
 // {00020430-0000-0000-C000-000000000046}
 static const GUID LIBID_STDOLE2 = { 0x00020430, 0x0000, 0x0000, { 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
-
-// The uuid.lib doesn't have IID_IRestrictedErrorInfo in their lib. Remove this once it is included in the lib
-static const GUID IID_IRestrictedErrorInfo = { 0x82BA7092, 0x4C88, 0x427D, { 0xA7, 0xBC, 0x16, 0xDD, 0x93, 0xFE, 0xB6, 0x7E } };
-EXTERN_C SELECTANY const IID IID_ILanguageExceptionErrorInfo =  { 0x04a2dbf3, 0xdf83, 0x116c, { 0x09, 0x46, 0x08, 0x12, 0xab, 0xf6, 0xe0, 0x7d } };
 
 // Until the Windows SDK is updated, just hard-code the IAgileObject IID
 #ifndef __IAgileObject_INTERFACE_DEFINED__
@@ -840,7 +835,7 @@ HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)
 // helper function to locate error info (if any) after a call, and make sure
 // that the error info comes from that call
 
-IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid, BOOL checkForIRestrictedErrInfo)
+IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
 {
     CONTRACTL
     {
@@ -885,22 +880,6 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid, BOOL checkForIRe
                 }
             }
         }
-
-        if (!bUseThisErrorInfo && pErrorInfo != NULL && checkForIRestrictedErrInfo)
-        {
-
-            // Do we support IRestrictedErrorInfo?
-            SafeComHolderPreemp<IRestrictedErrorInfo> pRestrictedErrorInfo;
-            hr = SafeQueryInterfacePreemp(pErrorInfo, IID_IRestrictedErrorInfo, (IUnknown **) &pRestrictedErrorInfo);
-            LogInteropQI(pErrorInfo, IID_IRestrictedErrorInfo, hr, "IRestrictedErrorInfo");
-            if (SUCCEEDED(hr))
-            {
-
-                // This is a WinRT IRestrictedErrorInfo scenario
-                bUseThisErrorInfo = TRUE;
-            }
-        }
-
         if (bUseThisErrorInfo)
         {
             pRetErrorInfo = pErrorInfo;

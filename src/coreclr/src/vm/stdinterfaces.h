@@ -495,7 +495,7 @@ InternalDispatchImpl_Invoke (
 
 //------------------------------------------------------------------------------------------
 // Helper to get the current IErrorInfo if the specified interface supports it.
-IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid, BOOL checkForIRestrictedErrInfo = TRUE);
+IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid);
 
 //------------------------------------------------------------------------------------------
 // Helpers to get the ITypeInfo* for a type.
