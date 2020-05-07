@@ -399,9 +399,6 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
 
     CloneFieldsToStackingAllocator(alloc);
 
-    // Extract embedded WinRT name, if present.
-    ParseEncodedName();
-
     return S_OK;
 }
 

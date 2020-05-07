@@ -1035,6 +1035,11 @@ Module * Assembly::FindModuleByTypeRef(
 
         case mdtAssemblyRef:
         {
+            if(IsAfContentType_WindowsRuntime(pModule->GetAssemblyRefFlags(tkType)))
+            {
+                ThrowHR(COR_E_PLATFORMNOTSUPPORTED);
+            }
+
             // Do this first because it has a strong contract
             Assembly * pAssembly = NULL;
 
@@ -1042,10 +1047,6 @@ Module * Assembly::FindModuleByTypeRef(
             LPCUTF8 szNamespace = NULL;
             LPCUTF8 szClassName = NULL;
 #endif
-
-#ifdef FEATURE_COMINTEROP
-            _ASSERTE(pModule->HasBindableIdentity(tkType));
-#endif// FEATURE_COMINTEROP
             if (loadFlag == Loader::SafeLookup)
             {
                 pAssembly = pModule->LookupAssemblyRef(tkType);
