@@ -17494,7 +17494,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 #ifdef DEBUG
             char buffer[400];
             sprintf_s(buffer, sizeof(buffer),
-                      "Block at offset %4.4x to %4.4x in %s entered with different stack depths.\n"
+                      "Block at offset %4.4x to %4.4x in %0.200s entered with different stack depths.\n"
                       "Previous depth was %d, current depth is %d",
                       block->bbCodeOffs, block->bbCodeOffsEnd, info.compFullName, block->bbStkDepth,
                       verCurrentState.esStackDepth);

@@ -5,9 +5,9 @@
 using System.Buffers.Binary;
 using System.Xml;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         // Implements major type 0,1 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
 

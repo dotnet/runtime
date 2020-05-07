@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 using System;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
 namespace TestStackOverflow
 {
@@ -67,39 +68,47 @@ namespace TestStackOverflow
     }
     class Program
     {
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void InfiniteRecursionA()
         {
             InfiniteRecursionB();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void InfiniteRecursionB()
         {
             InfiniteRecursionC();
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void InfiniteRecursionC()
         {
             InfiniteRecursionA();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void InfiniteRecursionA2()
         {
             LargeStruct65536 s;
             InfiniteRecursionB2();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void InfiniteRecursionB2()
         {
             LargeStruct65536 s;
             InfiniteRecursionC2();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void InfiniteRecursionC2()
         {
             LargeStruct65536 s;
             InfiniteRecursionA2();
         }
 
-        static void MainThreadTest(bool smallframe)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Test(bool smallframe)
         {
             if (smallframe)
             {
@@ -116,16 +125,7 @@ namespace TestStackOverflow
             Thread[] threads = new Thread[32];
             for (int i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Thread(() => {
-                    if (smallframe)
-                    {
-                        InfiniteRecursionA();
-                    }
-                    else
-                    {
-                        InfiniteRecursionA2();
-                    }
-                });
+                threads[i] = new Thread(() => Test(smallframe));
                 threads[i].Start();
             }
 
@@ -144,7 +144,7 @@ namespace TestStackOverflow
             }
             else if (args[1] == "main")
             {
-                MainThreadTest(smallframe);
+                Test(smallframe);
             }
         }
     }

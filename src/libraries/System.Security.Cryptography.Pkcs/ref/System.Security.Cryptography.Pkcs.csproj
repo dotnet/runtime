@@ -13,7 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Pkcs.cs" />
-    <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard'))" />
+    <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="!$(TargetFramework.StartsWith('net4'))" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />

@@ -17,7 +17,11 @@ namespace System.Globalization
             bool invariantEnabled = GetInvariantSwitchValue();
             if (!invariantEnabled)
             {
-                if (Interop.Globalization.LoadICU() == 0)
+                if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
+                {
+                    LoadAppLocalIcu(icuSuffixAndVersion, suffixWithSeparator: true);
+                }
+                else if (Interop.Globalization.LoadICU() == 0)
                 {
                     string message = "Couldn't find a valid ICU package installed on the system. " +
                                     "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
@@ -25,6 +29,29 @@ namespace System.Globalization
                 }
             }
             return invariantEnabled;
+        }
+
+        private static void LoadAppLocalIcuCore(ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
+        {
+
+#if TARGET_OSX
+            const string extension = ".dylib";
+            bool versionAtEnd = false;
+#else
+            string extension = version.Length > 0 ? "so." : "so";
+            bool versionAtEnd = true;
+#endif
+
+#if !TARGET_OSX
+            // In Linux we need to load libicudata first because libicuuc and libicui18n depend on it. In order for the loader to find
+            // it on the same path, we load it before loading the other two libraries.
+            LoadLibrary(CreateLibraryName("libicudata", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
+#endif
+
+            IntPtr icuucLib = LoadLibrary(CreateLibraryName("libicuuc", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
+            IntPtr icuinLib = LoadLibrary(CreateLibraryName("libicui18n", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
+
+            Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, suffix);
         }
     }
 }

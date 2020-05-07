@@ -4,9 +4,9 @@
 
 using System.Diagnostics;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal enum CborConformanceLevel
+    public enum CborConformanceLevel
     {
         Lax = 0,
         Strict = 1,

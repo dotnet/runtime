@@ -1,0 +1,23 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.SkipValue.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.SkipValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.Simple.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Simple.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.Tag.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Tag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.Array.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Array.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.Integer.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Integer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.Map.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Map.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.String.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.String.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborWriter.Array.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Array.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborWriter.Map.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Map.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborWriter.Simple.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Simple.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborWriter.String.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.String.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborWriter.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborWriter.Integer.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Integer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborWriter.Tag.cs" Link="Common\System\Formats\Cbor\Writer\CborWriter.Tag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborConformanceLevel.cs" Link="Common\System\Formats\Cbor\CborConformanceLevel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborInitialByte.cs" Link="Common\System\Formats\Cbor\CborInitialByte.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborTag.cs" Link="Common\System\Formats\Cbor\CborTag.cs" />
+  </ItemGroup>
+</Project>

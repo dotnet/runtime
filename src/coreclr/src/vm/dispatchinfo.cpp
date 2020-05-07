@@ -2193,10 +2193,8 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         EX_CATCH
         {
             pThrowable = GET_THROWABLE();
-
-            // RethrowCorruptingExceptionsEx, in EX_END_CATCH below, will ensure that CEs are rethrown.
         }
-        EX_END_CATCH(RethrowCorruptingExceptionsEx(!CEHelper::CanIDispatchTargetHandleException()))
+        EX_END_CATCH(RethrowTerminalExceptions)
         catchFrame.Pop();
 
         if (pThrowable != NULL)

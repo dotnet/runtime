@@ -14,7 +14,7 @@
     <Reference Include="System.ComponentModel.Annotations" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.Runtime" />

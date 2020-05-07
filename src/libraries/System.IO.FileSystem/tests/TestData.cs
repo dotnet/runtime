@@ -59,7 +59,6 @@ internal static class TestData
         {
             TheoryData<string> data = new TheoryData<string>
             {
-                "\0",
                 "middle\0path",
                 "trailing\0"
             };

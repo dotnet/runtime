@@ -99,7 +99,7 @@
  <!-- Generate a self-contained app bundle for Android with tests.
        This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
   <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AndroidAppBuilder\$(TargetArchitecture)\$(Configuration)\AndroidAppBuilder.dll" />
+             AssemblyFile="$(ArtifactsObjDir)mono\AndroidAppBuilder\$(HostArch)\$(Configuration)\AndroidAppBuilder.dll" />
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
@@ -133,6 +133,14 @@
     <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
+    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
+          SourceFiles="$(AndroidOpenSslCryptoLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
+          SourceFiles="$(AndroidOpenSslLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+
     <WriteLinesToFile File="$(BundleDir)\xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
 
     <AndroidAppBuilderTask 
@@ -153,7 +161,7 @@
   <!-- Generate a self-contained app bundle for iOS with tests.
        This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
   <UsingTask TaskName="AppleAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
+             AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(HostArch)\$(Configuration)\AppleAppBuilder.dll" />
   <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>

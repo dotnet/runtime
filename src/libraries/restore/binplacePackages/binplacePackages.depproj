@@ -5,7 +5,7 @@
     <NETStandardVersion Condition="$(TargetFramework.StartsWith('netstandard'))">$(TargetFramework.SubString(11))</NETStandardVersion>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <TargetsNetStandardLowerThan21 Condition="$(TargetFramework.StartsWith('netstandard')) and '$(NETStandardVersion)' &lt; 2.1">true</TargetsNetStandardLowerThan21>
-    <TargetFrameworks>net461;net472;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0;netstandard2.0;netcoreapp2.0;netcoreapp3.0;$(netcoreappCurrent)</TargetFrameworks>    
+    <TargetFrameworks>net461;net472;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0;netstandard2.0;netcoreapp2.0;netcoreapp3.0;$(NetCoreAppCurrent)</TargetFrameworks>    
   </PropertyGroup>
 
     <!-- Ref binplacing for all configurations -->

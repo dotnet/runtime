@@ -1457,13 +1457,13 @@ namespace JIT.HardwareIntrinsics.Arm
             return (sbyte)(((ushort)op1 + roundConst) >> (8 * sizeof(sbyte)));
         }
 
-        public static sbyte AddReturningHighNarrow(short op1, short op2) => HighNarrow((short)(op1 + op2), round: false);
+        public static sbyte AddHighNarrow(short op1, short op2) => HighNarrow((short)(op1 + op2), round: false);
 
-        public static sbyte AddReturningHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static sbyte AddHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static sbyte AddReturningRoundedHighNarrow(short op1, short op2) => HighNarrow((short)(op1 + op2), round: true);
+        public static sbyte AddRoundedHighNarrow(short op1, short op2) => HighNarrow((short)(op1 + op2), round: true);
 
-        public static short AddReturningRoundedHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static short AddRoundedHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static short AddWidening(sbyte op1, sbyte op2) => (short)((short)op1 + (short)op2);
 
@@ -1491,13 +1491,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short MultiplyWideningUpperAndSubtract(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static sbyte SubtractReturningHighNarrow(short op1, short op2) => HighNarrow((short)(op1 - op2), round: false);
+        public static sbyte SubtractHighNarrow(short op1, short op2) => HighNarrow((short)(op1 - op2), round: false);
 
-        public static short SubtractReturningHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static short SubtractHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static sbyte SubtractReturningRoundedHighNarrow(short op1, short op2) => HighNarrow((short)(op1 - op2), round: true);
+        public static sbyte SubtractRoundedHighNarrow(short op1, short op2) => HighNarrow((short)(op1 - op2), round: true);
 
-        public static short SubtractReturningRoundedHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static short SubtractRoundedHighNarrowUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static short SubtractWidening(sbyte op1, sbyte op2) => (short)((short)op1 - (short)op2);
 
@@ -1529,13 +1529,13 @@ namespace JIT.HardwareIntrinsics.Arm
             return (short)(((uint)op1 + roundConst) >> (8 * sizeof(short)));
         }
 
-        public static short AddReturningHighNarrow(int op1, int op2) => HighNarrow((int)(op1 + op2), round: false);
+        public static short AddHighNarrow(int op1, int op2) => HighNarrow((int)(op1 + op2), round: false);
 
-        public static short AddReturningHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static short AddHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static short AddReturningRoundedHighNarrow(int op1, int op2) => HighNarrow((int)(op1 + op2), round: true);
+        public static short AddRoundedHighNarrow(int op1, int op2) => HighNarrow((int)(op1 + op2), round: true);
 
-        public static int AddReturningRoundedHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static int AddRoundedHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static int AddWidening(short op1, short op2) => (int)((int)op1 + (int)op2);
 
@@ -1563,13 +1563,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int MultiplyWideningUpperAndSubtract(int[] op1, short[] op2, short[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static short SubtractReturningHighNarrow(int op1, int op2) => HighNarrow((int)(op1 - op2), round: false);
+        public static short SubtractHighNarrow(int op1, int op2) => HighNarrow((int)(op1 - op2), round: false);
 
-        public static int SubtractReturningHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static int SubtractHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static short SubtractReturningRoundedHighNarrow(int op1, int op2) => HighNarrow((int)(op1 - op2), round: true);
+        public static short SubtractRoundedHighNarrow(int op1, int op2) => HighNarrow((int)(op1 - op2), round: true);
 
-        public static int SubtractReturningRoundedHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static int SubtractRoundedHighNarrowUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static int SubtractWidening(short op1, short op2) => (int)((int)op1 - (int)op2);
 
@@ -1601,13 +1601,13 @@ namespace JIT.HardwareIntrinsics.Arm
             return (int)(((ulong)op1 + roundConst) >> (8 * sizeof(int)));
         }
 
-        public static int AddReturningHighNarrow(long op1, long op2) => HighNarrow((long)(op1 + op2), round: false);
+        public static int AddHighNarrow(long op1, long op2) => HighNarrow((long)(op1 + op2), round: false);
 
-        public static int AddReturningHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static int AddHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static int AddReturningRoundedHighNarrow(long op1, long op2) => HighNarrow((long)(op1 + op2), round: true);
+        public static int AddRoundedHighNarrow(long op1, long op2) => HighNarrow((long)(op1 + op2), round: true);
 
-        public static long AddReturningRoundedHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static long AddRoundedHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static long AddWidening(int op1, int op2) => (long)((long)op1 + (long)op2);
 
@@ -1635,13 +1635,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static int SubtractReturningHighNarrow(long op1, long op2) => HighNarrow((long)(op1 - op2), round: false);
+        public static int SubtractHighNarrow(long op1, long op2) => HighNarrow((long)(op1 - op2), round: false);
 
-        public static long SubtractReturningHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static long SubtractHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static int SubtractReturningRoundedHighNarrow(long op1, long op2) => HighNarrow((long)(op1 - op2), round: true);
+        public static int SubtractRoundedHighNarrow(long op1, long op2) => HighNarrow((long)(op1 - op2), round: true);
 
-        public static long SubtractReturningRoundedHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static long SubtractRoundedHighNarrowUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static long SubtractWidening(int op1, int op2) => (long)((long)op1 - (long)op2);
 
@@ -1673,13 +1673,13 @@ namespace JIT.HardwareIntrinsics.Arm
             return (byte)(((ushort)op1 + roundConst) >> (8 * sizeof(byte)));
         }
 
-        public static byte AddReturningHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 + op2), round: false);
+        public static byte AddHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 + op2), round: false);
 
-        public static byte AddReturningHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static byte AddHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static byte AddReturningRoundedHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 + op2), round: true);
+        public static byte AddRoundedHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 + op2), round: true);
 
-        public static ushort AddReturningRoundedHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ushort AddRoundedHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static ushort AddWidening(byte op1, byte op2) => (ushort)((ushort)op1 + (ushort)op2);
 
@@ -1707,13 +1707,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort MultiplyWideningUpperAndSubtract(ushort[] op1, byte[] op2, byte[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static byte SubtractReturningHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 - op2), round: false);
+        public static byte SubtractHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 - op2), round: false);
 
-        public static ushort SubtractReturningHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ushort SubtractHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static byte SubtractReturningRoundedHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 - op2), round: true);
+        public static byte SubtractRoundedHighNarrow(ushort op1, ushort op2) => HighNarrow((ushort)(op1 - op2), round: true);
 
-        public static ushort SubtractReturningRoundedHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ushort SubtractRoundedHighNarrowUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static ushort SubtractWidening(byte op1, byte op2) => (ushort)((ushort)op1 - (ushort)op2);
 
@@ -1745,13 +1745,13 @@ namespace JIT.HardwareIntrinsics.Arm
             return (ushort)(((uint)op1 + roundConst) >> (8 * sizeof(ushort)));
         }
 
-        public static ushort AddReturningHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 + op2), round: false);
+        public static ushort AddHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 + op2), round: false);
 
-        public static ushort AddReturningHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ushort AddHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static ushort AddReturningRoundedHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 + op2), round: true);
+        public static ushort AddRoundedHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 + op2), round: true);
 
-        public static uint AddReturningRoundedHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static uint AddRoundedHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static uint AddWidening(ushort op1, ushort op2) => (uint)((uint)op1 + (uint)op2);
 
@@ -1779,13 +1779,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint MultiplyWideningUpperAndSubtract(uint[] op1, ushort[] op2, ushort[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static ushort SubtractReturningHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 - op2), round: false);
+        public static ushort SubtractHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 - op2), round: false);
 
-        public static uint SubtractReturningHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static uint SubtractHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static ushort SubtractReturningRoundedHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 - op2), round: true);
+        public static ushort SubtractRoundedHighNarrow(uint op1, uint op2) => HighNarrow((uint)(op1 - op2), round: true);
 
-        public static uint SubtractReturningRoundedHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static uint SubtractRoundedHighNarrowUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static uint SubtractWidening(ushort op1, ushort op2) => (uint)((uint)op1 - (uint)op2);
 
@@ -1817,13 +1817,13 @@ namespace JIT.HardwareIntrinsics.Arm
             return (uint)(((ulong)op1 + roundConst) >> (8 * sizeof(uint)));
         }
 
-        public static uint AddReturningHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 + op2), round: false);
+        public static uint AddHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 + op2), round: false);
 
-        public static uint AddReturningHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static uint AddHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static uint AddReturningRoundedHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 + op2), round: true);
+        public static uint AddRoundedHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 + op2), round: true);
 
-        public static ulong AddReturningRoundedHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ulong AddRoundedHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static ulong AddWidening(uint op1, uint op2) => (ulong)((ulong)op1 + (ulong)op2);
 
@@ -1851,13 +1851,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong MultiplyWideningUpperAndSubtract(ulong[] op1, uint[] op2, uint[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static uint SubtractReturningHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 - op2), round: false);
+        public static uint SubtractHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 - op2), round: false);
 
-        public static ulong SubtractReturningHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ulong SubtractHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static uint SubtractReturningRoundedHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 - op2), round: true);
+        public static uint SubtractRoundedHighNarrow(ulong op1, ulong op2) => HighNarrow((ulong)(op1 - op2), round: true);
 
-        public static ulong SubtractReturningRoundedHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ulong SubtractRoundedHighNarrowUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static ulong SubtractWidening(uint op1, uint op2) => (ulong)((ulong)op1 - (ulong)op2);
 

@@ -4,9 +4,9 @@
 
 using System.Buffers.Binary;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter
+    public partial class CborWriter
     {
         // Implements https://tools.ietf.org/html/rfc7049#section-2.3
 
