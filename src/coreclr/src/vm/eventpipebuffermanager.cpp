@@ -168,6 +168,9 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(EventPipeThread
         const unsigned int maxBufferSize = 1024 * 1024;
         bufferSize = Min(bufferSize, maxBufferSize);
 
+        // Make the buffer size fit into with pagesize-aligned block.
+        bufferSize = bufferSize + (g_SystemInfo.dwAllocationGranularity - (bufferSize % g_SystemInfo.dwAllocationGranularity));
+
         // EX_TRY is used here as opposed to new (nothrow) because
         // the constructor also allocates a private buffer, which
         // could throw, and cannot be easily checked
