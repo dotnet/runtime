@@ -270,9 +270,10 @@ public class Program
     }
 
     [UnmanagedCallersOnly]
-    public void CallbackNonStatic()
+    public int CallbackNonStatic(int val)
     {
         Assert.Fail($"Instance functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} are invalid");
+        return -1;
     }
 
     public static void NegativeTest_NonStaticMethod()
@@ -284,9 +285,14 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      void CallbackNonStatic()
+                IL_0001:  ldftn      int CallbackNonStatic(int)
                 IL_0007:  stloc.0
-                IL_0008:  ret
+
+                IL_0008:  ldloc.0
+                IL_0009:  ldc.i4     <n> local
+                IL_000e:  call       bool UnmanagedCallersOnlyDll::CallManagedProc(native int, int)
+
+                IL_0013:  ret
              }
         */
         DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyNonStatic", null, null, typeof(Program).Module);
@@ -297,8 +303,13 @@ public class Program
         // Get native function pointer of the callback
         il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(CallbackNonStatic)));
         il.Emit(OpCodes.Stloc_0);
+        il.Emit(OpCodes.Ldloc_0);
 
+        int n = 12345;
+        il.Emit(OpCodes.Ldc_I4, n);
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProc"));
         il.Emit(OpCodes.Ret);
+
         var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
@@ -306,9 +317,10 @@ public class Program
     }
 
     [UnmanagedCallersOnly]
-    public static void CallbackMethodNonBlittable(bool x1)
+    public static int CallbackMethodNonBlittable(bool x1)
     {
         Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have non-blittable arguments");
+        return -1;
     }
 
     public static void NegativeTest_NonBlittable()
@@ -320,9 +332,14 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      void CallbackMethodNonBlittable(bool)
+                IL_0001:  ldftn      int CallbackMethodNonBlittable(bool)
                 IL_0007:  stloc.0
-                IL_0008:  ret
+
+                IL_0008:  ldloc.0
+                IL_0009:  ldc.i4     <n> local
+                IL_000e:  call       bool UnmanagedCallersOnlyDll::CallManagedProc(native int, int)
+
+                IL_0013:  ret
              }
         */
         DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyNonBlittable", null, null, typeof(Program).Module);
@@ -333,8 +350,13 @@ public class Program
         // Get native function pointer of the callback
         il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(CallbackMethodNonBlittable)));
         il.Emit(OpCodes.Stloc_0);
+        il.Emit(OpCodes.Ldloc_0);
 
+        int n = 12345;
+        il.Emit(OpCodes.Ldc_I4, n);
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProc"));
         il.Emit(OpCodes.Ret);
+
         var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
@@ -342,9 +364,10 @@ public class Program
     }
 
     [UnmanagedCallersOnly]
-    public static void CallbackMethodGeneric<T>(T arg)
+    public static int CallbackMethodGeneric<T>(T arg)
     {
         Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have generic arguments");
+        return -1;
     }
 
     public static void NegativeTest_NonInstantiatedGenericArguments()
@@ -388,7 +411,12 @@ public class Program
                 IL_0000:  nop
                 IL_0001:  ldftn      void CallbackMethodGeneric(int)
                 IL_0007:  stloc.0
-                IL_0008:  ret
+
+                IL_0008:  ldloc.0
+                IL_0009:  ldc.i4     <n> local
+                IL_000e:  call       bool UnmanagedCallersOnlyDll::CallManagedProc(native int, int)
+
+                IL_0013:  ret
              }
         */
         DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyInstGenericArguments", null, null, typeof(Program).Module);
@@ -399,8 +427,13 @@ public class Program
         // Get native function pointer of the instantiated generic callback
         il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(CallbackMethodGeneric)).MakeGenericMethod(new [] { typeof(int) }));
         il.Emit(OpCodes.Stloc_0);
+        il.Emit(OpCodes.Ldloc_0);
 
+        int n = 12345;
+        il.Emit(OpCodes.Ldc_I4, n);
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProc"));
         il.Emit(OpCodes.Ret);
+
         var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
@@ -425,9 +458,14 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      void GenericClass<int>::CallbackMethod(int)
+                IL_0001:  ldftn      int GenericClass<int>::CallbackMethod(int)
                 IL_0007:  stloc.0
-                IL_0008:  ret
+
+                IL_0008:  ldloc.0
+                IL_0009:  ldc.i4     <n> local
+                IL_000e:  call       bool UnmanagedCallersOnlyDll::CallManagedProc(native int, int)
+
+                IL_0013:  ret
              }
         */
         DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyInstGenericClass", null, null, typeof(Program).Module);
@@ -438,8 +476,13 @@ public class Program
         // Get native function pointer of the callback from the instantiated generic class.
         il.Emit(OpCodes.Ldftn, typeof(GenericClass<int>).GetMethod(nameof(GenericClass<int>.CallbackMethod)));
         il.Emit(OpCodes.Stloc_0);
+        il.Emit(OpCodes.Ldloc_0);
 
+        int n = 12345;
+        il.Emit(OpCodes.Ldc_I4, n);
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProc"));
         il.Emit(OpCodes.Ret);
+
         var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
