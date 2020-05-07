@@ -42,6 +42,8 @@ jobs:
       ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
         name: test_run
+      ${{ if eq(parameters.interpreter, 'true') }}:
+        testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
       dependsOn:
       - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
