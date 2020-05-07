@@ -556,14 +556,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Vector64_Create:
             case NI_Vector128_Create:
-                if (intrin.op1->isContainedFltOrDblImmed())
+            case NI_AdvSimd_DuplicateToVector64:
+            case NI_AdvSimd_DuplicateToVector128:
+            case NI_AdvSimd_Arm64_DuplicateToVector64:
+            case NI_AdvSimd_Arm64_DuplicateToVector128:
+                if (varTypeIsFloating(intrin.baseType))
                 {
-                    const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
-                    GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
-                }
-                else if (varTypeIsFloating(intrin.baseType))
-                {
-                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 0, opt);
+                    if (intrin.op1->isContainedFltOrDblImmed())
+                    {
+                        const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                        GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
+                    }
+                    else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 0, opt);
+                    }
                 }
                 else
                 {

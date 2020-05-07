@@ -641,6 +641,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vdupq_n_f64 (float64_t value)
+            ///   A64: DUP Vd.2D, Vn.D[0]
+            /// </summary>
+            public static Vector128<double> DuplicateToVector128(double value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vdupq_n_s64 (int64_t value)
+            ///   A64: DUP Vd.2D, Rn
+            /// </summary>
+            public static Vector128<long> DuplicateToVector128(long value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vdupq_n_s64 (uint64_t value)
+            ///   A64: DUP Vd.2D, Rn
+            /// </summary>
+            public static Vector128<ulong> DuplicateToVector128(ulong value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
             ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -4200,6 +4218,104 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vdup_n_u8 (uint8_t value)
+        ///   A32: VDUP.8 Dd, Rt
+        ///   A64: DUP Vd.8B, Rn
+        /// </summary>
+        public static Vector64<byte> DuplicateToVector64(byte value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// int16x4_t vdup_n_s16 (int16_t value)
+        ///   A32: VDUP.16 Dd, Rt
+        ///   A64: DUP Vd.4H, Rn
+        /// </summary>
+        public static Vector64<short> DuplicateToVector64(short value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// int32x2_t vdup_n_s32 (int32_t value)
+        ///   A32: VDUP.32 Dd, Rt
+        ///   A64: DUP Vd.2S, Rn
+        /// </summary>
+        public static Vector64<int> DuplicateToVector64(int value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// int8x8_t vdup_n_s8 (int8_t value)
+        ///   A32: VDUP.8 Dd, Rt
+        ///   A64: DUP Vd.8B, Rn
+        /// </summary>
+        public static Vector64<sbyte> DuplicateToVector64(sbyte value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// float32x2_t vdup_n_f32 (float32_t value)
+        ///   A32: VDUP Dd, Dm[0]
+        ///   A64: DUP Vd.2S, Vn.S[0]
+        /// </summary>
+        public static Vector64<float> DuplicateToVector64(float value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// uint16x4_t vdup_n_u16 (uint16_t value)
+        ///   A32: VDUP.16 Dd, Rt
+        ///   A64: DUP Vd.4H, Rn
+        /// </summary>
+        public static Vector64<ushort> DuplicateToVector64(ushort value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// uint32x2_t vdup_n_u32 (uint32_t value)
+        ///   A32: VDUP.32 Dd, Rt
+        ///   A64: DUP Vd.2S, Rn
+        /// </summary>
+        public static Vector64<uint> DuplicateToVector64(uint value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// uint8x16_t vdupq_n_u8 (uint8_t value)
+        ///   A32: VDUP.8 Qd, Rt
+        ///   A64: DUP Vd.16B, Rn
+        /// </summary>
+        public static Vector128<byte> DuplicateToVector128(byte value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// int16x8_t vdupq_n_s16 (int16_t value)
+        ///   A32: VDUP.16 Qd, Rt
+        ///   A64: DUP Vd.8H, Rn
+        /// </summary>
+        public static Vector128<short> DuplicateToVector128(short value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// int32x4_t vdupq_n_s32 (int32_t value)
+        ///   A32: VDUP.32 Qd, Rt
+        ///   A64: DUP Vd.4S, Rn
+        /// </summary>
+        public static Vector128<int> DuplicateToVector128(int value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// int8x16_t vdupq_n_s8 (int8_t value)
+        ///   A32: VDUP.8 Qd, Rt
+        ///   A64: DUP Vd.16B, Rn
+        /// </summary>
+        public static Vector128<sbyte> DuplicateToVector128(sbyte value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// float32x4_t vdupq_n_f32 (float32_t value)
+        ///   A32: VDUP Qd, Dm[0]
+        ///   A64: DUP Vd.4S, Vn.S[0]
+        /// </summary>
+        public static Vector128<float> DuplicateToVector128(float value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// uint16x8_t vdupq_n_u16 (uint16_t value)
+        ///   A32: VDUP.16 Qd, Rt
+        ///   A64: DUP Vd.8H, Rn
+        /// </summary>
+        public static Vector128<ushort> DuplicateToVector128(ushort value) { throw new PlatformNotSupportedException; }
+
+        /// <summary>
+        /// uint32x4_t vdupq_n_u32 (uint32_t value)
+        ///   A32: VDUP.32 Qd, Rt
+        ///   A64: DUP Vd.4S, Rn
+        /// </summary>
+        public static Vector128<uint> DuplicateToVector128(uint value) { throw new PlatformNotSupportedException; }
 
         /// <summary>
         /// uint8_t vget_lane_u8 (uint8x8_t v, const int lane)
