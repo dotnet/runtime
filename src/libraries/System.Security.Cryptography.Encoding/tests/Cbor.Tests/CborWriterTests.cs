@@ -278,9 +278,9 @@ namespace System.Formats.Cbor.Tests
                 Q = new ECPoint() { X = hexQx.HexToByteArray(), Y = hexQy.HexToByteArray() },
             };
 
-            _ = ECDsa.Create(ecParameters); // validate EC parameters
+            ECDsa ecDsa = ECDsa.Create(ecParameters);
 
-            byte[] coseKeyEncoding = CborCoseKeyHelpers.ExportCosePublicKey(ecParameters, hashAlgName);
+            byte[] coseKeyEncoding = CborCoseKeyHelpers.ExportCosePublicKey(ecDsa, hashAlgName);
             AssertHelper.HexEqual(expectedEncoding, coseKeyEncoding);
         }
     }

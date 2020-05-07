@@ -200,9 +200,9 @@ namespace System.Formats.Cbor.Tests
         public static void CoseKeyReader_HappyPath(string hexEncoding, string hexExpectedQx, string hexExpectedQy, string expectedHashAlgorithmName, string curveFriendlyName)
         {
             ECPoint q = new ECPoint() { X = hexExpectedQx.HexToByteArray(), Y = hexExpectedQy.HexToByteArray() };
-            (ECParameters ecParams, HashAlgorithmName name) = CborCoseKeyHelpers.ParseCosePublicKey(hexEncoding.HexToByteArray());
+            (ECDsa ecDsa, HashAlgorithmName name) = CborCoseKeyHelpers.ParseCosePublicKey(hexEncoding.HexToByteArray());
 
-            _ = ECDsa.Create(ecParams); // validate parameters
+            ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
 
             Assert.True(ecParams.Curve.IsNamed);
             Assert.Equal(curveFriendlyName, ecParams.Curve.Oid.FriendlyName);

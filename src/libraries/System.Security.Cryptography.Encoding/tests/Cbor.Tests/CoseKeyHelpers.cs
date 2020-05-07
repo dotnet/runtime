@@ -12,17 +12,19 @@ namespace System.Formats.Cbor.Tests
 {
     public static class CborCoseKeyHelpers
     {
-        public static byte[] ExportCosePublicKey(ECParameters ecParams, HashAlgorithmName name)
+        public static byte[] ExportCosePublicKey(ECDsa ecDsa, HashAlgorithmName hashAlgName)
         {
+            ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
             using var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
-            WriteECParametersAsCosePublicKey(writer, ecParams, name);
+            WriteECParametersAsCosePublicKey(writer, ecParams, hashAlgName);
             return writer.GetEncoding();
         }
 
-        public static (ECParameters ecParams, HashAlgorithmName name) ParseCosePublicKey(byte[] coseKey)
+        public static (ECDsa ecDsa, HashAlgorithmName hashAlgName) ParseCosePublicKey(byte[] coseKey)
         {
             var reader = new CborReader(coseKey, CborConformanceLevel.Ctap2Canonical);
-            return ReadECParametersAsCosePublicKey(reader);
+            (ECParameters ecParams, HashAlgorithmName hashAlgName) = ReadECParametersAsCosePublicKey(reader);
+            return (ECDsa.Create(ecParams), hashAlgName);
         }
 
         public static void WriteECParametersAsCosePublicKey(CborWriter writer, ECParameters ecParams, HashAlgorithmName algorithmName)
