@@ -23,10 +23,6 @@
     <!-- Blob storage container that has the "Latest" channel to publish to. -->
     <ContainerName>dotnet</ContainerName>
     <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
-    <!-- Max version of NETCoreApp, used by test projects. -->
-    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
-    <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
-    <NETCoreAppFramework>net$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
     <!--
       The NETStandard.Library targeting pack uses this patch version, which does not match the
       runtime's. After publishing a new version of the NETStandard targeting pack in a servicing

@@ -17,11 +17,20 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NETCoreAppCurrentVersion>5.0</NETCoreAppCurrentVersion>
-    <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
-    <NetCoreAppCurrent>net$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
-    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
+    <!--
+      TODO: Update to $(MajorVersion).$(MinorVersion) when all sub-repos import
+      Arcade at the beginning (SkipImportArcadeSdkFromRoot=false).
+    -->
+    <NetCoreAppCurrentVersion>5.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
+    <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
+    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <!-- Used by Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk. -->
+    <NETCoreAppFramework>$(NetCoreAppCurrent)</NETCoreAppFramework>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
+    <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
+
+    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
   </PropertyGroup>
 
   <!-- Honor the generic RuntimeConfiguration property. -->

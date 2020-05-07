@@ -29,12 +29,6 @@
     <SigningToolsDir>$(InstallerProjectRoot)signing\</SigningToolsDir>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <NETCoreAppFrameworkIdentifier>.NETCoreApp</NETCoreAppFrameworkIdentifier>
-    <NETCoreAppFrameworkMoniker>$(NETCoreAppFrameworkIdentifier),Version=v$(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkMoniker>
-    <NETCoreAppFrameworkBrandName>.NET $(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkBrandName>
-  </PropertyGroup>
-
   <!-- Platform detection -->
   <PropertyGroup>
     <RunningOnUnix Condition="'$(OS)'!='Windows_NT'">true</RunningOnUnix>

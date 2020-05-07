@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-    <NETCoreAppFrameworkIdentifier>$(TargetFrameworkIdentifier)</NETCoreAppFrameworkIdentifier>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -86,7 +85,7 @@
 
     <ItemGroup>
       <_runtimePackLibFiles Include="$(RuntimePackLibDir)*.*">
-        <TargetPath>$(RuntimePackTargetFrameworkPath)/lib/$(NETCoreAppFramework)</TargetPath>
+        <TargetPath>$(RuntimePackTargetFrameworkPath)/lib/$(NetCoreAppCurrent)</TargetPath>
         <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
       </_runtimePackLibFiles>
       <_runtimePackNativeFiles Include="$(RuntimePackNativeDir)*.*">
@@ -94,9 +93,9 @@
         <IsNative>true</IsNative>
       </_runtimePackNativeFiles>
 
-      <FrameworkListRootAttributes Include="Name" Value=".NET $(NETCoreAppFrameworkVersion)" />
-      <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(NETCoreAppFrameworkIdentifier)" />
-      <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="$(NETCoreAppFrameworkVersion)" />
+      <FrameworkListRootAttributes Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
+      <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
+      <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
       <FrameworkListRootAttributes Include="FrameworkName" Value="$(SharedFrameworkName)" />
     </ItemGroup>
 

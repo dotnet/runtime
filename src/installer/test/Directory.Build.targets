@@ -81,7 +81,7 @@
       <TestContextVariable Include="BUILD_ARCHITECTURE=$(TargetArchitecture)" />
       <TestContextVariable Include="BUILD_CONFIGURATION=$(Configuration)" />
       <TestContextVariable Include="MNA_VERSION=$(NETCoreAppRuntimePackageVersion)" />
-      <TestContextVariable Include="MNA_TFM=$(NETCoreAppFramework)" />
+      <TestContextVariable Include="MNA_TFM=$(NetCoreAppCurrent)" />
       <TestContextVariable Include="DOTNET_SDK_PATH=$(DotNetRoot)" />
       <TestContextVariable Include="TEST_ASSETS=$(MSBuildThisFileDirectory)Assets" />
     </ItemGroup>

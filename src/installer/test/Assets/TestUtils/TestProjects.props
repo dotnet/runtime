@@ -6,7 +6,7 @@
     in a different manner than using the $(RepositoryEngineeringDir) variable.
   -->
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\eng\Versions.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\eng\Configurations.props" />
   <Import Project="$(MSBuildThisFileDirectory)MNADeprecationWorkaround.props" />
 
   <PropertyGroup>
