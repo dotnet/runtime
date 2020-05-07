@@ -6796,6 +6796,7 @@ AC_COMPILE_IFELSE(
 	])
 
 # for icu shim
+ICU_SHIM_PATH=.
 if test x$with_core = xonly; then
 	ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
 	if test x$target_osx = xyes; then
@@ -6826,8 +6827,8 @@ if test x$with_core = xonly; then
 	
 	AC_SUBST(ICU_CFLAGS)
 	AC_SUBST(ICU_LIBS)
-	AC_SUBST(ICU_SHIM_PATH)
 fi
+AC_SUBST(ICU_SHIM_PATH)
 AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
 
 AC_SUBST(CFLAGS)
