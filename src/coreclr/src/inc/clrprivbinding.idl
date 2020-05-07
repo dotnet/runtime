@@ -203,15 +203,3 @@ interface ICLRPrivAssemblyInfo : IUnknown
         [out] LPDWORD pcbBuffer,
         [out, size_is(cbBuffer), length_is(*pcbBuffer), optional] BYTE *pbBuffer);
 };
-
-/**************************************************************************************
- ** ICLRPrivAssemblyID_WinRT - Provides identification for WinRT assembly - allows dynamic casting inside code:CLRPrivAssemblyWinRT.
- **************************************************************************************/
-[
-    uuid(4372D277-9906-4FED-BF53-30C0B4010896),
-    version(1.0),
-    local
-]
-interface ICLRPrivAssemblyID_WinRT : IUnknown
-{
-};
