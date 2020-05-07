@@ -15,7 +15,8 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="GlobalInstance.cs" />
+    <Compile Include="GlobalInstance.TrackerSupport.cs" />
     <Compile Include="../Common.cs" />
     <Compile Include="../../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
@@ -33,11 +34,5 @@
     <None Include="CoreShim.X.manifest">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <PropertyGroup>
-    <CLRTestNeedTarget>1</CLRTestNeedTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <TraitTags Include="OsSpecific" />
   </ItemGroup>
 </Project>

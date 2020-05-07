@@ -6755,6 +6755,17 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     GenTreeSIMD* simdNode =
         new (compiler, GT_SIMD) GenTreeSIMD(LargeVectorSaveType, saveLcl, nullptr, SIMDIntrinsicUpperSave,
                                             varDsc->lvBaseType, genTypeSize(varDsc->lvType));
+
+    if (simdNode->gtSIMDBaseType == TYP_UNDEF)
+    {
+        // There are a few scenarios where we can get a LCL_VAR which
+        // doesn't know the underlying baseType. In that scenario, we
+        // will just lie and say it is a float. Codegen doesn't actually
+        // care what the type is but this avoids an assert that would
+        // otherwise be fired from the more general checks that happen.
+        simdNode->gtSIMDBaseType = TYP_FLOAT;
+    }
+
     SetLsraAdded(simdNode);
     simdNode->SetRegNum(spillReg);
     if (spillToMem)
@@ -6811,6 +6822,16 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     GenTreeSIMD* simdNode =
         new (compiler, GT_SIMD) GenTreeSIMD(varDsc->lvType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore,
                                             varDsc->lvBaseType, genTypeSize(varDsc->lvType));
+
+    if (simdNode->gtSIMDBaseType == TYP_UNDEF)
+    {
+        // There are a few scenarios where we can get a LCL_VAR which
+        // doesn't know the underlying baseType. In that scenario, we
+        // will just lie and say it is a float. Codegen doesn't actually
+        // care what the type is but this avoids an assert that would
+        // otherwise be fired from the more general checks that happen.
+        simdNode->gtSIMDBaseType = TYP_FLOAT;
+    }
 
     regNumber restoreReg = upperVectorInterval->physReg;
     SetLsraAdded(simdNode);

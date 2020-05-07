@@ -22,7 +22,7 @@
              Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\RuntimeFrameworks.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TestPlatformHelper.cs"
              Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TestPlatformHelper.cs" />
   </ItemGroup>

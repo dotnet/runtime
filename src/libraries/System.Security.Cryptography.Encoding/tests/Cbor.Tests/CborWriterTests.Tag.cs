@@ -11,7 +11,7 @@ using System.Numerics;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborWriterTests
     {
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [MemberData(nameof(UnsupportedConformanceTaggedValues))]
-        internal static void WriteTaggedValue_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel level, object value)
+        public static void WriteTaggedValue_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel level, object value)
         {
             using var writer = new CborWriter(level);
             Assert.Throws<InvalidOperationException>(() => Helpers.WriteValue(writer, value));
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [MemberData(nameof(SupportedConformanceTaggedValues))]
-        internal static void WriteTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object value)
+        public static void WriteTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object value)
         {
             using var writer = new CborWriter(level);
             Helpers.WriteValue(writer, value);

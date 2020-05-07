@@ -1086,8 +1086,6 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 CheckIfDisposed();
 
-                Guid schemaGuid = Guid.Empty;
-
                 if (isBound)
                 {
                     if (_schemaGuidBinaryForm == null)
