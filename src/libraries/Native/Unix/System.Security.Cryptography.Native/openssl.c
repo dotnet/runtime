@@ -1264,19 +1264,21 @@ done:
     #define OPENSSL_INIT_NO_ATEXIT 0x00080000L
 #endif
 
-int volatile g_str_read_count = 0;
+pthread_mutex_t g_err_mutex = PTHREAD_MUTEX_INITIALIZER;
 int volatile g_err_unloaded = 0;
 
 static void HandleShutdown()
 {
-    // Set this first, which stops new callers from using the error string tables.
+    // Generally, a mutex to set a boolean is overkill, but this lock
+    // ensures that there are no callers already inside the string table
+    // when the unload (possibly) executes.
+    int result = pthread_mutex_lock(&g_err_mutex);
+    assert(!result && "Acquiring the error string table mutex failed.");
+
     g_err_unloaded = 1;
 
-    // Now, spin until existing calls all finish, and we can move on with shutdown.
-    int x;
-    while ((x = __atomic_load_n(&g_str_read_count, __ATOMIC_SEQ_CST)))
-    {
-    }
+    result = pthread_mutex_unlock(&g_err_mutex);
+    assert(!result && "Releasing the error string table mutex failed.");
 }
 
 static int32_t EnsureOpenSsl11Initialized()

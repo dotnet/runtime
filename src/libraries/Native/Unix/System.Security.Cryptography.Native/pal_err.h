@@ -7,7 +7,7 @@
 #include "opensslshim.h"
 
 #ifdef NEED_OPENSSL_1_1
-extern int volatile g_str_read_count;
+extern pthread_mutex_t g_err_mutex;
 extern int volatile g_err_unloaded;
 #endif
 

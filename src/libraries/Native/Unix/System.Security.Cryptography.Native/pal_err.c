@@ -36,35 +36,35 @@ const char* CryptoNative_ErrReasonErrorString(uint64_t error)
 {
     const char* errStr = NULL;
 
+#ifdef NEED_OPENSSL_1_1
+    int result = pthread_mutex_lock(&g_err_mutex);
+    assert(!result && "Acquiring the error string table mutex failed.");
+
     if (!g_err_unloaded)
     {
-#ifdef NEED_OPENSSL_1_1
-        __atomic_fetch_add(&g_str_read_count, 1, __ATOMIC_SEQ_CST);
 #endif
-
         errStr = ERR_reason_error_string((unsigned long)error);
-
 #ifdef NEED_OPENSSL_1_1
-        __atomic_fetch_add(&g_str_read_count, -1, __ATOMIC_SEQ_CST);
-#endif
     }
+
+    result = pthread_mutex_unlock(&g_err_mutex);
+    assert(!result && "Releasing the error string table mutex failed.");
+#endif
 
     return errStr;
 }
 
 void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len)
 {
+#ifdef NEED_OPENSSL_1_1
+    int result = pthread_mutex_lock(&g_err_mutex);
+    assert(!result && "Acquiring the error string table mutex failed.");
+
     if (!g_err_unloaded)
     {
-#ifdef NEED_OPENSSL_1_1
-        __atomic_fetch_add(&g_str_read_count, 1, __ATOMIC_SEQ_CST);
 #endif
-
         ERR_error_string_n((unsigned long)e, buf, Int32ToSizeT(len));
-
 #ifdef NEED_OPENSSL_1_1
-        __atomic_fetch_add(&g_str_read_count, -1, __ATOMIC_SEQ_CST);
-#endif
     }
     else
     {
@@ -74,4 +74,8 @@ void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len)
             buf[0] = 0;
         }
     }
+
+    result = pthread_mutex_unlock(&g_err_mutex);
+    assert(!result && "Releasing the error string table mutex failed.");
+#endif
 }
