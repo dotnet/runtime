@@ -484,7 +484,7 @@ namespace System.DirectoryServices.Protocols
         {
             IntPtr berValArray = IntPtr.Zero;
             IntPtr tempPtr = IntPtr.Zero;
-            SafeBerval[] managedBerVal = null;
+            berval[] managedBervalArray = null;
             int error = 0;
 
             try
@@ -493,26 +493,26 @@ namespace System.DirectoryServices.Protocols
                 {
                     int i = 0;
                     berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
-                    int structSize = Marshal.SizeOf(typeof(SafeBerval));
-                    managedBerVal = new SafeBerval[tempValue.Length];
+                    int structSize = Marshal.SizeOf(typeof(berval));
+                    managedBervalArray = new berval[tempValue.Length];
 
                     for (i = 0; i < tempValue.Length; i++)
                     {
                         byte[] byteArray = tempValue[i];
 
                         // construct the managed berval
-                        managedBerVal[i] = new SafeBerval(0, IntPtr.Zero);
+                        managedBervalArray[i] = new berval();
 
                         if (byteArray != null)
                         {
-                            managedBerVal[i].bv_len = byteArray.Length;
-                            managedBerVal[i].bv_val = Marshal.AllocHGlobal(byteArray.Length);
-                            Marshal.Copy(byteArray, 0, managedBerVal[i].bv_val, byteArray.Length);
+                            managedBervalArray[i].bv_len = byteArray.Length;
+                            managedBervalArray[i].bv_val = Marshal.AllocHGlobal(byteArray.Length);
+                            Marshal.Copy(byteArray, 0, managedBervalArray[i].bv_val, byteArray.Length);
                         }
 
                         // allocate memory for the unmanaged structure
                         IntPtr valPtr = Marshal.AllocHGlobal(structSize);
-                        Marshal.StructureToPtr(managedBerVal[i], valPtr, false);
+                        Marshal.StructureToPtr(managedBervalArray[i], valPtr, false);
 
                         tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, valPtr);
@@ -536,13 +536,13 @@ namespace System.DirectoryServices.Protocols
                     }
                     Marshal.FreeHGlobal(berValArray);
                 }
-                if (managedBerVal != null)
+                if (managedBervalArray != null)
                 {
-                    foreach (SafeBerval berval in managedBerVal)
+                    foreach (berval managedBerval in managedBervalArray)
                     {
-                        if (berval.bv_val != IntPtr.Zero)
+                        if (managedBerval.bv_val != IntPtr.Zero)
                         {
-                            Marshal.FreeHGlobal(berval.bv_val);
+                            Marshal.FreeHGlobal(managedBerval.bv_val);
                         }
                     }
                 }

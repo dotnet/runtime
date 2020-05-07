@@ -150,6 +150,27 @@ namespace System.DirectoryServices.Protocols.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => BerConverter.Decode(format, values));
         }
 
+        public static IEnumerable<object[]> Decode_Invalid_ThrowsBerConversionException_Data()
+        {
+            yield return new object[] { "n", null };
+            yield return new object[] { "n", new byte[0] };
+            yield return new object[] { "{", new byte[] { 1 } };
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                yield return new object[] { "}", new byte[] { 1 } }; // This is considered a valid case in Linux
+            }
+            yield return new object[] { "{}{}{}{}{}{}{}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                yield return new object[] { "aaa", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+            } 
+            yield return new object[] { "iii", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+            yield return new object[] { "eee", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+            yield return new object[] { "bbb", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+            yield return new object[] { "OOO", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+            yield return new object[] { "BBB", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+        }
+
         [Theory]
         [InlineData("n", null)]
         [InlineData("n", new byte[0])]

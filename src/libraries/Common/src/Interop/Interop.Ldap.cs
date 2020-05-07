@@ -120,19 +120,6 @@ namespace System.DirectoryServices.Protocols
         public berval() { }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SafeBerval
-    {
-        public int bv_len;
-        public IntPtr bv_val;
-
-        public SafeBerval(int length, IntPtr value)
-        {
-            bv_len = length;
-            bv_val = value;
-        }
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class LdapControl
     {

@@ -12,6 +12,7 @@ namespace System.DirectoryServices.Protocols.Tests
     public class LdapSessionOptionsTests
     {
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(ReferralChasingOptions.None)]
         [InlineData(ReferralChasingOptions.External)]
         public void ReferralChasing_Set_GetReturnsExpected(ReferralChasingOptions value)
@@ -146,6 +147,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void HostName_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -374,6 +376,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(-1)]
         [InlineData(10)]
         public void SspiFlag_Set_GetReturnsExpected(int value)
@@ -399,6 +402,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SslInformation_GetNotStarted_ThrowsDirectoryOperationException()
         {
             using (var connection = new LdapConnection("server"))
@@ -418,6 +422,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SecurityContext_GetNotStarted_ThrowsDirectoryOperationException()
         {
             using (var connection = new LdapConnection("server"))
@@ -437,6 +442,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public void Signing_Set_GetReturnsExpected(bool value)
@@ -462,6 +468,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public void Sealing_Set_GetReturnsExpected(bool value)
@@ -487,6 +494,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SaslMethod_Set_ThrowsLdapException()
         {
             using (var connection = new LdapConnection("server"))
@@ -716,6 +724,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void StopTransportLayerSecurity_NotStarted_ThrowsTlsOperationException()
         {
             using (var connection = new LdapConnection("server"))

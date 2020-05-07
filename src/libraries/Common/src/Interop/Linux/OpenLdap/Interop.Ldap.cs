@@ -11,6 +11,9 @@ internal static partial class Interop
     [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", CharSet = CharSet.Ansi, SetLastError = true)]
     public static extern int ldap_initialize(out IntPtr ld, string hostname);
 
+    [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_init", CharSet = CharSet.Ansi, SetLastError = true)]
+    public static extern IntPtr ldap_init(string hostName, int portNumber);
+
     [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_unbind_ext_s", CharSet = CharSet.Ansi)]
     public static extern int ldap_unbind_ext_s(IntPtr ld, ref IntPtr serverctrls, ref IntPtr clientctrls);
 

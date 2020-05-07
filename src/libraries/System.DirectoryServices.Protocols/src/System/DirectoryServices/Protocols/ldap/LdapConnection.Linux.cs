@@ -12,11 +12,7 @@ namespace System.DirectoryServices.Protocols
         // Linux doesn't support setting FQDN so we mark the flag as if it is already set so we don't make a call to set it again.
         private bool _setFQDNDone = true;
 
-        private void InternalInitConnectionHandle(string hostname)
-        {
-            Interop.ldap_initialize(out IntPtr ldapServerHandle, $"ldap://{hostname}:{((LdapDirectoryIdentifier)_directoryIdentifier).PortNumber}/");
-            _ldapHandle = new ConnectionHandle(ldapServerHandle, _needDispose);
-        }
+        private void InternalInitConnectionHandle(string hostname) => _ldapHandle = new ConnectionHandle(Interop.ldap_init(hostname, ((LdapDirectoryIdentifier)_directoryIdentifier).PortNumber), _needDispose);
 
         private int InternalConnectToServer()
         {
