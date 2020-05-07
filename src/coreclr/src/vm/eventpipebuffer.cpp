@@ -23,6 +23,13 @@ EventPipeBuffer::EventPipeBuffer(unsigned int bufferSize, EventPipeThread* pWrit
     m_state = EventPipeBufferState::WRITABLE;
     m_pWriterThread = pWriterThread;
     m_eventSequenceNumber = eventSequenceNumber;
+    // Use ClrVirtualAlloc instead of malloc to allocate buffer to avoid potential internal fragmentation in the native CRT heap.
+    // (See https://github.com/dotnet/runtime/pull/35924 and https://github.com/microsoft/ApplicationInsights-dotnet/issues/1678 for more details)
+    //
+    // This fix does cause a little bit of performance regression (1-2%) in throughput,
+    // but within acceptable boundaries, while minimizing the risk of the fix to be backported
+    // to servicing releases. We may come back in the future to reassess this and potentially improve
+    // the throughput via more performant solution afterwards.
     m_pBuffer = (BYTE*)ClrVirtualAlloc(NULL, bufferSize, MEM_COMMIT, PAGE_READWRITE);
     memset(m_pBuffer, 0, bufferSize);
     m_pLimit = m_pBuffer + bufferSize;

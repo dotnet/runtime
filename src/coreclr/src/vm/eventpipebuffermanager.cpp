@@ -168,8 +168,8 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(EventPipeThread
         const unsigned int maxBufferSize = 1024 * 1024;
         bufferSize = Min(bufferSize, maxBufferSize);
 
-        // Make the buffer size fit into with pagesize-aligned block.
-        bufferSize = bufferSize + (g_SystemInfo.dwAllocationGranularity - (bufferSize % g_SystemInfo.dwAllocationGranularity));
+        // Make the buffer size fit into with pagesize-aligned block, since ClrVirtualAlloc expects page-aligned sizes to be passed as arguments (see ctor of EventPipeBuffer)
+        bufferSize = (bufferSize + g_SystemInfo.dwAllocationGranularity - 1) & ~static_cast<unsigned int>(g_SystemInfo.dwAllocationGranularity - 1);
 
         // EX_TRY is used here as opposed to new (nothrow) because
         // the constructor also allocates a private buffer, which
