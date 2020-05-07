@@ -23,6 +23,7 @@ namespace System.Text.Json.Serialization
             CanBePolymorphic = TypeToConvert == typeof(object);
             IsValueType = TypeToConvert.IsValueType;
             HandleNull = IsValueType;
+            CanBeNull = !IsValueType || Nullable.GetUnderlyingType(TypeToConvert) != null;
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
             CanUseDirectReadOrWrite = !CanBePolymorphic && IsInternalConverter && ClassType == ClassType.Value;
         }
@@ -62,6 +63,11 @@ namespace System.Text.Json.Serialization
         /// The default value is <see langword="true"/> for converters for value types, and <see langword="false"/> for converters for reference types.
         /// </remarks>
         public virtual bool HandleNull { get; }
+
+        /// <summary>
+        /// Can <see langword="null"/> be assigned to <see cref="TypeToConvert"/>?
+        /// </summary>
+        internal bool CanBeNull { get; }
 
         /// <summary>
         /// Is the converter built-in.
@@ -112,6 +118,11 @@ namespace System.Text.Json.Serialization
                 // For perf and converter simplicity, handle null here instead of forwarding to the converter.
                 if (reader.TokenType == JsonTokenType.Null && !HandleNull)
                 {
+                    if (!CanBeNull)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    }
+
                     value = default;
                     return true;
                 }
@@ -154,6 +165,11 @@ namespace System.Text.Json.Serialization
             {
                 if (reader.TokenType == JsonTokenType.Null && !HandleNull && !wasContinuation)
                 {
+                    if (!CanBeNull)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    }
+
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
                     value = default;
                     success = true;
@@ -171,6 +187,11 @@ namespace System.Text.Json.Serialization
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
                     if (reader.TokenType == JsonTokenType.Null && !HandleNull)
                     {
+                        if (!CanBeNull)
+                        {
+                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                        }
+
                         value = default;
                         state.Pop(true);
                         return true;

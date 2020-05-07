@@ -49,8 +49,8 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new Int32NullConverter_OptOut());
 
-            // Serializer sets default value (doesn't fallback to built-in converter).
-            Assert.Equal(0, JsonSerializer.Deserialize<int>("null", options));
+            // Serializer throws JsonException if null is assigned to value that can't be null.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>("null", options));
         }
 
         private class Int32NullConverter_OptOut : Int32NullConverter_SpecialCaseNull
@@ -113,9 +113,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PointStructConverter_OptOut());
 
-            var obj = JsonSerializer.Deserialize<Point_2D_Struct>("null", options);
-            Assert.Equal(0, obj.X);
-            Assert.Equal(0, obj.Y);
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Point_2D_Struct>("null", options));
         }
 
         private class PointStructConverter_OptOut : PointStructConverter_SpecialCaseNull

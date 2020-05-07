@@ -56,6 +56,11 @@ namespace System.Text.Json
 
             if (isNullToken && !_converter.HandleNull && !state.IsContinuation)
             {
+                if (!_converter.CanBeNull)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(_converter.TypeToConvert);
+                }
+
                 // Don't have to check for IgnoreNullValue option here because we set the default value regardless.
                 value = DefaultValue;
                 return true;
@@ -85,6 +90,11 @@ namespace System.Text.Json
 
             if (isNullToken && !_converter.HandleNull && !state.IsContinuation)
             {
+                if (!_converter.CanBeNull)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(_converter.TypeToConvert);
+                }
+
                 // Don't have to check for IgnoreNullValue option here because we set the default value regardless.
                 value = TypedDefaultValue;
                 return true;

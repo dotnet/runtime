@@ -164,6 +164,11 @@ namespace System.Text.Json
             {
                 if (!IgnoreNullValues)
                 {
+                    if (!Converter.CanBeNull)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
+                    }
+
                     T value = default;
                     Set!(obj, value!);
                 }
@@ -206,6 +211,11 @@ namespace System.Text.Json
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
             {
+                if (!Converter.CanBeNull)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
+                }
+
                 value = default(T)!;
                 success = true;
             }
