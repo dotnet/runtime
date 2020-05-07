@@ -145,9 +145,9 @@ namespace System.Runtime.Intrinsics.Arm
     {
         public abstract class Arm64
         {
+            public const bool IsSupported = false;
             public static Vector64<byte> AddAcross(Vector64<byte> value) => throw new PlatformNotSupportedException();
         }
-        public const bool IsSupported = false;
         public static byte Extract(Vector64<byte> vector, byte index) => throw new PlatformNotSupportedException();
         public static Vector64<byte> PopCount(Vector64<byte> value) => throw new PlatformNotSupportedException();
     }
