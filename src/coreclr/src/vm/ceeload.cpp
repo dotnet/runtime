@@ -576,8 +576,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
         if (IsSystem() ||
             (strcmp(m_pSimpleName, "System") == 0) ||
-            (strcmp(m_pSimpleName, "System.Core") == 0) ||
-            (strcmp(m_pSimpleName, "Windows.Foundation") == 0))
+            (strcmp(m_pSimpleName, "System.Core") == 0))
         {
             FastInterlockOr(&m_dwPersistedFlags, LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME);
         }
@@ -1499,11 +1498,6 @@ static bool IsLikelyDependencyOf(Module * pModule, Module * pOtherModule)
     // reference between these low level system assemblies and the app assemblies. The prefererred zap module for instantiations of generic
     // collections from these low level system assemblies (like LinkedList<AppType>) should be module of AppType. It would be module of the generic
     // collection without this check.
-    //
-    // Similar problem exists for Windows.Foundation.winmd. There is a cycle between Windows.Foundation.winmd and Windows.Storage.winmd. This cycle
-    // would cause prefererred zap module for instantiations of foundation types (like IAsyncOperation<StorageFolder>) to be Windows.Foundation.winmd.
-    // It is a bad choice. It should be Windows.Storage.winmd instead. We explicitly push Windows.Foundation to lower level by treating it as
-    // low level system assembly to avoid this problem.
     //
     if (pModule->IsLowLevelSystemAssemblyByName())
     {
@@ -3186,36 +3180,6 @@ void Module::StartUnload()
 }
 #endif // CROSSGEN_COMPILE
 
-//---------------------------------------------------------------------------------------
-//
-// Simple wrapper around calling IsAfContentType_WindowsRuntime() against the flags
-// returned from the PEAssembly's GetFlagsNoTrigger()
-//
-// Return Value:
-//     nonzero iff we successfully determined pModule is a WinMD. FALSE if pModule is not
-//     a WinMD, or we fail trying to find out.
-//
-BOOL Module::IsWindowsRuntimeModule()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // Accesses metadata directly, which takes locks
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    BOOL fRet = FALSE;
-
-    DWORD dwFlags;
-
-    if (FAILED(GetAssembly()->GetManifestFile()->GetFlagsNoTrigger(&dwFlags)))
-        return FALSE;
-
-    return IsAfContentType_WindowsRuntime(dwFlags);
-}
-
 BOOL Module::IsInCurrentVersionBubble()
 {
     LIMITED_METHOD_CONTRACT;
@@ -3309,8 +3273,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 
 //---------------------------------------------------------------------------------------
 //
-// WinMD-aware helper to grab a readable public metadata interface. Any place that thinks
-// it wants to use Module::GetRWImporter + QI now should use this wrapper instead.
+// Wrapper for Module::GetRWImporter + QI when writing is not needed.
 //
 // Arguments:
 //      * dwOpenFlags - Combo from CorOpenFlags. Better not contain ofWrite!
@@ -3327,15 +3290,12 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // IsWindowsRuntimeModule accesses metadata directly, which takes locks
+        CAN_TAKE_LOCK;
         MODE_ANY;
     }
     CONTRACTL_END;
 
     _ASSERTE((dwOpenFlags & ofWrite) == 0);
-
-    // Temporary place to store public, AddRef'd interface pointers
-    ReleaseHolder<IUnknown> pIUnkPublic;
 
     // Temporary place to store the IUnknown from which we'll do the final QI to get the
     // requested public interface.  Any assignment to pIUnk assumes pIUnk does not need
@@ -3351,51 +3311,6 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
         pIUnk = GetRWImporter();
     }
     EX_CATCH_HRESULT_NO_ERRORINFO(hr);
-
-    if (FAILED(hr) && IsWindowsRuntimeModule())
-    {
-        // WinMD modules don't like creating RW importers.   They also (currently)
-        // have no plumbing to get to their public metadata interfaces from the
-        // Module.  So we actually have to start from scratch at the dispenser.
-
-        // To start with, get a dispenser, and get the metadata memory blob we've
-        // already loaded.  If either of these fail, just return the error HRESULT
-        // from the above GetRWImporter() call.
-
-        // We'll get an addref'd IMetaDataDispenser, so use a holder to release it
-        ReleaseHolder<IMetaDataDispenser> pDispenser;
-        if (FAILED(InternalCreateMetaDataDispenser(IID_IMetaDataDispenser, &pDispenser)))
-        {
-            _ASSERTE(FAILED(hr));
-            return hr;
-        }
-
-        COUNT_T cbMetadata = 0;
-        PTR_CVOID pvMetadata = GetAssembly()->GetManifestFile()->GetLoadedMetadata(&cbMetadata);
-        if ((pvMetadata == NULL) || (cbMetadata == 0))
-        {
-            _ASSERTE(FAILED(hr));
-            return hr;
-        }
-
-        // Now that the pieces are ready, we can use the riid specified by the
-        // profiler in this call to the dispenser to get the requested interface. If
-        // this fails, then this is the interesting HRESULT for the caller to see.
-        //
-        // We'll get an AddRef'd public interface, so use a holder to release it
-        hr = pDispenser->OpenScopeOnMemory(
-            pvMetadata,
-            cbMetadata,
-            (dwOpenFlags | ofReadOnly),         // Force ofReadOnly on behalf of the profiler
-            riid,
-            &pIUnkPublic);
-        if (FAILED(hr))
-            return hr;
-
-        // Set pIUnk so we can do the final QI from it below as we do in the other
-        // cases.
-        pIUnk = pIUnkPublic;
-    }
 
     // Get the requested interface
     if (SUCCEEDED(hr) && (ppvInterface != NULL))
@@ -3599,9 +3514,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // Call Fusion to ensure that any PDB's are shadow copied before
             // trying to get a symbol reader. This has to be done once per
             // Assembly.
-            // for this to work with winmds we cannot simply call GetRWImporter() as winmds are RO
-            // and thus don't implement the RW interface. so we call this wrapper function which knows
-            // how to get a IMetaDataImport interface regardless of the underlying module type.
             ReleaseHolder<IUnknown> pUnk = NULL;
             hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, &pUnk);
             if (SUCCEEDED(hr))
@@ -7405,14 +7317,6 @@ void Module::ExpandAll(DataImage *image)
         {
             mdToken tkResolutionScope = mdTokenNil;
             pInternalImport->GetResolutionScopeOfTypeRef(tk, &tkResolutionScope);
-
-#ifdef FEATURE_COMINTEROP
-            // WinRT first party files are authored with TypeRefs pointing to TypeDefs in the same module.
-            // This causes us to load types we do not want to NGen such as custom attributes. We will not
-            // expand any module local TypeRefs for WinMDs to prevent this.
-            if(TypeFromToken(tkResolutionScope)==mdtModule && IsAfContentType_WindowsRuntime(assemblyFlags))
-                continue;
-#endif // FEATURE_COMINTEROP
             TypeHandle t = LoadTypeDefOrRefHelper(image, this, tk);
 
             if (t.IsNull()) // Skip this type
@@ -7547,22 +7451,6 @@ void Module::ExpandAll(DataImage *image)
         {
             mdTypeRef parent;
             IfFailThrow(pInternalImport->GetParentOfMemberRef(tk, &parent));
-
-#ifdef FEATURE_COMINTEROP
-            if (IsAfContentType_WindowsRuntime(assemblyFlags) && TypeFromToken(parent) == mdtTypeRef)
-            {
-                mdToken tkResolutionScope = mdTokenNil;
-                pInternalImport->GetResolutionScopeOfTypeRef(parent, &tkResolutionScope);
-                // WinRT first party files are authored with TypeRefs pointing to TypeDefs in the same module.
-                // This causes us to load types we do not want to NGen such as custom attributes. We will not
-                // expand any module local TypeRefs for WinMDs to prevent this.
-                if(TypeFromToken(tkResolutionScope)==mdtModule)
-                    continue;
-
-                LPCSTR szNameSpace = NULL;
-                LPCSTR szName = NULL;
-            }
-#endif // FEATURE_COMINTEROP
 
             // If the MethodRef has a TypeSpec as a parent (i.e. refers to a method on an array type
             // or on a generic class), then it could in turn refer to type variables of

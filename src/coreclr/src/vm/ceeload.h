@@ -1927,8 +1927,6 @@ protected:
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
 #endif // !DACCESS_COMPILE
 
-    BOOL IsWindowsRuntimeModule();
-
     BOOL IsInCurrentVersionBubble();
 
 #if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)

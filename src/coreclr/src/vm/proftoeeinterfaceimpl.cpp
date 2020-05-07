@@ -3917,7 +3917,7 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // IsWindowsRuntimeModule accesses metadata directly, which takes locks
+        CANNOT_TAKE_LOCK;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3981,11 +3981,6 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     if (pModule->IsResource())
     {
         dwRet |= COR_PRF_MODULE_RESOURCE;
-    }
-
-    if (pModule->IsWindowsRuntimeModule())
-    {
-        dwRet |= COR_PRF_MODULE_WINDOWS_RUNTIME;
     }
 
     return dwRet;
