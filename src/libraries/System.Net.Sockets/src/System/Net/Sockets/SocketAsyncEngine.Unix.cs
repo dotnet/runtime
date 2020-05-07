@@ -204,8 +204,8 @@ namespace System.Net.Sockets
 
             IntPtr handle = _nextHandle;
             Debug.Assert(handle != ShutdownHandle, "ShutdownHandle must not be added to the dictionary");
-            _handleToContextMap.TryAdd(handle, new SocketAsyncContextWrapper(context));
-
+            bool added = _handleToContextMap.TryAdd(handle, new SocketAsyncContextWrapper(context));
+            Debug.Assert(added, "Add should always succeed");
             _nextHandle = IntPtr.Add(_nextHandle, 1);
 
             Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
