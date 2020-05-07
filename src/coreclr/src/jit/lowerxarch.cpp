@@ -2167,14 +2167,15 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     opN = argList->Current();
 
                     tmp2 =
-                         comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, opN, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+                        comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, opN, NI_Vector128_CreateScalarUnsafe, baseType, 16);
                     BlockRange().InsertAfter(opN, tmp2);
                     LowerNode(tmp2);
 
                     idx = comp->gtNewIconNode(N << 4, TYP_INT);
                     BlockRange().InsertAfter(tmp2, idx);
 
-                    tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, idx, NI_SSE41_Insert, baseType, simdSize);
+                    tmp1 =
+                        comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, idx, NI_SSE41_Insert, baseType, simdSize);
                     BlockRange().InsertAfter(idx, tmp1);
                     LowerNode(tmp1);
 
