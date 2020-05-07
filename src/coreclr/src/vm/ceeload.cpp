@@ -7203,33 +7203,6 @@ void Module::ExpandAll(DataImage *image)
 
         while (pInternalImport->EnumNext(&hEnum, &tk))
         {
-#ifdef FEATURE_COMINTEROP
-            // Skip the non-managed WinRT types since they're only used by Javascript and C++
-            //
-            // With WinRT files, we want to exclude certain types that cause us problems:
-            // * Attribute types defined in Windows.Foundation.  The constructor's methodimpl flags
-            //   specify it is an internal runtime function and gets set as an FCALL when we parse
-            //   the type
-            //
-            if (IsAfContentType_WindowsRuntime(assemblyFlags))
-            {
-                mdToken tkExtends;
-                pInternalImport->GetTypeDefProps(tk, NULL, &tkExtends);
-
-                if (TypeFromToken(tkExtends) == mdtTypeRef)
-                {
-                    LPCSTR szNameSpace = NULL;
-                    LPCSTR szName = NULL;
-                    pInternalImport->GetNameOfTypeRef(tkExtends, &szNameSpace, &szName);
-
-                    if (!strcmp(szNameSpace, "System") && !_stricmp((szName), "Attribute"))
-                    {
-                        continue;
-                    }
-                }
-            }
-#endif // FEATURE_COMINTEROP
-
             TypeHandle t = LoadTypeDefOrRefHelper(image, this, tk);
 
             if (t.IsNull()) // Skip this type

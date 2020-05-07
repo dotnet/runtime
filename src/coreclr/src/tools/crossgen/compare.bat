@@ -79,21 +79,6 @@
 ::System.Xml.ReaderWriter
 ::System.Xml.XDocument
 ::System.Xml.XmlSerializer
-::Windows.ApplicationModel
-::Windows.Data
-::Windows.Devices
-::Windows.Foundation
-::Windows.Globalization
-::Windows.Graphics
-::Windows.Management
-::Windows.Media
-::Windows.Networking
-::Windows.Security
-::Windows.Storage
-::Windows.System
-::Windows.UI
-::Windows.UI.Xaml
-::Windows.Web
 ::END_OF_LIST
 
 @echo off

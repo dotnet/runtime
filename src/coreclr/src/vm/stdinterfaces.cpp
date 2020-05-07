@@ -2712,70 +2712,7 @@ HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider,
 HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
                                                /* [out, retval] */ HSTRING* pResult)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pStringable));
-        PRECONDITION(IsSimpleTearOff(pStringable));
-        PRECONDITION(CheckPointer(pResult, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    if (pResult == NULL)
-        return E_POINTER;
-
-    // Initialize [out] parameters
-    *pResult = NULL;
-
-    HRESULT hr;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        _ASSERTE(IsSimpleTearOff(pStringable));
-        SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pStringable);
-
-        GCX_COOP();
-
-        struct _gc {
-                OBJECTREF  TargetObj;
-                STRINGREF  RetVal;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        gc.TargetObj = pSimpleWrap->GetObjectRef();
-        MethodDesc* pToStringMD = NULL;
-
-        MethodTable* pMT = gc.TargetObj->GetMethodTable();
-
-        // The object does not implement IStringable interface we need to call the default implementation using Object.ToString() call.
-        pToStringMD = MscorlibBinder::GetMethod(METHOD__OBJECT__TO_STRING);
-        _ASSERTE(pToStringMD != NULL);
-
-        PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pToStringMD, gc.TargetObj);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
-
-        CALL_MANAGED_METHOD_RETREF(gc.RetVal, STRINGREF, args);
-
-        //
-        // Convert managed string to HSTRING
-        //
-        if (gc.RetVal == NULL)
-            *pResult = NULL;
-        else
-            hr = ::WindowsCreateString(gc.RetVal->GetBuffer(), gc.RetVal->GetStringLength(), pResult);
-
-        GCPROTECT_END();
-
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return hr;
-
+    return E_NOTIMPL;
 }
 
 

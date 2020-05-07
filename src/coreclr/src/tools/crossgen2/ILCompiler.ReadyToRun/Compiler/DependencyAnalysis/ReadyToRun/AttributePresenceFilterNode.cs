@@ -60,11 +60,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     addToTable = true;
                 }
-                else if (customAttributeTypeNamespace == "Windows.Foundation.Metadata")
-                {
-                    // Windows.Foundation.Metadata attributes are a similar construct to compilerservices attributes. Add them to the table
-                    addToTable = true;
-                }
                 else if (customAttributeTypeNamespace == "System")
                 {
                     // Some historical well known attributes were placed in the System namespace. Special case them
@@ -101,12 +96,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         /**
          * This class is used to extract the first type handle in a signature.
-         * 
+         *
          * In the case that a custom attribute's constructor is a MemberReference,
-         * and its parent is a TypeSpec, we have to parse the signature, but we do 
-         * not want to actually resolve the types. So we used this dummy signature 
+         * and its parent is a TypeSpec, we have to parse the signature, but we do
+         * not want to actually resolve the types. So we used this dummy signature
          * type provider to extract the first type handle.
-         */ 
+         */
         private class FirstTypeHandleExtractor : ISignatureTypeProvider<DummyType, DummyGenericContext>
         {
             private EntityHandle _firstTypeHandle;
@@ -251,7 +246,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         TypeDefinitionHandle customAttributeConstructorTypeDefinitionHandle = (TypeDefinitionHandle)firstTypeHandle;
                         GetTypeNameFromTypeDefinitionHandle(customAttributeConstructorTypeDefinitionHandle, out customAttributeTypeNamespace, out customAttributeTypeName);
-                    } 
+                    }
                     else
                     {
                         Debug.Assert(firstTypeHandle.Kind == HandleKind.TypeReference);
@@ -462,7 +457,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialAlignment(16);
             builder.AddSymbol(this);
             builder.EmitBytes(result);
-            
+
             return builder.ToObjectData(); ;
         }
     }
