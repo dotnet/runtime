@@ -1,6 +1,9 @@
+#nullable enable
+using Xunit.Abstractions;
+
 namespace System.Net.NameResolution.Tests
 {
-    partial static class NameResolutionTestHelper
+    internal static class NameResolutionTestHelper
     {
         public static unsafe bool EnsureNameToAddressWorks(string hostName, ITestOutputHelper? testOutput, bool throwOnFailure = true)
         {
