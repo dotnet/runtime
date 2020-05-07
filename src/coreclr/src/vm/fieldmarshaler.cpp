@@ -56,9 +56,6 @@ VOID ParseNativeType(Module*                     pModule,
     CONTRACTL_END;
 
     BOOL fAnsi = (flags == ParseNativeTypeFlags::IsAnsi);
-#ifdef FEATURE_COMINTEROP
-    BOOL fIsWinRT = (flags == ParseNativeTypeFlags::IsWinRT);
-#endif // FEATURE_COMINTEROP
 
     MarshalInfo mlInfo(
         pModule,
@@ -225,11 +222,6 @@ bool IsFieldBlittable(
         nativeType = (CorNativeType)*marshalInfoSig;
     }
 
-    if (nativeType != NATIVE_TYPE_DEFAULT && flags == ParseNativeTypeFlags::IsWinRT)
-    {
-        return false;
-    }
-
     bool isBlittable = false;
 
     EX_TRY
@@ -268,10 +260,10 @@ bool IsFieldBlittable(
             isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_INT) || (nativeType == NATIVE_TYPE_UINT);
             break;
         case ELEMENT_TYPE_PTR:
-            isBlittable = nativeType == NATIVE_TYPE_DEFAULT && flags != ParseNativeTypeFlags::IsWinRT;
+            isBlittable = nativeType == NATIVE_TYPE_DEFAULT;
             break;
         case ELEMENT_TYPE_FNPTR:
-            isBlittable = flags != ParseNativeTypeFlags::IsWinRT && (nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_FUNC);
+            isBlittable = nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_FUNC;
             break;
         case ELEMENT_TYPE_VALUETYPE:
             if (nativeType != NATIVE_TYPE_DEFAULT && nativeType != NATIVE_TYPE_STRUCT)
@@ -284,19 +276,6 @@ bool IsFieldBlittable(
                 // As a result, a field of type System.Decimal can't be blittable.
                 isBlittable = false;
             }
-#if FEATURE_COMINTEROP
-            else if (flags == ParseNativeTypeFlags::IsWinRT)
-            {
-                if (valueTypeHandle.GetMethodTable()->HasSameTypeDefAs(g_pNullableClass))
-                {
-                    isBlittable = false;
-                }
-                else if (valueTypeHandle.GetMethodTable()->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)))
-                {
-                    isBlittable = false;
-                }
-            }
-#endif
             else
             {
                 isBlittable = !valueTypeHandle.GetMethodTable()->HasInstantiation() && valueTypeHandle.GetMethodTable()->IsBlittable();
