@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
             context.IncrementItemCount(memberCount);
             int memberIndex = -1;
             int firstRequiredMember;
-            bool[] requiredMembers = GetRequiredMembers(classContract, out firstRequiredMember);
+            _ = GetRequiredMembers(classContract, out firstRequiredMember);
             bool hasRequiredMembers = (firstRequiredMember < memberCount);
             int requiredIndex = hasRequiredMembers ? firstRequiredMember : -1;
             DataMember[] members = new DataMember[memberCount];
