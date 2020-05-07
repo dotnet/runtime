@@ -31,8 +31,8 @@ namespace System.Net.Http
     internal partial class BrowserHttpHandler : HttpMessageHandler
     {
         // This partial implementation contains members common to Browser WebAssembly running on .NET Core.
-        private static readonly JSObject? fetch = (JSObject)Interop.Runtime.GetGlobalObject("fetch");
-        private static readonly JSObject? window = (JSObject)Interop.Runtime.GetGlobalObject("window");
+        private static readonly JSObject? s_fetch = (JSObject)Interop.Runtime.GetGlobalObject("fetch");
+        private static readonly JSObject? s_window = (JSObject)Interop.Runtime.GetGlobalObject("window");
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -264,7 +264,7 @@ namespace System.Net.Http
 
                     requestObject.Dispose();
 
-                    var response = fetch?.Invoke("apply", window, args) as Task<object>;
+                    var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
                     args.Dispose();
                     if (response == null)
                         throw new Exception("Internal error marshalling the response Promise from `fetch`.");
@@ -338,32 +338,32 @@ namespace System.Net.Http
 
         private class WasmFetchResponse : IDisposable
         {
-            private readonly JSObject fetchResponse;
-            private readonly JSObject abortController;
-            private readonly CancellationTokenSource abortCts;
-            private readonly CancellationTokenRegistration abortRegistration;
+            private readonly JSObject _fetchResponse;
+            private readonly JSObject _abortController;
+            private readonly CancellationTokenSource _abortCts;
+            private readonly CancellationTokenRegistration _abortRegistration;
 
             public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
             {
-                this.fetchResponse = fetchResponse ?? throw new ArgumentNullException(nameof(fetchResponse));
-                this.abortController = abortController ?? throw new ArgumentNullException(nameof(abortController));
-                this.abortCts = abortCts;
-                this.abortRegistration = abortRegistration;
+                _fetchResponse = fetchResponse ?? throw new ArgumentNullException(nameof(fetchResponse));
+                _abortController = abortController ?? throw new ArgumentNullException(nameof(abortController));
+                _abortCts = abortCts;
+                _abortRegistration = abortRegistration;
             }
 
-            public bool IsOK => (bool)fetchResponse.GetObjectProperty("ok");
-            public bool IsRedirected => (bool)fetchResponse.GetObjectProperty("redirected");
-            public int Status => (int)fetchResponse.GetObjectProperty("status");
-            public string StatusText => (string)fetchResponse.GetObjectProperty("statusText");
-            public string ResponseType => (string)fetchResponse.GetObjectProperty("type");
-            public string Url => (string)fetchResponse.GetObjectProperty("url");
-            public bool IsBodyUsed => (bool)fetchResponse.GetObjectProperty("bodyUsed");
-            public JSObject Headers => (JSObject)fetchResponse.GetObjectProperty("headers");
-            public JSObject Body => (JSObject)fetchResponse.GetObjectProperty("body");
+            public bool IsOK => (bool)_fetchResponse.GetObjectProperty("ok");
+            public bool IsRedirected => (bool)_fetchResponse.GetObjectProperty("redirected");
+            public int Status => (int)_fetchResponse.GetObjectProperty("status");
+            public string StatusText => (string)_fetchResponse.GetObjectProperty("statusText");
+            public string ResponseType => (string)_fetchResponse.GetObjectProperty("type");
+            public string Url => (string)_fetchResponse.GetObjectProperty("url");
+            public bool IsBodyUsed => (bool)_fetchResponse.GetObjectProperty("bodyUsed");
+            public JSObject Headers => (JSObject)_fetchResponse.GetObjectProperty("headers");
+            public JSObject Body => (JSObject)_fetchResponse.GetObjectProperty("body");
 
-            public Task<object> ArrayBuffer() => (Task<object>)fetchResponse.Invoke("arrayBuffer");
-            public Task<object> Text() => (Task<object>)fetchResponse.Invoke("text");
-            public Task<object> JSON() => (Task<object>)fetchResponse.Invoke("json");
+            public Task<object> ArrayBuffer() => (Task<object>)_fetchResponse.Invoke("arrayBuffer");
+            public Task<object> Text() => (Task<object>)_fetchResponse.Invoke("text");
+            public Task<object> JSON() => (Task<object>)_fetchResponse.Invoke("json");
 
             public void Dispose()
             {
@@ -378,15 +378,15 @@ namespace System.Net.Http
                 {
                     // Free any other managed objects here.
                     //
-                    abortCts.Cancel();
+                    _abortCts.Cancel();
 
-                    abortRegistration.Dispose();
+                    _abortRegistration.Dispose();
                 }
 
                 // Free any unmanaged objects here.
                 //
-                fetchResponse?.Dispose();
-                abortController?.Dispose();
+                _fetchResponse?.Dispose();
+                _abortController?.Dispose();
             }
 
         }
@@ -591,5 +591,4 @@ namespace System.Net.Http
             }
         }
     }
-
 }
