@@ -13,4 +13,4 @@ sweep operations on all the code that it is referenced, to only keep what is
 necessary for the source program to run.
 
 For more details about how the linker works and other documentation please
-check [doc/](/doc/README.md) folder.
+check [docs/](/docs/README.md) folder.
