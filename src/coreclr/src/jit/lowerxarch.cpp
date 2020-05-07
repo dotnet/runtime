@@ -1264,8 +1264,8 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     assert(op1 != nullptr);
 
-    int argCnt    = 0;
-    int cnsArgCnt = 0;
+    unsigned argCnt    = 0;
+    unsigned cnsArgCnt = 0;
 
     if (op1->OperIsList())
     {
@@ -1312,7 +1312,6 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     if (argCnt == cnsArgCnt)
     {
-
         if (op1->OperIsList())
         {
             for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
@@ -1787,12 +1786,12 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         //   lo = Vector128.Create(op1,  ..., op15);
         //   hi = Vector128.Create(op16, ..., op31);
 
-        int halfArgCnt = argCnt / 2;
+        unsigned halfArgCnt = argCnt / 2;
         assert((halfArgCnt * 2) == argCnt);
 
         argList = op1->AsArgList();
 
-        for (int i = 0; i < halfArgCnt; i++)
+        for (unsigned i = 0; i < halfArgCnt; i++)
         {
             op2     = argList;
             argList = argList->Rest();
@@ -1893,7 +1892,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         case TYP_INT:
         case TYP_UINT:
         {
-            int            N            = 0;
+            unsigned       N            = 0;
             GenTree*       opN          = nullptr;
             NamedIntrinsic insIntrinsic = NI_Illegal;
 
@@ -2013,9 +2012,9 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     //   tmp3 = Sse2.UnpackLow(tmp1, tmp2);
                     //   ...
 
-                    int O = N + 1;
-                    int P = N + 2;
-                    int Q = N + 3;
+                    unsigned O = N + 1;
+                    unsigned P = N + 2;
+                    unsigned Q = N + 3;
 
                     tmp1 =
                         comp->gtNewSimdHWIntrinsicNode(simdType, op[N], op[O], NI_SSE2_UnpackLow, TYP_UBYTE, simdSize);
@@ -2139,7 +2138,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         case TYP_FLOAT:
         {
-            int      N   = 0;
+            unsigned N   = 0;
             GenTree* opN = nullptr;
 
             if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
