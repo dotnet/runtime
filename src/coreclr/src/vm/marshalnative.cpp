@@ -694,25 +694,6 @@ FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL1(int, MarshalNative::GetHRForException_WinRT, Object* eUNSAFE)
-{
-    CONTRACTL {
-       NOTHROW;    // Used by reverse COM IL stubs, so we must not throw exceptions back to COM
-       DISABLED(GC_TRIGGERS); // FCALLS with HELPER frames have issues with GC_TRIGGERS
-       MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    int retVal = 0;
-    OBJECTREF e = (OBJECTREF) eUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOTHROW_1({ retVal = COR_E_STACKOVERFLOW; }, e);
-
-    retVal = SetupErrorInfo(e, /* isWinRTScenario = */ TRUE);
-
-    HELPER_METHOD_FRAME_END_NOTHROW();
-    return retVal;
-}
-FCIMPLEND
-
 #ifdef FEATURE_COMINTEROP
 
 //====================================================================

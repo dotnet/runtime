@@ -1369,26 +1369,6 @@ void ILInterfaceMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
     pslILEmit->EmitCALL(METHOD__INTERFACEMARSHALER__CONVERT_TO_NATIVE, 4, 1);
 
     EmitStoreNativeValue(pslILEmit);
-
-    if (IsCLRToNative(m_dwMarshalFlags) &&
-        m_pargs->m_pMarshalInfo->IsWinRTScenario())
-    {
-        // If we are calling from CLR into WinRT and we are passing an interface to WinRT, we need to
-        // keep the object alive across unmanaged call because Jupiter might need to add this
-        // RCW into their live tree and whatever CCWs referenced by this RCW could get collected
-        // before the call to native, for example:
-        //
-        // Button btn = new Button();
-        // btn.OnClick += ...
-        // m_grid.Children.Add(btn)
-        //
-        // In this case, btn could be collected and takes the delegate CCW with it, before Children.add
-        // native method is called, and as a result Jupiter will add the neutered CCW into the tree
-        //
-        // The fix is to extend the lifetime of the argument across the call to native by doing a GC.KeepAlive
-        // keep the delegate ref alive across the call-out to native
-        EmitKeepAliveManagedValue();
-    }
 }
 
 void ILInterfaceMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -1400,18 +1380,6 @@ void ILInterfaceMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmi
 
     // the helper may assign NULL to the home (see below)
     EmitLoadNativeHomeAddr(pslILEmit);
-
-    if (IsCLRToNative(m_dwMarshalFlags) && m_pargs->m_pMarshalInfo->IsWinRTScenario())
-    {
-        // We are converting an interface pointer to object in a CLR->native stub which means
-        // that the interface pointer has been AddRef'ed for us by the callee. If we end up
-        // wrapping it with a new RCW, we can omit another AddRef/Release pair. Note that if
-        // a new RCW is created the native home will be zeroed out by the helper so the call
-        // to InterfaceMarshaler__ClearNative will become a no-op.
-
-        // Note that we are only doing this for WinRT scenarios to reduce the risk of this change
-        itfInfo.dwFlags |= ItfMarshalInfo::ITF_MARSHAL_SUPPRESS_ADDREF;
-    }
 
     if (itfInfo.thItf.GetMethodTable())
     {

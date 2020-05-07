@@ -312,7 +312,7 @@ struct MethodTableWriteableData
         enum_flag_IsNotFullyLoaded          = 0x00000040,
         enum_flag_DependenciesLoaded        = 0x00000080,     // class and all depedencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
-        enum_flag_SkipWinRTOverride         = 0x00000100,     // No WinRT override is needed
+        // enum_unused                      = 0x00000100,
 
         enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x00000200,     // Is any field type or sub field type overrode Equals or GetHashCode
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000400,  // Whether we have checked the overridden Equals or GetHashCode
@@ -324,7 +324,7 @@ struct MethodTableWriteableData
         enum_flag_NGEN_IsFixedUp            = 0x00010000, // This MT has been fixed up during NGEN
         enum_flag_NGEN_IsNeedsRestoreCached = 0x00020000, // Set if we have cached the results of needs restore computation
         enum_flag_NGEN_CachedNeedsRestore   = 0x00040000, // The result of the needs restore computation
-        enum_flag_NGEN_OverridingInterface  = 0x00080000, // Overriding interface that we should generate WinRT CCW stubs for.
+        // enum_unused                      = 0x00080000,
 
 #ifdef FEATURE_READYTORUN_COMPILER
         enum_flag_NGEN_IsLayoutFixedComputed                    = 0x0010000, // Set if we have cached the result of IsLayoutFixed computation
@@ -717,14 +717,6 @@ public:
     // Retrieves the COM interface type.
     CorIfaceAttr    GetComInterfaceType();
     void SetComInterfaceType(CorIfaceAttr ItfType);
-
-    // Determines whether this is a WinRT-legal type
-    BOOL IsLegalWinRTType(OBJECTREF *poref);
-
-    // Determines whether this is a WinRT-legal type - don't use it with array
-    BOOL IsLegalNonArrayWinRTType();
-
-    MethodTable *GetDefaultWinRTInterface();
 
     OBJECTHANDLE GetOHDelegate();
     void SetOHDelegate (OBJECTHANDLE _ohDelegate);

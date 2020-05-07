@@ -1505,9 +1505,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     if (IsComImport() && !IsEnum() && !IsInterface() && !IsValueClass() && !IsDelegate())
     {
 #ifdef FEATURE_COMINTEROP
-        // ComImport classes must either extend from Object or be a WinRT class
-        // that extends from another WinRT class (and so form a chain of WinRT classes
-        // that ultimately extend from object).
+        // ComImport classes must either extend from Object
         MethodTable* pMTParent = GetParentMethodTable();
         if ((pMTParent == NULL) || (pMTParent != g_pObjectClass))
         {
@@ -10743,9 +10741,6 @@ void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData
         return;
 
 #ifdef FEATURE_COMINTEROP
-    // Note that this is important for WinRT where redirected .NET interfaces appear on the interface
-    // impl list but their methods are not implemented (the adapter only hides the WinRT methods, it
-    // does not make up the .NET ones).
     if (bmtProp->fIsComObjectType)
         return;
 #endif // FEATURE_COMINTEROP
@@ -10992,7 +10987,7 @@ bool ModulesAreDistributedAsAnIndivisibleUnit(Module* module1, Module* module2)
 {
     if (module1 == module2)
         return true;
-    
+
     bool nativeImagesIdentical = false;
     if (module1->GetCompositeNativeImage() != NULL)
     {

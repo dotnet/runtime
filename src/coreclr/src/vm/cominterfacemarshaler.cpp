@@ -235,47 +235,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
     // (SetJupiterObject gets the first shot at this.)
     int nNextFreeIdx = pNewRCW->m_aInterfaceEntries[0].IsFree() ? 0 : 1;
 
-    // Only cache WinRT interfaces
-    // Note that we can't use SupportsIInspectable here because we could be talking to a CCW
-    // which supports IInspectable by default
-    if (ppIncomingIP != NULL &&
-        *ppIncomingIP != NULL &&
-        pIncomingItfMT != NULL &&
-        pIncomingItfMT->IsLegalNonArrayWinRTType())
-    {
-        _ASSERTE(pIncomingItfMT->IsInterface());
-        _ASSERTE(pNewRCW->m_aInterfaceEntries[nNextFreeIdx].IsFree());
-
-        //
-        // The incoming interface pointer is of type m_pItfMT
-        // Cache the result into RCW for better performance and for variance support
-        pNewRCW->m_aInterfaceEntries[nNextFreeIdx++].Init(pIncomingItfMT, *ppIncomingIP);
-
-        // Don't hold ref count if RCW is aggregated
-        if (!pNewRCW->IsURTAggregated())
-        {
-            if (bIncomingIPAddRefed)
-            {
-                // Transfer the ref from ppIncomingIP to internal cache
-                // This will only happen in WinRT scenarios to reduce risk of this change
-                *ppIncomingIP = NULL;
-            }
-            else
-            {
-                // Otherwise AddRef by ourselves
-                RCW_VTABLEPTR(pNewRCW);
-                SafeAddRef(*ppIncomingIP);
-            }
-
-            RCWWalker::AfterInterfaceAddRef(pNewRCW);
-        }
-
-        // Save GetEnumerator method if necessary
-        // Do this after we "AddRef" on ppIncomingIP otherwise we would call Release on it
-        // without a AddRef
-        pNewRCW->SetGetEnumeratorMethod(pIncomingItfMT);
-    }
-
     if (!m_itfTypeHandle.IsNull() && !m_itfTypeHandle.IsTypeDesc())
     {
         MethodTable *pItfMT = m_itfTypeHandle.AsMethodTable();

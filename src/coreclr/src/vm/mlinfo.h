@@ -526,15 +526,6 @@ public:
         return m_paramidx;
     }
 
-#ifdef FEATURE_COMINTEROP
-    BOOL IsWinRTScenario()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return false;
-    }
-#endif // FEATURE_COMINTEROP
-
     BOOL IsFieldScenario()
     {
         LIMITED_METHOD_CONTRACT;

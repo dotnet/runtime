@@ -114,14 +114,13 @@ HRESULT GetHRFromCLRErrorInfo(IErrorInfo* pErr)
 }
 #endif // FEATURE_COMINTEROP
 
-HRESULT SetupErrorInfo(OBJECTREF pThrownObject, BOOL bIsWinRTScenario /* = FALSE */)
+HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(!bIsWinRTScenario);
     }
     CONTRACTL_END;
 

@@ -216,33 +216,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
 
         if (ReqIpType & ComIpType_Inspectable)
         {
-            MethodTable * pMT = (*poref)->GetMethodTable();
-
-            //
-            // Check whether this object is of a legal WinRT type (including array)
-            //
-            // Note that System.RuntimeType is a weird case - we only redirect System.Type at type
-            // level, but when we boxing the actual instance, we expect it to be a System.RuntimeType
-            // instance, which is not redirected and not a legal WinRT type
-            //
-            // Therefore, special case for System.RuntimeType and treat it as a legal WinRT type
-            // only for boxing
-            //
-            if (pMT->IsLegalWinRTType(poref) ||
-                MscorlibBinder::IsClass(pMT, CLASS__CLASS))
-            {
-                // WinRT reference type - marshal as IInspectable
-                //
-                pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_IInspectable, /* pIntfMT = */ NULL);
-            }
-            else
-            {
-                //
-                // Marshal non-WinRT types as IInspectable* to enable round-tripping (for example, TextBox.Tag property)
-                // By default, this returns ICustomPropertyProvider;
-                //
-                pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_IInspectable, /* pIntfMT = */ NULL);
-            }
+            pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_IInspectable, /* pIntfMT = */ NULL);
 
             if (pUnk)
                 FetchedIpType = ComIpType_Inspectable;

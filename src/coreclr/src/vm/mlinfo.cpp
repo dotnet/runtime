@@ -1296,16 +1296,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
     corElemType = sig.PeekElemTypeNormalized(pModule, pTypeContext);
     mtype = corElemType;
 
-#ifdef FEATURE_COMINTEROP
-    if (IsWinRTScenario() && nativeType != NATIVE_TYPE_DEFAULT)
-    {
-        // Do not allow any MarshalAs in WinRT scenarios - marshaling is fully described by the parameter type.
-        m_type = MARSHAL_TYPE_UNKNOWN;
-        m_resID = IDS_EE_BADMARSHAL_WINRT_MARSHAL_AS;
-        IfFailGoto(E_FAIL, lFail);
-    }
-#endif // FEATURE_COMINTEROP
-
     // Make sure SizeParamIndex < numArgs when marshalling native arrays
     if (nativeType == NATIVE_TYPE_ARRAY && ParamInfo.m_SizeIsSpecified)
     {
@@ -1352,16 +1342,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
     // Check for valid ET_PTR signature
     if (mtype == ELEMENT_TYPE_PTR)
     {
-#ifdef FEATURE_COMINTEROP
-        // WinRT does not support ET_PTR
-        if (IsWinRTScenario())
-        {
-            m_type = MARSHAL_TYPE_UNKNOWN;
-            m_resID = IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE;
-            IfFailGoto(E_FAIL, lFail);
-        }
-#endif // FEATURE_COMINTEROP
-
         SigPointer sigtmp = sig;
         IfFailGoto(sigtmp.GetElemType(NULL), lFail);
 
@@ -1517,11 +1497,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         // 2-byte COM VARIANT_BOOL
                         m_type = MARSHAL_TYPE_VTBOOL;
-                    }
-                    else if (IsWinRTScenario())
-                    {
-                        // 1-byte WinRT bool
-                        m_type = MARSHAL_TYPE_CBOOL;
                     }
                     else
 #endif // FEATURE_COMINTEROP
@@ -1709,10 +1684,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_PTR:
-#ifdef FEATURE_COMINTEROP
-            _ASSERTE(!IsWinRTScenario()); // we checked for this earlier
-#endif // FEATURE_COMINTEROP
-
             if (nativeType != NATIVE_TYPE_DEFAULT)
             {
                 m_resID = IDS_EE_BADMARSHAL_PTR;
@@ -1726,14 +1697,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_FNPTR:
-#ifdef FEATURE_COMINTEROP
-            if (IsWinRTScenario())
-            {
-                m_resID = IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE;
-                IfFailGoto(E_FAIL, lFail);
-            }
-#endif // FEATURE_COMINTEROP
-
             if (!(nativeType == NATIVE_TYPE_FUNC || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_FNPTR;
@@ -1911,17 +1874,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         case NATIVE_TYPE_DEFAULT:
                         {
 #ifdef FEATURE_COMINTEROP
-                            if (IsWinRTScenario())
-                            {
-                                if (builder)
-                                {
-                                    m_resID = IDS_EE_BADMARSHALPARAM_STRINGBUILDER;
-                                    IfFailGoto(E_FAIL, lFail);
-                                }
-
-                                IfFailGoto(E_FAIL, lFail);
-                            }
-                            else if (m_ms == MARSHAL_SCENARIO_COMINTEROP)
+                            if (m_ms == MARSHAL_SCENARIO_COMINTEROP)
                             {
                                 m_type = builder ? MARSHAL_TYPE_LPWSTR_BUFFER : MARSHAL_TYPE_BSTR;
                             }
@@ -2020,12 +1973,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         IfFailGoto(E_FAIL, lFail);
                     }
                     m_type = MARSHAL_TYPE_INTERFACE;
-
-                    if (IsWinRTScenario())
-                    {
-                        // all interfaces marshaled in WinRT scenarios are IInspectable-based
-                        m_fInspItf = TRUE;
-                    }
                 }
 #endif // FEATURE_COMINTEROP
                 else if (COMDelegate::IsDelegate(m_pMT))
@@ -2091,13 +2038,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
 #ifdef FEATURE_COMINTEROP
                         case NATIVE_TYPE_DEFAULT:
-                            if (IsWinRTScenario())
-                            {
-                                m_fInspItf = TRUE;
-                                m_type = MARSHAL_TYPE_INTERFACE;
-                                break;
-                            }
-                            else if (ms == MARSHAL_SCENARIO_FIELD)
+                            if (ms == MARSHAL_SCENARIO_FIELD)
                             {
                                 m_type = MARSHAL_TYPE_INTERFACE;
                                 break;
@@ -2147,12 +2088,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
 #ifdef FEATURE_COMINTEROP
                 else if (sig.IsClassThrowing(pModule, g_ArrayClassName, pTypeContext))
                 {
-                    if (IsWinRTScenario())
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-
                     switch(nativeType)
                     {
                         case NATIVE_TYPE_DEFAULT:
@@ -2200,14 +2135,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
 #endif // FEATURE_COMINTEROP
                 else if (!m_pMT->IsValueType())
                 {
-#ifdef FEATURE_COMINTEROP
-                    if (IsWinRTScenario() && !m_pMT->IsLegalNonArrayWinRTType())
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-#endif // FEATURE_COMINTEROP
-
                     if (!(nativeType == NATIVE_TYPE_INTF || nativeType == NATIVE_TYPE_DEFAULT))
                     {
                         m_resID = IDS_EE_BADMARSHAL_NOLAYOUT;
@@ -2441,16 +2368,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         if (fNeedsCopyCtor && !IsFieldScenario()) // We don't support automatically discovering copy constructors for fields.
                         {
-#ifdef FEATURE_COMINTEROP
-                            if (IsWinRTScenario())
-                            {
-                                // our WinRT-optimized GetCOMIPFromRCW helpers don't support copy
-                                // constructor stubs so make sure that this marshaler will not be used
-                                m_resID = IDS_EE_BADMARSHAL_WINRT_COPYCTOR;
-                                IfFailGoto(E_FAIL, lFail);
-                            }
-#endif
-
                             MethodDesc *pCopyCtor;
                             MethodDesc *pDtor;
                             FindCopyCtor(pModule, m_pMT, &pCopyCtor);
@@ -2706,7 +2623,7 @@ VOID MarshalInfo::EmitOrThrowInteropParamException(NDirectStubLinker* psl, BOOL 
 #ifdef FEATURE_COMINTEROP
     // If this is not forward COM interop, throw the exception right away. We rely on this
     // for example in code:ComPreStubWorker when we fire the InvalidMemberDeclaration MDA.
-    if ((m_ms == MARSHAL_SCENARIO_COMINTEROP || IsWinRTScenario()) && fMngToNative && !IsFieldScenario())
+    if (m_ms == MARSHAL_SCENARIO_COMINTEROP && fMngToNative && !IsFieldScenario())
     {
         psl->SetInteropParamExceptionInfo(resID, paramIdx);
         return;

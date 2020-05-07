@@ -70,7 +70,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject, ComCallMethodDesc *pCMD);
 BOOL IsManagedObject(IUnknown *pErrInfo);
 #endif // FEATURE_COMINTEROP
 
-HRESULT SetupErrorInfo(OBJECTREF pThrownObject, BOOL bIsWinRTScenario = FALSE);
+HRESULT SetupErrorInfo(OBJECTREF pThrownObject);
 
 //--------------------------------------------------------------------------------
  // Release helper, enables and disables GC during call-outs

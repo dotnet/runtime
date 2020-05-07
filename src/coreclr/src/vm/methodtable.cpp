@@ -4005,27 +4005,22 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
     if (HasGuidInfo())
     {
         // Make sure our GUID is computed
-
-        // Generic WinRT types can have their GUID computed only if the instantiation is WinRT-legal
-        if (IsLegalNonArrayWinRTType())
+        GUID dummy;
+        if (SUCCEEDED(GetGuidNoThrow(&dummy, TRUE, FALSE)))
         {
-            GUID dummy;
-            if (SUCCEEDED(GetGuidNoThrow(&dummy, TRUE, FALSE)))
-            {
-                GuidInfo* pGuidInfo = GetGuidInfo();
-                _ASSERTE(pGuidInfo != NULL);
+            GuidInfo* pGuidInfo = GetGuidInfo();
+            _ASSERTE(pGuidInfo != NULL);
 
-                image->StoreStructure(pGuidInfo,
-                                      sizeof(GuidInfo),
-                                      DataImage::ITEM_GUID_INFO);
+            image->StoreStructure(pGuidInfo,
+                                    sizeof(GuidInfo),
+                                    DataImage::ITEM_GUID_INFO);
 
-                Module *pModule = GetModule();
-            }
-            else
-            {
-                GuidInfo** ppGuidInfo = GetGuidInfoPtr();
-                *ppGuidInfo = NULL;
-            }
+            Module *pModule = GetModule();
+        }
+        else
+        {
+            GuidInfo** ppGuidInfo = GetGuidInfoPtr();
+            *ppGuidInfo = NULL;
         }
     }
 #endif // FEATURE_COMINTEROP
@@ -6195,80 +6190,6 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
 
 #endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-#ifndef DACCESS_COMPILE
-
-#ifndef CROSSGEN_COMPILE
-BOOL MethodTable::IsLegalWinRTType(OBJECTREF *poref)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(IsProtectedByGCFrame(poref));
-        PRECONDITION(CheckPointer(poref));
-        PRECONDITION((*poref) != NULL);
-    }
-    CONTRACTL_END
-
-    if (IsArray())
-    {
-        BASEARRAYREF arrayRef = (BASEARRAYREF)(*poref);
-
-        // WinRT array must be one-dimensional array with 0 lower-bound
-        if (arrayRef->GetRank() == 1 && arrayRef->GetLowerBoundsPtr()[0] == 0)
-        {
-            MethodTable *pElementMT = ((BASEARRAYREF)(*poref))->GetArrayElementTypeHandle().GetMethodTable();
-
-            // Element must be a legal WinRT type and not an array
-            if (!pElementMT->IsArray() && pElementMT->IsLegalNonArrayWinRTType())
-                return TRUE;
-        }
-
-        return FALSE;
-    }
-    else
-    {
-        // Non-Array version of IsLegalNonArrayWinRTType
-        return IsLegalNonArrayWinRTType();
-    }
-}
-#endif //#ifndef CROSSGEN_COMPILE
-
-BOOL MethodTable::IsLegalNonArrayWinRTType()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(!IsArray()); // arrays are handled in the callers
-    }
-    CONTRACTL_END
-
-    return FALSE;
-}
-
-//==========================================================================================
-// Returns the default WinRT interface if this is a WinRT class, NULL otherwise.
-MethodTable *MethodTable::GetDefaultWinRTInterface()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    _ASSERT("WinRT is not supported.");
-    return nullptr;
-}
-
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_COMINTEROP
-
 #ifdef FEATURE_TYPEEQUIVALENCE
 #ifndef DACCESS_COMPILE
 
@@ -7484,13 +7405,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     // Cache the guid in the type, if not already cached.
     // We currently only do this for interfaces.
     // Also, in classic mode do NOT cache GUID for redirected interfaces.
-    if ((IsInterface()) && (pInfo == NULL) && (*pGuid != GUID_NULL)
-#ifdef FEATURE_COMINTEROP
-        && !(bClassic
-             && SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)
-             && IsLegalNonArrayWinRTType())
-#endif // FEATURE_COMINTEROP
-        )
+    if ((IsInterface()) && (pInfo == NULL) && (*pGuid != GUID_NULL))
     {
         AllocMemTracker amTracker;
         BOOL bStoreGuidInfoOnEEClass = false;
