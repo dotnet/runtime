@@ -94,6 +94,7 @@ internal static partial class Interop
             }
 
         }
+
         internal static void UnBindRawJSObjectAndFree(int gcHandle)
         {
 
@@ -118,6 +119,7 @@ internal static partial class Interop
             }
 
         }
+
         internal static object CreateTaskSource(int jsId)
         {
             return new TaskCompletionSource<object>();
@@ -147,6 +149,7 @@ internal static partial class Interop
 
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
+
         internal static int GetJSObjectId(object rawObj)
         {
             JSObject? obj = rawObj as JSObject;
@@ -168,6 +171,7 @@ internal static partial class Interop
         {
             return i;
         }
+
         internal static object BoxDouble(double d)
         {
             return d;
@@ -182,6 +186,7 @@ internal static partial class Interop
         {
             return a is Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
+
         internal static object? GetCoreType(string coreObj)
         {
             Assembly asm = typeof(Runtime).Assembly;
@@ -271,6 +276,7 @@ internal static partial class Interop
             }
             return new string(res);
         }
+
         internal static void SetupJSContinuation(Task task, JSObject continuationObj)
         {
             if (task.IsCompleted)
@@ -315,12 +321,6 @@ internal static partial class Interop
 
         internal static string ObjectToString(object o)
         {
-
-            //if (o == null)
-            //    return null;
-            //if (o is Enum)
-            //    return EnumToExportContract((Enum)o).ToString();
-
             return o.ToString() ?? string.Empty;
         }
 
@@ -342,6 +342,7 @@ internal static partial class Interop
             var unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
             return unixTime.DateTime;
         }
+
         internal static Uri CreateUri(string uri)
         {
             return new Uri(uri);

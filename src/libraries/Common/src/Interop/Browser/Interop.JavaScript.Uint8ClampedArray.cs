@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
 internal static partial class Interop
 {
     internal static partial class JavaScript
     {
-
         public sealed class Uint8ClampedArray : TypedArray<Uint8ClampedArray, byte>
         {
             public Uint8ClampedArray()

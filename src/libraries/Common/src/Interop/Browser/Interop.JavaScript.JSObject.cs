@@ -14,6 +14,7 @@ internal static partial class Interop
             int Length { get; }
         }
     }
+
     internal static partial class JavaScript
     {
         /// <summary>
@@ -36,14 +37,10 @@ internal static partial class Interop
             }
 
             internal JSObject(IntPtr js_handle) : base(js_handle)
-            {
-                //Console.WriteLine ($"JSObject: {js_handle}");
-            }
+            { }
 
             internal JSObject(int js_handle) : base((IntPtr)js_handle)
-            {
-                //Console.WriteLine ($"JSObject: {js_handle}");
-            }
+            { }
 
             internal JSObject(int js_handle, object raw_obj) : base(js_handle)
             {

@@ -21,12 +21,10 @@ internal static partial class Interop
 
             void Set(ITypedArray typedArray);
             void Set(ITypedArray typedArray, int offset);
-            //TypedArrayTypeCode GetTypedArrayType();
         }
 
         public interface ITypedArray<T, U> where U : struct
         {
-
             T Slice();
             T Slice(int begin);
             T Slice(int begin, int end);
@@ -34,7 +32,6 @@ internal static partial class Interop
             T SubArray();
             T SubArray(int begin);
             T SubArray(int begin, int end);
-
         }
 
         public enum TypedArrayTypeCode
@@ -50,10 +47,14 @@ internal static partial class Interop
             Uint8ClampedArray = 0xF,
         }
 
+        /// <summary>
+        /// Represents a JavaScript TypedArray.
+        /// </summary>
         public abstract class TypedArray<T, U> : CoreObject, ITypedArray, ITypedArray<T, U> where U : struct
         {
             protected TypedArray() : base(Runtime.New<T>())
             { }
+
             protected TypedArray(int length) : base(Runtime.New<T>(length))
             { }
 
@@ -75,35 +76,8 @@ internal static partial class Interop
             protected TypedArray(SharedArrayBuffer buffer, int byteOffset, int length) : base(Runtime.New<T>(buffer, byteOffset, length))
             { }
 
-            internal TypedArray(IntPtr js_handle) : base(js_handle)
+            internal TypedArray(IntPtr jsHandle) : base(jsHandle)
             { }
-
-            // public TypedArrayTypeCode GetTypedArrayType()
-            // {
-            //     switch (this)
-            //     {
-            //         case Int8Array _:
-            //             return TypedArrayTypeCode.Int8Array;
-            //         case Uint8Array _:
-            //             return TypedArrayTypeCode.Uint8Array;
-            //         case Uint8ClampedArray _:
-            //             return TypedArrayTypeCode.Uint8ClampedArray;
-            //         case Int16Array _:
-            //             return TypedArrayTypeCode.Int16Array;
-            //         case Uint16Array _:
-            //             return TypedArrayTypeCode.Uint16Array;
-            //         case Int32Array _:
-            //             return TypedArrayTypeCode.Int32Array;
-            //         case Uint32Array _:
-            //             return TypedArrayTypeCode.Uint32Array;
-            //         case Float32Array _:
-            //             return TypedArrayTypeCode.Float32Array;
-            //         case Float64Array _:
-            //             return TypedArrayTypeCode.Float64Array;
-            //         default:
-            //             throw new ArrayTypeMismatchException("TypedArray is not of correct type.");
-            //     }
-            // }
 
             public int BytesPerElement => (int)GetObjectProperty("BYTES_PER_ELEMENT");
             public string Name => (string)GetObjectProperty("name");

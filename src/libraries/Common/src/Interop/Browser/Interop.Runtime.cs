@@ -117,7 +117,6 @@ internal static partial class Interop
                     jsobj.IsDisposed = true;
                     jsobj.Handle.Free();
                 }
-
             }
             else
             {

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
 internal static partial class Interop
 {
     /// <summary>
