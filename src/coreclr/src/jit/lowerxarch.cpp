@@ -934,6 +934,13 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_Create:
         case NI_Vector256_Create:
         {
+            // We don't directly support the Vector128.Create or Vector256.Create methods in codegen
+            // and instead lower them to other intrinsic nodes in LowerHWIntrinsicCreate so we expect
+            // that the node is modified to either not be a HWIntrinsic node or that it is no longer
+            // the same intrinsic as when it came in. In the case of Vector256.Create, we may lower
+            // it into 2x Vector128.Create intrinsics which themselves are also lowered into other
+            // intrinsics that are not Vector*.Create
+
             LowerHWIntrinsicCreate(node);
             assert(!node->OperIsHWIntrinsic() || (node->gtHWIntrinsicId != intrinsicId));
             LowerNode(node);
@@ -1129,6 +1136,11 @@ static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConsta
                 vecCns.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
                 return true;
             }
+            else
+            {
+                // We expect the VectorConstant to have been already zeroed
+                assert(vecCns.i8[argIdx] == 0);
+            }
             break;
         }
 
@@ -1139,6 +1151,11 @@ static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConsta
             {
                 vecCns.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
                 return true;
+            }
+            else
+            {
+                // We expect the VectorConstant to have been already zeroed
+                assert(vecCns.i16[argIdx] == 0);
             }
             break;
         }
@@ -1151,6 +1168,11 @@ static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConsta
                 vecCns.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
                 return true;
             }
+            else
+            {
+                // We expect the VectorConstant to have been already zeroed
+                assert(vecCns.i32[argIdx] == 0);
+            }
             break;
         }
 
@@ -1162,6 +1184,11 @@ static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConsta
                 vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsLngCon()->gtLconVal);
                 return true;
             }
+            else
+            {
+                // We expect the VectorConstant to have been already zeroed
+                assert(vecCns.i64[argIdx] == 0);
+            }
             break;
         }
 
@@ -1172,6 +1199,12 @@ static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConsta
                 vecCns.f32[argIdx] = static_cast<float>(arg->AsDblCon()->gtDconVal);
                 return true;
             }
+            else
+            {
+                // We expect the VectorConstant to have been already zeroed
+                // We check against the i32, rather than f32, to account for -0.0
+                assert(vecCns.i32[argIdx] == 0);
+            }
             break;
         }
 
@@ -1181,6 +1214,12 @@ static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConsta
             {
                 vecCns.f64[argIdx] = static_cast<double>(arg->AsDblCon()->gtDconVal);
                 return true;
+            }
+            else
+            {
+                // We expect the VectorConstant to have been already zeroed
+                // We check against the i64, rather than f64, to account for -0.0
+                assert(vecCns.i64[argIdx] == 0);
             }
             break;
         }
@@ -1215,8 +1254,13 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     GenTreeArgList* argList = nullptr;
     GenTree*        op1     = node->gtGetOp1();
     GenTree*        op2     = node->gtGetOp2();
-    GenTree*        idx     = nullptr;
-    GenTree*        tmp     = nullptr;
+
+    // Spare GenTrees to be used for the lowering logic below
+    // Defined upfront to avoid naming conflicts, etc...
+    GenTree* idx  = nullptr;
+    GenTree* tmp1 = nullptr;
+    GenTree* tmp2 = nullptr;
+    GenTree* tmp3 = nullptr;
 
     assert(op1 != nullptr);
 
@@ -1299,27 +1343,29 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     }
     else if (argCnt == 1)
     {
-        // We have the following:
-        //
-        // /--*  <value>
-        // *  HWINTRINSIC simd16 T Create
+        // We have the following (where simd is simd16 or simd32):
+        //          /--*  op1  T
+        //   node = *  HWINTRINSIC   simd   T Create
 
         if (intrinsicId == NI_Vector256_Create)
         {
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 // We will be constructing the following parts:
-                //
-                //      /--*  <value>
-                // t1 = *  HWINTRINSIC simd16 ubyte CreateScalarUnsafe
-                //      /--*  t1     simd16
-                // t0 = *  HWINTRINSIC simd32 T BroadcastScalarToVector256
+                //          /--*  op1  T
+                //   tmp1 = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+                //          /--*  tmp1 simd16
+                //   node = *  HWINTRINSIC   simd32 T BroadcastScalarToVector256
 
-                op1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-                BlockRange().InsertBefore(node, op1);
-                LowerNode(op1);
+                // This is roughly the following managed code:
+                //   var tmp1 = Vector128.CreateScalarUnsafe(op1);
+                //   return Avx2.BroadcastScalarToVector256(tmp1);
 
-                node->gtOp1 = op1;
+                tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+                BlockRange().InsertAfter(op1, tmp1);
+                LowerNode(tmp1);
+
+                node->gtOp1 = tmp1;
                 node->gtOp2 = nullptr;
 
                 node->gtHWIntrinsicId = NI_AVX2_BroadcastScalarToVector256;
@@ -1329,34 +1375,46 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
 
             // We will be constructing the following parts:
-            //
-            // t2 =    CNS_INT   int    0
-            //      /--*  t?     simd32
-            //      +--*  t?     simd16
-            //      +--*  t?     int
-            // t0 = *  HWINTRINSIC simd32 T InsertVector128
+            //          /--*  op1  T
+            //   tmp1 = *  HWINTRINSIC   simd16 T Create
+            //          /--*  tmp1 simd16
+            //          *  STORE_LCL_VAR simd16
+            //   tmp1 =    LCL_VAR       simd16
+            //   tmp2 =    LCL_VAR       simd16
+            //          /--*  tmp2 simd16
+            //   tmp3 = *  HWINTRINSIC   simd16 T ToVector256Unsafe
+            //   idx  =    CNS_INT       int    0
+            //          /--*  tmp3 simd32
+            //          +--*  tmp1 simd16
+            //          +--*  idx  int
+            //   node = *  HWINTRINSIC simd32 T InsertVector128
 
-            op2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_Create, baseType, 16);
-            BlockRange().InsertBefore(node, op2);
-            LowerNode(op2);
+            // This is roughly the following managed code:
+            //   var tmp1 = Vector128.Create(op1);
+            //   var tmp2 = tmp1;
+            //   var tmp3 = tmp2.ToVector256Unsafe();
+            //   return Avx.InsertVector128(tmp3, tmp1, 0x01);
 
-            node->gtOp2 = op2;
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_Create, baseType, 16);
+            BlockRange().InsertAfter(op1, tmp1);
+            LowerNode(tmp1);
 
-            LIR::Use op2Use(BlockRange(), &node->gtOp2, node);
-            ReplaceWithLclVar(op2Use);
+            node->gtOp1 = tmp1;
+            LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+            ReplaceWithLclVar(tmp1Use);
+            tmp1 = node->gtOp1;
 
-            op1 = comp->gtClone(node->gtOp2);
-            BlockRange().InsertBefore(node, op1);
-            LowerNode(op1);
+            tmp2 = comp->gtClone(tmp1);
+            BlockRange().InsertAfter(tmp1, tmp2);
 
-            op1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, NI_Vector128_ToVector256Unsafe, baseType, 16);
-            BlockRange().InsertBefore(node, op1);
-            LowerNode(op1);
+            tmp3 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, tmp2, NI_Vector128_ToVector256Unsafe, baseType, 16);
+            BlockRange().InsertAfter(tmp2, tmp3);
+            LowerNode(tmp3);
 
             idx = comp->gtNewIconNode(0x01, TYP_INT);
-            BlockRange().InsertBefore(node, idx);
+            BlockRange().InsertAfter(tmp3, idx);
 
-            node->gtOp1 = comp->gtNewArgList(op1, node->gtOp2, idx);
+            node->gtOp1 = comp->gtNewArgList(tmp3, tmp1, idx);
             node->gtOp2 = nullptr;
 
             node->gtHWIntrinsicId = NI_AVX_InsertVector128;
@@ -1364,21 +1422,30 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         }
 
         // We will be constructing the following parts:
-        //
-        //      /--*  <value>
-        // t1 = *  HWINTRINSIC simd16 ubyte CreateScalarUnsafe
-        // ...
-        op1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-        BlockRange().InsertBefore(node, op1);
-        LowerNode(op1);
+        //          /--*  op1  T
+        //   tmp1 = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+        //   ...
+
+        // This is roughly the following managed code:
+        //   var tmp1 = Vector128.CreateScalarUnsafe(op1);
+        //   ...
+
+        tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+        BlockRange().InsertAfter(op1, tmp1);
+        LowerNode(tmp1);
 
         if ((baseType != TYP_DOUBLE) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
-            // ...
-            //      /--*  t1     simd16
-            // t0 = *  HWINTRINSIC simd16 T BroadcastScalarToVector128
+            // We will be constructing the following parts:
+            //   ...
+            //           /--*  tmp1 simd16
+            //   node  = *  HWINTRINSIC   simd16 T BroadcastScalarToVector128
 
-            node->gtOp1 = op1;
+            // This is roughly the following managed code:
+            //   ...
+            //   return Avx2.BroadcastScalarToVector128(tmp1);
+
+            node->gtOp1 = tmp1;
             node->gtOp2 = nullptr;
 
             node->gtHWIntrinsicId = NI_AVX2_BroadcastScalarToVector128;
@@ -1392,18 +1459,24 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             {
                 if (comp->compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                 {
-                    // ...
-                    // t2 =   HWINTRINSIC simd16 ubyte get_Zero
-                    //      /--*  t1     simd16
-                    //      +--*  t2     simd16
-                    // t0 = *  HWINTRINSIC simd16 ubyte Shuffle
+                    // We will be constructing the following parts:
+                    //   ...
+                    //   tmp2 =    HWINTRINSIC   simd16 ubyte get_Zero
+                    //         /--*  tmp1 simd16
+                    //         +--*  tmp2 simd16
+                    //   node = *  HWINTRINSIC   simd16 ubyte Shuffle
 
-                    op2 = comp->gtNewSimdHWIntrinsicNode(simdType, NI_Vector128_get_Zero, TYP_UBYTE, simdSize);
-                    BlockRange().InsertBefore(node, op2);
-                    LowerNode(op2);
+                    // This is roughly the following managed code:
+                    //   ...
+                    //   var tmp2 = Vector128<byte>.Zero;
+                    //   return Ssse3.Shuffle(tmp1, tmp2);
 
-                    node->gtOp1 = op1;
-                    node->gtOp2 = op2;
+                    tmp2 = comp->gtNewSimdHWIntrinsicNode(simdType, NI_Vector128_get_Zero, TYP_UBYTE, simdSize);
+                    BlockRange().InsertAfter(tmp1, tmp2);
+                    LowerNode(tmp2);
+
+                    node->gtOp1 = tmp1;
+                    node->gtOp2 = tmp2;
 
                     node->gtHWIntrinsicId = NI_SSSE3_Shuffle;
                     break;
@@ -1411,25 +1484,34 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                 assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
-                // ...
-                //      /--*  t1     simd16
-                //      *  STORE_LCL_VAR simd16<Vector128`1>
-                // t3 =    LCL_VAR   simd16<Vector128`1>
-                // t4 =    LCL_VAR   simd16<Vector128`1>
-                //      /--*  t3     simd16
-                //      +--*  t4     simd16
-                // t2 = *  HWINTRINSIC simd16 ubyte UnpackLow
-                // ...
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd16
+                //          *  STORE_LCL_VAR simd16
+                //   tmp1 =    LCL_VAR       simd16
+                //   tmp2 =    LCL_VAR       simd16
+                //          /--*  tmp1 simd16
+                //          +--*  tmp2 simd16
+                //   tmp1 = *  HWINTRINSIC   simd16 ubyte UnpackLow
+                //   ...
 
-                op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, nullptr, NI_SSE2_UnpackLow, TYP_UBYTE, simdSize);
-                BlockRange().InsertBefore(node, op1);
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp2 = tmp1;
+                //   tmp1 = Sse2.UnpackLow(tmp1, tmp2);
+                //   ...
 
-                LIR::Use op1Use(BlockRange(), &op1->AsOp()->gtOp1, op1);
-                ReplaceWithLclVar(op1Use);
+                node->gtOp1 = tmp1;
+                LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(tmp1Use);
+                tmp1 = node->gtOp1;
 
-                op1->AsOp()->gtOp2 = comp->gtClone(op1->AsOp()->gtOp1);
-                BlockRange().InsertBefore(op1, op1->AsOp()->gtOp2);
-                LowerNode(op1);
+                tmp2 = comp->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp2);
+
+                tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_SSE2_UnpackLow, TYP_UBYTE, simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
 
                 __fallthrough;
             }
@@ -1437,27 +1519,36 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             case TYP_SHORT:
             case TYP_USHORT:
             {
-                // ...
-                //      /--*  t2     simd16
-                //      *  STORE_LCL_VAR simd16<Vector128`1>
-                // t6 =    LCL_VAR   simd16<Vector128`1>
-                // t7 =    LCL_VAR   simd16<Vector128`1>
-                //      /--*  t6     simd16
-                //      +--*  t7     simd16
-                // t5 = *  HWINTRINSIC simd16 ushort UnpackLow
-                // ...
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd16
+                //          *  STORE_LCL_VAR simd16
+                //   tmp1 =    LCL_VAR       simd16
+                //   tmp2 =    LCL_VAR       simd16
+                //          /--*  tmp1 simd16
+                //          +--*  tmp2 simd16
+                //   tmp1 = *  HWINTRINSIC   simd16 ushort UnpackLow
+                //   ...
+
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp2 = tmp1;
+                //   tmp1 = Sse2.UnpackLow(tmp1, tmp2);
+                //   ...
 
                 assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
-                op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, nullptr, NI_SSE2_UnpackLow, TYP_USHORT, simdSize);
-                BlockRange().InsertBefore(node, op1);
+                node->gtOp1 = tmp1;
+                LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(tmp1Use);
+                tmp1 = node->gtOp1;
 
-                LIR::Use op1Use(BlockRange(), &op1->AsOp()->gtOp1, op1);
-                ReplaceWithLclVar(op1Use);
+                tmp2 = comp->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp2);
 
-                op1->AsOp()->gtOp2 = comp->gtClone(op1->AsOp()->gtOp1);
-                BlockRange().InsertBefore(op1, op1->AsOp()->gtOp2);
-                LowerNode(op1);
+                tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_SSE2_UnpackLow, TYP_USHORT, simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
 
                 __fallthrough;
             }
@@ -1465,18 +1556,23 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             case TYP_INT:
             case TYP_UINT:
             {
-                // ...
-                // t8 =    CNS_INT   int    0
-                //      /--*  t5     simd16
-                //      +--*  t8     int
-                // t0 = *  HWINTRINSIC simd16 uint Shuffle
+                // We will be constructing the following parts:
+                //   ...
+                //   idx  =    CNS_INT       int    0
+                //          /--*  tmp1 simd16
+                //          +--*  idx  int
+                //   node = *  HWINTRINSIC   simd16 uint Shuffle
+
+                // This is roughly the following managed code:
+                //   ...
+                //   return Sse2.Shuffle(tmp1, 0x00);
 
                 assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
                 idx = comp->gtNewIconNode(0x00, TYP_INT);
-                BlockRange().InsertBefore(node, idx);
+                BlockRange().InsertAfter(tmp1, idx);
 
-                node->gtOp1 = op1;
+                node->gtOp1 = tmp1;
                 node->gtOp2 = idx;
 
                 node->gtHWIntrinsicId = NI_SSE2_Shuffle;
@@ -1489,23 +1585,33 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             case TYP_LONG:
             case TYP_ULONG:
             {
-                // ...
-                //      *  STORE_LCL_VAR simd16<Vector128`1>
-                // t2 =    LCL_VAR   simd16<Vector128`1>
-                // t3 =    LCL_VAR   simd16<Vector128`1>
-                //      /--*  t2     simd16
-                //      +--*  t3     simd16
-                // t0 = *  HWINTRINSIC simd16 ulong UnpackLow
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd16
+                //          *  STORE_LCL_VAR simd16
+                //   tmp1 =    LCL_VAR       simd16
+                //   tmp2 =    LCL_VAR       simd16
+                //          /--*  tmp1 simd16
+                //          +--*  tmp2 simd16
+                //   node = *  HWINTRINSIC simd16 ulong UnpackLow
+
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp2 = tmp1;
+                //   return Sse2.UnpackLow(tmp1, tmp2);
 
                 assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
-                node->gtOp1 = op1;
+                node->gtOp1 = tmp1;
+                LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(tmp1Use);
+                tmp1 = node->gtOp1;
 
-                LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
-                ReplaceWithLclVar(op1Use);
+                tmp2 = comp->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp2);
 
-                node->gtOp2 = comp->gtClone(node->gtOp1);
-                BlockRange().InsertBefore(node, node->gtOp2);
+                node->gtOp1 = tmp1;
+                node->gtOp2 = tmp2;
 
                 node->gtHWIntrinsicId = NI_SSE2_UnpackLow;
                 break;
@@ -1516,46 +1622,58 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             {
                 if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
-                    // ...
-                    // t2 =    CNS_INT   int    0
-                    //      /--*  t1     simd16
-                    //      +--*  t2     int
-                    // t0 = *  HWINTRINSIC simd16 float Permute
+                    // We will be constructing the following parts:
+                    //   ...
+                    //   idx  =    CNS_INT       int    0
+                    //          /--*  tmp1 simd16
+                    //          +--*  idx  int
+                    //   node = *  HWINTRINSIC   simd16 float Permute
+
+                    // This is roughly the following managed code:
+                    //   ...
+                    //   return Avx.Permute(tmp1, 0x00);
 
                     idx = comp->gtNewIconNode(0x00, TYP_INT);
-                    BlockRange().InsertBefore(node, idx);
+                    BlockRange().InsertAfter(tmp1, idx);
 
-                    node->gtOp1 = op1;
+                    node->gtOp1 = tmp1;
                     node->gtOp2 = idx;
 
                     node->gtHWIntrinsicId = NI_AVX_Permute;
                     break;
                 }
 
-                // ...
-                //      *  STORE_LCL_VAR simd16<Vector128`1>
-                // t2 =    LCL_VAR   simd16<Vector128`1>
-                // t3 =    LCL_VAR   simd16<Vector128`1>
-                // t4 =    CNS_INT   int    0
-                //      /--*  t2     simd16
-                //      +--*  t3     simd16
-                //      +--*  t4     int
-                // t0 = *  HWINTRINSIC simd16 float Shuffle
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd16
+                //          *  STORE_LCL_VAR simd16
+                //   tmp1 =    LCL_VAR       simd16
+                //   tmp2 =    LCL_VAR       simd16
+                //   idx  =    CNS_INT       int    0
+                //          /--*  tmp1 simd16
+                //          +--*  tmp2 simd16
+                //          +--*  idx  int
+                //   node = *  HWINTRINSIC   simd16 float Shuffle
+
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp2 = tmp1;
+                //   return Sse.Shuffle(tmp1, tmp2, 0x00);
 
                 assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE));
 
-                node->gtOp1 = op1;
+                node->gtOp1 = tmp1;
+                LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(tmp1Use);
+                tmp1 = node->gtOp1;
 
-                LIR::Use t1Use(BlockRange(), &node->gtOp1, node);
-                ReplaceWithLclVar(t1Use);
-
-                node->gtOp2 = comp->gtClone(node->gtOp1);
-                BlockRange().InsertBefore(node, node->gtOp2);
+                tmp2 = comp->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp2);
 
                 idx = comp->gtNewIconNode(0x00, TYP_INT);
-                BlockRange().InsertBefore(node, idx);
+                BlockRange().InsertAfter(tmp2, idx);
 
-                node->gtOp1 = comp->gtNewArgList(node->gtOp1, node->gtOp2, idx);
+                node->gtOp1 = comp->gtNewArgList(tmp1, tmp2, idx);
                 node->gtOp2 = nullptr;
 
                 node->gtHWIntrinsicId = NI_SSE_Shuffle;
@@ -1566,12 +1684,16 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             {
                 if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
                 {
-                    //      /--*  <value>
-                    // t1 = *  HWINTRINSIC simd16 double CreateScalarUnsafe
-                    //      /--*  t1     simd16
-                    // t0 = *  HWINTRINSIC simd16 double MoveAndDuplicate
+                    // We will be constructing the following parts:
+                    //   ...
+                    //          /--*  tmp1 simd16
+                    //   node = *  HWINTRINSIC   simd16 double MoveAndDuplicate
 
-                    node->gtOp1 = op1;
+                    // This is roughly the following managed code:
+                    //   ...
+                    //   return Sse3.MoveAndDuplicate(tmp1);
+
+                    node->gtOp1 = tmp1;
                     node->gtOp2 = nullptr;
 
                     node->gtHWIntrinsicId = NI_SSE3_MoveAndDuplicate;
@@ -1580,22 +1702,31 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                 assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
-                //      /--*  <value>
-                // t1 = *  HWINTRINSIC simd16 double CreateScalarUnsafe
-                //      *  STORE_LCL_VAR simd16<Vector128`1>
-                // t2 =    LCL_VAR   simd16<Vector128`1>
-                // t3 =    LCL_VAR   simd16<Vector128`1>
-                //      /--*  t2     simd16
-                //      +--*  t3     simd16
-                // t0 = *  HWINTRINSIC simd16 float MoveLowToHigh
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd16
+                //          *  STORE_LCL_VAR simd16
+                //   tmp1 =    LCL_VAR       simd16
+                //   tmp2 =    LCL_VAR       simd16
+                //          /--*  tmp1 simd16
+                //          +--*  tmp2 simd16
+                //   node = *  HWINTRINSIC   simd16 float MoveLowToHigh
 
-                node->gtOp1 = op1;
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp2 = tmp1;
+                //   return Sse.MoveLowToHigh(tmp1, tmp2);
 
-                LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
-                ReplaceWithLclVar(op1Use);
+                node->gtOp1 = tmp1;
+                LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(tmp1Use);
+                tmp1 = node->gtOp1;
 
-                node->gtOp2 = comp->gtClone(node->gtOp1);
-                BlockRange().InsertBefore(node, node->gtOp2);
+                tmp2 = comp->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp2);
+
+                node->gtOp1 = tmp1;
+                node->gtOp2 = tmp2;
 
                 node->gtHWIntrinsicId = NI_SSE_MoveLowToHigh;
                 node->gtSIMDBaseType  = TYP_FLOAT;
@@ -1612,24 +1743,47 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         return;
     }
 
-    // We have the following:
-    //
-    // /--*  <valueFirst>
-    // +--*  <value...>
-    // +--*  <valueLast>
-    // *  HWINTRINSIC simd16 T Create
+    // We have the following (where simd is simd16 or simd32):
+    //          /--*  op1 T
+    //          +--*  ... T
+    //          +--*  opN T
+    //   node = *  HWINTRINSIC   simd   T Create
 
     if (intrinsicId == NI_Vector256_Create)
     {
         assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
 
         // We will be constructing the following parts:
-        //
-        // t2 =    CNS_INT   int    0
-        //      /--*  t?     simd32
-        //      +--*  t?     simd16
-        //      +--*  t?     int
-        // t0 = *  HWINTRINSIC simd32 T InsertVector128
+        //          /--*  op1 T
+        //          +--*  ... T
+        //   lo   = *  HWINTRINSIC   simd16 T Create
+        //          /--*  ... T
+        //          +--*  opN T
+        //   hi   = *  HWINTRINSIC   simd16 T Create
+        //   idx  =    CNS_INT       int    1
+        //          /--*  lo   simd32
+        //          +--*  hi   simd16
+        //          +--*  idx  int
+        //   node = *  HWINTRINSIC   simd32 T InsertVector128
+
+        // This is roughly the following managed code:
+        //   ...
+        //   var lo   = Vector128.Create(op1, ...);
+        //   var hi   = Vector128.Create(..., opN);
+        //   return Avx.InsertVector128(lo, hi, 0x01);
+
+        // Each Vector128.Create call gets half the operands. That is:
+        //   lo = Vector128.Create(op1, op2);
+        //   hi = Vector128.Create(op3, op4);
+        // -or-
+        //   lo = Vector128.Create(op1,  ..., op3);
+        //   hi = Vector128.Create(op4,  ..., op7);
+        // -or-
+        //   lo = Vector128.Create(op1,  ..., op7);
+        //   hi = Vector128.Create(op8,  ..., op15);
+        // -or-
+        //   lo = Vector128.Create(op1,  ..., op15);
+        //   hi = Vector128.Create(op16, ..., op31);
 
         int halfArgCnt = argCnt / 2;
         assert((halfArgCnt * 2) == argCnt);
@@ -1645,41 +1799,63 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         op2->AsArgList()->gtOp2 = nullptr;
         op2                     = argList;
 
+        // The above for loop splits the operand count into exactly half.
+        // Once it exits, op1 will point to op1 and op2 will point to the
+        // last operand that will be passed to the first Vector128.Create
+        // We will set its op2 to null, terminating the chain and then
+        // assign  op2 to be argList, which is the first operand that will
+        // get passed to the second Vector128.Create
+
+        GenTree* lo = nullptr;
+        GenTree* hi = nullptr;
+
         if (halfArgCnt == 2)
         {
+            // The Vector256.Create calls that take 4 operands are special
+            // because the half argument count is 2, which means we can't
+            // actually use the GT_LIST anymore and need to pass them as
+            // explicit operands instead.
+
             argList = op1->AsArgList();
 
-            tmp = argList->Rest()->Current();
-            op1 =
-                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, argList->Current(), tmp, NI_Vector128_Create, baseType, 16);
-            BlockRange().InsertAfter(tmp, op1);
-            LowerNode(op1);
+            tmp1 = argList->Current();
+            tmp2 = argList->Rest()->Current();
+
+            lo = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, tmp2, NI_Vector128_Create, baseType, 16);
+            BlockRange().InsertAfter(tmp2, lo);
+            LowerNode(lo);
 
             argList = op2->AsArgList();
 
-            tmp = argList->Rest()->Current();
-            op2 =
-                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, argList->Current(), tmp, NI_Vector128_Create, baseType, 16);
-            BlockRange().InsertAfter(tmp, op2);
-            LowerNode(op2);
+            tmp1 = argList->Current();
+            tmp2 = argList->Rest()->Current();
+
+            hi = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, tmp2, NI_Vector128_Create, baseType, 16);
+            BlockRange().InsertAfter(tmp2, hi);
+            LowerNode(hi);
         }
         else
         {
-            tmp = op2->AsArgList()->Current();
+            // The rest of the Vector256.Create calls take at least 8 operands
+            // and so the half count is at least 4 and we have to continue
+            // passing around GT_LIST nodes in op1 with a null op2
+            assert(halfArgCnt >= 4);
 
-            op1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_Create, baseType, 16);
-            BlockRange().InsertBefore(tmp, op1);
-            LowerNode(op1);
+            tmp1 = op2->AsArgList()->Current();
 
-            op2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_Create, baseType, 16);
-            BlockRange().InsertBefore(node, op2);
-            LowerNode(op2);
+            lo = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_Create, baseType, 16);
+            BlockRange().InsertBefore(tmp1, lo);
+            LowerNode(lo);
+
+            hi = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_Create, baseType, 16);
+            BlockRange().InsertBefore(node, hi);
+            LowerNode(hi);
         }
 
         idx = comp->gtNewIconNode(0x01, TYP_INT);
-        BlockRange().InsertBefore(node, idx);
+        BlockRange().InsertAfter(hi, idx);
 
-        node->gtOp1 = comp->gtNewArgList(op1, op2, idx);
+        node->gtOp1 = comp->gtNewArgList(lo, hi, idx);
         node->gtOp2 = nullptr;
 
         node->gtHWIntrinsicId = NI_AVX_InsertVector128;
@@ -1694,14 +1870,17 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     }
 
     // We will be constructing the following parts:
-    //
-    //      /--*  <valueFirst>
-    // t1 = *  HWINTRINSIC simd16 T CreateScalarUnsafe
-    // ...
-    tmp = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-    BlockRange().InsertAfter(op1, tmp);
-    LowerNode(tmp);
-    op1 = tmp;
+    //          /--*  op1  T
+    //   tmp1 = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+    //   ...
+
+    // This is roughly the following managed code:
+    //   var tmp1 = Vector128.CreateScalarUnsafe(op1);
+    //   ...
+
+    tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+    BlockRange().InsertAfter(op1, tmp1);
+    LowerNode(tmp1);
 
     switch (baseType)
     {
@@ -1712,88 +1891,89 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         case TYP_INT:
         case TYP_UINT:
         {
-            GenTree*       arg             = nullptr;
-            NamedIntrinsic insertIntrinsic = NI_Illegal;
+            int            N            = 0;
+            GenTree*       opN          = nullptr;
+            NamedIntrinsic insIntrinsic = NI_Illegal;
 
             if ((baseType == TYP_SHORT) || (baseType == TYP_USHORT))
             {
                 assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
-                insertIntrinsic = NI_SSE2_Insert;
+                insIntrinsic = NI_SSE2_Insert;
             }
             else if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
-                insertIntrinsic = NI_SSE41_Insert;
+                insIntrinsic = NI_SSE41_Insert;
             }
 
-            if (insertIntrinsic != NI_Illegal)
+            if (insIntrinsic != NI_Illegal)
             {
-                // ...
-                // t2 =    CNS_INT   int    <...>
-                //      /--*  t1     simd16
-                //      +--*  <value...>
-                //      +--*  t2     int
-                // t3 = *  HWINTRINSIC simd16 T Insert
-                // ...
-                // t4 =    CNS_INT   int    <Last>
-                //      /--*  t2     simd16
-                //      +--*  <valueLast>
-                //      +--*  t4     int
-                // t0 = *  HWINTRINSIC simd16 T Insert
-
-                for (int i = 1; i < argCnt - 1; i++)
+                for (N = 1; N < argCnt - 1; N++)
                 {
-                    arg = argList->Current();
+                    // We will be constructing the following parts:
+                    //   ...
+                    //   idx  =    CNS_INT       int    N
+                    //          /--*  tmp1 simd16
+                    //          +--*  opN  T
+                    //          +--*  idx  int
+                    //   tmp1 = *  HWINTRINSIC   simd16 T Insert
+                    //   ...
 
-                    idx = comp->gtNewIconNode(i, TYP_INT);
-                    BlockRange().InsertAfter(arg, idx);
+                    // This is roughly the following managed code:
+                    //   ...
+                    //   tmp1 = Sse?.Insert(tmp1, opN, N);
+                    //   ...
 
-                    op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, arg, idx, insertIntrinsic, baseType, simdSize);
-                    BlockRange().InsertAfter(idx, op1);
-                    LowerNode(op1);
+                    opN = argList->Current();
+
+                    idx = comp->gtNewIconNode(N, TYP_INT);
+                    BlockRange().InsertAfter(opN, idx);
+
+                    tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, opN, idx, insIntrinsic, baseType, simdSize);
+                    BlockRange().InsertAfter(idx, tmp1);
+                    LowerNode(tmp1);
 
                     argList = argList->Rest();
                 }
 
-                op2 = argList->Current();
+                assert(N == (argCnt - 1));
 
-                idx = comp->gtNewIconNode(argCnt - 1, TYP_INT);
-                BlockRange().InsertBefore(node, idx);
+                // We will be constructing the following parts:
+                //   idx  =    CNS_INT       int    N
+                //          /--*  tmp1 simd16
+                //          +--*  opN  T
+                //          +--*  idx  int
+                //   node = *  HWINTRINSIC   simd16 T Insert
 
-                node->gtOp1 = comp->gtNewArgList(op1, op2, idx);
+                // This is roughly the following managed code:
+                //   ...
+                //   tmp1 = Sse?.Insert(tmp1, opN, N);
+                //   ...
+
+                opN = argList->Current();
+
+                idx = comp->gtNewIconNode(N, TYP_INT);
+                BlockRange().InsertAfter(opN, idx);
+
+                node->gtOp1 = comp->gtNewArgList(tmp1, opN, idx);
                 node->gtOp2 = nullptr;
 
-                node->gtHWIntrinsicId = insertIntrinsic;
+                node->gtHWIntrinsicId = insIntrinsic;
                 break;
             }
 
             assert((baseType != TYP_SHORT) && (baseType != TYP_USHORT));
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
-            // ...
-            //      /--*  <valueSecond>
-            // t2 = *  HWINTRINSIC simd16 T CreateScalarUnsafe
-            //      /--*  t1     simd16
-            //      +--*  t2     simd16
-            // t5 = *  HWINTRINSIC simd16 T UnpackLow
-            //      /--*  <valueThird>
-            // t3 = *  HWINTRINSIC simd16 T CreateScalarUnsafe
-            //      /--*  <valueLast>
-            // t4 = *  HWINTRINSIC simd16 T CreateScalarUnsafe
-            //      /--*  t3     simd16
-            //      +--*  t4     simd16
-            // t6 = *  HWINTRINSIC simd16 T UnpackLow
-            // ...
+            GenTree* op[16];
+            op[0] = tmp1;
 
-            GenTree* pt[16];
-            pt[0] = op1;
-
-            for (int i = 1; i < argCnt; i++)
+            for (N = 1; N < argCnt; N++)
             {
-                arg = argList->Current();
+                opN = argList->Current();
 
-                pt[i] = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, arg, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-                BlockRange().InsertAfter(arg, pt[i]);
-                LowerNode(pt[i]);
+                op[N] = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, opN, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+                BlockRange().InsertAfter(opN, op[N]);
+                LowerNode(op[N]);
 
                 argList = argList->Rest();
             }
@@ -1801,40 +1981,99 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             if ((baseType == TYP_BYTE) || (baseType == TYP_UBYTE))
             {
-                for (int i = 0; i < argCnt; i += 4)
+                for (N = 0; N < argCnt; N += 4)
                 {
-                    op1 = comp->gtNewSimdHWIntrinsicNode(simdType, pt[i + 0], pt[i + 1], NI_SSE2_UnpackLow, baseType,
-                                                         simdSize);
-                    BlockRange().InsertAfter(pt[i + 1], op1);
-                    LowerNode(op1);
+                    // We will be constructing the following parts:
+                    //   ...
+                    //          /--*  opN  T
+                    //   opN  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+                    //          /--*  opO  T
+                    //   opO  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+                    //          /--*  opN  simd16
+                    //          +--*  opO  simd16
+                    //   tmp1 = *  HWINTRINSIC   simd16 T UnpackLow
+                    //          /--*  opP  T
+                    //   opP  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+                    //          /--*  opQ  T
+                    //   opQ  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+                    //          /--*  opP  simd16
+                    //          +--*  opQ  simd16
+                    //   tmp2 = *  HWINTRINSIC   simd16 T UnpackLow
+                    //          /--*  tmp1 simd16
+                    //          +--*  tmp2 simd16
+                    //   tmp3  = *  HWINTRINSIC   simd16 T UnpackLow
+                    //   ...
 
-                    op2 = comp->gtNewSimdHWIntrinsicNode(simdType, pt[i + 2], pt[i + 3], NI_SSE2_UnpackLow, baseType,
-                                                         simdSize);
-                    BlockRange().InsertAfter(pt[i + 3], op2);
-                    LowerNode(op2);
+                    // This is roughly the following managed code:
+                    //   ...
+                    //   tmp1 = Sse2.UnpackLow(opN, opO);
+                    //   tmp2 = Sse2.UnpackLow(opP, opQ);
+                    //   tmp3 = Sse2.UnpackLow(tmp1, tmp2);
+                    //   ...
 
-                    pt[i / 4] =
-                        comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, NI_SSE2_UnpackLow, TYP_USHORT, simdSize);
-                    BlockRange().InsertAfter(op2, pt[i / 4]);
-                    LowerNode(pt[i / 4]);
+                    int O = N + 1;
+                    int P = N + 2;
+                    int Q = N + 3;
+
+                    tmp1 =
+                        comp->gtNewSimdHWIntrinsicNode(simdType, op[N], op[O], NI_SSE2_UnpackLow, TYP_UBYTE, simdSize);
+                    BlockRange().InsertAfter(op[O], tmp1);
+                    LowerNode(tmp1);
+
+                    tmp2 =
+                        comp->gtNewSimdHWIntrinsicNode(simdType, op[P], op[Q], NI_SSE2_UnpackLow, TYP_UBYTE, simdSize);
+                    BlockRange().InsertAfter(op[Q], tmp2);
+                    LowerNode(tmp2);
+
+                    tmp3 =
+                        comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_SSE2_UnpackLow, TYP_USHORT, simdSize);
+                    BlockRange().InsertAfter(tmp2, tmp3);
+                    LowerNode(tmp3);
+
+                    // This caches the result in index 0 through 3, depending on which
+                    // loop iteration this is and allows the rest of the logic to be
+                    // shared with the TYP_INT and TYP_UINT path.
+
+                    op[N / 4] = tmp3;
                 }
             }
 
-            op1 = comp->gtNewSimdHWIntrinsicNode(simdType, pt[0], pt[1], NI_SSE2_UnpackLow, TYP_UINT, simdSize);
-            BlockRange().InsertAfter(pt[1], op1);
-            LowerNode(op1);
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  opN  T
+            //   opN  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  opO  T
+            //   opO  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  opN  simd16
+            //          +--*  opO  simd16
+            //   tmp1 = *  HWINTRINSIC   simd16 T UnpackLow
+            //          /--*  opP  T
+            //   opP  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  opQ  T
+            //   opQ  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  opP  simd16
+            //          +--*  opQ  simd16
+            //   tmp2 = *  HWINTRINSIC   simd16 T UnpackLow
+            //          /--*  tmp1 simd16
+            //          +--*  tmp2 simd16
+            //   node = *  HWINTRINSIC   simd16 T UnpackLow
 
-            op2 = comp->gtNewSimdHWIntrinsicNode(simdType, pt[2], pt[3], NI_SSE2_UnpackLow, TYP_UINT, simdSize);
-            BlockRange().InsertAfter(pt[3], op2);
-            LowerNode(op2);
+            // This is roughly the following managed code:
+            //   ...
+            //   tmp1 = Sse2.UnpackLow(opN, opO);
+            //   tmp2 = Sse2.UnpackLow(opP, opQ);
+            //   return Sse2.UnpackLow(tmp1, tmp2);
 
-            // ...
-            //      /--*  t5     simd16
-            //      +--*  t6     simd16
-            // t0 = *  HWINTRINSIC simd16 ulong UnpackLow
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op[0], op[1], NI_SSE2_UnpackLow, TYP_UINT, simdSize);
+            BlockRange().InsertAfter(op[1], tmp1);
+            LowerNode(tmp1);
 
-            node->gtOp1 = op1;
-            node->gtOp2 = op2;
+            tmp2 = comp->gtNewSimdHWIntrinsicNode(simdType, op[2], op[3], NI_SSE2_UnpackLow, TYP_UINT, simdSize);
+            BlockRange().InsertAfter(op[3], tmp2);
+            LowerNode(tmp2);
+
+            node->gtOp1 = tmp1;
+            node->gtOp2 = tmp2;
 
             node->gtHWIntrinsicId = NI_SSE2_UnpackLow;
             node->gtSIMDBaseType  = TYP_ULONG;
@@ -1847,39 +2086,49 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         {
             if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
             {
-                // ...
-                // t2 =    CNS_INT   int    <Last>
-                //      /--*  t1     simd16
-                //      +--*  <valueLast>
-                //      +--*  t2     int
-                // t0 = *  HWINTRINSIC simd16 T Insert
+                // We will be constructing the following parts:
+                //   ...
+                //   idx  =    CNS_INT       int    1
+                //          /--*  tmp1 simd16
+                //          +--*  op2  T
+                //          +--*  idx  int
+                //   node = *  HWINTRINSIC   simd16 T Insert
+
+                // This is roughly the following managed code:
+                //   ...
+                //   return Sse41.X64.Insert(tmp1, op2, 0x01);
 
                 idx = comp->gtNewIconNode(0x01, TYP_INT);
-                BlockRange().InsertBefore(node, idx);
+                BlockRange().InsertAfter(op2, idx);
 
-                node->gtOp1 = comp->gtNewArgList(op1, op2, idx);
+                node->gtOp1 = comp->gtNewArgList(tmp1, op2, idx);
                 node->gtOp2 = nullptr;
 
                 node->gtHWIntrinsicId = NI_SSE41_X64_Insert;
                 break;
             }
 
-            // ...
-            //      /--*  <valueLast>
-            // t2 = *  HWINTRINSIC simd16 ulong CreateScalarUnsafe
-            //      /--*  t1     simd16
-            //      +--*  t2     simd16
-            // t0 = *  HWINTRINSIC simd16 ulong UnpackLow
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  op2  T
+            //   tmp2 = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  tmp1 simd16
+            //          +--*  tmp2 simd16
+            //   node = *  HWINTRINSIC   simd16 T UnpackLow
+
+            // This is roughly the following managed code:
+            //   ...
+            //   var tmp2 = Vector128.CreateScalarUnsafe(op2);
+            //   return Sse2.UnpackLow(tmp1, tmp2);
 
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
-            tmp = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-            BlockRange().InsertAfter(op2, tmp);
-            LowerNode(tmp);
-            op2 = tmp;
+            tmp2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+            BlockRange().InsertAfter(op2, tmp2);
+            LowerNode(tmp2);
 
-            node->gtOp1 = op1;
-            node->gtOp2 = op2;
+            node->gtOp1 = tmp1;
+            node->gtOp2 = tmp2;
 
             node->gtHWIntrinsicId = NI_SSE2_UnpackLow;
             break;
@@ -1888,104 +2137,133 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         case TYP_FLOAT:
         {
-            GenTree* arg = nullptr;
+            int      N   = 0;
+            GenTree* opN = nullptr;
 
             if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
-                // ...
-                // t2 =    CNS_INT   int    <...>
-                //      /--*  t1     simd16
-                //      +--*  <value...>
-                //      +--*  t2     int
-                // t3 = *  HWINTRINSIC simd16 float Insert
-                // ...
-                // t4 =    CNS_INT   int    <Last>
-                //      /--*  t2     simd16
-                //      +--*  <valueLast>
-                //      +--*  t4     int
-                // t0 = *  HWINTRINSIC simd16 float Insert
-
-                for (int i = 1; i < argCnt - 1; i++)
+                for (N = 1; N < argCnt - 1; N++)
                 {
-                    arg = argList->Current();
+                    // We will be constructing the following parts:
+                    //   ...
+                    //
+                    //          /--*  opN  T
+                    //   tmp2 = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+                    //   idx  =    CNS_INT       int    N
+                    //          /--*  tmp1 simd16
+                    //          +--*  opN  T
+                    //          +--*  idx  int
+                    //   tmp1 = *  HWINTRINSIC   simd16 T Insert
+                    //   ...
 
-                    tmp =
-                        comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, arg, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-                    BlockRange().InsertAfter(arg, tmp);
-                    LowerNode(tmp);
-                    arg = tmp;
+                    // This is roughly the following managed code:
+                    //   ...
+                    //   tmp2 = Vector128.CreateScalarUnsafe(opN);
+                    //   tmp1 = Sse41.Insert(tmp1, tmp2, N << 4);
+                    //   ...
 
-                    idx = comp->gtNewIconNode(i << 4, TYP_INT);
-                    BlockRange().InsertAfter(arg, idx);
+                    opN = argList->Current();
 
-                    op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, arg, idx, NI_SSE41_Insert, baseType, simdSize);
-                    BlockRange().InsertAfter(idx, op1);
-                    LowerNode(op1);
+                    tmp2 =
+                         comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, opN, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+                    BlockRange().InsertAfter(opN, tmp2);
+                    LowerNode(tmp2);
+
+                    idx = comp->gtNewIconNode(N << 4, TYP_INT);
+                    BlockRange().InsertAfter(tmp2, idx);
+
+                    tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, idx, NI_SSE41_Insert, baseType, simdSize);
+                    BlockRange().InsertAfter(idx, tmp1);
+                    LowerNode(tmp1);
 
                     argList = argList->Rest();
                 }
 
-                op2 = argList->Current();
+                // We will be constructing the following parts:
+                //   ...
+                //
+                //          /--*  opN  T
+                //   tmp2 = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+                //   idx  =    CNS_INT       int    N
+                //          /--*  tmp1 simd16
+                //          +--*  opN  T
+                //          +--*  idx  int
+                //   node = *  HWINTRINSIC   simd16 T Insert
 
-                tmp = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-                BlockRange().InsertAfter(op2, tmp);
-                LowerNode(tmp);
-                op2 = tmp;
+                // This is roughly the following managed code:
+                //   ...
+                //   tmp2 = Vector128.CreateScalarUnsafe(opN);
+                //   return Sse41.Insert(tmp1, tmp2, N << 4);
+
+                opN = argList->Current();
+
+                tmp2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, opN, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+                BlockRange().InsertAfter(opN, tmp2);
+                LowerNode(tmp2);
 
                 idx = comp->gtNewIconNode((argCnt - 1) << 4, TYP_INT);
-                BlockRange().InsertAfter(op2, idx);
+                BlockRange().InsertAfter(tmp2, idx);
 
-                node->gtOp1 = comp->gtNewArgList(op1, op2, idx);
+                node->gtOp1 = comp->gtNewArgList(tmp1, tmp2, idx);
                 node->gtOp2 = nullptr;
 
                 node->gtHWIntrinsicId = NI_SSE41_Insert;
                 break;
             }
 
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  opN  T
+            //   opN  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  opO  T
+            //   opO  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  opN  simd16
+            //          +--*  opO  simd16
+            //   tmp1 = *  HWINTRINSIC   simd16 T UnpackLow
+            //          /--*  opP  T
+            //   opP  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  opQ  T
+            //   opQ  = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  opP  simd16
+            //          +--*  opQ  simd16
+            //   tmp2 = *  HWINTRINSIC   simd16 T UnpackLow
+            //          /--*  tmp1 simd16
+            //          +--*  tmp2 simd16
+            //   node = *  HWINTRINSIC   simd16 T MoveLowToHigh
+
+            // This is roughly the following managed code:
+            //   ...
+            //   tmp1 = Sse.UnpackLow(opN, opO);
+            //   tmp2 = Sse.UnpackLow(opP, opQ);
+            //   return Sse.MoveLowToHigh(tmp1, tmp2);
+
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE));
 
-            GenTree* pt[4];
-            pt[0] = op1;
+            GenTree* op[4];
+            op[0] = tmp1;
 
-            for (int i = 1; i < argCnt; i++)
+            for (N = 1; N < argCnt; N++)
             {
-                arg = argList->Current();
+                opN = argList->Current();
 
-                pt[i] = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, arg, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-                BlockRange().InsertAfter(arg, pt[i]);
-                LowerNode(pt[i]);
+                op[N] = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, opN, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+                BlockRange().InsertAfter(opN, op[N]);
+                LowerNode(op[N]);
 
                 argList = argList->Rest();
             }
             assert(argList == nullptr);
 
-            // ...
-            //      /--*  <valueSecond>
-            // t2 = *  HWINTRINSIC simd16 float CreateScalarUnsafe
-            //      /--*  t1     simd16
-            //      +--*  t2     simd16
-            // t5 = *  HWINTRINSIC simd16 float UnpackLow
-            //      /--*  <valueThird>
-            // t3 = *  HWINTRINSIC simd16 float CreateScalarUnsafe
-            //      /--*  <valueLast>
-            // t4 = *  HWINTRINSIC simd16 float CreateScalarUnsafe
-            //      /--*  t3     simd16
-            //      +--*  t4     simd16
-            // t6 = *  HWINTRINSIC simd16 float UnpackLow
-            //      /--*  t5     simd16
-            //      +--*  t6     simd16
-            // t0 = *  HWINTRINSIC simd16 float MoveLowToHigh
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op[0], op[1], NI_SSE_UnpackLow, baseType, simdSize);
+            BlockRange().InsertAfter(op[1], tmp1);
+            LowerNode(tmp1);
 
-            op1 = comp->gtNewSimdHWIntrinsicNode(simdType, pt[0], pt[1], NI_SSE_UnpackLow, baseType, simdSize);
-            BlockRange().InsertAfter(pt[1], op1);
-            LowerNode(op1);
+            tmp2 = comp->gtNewSimdHWIntrinsicNode(simdType, op[2], op[3], NI_SSE_UnpackLow, baseType, simdSize);
+            BlockRange().InsertAfter(op[3], tmp2);
+            LowerNode(tmp2);
 
-            op2 = comp->gtNewSimdHWIntrinsicNode(simdType, pt[2], pt[3], NI_SSE_UnpackLow, baseType, simdSize);
-            BlockRange().InsertAfter(pt[3], op2);
-            LowerNode(op2);
-
-            node->gtOp1 = op1;
-            node->gtOp2 = op2;
+            node->gtOp1 = tmp1;
+            node->gtOp2 = tmp2;
 
             node->gtHWIntrinsicId = NI_SSE_MoveLowToHigh;
             break;
@@ -1993,22 +2271,27 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         case TYP_DOUBLE:
         {
-            // ...
-            //      /--*  <valueLast>
-            // t2 = *  HWINTRINSIC simd16 double CreateScalarUnsafe
-            //      /--*  t1     simd16
-            //      +--*  t2     simd16
-            // t0 = *  HWINTRINSIC simd16 float MoveLowToHigh
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  op2  T
+            //   tmp2 = *  HWINTRINSIC   simd16 T CreateScalarUnsafe
+            //          /--*  tmp1 simd16
+            //          +--*  tmp2 simd16
+            //   node = *  HWINTRINSIC   simd16 T MoveLowToHigh
+
+            // This is roughly the following managed code:
+            //   ...
+            //   var tmp2 = Vector128.CreateScalarUnsafe(op2);
+            //   return Sse.MoveLowToHigh(tmp1, tmp2);
 
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
-            tmp = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_CreateScalarUnsafe, baseType, 16);
-            BlockRange().InsertAfter(op2, tmp);
-            LowerNode(tmp);
-            op2 = tmp;
+            tmp2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_CreateScalarUnsafe, baseType, 16);
+            BlockRange().InsertAfter(op2, tmp2);
+            LowerNode(tmp2);
 
-            node->gtOp1 = op1;
-            node->gtOp2 = op2;
+            node->gtOp1 = tmp1;
+            node->gtOp2 = tmp2;
 
             node->gtHWIntrinsicId = NI_SSE_MoveLowToHigh;
             node->gtSIMDBaseType  = TYP_FLOAT;
