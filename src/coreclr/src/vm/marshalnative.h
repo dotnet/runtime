@@ -199,11 +199,6 @@ public:
     static FCDECL1(Object*, WrapIUnknownWithComObject, IUnknown* pUnk);
 
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
-    static FCDECL2(void, InitializeWrapperForWinRT, Object *unsafe_pThis, IUnknown **ppUnk);
-    static FCDECL2(void, InitializeManagedWinRTFactoryObject, Object *unsafe_pThis, ReflectClassBaseObject *unsafe_pType);
-    static FCDECL1(Object *, GetNativeActivationFactory, ReflectClassBaseObject *unsafe_pType);
-    static void QCALLTYPE GetInspectableIIDs(QCall::ObjectHandleOnStack hobj, QCall::ObjectHandleOnStack retArrayGuids);
-
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
     static BOOL IsObjectInContext(OBJECTREF *pObj);
