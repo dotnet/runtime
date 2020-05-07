@@ -2910,6 +2910,10 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
+
+    LOG((LF_EH, LL_INFO100, "RealCOMPlusThrow throwing %s\n",
+        throwable->GetMethodTable()->GetDebugClassName()));
+
     GCPROTECT_BEGIN(throwable);
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
