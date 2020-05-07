@@ -54,9 +54,9 @@ namespace System.Net.Sockets
 
         private static readonly object s_lock = new object();
 
-        private static readonly int s_engineCount = GetEnginesCount();
+        private static readonly int s_maxEngineCount = GetEngineCount();
 
-        private static int GetEnginesCount()
+        private static int GetEngineCount()
         {
             // The responsibility of SocketAsyncEngine is to get notifications from epoll|kqueue
             // and schedule corresponding work items to ThreadPool (socket reads and writes).
@@ -87,7 +87,7 @@ namespace System.Net.Sockets
         // The current engines. We replace an engine when it runs out of "handle" values.
         // Must be accessed under s_lock.
         //
-        private static readonly SocketAsyncEngine?[] s_currentEngines = new SocketAsyncEngine?[s_engineCount];
+        private static readonly SocketAsyncEngine?[] s_currentEngines = new SocketAsyncEngine?[s_maxEngineCount];
         private static int s_allocateFromEngine = 0;
 
         private readonly IntPtr _port;
@@ -122,7 +122,7 @@ namespace System.Net.Sockets
         //
         private static readonly IntPtr MaxHandles = IntPtr.Size == 4 ? (IntPtr)int.MaxValue : (IntPtr)long.MaxValue;
 #endif
-        private static readonly IntPtr MinHandlesForAdditionalEngine = s_engineCount == 1 ? MaxHandles : (IntPtr)32;
+        private static readonly IntPtr MinHandlesForAdditionalEngine = s_maxEngineCount == 1 ? MaxHandles : (IntPtr)32;
 
         //
         // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop
@@ -213,7 +213,7 @@ namespace System.Net.Sockets
                 // Round-robin to the next engine once we have sufficient sockets on this one.
                 if (!engine.HasLowNumberOfSockets)
                 {
-                    s_allocateFromEngine = (s_allocateFromEngine + 1) % s_engineCount;
+                    s_allocateFromEngine = (s_allocateFromEngine + 1) % s_maxEngineCount;
                 }
             }
         }
