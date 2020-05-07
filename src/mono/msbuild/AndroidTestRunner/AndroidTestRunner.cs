@@ -53,10 +53,7 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
         }
     }
 
-    protected override void TerminateWithSuccess()
-    {
-        Console.WriteLine("[TerminateWithSuccess]");
-    }
+    protected override void TerminateWithSuccess() {}
 
     private int? _maxParallelThreads;
 
@@ -67,6 +64,8 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
     protected override TestRunnerType TestRunner => TestRunnerType.Xunit;
 
     protected override string? IgnoreFilesDirectory => null;
+
+    protected override string IgnoredTraitsFilePath => "xunit-excludes.txt";
 
     public string BundleIdentifier => "net.dot." + s_MainTestName;
 
@@ -84,6 +83,15 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
 
     public override TextWriter? Logger => null;
 
-    public override string TestsResultsFinalPath => 
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "testResults.xml");
+    public override string TestsResultsFinalPath
+    {
+        get
+        {
+            string? publicDir = Environment.GetEnvironmentVariable("DOCSDIR");
+            if (string.IsNullOrEmpty(publicDir))
+                throw new ArgumentException("DOCSDIR should not be empty");
+
+            return Path.Combine(publicDir, "testResults.xml");
+        }
+    }
 }

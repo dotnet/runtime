@@ -10,15 +10,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.OleDb.cs" />
-    <Compile Condition="'$(TargetsNetFx)' != 'true'" Include="System.Data.OleDb.Manual.cs" />
+    <Compile Condition="!$(TargetFramework.StartsWith('net4'))" Include="System.Data.OleDb.Manual.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Transactions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <ProjectReference Include="..\..\System.IO.FileSystem.AccessControl\ref\System.IO.FileSystem.AccessControl.csproj" />
     <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
     <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />

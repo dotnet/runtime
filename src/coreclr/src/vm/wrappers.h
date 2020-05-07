@@ -106,11 +106,13 @@ inline void SafeComReleasePreemp(TYPE *value)
     SafeReleasePreemp((IUnknown*)value);
 }
 
-NEW_WRAPPER_TEMPLATE1(SafeComHolder, SafeComRelease<_TYPE>);
+template<typename _TYPE>
+using SafeComHolder = SpecializedWrapper<_TYPE, SafeComRelease<_TYPE>>;
 
 // Use this holder if you're already in preemptive mode for other reasons,
 // use SafeComHolder otherwise.
-NEW_WRAPPER_TEMPLATE1(SafeComHolderPreemp, SafeComReleasePreemp<_TYPE>);
+template<typename _TYPE>
+using SafeComHolderPreemp = SpecializedWrapper<_TYPE, SafeComReleasePreemp<_TYPE>>;
 
 //-----------------------------------------------------------------------------
 // NewPreempHolder : New'ed memory holder, deletes in preemp mode.
@@ -129,7 +131,8 @@ void DeletePreemp(TYPE *value)
     delete value;
 }
 
-NEW_WRAPPER_TEMPLATE1(NewPreempHolder, DeletePreemp<_TYPE>);
+template<typename _TYPE>
+using NewPreempHolder = SpecializedWrapper<_TYPE, DeletePreemp<_TYPE>>;
 
 
 //-----------------------------------------------------------------------------

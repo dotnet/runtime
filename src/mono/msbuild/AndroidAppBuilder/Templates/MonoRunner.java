@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.View;
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Environment;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -44,24 +45,21 @@ public class MonoRunner extends Instrumentation
         Context context = getContext();
         AssetManager am = context.getAssets();
         String filesDir = context.getFilesDir().getAbsolutePath();
-        String cacheDir = context.getCacheDir().getAbsolutePath ();
+        String cacheDir = context.getCacheDir().getAbsolutePath();
+        String docsDir  = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath();
 
         copyAssetDir(am, "", filesDir);
 
-        // retcode is what Main() returns in C#
-        int retcode = initRuntime(filesDir, cacheDir);
-        WriteLineToInstrumentation("[Mono] Main() returned " + retcode);
-        runOnMainSync (new Runnable() {
+        int retcode = initRuntime(filesDir, cacheDir, docsDir);
+        runOnMainSync(new Runnable() {
             public void run() {
-                finish (retcode, null);
+                Bundle result = new Bundle();
+                result.putInt("return-code", retcode);
+                // Xharness cli expects "test-results-path" with test results
+                result.putString("test-results-path", docsDir + "/testResults.xml");
+                finish(retcode, result);
             }
         });
-    }
-    
-    static void WriteLineToInstrumentation(String line) {
-        Bundle b = new Bundle();
-        b.putString(Instrumentation.REPORT_KEY_STREAMRESULT, line + "\n");
-        MonoRunner.inst.sendStatus(0, b);
     }
 
     static void copyAssetDir(AssetManager am, String path, String outpath) {
@@ -72,7 +70,7 @@ public class MonoRunner extends Instrumentation
                 String toFile = outpath + "/" + res[i];
                 try {
                     InputStream fromStream = am.open(fromFile);
-                    Log.w("MONO", "\tCOPYING " + fromFile + " to " + toFile);
+                    Log.w("DOTNET", "\tCOPYING " + fromFile + " to " + toFile);
                     copy(fromStream, new FileOutputStream(toFile));
                 } catch (FileNotFoundException e) {
                     new File(toFile).mkdirs();
@@ -82,7 +80,7 @@ public class MonoRunner extends Instrumentation
             }
         }
         catch (Exception e) {
-            Log.w("MONO", "EXCEPTION", e);
+            Log.w("DOTNET", "EXCEPTION", e);
         }
     }
 
@@ -94,5 +92,5 @@ public class MonoRunner extends Instrumentation
         out.close();
     }
 
-    native int initRuntime(String libsDir, String cacheDir);
+    native int initRuntime(String libsDir, String cacheDir, String docsDir);
 }

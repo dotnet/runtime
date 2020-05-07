@@ -47,12 +47,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Require compilation of the canonical version for instantiating stubs
                 MethodDesc canonMethod = _method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                ISymbolNode canonMethodNode = factory.MethodEntrypoint(
-                    new MethodWithToken(canonMethod, _method.Token, constrainedType: null),
-                    isUnboxingStub: false,
-                    isInstantiatingStub: false,
-                    isPrecodeImportRequired: false);
-                yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
+                if (factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
+                {
+                    ISymbolNode canonMethodNode = factory.CompiledMethodNode(canonMethod);
+                    yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
+                }
             }
         }
 

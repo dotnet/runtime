@@ -1288,35 +1288,6 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
     switch (intrinsic)
     {
-        case NI_SSE_CompareGreaterThan:
-        case NI_SSE_CompareGreaterThanOrEqual:
-        case NI_SSE_CompareNotGreaterThan:
-        case NI_SSE_CompareNotGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_FLOAT);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                // These intrinsics are "special import" because the non-AVX path isn't directly
-                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
-
-                FloatComparisonMode comparison =
-                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
-                                                   NI_AVX_Compare, baseType, simdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE_CompareScalarGreaterThan:
         case NI_SSE_CompareScalarGreaterThanOrEqual:
         case NI_SSE_CompareScalarNotGreaterThan:
@@ -1334,9 +1305,8 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
                 FloatComparisonMode comparison =
-                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic, true));
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
@@ -1395,68 +1365,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
     switch (intrinsic)
     {
-        case NI_SSE2_CompareGreaterThan:
-        {
-            if (baseType != TYP_DOUBLE)
-            {
-                assert(sig->numArgs == 2);
-                op2 = impSIMDPopStack(TYP_SIMD16);
-                op1 = impSIMDPopStack(TYP_SIMD16);
-
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
-
-                break;
-            }
-
-            __fallthrough;
-        }
-
-        case NI_SSE2_CompareGreaterThanOrEqual:
-        case NI_SSE2_CompareNotGreaterThan:
-        case NI_SSE2_CompareNotGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-            op2 = impSIMDPopStack(TYP_SIMD16);
-            op1 = impSIMDPopStack(TYP_SIMD16);
-            assert(baseType == TYP_DOUBLE);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                // These intrinsics are "special import" because the non-AVX path isn't directly
-                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
-
-                FloatComparisonMode comparison =
-                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
-                                                   NI_AVX_Compare, baseType, simdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
-            }
-            break;
-        }
-
-        case NI_SSE2_CompareLessThan:
-        {
-            assert(sig->numArgs == 2);
-            op2 = impSIMDPopStack(TYP_SIMD16);
-            op1 = impSIMDPopStack(TYP_SIMD16);
-
-            if (baseType == TYP_DOUBLE)
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, baseType, simdSize);
-            }
-            else
-            {
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareGreaterThan, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE2_CompareScalarGreaterThan:
         case NI_SSE2_CompareScalarGreaterThanOrEqual:
         case NI_SSE2_CompareScalarNotGreaterThan:
@@ -1473,9 +1381,8 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
                 FloatComparisonMode comparison =
-                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic, true));
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else

@@ -193,6 +193,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35753", TestPlatforms.Windows)]
         public void EmitsDynamicMethodBuiltEvent()
         {
             // Arrange

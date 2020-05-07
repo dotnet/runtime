@@ -644,6 +644,11 @@ void EEStartupHelper()
         IfFailGo(EEConfig::Setup());
 
 #ifndef CROSSGEN_COMPILE
+
+#ifdef HOST_WINDOWS
+        InitializeCrashDump();
+#endif // HOST_WINDOWS
+
         // Initialize Numa and CPU group information
         // Need to do this as early as possible. Used by creating object handle
         // table inside Ref_Initialization() before GC is initialized.

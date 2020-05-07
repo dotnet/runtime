@@ -18,6 +18,7 @@ set(MDRUNTIME_HEADERS
   ../../inc/corhlpr.h
   ../../inc/corpriv.h
   ../../inc/mdcommon.h
+  ../../inc/mdfileformat.h
   ../../inc/metadatatracker.h
   ../../inc/pedecoder.h
   ../../inc/posterror.h
@@ -26,7 +27,6 @@ set(MDRUNTIME_HEADERS
   ../inc/assemblymdinternaldisp.h
   ../inc/liteweightstgdb.h
   ../inc/mdcolumndescriptors.h
-  ../inc/mdfileformat.h
   ../inc/metamodel.h
   ../inc/metamodelro.h
   ../inc/recordpool.h

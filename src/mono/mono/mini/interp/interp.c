@@ -3438,13 +3438,13 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 #if defined(ENABLE_HYBRID_SUSPEND) || defined(ENABLE_COOP_SUSPEND)
 	mono_threads_safepoint ();
 #endif
+main_loop:
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
 	 * but it may be useful for debug
 	 */
 	while (1) {
 		MintOpcode opcode;
-main_loop:
 		/* g_assert (sp >= frame->stack); */
 		/* g_assert(vt_sp - vtalloc <= frame->imethod->vt_stack_size); */
 		DUMP_INSTR();
@@ -5143,26 +5143,13 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_CTOR) {
-			MonoMethodSignature *csig;
-			guint32 token;
-
-			frame->ip = ip;
-			token = ip [1];
-			ip += 2;
-
-			InterpMethod *cmethod = (InterpMethod*)frame->imethod->data_items [token];
-			csig = mono_method_signature_internal (cmethod->method);
-
-			g_assert (csig->hasthis);
-			sp -= csig->param_count;
-
-			gpointer arg0 = sp [0].data.p;
-
+			gpointer arg0 = sp [-1].data.p;
 			gpointer *byreference_this = (gpointer*)vt_sp;
 			*byreference_this = arg0;
 
 			/* Followed by a VTRESULT opcode which will push the result on the stack */
-			++sp;
+			/* FIXME kill MINT_VTRESULT */
+			ip++;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_GET_VALUE) {

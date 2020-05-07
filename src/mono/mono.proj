@@ -929,7 +929,7 @@
 
   <Target Name="BuildAppleAppBuilder">
     <MSBuild Projects="$(MonoProjectRoot)msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)"
              Targets="Restore;Build" />
     <MSBuild Projects="$(MonoProjectRoot)msbuild\AppleTestRunner\AppleTestRunner.csproj"
              Properties="Configuration=$(Configuration)"
@@ -938,7 +938,7 @@
 
   <Target Name="BuildAndroidAppBuilder">
     <MSBuild Projects="$(MonoProjectRoot)msbuild\AndroidAppBuilder\AndroidAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)"
              Targets="Restore;Build" />
     <MSBuild Projects="$(MonoProjectRoot)msbuild\AndroidTestRunner\AndroidTestRunner.csproj"
              Properties="Configuration=$(Configuration)"

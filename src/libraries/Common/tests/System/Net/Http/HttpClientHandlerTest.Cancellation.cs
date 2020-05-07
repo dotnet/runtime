@@ -341,7 +341,7 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // HTTP/2 does not use connection limits.
-                throw new SkipTestException("Not supported on HTTP/2 and later");
+                return;
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())

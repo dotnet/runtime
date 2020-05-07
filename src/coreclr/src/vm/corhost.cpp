@@ -783,11 +783,8 @@ HRESULT CorHost2::CreateDelegate(
 
         if (pMD->HasUnmanagedCallersOnlyAttribute())
         {
-            if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-                ThrowHR(COR_E_INVALIDPROGRAM);
-
 #ifdef TARGET_X86
-            *fnPtr = (INT_PTR)COMDelegate::ConvertToCallback(pMD);
+            *fnPtr = (INT_PTR)COMDelegate::ConvertToUnmanagedCallback(pMD);
 #else
             *fnPtr = pMD->GetMultiCallableAddrOfCode();
 #endif

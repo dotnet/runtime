@@ -187,7 +187,7 @@ union byteShiftedImm {
 
 static emitter::byteShiftedImm emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL);
 
-static INT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
+static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
 
 /************************************************************************
 *
@@ -453,9 +453,9 @@ static emitAttr optGetSrcsize(insOpts conversion);
 //    for an element of size 'elemsize' in a vector register of size 'datasize'
 static bool isValidVectorIndex(emitAttr datasize, emitAttr elemsize, ssize_t index);
 
-// For a given Load/Store Vector instruction 'ins' returns a number of consecutive SIMD registers
-// the instruction loads to/store from.
-static unsigned insGetLoadStoreRegisterListSize(instruction ins);
+// For a given instruction 'ins' which contains a register lists returns a
+// number of consecutive SIMD registers the instruction loads to/store from.
+static unsigned insGetRegisterListSize(instruction ins);
 
 /************************************************************************/
 /*           Public inline informational methods                        */

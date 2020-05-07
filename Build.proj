@@ -29,7 +29,6 @@
   <!-- Upfront restore hooks -->
   <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\runtimeprops.targets" />
 
   <!--
     Use synthetic inputs/outputs to avoid building it all the time. This should let devs build with

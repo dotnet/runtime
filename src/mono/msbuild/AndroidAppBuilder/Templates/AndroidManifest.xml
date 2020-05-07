@@ -5,6 +5,8 @@
           a:versionName="1.0">
   <uses-sdk a:minSdkVersion="%MinSdkLevel%" />
   <uses-permission a:name="android.permission.INTERNET"/>
+  <uses-permission a:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <uses-permission a:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
   <application a:label="%PackageName%" 
                a:largeHeap="true">
     <activity a:name="net.dot.MainActivity">

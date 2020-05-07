@@ -74,7 +74,7 @@ The libraries build has two logical components, the native build which produces 
 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. Possible values include `netcoreapp5.0` (currently the latest .NET Core version) or `net472`. (msbuild property `BuildTargetFramework`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `net5.0` (currently the latest .NET version) or `net472`. (msbuild property `BuildTargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
@@ -98,7 +98,7 @@ By default the `build` script only builds the product libraries and none of the 
 
 - Building for different target frameworks (restore and build are implicit again as no action is passed in)
 ```bash
-./build.sh -subset libs -framework netcoreapp5.0
+./build.sh -subset libs -framework net5.0
 ./build.sh -subset libs -framework net472
 ```
 
