@@ -55,7 +55,7 @@ MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
 BUILDS_BIN_DIR=$(MONO_BIN_DIR)/wasm/runtimes
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
 
-EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -s WASM_OBJECT_FILES=0 -s FORCE_FILESYSTEM=1
+EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -s WASM_OBJECT_FILES=0 -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1
 EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 --llvm-lto 1 -DENABLE_NETCORE=1
 
