@@ -8,6 +8,7 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 
 using Internal.IL;
@@ -343,6 +344,19 @@ namespace ILCompiler
                     //
                     // Initialize compilation group and compilation roots
                     //
+                    if (_commandLineOptions.CompilationPolicy == null)
+                    {
+                        _commandLineOptions.CompilationPolicy = "";
+                    }
+                    StringBuilder actualPolicyString = new StringBuilder();
+                    string defaultCompilationPolicy = "RootNonGenericMethods,RootGenericCanonInstantiations,AllowGenericCanonInstantiations,AllowLocalGenericInstantiations,AllowPrimitiveGenericInstantiations,AllowAllGenericInstantiations,CompileVirtualMethodsOnReferencedTypes,CompileNonVirtualMethodsOnReferencedTypes,MaxGenericDepth:10,MaxGenericDepthReferencedTypeExpansion:10,";
+                    actualPolicyString.Append(defaultCompilationPolicy);
+                    if (_commandLineOptions.Partial)
+                    {
+                        actualPolicyString.Append(",OnlyProfileSpecifiedMethods,");
+                    }
+                    actualPolicyString.Append(_commandLineOptions.CompilationPolicy);
+                    var compilationPolicy = new ReadyToRunCompilationPolicy(typeSystemContext, actualPolicyString.ToString());
 
                     // Single method mode?
                     MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
@@ -419,7 +433,8 @@ namespace ILCompiler
                             _commandLineOptions.InputBubble,
                             inputModules,
                             versionBubbleModules,
-                            _commandLineOptions.CompileBubbleGenerics);
+                            _commandLineOptions.CompileBubbleGenerics,
+                            compilationPolicy);
                     }
 
                     // Examine profile guided information as appropriate
@@ -433,10 +448,7 @@ namespace ILCompiler
                         typeSystemContext,
                         compilationGroup);
 
-                    if (_commandLineOptions.Partial)
-                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
-                    else
-                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
+                    compilationGroup.ApplyProfilerGuidedInformation(profileDataManager);
 
                     if ((singleMethod == null) && !_commandLineOptions.CompileNoMethods)
                     {
@@ -446,7 +458,7 @@ namespace ILCompiler
                             compilationRoots.Add(new ReadyToRunRootProvider(
                                 module,
                                 profileDataManager,
-                                profileDrivenPartialNGen: _commandLineOptions.Partial));
+                                compilationPolicy));
 
                             if (!_commandLineOptions.CompositeOrInputBubble)
                             {
@@ -476,6 +488,7 @@ namespace ILCompiler
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
+                        .UseCompilationPolicy(compilationPolicy)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)

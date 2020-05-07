@@ -38,7 +38,7 @@ namespace ILCompiler
         public bool Resilient { get; set; }
         public bool Map { get; set; }
         public int Parallelism { get; set; }
-
+        public string CompilationPolicy { get; set; }
 
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
@@ -47,6 +47,7 @@ namespace ILCompiler
         public string[] CodegenOptions { get; set; }
 
         public bool CompositeOrInputBubble => Composite || InputBubble;
+
 
         public static Command RootCommand()
         {
@@ -177,6 +178,10 @@ namespace ILCompiler
                 new Option(new[] { "--map" }, SR.MapFileOption)
                 {
                     Argument = new Argument<bool>()
+                },
+                new Option(new[] { "--compilation-policy" }, SR.CompilationPolicyOption)
+                {
+                    Argument = new Argument<string>()
                 },
             };
         }

@@ -37,7 +37,7 @@ namespace ILCompiler
             return false;
         }
 
-        public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
+        public sealed override void ApplyProfilerGuidedInformation(ProfileDataManager profileGuidedInfo)
         {
             return;
         }

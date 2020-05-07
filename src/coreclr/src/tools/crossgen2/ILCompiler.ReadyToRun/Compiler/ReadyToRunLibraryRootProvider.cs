@@ -17,13 +17,15 @@ namespace ILCompiler
     {
         private EcmaModule _module;
         private IEnumerable<MethodDesc> _profileData;
-        private readonly bool _profileDrivenPartialNGen;
+        private readonly ReadyToRunCompilationSpecificPolicy _moduleSpecificPolicy;
+        private readonly ReadyToRunCompilationPolicy _compilationPolicy;
 
-        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, bool profileDrivenPartialNGen)
+        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, ReadyToRunCompilationPolicy compilationPolicy)
         {
             _module = module;
             _profileData = profileDataManager.GetMethodsForModuleDesc(module);
-            _profileDrivenPartialNGen = profileDrivenPartialNGen;
+            _compilationPolicy = compilationPolicy;
+            _moduleSpecificPolicy = compilationPolicy.For(module);
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -32,6 +34,10 @@ namespace ILCompiler
             {
                 try
                 {
+                    // If profile data for this method is to be ignored...ignore it.
+                    if ((_compilationPolicy.For(method).Flags & ReadyToRunCompilationPolicyFlags.IgnoreProfileData) == 0)
+                        continue;
+
                     // Validate that this method is fully instantiated
                     if (method.OwningType.IsGenericDefinition || method.OwningType.ContainsSignatureVariables())
                     {
@@ -75,7 +81,8 @@ namespace ILCompiler
                 }
             }
 
-            if (!_profileDrivenPartialNGen)
+            // If only profiled functions are to be processed here, don't do normal rooting
+            if ((_moduleSpecificPolicy.Flags & ReadyToRunCompilationPolicyFlags.OnlyProfileSpecifiedMethods) == 0)
             {
                 foreach (MetadataType type in _module.GetAllTypes())
                 {
@@ -109,6 +116,11 @@ namespace ILCompiler
                     methodToRoot = InstantiateIfPossible(method);
 
                     if (methodToRoot == null)
+                        continue;
+                }
+                else
+                {
+                    if ((_moduleSpecificPolicy.Flags & ReadyToRunCompilationPolicyFlags.RootNonGenericMethods) == 0)
                         continue;
                 }
 
@@ -193,8 +205,11 @@ namespace ILCompiler
             return new Instantiation(args);
         }
 
-        private static InstantiatedType InstantiateIfPossible(MetadataType type)
+        private InstantiatedType InstantiateIfPossible(MetadataType type)
         {
+            if ((_moduleSpecificPolicy.Flags & ReadyToRunCompilationPolicyFlags.RootGenericCanonInstantiations) == 0)
+                return null;
+
             Instantiation inst = GetInstantiationThatMeetsConstraints(type.Instantiation);
             if (inst.IsNull)
             {
@@ -204,8 +219,11 @@ namespace ILCompiler
             return type.MakeInstantiatedType(inst);
         }
 
-        private static MethodDesc InstantiateIfPossible(MethodDesc method)
+        private MethodDesc InstantiateIfPossible(MethodDesc method)
         {
+            if ((_moduleSpecificPolicy.Flags & ReadyToRunCompilationPolicyFlags.RootGenericCanonInstantiations) == 0)
+                return null;
+
             Instantiation inst = GetInstantiationThatMeetsConstraints(method.Instantiation);
             if (inst.IsNull)
             {

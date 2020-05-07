@@ -26,6 +26,7 @@ namespace ILCompiler
         private bool _generateMapFile;
         private int _parallelism;
         private InstructionSetSupport _instructionSetSupport;
+        private ReadyToRunCompilationPolicy _compilationPolicy;
 
         private string _jitPath;
 
@@ -115,6 +116,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseCompilationPolicy(ReadyToRunCompilationPolicy compilationPolicy)
+        {
+            _compilationPolicy = compilationPolicy;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -155,7 +162,8 @@ namespace ILCompiler
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
-                flags);
+                flags,
+                _compilationPolicy);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);

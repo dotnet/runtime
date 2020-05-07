@@ -168,6 +168,9 @@
   <data name="MapFileOption" xml:space="preserve">
     <value>Generate the map file</value>
   </data>
+  <data name="CompilationPolicyOption" xml:space="preserve">
+    <value>Specify the compilation policy. The compilation policy is specified as a set of flags and numeric values, optionally associated with a specific module. For instance '-AllowAllGenericInstantiations,MaxGenericDepth:5;System.Private.CoreLib=+AllowAllGenericInstantiations' Valid flags include: NoMethods, OnlyProfileSpecifiedMethods, IgnoreProfileData, RootNonGenericMethods, RootGenericCanonInstantiations, AllowGenericCanonInstantiations, AllowLocalGenericInstantiations, AllowPrimitiveGenericInstantiations, AllowAllGenericInstantiations, CompileVirtualMethodsOnReferencedTypes, and CompileNonVirtualMethodsOnReferencedTypes. Valid numeric values include: MaxGenericDepth and MaxGenericDepthReferencedTypeExpansion.</value>
+  </data>
   <data name="MethodNotFoundOnType" xml:space="preserve">
     <value>Method '{0}' not found in '{1}'</value>
   </data>

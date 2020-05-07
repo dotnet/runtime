@@ -62,6 +62,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public bool MarkingComplete => _markingComplete;
 
+        public ReadyToRunCompilationPolicy CompilationPolicy { get; }
+
         public void SetMarkingComplete()
         {
             _markingComplete = true;
@@ -149,8 +151,10 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode corHeaderNode,
             DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
-            ReadyToRunFlags flags)
+            ReadyToRunFlags flags,
+            ReadyToRunCompilationPolicy compilationPolicy)
         {
+            CompilationPolicy = compilationPolicy;
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
             Target = context.Target;

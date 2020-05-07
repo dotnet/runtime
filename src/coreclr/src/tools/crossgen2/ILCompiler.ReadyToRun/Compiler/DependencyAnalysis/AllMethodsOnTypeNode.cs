@@ -35,13 +35,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
             DependencyList dependencies = new DependencyList();
+            var policy = context.CompilationPolicy.For(Type);
+            int typeGenericDepth = Type.GetGenericDepth();
 
-            foreach (MethodDesc method in Type.GetAllMethods())
+            if (typeGenericDepth < policy.MaxGenericDepthReferencedTypeExpansion)
             {
-                if (!method.IsGenericMethodDefinition &&
-                    context.CompilationModuleGroup.ContainsMethodBody(method, false))
+                foreach (MethodDesc method in Type.GetAllMethods())
                 {
-                    dependencies.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
+                    if (!method.IsGenericMethodDefinition &&
+                        context.CompilationModuleGroup.ContainsMethodBody(method, false))
+                    {
+                        if (method.IsVirtual)
+                        {
+                            if ((policy.Flags & ReadyToRunCompilationPolicyFlags.CompileVirtualMethodsOnReferencedTypes) == 0)
+                                continue;
+                        }
+                        else
+                        {
+                            if ((policy.Flags & ReadyToRunCompilationPolicyFlags.CompileNonVirtualMethodsOnReferencedTypes) == 0)
+                                continue;
+                        }
+                        dependencies.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
+                    }
                 }
             }
 

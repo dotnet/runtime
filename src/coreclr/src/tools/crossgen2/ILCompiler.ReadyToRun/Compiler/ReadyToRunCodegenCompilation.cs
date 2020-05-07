@@ -311,7 +311,8 @@ namespace ILCompiler
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component |
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs);
+                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs,
+                null);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);

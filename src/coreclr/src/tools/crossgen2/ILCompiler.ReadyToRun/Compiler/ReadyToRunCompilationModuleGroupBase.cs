@@ -455,6 +455,6 @@ namespace ILCompiler
             }
         }
 
-        public abstract void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction);
+        public abstract void ApplyProfilerGuidedInformation(ProfileDataManager profileGuidedInfo);
     }
 }

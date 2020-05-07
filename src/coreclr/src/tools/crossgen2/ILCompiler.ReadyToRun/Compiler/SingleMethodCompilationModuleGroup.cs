@@ -40,9 +40,9 @@ namespace ILCompiler
             return method == _method;
         }
 
-        public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
+        public sealed override void ApplyProfilerGuidedInformation(ProfileDataManager profileGuidedInfo)
         {
-            // Profiler guided restrictions are ignored for single method compilation
+            // Profiler guided data is ignored for single method compilation
             return;
         }
 

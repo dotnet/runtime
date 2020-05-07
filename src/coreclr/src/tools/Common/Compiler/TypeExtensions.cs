@@ -171,6 +171,32 @@ namespace ILCompiler
         }
 
         /// <summary>
+        /// What is the maximum number of steps that need to be taken from this method to its most contained generic type.
+        /// i.e.
+        /// System.Int32 => 0
+        /// List&lt;System.Int32&gt; => 1
+        /// Dictionary&lt;System.Int32,System.Int32&gt; => 1
+        /// Dictionary&lt;List&lt;System.Int32&gt;,&lt;System.Int32&gt; => 2
+        /// </summary>
+        public static int GetGenericDepth(this MethodDesc method)
+        {
+            int maxGenericDepthInInstantiation = 0;
+
+            if (method.HasInstantiation)
+            {
+                foreach (TypeDesc instantiationType in method.Instantiation)
+                {
+                    maxGenericDepthInInstantiation = Math.Max(instantiationType.GetGenericDepth(), maxGenericDepthInInstantiation);
+                }
+                maxGenericDepthInInstantiation = maxGenericDepthInInstantiation + 1;
+            }
+
+            maxGenericDepthInInstantiation = Math.Max(maxGenericDepthInInstantiation, method.OwningType.GetGenericDepth());
+
+            return maxGenericDepthInInstantiation;
+        }
+
+        /// <summary>
         /// Determine if a type has a generic depth greater than a given value
         /// </summary>
         public static bool IsGenericDepthGreaterThan(this TypeDesc type, int depth)
