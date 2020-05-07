@@ -1473,9 +1473,6 @@ HRESULT RegMeta::GetVersionString(      // S_OK or error.
     else
     {
         //This emptry string matches the fallback behavior we have in other places that query the version string.
-        //From what I can tell the only caller to this method is the code that tests if we need to apply the WinMD adapter
-        //and it checks if pVer == "WindowsRuntime". We don't support the debugger custom metadata source scenario with WinMDs (yet?)
-        //so we intend for that check to return FALSE.
         *pVer = "";
     }
 #endif

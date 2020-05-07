@@ -130,7 +130,6 @@ namespace System
             throw new NotImplementedException();
         }
 
-        // Determines if this type is exported to WinRT (i.e. is an activatable class in a managed .winmd)
         internal virtual bool IsExportedToWindowsRuntimeImpl()
         {
             throw new NotImplementedException();

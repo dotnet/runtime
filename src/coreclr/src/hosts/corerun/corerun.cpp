@@ -283,9 +283,7 @@ public:
                         W("*.ni.dll"),		// Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
                         W("*.dll"),
                         W("*.ni.exe"),
-                        W("*.exe"),
-                        W("*.ni.winmd"),
-                        W("*.winmd")
+                        W("*.exe")
                         };
 
             // Add files from %CORE_LIBRARIES% if specified

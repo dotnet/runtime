@@ -140,8 +140,7 @@ DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true,
                  HRESULT_FROM_WIN32(ERROR_FILE_CORRUPT),
                  IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY,
                  COR_E_LOADING_REFERENCE_ASSEMBLY,
-                 META_E_BAD_SIGNATURE,
-                 COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY)
+                 META_E_BAD_SIGNATURE)
 
 // CannotUnloadAppDomainException is removed in CoreCLR
 #define kCannotUnloadAppDomainException kException

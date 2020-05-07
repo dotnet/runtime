@@ -633,9 +633,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     LPCWSTR pwzPlatformResourceRoots = NULL;
     LPCWSTR pwzAppPaths = NULL;
     LPCWSTR pwzAppNiPaths = NULL;
-#ifdef FEATURE_COMINTEROP
-    LPCWSTR pwzAppLocalWinMD = NULL;
-#endif
 
     for (int i = 0; i < nProperties; i++)
     {

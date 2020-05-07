@@ -7346,13 +7346,6 @@ HRESULT MethodTable::GetGuidNoThrow(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL 
 // If metadata does not specify GUID for the type, GUID_NULL is returned (if bGenerateIfNotFound
 // is FALSE) or a GUID is auto-generated on the fly from the name and members of the type
 // (bGenerateIfNotFound is TRUE).
-//
-// Redirected WinRT types may have two GUIDs, the "classic" one which matches the return value
-// of Type.Guid, and the new one which is the GUID of the WinRT type to which it is redirected.
-// The bClassic parameter controls which one is returned from this method. Note that the parameter
-// is ignored for genuine WinRT types, i.e. types loaded from .winmd files, those always return
-// the new GUID.
-//
 void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /*=TRUE*/)
 {
     CONTRACTL {

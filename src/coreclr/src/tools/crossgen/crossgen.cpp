@@ -33,8 +33,8 @@ enum ReturnValues
 
 #define NumItems(s) (sizeof(s) / sizeof(s[0]))
 
-STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths, LPCWSTR pwzDiasymreaderPath);
-STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
+STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzDiasymreaderPath);
+STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
 void SetSvcLogger(ICorSvcLogger *pCorSvcLogger);
 void SetMscorlibPath(LPCWSTR wzSystemDirectory);
 
@@ -131,12 +131,6 @@ void PrintUsageHelper()
        W("                         - List of paths containing user-application native images\n")
        W("                         - Must be used with /CreatePDB switch\n")
 #endif // NO_NGENPDB
-
-#ifdef FEATURE_COMINTEROP
-       W("    /Platform_Winmd_Paths <path[") PATH_SEPARATOR_STR_W W("path]>\n")
-       W("                         - List of paths containing target platform WinMDs used\n")
-       W("                           for emulating RoResolveNamespace\n")
-#endif
        W("    /MissingDependenciesOK\n")
        W("                         - Specifies that crossgen should attempt not to fail\n")
        W("                           if a dependency is missing.\n")
@@ -158,8 +152,6 @@ void PrintUsageHelper()
 #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
        W("    /BaseAddress <value> - Specifies base address to use for compilation.\n")
 #endif
-       W(" Size on Disk Parameters\n")
-       W("    /NoMetaData     - Do not copy metadata and IL into native image.\n")
 #ifndef NO_NGENPDB
        W(" Debugging Parameters\n")
        W("    /CreatePDB <Dir to store PDB> [/lines [<search path for managed PDB>] ]\n")
@@ -427,7 +419,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPCWSTR pwzAppPaths = nullptr;
     LPCWSTR pwzAppNiPaths = nullptr;
     LPCWSTR pwzPlatformAssembliesPaths = nullptr;
-    LPCWSTR pwzPlatformWinmdPaths = nullptr;
     StackSString wzDirectoryToStorePDB;
     bool fCreatePDB = false;
     bool fGeneratePDBLinesInfo = false;
@@ -551,10 +542,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argc--;
         }
 #endif
-        else if (MatchParameter(*argv, W("NoMetaData")))
-        {
-            dwFlags |= NGENWORKER_FLAGS_NO_METADATA;
-        }
         else if (MatchParameter(*argv, W("out")))
         {
             if (pwzOutputFilename != NULL)
@@ -625,16 +612,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv++;
             argc--;
         }
-#ifdef FEATURE_COMINTEROP
-        else if (MatchParameter(*argv, W("Platform_Winmd_Paths")) && (argc > 1))
-        {
-            pwzPlatformWinmdPaths = argv[1];
-
-            // skip User app path
-            argv++;
-            argc--;
-        }
-#endif // FEATURE_COMINTEROP
 #ifndef NO_NGENPDB
         else if (MatchParameter(*argv, W("CreatePDB")) && (argc > 1))
         {
@@ -823,31 +800,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         exit(FAILURE_RESULT);
     }
 
-    if ((dwFlags & NGENWORKER_FLAGS_NO_METADATA) != 0)
-    {
-        const size_t windowsDotWinmdLength = 13;    // Length of string "Windows.winmd"
-        size_t filenameLength = wcslen(pwzFilename);
-        bool isWindowsDotWinmd = true;
-        if (filenameLength < windowsDotWinmdLength ||
-            _wcsicmp(pwzFilename + filenameLength - windowsDotWinmdLength, W("windows.winmd")) != 0)
-        {
-            isWindowsDotWinmd = false;
-        }
-        else if (filenameLength > windowsDotWinmdLength)
-        {
-            WCHAR pathSeparator = pwzFilename[filenameLength - windowsDotWinmdLength - 1];
-            if (pathSeparator != W('\\') && pathSeparator != W('/') && pathSeparator != W(':'))
-            {
-                isWindowsDotWinmd = false;
-            }
-        }
-        if (!isWindowsDotWinmd)
-        {
-            OutputErr(W("The /NoMetaData switch can only be used with Windows.winmd.\n"));
-            exit(FAILURE_RESULT);
-        }
-    }
-
     // All argument processing has happened by now. The only messages that should appear before here are errors
     // related to argument parsing, such as the Usage message. Afterwards, other messages can appear.
 
@@ -937,7 +889,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             wzDirectoryToStorePDB,
             fGeneratePDBLinesInfo,
             pwzSearchPathForManagedPDB,
-            pwzPlatformWinmdPaths,
             pwzDiasymreaderPath);
 
     }
@@ -949,8 +900,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
          pwzPlatformResourceRoots,
          pwzAppPaths,
          pwzOutputFilename,
-         baseAddress,
-         pwzPlatformWinmdPaths
+         baseAddress
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         ,
         NULL, // ICorSvcLogger

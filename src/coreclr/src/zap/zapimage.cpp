@@ -166,11 +166,8 @@ void ZapImage::InitializeSections()
 
     m_pHelperThunks = new (GetHeap()) ZapNode * [CORINFO_HELP_COUNT];
 
-    if (!m_zapper->m_pOpt->m_fNoMetaData)
-    {
-        m_pILMetaData = new (GetHeap()) ZapILMetaData(this);
-        m_pILMetaDataSection->Place(m_pILMetaData);
-    }
+    m_pILMetaData = new (GetHeap()) ZapILMetaData(this);
+    m_pILMetaDataSection->Place(m_pILMetaData);
 
     m_pDebugInfoTable = new (GetHeap()) ZapDebugInfoTable(this);
     m_pDebugSection->Place(m_pDebugInfoTable);

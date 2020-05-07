@@ -173,11 +173,10 @@ public:
 
 
 // An extension of IMetaModelCommon, exposed by read-only importers only.
-// (The primary user for this is the WinMD import adapter which needs
-// a unified view of RegMeta and MDInternalRO.)
 //
-// These methods were separated from IMetaModelCommon as they are only used by
-// the WinMDAdapter and we don't want the maintainence and code-coverage cost
+// These methods were separated from IMetaModelCommon as
+// Enc-aware versions of these methods haven't been needed
+// and we don't want the maintainence and code-coverage cost
 // of providing Enc-aware versions of these methods.
 class IMetaModelCommonRO : public IMetaModelCommon
 {

@@ -3457,7 +3457,6 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
     }
 
     // If the class implements IReflect then use the IDispatchEx implementation.
-    // WinRT objects cannot implement IReflect as WinMDExp doesn't support exporting non-WinRT interfaces
     if (SimpleComCallWrapper::SupportsIReflect(pMT))
     {
         // The class implements IReflect so lets let it handle IDispatch calls.

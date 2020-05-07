@@ -195,7 +195,6 @@ public:
     CHECK CheckLoaded(BOOL allowNativeSkip = TRUE);
     void ValidateForExecution();
     BOOL IsMarkedAsNoPlatform();
-    BOOL IsMarkedAsContentTypeWindowsRuntime();
 
 
     // ------------------------------------------------------------

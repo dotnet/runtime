@@ -178,8 +178,7 @@ ErrExit:
 
 
 //*****************************************************************************
-// Deliver scope to caller of OpenScope or OpenScopeOnMemory (this may
-// involve wrapping a WinMD adapter.)
+// Deliver scope to caller of OpenScope or OpenScopeOnMemory
 //*****************************************************************************
 static HRESULT DeliverScope(IMDCommon *pMDCommon, REFIID riid, DWORD dwOpenFlags, IUnknown **ppIUnk)
 {

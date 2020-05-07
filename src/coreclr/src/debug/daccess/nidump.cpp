@@ -887,8 +887,6 @@ NativeImageDumper::DumpNativeImage()
                                                           NULL, &dwAssemblyFlags));
         if ((afContentType_WindowsRuntime & dwAssemblyFlags) == afContentType_WindowsRuntime)
         {
-            // The WinMD adapter doesn't implement the IID_IMetaDataTables interface so we can't dump
-            // the raw metadata.
             DisplayWriteElementString ("Metadata", "Not supported by WinRT", COR_INFO);
         }
         else

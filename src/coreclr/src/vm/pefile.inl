@@ -137,14 +137,7 @@ inline void PEFile::ValidateForExecution()
     {
         if (IsMarkedAsNoPlatform())
         {
-            if (IsMarkedAsContentTypeWindowsRuntime())
-            {
-                ThrowHR(COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY);
-            }
-            else
-            {
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
+            ThrowHR(COR_E_BADIMAGEFORMAT);
         }
     }
 }
@@ -154,12 +147,6 @@ inline BOOL PEFile::IsMarkedAsNoPlatform()
 {
     WRAPPER_NO_CONTRACT;
     return (IsAfPA_NoPlatform(GetFlags()));
-}
-
-inline BOOL PEFile::IsMarkedAsContentTypeWindowsRuntime()
-{
-    WRAPPER_NO_CONTRACT;
-    return (IsAfContentType_WindowsRuntime(GetFlags()));
 }
 
 

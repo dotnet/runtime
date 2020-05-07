@@ -133,9 +133,6 @@ Crst ClrNotification
     Unordered
 End
 
-Crst CrstCLRPrivBinderLocalWinMDPath
-End
-
 Crst CLRPrivBinderMaps
 End
 

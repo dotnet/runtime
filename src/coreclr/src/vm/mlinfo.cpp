@@ -47,21 +47,8 @@
     DEFINE_ASM_QUAL_TYPE_NAME(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME, g_ColorTranslatorClassName, g_DrawingAsmName);
     DEFINE_ASM_QUAL_TYPE_NAME(COLOR_ASM_QUAL_TYPE_NAME, g_ColorClassName, g_DrawingAsmName);
 
-    DEFINE_ASM_QUAL_TYPE_NAME(URI_ASM_QUAL_TYPE_NAME, g_SystemUriClassName, g_SystemRuntimeAsmName);
-
-    DEFINE_ASM_QUAL_TYPE_NAME(NCCEVENTARGS_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventArgsName, g_ObjectModelAsmName);
-    DEFINE_ASM_QUAL_TYPE_NAME(NCCEVENTARGS_MARSHALER_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventArgsMarshalerName, g_SystemRuntimeWindowsRuntimeAsmName);
-
-    DEFINE_ASM_QUAL_TYPE_NAME(PCEVENTARGS_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventArgsName, g_ObjectModelAsmName);
-    DEFINE_ASM_QUAL_TYPE_NAME(PCEVENTARGS_MARSHALER_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventArgsMarshalerName, g_SystemRuntimeWindowsRuntimeAsmName);
-
     #define OLECOLOR_TO_SYSTEMCOLOR_METH_NAME   "FromOle"
     #define SYSTEMCOLOR_TO_OLECOLOR_METH_NAME   "ToOle"
-
-    #define EVENTARGS_TO_WINRT_EVENTARGS_METH_NAME  "ConvertToNative"
-    #define WINRT_EVENTARGS_TO_EVENTARGS_METH_NAME  "ConvertToManaged"
-
-    #define ORIGINALSTRING_PROPERTY_NAME        "OriginalString"
 #endif // FEATURE_COMINTEROP
 
 

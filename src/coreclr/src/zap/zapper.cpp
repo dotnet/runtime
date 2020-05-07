@@ -21,8 +21,6 @@ bool g_fReadyToRunCompilation;
 bool g_fLargeVersionBubble;
 #endif
 
-static bool s_fNGenNoMetaData;
-
 /* --------------------------------------------------------------------------- *
  * Public entry points for ngen
  * --------------------------------------------------------------------------- */
@@ -72,8 +70,6 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
         ngo.uStats = false;
 
         ngo.fNgenLastRetry = false;
-
-        s_fNGenNoMetaData = (dwFlags & NGENWORKER_FLAGS_NO_METADATA) != 0;
 
         zap = Zapper::NewZapper(&ngo);
 
@@ -206,8 +202,7 @@ ZapperOptions::ZapperOptions() :
   m_fPartialNGen(false),
   m_fPartialNGenSet(false),
   m_fNGenLastRetry(false),
-  m_compilerFlags(),
-  m_fNoMetaData(s_fNGenNoMetaData)
+  m_compilerFlags()
 {
     SetCompilerFlags();
 

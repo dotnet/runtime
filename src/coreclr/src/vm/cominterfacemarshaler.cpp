@@ -249,11 +249,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         //
         // The incoming interface pointer is of type m_pItfMT
         // Cache the result into RCW for better performance and for variance support
-        // For example, GetFilesAsync() returns Windows.Storage.StorageFileView and this type
-        // is not in any WinMD. Because GetFilesAsync actually returns IVectorView<StorageFile>,
-        // we know this RCW supports this interface, and putting it into the cache would make sure
-        // casting this RCW to IVectorView<object> works
-        //
         pNewRCW->m_aInterfaceEntries[nNextFreeIdx++].Init(pIncomingItfMT, *ppIncomingIP);
 
         // Don't hold ref count if RCW is aggregated

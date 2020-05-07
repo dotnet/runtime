@@ -162,8 +162,6 @@ inline unsigned RoundUp(unsigned val)
     return (val + 3) / 4 * 4;
 }
 
-const unsigned short FLAG_LOADOKAY = 1;    // Okay to load the module in background thread (e.g. for Appx first party WinMD)
-
 // Used to mark a module that was loaded in the LOADFROM context.
 // First 16 bits are reserved for CorAssemblyFlags.  Use the last bit (bit 31) to allow for expansion of CorAssemblyFlags.
 const unsigned int VERSIONFLAG_LOADCTX_LOADFROM = 0x40000000;

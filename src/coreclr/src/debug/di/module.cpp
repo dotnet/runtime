@@ -63,7 +63,6 @@ CordbModule::CordbModule(
     m_vmDomainFile(vmDomainFile),
     m_vmModule(vmModule),
     m_EnCCount(0),
-    m_isIlWinMD(Uninitialized),
     m_fForceMetaDataSerialize(FALSE),
     m_nativeCodeTable(101)
 {
@@ -372,14 +371,6 @@ void CordbModule::UpdateMetaDataCacheIfNeeded(mdToken token)
         return;
     }
 
-    // the metadata in WinMD is currently static since there's no
-    // support for profilers or EnC so we can simply exit early.
-    if (IsWinMD())
-    {
-        LOG((LF_CORDB,LL_INFO10000, "CM::UMCIN token is in WinMD, exiting\n"));
-        return;
-    }
-
     //
     // 1) Check if in-range? Compare against tables, etc.
     //
@@ -411,8 +402,6 @@ BOOL CordbModule::CheckIfTokenInMetaData(mdToken token)
     CONTRACTL_END;
     LOG((LF_CORDB,LL_INFO10000, "CM::CITIM token=0x%x\n", token));
     _ASSERTE(TypeFromToken(token) == mdtSignature);
-    // we shouldn't be doing this on WinMD modules since they don't implement IID_IMetaDataTables
-    _ASSERTE(!IsWinMD());
     RSExtSmartPtr<IMetaDataTables> pTable;
 
     HRESULT hr = GetMetaDataImporter()->QueryInterface(IID_IMetaDataTables, (void**) &pTable);
@@ -2762,37 +2751,6 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
     }
     EX_CATCH_HRESULT(hr);
     return hr;
-}
-
-BOOL CordbModule::IsWinMD()
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    if (m_isIlWinMD == Uninitialized)
-    {
-        BOOL isWinRT;
-        HRESULT hr = E_FAIL;
-
-        {
-            RSLockHolder processLockHolder(GetProcess()->GetProcessLock());
-            hr = GetProcess()->GetDAC()->IsWinRTModule(m_vmModule, isWinRT);
-        }
-
-        _ASSERTE(SUCCEEDED(hr));
-        if (FAILED(hr))
-            ThrowHR(hr);
-
-        if (isWinRT)
-            m_isIlWinMD = True;
-        else
-            m_isIlWinMD = False;
-    }
-
-    return m_isIlWinMD == True;
 }
 
 /* ------------------------------------------------------------------------- *

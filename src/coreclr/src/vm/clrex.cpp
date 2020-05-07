@@ -1718,8 +1718,7 @@ RuntimeExceptionKind EEFileLoadException::GetFileLoadKind(HRESULT hr)
             (hr == HRESULT_FROM_WIN32(ERROR_FILE_CORRUPT)) ||
             (hr == (HRESULT) IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY) ||
             (hr == COR_E_LOADING_REFERENCE_ASSEMBLY) ||
-            (hr == META_E_BAD_SIGNATURE) ||
-            (hr == COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY))
+            (hr == META_E_BAD_SIGNATURE))
             return kBadImageFormatException;
         else
         {
