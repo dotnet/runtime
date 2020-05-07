@@ -123,6 +123,7 @@ namespace System.Text.Json.Serialization.Tests
             // Serializer throws JsonException if null is assigned to value that can't be null.
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Point_2D_Struct>("null", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithPoint>(@"{""MyPoint"":null}", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ImmutableClassWithPoint>(@"{""MyPoint"":null}", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Point_2D_Struct>>("[null]", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, Point_2D_Struct>>(@"{""MyPoint"":null}", options));
         }
@@ -135,6 +136,13 @@ namespace System.Text.Json.Serialization.Tests
         private class ClassWithPoint
         {
             public Point_2D_Struct MyPoint { get; set; }
+        }
+
+        private class ImmutableClassWithPoint
+        {
+            public Point_2D_Struct MyPoint { get; }
+
+            public ImmutableClassWithPoint(Point_2D_Struct myPoint) => MyPoint = myPoint;
         }
 
         [Fact]
