@@ -31765,7 +31765,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #ifdef FEATURE_CORECLR
                 desired_allocation;
 #else
-                dd_max_size (dd);
+                dd_max_size (dd0);
 #endif //FEATURE_CORECLR
 #endif // HOST_64BIT
 
