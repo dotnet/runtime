@@ -298,8 +298,8 @@ namespace System.Text.Json
                 if (utf8PropertyName == null)
                 {
                     // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
-                    utf8PropertyName = frame.JsonPropertyInfo?.NameAsUtf8 ??
-                        frame.CtorArgumentState?.JsonParameterInfo?.JsonPropertyName;
+                    utf8PropertyName = frame.JsonPropertyInfo?.NameAsUtf8Bytes ??
+                        frame.CtorArgumentState?.JsonParameterInfo?.NameAsUtf8Bytes;
 
                     if (utf8PropertyName == null)
                     {

@@ -6,17 +6,17 @@ namespace System.Text.Json
 {
     internal readonly struct PropertyRef
     {
-        public PropertyRef(ulong key, JsonPropertyInfo info, byte[] name)
+        public PropertyRef(ulong key, JsonPropertyInfo info, byte[] nameFromJson)
         {
             Key = key;
             Info = info;
-            Name = name;
+            NameFromJson = nameFromJson;
         }
 
         public readonly ulong Key;
         public readonly JsonPropertyInfo Info;
 
-        // Name may be different than Info.NameAsUtf8 when case insensitive is enabled.
-        public readonly byte[] Name;
+        // NameFromJson may be different than Info.NameAsUtf8Bytes when case insensitive is enabled.
+        public readonly byte[] NameFromJson;
     }
 }

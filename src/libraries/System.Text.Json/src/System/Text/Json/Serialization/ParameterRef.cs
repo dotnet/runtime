@@ -6,14 +6,18 @@ namespace System.Text.Json
 {
     internal readonly struct ParameterRef
     {
-        public ParameterRef(ulong key, JsonParameterInfo info)
+        public ParameterRef(ulong key, JsonParameterInfo info, byte[] nameFromJson)
         {
             Key = key;
             Info = info;
+            NameFromJson = nameFromJson;
         }
 
         public readonly ulong Key;
 
         public readonly JsonParameterInfo Info;
+
+        // NameFromJson may be different than Info.NameAsUtf8Bytes when case insensitive is enabled.
+        public readonly byte[] NameFromJson;
     }
 }

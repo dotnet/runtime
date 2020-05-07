@@ -83,10 +83,10 @@ namespace System.Text.Json
             Debug.Assert(NameAsString != null);
 
             // At this point propertyName is valid UTF16, so just call the simple UTF16->UTF8 encoder.
-            NameAsUtf8 = Encoding.UTF8.GetBytes(NameAsString);
+            NameAsUtf8Bytes = Encoding.UTF8.GetBytes(NameAsString);
 
             // Cache the escaped property name.
-            EscapedName = JsonEncodedText.Encode(NameAsString, NameAsUtf8, Options.Encoder);
+            EscapedName = JsonEncodedText.Encode(NameAsString, NameAsUtf8Bytes, Options.Encoder);
         }
 
         private void DetermineSerializationCapabilities(JsonIgnoreCondition? ignoreCondition)
@@ -189,9 +189,9 @@ namespace System.Text.Json
 
         // There are 3 copies of the property name:
         // 1) NameAsString. The unescaped property name.
-        // 2) NameAsUtf8. The Utf8 version of NameAsString. Used during during deserialization for property lookup.
-        // 3) EscapedName. The escaped verson of NameAsString and NameAsUtf8 written during serialization. Internally shares
-        // the same instances of NameAsString and NameAsUtf8 if there is no escaping.
+        // 2) NameAsUtf8Bytes. The Utf8 version of NameAsString. Used during during deserialization for property lookup.
+        // 3) EscapedName. The escaped verson of NameAsString and NameAsUtf8Bytes written during serialization. Internally shares
+        // the same instances of NameAsString and NameAsUtf8Bytes if there is no escaping.
 
         /// <summary>
         /// The unescaped name of the property.
@@ -204,7 +204,7 @@ namespace System.Text.Json
         /// <summary>
         /// Utf8 version of NameAsString.
         /// </summary>
-        public byte[]? NameAsUtf8 { get; private set; }
+        public byte[]? NameAsUtf8Bytes { get; private set; }
 
         /// <summary>
         /// The escaped name passed to the writer.

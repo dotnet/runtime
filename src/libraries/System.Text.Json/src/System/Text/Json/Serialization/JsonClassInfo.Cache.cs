@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -145,7 +144,7 @@ namespace System.Text.Json
                 runtimePropertyType: runtimePropertyType,
                 propertyInfo: null, // Not a real property so this is null.
                 parentClassType: typeof(object), // a dummy value (not used)
-                converter : converter,
+                converter: converter,
                 options);
         }
 
@@ -180,7 +179,7 @@ namespace System.Text.Json
                         propertyRef = localPropertyRefsSorted[iForward];
                         if (IsPropertyRefEqual(propertyRef, propertyName, key))
                         {
-                            utf8PropertyName = propertyRef.Name;
+                            utf8PropertyName = propertyRef.NameFromJson;
                             return propertyRef.Info;
                         }
 
@@ -191,7 +190,7 @@ namespace System.Text.Json
                             propertyRef = localPropertyRefsSorted[iBackward];
                             if (IsPropertyRefEqual(propertyRef, propertyName, key))
                             {
-                                utf8PropertyName = propertyRef.Name;
+                                utf8PropertyName = propertyRef.NameFromJson;
                                 return propertyRef.Info;
                             }
 
@@ -203,7 +202,7 @@ namespace System.Text.Json
                         propertyRef = localPropertyRefsSorted[iBackward];
                         if (IsPropertyRefEqual(propertyRef, propertyName, key))
                         {
-                            utf8PropertyName = propertyRef.Name;
+                            utf8PropertyName = propertyRef.NameFromJson;
                             return propertyRef.Info;
                         }
 
@@ -219,18 +218,17 @@ namespace System.Text.Json
 
             // No cached item was found. Try the main dictionary which has all of the properties.
             Debug.Assert(PropertyCache != null);
-            JsonPropertyInfo jsonPropertyInfo;
-            string stringPropertyName = JsonHelpers.Utf8GetString(propertyName);
-            if (PropertyCache.TryGetValue(stringPropertyName, out jsonPropertyInfo!))
+
+            if (PropertyCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
             {
                 if (Options.PropertyNameCaseInsensitive)
                 {
-                    if (propertyName.SequenceEqual(jsonPropertyInfo!.NameAsUtf8))
+                    if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
                     {
-                        Debug.Assert(key == GetKey(jsonPropertyInfo!.NameAsUtf8.AsSpan()));
+                        Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
 
                         // Use the existing byte[] reference instead of creating another one.
-                        utf8PropertyName = jsonPropertyInfo!.NameAsUtf8!;
+                        utf8PropertyName = info.NameAsUtf8Bytes!;
                     }
                     else
                     {
@@ -240,13 +238,13 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    Debug.Assert(key == GetKey(jsonPropertyInfo!.NameAsUtf8!.AsSpan()));
-                    utf8PropertyName = jsonPropertyInfo!.NameAsUtf8!;
+                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes!.AsSpan()));
+                    utf8PropertyName = info.NameAsUtf8Bytes!;
                 }
             }
             else
             {
-                jsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
+                info = JsonPropertyInfo.s_missingProperty;
 
                 // Make a copy of the original Span.
                 utf8PropertyName = propertyName.ToArray();
@@ -277,29 +275,29 @@ namespace System.Text.Json
                         frame.PropertyRefCache = new List<PropertyRef>();
                     }
 
-                    Debug.Assert(jsonPropertyInfo != null);
+                    Debug.Assert(info != null);
 
-                    propertyRef = new PropertyRef(key, jsonPropertyInfo, utf8PropertyName);
+                    propertyRef = new PropertyRef(key, info, utf8PropertyName);
                     frame.PropertyRefCache.Add(propertyRef);
                 }
             }
 
-            return jsonPropertyInfo;
+            return info;
         }
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetParameter(
+        public JsonParameterInfo? GetParameter(
             ReadOnlySpan<byte> propertyName,
             ref ReadStackFrame frame,
-            out JsonParameterInfo? jsonParameterInfo)
+            out byte[] utf8PropertyName)
         {
-            JsonParameterInfo? info = null;
+            ParameterRef parameterRef;
+
+            ulong key = GetKey(propertyName);
 
             // Keep a local copy of the cache in case it changes by another thread.
             ParameterRef[]? localParameterRefsSorted = _parameterRefsSorted;
-
-            ulong key = GetKey(propertyName);
 
             // If there is an existing cache, then use it.
             if (localParameterRefsSorted != null)
@@ -315,11 +313,11 @@ namespace System.Text.Json
                 {
                     if (iForward < count)
                     {
-                        ParameterRef parameterRef = localParameterRefsSorted[iForward];
-                        if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
+                        parameterRef = localParameterRefsSorted[iForward];
+                        if (IsParameterRefEqual(parameterRef, propertyName, key))
                         {
-                            jsonParameterInfo = info;
-                            return true;
+                            utf8PropertyName = parameterRef.NameFromJson;
+                            return parameterRef.Info;
                         }
 
                         ++iForward;
@@ -327,10 +325,10 @@ namespace System.Text.Json
                         if (iBackward >= 0)
                         {
                             parameterRef = localParameterRefsSorted[iBackward];
-                            if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
+                            if (IsParameterRefEqual(parameterRef, propertyName, key))
                             {
-                                jsonParameterInfo = info;
-                                return true;
+                                utf8PropertyName = parameterRef.NameFromJson;
+                                return parameterRef.Info;
                             }
 
                             --iBackward;
@@ -338,11 +336,11 @@ namespace System.Text.Json
                     }
                     else if (iBackward >= 0)
                     {
-                        ParameterRef parameterRef = localParameterRefsSorted[iBackward];
-                        if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
+                        parameterRef = localParameterRefsSorted[iBackward];
+                        if (IsParameterRefEqual(parameterRef, propertyName, key))
                         {
-                            jsonParameterInfo = info;
-                            return true;
+                            utf8PropertyName = parameterRef.NameFromJson;
+                            return parameterRef.Info;
                         }
 
                         --iBackward;
@@ -355,26 +353,39 @@ namespace System.Text.Json
                 }
             }
 
-            string propertyNameAsString = JsonHelpers.Utf8GetString(propertyName);
-
+            // No cached item was found. Try the main dictionary which has all of the parameters.
             Debug.Assert(ParameterCache != null);
 
-            if (!ParameterCache.TryGetValue(propertyNameAsString, out info))
+            if (ParameterCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonParameterInfo? info))
             {
-                // Constructor parameter not found. We'll check if it's a property next.
-                jsonParameterInfo = null;
-                return false;
+                if (Options.PropertyNameCaseInsensitive)
+                {
+                    if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
+                    {
+                        Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
+
+                        // Use the existing byte[] reference instead of creating another one.
+                        utf8PropertyName = info.NameAsUtf8Bytes!;
+                    }
+                    else
+                    {
+                        // Make a copy of the original Span.
+                        utf8PropertyName = propertyName.ToArray();
+                    }
+                }
+                else
+                {
+                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes!.AsSpan()));
+                    utf8PropertyName = info.NameAsUtf8Bytes!;
+                }
             }
+            else
+            {
+                Debug.Assert(info == null);
 
-            jsonParameterInfo = info;
-            Debug.Assert(info != null);
-
-            // Two code paths to get here:
-            // 1) key == info.PropertyNameKey. Exact match found.
-            // 2) key != info.PropertyNameKey. Match found due to case insensitivity.
-            // TODO: recheck these conditions
-            Debug.Assert(key == info.ParameterNameKey ||
-                propertyNameAsString.Equals(info.NameAsString, StringComparison.OrdinalIgnoreCase));
+                // Make a copy of the original Span.
+                utf8PropertyName = propertyName.ToArray();
+            }
 
             // Check if we should add this to the cache.
             // Only cache up to a threshold length and then just use the dictionary when an item is not found in the cache.
@@ -401,12 +412,12 @@ namespace System.Text.Json
                         frame.CtorArgumentState.ParameterRefCache = new List<ParameterRef>();
                     }
 
-                    ParameterRef parameterRef = new ParameterRef(key, jsonParameterInfo);
+                    parameterRef = new ParameterRef(key, info!, utf8PropertyName);
                     frame.CtorArgumentState.ParameterRefCache.Add(parameterRef);
                 }
             }
 
-            return true;
+            return info;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -416,7 +427,7 @@ namespace System.Text.Json
             {
                 // We compare the whole name, although we could skip the first 7 bytes (but it's not any faster)
                 if (propertyName.Length <= PropertyNameKeyLength ||
-                    propertyName.SequenceEqual(propertyRef.Name))
+                    propertyName.SequenceEqual(propertyRef.NameFromJson))
                 {
                     return true;
                 }
@@ -426,15 +437,14 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryIsParameterRefEqual(in ParameterRef parameterRef, ReadOnlySpan<byte> parameterName, ulong key, [NotNullWhen(true)] ref JsonParameterInfo? info)
+        private static bool IsParameterRefEqual(in ParameterRef parameterRef, ReadOnlySpan<byte> parameterName, ulong key)
         {
             if (key == parameterRef.Key)
             {
                 // We compare the whole name, although we could skip the first 7 bytes (but it's not any faster)
                 if (parameterName.Length <= PropertyNameKeyLength ||
-                    parameterName.SequenceEqual(parameterRef.Info.ParameterName))
+                    parameterName.SequenceEqual(parameterRef.NameFromJson))
                 {
-                    info = parameterRef.Info;
                     return true;
                 }
             }
