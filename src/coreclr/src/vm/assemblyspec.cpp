@@ -207,22 +207,6 @@ HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
     {
         IfFailThrow(BaseAssemblySpec::Init(kAssemblyToken,pImport));
 
-        if (IsContentType_WindowsRuntime())
-        {
-            if (!fAllowAllocation)
-            {   // We don't support this because we must be able to allocate in order to
-                // extract embedded type names for the native image scenario. Currently,
-                // the only caller of this method with fAllowAllocation == FALSE is
-                // Module::GetAssemblyIfLoaded, and since this method will only check the
-                // assembly spec cache, and since we can't cache WinRT assemblies, this
-                // limitation should have no negative impact.
-                IfFailThrow(E_FAIL);
-            }
-
-            // Extract embedded content, if present (currently used for embedded WinRT type names).
-            ParseEncodedName();
-        }
-
         // For static binds, we cannot reference a weakly named assembly from a strong named one.
         // (Note that this constraint doesn't apply to dynamic binds which is why this check is
         // not farther down the stack.)
@@ -257,13 +241,6 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     IfFailThrow(pImport->GetAssemblyFromScope(&a));
 
     InitializeSpec(a, pImport, NULL);
-
-#ifdef FEATURE_COMINTEROP
-    if (IsContentType_WindowsRuntime())
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-#endif //FEATURE_COMINTEROP
 
     // Set the binding context for the AssemblySpec
     ICLRPrivBinder* pCurrentBinder = GetBindingContext();
@@ -974,22 +951,6 @@ HRESULT AssemblySpec::EmitToken(
 // Constructs an AssemblySpec for the given IAssemblyName. Recognizes IAssemblyName objects
 // that were built from WinRT AssemblySpec objects, extracts the encoded type name, and sets
 // the type namespace and class name properties appropriately.
-
-void AssemblySpec::ParseEncodedName()
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END
-
-#ifdef FEATURE_COMINTEROP
-    if (IsContentType_WindowsRuntime())
-    {
-        _ASSERTE(false);
-    }
-#endif
-}
 
 AssemblySpecBindingCache::AssemblySpecBindingCache()
 {

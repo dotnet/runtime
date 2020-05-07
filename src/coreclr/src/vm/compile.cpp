@@ -287,12 +287,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
 
             PEAssemblyHolder pAssemblyHolder;
 
-#ifdef FEATURE_COMINTEROP
-            if (spec.IsContentType_WindowsRuntime())
-            {
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
-#endif //FEATURE_COMINTEROP
             //ExplicitBind
             CoreBindResult bindResult;
             spec.SetCodeBase(pImage->GetPath());

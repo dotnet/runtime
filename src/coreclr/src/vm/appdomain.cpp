@@ -4179,12 +4179,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
     BinderTracing::AssemblyBindOperation bindOperation(pSpec);
 
-    // WinRT assemblies are not supported as direct references.
-    if (pSpec->IsContentType_WindowsRuntime())
-    {
-        EEFileLoadException::Throw(pSpec, COR_E_PLATFORMNOTSUPPORTED);
-    }
-    else if (pSpec->HasUniqueIdentity())
+    if (pSpec->HasUniqueIdentity())
     {
         HRESULT hrBindResult = S_OK;
         PEAssemblyHolder result;

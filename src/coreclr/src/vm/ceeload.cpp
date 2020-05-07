@@ -4671,10 +4671,6 @@ Module::GetAssemblyIfLoaded(
                                                      // This should not ever happen, due to the above checks, but this logic
                                                      // is intended to be defensive against unexpected behavior.
             }
-            else if (specSearchAssemblyRef.IsContentType_WindowsRuntime())
-            {
-                eligibleForAdditionalChecks = FALSE; // WinRT binds do not support this scan
-            }
         }
 
         if (eligibleForAdditionalChecks)

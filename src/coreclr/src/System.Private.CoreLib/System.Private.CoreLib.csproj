@@ -324,9 +324,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureAppX)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.Uap.cs" />
-  </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
   <ItemGroup>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">

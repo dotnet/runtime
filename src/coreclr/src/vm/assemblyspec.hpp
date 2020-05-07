@@ -230,8 +230,6 @@ class AssemblySpec  : public BaseAssemblySpec
         return m_pAppDomain;
     }
 
-    void ParseEncodedName();
-
     inline HRESULT SetContentType(AssemblyContentType type)
     {
         LIMITED_METHOD_CONTRACT;
@@ -242,8 +240,8 @@ class AssemblySpec  : public BaseAssemblySpec
         }
         else if (type == AssemblyContentType_WindowsRuntime)
         {
-            m_dwFlags = (m_dwFlags & ~afContentType_Mask) | afContentType_WindowsRuntime;
-            return S_OK;
+            // WinRT assemblies are not supported as direct references.
+            return COR_E_PLATFORMNOTSUPPORTED;
         }
         else
         {

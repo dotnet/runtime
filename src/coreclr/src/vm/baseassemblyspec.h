@@ -124,27 +124,13 @@ public:
         BOOL fIncludeCodeBase = TRUE, /* Used by fusion only */
         BOOL fMustBeBindable = FALSE) const;
 
-    inline BOOL IsContentType_WindowsRuntime() const
-    {
-        LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_COMINTEROP
-        return IsAfContentType_WindowsRuntime(m_dwFlags);
-#else
-        return FALSE;
-#endif
-    }
-
     void GetEncodedName(SString & ssEncodedName) const;
 
-    // Returns true if this object uniquely identifies a single assembly;
-    // false otherwise. This will return false for Windows Runtime assemblies,
-    // as WinRT assembly names do not represent an identity. This method
-    // does not take into account additional attributes such as type namespace
-    // and name.
+    // Returns true
     inline BOOL HasUniqueIdentity() const
     {
         STATIC_CONTRACT_LIMITED_METHOD;
-        return !IsContentType_WindowsRuntime();
+        return TRUE;
     }
 
     enum CompareExFlags
