@@ -250,15 +250,6 @@ class AssemblySpec  : public BaseAssemblySpec
         }
     }
 
-    // Returns true if the object can be used to bind to the target assembly.
-    // One case in which this is not true is when the content type is WinRT
-    // but no type name has been set.
-    inline bool HasBindableIdentity() const
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        return TRUE;
-    }
-
     inline BOOL CanUseWithBindingCache() const
     {
         STATIC_CONTRACT_LIMITED_METHOD;

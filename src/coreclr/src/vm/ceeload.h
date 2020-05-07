@@ -2159,20 +2159,11 @@ private:
     Assembly *GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(mdAssemblyRef kAssemblyRef, BOOL *pfDiscoveredAssemblyRefMatchesTargetDefExactly);
 public:
 
-    DomainAssembly * LoadAssembly(
-            mdAssemblyRef kAssemblyRef,
-            LPCUTF8       szWinRtTypeNamespace = NULL,
-            LPCUTF8       szWinRtTypeClassName = NULL);
+    DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
     Module *GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL loadAllowed);
     DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile, BOOL loadResources = TRUE, BOOL bindOnly = FALSE);
     PTR_Module LookupModule(mdToken kFile, BOOL loadResources = TRUE); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
-
-    bool HasBindableIdentity(mdAssemblyRef tkAssemblyRef)
-    {
-        WRAPPER_NO_CONTRACT;
-        return !IsAfContentType_WindowsRuntime(GetAssemblyRefFlags(tkAssemblyRef));
-    }
 
     // RID maps
     TypeHandle LookupTypeDef(mdTypeDef token, ClassLoadLevel *pLoadLevel = NULL)

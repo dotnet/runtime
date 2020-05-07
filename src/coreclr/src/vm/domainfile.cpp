@@ -998,13 +998,6 @@ void DomainFile::FinishLoad()
 
     // Are we absolutely required to use a native image?
     CheckZapRequired();
-
-    // If this is a winmd file, throw a bad image format exeption. We don't support winmds.
-    PEFile* peFile = GetFile();
-    if (peFile && peFile->AsAssembly()->IsWindowsRuntime() && peFile->HasHostAssembly())
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
 #endif // FEATURE_PREJIT
 
     // Flush any log messages

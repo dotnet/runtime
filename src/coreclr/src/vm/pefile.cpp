@@ -1510,9 +1510,7 @@ void PEFile::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *pbInM
 PEAssembly *
 PEFile::LoadAssembly(
     mdAssemblyRef       kAssemblyRef,
-    IMDInternalImport * pImport,                // = NULL
-    LPCUTF8             szWinRtTypeNamespace,   // = NULL
-    LPCUTF8             szWinRtTypeClassName)   // = NULL
+    IMDInternalImport * pImport)
 {
     CONTRACT(PEAssembly *)
     {

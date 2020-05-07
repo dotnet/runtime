@@ -1043,10 +1043,6 @@ Module * Assembly::FindModuleByTypeRef(
             // Do this first because it has a strong contract
             Assembly * pAssembly = NULL;
 
-#if defined(FEATURE_COMINTEROP) || !defined(DACCESS_COMPILE)
-            LPCUTF8 szNamespace = NULL;
-            LPCUTF8 szClassName = NULL;
-#endif
             if (loadFlag == Loader::SafeLookup)
             {
                 pAssembly = pModule->LookupAssemblyRef(tkType);
@@ -1070,10 +1066,7 @@ Module * Assembly::FindModuleByTypeRef(
             }
 
 
-            DomainAssembly * pDomainAssembly = pModule->LoadAssembly(
-                    tkType,
-                    szNamespace,
-                    szClassName);
+            DomainAssembly * pDomainAssembly = pModule->LoadAssembly(tkType);
 
 
             if (pDomainAssembly == NULL)

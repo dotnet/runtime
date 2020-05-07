@@ -5780,13 +5780,6 @@ HRESULT DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT)
     HRESULT hr = S_OK;
     isWinRT = FALSE;
 
-    EX_TRY
-    {
-        Module* pModule = vmModule.GetDacPtr();
-        isWinRT = pModule->GetFile()->GetAssembly()->IsWindowsRuntime();
-    }
-    EX_CATCH_HRESULT(hr);
-
     return hr;
 }
 

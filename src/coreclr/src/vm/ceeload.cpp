@@ -4813,14 +4813,7 @@ Module::GetAssemblyRefFlags(
 } // Module::GetAssemblyRefFlags
 
 #ifndef DACCESS_COMPILE
-
-// Arguments:
-//   szWinRtTypeNamespace ... Namespace of WinRT type.
-//   szWinRtTypeClassName ... Name of WinRT type, NULL for non-WinRT (classic) types.
-DomainAssembly * Module::LoadAssembly(
-    mdAssemblyRef kAssemblyRef,
-    LPCUTF8       szWinRtTypeNamespace,
-    LPCUTF8       szWinRtTypeClassName)
+DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
 {
     CONTRACT(DomainAssembly *)
     {
@@ -4830,7 +4823,6 @@ DomainAssembly * Module::LoadAssembly(
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
-        //POSTCONDITION((CheckPointer(GetAssemblyIfLoaded(kAssemblyRef, szWinRtTypeNamespace, szWinRtTypeClassName)), NULL_NOT_OK));
     }
     CONTRACT_END;
 
@@ -4844,22 +4836,18 @@ DomainAssembly * Module::LoadAssembly(
     Assembly * pAssembly = LookupAssemblyRef(kAssemblyRef);
     if (pAssembly != NULL)
     {
-        _ASSERTE(HasBindableIdentity(kAssemblyRef));
-
         pDomainAssembly = pAssembly->GetDomainAssembly();
         ::GetAppDomain()->LoadDomainFile(pDomainAssembly, FILE_LOADED);
 
         RETURN pDomainAssembly;
     }
 
-    bool fHasBindableIdentity = HasBindableIdentity(kAssemblyRef);
+    bool fHasBindableIdentity = true;
 
     {
         PEAssemblyHolder pFile = GetDomainAssembly()->GetFile()->LoadAssembly(
                 kAssemblyRef,
-                NULL,
-                szWinRtTypeNamespace,
-                szWinRtTypeClassName);
+                NULL);
         AssemblySpec spec;
         spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up

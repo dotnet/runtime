@@ -1296,38 +1296,17 @@ void CEECompileInfo::EncodeModuleAsIndex(CORINFO_MODULE_HANDLE  fromHandle,
         if (!pRefCache)
             ThrowOutOfMemory();
 
+        result = pRefCache->m_sAssemblyRefMap.LookupValue((UPTR)assembly, NULL);
 
-        if (!assembly->GetManifestFile()->HasBindableIdentity())
-        {
-            // If the module that we'd like to encode for a later fixup doesn't have
-            // a bindable identity, then this will fail at runtime. So, we ask the
-            // compilation domain for a matching assembly with a bindable identity.
-            // This is possible because this module must have been bound in the past,
-            // and the compilation domain will keep track of at least one corresponding
-            // bindable identity.
-            AssemblySpec defSpec;
-            defSpec.InitializeSpec(assembly->GetManifestFile());
-
-            AssemblySpec* pRefSpec = pDomain->FindAssemblyRefSpecForDefSpec(&defSpec);
-            _ASSERTE(pRefSpec != nullptr);
-
-            IfFailThrow(pRefSpec->EmitToken(pAssemblyEmit, &token, TRUE, TRUE));
-            token += fromModule->GetAssemblyRefMax();
-        }
+        if (result == (UPTR)INVALIDENTRY)
+            token = fromModule->FindAssemblyRef(assembly);
         else
+            token = (mdAssemblyRef) result;
+
+        if (IsNilToken(token))
         {
-            result = pRefCache->m_sAssemblyRefMap.LookupValue((UPTR)assembly, NULL);
-
-            if (result == (UPTR)INVALIDENTRY)
-                token = fromModule->FindAssemblyRef(assembly);
-            else
-                token = (mdAssemblyRef) result;
-
-            if (IsNilToken(token))
-            {
-                token = fromAssembly->AddAssemblyRef(assembly, pAssemblyEmit);
-                token += fromModule->GetAssemblyRefMax();
-            }
+            token = fromAssembly->AddAssemblyRef(assembly, pAssemblyEmit);
+            token += fromModule->GetAssemblyRefMax();
         }
 
         *pIndex = RidFromToken(token);
