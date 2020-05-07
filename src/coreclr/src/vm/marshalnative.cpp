@@ -923,7 +923,7 @@ FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
     if (fOnlyInContext && !IsObjectInContext(&oref))
         retVal = NULL;
     else
-        retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), TRUE, bEnableCustomizedQueryInterface);
+        retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
 
     HELPER_METHOD_FRAME_END();
     return retVal;
