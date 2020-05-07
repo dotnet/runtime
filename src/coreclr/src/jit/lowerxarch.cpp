@@ -1308,9 +1308,11 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
     }
+    assert((argCnt == 1) || (argCnt == (simdSize / genTypeSize(baseType))));
 
     if (argCnt == cnsArgCnt)
     {
+
         if (op1->OperIsList())
         {
             for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
