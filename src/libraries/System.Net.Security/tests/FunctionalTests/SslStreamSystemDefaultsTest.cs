@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
@@ -21,10 +22,7 @@ namespace System.Net.Security.Tests
 
         public SslStreamSystemDefaultTest()
         {
-            var network = new VirtualNetwork();
-            var clientNet = new VirtualNetworkStream(network, isServer:false);
-            var serverNet = new VirtualNetworkStream(network, isServer: true);
-
+            (Stream clientNet, Stream serverNet) = TestHelper.GetConnectedTcpStreams();
             _clientStream = new SslStream(clientNet, false, ClientCertCallback);
             _serverStream = new SslStream(serverNet, false, ServerCertCallback);
         }
@@ -73,6 +71,28 @@ namespace System.Net.Security.Tests
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha512,
                         _clientStream.SslProtocol + " " + _clientStream.HashAlgorithm);
                 }
+            }
+        }
+
+        [ConditionalTheory(nameof(IsNotWindows7))]
+#pragma warning disable 0618
+        [InlineData(null, SslProtocols.Ssl2)]
+        [InlineData(SslProtocols.None, SslProtocols.Ssl2)]
+        [InlineData(SslProtocols.Ssl2, null)]
+        [InlineData(SslProtocols.Ssl2, SslProtocols.None)]
+#pragma warning restore 0618
+        public async Task ClientAndServer_OneUsesDefault_OtherUsesLowerProtocol_Fails(
+            SslProtocols? clientProtocols, SslProtocols? serverProtocols)
+        {
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+            {
+                string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+                var clientCertificates = new X509CertificateCollection() { clientCertificate };
+
+                await Assert.ThrowsAnyAsync<Exception>(() => TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
+                    AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols)));
             }
         }
 

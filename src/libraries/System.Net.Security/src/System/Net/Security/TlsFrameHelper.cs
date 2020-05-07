@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Security.Authentication;
 
 namespace System.Net.Security
@@ -87,10 +88,10 @@ namespace System.Net.Security
     {
         public const int HeaderSize = 5;
 
-        private static byte[] _protocolMismatch13 = new byte[] { (byte)TlsContentType.Alert, 3, 4, 0, 2, 2, 70 };
-        private static byte[] _protocolMismatch12 = new byte[] { (byte)TlsContentType.Alert, 3, 3, 0, 2, 2, 70 };
-        private static byte[] _protocolMismatch11 = new byte[] { (byte)TlsContentType.Alert, 3, 2, 0, 2, 2, 70 };
-        private static byte[] _protocolMismatch10 = new byte[] { (byte)TlsContentType.Alert, 3, 1, 0, 2, 2, 70 };
+        private static byte[] s_protocolMismatch13 = new byte[] { (byte)TlsContentType.Alert, 3, 4, 0, 2, 2, 70 };
+        private static byte[] s_protocolMismatch12 = new byte[] { (byte)TlsContentType.Alert, 3, 3, 0, 2, 2, 70 };
+        private static byte[] s_protocolMismatch11 = new byte[] { (byte)TlsContentType.Alert, 3, 2, 0, 2, 2, 70 };
+        private static byte[] s_protocolMismatch10 = new byte[] { (byte)TlsContentType.Alert, 3, 1, 0, 2, 2, 70 };
 
         public static bool TryGetFrameHeader(ReadOnlySpan<byte> frame, ref TlsFrameHeader header)
         {
@@ -164,7 +165,9 @@ namespace System.Net.Security
             }
 
             // This will not fail since we have enough data.
-            TryGetFrameHeader(frame, ref info.Header);
+            bool gotHeader = TryGetFrameHeader(frame, ref info.Header);
+            Debug.Assert(gotHeader);
+
             info.SupportedVersions = info.Header.Version;
 
             info.HandshakeType = (TlsHandshakeType)frame[5];
@@ -190,22 +193,15 @@ namespace System.Net.Security
             return true;
         }
 
-        private static byte[] CreateProtocolVersionAlert(SslProtocols version)
-        {
-            switch (version)
+        private static byte[] CreateProtocolVersionAlert(SslProtocols version) =>
+            version switch
             {
-                case SslProtocols.Tls13:
-                    return _protocolMismatch13;
-                case SslProtocols.Tls12:
-                    return _protocolMismatch12;
-                case SslProtocols.Tls11:
-                    return _protocolMismatch11;
-                case SslProtocols.Tls:
-                    return _protocolMismatch10;
-                default:
-                    return Array.Empty<byte>();
-            }
-        }
+                SslProtocols.Tls13 => s_protocolMismatch13,
+                SslProtocols.Tls12 => s_protocolMismatch12,
+                SslProtocols.Tls11 => s_protocolMismatch11,
+                SslProtocols.Tls => s_protocolMismatch10,
+                _ => Array.Empty<byte>(),
+            };
 
         public static byte[] CreateAlertFrame(SslProtocols version, TlsAlertDescription reason)
         {
