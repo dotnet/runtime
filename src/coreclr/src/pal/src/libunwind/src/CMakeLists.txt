@@ -25,6 +25,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 else()
   add_compile_options(-Wno-unused-value)
   add_compile_options(-Wno-unused-result)
+  add_compile_options(-Wno-implicit-function-declaration)
+  add_compile_options(-Wno-incompatible-pointer-types)
 endif()
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
@@ -96,7 +98,6 @@ SET(libunwind_la_SOURCES_generic
     mi/Gget_fpreg.c mi/Gset_fpreg.c
     mi/Gset_caching_policy.c
     mi/Gset_cache_size.c
-    oop/_OOP_find_proc_info.c
 )
 
 SET(libunwind_la_SOURCES_os_linux
@@ -112,6 +113,14 @@ SET(libunwind_la_SOURCES_os_freebsd
 )
 
 SET(libunwind_la_SOURCES_os_freebsd_local
+# Nothing
+)
+
+SET(libunwind_la_SOURCES_os_solaris
+    os-solaris.c
+)
+
+SET(libunwind_la_SOURCES_os_solaris_local
 # Nothing
 )
 
@@ -137,6 +146,11 @@ elseif(CLR_CMAKE_HOST_FREEBSD)
     SET(libunwind_la_SOURCES_arm_os             arm/Gos-freebsd.c)
     SET(libunwind_la_SOURCES_arm_os_local       arm/Los-freebsd.c)
     list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_freebsd.c)
+elseif(CLR_CMAKE_HOST_SUNOS)
+    SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_solaris})
+    SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_solaris_local})
+    SET(libunwind_la_SOURCES_x86_64_os          x86_64/Gos-solaris.c)
+    SET(libunwind_la_SOURCES_x86_64_os_local    x86_64/Los-solaris.c)
 endif()
 
 # List of arch-independent files needed by both local-only and generic
