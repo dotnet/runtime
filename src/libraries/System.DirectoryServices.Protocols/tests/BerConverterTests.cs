@@ -172,17 +172,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
-        [InlineData("n", null)]
-        [InlineData("n", new byte[0])]
-        [InlineData("{", new byte[] { 1 })]
-        [InlineData("}", new byte[] { 1 })]
-        [InlineData("{}{}{}{}{}{}{}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 })]
-        [InlineData("aaa", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 })]
-        [InlineData("iii", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 })]
-        [InlineData("eee", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 })]
-        [InlineData("bbb", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 })]
-        [InlineData("OOO", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 })]
-        [InlineData("BBB", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 })]
+        [MemberData(nameof(Decode_Invalid_ThrowsBerConversionException_Data))]
         public void Decode_Invalid_ThrowsBerConversionException(string format, byte[] values)
         {
             Assert.Throws<BerConversionException>(() => BerConverter.Decode(format, values));
