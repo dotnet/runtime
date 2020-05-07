@@ -4,6 +4,16 @@
 
 namespace System.Runtime.Intrinsics
 {
+    internal static class Vector64
+    {
+        public static Vector64<ulong> Create(ulong value) => throw new PlatformNotSupportedException();
+    }
+    internal readonly struct Vector64<T>
+        where T : struct
+    {
+        public static Vector64<byte> AsByte<T>(this Vector64<T> vector) => throw new PlatformNotSupportedException();
+    }
+
     internal static class Vector128
     {
         public static Vector128<short> Create(short value) => throw new PlatformNotSupportedException();
@@ -129,5 +139,16 @@ namespace System.Runtime.Intrinsics.Arm
         public const bool IsSupported = false;
         public static int LeadingZeroCount(uint value) => throw new PlatformNotSupportedException();
         public static uint ReverseElementBits(uint value) => throw new PlatformNotSupportedException();
+    }
+
+    internal abstract class AdvSimd : ArmBase
+    {
+        public abstract class Arm64
+        {
+            public static Vector64<byte> AddAcross(Vector64<byte> value) => throw new PlatformNotSupportedException();
+        }
+        public const bool IsSupported = false;
+        public static byte Extract(Vector64<byte> vector, byte index) => throw new PlatformNotSupportedException();
+        public static Vector64<byte> PopCount(Vector64<byte> value) => throw new PlatformNotSupportedException();
     }
 }
