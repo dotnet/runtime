@@ -660,39 +660,10 @@ namespace System.Net.Sockets
                 SocketPal.TryCompleteSendFile(context._socket, FileHandle, ref Offset, ref Count, ref BytesTransferred, out ErrorCode);
         }
 
-        // In debug builds, this struct guards against:
-        // (1) Unexpected lock reentrancy, which should never happen
-        // (2) Deadlock, by setting a reasonably large timeout
-        private readonly struct LockToken : IDisposable
-        {
-            private readonly object _lockObject;
-
-            public LockToken(object lockObject)
-            {
-                Debug.Assert(lockObject != null);
-
-                _lockObject = lockObject;
-
-                Debug.Assert(!Monitor.IsEntered(_lockObject));
-
-#if DEBUG
-                bool success = Monitor.TryEnter(_lockObject, 10000);
-                Debug.Assert(success, "Timed out waiting for queue lock");
-#else
-                Monitor.Enter(_lockObject);
-#endif
-            }
-
-            public void Dispose()
-            {
-                Debug.Assert(Monitor.IsEntered(_lockObject));
-                Monitor.Exit(_lockObject);
-            }
-        }
-
         private struct OperationQueue<TOperation>
             where TOperation : AsyncOperation
         {
+            private int _processing; // Tracks whether operations in the queue are being dispatched.
             private bool _isNextOperationSynchronous;
             private int _sequenceNumber;    // This sequence number is updated when we receive an epoll notification.
                                             // It allows us to detect when a new epoll notification has arrived
@@ -973,8 +944,6 @@ namespace System.Net.Sockets
                     }
                 }
             }
-
-            private int _processing;
 
             private void EnsureProcessingIfNeeded(SocketAsyncContext context)
             {
