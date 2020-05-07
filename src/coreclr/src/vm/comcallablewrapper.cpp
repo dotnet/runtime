@@ -3678,8 +3678,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             CorIfaceAttr ifaceType = hndDefItfClass.GetMethodTable()->GetComInterfaceType();
             if (IsDispatchBasedItf(ifaceType))
             {
-                RETURN (IDispatch*)GetComIPFromCCW(this, GUID_NULL, hndDefItfClass.GetMethodTable(),
-                    GetComIPFromCCW::SuppressSecurityCheck);
+                RETURN (IDispatch*)GetComIPFromCCW(this, GUID_NULL, hndDefItfClass.GetMethodTable());
             }
             else
             {
