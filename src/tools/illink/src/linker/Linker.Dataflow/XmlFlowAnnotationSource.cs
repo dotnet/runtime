@@ -678,7 +678,7 @@ namespace Mono.Linker.Dataflow
 			if (string.IsNullOrEmpty (value))
 				return false;
 
-			return Context.IsFeatureExcluded (value);
+			return _context.IsFeatureExcluded (value);
 		}
 #endif
 
