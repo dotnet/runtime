@@ -170,6 +170,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     regset.h
     sideeffects.h
     simd.h
+    simdashwintrinsic.h
     simdintrinsiclist.h
     sm.h
     smallhash.h
@@ -204,14 +205,16 @@ if (CLR_CMAKE_TARGET_WIN32)
       instrsarm.h
       instrsarm64.h
       registerarm.h
-      registerarm64.h)
+      registerarm64.h
+      simdashwintrinsiclistarm64.h)
   elseif (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
     list (APPEND JIT_HEADERS
       emitfmtsxarch.h
       emitxarch.h
       hwintrinsiclistxarch.h
       hwintrinsic.h
-      instrsxarch.h)
+      instrsxarch.h
+      simdashwintrinsiclistxarch.h)
   endif ()
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -223,6 +226,7 @@ set( JIT_AMD64_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetamd64.cpp
   unwindamd64.cpp
@@ -249,6 +253,7 @@ set( JIT_I386_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetx86.cpp
   unwindx86.cpp
@@ -264,6 +269,7 @@ set( JIT_ARM64_SOURCES
   lsraarmarch.cpp
   lsraarm64.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   targetarm64.cpp
   unwindarm.cpp
   unwindarm64.cpp

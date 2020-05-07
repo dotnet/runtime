@@ -241,9 +241,6 @@ void InitializeExceptionHandling()
     // Register handler for termination requests (e.g. SIGTERM)
     PAL_SetTerminationRequestHandler(HandleTerminationRequest);
 #endif // TARGET_UNIX
-#ifdef HOST_WINDOWS
-    InitializeCrashDump();
-#endif // HOST_WINDOWS
 }
 
 struct UpdateObjectRefInResumeContextCallbackState
@@ -1226,7 +1223,7 @@ lExit: ;
                 GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
                 if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
                 {
-                    // Exception is being propagated from a native callable method into its native caller.
+                    // Exception is being propagated from a method marked UnmanagedCallersOnlyAttribute into its native caller.
                     // The explicit frame chain needs to be unwound at this boundary.
                     bool fIsSO = pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW;
                     CleanUpForSecondPass(pThread, fIsSO, (void*)MemoryStackFp, (void*)MemoryStackFp);
@@ -4630,7 +4627,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
         if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
         {
-            // Propagating exception from a method marked by NativeCallable attribute is prohibited on Unix
+            // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
             if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
             {
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
@@ -5157,6 +5154,7 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
     return g_fEEStarted && (
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT ||
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
+        exceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW ||
         (IsSafeToCallExecutionManager() && ExecutionManager::IsManagedCode(controlPc)) ||
         IsIPinVirtualStub(controlPc) ||  // access violation comes from DispatchStub of Interface call
         IsIPInMarkedJitHelper(controlPc));
@@ -5192,6 +5190,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
     if (ex->GetExceptionRecord()->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
     {
         GetThread()->SetExecutingOnAltStack();
+        Thread::VirtualUnwindToFirstManagedCallFrame(ex->GetContextRecord());
         EEPolicy::HandleFatalStackOverflow(&ex->ExceptionPointers, FALSE);
         UNREACHABLE();
     }

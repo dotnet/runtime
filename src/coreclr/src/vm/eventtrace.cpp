@@ -4239,9 +4239,6 @@ VOID EtwCallbackCommon(
     static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
     static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
 #endif // !defined(HOST_UNIX)
-    GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-    GCEventLevel level = static_cast<GCEventLevel>(Level);
-    GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
 
     DOTNET_TRACE_CONTEXT * ctxToUpdate;
     switch(ProviderIndex)
@@ -4270,6 +4267,26 @@ VOID EtwCallbackCommon(
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
+    }
+
+    if (
+#if !defined(HOST_UNIX)
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
+#endif
+        (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
+    {
+#if !defined(HOST_UNIX)
+        // On Windows, consolidate level and keywords across event pipe and ETW contexts -
+        // ETW may still want to see events that event pipe doesn't care about and vice versa
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask |
+                                                              ctxToUpdate->EtwProvider->MatchAnyKeyword);
+        GCEventLevel level = static_cast<GCEventLevel>(max(ctxToUpdate->EventPipeProvider.Level,
+                                                           ctxToUpdate->EtwProvider->Level));
+#else
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
+        GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
+#endif
+        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -4488,10 +4505,6 @@ extern "C"
         BOOLEAN bIsPrivateTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimePrivateHandle);
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
-
-        GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-        GCEventLevel level = static_cast<GCEventLevel>(Level);
-        GCHeapUtilities::RecordEventStateChange(!!bIsPublicTraceHandle, keywords, level);
 
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.

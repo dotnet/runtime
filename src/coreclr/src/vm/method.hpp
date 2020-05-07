@@ -662,7 +662,7 @@ public:
         return GetMethodTable()->IsInterface();
     }
 
-    BOOL HasNativeCallableAttribute();
+    BOOL HasUnmanagedCallersOnlyAttribute();
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
@@ -2605,20 +2605,20 @@ protected:
         nomdILStubAttrs     = mdMemberAccessMask | mdStatic, //  method attributes (IL stubs)
 
         // attributes (except mdStatic and mdMemberAccessMask) have different meaning for IL stubs
-        // mdMemberAccessMask     = 0x0007,
-        nomdReverseStub           = 0x0008,
-        // mdStatic               = 0x0010,
-        nomdCALLIStub             = 0x0020,
-        nomdDelegateStub          = 0x0040,
-        nomdStructMarshalStub     = 0x0080,
-        nomdUnbreakable           = 0x0100,
-        nomdDelegateCOMStub       = 0x0200,  // CLR->COM or COM->CLR call via a delegate (WinRT specific)
-        nomdSignatureNeedsRestore = 0x0400,
-        nomdStubNeedsCOMStarted   = 0x0800,  // EnsureComStarted must be called before executing the method
-        nomdMulticastStub         = 0x1000,
-        nomdUnboxingILStub        = 0x2000,
-        nomdWrapperDelegateStub   = 0x4000,
-        nomdNativeCallableStub    = 0x8000,
+        // mdMemberAccessMask        = 0x0007,
+        nomdReverseStub              = 0x0008,
+        // mdStatic                  = 0x0010,
+        nomdCALLIStub                = 0x0020,
+        nomdDelegateStub             = 0x0040,
+        nomdStructMarshalStub        = 0x0080,
+        nomdUnbreakable              = 0x0100,
+        nomdDelegateCOMStub          = 0x0200,  // CLR->COM or COM->CLR call via a delegate (WinRT specific)
+        nomdSignatureNeedsRestore    = 0x0400,
+        nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
+        nomdMulticastStub            = 0x1000,
+        nomdUnboxingILStub           = 0x2000,
+        nomdWrapperDelegateStub      = 0x4000,
+        nomdUnmanagedCallersOnlyStub = 0x8000,
 
         nomdILStub          = 0x00010000,
         nomdLCGMethod       = 0x00020000,
@@ -2711,7 +2711,7 @@ public:
     }
 
     bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
-    bool IsNativeCallableStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdNativeCallableStub)); }
+    bool IsUnmanagedCallersOnlyStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnmanagedCallersOnlyStub)); }
     bool IsCALLIStub()       { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCALLIStub));    }
     bool IsDelegateStub()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateStub)); }
     bool IsCLRToCOMStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsDelegateStub() && !IsStructMarshalStub()); }

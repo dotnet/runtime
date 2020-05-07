@@ -1,16 +1,18 @@
 <Project>
+  <!-- Run target (F5) support. -->
   <PropertyGroup>
-    <!-- Default and user defined categories -->
-    <_withCategories Condition="'$(WithCategories)' != ''">;$(WithCategories.Trim(';'))</_withCategories>
-    <_withoutCategories Condition="'$(WithoutCategories)' != ''">;$(WithoutCategories.Trim(';'))</_withoutCategories>
-
-    <TestScope Condition="'$(TestScope)' == '' and '$(Outerloop)' == 'true'">all</TestScope>
-    <_withCategories Condition="'$(TestScope)' == 'outerloop'">$(_withCategories);OuterLoop</_withCategories>
-    <_withoutCategories Condition="'$(ArchiveTests)' == 'true'">$(_withoutCategories);IgnoreForCI</_withoutCategories>
-    <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
-    <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
+    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" Condition="'$(TestRunner)' == 'xunit.console'" />
-  <Import Project="$(MSBuildThisFileDirectory)vstest.targets" Condition="'$(TestRunner)' == 'vstest'" />
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <RunCommand>$(DotNetTool)</RunCommand>
+    <RunArguments>test $(TargetPath) --settings $(OutDir).runsettings</RunArguments>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <RunCommand>$(DevEnvDir)Extensions\TestPlatform\vstest.console.exe</RunCommand>
+    <RunArguments>$(TargetPath) --settings:$(OutDir).runsettings</RunArguments>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" />
 </Project>

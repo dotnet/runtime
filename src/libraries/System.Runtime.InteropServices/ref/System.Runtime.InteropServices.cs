@@ -1006,13 +1006,14 @@ namespace System.Runtime.InteropServices
         protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
         public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
-        public void RegisterAsGlobalInstance() { }
+        public static void RegisterForTrackerSupport(ComWrappers instance) { }
+        public static void RegisterForMarshalling(ComWrappers instance) { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
-    public sealed class NativeCallableAttribute : System.Attribute
+    public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
-        public NativeCallableAttribute() { }
+        public UnmanagedCallersOnlyAttribute() { }
         public System.Runtime.InteropServices.CallingConvention CallingConvention;
         public string? EntryPoint;
     }

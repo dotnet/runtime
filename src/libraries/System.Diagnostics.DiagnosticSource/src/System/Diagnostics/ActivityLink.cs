@@ -12,7 +12,7 @@ namespace System.Diagnostics
     /// Links can be used to represent batched operations where a Activity was initiated by multiple initiating Activities,
     /// each representing a single incoming item being processed in the batch.
     /// </summary>
-    public readonly struct ActivityLink  : IEquatable<ActivityLink>
+    public readonly partial struct ActivityLink  : IEquatable<ActivityLink>
     {
         /// <summary>
         /// Construct a new <see cref="ActivityLink"/> object which can be linked to an Activity object.
@@ -46,30 +46,5 @@ namespace System.Diagnostics
         public bool Equals(ActivityLink value) => Context == value.Context && value.Attributes == Attributes;
         public static bool operator ==(ActivityLink left, ActivityLink right) => left.Equals(right);
         public static bool operator !=(ActivityLink left, ActivityLink right) => !left.Equals(right);
-
-        public override int GetHashCode()
-        {
-            if (this == default)
-                return 0;
-
-            // HashCode.Combine would be the best but we need to compile for the full framework which require adding dependency
-            // on the extensions package. Considering this simple type and hashing is not expected to be used, we are implementing
-            // the hashing manually.
-            int hash = 5381;
-            hash = ((hash << 5) + hash) + this.Context.GetHashCode();
-            if (Attributes != null)
-            {
-                foreach (KeyValuePair<string, object> kvp in Attributes)
-                {
-                    hash = ((hash << 5) + hash) + kvp.Key.GetHashCode();
-                    if (kvp.Value != null)
-                    {
-                        hash = ((hash << 5) + hash) + kvp.Value.GetHashCode();
-                    }
-                }
-            }
-
-            return hash;
-        }
     }
 }

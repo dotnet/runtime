@@ -71,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty;
             }
 
-            if (defType.IsHfa)
+            if (defType.IsHomogeneousAggregate)
             {
                 flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA;
             }
@@ -79,17 +79,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.EmitUInt((uint)flags);
             dataBuilder.EmitUInt((uint)size);
 
-            if (defType.IsHfa)
+            if (defType.IsHomogeneousAggregate)
             {
-                switch (defType.HfaElementType.Category)
+                CorElementType elementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
                 {
-                    case TypeFlags.Single:
-                        dataBuilder.EmitUInt((uint)CorElementType.ELEMENT_TYPE_R4);
-                        break;
-                    case TypeFlags.Double:
-                        dataBuilder.EmitUInt((uint)CorElementType.ELEMENT_TYPE_R8);
-                        break;
-                }
+                    ValueTypeShapeCharacteristics.Float32Aggregate => CorElementType.ELEMENT_TYPE_R4,
+                    ValueTypeShapeCharacteristics.Float64Aggregate => CorElementType.ELEMENT_TYPE_R8,
+                    ValueTypeShapeCharacteristics.Vector64Aggregate => CorElementType.ELEMENT_TYPE_R8,
+                    // See MethodTable::GetHFAType
+                    ValueTypeShapeCharacteristics.Vector128Aggregate => CorElementType.ELEMENT_TYPE_VALUETYPE,
+                    ValueTypeShapeCharacteristics.Vector256Aggregate => CorElementType.ELEMENT_TYPE_VALUETYPE,
+                    _ => CorElementType.Invalid
+                };
+                dataBuilder.EmitUInt((uint)elementType);
             }
             
             if (alignment != pointerSize)

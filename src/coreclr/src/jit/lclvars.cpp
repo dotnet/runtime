@@ -72,6 +72,7 @@ void Compiler::lvaInit()
     lvaStubArgumentVar  = BAD_VAR_NUM;
     lvaArg0Var          = BAD_VAR_NUM;
     lvaMonAcquired      = BAD_VAR_NUM;
+    lvaRetAddrVar       = BAD_VAR_NUM;
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
@@ -624,7 +625,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
             // If the argType is a struct, then check if it is an HFA
             if (varTypeIsStruct(argType))
             {
-                // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF.
+                // hfaType is set to float, double, or SIMD type if it is an HFA, otherwise TYP_UNDEF
                 hfaType  = GetHfaType(typeHnd);
                 isHfaArg = varTypeIsValidHfaType(hfaType);
             }
@@ -643,9 +644,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 
         if (isHfaArg)
         {
-            // We have an HFA argument, so from here on out treat the type as a float, double or vector.
-            // The orginal struct type is available by using origArgType
-            // We also update the cSlots to be the number of float/double fields in the HFA
+            // We have an HFA argument, so from here on out treat the type as a float, double, or vector.
+            // The orginal struct type is available by using origArgType.
+            // We also update the cSlots to be the number of float/double/vector fields in the HFA.
             argType = hfaType;
             varDsc->SetHfaType(hfaType);
             cSlots = varDsc->lvHfaSlots();
@@ -2614,10 +2615,11 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
             }
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HFA
-            // for structs that are small enough, we check and set lvIsHfa and lvHfaTypeIsFloat
+            // For structs that are small enough, we check and set HFA element type
             if (varDsc->lvExactSize <= MAX_PASS_MULTIREG_BYTES)
             {
-                var_types hfaType = GetHfaType(typeHnd); // set to float or double if it is an HFA, otherwise TYP_UNDEF
+                // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
+                var_types hfaType = GetHfaType(typeHnd);
                 if (varTypeIsValidHfaType(hfaType))
                 {
                     varDsc->SetHfaType(hfaType);
@@ -2670,7 +2672,52 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         compGSReorderStackLayout = true;
         varDsc->lvIsUnsafeBuffer = true;
     }
+#ifdef DEBUG
+    if (JitConfig.EnableExtraSuperPmiQueries())
+    {
+        makeExtraStructQueries(typeHnd, 2);
+    }
+#endif // DEBUG
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// makeExtraStructQueries: Query the information for the given struct handle.
+//
+// Arguments:
+//    structHandle -- The handle for the struct type we're querying.
+//    level        -- How many more levels to recurse.
+//
+void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level)
+{
+    if (level <= 0)
+    {
+        return;
+    }
+    assert(structHandle != NO_CLASS_HANDLE);
+    (void)typGetObjLayout(structHandle);
+    unsigned fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
+    impNormStructType(structHandle);
+#ifdef TARGET_ARMARCH
+    GetHfaType(structHandle);
+#endif
+    for (unsigned int i = 0; i < fieldCnt; i++)
+    {
+        CORINFO_FIELD_HANDLE fieldHandle      = info.compCompHnd->getFieldInClass(structHandle, i);
+        unsigned             fldOffset        = info.compCompHnd->getFieldOffset(fieldHandle);
+        CORINFO_CLASS_HANDLE fieldClassHandle = NO_CLASS_HANDLE;
+        CorInfoType          fieldCorType     = info.compCompHnd->getFieldType(fieldHandle, &fieldClassHandle);
+        var_types            fieldVarType     = JITtype2varType(fieldCorType);
+        if (fieldClassHandle != NO_CLASS_HANDLE)
+        {
+            if (varTypeIsStruct(fieldVarType))
+            {
+                makeExtraStructQueries(fieldClassHandle, level - 1);
+            }
+        }
+    }
+}
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // lvaSetStructUsedAsVarArg: update hfa information for vararg struct args
@@ -4994,6 +5041,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
     }
 
 #endif // FEATURE_FIXED_OUT_ARGS
+
+#ifdef TARGET_ARM64
+    // We normally add alignment below the locals between them and the outgoing
+    // arg space area. When we store fp/lr at the bottom, however, this will be
+    // below the alignment. So we should not apply the alignment adjustment to
+    // them. On ARM64 it turns out we always store these at +0 and +8 of the FP,
+    // so instead of dealing with skipping adjustment just for them we just set
+    // them here always.
+    assert(codeGen->isFramePointerUsed());
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = REGSIZE_BYTES;
+    }
+#endif
 }
 
 #ifdef TARGET_ARM
@@ -5709,6 +5770,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef TARGET_XARCH
     // On x86/amd64, the return address has already been pushed by the call instruction in the caller.
     stkOffs -= TARGET_POINTER_SIZE; // return address;
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = stkOffs;
+    }
 
     // If we are an OSR method, we "inherit" the frame of the original method,
     // and the stack is already double aligned on entry (since the return adddress push
@@ -5769,7 +5834,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
     }
 
-#else  // !TARGET_ARM64
+#else // !TARGET_ARM64
+#ifdef TARGET_ARM
+    // On ARM32 LR is part of the pushed registers and is always stored at the
+    // top.
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = stkOffs - REGSIZE_BYTES;
+    }
+#endif
+
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
 #endif // !TARGET_ARM64
 
@@ -6130,7 +6204,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef JIT32_GCENCODER
                 lclNum == lvaLocAllocSPvar ||
 #endif // JIT32_GCENCODER
-                false)
+                lclNum == lvaRetAddrVar)
             {
                 assert(varDsc->lvStkOffs != BAD_STK_OFFS);
                 continue;

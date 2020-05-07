@@ -1768,10 +1768,8 @@ void SystemDomain::Init()
     // to allow stub caches to use the memory pool. Do not
     // initialze it here!
 
-#ifdef FEATURE_PREJIT
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapDisable) != 0)
         g_fAllowNativeImages = false;
-#endif
 
     m_pSystemFile = NULL;
     m_pSystemAssembly = NULL;

@@ -11,6 +11,8 @@
  *
  */
 
+#include "gcrefmap.h"
+
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
     WRAPPER_NO_CONTRACT;
@@ -154,6 +156,57 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 }
 
+static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
+{
+    void* gcDesc;
+    char* argBuffer = pThread->GetTailCallTls()->GetArgBuffer(&gcDesc);
+    if (gcDesc == NULL)
+        return;
+
+    GCRefMapDecoder decoder(static_cast<PTR_BYTE>(gcDesc));
+    while (!decoder.AtEnd())
+    {
+        int pos = decoder.CurrentPos();
+        int token = decoder.ReadToken();
+
+        PTR_TADDR ppObj = dac_cast<PTR_TADDR>(argBuffer + pos * sizeof(TADDR));
+        switch (token)
+        {
+        case GCREFMAP_SKIP:
+            break;
+        case GCREFMAP_REF:
+            fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
+            break;
+        case GCREFMAP_INTERIOR:
+            PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
+            break;
+        case GCREFMAP_METHOD_PARAM:
+            if (sc->promotion)
+            {
+#ifndef DACCESS_COMPILE
+                MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(*ppObj);
+                if (pMDReal != NULL)
+                    GcReportLoaderAllocator(fn, sc, pMDReal->GetLoaderAllocator());
+#endif
+            }
+            break;
+        case GCREFMAP_TYPE_PARAM:
+            if (sc->promotion)
+            {
+#ifndef DACCESS_COMPILE
+                MethodTable *pMTReal = dac_cast<PTR_MethodTable>(*ppObj);
+                if (pMTReal != NULL)
+                    GcReportLoaderAllocator(fn, sc, pMTReal->GetLoaderAllocator());
+#endif
+            }
+            break;
+        default:
+            _ASSERTE(!"Unhandled GCREFMAP token in arg buffer GC desc");
+            break;
+        }
+    }
+}
+
 void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
     STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Promotion Phase = %d\n", sc->promotion);
@@ -171,6 +224,7 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
             sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
+            ScanTailCallArgBufferRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -496,6 +550,7 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
         sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
+        ScanTailCallArgBufferRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE

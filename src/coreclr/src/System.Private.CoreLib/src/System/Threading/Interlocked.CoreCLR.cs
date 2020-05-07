@@ -232,6 +232,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrier();
 
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory reads before
+        /// the call to <see cref="ReadMemoryBarrier"/> execute after memory accesses that follow the call to <see cref="ReadMemoryBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void ReadMemoryBarrier();
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _MemoryBarrierProcessWide();
 

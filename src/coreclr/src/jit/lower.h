@@ -132,11 +132,16 @@ private:
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
+#if !FEATURE_MULTIREG_RET
+    void LowerRetStruct(GenTreeUnOp* ret);
+    void LowerRetStructLclVar(GenTreeUnOp* ret);
+    void LowerCallStruct(GenTreeCall* call);
+#endif
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
-    GenTree* LowerTailCallViaHelper(GenTreeCall* callNode, GenTree* callTarget);
+    GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
     void LowerFastTailCall(GenTreeCall* callNode);
     void RehomeArgForFastTailCall(unsigned int lclNum,
                                   GenTree*     insertTempBefore,

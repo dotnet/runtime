@@ -501,8 +501,7 @@ set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 if %%__Mono%%==1 (
   set RuntimeFlavor="mono"
-)
-else (
+) else (
   set RuntimeFlavor="coreclr"
 )
 
@@ -679,13 +678,13 @@ REM Compile the managed assemblies in Core_ROOT before running the tests
 set AssemblyPath=%1
 set AssemblyName=%2
 
-set __CrossgenExe="%CORE_ROOT%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT%\x64\crossgen.exe" )
+set __CrossgenExe="%__BinDir%\crossgen.exe"
+if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%__BinDir%\x86\crossgen.exe" )
+if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%__BinDir%\x64\crossgen.exe" )
 set __CrossgenExe=%__CrossgenExe%
 
 if defined __DoCrossgen2 (
-    set __CrossgenExe="%CORE_ROOT%\corerun" "%CORE_ROOT%\crossgen2\crossgen2.dll"
+    set __CrossgenExe="%CORE_ROOT%\corerun" "%__BinDir%\crossgen2\crossgen2.dll"
 )
 
 REM Intentionally avoid using the .dll extension to prevent

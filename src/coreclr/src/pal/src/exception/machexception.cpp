@@ -41,6 +41,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include <pthread.h>
 #include <dlfcn.h>
 #include <mach-o/loader.h>
+#include <sys/mman.h>
 
 using namespace CorUnix;
 
@@ -671,11 +672,11 @@ HijackFaultingThread(
     //          does not do this by default. We have to explicitly provide the -fstack-check compiler option
     //          to enable the behavior.
 #if (defined(HOST_X86) || defined(HOST_AMD64)) && defined(__APPLE__)
+    // Assume that AV isn't an SO to begin with.
+    bool fIsStackOverflow = false;
+
     if (exceptionRecord.ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
     {
-        // Assume this AV isn't an SO to begin with.
-        bool fIsStackOverflow = false;
-
         // Calculate the page base addresses for the fault and the faulting thread's SP.
         int cbPage = getpagesize();
         char *pFaultPage = (char*)(exceptionRecord.ExceptionInformation[1] & ~(cbPage - 1));
@@ -755,24 +756,6 @@ HijackFaultingThread(
             }
         }
 #endif // HOST_AMD64
-
-        if (fIsStackOverflow)
-        {
-            // We have a stack overflow. Abort the process immediately. It would be nice to let the VM do this
-            // but the Windows mechanism (where a stack overflow SEH exception is delivered on the faulting
-            // thread) will not work most of the time since non-Windows OSs don't keep a reserve stack
-            // extension allocated for this purpose.
-
-            // TODO: Once our event reporting story is further along we probably want to report something
-            // here. If our runtime policy for SO ever changes (the most likely candidate being "unload
-            // appdomain on SO) then we'll have to do something more complex here, probably involving a
-            // handshake with the runtime in order to report the SO without attempting to extend the faulting
-            // thread's stack any further. Note that we cannot call most PAL functions from the context of
-            // this thread since we're not a PAL thread.
-
-            write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-            abort();
-        }
     }
 #else // (HOST_X86 || HOST_AMD64) && __APPLE__
 #error Platform not supported for correct stack overflow handling
@@ -857,11 +840,38 @@ HijackFaultingThread(
         ts64.__rflags &= ~EFL_TF;
     }
 
+    if (fIsStackOverflow)
+    {
+        exceptionRecord.ExceptionCode = EXCEPTION_STACK_OVERFLOW;
+    }
+
     exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
     exceptionRecord.ExceptionRecord = NULL;
     exceptionRecord.ExceptionAddress = (void *)ts64.__rip;
 
-    void **FramePointer = (void **)ts64.__rsp;
+    void **FramePointer;
+
+    if (fIsStackOverflow)
+    {
+        // Allocate the minimal stack necessary for handling stack overflow
+        int stackOverflowStackSize = 7 * 4096;
+        // Align the size to virtual page size and add one virtual page as a stack guard
+        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
+        void* stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+
+        if ((stackOverflowHandlerStack == MAP_FAILED) || mprotect((void*)stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE) != 0)
+        {
+            // We are out of memory or we've failed to protect the guard page, so resort to just printing a stack overflow message and abort
+            write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+            abort();
+        }
+
+        FramePointer = (void**)((size_t)stackOverflowHandlerStack + stackOverflowStackSize);
+    }
+    else
+    {
+        FramePointer = (void **)ts64.__rsp;
+    }
 
     *--FramePointer = (void *)ts64.__rip;
 

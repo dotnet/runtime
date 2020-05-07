@@ -11,11 +11,11 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    {NI_##isa##_##name, #name, InstructionSet_##isa, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    {NI_##isa##_##name, #name, InstructionSet_##isa, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
@@ -200,6 +200,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
         {
             case TYP_FLOAT:
                 return m_simdHandleCache->Vector64FloatHandle;
+            case TYP_DOUBLE:
+                return m_simdHandleCache->Vector64DoubleHandle;
             case TYP_INT:
                 return m_simdHandleCache->Vector64IntHandle;
             case TYP_USHORT:
@@ -212,6 +214,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 return m_simdHandleCache->Vector64ByteHandle;
             case TYP_UINT:
                 return m_simdHandleCache->Vector64UIntHandle;
+            case TYP_LONG:
+                return m_simdHandleCache->Vector64LongHandle;
+            case TYP_ULONG:
+                return m_simdHandleCache->Vector64ULongHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -349,9 +355,11 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
 //    get the SIMD size from the GenTreeHWIntrinsic node.
 unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig)
 {
-    if (HWIntrinsicInfo::HasFixedSimdSize(id))
+    unsigned simdSize = 0;
+
+    if (tryLookupSimdSize(id, &simdSize))
     {
-        return lookupSimdSize(id);
+        return simdSize;
     }
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
@@ -371,7 +379,6 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
         typeHnd = sig->retTypeSigClass;
     }
 
-    unsigned  simdSize = 0;
     var_types baseType = comp->getBaseTypeAndSizeOfSIMDType(typeHnd, &simdSize);
     assert((simdSize > 0) && (baseType != TYP_UNKNOWN));
     return simdSize;
@@ -494,16 +501,17 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 }
 
 //------------------------------------------------------------------------
-// // getArgForHWIntrinsic: pop an argument from the stack and validate its type
+// getArgForHWIntrinsic: pop an argument from the stack and validate its type
 //
 // Arguments:
-//    argType   -- the required type of argument
-//    argClass  -- the class handle of argType
+//    argType    -- the required type of argument
+//    argClass   -- the class handle of argType
+//    expectAddr --  if true indicates we are expecting type stack entry to be a TYP_BYREF.
 //
 // Return Value:
 //     the validated argument
 //
-GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass)
+GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr)
 {
     GenTree* arg = nullptr;
     if (argType == TYP_STRUCT)
@@ -511,9 +519,9 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
         unsigned int argSizeBytes;
         var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
         argType           = getSIMDTypeForSize(argSizeBytes);
-        assert((argType == TYP_SIMD8) || (argType == TYP_SIMD16) || (argType == TYP_SIMD32));
-        arg = impSIMDPopStack(argType);
-        assert((arg->TypeGet() == TYP_SIMD8) || (arg->TypeGet() == TYP_SIMD16) || (arg->TypeGet() == TYP_SIMD32));
+        assert(varTypeIsSIMD(argType));
+        arg = impSIMDPopStack(argType, expectAddr);
+        assert(varTypeIsSIMD(arg->TypeGet()));
     }
     else
     {
@@ -788,6 +796,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         // to the code generator. May encode the overload info in other way.
                         retNode->AsHWIntrinsic()->gtSIMDBaseType = JITtype2varType(corType);
                     }
+#ifdef TARGET_ARM64
+                if ((intrinsic == NI_AdvSimd_AddWideningUpper) || (intrinsic == NI_AdvSimd_SubtractWideningUpper))
+                {
+                    assert(varTypeIsSIMD(op1->TypeGet()));
+                    retNode->AsHWIntrinsic()->SetOtherBaseType(getBaseTypeOfSIMDType(argClass));
+                }
+#endif
                 break;
             }
 

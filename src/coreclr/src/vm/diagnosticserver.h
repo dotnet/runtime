@@ -46,6 +46,7 @@ public:
     static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter);
 
 private:
+    static IpcStream::DiagnosticsIpc *s_pIpc;
     static Volatile<bool> s_shuttingDown;
 };
 
