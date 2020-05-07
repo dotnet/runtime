@@ -114,32 +114,13 @@ namespace System
             return ((long)a) * b;
         }
 
-        private static ulong BigMulSoftwareFallback(ulong a, ulong b, out ulong low)
-        {
-            const ulong lowBitsMask = 0xFFFFFFFFU;
-
-            ulong al = a & lowBitsMask;
-            ulong ah = a >> 32;
-            ulong bl = b & lowBitsMask;
-            ulong bh = b >> 32;
-
-            ulong mull = al * bl;
-            ulong t = ah * bl + (mull >> 32);
-            ulong tl = t & lowBitsMask;
-
-            tl += al * bh;
-            low = tl << 32 | mull & lowBitsMask;
-
-            return ah * bh + (t >> 32) + (tl >> 32);
-        }
-
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong BigMul(ulong a, ulong b, out ulong low)
         {
             if (Bmi2.X64.IsSupported)
             {
-                ulong tmp = 0U;
-                ulong high;
+                ulong tmp, high;
                 unsafe
                 {
                     high = Bmi2.X64.MultiplyNoFlags(a, b, &tmp);
@@ -149,7 +130,26 @@ namespace System
             }
             else
             {
-                return BigMulSoftwareFallback(a, b, out low);
+                return SoftwareFallback(a, b, out low);
+            }
+
+            static ulong SoftwareFallback(ulong a, ulong b, out ulong low)
+            {
+                const ulong lowBitsMask = 0xFFFFFFFFU;
+
+                ulong al = a & lowBitsMask;
+                ulong ah = a >> 32;
+                ulong bl = b & lowBitsMask;
+                ulong bh = b >> 32;
+
+                ulong mull = al * bl;
+                ulong t = ah * bl + (mull >> 32);
+                ulong tl = t & lowBitsMask;
+
+                tl += al * bh;
+                low = tl << 32 | mull & lowBitsMask;
+
+                return ah * bh + (t >> 32) + (tl >> 32);
             }
         }
 
@@ -157,7 +157,7 @@ namespace System
         {
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
             low = (long)ulow;
-            return (long)high - (a < 0 ? b : 0) - (b < 0 ? a : 0);
+            return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
         }
 
         public static double BitDecrement(double x)
