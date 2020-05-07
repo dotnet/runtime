@@ -329,14 +329,11 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                lock (SyncObject)
+                CreditWaiter? w = _creditWaiter;
+                if (w != null)
                 {
-                    CreditWaiter? w = _creditWaiter;
-                    if (w != null)
-                    {
-                        w.Dispose();
-                        _creditWaiter = null;
-                    }
+                    w.Dispose();
+                    _creditWaiter = null;
                 }
             }
 
