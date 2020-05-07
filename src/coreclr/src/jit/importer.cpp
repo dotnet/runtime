@@ -4504,7 +4504,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
         {
-            result = HWIntrinsicInfo::lookupId(this, className, methodName, enclosingClassName);
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(method, &sig);
+
+            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
         }
         else if (strcmp(methodName, "get_IsSupported") == 0)
         {
