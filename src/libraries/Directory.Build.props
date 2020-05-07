@@ -171,7 +171,7 @@
     <BaseOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>    
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisDirectory)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />
 
   <PropertyGroup>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
