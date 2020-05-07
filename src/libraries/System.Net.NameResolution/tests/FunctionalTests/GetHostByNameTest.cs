@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.NameResolution.Tests
 {
@@ -16,6 +17,13 @@ namespace System.Net.NameResolution.Tests
 
     public class GetHostByNameTest
     {
+        private readonly ITestOutputHelper _output;
+
+        public GetHostByNameTest(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public void DnsObsoleteBeginGetHostByName_BadName_Throws()
         {
@@ -110,7 +118,11 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
         {
-            NameResolutionTestHelper.EnsureOsNameResolutionWorks("");
+            if (!NameResolutionTestHelper.EnsureNameToAddressWorks("", _output, throwOnFailure: true))
+            {
+                return;
+            }
+
             IPHostEntry entry = Dns.GetHostByName("");
 
             // DNS labels should be compared as case insensitive for ASCII characters. See RFC 4343.
@@ -120,7 +132,11 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
-            NameResolutionTestHelper.EnsureOsNameResolutionWorks("");
+            if (!NameResolutionTestHelper.EnsureNameToAddressWorks("", _output, throwOnFailure: true))
+            {
+                return;
+            }
+
             IPHostEntry entry = Dns.EndGetHostByName(Dns.BeginGetHostByName("", null, null));
 
             // DNS labels should be compared as case insensitive for ASCII characters. See RFC 4343.

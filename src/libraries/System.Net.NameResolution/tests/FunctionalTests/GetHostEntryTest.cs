@@ -8,11 +8,19 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.NameResolution.Tests
 {
     public class GetHostEntryTest
     {
+        private readonly ITestOutputHelper _output;
+
+        public GetHostEntryTest(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public async Task Dns_GetHostEntryAsync_IPAddress_Ok()
         {
@@ -25,49 +33,12 @@ namespace System.Net.NameResolution.Tests
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
         {
-            NameResolutionTestHelper.EnsureOsNameResolutionWorks(hostName);
-
-            try
+            if (!NameResolutionTestHelper.EnsureNameToAddressWorks(hostName, _output, throwOnFailure: true))
             {
-                await TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
+                return;
             }
-            catch (Exception ex) when (hostName == "")
-            {
-                // Additional data for debugging sporadic CI failures https://github.com/dotnet/runtime/issues/1488
-                string actualHostName = Dns.GetHostName();
-                string etcHosts = "";
-                Exception getHostEntryException = null;
-                Exception etcHostsException = null;
 
-                try
-                {
-                    Dns.GetHostEntry(actualHostName);
-                }
-                catch (Exception e2)
-                {
-                    getHostEntryException = e2;
-                }
-
-                try
-                {
-                    if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-                    {
-                        etcHosts = File.ReadAllText("/etc/hosts");
-                    }
-                }
-                catch (Exception e2)
-                {
-                    etcHostsException = e2;
-                }
-
-                throw new Exception(
-                    $"Failed for empty hostname.{Environment.NewLine}" +
-                    $"Dns.GetHostName() == {actualHostName}{Environment.NewLine}" +
-                    $"{nameof(getHostEntryException)}=={getHostEntryException}{Environment.NewLine}" +
-                    $"{nameof(etcHostsException)}=={etcHostsException}{Environment.NewLine}" +
-                    $"/etc/host =={Environment.NewLine}{etcHosts}",
-                    ex);
-            }
+            await TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
         }
 
         [Theory]
@@ -75,7 +46,11 @@ namespace System.Net.NameResolution.Tests
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)
         {
-            NameResolutionTestHelper.EnsureOsNameResolutionWorks(hostName);
+            if (!NameResolutionTestHelper.EnsureNameToAddressWorks(hostName, _output, throwOnFailure: true))
+            {
+                return;
+            }
+
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
         }
 

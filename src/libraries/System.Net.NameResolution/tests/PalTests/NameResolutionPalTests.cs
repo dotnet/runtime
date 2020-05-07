@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Net.NameResolution.Tests;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -60,15 +61,16 @@ namespace System.Net.NameResolution.PalTests
             string hostName = NameResolutionPal.GetHostName();
             Assert.NotNull(hostName);
 
-            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
-            if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+            // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
+            // machine configurations, which varies by distro and is often inconsistent.
+            if (!NameResolutionTestHelper.EnsureNameToAddressWorks(hostName, _output, throwOnFailure: true))
             {
-                // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
-                // machine configurations, which varies by distro and is often inconsistent.
                 return;
             }
 
+            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
             Assert.Equal(SocketError.Success, error);
+
             if (!justAddresses)
             {
                 Assert.NotNull(hostName);
@@ -123,14 +125,14 @@ namespace System.Net.NameResolution.PalTests
             string hostName = NameResolutionPal.GetHostName();
             Assert.NotNull(hostName);
 
-            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses: false, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
-            if (error == SocketError.HostNotFound)
+            // On Unix, getaddrinfo returns host not found, if all the machine discovery settings on the local network
+            // is turned off. Hence dns lookup for it's own hostname fails.
+            if (!NameResolutionTestHelper.EnsureNameToAddressWorks(hostName, _output, throwOnFailure: true))
             {
-                // On Unix, getaddrinfo returns host not found, if all the machine discovery settings on the local network
-                // is turned off. Hence dns lookup for it's own hostname fails.
-                Assert.Equal(PlatformID.Unix, Environment.OSVersion.Platform);
                 return;
             }
+
+            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses: false, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
 
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(hostName);
