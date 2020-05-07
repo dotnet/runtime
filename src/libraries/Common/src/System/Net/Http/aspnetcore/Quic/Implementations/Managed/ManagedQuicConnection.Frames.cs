@@ -92,7 +92,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 if (!IsFrameAllowed(frameType, packetType))
                 {
-                    return CloseConnection(TransportErrorCode.ProtocolViolation, "Frame type not allowed", frameType);
+                    return CloseConnection(TransportErrorCode.ProtocolViolation, QuicError.FrameNotAllowed, frameType);
                 }
 
                 if (IsAckEliciting(frameType))
@@ -107,21 +107,22 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.Ping => DiscardFrameType(reader),
                     FrameType.Ack => ProcessAckFrame(reader, packetType, context),
                     FrameType.AckWithEcn => ProcessAckFrame(reader, packetType, context),
-                    FrameType.StopSending => throw new NotImplementedException(),
+                    FrameType.ResetStream => ProcessResetStreamFrame(reader),
+                    FrameType.StopSending => ProcessStopSendingFrame(reader),
                     FrameType.Crypto => ProcessCryptoFrame(reader, packetType, context),
-                    FrameType.NewToken => throw new NotImplementedException(),
+                    FrameType.NewToken => ProcessNewTokenFrame(reader),
                     FrameType.MaxData => ProcessMaxDataFrame(reader),
                     FrameType.MaxStreamData => ProcessMaxStreamDataFrame(reader),
                     FrameType.MaxStreamsBidirectional => ProcessMaxStreamsFrame(reader),
                     FrameType.MaxStreamsUnidirectional => ProcessMaxStreamsFrame(reader),
-                    FrameType.DataBlocked => throw new NotImplementedException(),
-                    FrameType.StreamDataBlocked => throw new NotImplementedException(),
-                    FrameType.StreamsBlockedBidirectional => throw new NotImplementedException(),
-                    FrameType.StreamsBlockedUnidirectional => throw new NotImplementedException(),
+                    FrameType.DataBlocked => ProcessDataBlockedFrame(reader),
+                    FrameType.StreamDataBlocked => ProcessStreamDataBlockedFrame(reader),
+                    FrameType.StreamsBlockedBidirectional => ProcessStreamsBlockedFrame(reader),
+                    FrameType.StreamsBlockedUnidirectional => ProcessStreamsBlockedFrame(reader),
                     FrameType.NewConnectionId => ProcessNewConnectionIdFrame(reader),
-                    FrameType.RetireConnectionId => throw new NotImplementedException(),
-                    FrameType.PathChallenge => throw new NotImplementedException(),
-                    FrameType.PathResponse => throw new NotImplementedException(),
+                    FrameType.RetireConnectionId => ProcessRetireConnectionId(reader),
+                    FrameType.PathChallenge => ProcessPathChallengeFrame(reader),
+                    FrameType.PathResponse => ProcessPathResponseFrame(reader),
                     FrameType.ConnectionCloseQuic => ProcessConnectionClose(reader, context),
                     FrameType.ConnectionCloseApplication => ProcessConnectionClose(reader, context),
                     FrameType.HandshakeDone => ProcessHandshakeDoneFrame(reader),
@@ -151,6 +152,12 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
+        // TODO-RZ: remove this once all frame types are supported
+        private ProcessPacketResult FrameNotSupported(FrameType type)
+        {
+            return CloseConnection(TransportErrorCode.InternalError, "Frame not supported", type);
+        }
+
         private ProcessPacketResult DiscardFrameType(QuicReader reader)
         {
             reader.ReadFrameType();
@@ -166,148 +173,6 @@ namespace System.Net.Quic.Implementations.Managed
 
             return ProcessPacketResult.Ok;
         }
-
-        private ProcessPacketResult ProcessHandshakeDoneFrame(QuicReader reader)
-        {
-            // frame not being allowed to be sent by client is handled in IsPacketAllowed
-            Debug.Assert(!_isServer);
-
-            reader.ReadFrameType(); // there are no more data, just the frame type identifier.
-            _handshakeDoneReceived = true;
-
-            // An endpoint MUST discard handshake keys when TLS handshake is complete.
-            DropPacketNumberSpace(PacketSpace.Handshake);
-
-            SignalConnected();
-
-            return ProcessPacketResult.Ok;
-        }
-
-        private ProcessPacketResult ProcessMaxStreamDataFrame(QuicReader reader)
-        {
-            if (!MaxStreamDataFrame.Read(reader, out var frame))
-                return ProcessPacketResult.Error;
-
-            if (!StreamHelpers.IsReadable(_isServer, frame.StreamId))
-                // TODO-RZ: check stream state
-                return CloseConnection(TransportErrorCode.StreamStateError,
-                    QuicError.NotInRecvState, FrameType.MaxStreamData);
-
-            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
-                return CloseConnection(TransportErrorCode.StreamLimitError,
-                    QuicError.StreamsLimitViolated, FrameType.MaxStreamData);
-
-            var buffer = stream!.OutboundBuffer!;
-            buffer.UpdateMaxData(frame.MaximumStreamData);
-
-            if (buffer.IsFlushable)
-            {
-                _streams.MarkFlushable(stream!);
-            }
-
-            return ProcessPacketResult.Ok;
-        }
-
-        private ProcessPacketResult ProcessMaxDataFrame(QuicReader reader)
-        {
-            if (!MaxDataFrame.Read(reader, out var frame))
-                return ProcessPacketResult.Error;
-
-            _peerLimits.UpdateMaxData(frame.MaximumData);
-            return ProcessPacketResult.Ok;
-        }
-
-        private ProcessPacketResult ProcessMaxStreamsFrame(QuicReader reader)
-        {
-            if (!MaxStreamsFrame.Read(reader, out var frame))
-                return ProcessPacketResult.Error;
-
-            if (frame.Bidirectional)
-                _peerLimits.UpdateMaxStreamsBidi(frame.MaximumStreams);
-            else
-                _peerLimits.UpdateMaxStreamsUni(frame.MaximumStreams);
-
-            return ProcessPacketResult.Ok;
-        }
-
-        private ProcessPacketResult ProcessNewConnectionIdFrame(QuicReader reader)
-        {
-            if (!NewConnectionIdFrame.Read(reader, out var frame))
-                return ProcessPacketResult.Error;
-
-            if (DestinationConnectionId!.Data.Length == 0)
-            {
-                return CloseConnection(TransportErrorCode.ProtocolViolation,
-                    QuicError.NewConnectionIdFrameWhenZeroLengthCIDUsed, FrameType.NewConnectionId);
-            }
-
-            // RFC: If an endpoint receives a NEW_CONNECTION_ID frame that repeats a
-            // previously issued connection ID with a different Stateless Reset
-            // Token or a different sequence number, or if a sequence number is used
-            // for different connection IDs, the endpoint MAY treat that receipt as
-            // a connection error of type PROTOCOL_VIOLATION.
-
-            var existingCid = _remoteConnectionIdCollection.FindBySequenceNumber(frame.SequenceNumber);
-
-            if (!ReferenceEquals(_remoteConnectionIdCollection.Find(frame.ConnectionId), existingCid) ||
-                 existingCid != null && existingCid.StatelessResetToken != frame.StatelessResetToken)
-            {
-                return CloseConnection(TransportErrorCode.ProtocolViolation,
-                    QuicError.InconsistentNewConnectionIdFrame, FrameType.NewConnectionId);
-            }
-
-            if (existingCid == null)
-            {
-                var connectionId = new ConnectionId(
-                    frame.ConnectionId.ToArray(),
-                    frame.SequenceNumber,
-                    frame.StatelessResetToken);
-
-                _remoteConnectionIdCollection.Add(connectionId);
-                if (NetEventSource.IsEnabled) NetEventSource.NewConnectionIdReceived(this, connectionId.Data);
-            }
-
-            if (frame.RetirePriorTo > 0)
-                throw new NotImplementedException("Retiring connection ids is not implemented");
-
-            return ProcessPacketResult.Ok;
-        }
-
-        private ProcessPacketResult ProcessConnectionClose(QuicReader reader, QuicSocketContext.RecvContext context)
-        {
-            if (!ConnectionCloseFrame.Read(reader, out var frame))
-                return ProcessPacketResult.Error;
-
-            // keep only the first error
-            if (_inboundError == null)
-            {
-                _inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.ReasonPhrase,
-                    frame.FrameType, frame.IsQuicError);
-
-                if (_closingPeriodEnd == null)
-                {
-                    StartClosing(context.Timestamp);
-                }
-
-                if (_outboundError == null)
-                {
-                    // From RFC: An endpoint that receives a CONNECTION_CLOSE frame MAY send a single packet containing a
-                    // CONNECTION_CLOSE frame before entering the draining state, using NO_ERROR code if appropriate.
-                    _outboundError = new QuicError(TransportErrorCode.NoError);
-                    // draining state will be entered once the error is sent.
-                }
-                else
-                {
-                    StartDraining();
-                }
-
-                // connection will not succeed
-                _connectTcs.TryCompleteException(new QuicErrorException(_inboundError));
-            }
-
-            return ProcessPacketResult.Ok; //TODO-RZ: Draining/closing state management
-        }
-
 
         private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType, QuicSocketContext.RecvContext context)
         {
@@ -364,6 +229,24 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
+        private ProcessPacketResult ProcessResetStreamFrame(QuicReader reader)
+        {
+            if (!ResetStreamFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement RESET_STREAM
+            return FrameNotSupported(FrameType.ResetStream);
+        }
+
+        private ProcessPacketResult ProcessStopSendingFrame(QuicReader reader)
+        {
+            if (!StopSendingFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement STOP_SENDING
+            return FrameNotSupported(FrameType.StopSending);
+        }
+
         private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, QuicSocketContext.RecvContext context)
         {
             if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.Error;
@@ -385,6 +268,198 @@ namespace System.Net.Quic.Implementations.Managed
 
             return ProcessPacketResult.Ok;
         }
+
+        private ProcessPacketResult ProcessNewTokenFrame(QuicReader reader)
+        {
+            if (!NewTokenFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement NEW_TOKEN
+            return FrameNotSupported(FrameType.NewToken);
+        }
+
+        private ProcessPacketResult ProcessMaxDataFrame(QuicReader reader)
+        {
+            if (!MaxDataFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            _peerLimits.UpdateMaxData(frame.MaximumData);
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessMaxStreamDataFrame(QuicReader reader)
+        {
+            if (!MaxStreamDataFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            if (!StreamHelpers.IsReadable(_isServer, frame.StreamId))
+                // TODO-RZ: check stream state
+                return CloseConnection(TransportErrorCode.StreamStateError,
+                    QuicError.NotInRecvState, FrameType.MaxStreamData);
+
+            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
+                return CloseConnection(TransportErrorCode.StreamLimitError,
+                    QuicError.StreamsLimitViolated, FrameType.MaxStreamData);
+
+            var buffer = stream!.OutboundBuffer!;
+            buffer.UpdateMaxData(frame.MaximumStreamData);
+
+            if (buffer.IsFlushable)
+            {
+                _streams.MarkFlushable(stream!);
+            }
+
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessMaxStreamsFrame(QuicReader reader)
+        {
+            if (!MaxStreamsFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            if (frame.Bidirectional)
+                _peerLimits.UpdateMaxStreamsBidi(frame.MaximumStreams);
+            else
+                _peerLimits.UpdateMaxStreamsUni(frame.MaximumStreams);
+
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessDataBlockedFrame(QuicReader reader)
+        {
+            if (!DataBlockedFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement DATA_BLOCKED
+            return FrameNotSupported(FrameType.DataBlocked);
+        }
+
+        private ProcessPacketResult ProcessStreamDataBlockedFrame(QuicReader reader)
+        {
+            if (!StreamDataBlockedFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement STREAM_DATA_BLOCKED
+            return FrameNotSupported(FrameType.StreamDataBlocked);
+        }
+
+        private ProcessPacketResult ProcessStreamsBlockedFrame(QuicReader reader)
+        {
+            if (!StreamsBlockedFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement STREAMS_BLOCKED
+            return FrameNotSupported(frame.Bidirectional
+                ? FrameType.StreamsBlockedBidirectional
+                : FrameType.StreamsBlockedUnidirectional);
+        }
+
+        private ProcessPacketResult ProcessNewConnectionIdFrame(QuicReader reader)
+        {
+            if (!NewConnectionIdFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            if (DestinationConnectionId!.Data.Length == 0)
+            {
+                return CloseConnection(TransportErrorCode.ProtocolViolation,
+                    QuicError.NewConnectionIdFrameWhenZeroLengthCIDUsed, FrameType.NewConnectionId);
+            }
+
+            // RFC: If an endpoint receives a NEW_CONNECTION_ID frame that repeats a
+            // previously issued connection ID with a different Stateless Reset
+            // Token or a different sequence number, or if a sequence number is used
+            // for different connection IDs, the endpoint MAY treat that receipt as
+            // a connection error of type PROTOCOL_VIOLATION.
+
+            var existingCid = _remoteConnectionIdCollection.FindBySequenceNumber(frame.SequenceNumber);
+
+            if (!ReferenceEquals(_remoteConnectionIdCollection.Find(frame.ConnectionId), existingCid) ||
+                 existingCid != null && existingCid.StatelessResetToken != frame.StatelessResetToken)
+            {
+                return CloseConnection(TransportErrorCode.ProtocolViolation,
+                    QuicError.InconsistentNewConnectionIdFrame, FrameType.NewConnectionId);
+            }
+
+            if (existingCid == null)
+            {
+                var connectionId = new ConnectionId(
+                    frame.ConnectionId.ToArray(),
+                    frame.SequenceNumber,
+                    frame.StatelessResetToken);
+
+                _remoteConnectionIdCollection.Add(connectionId);
+                if (NetEventSource.IsEnabled) NetEventSource.NewConnectionIdReceived(this, connectionId.Data);
+            }
+
+            if (frame.RetirePriorTo > 0)
+                // TODO-RZ: implement retiring of connection ids
+                return FrameNotSupported(FrameType.NewConnectionId);
+
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessRetireConnectionId(QuicReader reader)
+        {
+            if (!RetireConnectionIdFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement RETIRE_CONNECTION_ID
+            return FrameNotSupported(FrameType.RetireConnectionId);
+        }
+
+        private ProcessPacketResult ProcessPathChallengeFrame(QuicReader reader)
+        {
+            if (!PathChallengeFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement PATH_CHALLENGE
+            return FrameNotSupported(FrameType.PathChallenge);
+        }
+
+        private ProcessPacketResult ProcessPathResponseFrame(QuicReader reader)
+        {
+            if (!PathChallengeFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // TODO-RZ: Implement PATH_RESPONSE
+            return FrameNotSupported(FrameType.PathResponse);
+        }
+
+        private ProcessPacketResult ProcessConnectionClose(QuicReader reader, QuicSocketContext.RecvContext context)
+        {
+            if (!ConnectionCloseFrame.Read(reader, out var frame))
+                return ProcessPacketResult.Error;
+
+            // keep only the first error
+            if (_inboundError == null)
+            {
+                _inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.ReasonPhrase,
+                    frame.FrameType, frame.IsQuicError);
+
+                if (_closingPeriodEnd == null)
+                {
+                    StartClosing(context.Timestamp);
+                }
+
+                if (_outboundError == null)
+                {
+                    // From RFC: An endpoint that receives a CONNECTION_CLOSE frame MAY send a single packet containing a
+                    // CONNECTION_CLOSE frame before entering the draining state, using NO_ERROR code if appropriate.
+                    _outboundError = new QuicError(TransportErrorCode.NoError);
+                    // draining state will be entered once the error is sent.
+                }
+                else
+                {
+                    StartDraining();
+                }
+
+                // connection will not succeed
+                _connectTcs.TryCompleteException(new QuicErrorException(_inboundError));
+            }
+
+            return ProcessPacketResult.Ok;
+        }
+
 
         private ProcessPacketResult ProcessStreamFrame(QuicReader reader)
         {
@@ -442,6 +517,22 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             buffer.Receive(frame.Offset, frame.StreamData, frame.Fin);
+
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessHandshakeDoneFrame(QuicReader reader)
+        {
+            // frame not being allowed to be sent by client is handled in IsPacketAllowed
+            Debug.Assert(!_isServer);
+
+            reader.ReadFrameType(); // there are no more data, just the frame type identifier.
+            _handshakeDoneReceived = true;
+
+            // An endpoint MUST discard handshake keys when TLS handshake is complete.
+            DropPacketNumberSpace(PacketSpace.Handshake);
+
+            SignalConnected();
 
             return ProcessPacketResult.Ok;
         }

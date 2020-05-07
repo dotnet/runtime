@@ -22,6 +22,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal const string InitialPacketTooShort = "Initial packet too short";
         internal const string InvalidAckRange = "Invalid ack range";
+        internal const string FrameNotAllowed = "Frame type not allowed in given packet";
         internal const string UnknownFrameType = "Unknown frame type";
         internal const string NotInRecvState = "Stream is not in Recv state";
         internal const string StreamsLimitViolated = "Streams limit exceeded";
