@@ -1387,13 +1387,6 @@ class ICorCompilationDomain
             CORCOMPILE_DEPENDENCY   **ppDependencies,
             DWORD                   *cDependencies
             ) = 0;
-
-
-#ifdef CROSSGEN_COMPILE
-    virtual HRESULT SetPlatformWinmdPaths(
-            LPCWSTR                 pwzPlatformWinmdPaths
-            ) = 0;
-#endif
 };
 
 /*********************************************************************************
@@ -1775,8 +1768,6 @@ extern "C" unsigned __stdcall PartialNGenStressPercentage();
 extern "C" HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath, LPCWSTR pDiasymreaderPath);
 
 extern bool g_fNGenMissingDependenciesOk;
-
-extern bool g_fNGenWinMDResilient;
 
 #ifdef FEATURE_READYTORUN_COMPILER
 extern bool g_fReadyToRunCompilation;

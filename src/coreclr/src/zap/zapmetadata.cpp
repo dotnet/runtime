@@ -270,7 +270,7 @@ void ZapILMetaData::CopyMetaData()
     V_BSTR(&versionOption) = strVersion;
     IfFailThrow(pMetaDataDispenser->SetOption(MetaDataRuntimeVersion, &versionOption));
 
-    // Preserve local refs. WinMD adapter depends on them at runtime.
+    // Preserve local refs.
     VARIANT preserveLocalRefsOption;
     V_VT(&preserveLocalRefsOption) = VT_UI4;
     V_UI4(&preserveLocalRefsOption) = MDPreserveLocalTypeRef | MDPreserveLocalMemberRef;

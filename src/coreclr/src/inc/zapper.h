@@ -350,7 +350,6 @@ class Zapper
     void SetPlatformResourceRoots(LPCWSTR pwzPlatformResourceRoots);
     void SetAppPaths(LPCWSTR pwzAppPaths);
     void SetAppNiPaths(LPCWSTR pwzAppNiPaths);
-    void SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths);
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     void SetCLRJITPath(LPCWSTR pwszCLRJITPath);

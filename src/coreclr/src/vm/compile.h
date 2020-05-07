@@ -840,10 +840,6 @@ class CompilationDomain : public AppDomain,
     HRESULT GetDependencies(CORCOMPILE_DEPENDENCY **ppDependencies,
                             DWORD *cDependencies) DAC_EMPTY_RET(E_FAIL);
 
-#ifdef CROSSGEN_COMPILE
-    HRESULT SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths) DAC_EMPTY_RET(E_FAIL);
-#endif
-
     void SetDependencyEmitter(IMetaDataAssemblyEmit *pEmitter);
 };
 

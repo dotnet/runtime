@@ -6897,21 +6897,11 @@ PEAssembly *CompilationDomain::BindAssemblySpec(
         //
         // Record missing dependencies
         //
-#ifdef FEATURE_COMINTEROP
-        if (!g_fNGenWinMDResilient || pSpec->HasUniqueIdentity())
-#endif
-        {
-            IfFailThrow(AddDependency(pSpec, NULL));
-        }
+        IfFailThrow(AddDependency(pSpec, NULL));
     }
     EX_END_HOOK
 
-#ifdef FEATURE_COMINTEROP
-    if (!g_fNGenWinMDResilient || pSpec->HasUniqueIdentity())
-#endif
-    {
-        IfFailThrow(AddDependency(pSpec, pFile));
-    }
+    IfFailThrow(AddDependency(pSpec, pFile));
 
     return pFile;
 }
@@ -6964,11 +6954,6 @@ HRESULT
 
 
 #ifdef CROSSGEN_COMPILE
-HRESULT CompilationDomain::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
-{
-    STANDARD_VM_CONTRACT;
-    return S_OK;
-}
 
 #ifdef FEATURE_READYTORUN_COMPILER
 

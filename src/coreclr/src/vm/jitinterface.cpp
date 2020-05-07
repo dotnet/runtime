@@ -13264,13 +13264,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     // We do not emit activation fixups for version resilient references. Activate the target explicitly.
                     th.AsMethodTable()->EnsureInstanceActive();
                 }
-                else
-                {
-#ifdef FEATURE_WINMD_RESILIENT
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    th.AsMethodTable()->EnsureInstanceActive();
-#endif
-                }
             }
 
             result = (size_t)th.AsPtr();
@@ -13403,13 +13396,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             {
                 // We do not emit activation fixups for version resilient references. Activate the target explicitly.
                 pMD->EnsureActive();
-            }
-            else
-            {
-#ifdef FEATURE_WINMD_RESILIENT
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                pMD->EnsureActive();
-#endif
             }
 
             goto MethodEntry;
@@ -14049,7 +14035,7 @@ void CEEInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,
                                         bool supportEnabled)
 {
     LIMITED_METHOD_CONTRACT;
-    // Do nothing. This api does not provide value in JIT scenarios and 
+    // Do nothing. This api does not provide value in JIT scenarios and
     // crossgen does not utilize the api either.
 }
 

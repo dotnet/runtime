@@ -275,39 +275,6 @@ PTR_Module ClassLoader::ComputeLoaderModuleForCompilation(
         pZapperLoaderModule = pTargetModule;
     }
 
-    // If generating WinMD resilient code and we so far choose to use the target module,
-    // we need to check if the definition module or any of the instantiation type can
-    // cause version resilient problems.
-    if (g_fNGenWinMDResilient && pZapperLoaderModule == pTargetModule)
-    {
-        if (pDefinitionModule != NULL && !pDefinitionModule->IsInCurrentVersionBubble())
-        {
-            pZapperLoaderModule = pDefinitionModule;
-            goto ModuleAdjustedForVersionResiliency;
-        }
-
-        for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
-        {
-            Module * pModule = classInst[i].GetLoaderModule();
-            if (!pModule->IsInCurrentVersionBubble())
-            {
-                pZapperLoaderModule = pModule;
-                goto ModuleAdjustedForVersionResiliency;
-            }
-        }
-
-        for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-        {
-            Module * pModule = methodInst[i].GetLoaderModule();
-            if (!pModule->IsInCurrentVersionBubble())
-            {
-                pZapperLoaderModule = pModule;
-                goto ModuleAdjustedForVersionResiliency;
-            }
-        }
-ModuleAdjustedForVersionResiliency: ;
-    }
-
     // Record this choice just in case we're NGEN'ing multiple modules
     // to make sure we always do the same thing if we're asked to compute
     // the loader module again.

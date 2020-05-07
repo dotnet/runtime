@@ -2555,13 +2555,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     // We do not emit activation fixups for version resilient references. Activate the target explicitly.
                     pMD->EnsureActive();
                 }
-                else
-                {
-#ifdef FEATURE_WINMD_RESILIENT
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-#endif
-                }
 
                 break;
             }
