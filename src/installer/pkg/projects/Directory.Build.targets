@@ -32,6 +32,9 @@
   <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true'">
     <RuntimeSpecificFrameworkSuffix>.Mono.LLVM</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoBundleLLVMOptimizer)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
 
   <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the

@@ -74,9 +74,12 @@ jobs:
         value: wasm
       - name: osOverride
         value: '-os Browser'
-    - ${{ if startsWith(parameters.runtimeVariant, 'llvm') }}:
+    - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
       - name: llvmParameter
         value: /p:MonoEnableLLVM=true
+    - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+      - name: llvmParameter
+        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
     - ${{ parameters.variables }}
 
     steps:

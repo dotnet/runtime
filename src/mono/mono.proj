@@ -975,6 +975,12 @@
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(BinDir)cross\mono-aot-cross</Destination>
       </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\llc">
+        <Destination>$(BinDir)\llc</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\opt">
+        <Destination>$(BinDir)\opt</Destination>
+      </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="$(MonoLLVMDir)\bin\llc">
         <Destination>$(BinDir)cross\llc</Destination>
       </_MonoRuntimeArtifacts>
