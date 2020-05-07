@@ -186,6 +186,11 @@ namespace Microsoft.DotNet.Build.Tasks
                     }
                 }
 
+                if (f.IsNative && !ShouldIncludeInSingleFileHost(f.Filename))
+                {
+                    element.Add(new XAttribute("DropFromSingleFile", "true"));
+                }
+
                 frameworkManifest.Add(element);
             }
 
@@ -206,6 +211,43 @@ namespace Microsoft.DotNet.Build.Tasks
         {
             return TargetFilePrefixes
                 ?.Any(prefix => item.GetMetadata("TargetPath")?.StartsWith(prefix) == true) ?? true;
+        }
+
+        private bool ShouldIncludeInSingleFileHost(string fileName)
+        {
+            switch (fileName)
+            {
+                // UNIX
+                case "libSystem.Globalization.Native.so":
+                case "libSystem.IO.Compression.Native.so":
+                case "libSystem.IO.Ports.Native.so":
+                case "libSystem.Native.so":
+                case "libSystem.Net.Security.Native.so":
+                case "libSystem.Security.Cryptography.Native.OpenSsl.so":
+                case "libclrjit.so":
+                case "libcoreclr.so":
+
+                // OSX
+                case "libSystem.Globalization.Native.dylib":
+                case "libSystem.IO.Compression.Native.dylib":
+                case "libSystem.IO.Ports.Native.dylib":
+                case "libSystem.Native.dylib":
+                case "libSystem.Net.Security.Native.dylib":
+                case "libSystem.Security.Cryptography.Native.Apple.dylib":
+                case "libSystem.Security.Cryptography.Native.OpenSsl.dylib":
+                case "libclrjit.dylib":
+                case "libcoreclr.dylib":
+
+                // Windows
+                case "clrcompression.dll":
+                case "clrjit.dll":
+                case "coreclr.dll":
+                case "mscordaccore.dll":
+
+                    return true;
+            }
+
+            return false;
         }
     }
 }
