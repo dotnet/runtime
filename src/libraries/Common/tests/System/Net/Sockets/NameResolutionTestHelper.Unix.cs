@@ -9,7 +9,7 @@ namespace System.Net.NameResolution.Tests
     internal static class NameResolutionTestHelper
     {
         /// <summary>
-        /// Check if name resolution (getaddrinfo) works within the executing OS & environment.
+        /// Check if name resolution (getaddrinfo) at OS level.
         /// In case of failure we may force the tests fail, so we can gather diagnostics from the CI environment.
         /// After collecting enough information we shall alter call sites to use throwOnFailure:false,
         /// since the failure does not indicate an error within the NCL product code.
