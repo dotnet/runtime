@@ -124,6 +124,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\w+(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
             yield return new object[] { @"(?>\w+)(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty };
             yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
+            yield return new object[] { @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
+            yield return new object[] { @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz" };
