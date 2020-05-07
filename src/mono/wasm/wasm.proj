@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="Build">
+<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildWasmRuntimes">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
@@ -36,7 +36,7 @@
       />
   </Target>
 
-  <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable" AfterTargets="Build">
+  <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable">
     <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
