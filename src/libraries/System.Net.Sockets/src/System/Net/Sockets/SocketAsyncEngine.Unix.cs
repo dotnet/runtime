@@ -135,12 +135,6 @@ namespace System.Net.Sockets
         private IntPtr _nextHandle;
 
         //
-        // Count of handles that have been allocated for this event port, but not yet freed.
-        // Must be accessed under s_lock.
-        //
-        private IntPtr _outstandingHandles;
-
-        //
         // Maps handle values to SocketAsyncContext instances.
         //
         private readonly ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> _handleToContextMap = new ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper>();
@@ -213,7 +207,6 @@ namespace System.Net.Sockets
             _handleToContextMap.TryAdd(handle, new SocketAsyncContextWrapper(context));
 
             _nextHandle = IntPtr.Add(_nextHandle, 1);
-            _outstandingHandles = IntPtr.Add(_outstandingHandles, 1);
 
             Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
             return handle;
@@ -229,14 +222,11 @@ namespace System.Net.Sockets
             {
                 if (_handleToContextMap.TryRemove(handle, out _))
                 {
-                    _outstandingHandles = IntPtr.Subtract(_outstandingHandles, 1);
-                    Debug.Assert(_outstandingHandles.ToInt64() >= 0, $"Unexpected _outstandingHandles: {_outstandingHandles}");
-
                     //
                     // If we've allocated all possible handles for this instance, and freed them all, then
                     // we don't need the event loop any more, and can reclaim resources.
                     //
-                    if (IsFull && _outstandingHandles == IntPtr.Zero)
+                    if (IsFull && _handleToContextMap.IsEmpty)
                     {
                         shutdownNeeded = true;
                     }
