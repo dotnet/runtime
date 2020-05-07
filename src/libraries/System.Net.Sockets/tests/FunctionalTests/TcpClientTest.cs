@@ -434,7 +434,8 @@ namespace System.Net.Sockets.Tests
                 {
                     await connectTask;
                 }
-                catch (SocketException e) when (e.SocketErrorCode == SocketError.OperationAborted) { }
+                catch (SocketException e) { }
+                catch (ObjectDisposedException e) { }
                 sw.Stop();
 
                 Assert.Null(client.Client); // should be nulled out after Dispose
