@@ -23,9 +23,9 @@ namespace System.Net.NameResolution.Tests
 
             addrinfo* res = default;
 
-            int err1 = getaddrinfo(hostName, null, &hint, &res);
+            int err = getaddrinfo(hostName, null, &hint, &res);
             freeaddrinfo(res);
-            int err = err1;
+
             if (err != 0)
             {
                 string failureInfo =
