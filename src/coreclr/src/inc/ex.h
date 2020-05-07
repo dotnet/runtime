@@ -278,17 +278,13 @@ protected:
 };
 
 #if 1
-template <typename T>
-inline void Exception__Delete(T* pvMemory);
 
-template <>
-inline void Exception__Delete<Exception>(Exception* pvMemory)
+inline void Exception__Delete(Exception* pvMemory)
 {
   Exception::Delete(pvMemory);
 }
 
-NEW_WRAPPER_TEMPLATE1(ExceptionHolderTemplate, Exception__Delete<_TYPE>);
-typedef ExceptionHolderTemplate<Exception> ExceptionHolder;
+using ExceptionHolder = SpecializedWrapper<Exception, Exception__Delete>;
 #else
 
 //------------------------------------------------------------------------------
