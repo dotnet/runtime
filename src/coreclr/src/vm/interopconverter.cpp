@@ -104,8 +104,16 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
 
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
-        pUnk.SuppressRelease();
-        RETURN pUnk;
+        GUID iid;
+        pMT->GetGuid(&iid, /*bGenerateIfNotFound*/ FALSE, /*bClassic*/ FALSE);
+
+        SafeComHolder<IUnknown> pvObj;
+        hr = pUnk->QueryInterface(iid, &pvObj);
+        if (FAILED(hr))
+            COMPlusThrowHR(hr);
+
+        pvObj.SuppressRelease();
+        RETURN pvObj;
     }
 
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
@@ -193,6 +201,12 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
 
         if (pFetchedIpType != NULL)
             *pFetchedIpType = ReqIpType;
+
+        if (pvObj != NULL)
+        {
+            pUnk->Release();
+            pUnk = pvObj.Extract();
+        }
 
         RETURN pUnk;
     }
@@ -466,9 +480,11 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     {
         SafeComHolder<IUnknown> pvObj;
         hr = pUnk->QueryInterface(iid, &pvObj);
+        pUnk->Release();
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
+        pUnk = pvObj.Extract();
         RETURN pUnk;
     }
 

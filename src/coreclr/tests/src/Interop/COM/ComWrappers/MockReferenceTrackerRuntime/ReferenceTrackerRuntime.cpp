@@ -374,5 +374,10 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsInterface(ITest *o
     if (obj == nullptr)
         return E_POINTER;
 
-    return UpdateTestObjectAsIUnknown(obj, i, (IUnknown**)out);
+    HRESULT hr;
+    RETURN_IF_FAILED(obj->SetValue(i));
+
+    obj->AddRef();
+    *out = obj;
+    return S_OK;
 }
