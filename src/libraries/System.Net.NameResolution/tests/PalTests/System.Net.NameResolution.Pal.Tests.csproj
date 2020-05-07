@@ -73,6 +73,9 @@
              Link="Common\System\Net\Sockets\ProtocolFamily.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs" />
+    <!-- Test -->
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\NameResolutionTestHelper.Windows.cs" 
+             Link="Common\System\Net\Sockets\NameResolutionTestHelper.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
@@ -107,5 +110,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+    <!-- Test -->
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\NameResolutionTestHelper.Unix.cs" 
+             Link="Common\System\Net\Sockets\NameResolutionTestHelper.Unix.cs" />           
   </ItemGroup>
 </Project>

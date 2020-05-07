@@ -4,10 +4,20 @@ using System.Text;
 
 namespace System.Net.NameResolution.Tests
 {
-    // TODO: Find proper place for this helper class.
-    static class NameResolutionTestHelper
+    partial static class NameResolutionTestHelper
     {
-        public static unsafe int CanResolveHostByOs(string hostName)
+        public static void EnsureOsNameResolutionWorks(string hostName)
+        {
+            int err = CanResolveHostByOs(hostName);
+            if (err != 0)
+            {
+                // We allow the tests fail for now to gather diagnostics from the CI environment.
+                // We should terminate (success or skip), when we collected enough information from possible future failures.
+                throw new Exception($"Failed to resolve '{hostName}'! getaddrinfo error: {err}{Environment.NewLine}{LogUnixInfo()}");
+            }
+        }
+
+        private static unsafe int CanResolveHostByOs(string hostName)
         {
             addrinfo hint = default;
             hint.ai_family = 0; // AF_UNSPEC
@@ -19,17 +29,6 @@ namespace System.Net.NameResolution.Tests
             int err = getaddrinfo(hostName, null, &hint, &res);
             freeaddrinfo(res);
             return err;
-        }
-
-        public static void EnsureOsNameResolutionWorks(string hostName)
-        {
-            int err = CanResolveHostByOs(hostName);
-            if (err != 0)
-            {
-                // We allow the tests fail for now to gather diagnostics from the CI environment.
-                // We should terminate (success or skip), when we collected enough information from possible future failures.
-                throw new Exception($"Failed to resolve '{hostName}'! getaddrinfo error: {err}{Environment.NewLine}{LogUnixInfo()}");
-            }
         }
 
         private static StringBuilder LogUnixInfo()
