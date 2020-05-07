@@ -988,6 +988,7 @@ namespace System.Net.Security
              *
              * ... SSLv2 CLIENT_HELLO ...
              */
+
             /* SSLv2 SERVER_HELLO starts with
              * RECORD_LENGTH_MSB  (ignore)
              * RECORD_LENGTH_LSB  (ignore)
@@ -1033,6 +1034,7 @@ namespace System.Net.Security
              * SSL_MT_REQUEST_CERTIFICATE  7
              * SSL_MT_CLIENT_CERTIFICATE   8
              */
+
             int version = -1;
 
             if (bytes.Length == 0)
