@@ -152,7 +152,6 @@ libmonoruntime_shimglobalization_la_SOURCES = \
 									@ICU_SHIM_PATH@/pal_timeZoneInfo.c \
 									@ICU_SHIM_PATH@/pal_icushim.c
 
-libmonoruntime_shimglobalization_la_LDFLAGS = @ICU_LIBS@
 libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/Common/
 endif
 endif
