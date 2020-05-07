@@ -153,6 +153,13 @@ namespace System
             }
         }
 
+        public static long BigMul(long a, long b, out long low)
+        {
+            ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
+            low = (long)ulow;
+            return (long)high - (a < 0 ? b : 0) - (b < 0 ? a : 0);
+        }
+
         public static double BitDecrement(double x)
         {
             long bits = BitConverter.DoubleToInt64Bits(x);
