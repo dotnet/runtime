@@ -18,6 +18,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -111,6 +112,45 @@ namespace System
         public static long BigMul(int a, int b)
         {
             return ((long)a) * b;
+        }
+
+        private static ulong BigMulSoftwareFallback(ulong a, ulong b, out ulong low)
+        {
+            const ulong lowBitsMask = 0xFFFFFFFFU;
+
+            ulong al = a & lowBitsMask;
+            ulong ah = a >> 32;
+            ulong bl = b & lowBitsMask;
+            ulong bh = b >> 32;
+
+            ulong mull = al * bl;
+            ulong t = ah * bl + (mull >> 32);
+            ulong tl = t & lowBitsMask;
+
+            tl += al * bh;
+            low = tl << 32 | mull & lowBitsMask;
+
+            return ah * bh + (t >> 32) + (tl >> 32);
+        }
+
+        [CLSCompliant(false)]
+        public static ulong BigMul(ulong a, ulong b, out ulong low)
+        {
+            if (Bmi2.X64.IsSupported)
+            {
+                ulong tmp = 0U;
+                ulong high;
+                unsafe
+                {
+                    high = Bmi2.X64.MultiplyNoFlags(a, b, &tmp);
+                }
+                low = tmp;
+                return high;
+            }
+            else
+            {
+                return BigMulSoftwareFallback(a, b, out low);
+            }
         }
 
         public static double BitDecrement(double x)
