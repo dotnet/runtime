@@ -4,7 +4,6 @@
 
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests

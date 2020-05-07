@@ -40,5 +40,7 @@ namespace System.Text.Json.Serialization
             state.Initialize(typeof(T), options, supportContinuation: false);
             TryWrite(writer, value, options, ref state);
         }
+
+        public override bool HandleNull => false;
     }
 }
