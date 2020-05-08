@@ -101,7 +101,7 @@
     <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
   </Target>
 
- <!-- Generate a self-contained app bundle for Android with tests.
+  <!-- Generate a self-contained app bundle for Android with tests.
        This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
   <UsingTask TaskName="AndroidAppBuilderTask" 
              AssemblyFile="$(AndroidAppBuilder)\$(HostArch)\$(Configuration)\AndroidAppBuilder.dll" />
@@ -150,7 +150,7 @@
         Abi="$(AndroidAbi)"
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(NETCoreAppRuntimePackNativePath)\include\mono-2.0"
-        MainLibraryFileName="AndroidTestRunner.dll"
+        MainLibraryFileName="$(AndroidTestRunner)$(HostArch)\$(Configuration)\AndroidTestRunner.dll"
         OutputDir="$(BundleDir)"
         SourceDir="$(BundleDir)">
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
@@ -197,7 +197,7 @@
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(NETCoreAppRuntimePackNativePath)\include\mono-2.0"
         CrossCompiler="$(NETCoreAppRuntimePackNativePath)\cross\mono-aot-cross"
-        MainLibraryFileName="AppleTestRunner.dll"
+        MainLibraryFileName="$(AppleTestRunner)$(HostArch)\$(Configuration)\AppleTestRunner.dll"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
