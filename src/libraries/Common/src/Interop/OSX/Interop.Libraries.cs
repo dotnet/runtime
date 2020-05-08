@@ -10,7 +10,7 @@ internal static partial class Interop
         internal const string CoreServicesLibrary = "/System/Library/Frameworks/CoreServices.framework/CoreServices";
         internal const string CFNetworkLibrary = "/System/Library/Frameworks/CFNetwork.framework/CFNetwork";
         internal const string libobjc = "/usr/lib/libobjc.dylib";
-        internal const string libproc = "libproc";
+        internal const string libproc = "/usr/lib/libproc.dylib";
         internal const string LibSystemCommonCrypto = "/usr/lib/system/libcommonCrypto";
         internal const string LibSystemKernel = "/usr/lib/system/libsystem_kernel";
         internal const string Odbc32 = "libodbc.2.dylib";
