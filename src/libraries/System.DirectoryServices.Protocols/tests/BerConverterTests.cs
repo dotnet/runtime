@@ -47,7 +47,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [MemberData(nameof(Encode_TestData))]
         public void Encode_Objects_ReturnsExpected(string format, object[] values, byte[] expected)
         {
-            if (PlatformDetection.IsArm64Process)
+            if (PlatformDetection.IsArm64Process && format.Contains("tetie"))
             {
                 throw new SkipTestException("Active issue: https://github.com/dotnet/runtime/issues/36087");
             }
