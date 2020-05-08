@@ -327,7 +327,9 @@
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <EnableTestSupport>true</EnableTestSupport>
-    <EnableCoverageSupport>true</EnableCoverageSupport>
+    <!-- TODO: Remove these conditions when VSTest is used in CI. -->
+    <EnableRunSettingsSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableRunSettingsSupport>
+    <EnableCoverageSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableCoverageSupport>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />
