@@ -13,10 +13,6 @@ internal static partial class Interop
             int JSHandle { get; }
             int Length { get; }
         }
-    }
-
-    internal static partial class JavaScript
-    {
         /// <summary>
         ///   JSObjects are wrappers for a native JavaScript object, and
         ///   they retain a reference to the JavaScript object for the lifetime of this C# object.
