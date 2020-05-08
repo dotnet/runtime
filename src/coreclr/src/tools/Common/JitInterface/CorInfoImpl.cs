@@ -2565,7 +2565,7 @@ namespace Internal.JitInterface
 
         private byte[] _roData;
 
-        private SettableReadOnlyDataBlob _roDataBlob;
+        private MethodReadOnlyDataNode _roDataBlob;
         private int _roDataAlignment;
 
         private int _numFrameInfos;
@@ -2611,8 +2611,7 @@ namespace Internal.JitInterface
 
                 _roData = new byte[roDataSize];
 
-                _roDataBlob = _compilation.NodeFactory.SettableReadOnlyDataBlob(
-                    "__readonlydata_" + _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled));
+                _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
 
                 roDataBlock = (void*)GetPin(_roData);
             }

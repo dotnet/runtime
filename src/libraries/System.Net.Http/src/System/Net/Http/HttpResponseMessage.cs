@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -39,9 +40,10 @@ namespace System.Net.Http
 
         internal void SetVersionWithoutValidation(Version value) => _version = value;
 
-        public HttpContent? Content
+        [AllowNull]
+        public HttpContent Content
         {
-            get { return _content; }
+            get { return _content ??= new EmptyContent(); }
             set
             {
                 CheckDisposed();

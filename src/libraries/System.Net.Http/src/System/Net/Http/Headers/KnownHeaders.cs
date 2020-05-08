@@ -49,6 +49,9 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader ExpectCT = new KnownHeader("Expect-CT");
         public static readonly KnownHeader Expires = new KnownHeader("Expires", HttpHeaderType.Content | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.Expires);
         public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, GenericHeaderParser.MailAddressParser, null, H2StaticTable.From);
+        public static readonly KnownHeader GrpcEncoding = new KnownHeader("grpc-encoding", HttpHeaderType.Custom, null, new string[] { "identity", "gzip", "deflate" });
+        public static readonly KnownHeader GrpcMessage = new KnownHeader("grpc-message");
+        public static readonly KnownHeader GrpcStatus = new KnownHeader("grpc-status", HttpHeaderType.Custom, null, new string[] { "0" });
         public static readonly KnownHeader Host = new KnownHeader("Host", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.HostParser, null, H2StaticTable.Host);
         public static readonly KnownHeader IfMatch = new KnownHeader("If-Match", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueEntityTagParser, null, H2StaticTable.IfMatch);
         public static readonly KnownHeader IfModifiedSince = new KnownHeader("If-Modified-Since", HttpHeaderType.Request | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.IfModifiedSince, H3StaticTable.IfModifiedSince);
@@ -250,20 +253,22 @@ namespace System.Net.Http.Headers
                     switch (key[0] | 0x20)
                     {
                         case 'c': return ContentMD5; // [C]ontent-MD5
+                        case 'g': return GrpcStatus; // [g]rpc-status
                         case 'r': return RetryAfter; // [R]etry-After
                         case 's': return SetCookie2; // [S]et-Cookie2
                     }
                     break;
 
                 case 12:
-                    switch (key[2] | 0x20)
+                    switch (key[5] | 0x20)
                     {
-                        case 'c': return AcceptPatch; // Ac[c]ept-Patch
-                        case 'm': return XMSEdgeRef;  // X-[M]SEdge-Ref
-                        case 'n': return ContentType; // Co[n]tent-Type
-                        case 'p': return XPoweredBy;  // X-[P]owered-By
-                        case 'r': return XRequestID;  // X-[R]equest-ID
-                        case 'x': return MaxForwards; // Ma[x]-Forwards
+                        case 'd': return XMSEdgeRef;  // X-MSE[d]ge-Ref
+                        case 'e': return XPoweredBy;  // X-Pow[e]red-By
+                        case 'm': return GrpcMessage; // grpc-[m]essage
+                        case 'n': return ContentType; // Conte[n]t-Type
+                        case 'o': return MaxForwards; // Max-F[o]rwards
+                        case 't': return AcceptPatch; // Accep[t]-Patch
+                        case 'u': return XRequestID;  // X-Req[u]est-ID
                     }
                     break;
 
@@ -272,7 +277,13 @@ namespace System.Net.Http.Headers
                     {
                         case 'd': return LastModified;  // Last-Modifie[d]
                         case 'e': return ContentRange;  // Content-Rang[e]
-                        case 'g': return ServerTiming;  // Server-Timin[g]
+                        case 'g':
+                            switch (key[0] | 0x20)
+                            {
+                                case 's': return ServerTiming;  // [S]erver-Timin[g]
+                                case 'g': return GrpcEncoding;  // [g]rpc-encodin[g]
+                            }
+                            break;
                         case 'h': return IfNoneMatch;   // If-None-Matc[h]
                         case 'l': return CacheControl;  // Cache-Contro[l]
                         case 'n': return Authorization; // Authorizatio[n]

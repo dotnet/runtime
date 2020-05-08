@@ -73,8 +73,8 @@ namespace R2RTest
             // Output
             yield return $"-o:{outputFileName}";
 
-            // Todo: Allow control of some of these
-            yield return "--targetarch=x64";
+            // Todo: Allow cross-architecture compilation
+            //yield return "--targetarch=x64";
 
             if (_options.Map)
             {
