@@ -316,13 +316,12 @@ namespace System.Text.RegularExpressions
                 // can update the tree with a temporary node to indicate that the implementation should use that node's ending position in the input text
                 // as the next starting position at which to start the next match. This avoids redoing matches we've already performed, e.g. matching
                 // "\w+@dot.net" against "is this a valid address@dot.net", the \w+ will initially match the "is" and then will fail to match the "@".
-                // Rather than bumping the scan loop by 1 and trying again to match at the "s", we can instead start at the " ".  We limit ourselves to
-                // one/notone/set loops with a min iteration count of 1 so that we know we'll get something in exchange for the extra overhead of storing
-                // the updated position. For functional correctness we can only consider unbounded loops, as to be able to start at the end of the
-                // loop we need the loop to have consumed all possible matches; otherwise, you could end up with a pattern like "a{1,3}b" matching
-                // against "aaaabc", which should match, but if we pre-emptively stop consuming after the first three a's and re-start from that position,
-                // we'll end up failing the match even though it should have succeeded.  We can also apply this optimization to non-atomic loops.
-                // Even though backtracking could be necessary, such backtracking would be handled within the processing of a single starting position.
+                // Rather than bumping the scan loop by 1 and trying again to match at the "s", we can instead start at the " ".  For functional correctness
+                // we can only consider unbounded loops, as to be able to start at the end of the loop we need the loop to have consumed all possible matches;
+                // otherwise, you could end up with a pattern like "a{1,3}b" matching against "aaaabc", which should match, but if we pre-emptively stop consuming
+                // after the first three a's and re-start from that position, we'll end up failing the match even though it should have succeeded.  We can also
+                // apply this optimization to non-atomic loops. Even though backtracking could be necessary, such backtracking would be handled within the processing
+                // of a single starting position.
                 {
                     RegexNode node = rootNode.Child(0); // skip implicit root capture node
                     while (true)
@@ -334,12 +333,12 @@ namespace System.Text.RegularExpressions
                                 node = node.Child(0);
                                 continue;
 
-                            case Oneloop when node.M > 0 && node.N == int.MaxValue:
-                            case Oneloopatomic when node.M > 0 && node.N == int.MaxValue:
-                            case Notoneloop when node.M > 0 && node.N == int.MaxValue:
-                            case Notoneloopatomic when node.M > 0 && node.N == int.MaxValue:
-                            case Setloop when node.M > 0 && node.N == int.MaxValue:
-                            case Setloopatomic when node.M > 0 && node.N == int.MaxValue:
+                            case Oneloop when node.N == int.MaxValue:
+                            case Oneloopatomic when node.N == int.MaxValue:
+                            case Notoneloop when node.N == int.MaxValue:
+                            case Notoneloopatomic when node.N == int.MaxValue:
+                            case Setloop when node.N == int.MaxValue:
+                            case Setloopatomic when node.N == int.MaxValue:
                                 RegexNode? parent = node.Next;
                                 if (parent != null && parent.Type == Concatenate)
                                 {
