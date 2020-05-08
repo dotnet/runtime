@@ -189,13 +189,16 @@ HRESULT DwGetFileVersionInfo(
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
 
     major = minor = build = revision = 0;
     ULARGE_INTEGER appVersion = { 0, 0 };
+
+    // Preempt to let GC suspend
+    GCX_PREEMP();
 
     HRESULT result = GetFileVersion(wszFilePath, &appVersion);
     if (SUCCEEDED(result))
@@ -602,7 +605,7 @@ HRESULT GetManagedBucketParametersForIp(
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -677,7 +680,7 @@ void* GetBucketParametersForManagedException(UINT_PTR ip, TypeOfReportedError to
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
