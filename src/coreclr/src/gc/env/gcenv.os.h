@@ -435,23 +435,17 @@ public:
     //  specified, it returns amount of actual physical memory.
     static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL);
 
-    // Set the total physical memory that this process is allowed to use.
-    // Remarks:
-    //  A process can use a GC config (GCTotalPhysicalMemory) to specify the amount of physicla memory
-    //  it's allowed to use. And if no hardlimit (specified with the GCHeapHardLimit config) is specified,
-    //  this is treated as the restricted environment so the hardlimit will be calcuated accordingly, ie,
-    //  max (75% of the total physical memory, 20mb).
-    static bool SetRestrictedPhysicalMemoryLimit(uint64_t totalPhysicalMemory);
-
     // Get memory status
     // Parameters:
+    //  restricted_limit - The amount of physical memory in bytes that the current process is being restricted to. If non-zero, it used to calculate
+    //      memory_load and available_physical. If zero, memory_load and available_physical is calculate based on all available memory.
     //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
     //      that is in use (0 indicates no memory use and 100 indicates full memory use).
     //  available_physical - The amount of physical memory currently available, in bytes.
     //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
     // Remarks:
     //  Any parameter can be null.
-    static void GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
+    static void GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
 
     // Get size of an OS memory page
     static size_t GetPageSize();

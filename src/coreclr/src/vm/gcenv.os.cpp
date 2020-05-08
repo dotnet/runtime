@@ -756,7 +756,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 
 // Return the size of the user-mode portion of the virtual address space of this process.
 // Return:
-//  non zero if it has succeeded, 0 if it has failed
+//  non zero if it has succeeded, (size_t)-1 if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
@@ -770,10 +770,6 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 static size_t g_RestrictedPhysicalMemoryLimit = (size_t)MAX_PTR;
 
 #ifndef TARGET_UNIX
-
-// For 32-bit processes the virtual address range could be smaller than the amount of physical
-// memory on the machine/in the container, we need to restrict by the VM.
-static bool g_UseRestrictedVirtualMemory = false;
 
 static size_t GetRestrictedPhysicalMemoryLimit()
 {
@@ -860,8 +856,8 @@ exit:
 
     if (total_virtual < total_physical)
     {
-        g_UseRestrictedVirtualMemory = true;
-        job_physical_memory_limit = (size_t)total_virtual;
+        // Limited by virtual address space
+        job_physical_memory_limit = 0;
     }
 
     VolatileStore(&g_RestrictedPhysicalMemoryLimit, job_physical_memory_limit);
@@ -898,11 +894,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     size_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
     {
-        if (is_restricted
-#ifndef TARGET_UNIX
-            && !g_UseRestrictedVirtualMemory
-#endif
-            )
+        if (is_restricted)
             *is_restricted = true;
 
         return restricted_limit;
@@ -914,32 +906,6 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     return memStatus.ullTotalPhys;
 }
 
-// Set the total physical memory that this process is allowed to use.
-// Remarks:
-//  A process can use a GC config (GCTotalPhysicalMemory) to specify the amount of physicla memory
-//  it's allowed to use. And if no hardlimit (specified with the GCHeapHardLimit config) is specified,
-//  this is treated as the restricted environment so the hardlimit will be calcuated accordingly, ie,
-//  max (75% of the total physical memory, 20mb).
-bool GCToOSInterface::SetRestrictedPhysicalMemoryLimit(uint64_t totalPhysicalMemory)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifndef TARGET_UNIX
-    MEMORYSTATUSEX ms;
-    GetProcessMemoryLoad(&ms);
-    uint64_t total_virtual = ms.ullTotalVirtual;
-
-    if (total_virtual < totalPhysicalMemory)
-    {
-        g_UseRestrictedVirtualMemory = true;
-        totalPhysicalMemory = total_virtual;
-    }
-#endif //!TARGET_UNIX
-
-    VolatileStore(&g_RestrictedPhysicalMemoryLimit, (size_t)totalPhysicalMemory);
-    return true;
-}
-
 // Get memory status
 // Parameters:
 //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
@@ -948,26 +914,22 @@ bool GCToOSInterface::SetRestrictedPhysicalMemoryLimit(uint64_t totalPhysicalMem
 //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
 // Remarks:
 //  Any parameter can be null.
-void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
+void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
     LIMITED_METHOD_CONTRACT;
 
-    uint64_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
     {
         size_t workingSetSize;
         BOOL status = FALSE;
 #ifndef TARGET_UNIX
-        if (!g_UseRestrictedVirtualMemory)
-        {
-            PROCESS_MEMORY_COUNTERS pmc;
-            status = GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
-            workingSetSize = pmc.WorkingSetSize;
-        }
+        PROCESS_MEMORY_COUNTERS pmc;
+        status = GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+        workingSetSize = pmc.WorkingSetSize;
 #else
         status = PAL_GetPhysicalMemoryUsed(&workingSetSize);
 #endif
-        if(status)
+        if (status)
         {
             if (memory_load)
                 *memory_load = (uint32_t)((float)workingSetSize * 100.0 / (float)restricted_limit);
@@ -992,9 +954,10 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
     GetProcessMemoryLoad(&ms);
 
 #ifndef TARGET_UNIX
-    if (g_UseRestrictedVirtualMemory)
+    // For 32-bit processes the virtual address range could be smaller than the amount of physical
+    // memory on the machine/in the container, we need to restrict by the VM.
+    if (ms.ullTotalVirtual < ms.ullTotalPhys)
     {
-        _ASSERTE (ms.ullTotalVirtual == restricted_limit);
         if (memory_load != NULL)
             *memory_load = (uint32_t)((float)(ms.ullTotalVirtual - ms.ullAvailVirtual) * 100.0 / (float)ms.ullTotalVirtual);
         if (available_physical != NULL)
