@@ -21,6 +21,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			instance.ReadFromInstanceField ();
 			instance.TwoAnnotatedParameters (typeof (TestType), typeof (TestType));
+			instance.SpacesBetweenParametersWrongArgument (typeof (TestType), true);
+			instance.GenericMethod<String> ("nonUsed", typeof (TestType));
 			instance.ReturnConstructorsFailure (null);
 			instance.ReadFromInstanceProperty ();
 
@@ -51,6 +53,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireDefaultConstructor (type2);
 			RequirePublicConstructors (type);
 			RequirePublicConstructors (type2);
+		}
+
+		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequireDefaultConstructor), new Type[] { typeof (Type) })]
+		private void SpacesBetweenParametersWrongArgument (
+			Type type,
+			bool nonused)
+		{
+			RequireDefaultConstructor (type);
+		}
+
+		[RecognizedReflectionAccessPattern]
+		private void GenericMethod<T> (
+			T input,
+			Type type)
+		{
+			RequireDefaultConstructor (type);
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (ReturnConstructorsFailure), new Type[] { typeof (Type) },

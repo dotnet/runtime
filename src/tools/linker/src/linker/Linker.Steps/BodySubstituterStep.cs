@@ -92,7 +92,7 @@ namespace Mono.Linker.Steps
 				AssemblyDefinition assembly = Context.GetLoadedAssembly (name.Name);
 
 				if (assembly == null) {
-					Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not match assembly '{name.FullName}' for substitution", 2007));
+					Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007));
 					continue;
 				}
 
@@ -118,7 +118,7 @@ namespace Mono.Linker.Steps
 				TypeDefinition type = assembly.MainModule.GetType (fullname);
 
 				if (type == null) {
-					Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve type '{fullname}' for substitution", 2008));
+					Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve type '{fullname}' specified in {_xmlDocumentLocation}", 2008));
 					continue;
 				}
 
@@ -167,7 +167,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition method = FindMethod (type, signature);
 			if (method == null) {
-				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find method '{signature}' for substitution", 2009));
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find method '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2009));
 				return;
 			}
 
@@ -203,7 +203,7 @@ namespace Mono.Linker.Steps
 
 			var field = type.Fields.FirstOrDefault (f => f.Name == name);
 			if (field == null) {
-				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find field '{name}' for substitution.", 2012));
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find field '{name}' in type '{type.FullName}' specified in { _xmlDocumentLocation}", 2012));
 				return;
 			}
 

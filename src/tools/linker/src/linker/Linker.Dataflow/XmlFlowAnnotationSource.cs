@@ -19,15 +19,6 @@ namespace Mono.Linker.Dataflow
 		readonly Dictionary<PropertyDefinition, DynamicallyAccessedMemberTypes> _properties = new Dictionary<PropertyDefinition, DynamicallyAccessedMemberTypes> ();
 		readonly Dictionary<FieldDefinition, DynamicallyAccessedMemberTypes> _fields = new Dictionary<FieldDefinition, DynamicallyAccessedMemberTypes> ();
 
-		static readonly string _signature = "signature";
-		static readonly string _fullname = "fullname";
-		static readonly string _preserve = "preserve";
-		static readonly string _accessors = "accessors";
-		static readonly string _ns = string.Empty;
-
-		static readonly string[] _accessorsAll = new string[] { "all" };
-		static readonly char[] _accessorsSep = new char[] { ';' };
-
 		readonly XPathDocument _document;
 		readonly string _xmlDocumentLocation;
 		readonly LinkContext _context;
@@ -88,14 +79,18 @@ namespace Mono.Linker.Dataflow
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		static DynamicallyAccessedMemberTypes ParseKinds (ArrayBuilder<Attribute> attributes)
+		static DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMemberAttribute (ArrayBuilder<Attribute> attributes, LinkContext _context, string _xmlDocumentLocation)
 		{
 			foreach (var attribute in attributes.ToArray ()) {
-				if (attribute.attributeName == "System.Runtime.CompilerServices.DynamicallyAccessedMembers" && attribute.arguments.Count == 1) {
+				if (attribute.attributeName == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers" && attribute.arguments.Count == 1) {
 					foreach (var argument in attribute.arguments.ToArray ()) {
 						if (argument == string.Empty)
 							break;
-						return (DynamicallyAccessedMemberTypes) Enum.Parse (typeof (DynamicallyAccessedMemberTypes), argument);
+						try {
+							return (DynamicallyAccessedMemberTypes) Enum.Parse (typeof (DynamicallyAccessedMemberTypes), argument);
+						} catch (ArgumentException) {
+							_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not parse argument {argument} specified in {_xmlDocumentLocation} as a DynamicallyAccessedMemberTypes", 2020));
+						}
 					}
 				}
 			}
@@ -106,39 +101,32 @@ namespace Mono.Linker.Dataflow
 		{
 			XPathNavigator nav = _document.CreateNavigator ();
 
-			// This step can be created with XML files that aren't necessarily
-			// annotations descriptor files. So bail if we don't have a <annotations> element.
-			if (!nav.MoveToChild ("annotations", _ns))
+			if (!nav.MoveToChild ("linker", string.Empty))
 				return;
 
 			try {
-				ProcessAssemblies (_context, nav.SelectChildren ("assembly", _ns));
+				ProcessAssemblies (_context, nav.SelectChildren ("assembly", string.Empty));
 			} catch (Exception ex) when (!(ex is XmlResolutionException)) {
 				throw new XmlResolutionException (string.Format ("Failed to process XML description: {0}", _document), ex);
 			}
 		}
 
-		protected virtual void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
+		private void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
 				AssemblyDefinition assembly = GetAssembly (context, GetAssemblyName (iterator.Current));
 
 				if (assembly == null) {
-					context.LogMessage ($"Assembly {GetAssemblyName (iterator.Current).Name} couldn't be resolved");
+					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007));
 					continue;
 				}
 
-				ProcessAssembly (assembly, iterator);
-			}
-		}
+				if (!ShouldProcessSubstitutions (iterator.Current)) {
+					return;
+				}
 
-		protected virtual void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator)
-		{
-#if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
-				return;
-#endif
-			ProcessTypes (assembly, iterator.Current.SelectChildren ("type", _ns));
+				ProcessTypes (assembly, iterator.Current.SelectChildren ("type", string.Empty));
+			}
 		}
 
 		ArrayBuilder<Attribute> ProcessAttributes (XPathNodeIterator iterator)
@@ -146,46 +134,31 @@ namespace Mono.Linker.Dataflow
 			var attributes = new ArrayBuilder<Attribute> ();
 			while (iterator.MoveNext ()) {
 				string attributeName = GetFullName (iterator.Current);
-				ArrayBuilder<string> arguments = GetAttributeArguments (iterator.Current.SelectChildren ("argument", _ns));
-				ArrayBuilder<string> fields = GetAttributeFields (iterator.Current.SelectChildren ("field", _ns));
-				ArrayBuilder<string> properties = GetAttributeProperties (iterator.Current.SelectChildren ("property", _ns));
+				ArrayBuilder<string> arguments = GetAttributeChilds (iterator.Current.SelectChildren ("argument", string.Empty));
+				ArrayBuilder<string> fields = GetAttributeChilds (iterator.Current.SelectChildren ("field", string.Empty));
+				ArrayBuilder<string> properties = GetAttributeChilds (iterator.Current.SelectChildren ("property", string.Empty));
 
 				attributes.Add (new Attribute (attributeName, arguments, fields, properties));
 			}
 			return attributes;
 		}
 
-		ArrayBuilder<string> GetAttributeArguments (XPathNodeIterator iterator)
+		ArrayBuilder<string> GetAttributeChilds (XPathNodeIterator iterator)
 		{
-			ArrayBuilder<string> arguments = new ArrayBuilder<string> ();
+			ArrayBuilder<string> childs = new ArrayBuilder<string> ();
 			while (iterator.MoveNext ()) {
-				arguments.Add (iterator.Current.Value);
+				childs.Add (iterator.Current.Value);
 			}
-			return arguments;
-		}
-
-		ArrayBuilder<string> GetAttributeFields (XPathNodeIterator iterator)
-		{
-			ArrayBuilder<string> fields = new ArrayBuilder<string> ();
-			while (iterator.MoveNext ()) {
-				fields.Add (iterator.Current.Value);
-			}
-			return fields;
-		}
-
-		ArrayBuilder<string> GetAttributeProperties (XPathNodeIterator iterator)
-		{
-			ArrayBuilder<string> properties = new ArrayBuilder<string> ();
-			while (iterator.MoveNext ()) {
-				properties.Add (iterator.Current.Value);
-			}
-			return properties;
+			return childs;
 		}
 
 		void ProcessTypes (AssemblyDefinition assembly, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
 				XPathNavigator nav = iterator.Current;
+
+				if (!ShouldProcessSubstitutions (nav))
+					continue;
 
 				string fullname = GetFullName (nav);
 
@@ -196,22 +169,22 @@ namespace Mono.Linker.Dataflow
 
 				TypeDefinition type = assembly.MainModule.GetType (fullname);
 
-				if (type == null) {
-					if (assembly.MainModule.HasExportedTypes) {
-						foreach (var exported in assembly.MainModule.ExportedTypes) {
-							if (fullname == exported.FullName) {
-								var resolvedExternal = exported.Resolve ();
-								if (resolvedExternal != null) {
-									type = resolvedExternal;
-									break;
-								}
+				if (type == null && assembly.MainModule.HasExportedTypes) {
+					foreach (var exported in assembly.MainModule.ExportedTypes) {
+						if (fullname == exported.FullName) {
+							var resolvedExternal = exported.Resolve ();
+							if (resolvedExternal != null) {
+								type = resolvedExternal;
+								break;
 							}
 						}
 					}
 				}
 
-				if (type == null)
+				if (type == null) {
+					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve type '{fullname}' specified in {_xmlDocumentLocation}", 2008));
 					continue;
+				}
 
 				ProcessType (type, nav);
 			}
@@ -249,7 +222,6 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-
 		void ProcessTypePattern (string fullname, AssemblyDefinition assembly, XPathNavigator nav)
 		{
 			Regex regex = CreateRegexFromPattern (fullname);
@@ -265,19 +237,19 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		protected virtual void ProcessType (TypeDefinition type, XPathNavigator nav)
+		void ProcessType (TypeDefinition type, XPathNavigator nav)
 		{
-#if !FEATURE_ILLINK
-			if (IsExcluded (nav))
+			if (!ShouldProcessSubstitutions (nav)) {
 				return;
-#endif
+			}
+
 			ProcessTypeChildren (type, nav);
 
 			if (!type.HasNestedTypes)
 				return;
 
 			foreach (TypeDefinition nested in type.NestedTypes) {
-				var iterator = nav.SelectChildren ("type", _ns);
+				var iterator = nav.SelectChildren ("type", string.Empty);
 				while (iterator.MoveNext ()) {
 					if (nested.Name == GetAttribute (iterator.Current, "name"))
 						ProcessTypeChildren (nested, iterator.Current);
@@ -296,72 +268,76 @@ namespace Mono.Linker.Dataflow
 
 		void ProcessSelectedFields (XPathNavigator nav, TypeDefinition type)
 		{
-			XPathNodeIterator fields = nav.SelectChildren ("field", _ns);
+			XPathNodeIterator fields = nav.SelectChildren ("field", string.Empty);
 			if (fields.Count == 0)
 				return;
 
-			ProcessFields (type, fields);
+			while (fields.MoveNext ()) {
+				if (!ShouldProcessSubstitutions (fields.Current)) {
+					return;
+				}
+				string value = GetSignature (fields.Current);
+				if (!String.IsNullOrEmpty (value))
+					ProcessFieldSignature (type, value, fields);
+
+				value = GetAttribute (fields.Current, "name");
+				if (!String.IsNullOrEmpty (value))
+					ProcessFieldName (type, value, fields);
+			}
 		}
 
 		void ProcessSelectedMethods (XPathNavigator nav, TypeDefinition type)
 		{
-			XPathNodeIterator methods = nav.SelectChildren ("method", _ns);
+			XPathNodeIterator methods = nav.SelectChildren ("method", string.Empty);
 			if (methods.Count == 0)
 				return;
 
-			ProcessMethods (type, methods);
+			while (methods.MoveNext ()) {
+				if (!ShouldProcessSubstitutions (methods.Current)) {
+					return;
+				}
+
+				string value = GetSignature (methods.Current);
+				if (!String.IsNullOrEmpty (value))
+					ProcessMethodSignature (type, value, methods);
+
+				value = GetAttribute (methods.Current, "name");
+				if (!String.IsNullOrEmpty (value))
+					ProcessMethodName (type, value, methods);
+			}
 		}
 
 		void ProcessSelectedProperties (XPathNavigator nav, TypeDefinition type)
 		{
-			XPathNodeIterator properties = nav.SelectChildren ("property", _ns);
+			XPathNodeIterator properties = nav.SelectChildren ("property", string.Empty);
 			if (properties.Count == 0)
 				return;
+			while (properties.MoveNext ()) {
+				if (!ShouldProcessSubstitutions (properties.Current)) {
+					return;
+				}
 
-			ProcessProperties (type, properties);
-		}
+				string value = GetSignature (properties.Current);
+				if (!String.IsNullOrEmpty (value))
+					ProcessPropertySignature (type, value, properties);
 
-		static TypePreserve GetTypePreserve (XPathNavigator nav)
-		{
-			string attribute = GetAttribute (nav, _preserve);
-			if (string.IsNullOrEmpty (attribute))
-				return nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
-
-			if (Enum.TryParse (attribute, true, out TypePreserve result))
-				return result;
-			return TypePreserve.Nothing;
-		}
-
-		void ProcessFields (TypeDefinition type, XPathNodeIterator iterator)
-		{
-			while (iterator.MoveNext ())
-				ProcessField (type, iterator);
-		}
-
-		protected virtual void ProcessField (TypeDefinition type, XPathNodeIterator iterator)
-		{
-#if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
-				return;
-#endif
-			string value = GetSignature (iterator.Current);
-			if (!String.IsNullOrEmpty (value))
-				ProcessFieldSignature (type, value, iterator);
-
-			value = GetAttribute (iterator.Current, "name");
-			if (!String.IsNullOrEmpty (value))
-				ProcessFieldName (type, value, iterator);
+				value = GetAttribute (properties.Current, "name");
+				if (!String.IsNullOrEmpty (value))
+					ProcessPropertyName (type, value, properties);
+			}
 		}
 
 		void ProcessFieldSignature (TypeDefinition type, string signature, XPathNodeIterator iterator)
 		{
 			FieldDefinition field = GetField (type, signature);
-			if (field != null) {
-				ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", _ns));
-				DynamicallyAccessedMemberTypes fieldAnnotation = ParseKinds (attributes);
-				if (fieldAnnotation != DynamicallyAccessedMemberTypes.None)
-					_fields[field] = fieldAnnotation;
+			if (field == null) {
+				_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find field '{signature}' in type '{type.FullName}' specified in { _xmlDocumentLocation}", 2016));
+				return;
 			}
+			ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+			DynamicallyAccessedMemberTypes fieldAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (attributes, _context, _xmlDocumentLocation);
+			if (fieldAnnotation != DynamicallyAccessedMemberTypes.None)
+				_fields[field] = fieldAnnotation;
 		}
 
 		void ProcessFieldName (TypeDefinition type, string name, XPathNodeIterator iterator)
@@ -371,74 +347,50 @@ namespace Mono.Linker.Dataflow
 
 			foreach (FieldDefinition field in type.Fields) {
 				if (field.Name == name) {
-					ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", _ns));
-					DynamicallyAccessedMemberTypes fieldAnnotation = ParseKinds (attributes);
+					ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+					DynamicallyAccessedMemberTypes fieldAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (attributes, _context, _xmlDocumentLocation);
 					if (fieldAnnotation != DynamicallyAccessedMemberTypes.None)
 						_fields[field] = fieldAnnotation;
 				}
 			}
 		}
 
-		protected static FieldDefinition GetField (TypeDefinition type, string signature)
+		static FieldDefinition GetField (TypeDefinition type, string signature)
 		{
 			if (!type.HasFields)
 				return null;
 
 			foreach (FieldDefinition field in type.Fields)
-				if (signature == GetFieldSignature (field))
+				if (signature == field.FieldType.FullName + " " + field.Name)
 					return field;
 
 			return null;
 		}
 
-		static string GetFieldSignature (FieldDefinition field)
-		{
-			return field.FieldType.FullName + " " + field.Name;
-		}
-
-		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
-		{
-			while (iterator.MoveNext ())
-				ProcessMethod (type, iterator);
-		}
-
-		protected virtual void ProcessMethod (TypeDefinition type, XPathNodeIterator iterator)
-		{
-#if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
-				return;
-#endif
-
-			string value = GetSignature (iterator.Current);
-			if (!String.IsNullOrEmpty (value))
-				ProcessMethodSignature (type, value, iterator);
-
-			value = GetAttribute (iterator.Current, "name");
-			if (!String.IsNullOrEmpty (value))
-				ProcessMethodName (type, value, iterator);
-		}
-
 		void ProcessMethodSignature (TypeDefinition type, string signature, XPathNodeIterator iterator)
 		{
-			MethodDefinition meth = GetMethod (type, signature);
-			if (meth != null)
-				ProcessMethodChildren (type, meth, iterator);
+			MethodDefinition method = GetMethod (type, signature);
+			if (method == null) {
+				_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find method '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2017));
+				return;
+			}
+			ProcessMethodChildren (type, method, iterator);
 		}
 
 		void ProcessMethodChildren (TypeDefinition type, MethodDefinition method, XPathNodeIterator iterator)
 		{
-			ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", _ns));
+			ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
 			ArrayBuilder<(string, ArrayBuilder<Attribute>)> parameterAnnotations = ProcessParameters (type,
-				method, iterator.Current.SelectChildren ("parameter", _ns));
+				method, iterator.Current.SelectChildren ("parameter", string.Empty));
 			ArrayBuilder<ArrayBuilder<Attribute>> returnParameterAnnotations = ProcessReturnParameters (type,
-				method, iterator.Current.SelectChildren ("returnparameter", _ns));
+				method, iterator.Current.SelectChildren ("return", string.Empty));
 
 			var parameterAnnotation = new ArrayBuilder<(string ParamName, DynamicallyAccessedMemberTypes Annotation)> ();
 			DynamicallyAccessedMemberTypes returnAnnotation = 0;
 
 			if (parameterAnnotations.Count > 0) {
 				foreach (var parameter in parameterAnnotations.ToArray ()) {
-					DynamicallyAccessedMemberTypes paramAnnotation = ParseKinds (parameter.Item2);
+					DynamicallyAccessedMemberTypes paramAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (parameter.Item2, _context, _xmlDocumentLocation);
 					if (paramAnnotation != 0)
 						parameterAnnotation.Add ((parameter.Item1, paramAnnotation));
 				}
@@ -446,7 +398,7 @@ namespace Mono.Linker.Dataflow
 
 			if (returnParameterAnnotations.Count == 1) {
 				foreach (var returnparameter in returnParameterAnnotations.ToArray ()) {
-					DynamicallyAccessedMemberTypes returnparamAnnotation = ParseKinds (returnparameter);
+					DynamicallyAccessedMemberTypes returnparamAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (returnparameter, _context, _xmlDocumentLocation);
 					if (returnparamAnnotation != 0)
 						returnAnnotation = returnparamAnnotation;
 				}
@@ -461,7 +413,7 @@ namespace Mono.Linker.Dataflow
 		{
 			var methodParameters = new ArrayBuilder<(string, ArrayBuilder<Attribute>)> ();
 			while (iterator.MoveNext ()) {
-				methodParameters.Add ((GetAttribute (iterator.Current, "name"), ProcessAttributes (iterator.Current.SelectChildren ("attribute", _ns))));
+				methodParameters.Add ((GetAttribute (iterator.Current, "name"), ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty))));
 			}
 			return methodParameters;
 		}
@@ -472,18 +424,9 @@ namespace Mono.Linker.Dataflow
 			var methodParameters = new ArrayBuilder<ArrayBuilder<Attribute>> ();
 
 			while (iterator.MoveNext ()) {
-				methodParameters.Add (ProcessAttributes (iterator.Current.SelectChildren ("attribute", _ns)));
+				methodParameters.Add (ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty)));
 			}
 			return methodParameters;
-		}
-
-
-		void ProcessMethodIfNotNull (TypeDefinition type, MethodDefinition method, XPathNodeIterator iterator)
-		{
-			if (method == null)
-				return;
-
-			ProcessMethodChildren (type, method, iterator);
 		}
 
 		void ProcessMethodName (TypeDefinition type, string name, XPathNodeIterator iterator)
@@ -496,153 +439,109 @@ namespace Mono.Linker.Dataflow
 					ProcessMethodChildren (type, method, iterator);
 		}
 
-		protected static MethodDefinition GetMethod (TypeDefinition type, string signature)
+		static MethodDefinition GetMethod (TypeDefinition type, string signature)
 		{
 			if (type.HasMethods)
-				foreach (MethodDefinition meth in type.Methods)
-					if (signature == GetMethodSignature (meth, false))
-						return meth;
+				foreach (MethodDefinition method in type.Methods)
+					if (signature.Replace (" ", "") == GetMethodSignature (method) || signature.Replace (" ", "") == GetMethodSignature (method, true))
+						return method;
 
 			return null;
 		}
 
-		public static string GetMethodSignature (MethodDefinition meth, bool includeGenericParameters)
+		static string GetMethodSignature (MethodDefinition method, bool includeReturnType = false)
 		{
 			StringBuilder sb = new StringBuilder ();
-			sb.Append (meth.ReturnType.FullName);
-			sb.Append (" ");
-			sb.Append (meth.Name);
-			if (includeGenericParameters && meth.HasGenericParameters) {
-				sb.Append ("`");
-				sb.Append (meth.GenericParameters.Count);
+			if (includeReturnType) {
+				sb.Append (method.ReturnType.FullName);
 			}
-
-			sb.Append ("(");
-			if (meth.HasParameters) {
-				for (int i = 0; i < meth.Parameters.Count; i++) {
+			sb.Append (method.Name);
+			if (method.HasGenericParameters) {
+				sb.Append ("<");
+				for (int i = 0; i < method.GenericParameters.Count; i++) {
 					if (i > 0)
 						sb.Append (",");
 
-					sb.Append (meth.Parameters[i].ParameterType.FullName);
+					sb.Append (method.GenericParameters[i].Name);
+				}
+				sb.Append (">");
+			}
+			sb.Append ("(");
+			if (method.HasParameters) {
+				for (int i = 0; i < method.Parameters.Count; i++) {
+					if (i > 0)
+						sb.Append (",");
+
+					sb.Append (method.Parameters[i].ParameterType.FullName);
 				}
 			}
 			sb.Append (")");
 			return sb.ToString ();
 		}
 
-		void ProcessProperties (TypeDefinition type, XPathNodeIterator iterator)
-		{
-			while (iterator.MoveNext ())
-				ProcessProperty (type, iterator);
-		}
-
-		protected virtual void ProcessProperty (TypeDefinition type, XPathNodeIterator iterator)
-		{
-#if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
-				return;
-#endif
-
-			string value = GetSignature (iterator.Current);
-			if (!String.IsNullOrEmpty (value))
-				ProcessPropertySignature (type, value, GetAccessors (iterator.Current), iterator);
-
-			value = GetAttribute (iterator.Current, "name");
-			if (!String.IsNullOrEmpty (value))
-				ProcessPropertyName (type, value, _accessorsAll, iterator);
-		}
-
-		void ProcessPropertySignature (TypeDefinition type, string signature, string[] accessors, XPathNodeIterator iterator)
+		void ProcessPropertySignature (TypeDefinition type, string signature, XPathNodeIterator iterator)
 		{
 			PropertyDefinition property = GetProperty (type, signature);
 			if (property != null) {
-				ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", _ns));
-				DynamicallyAccessedMemberTypes propertyAnnotation = ParseKinds (attributes);
+				ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+				DynamicallyAccessedMemberTypes propertyAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (attributes, _context, _xmlDocumentLocation);
 				if (propertyAnnotation != DynamicallyAccessedMemberTypes.None)
 					_properties[property] = propertyAnnotation;
 			}
 		}
 
-		void ProcessPropertyName (TypeDefinition type, string name, string[] accessors, XPathNodeIterator iterator)
+		void ProcessPropertyName (TypeDefinition type, string name, XPathNodeIterator iterator)
 		{
 			if (!type.HasProperties)
 				return;
 
 			foreach (PropertyDefinition property in type.Properties) {
 				if (property.Name == name) {
-					ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", _ns));
-					DynamicallyAccessedMemberTypes propertyAnnotation = ParseKinds (attributes);
+					ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+					DynamicallyAccessedMemberTypes propertyAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (attributes, _context, _xmlDocumentLocation);
 					if (propertyAnnotation != DynamicallyAccessedMemberTypes.None)
 						_properties[property] = propertyAnnotation;
 				}
 			}
 		}
 
-		protected static PropertyDefinition GetProperty (TypeDefinition type, string signature)
+		static PropertyDefinition GetProperty (TypeDefinition type, string signature)
 		{
 			if (!type.HasProperties)
 				return null;
 
 			foreach (PropertyDefinition property in type.Properties)
-				if (signature == GetPropertySignature (property))
+				if (signature == property.PropertyType.FullName + " " + property.Name)
 					return property;
 
 			return null;
 		}
 
-		static string GetPropertySignature (PropertyDefinition property)
-		{
-			return property.PropertyType.FullName + " " + property.Name;
-		}
-
-		protected AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
+		AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
 		{
 			var assembly = context.Resolve (assemblyName);
-			ProcessReferences (assembly, context);
+			context.ResolveReferences (assembly);
 			return assembly;
 		}
 
-		protected virtual AssemblyNameReference GetAssemblyName (XPathNavigator nav)
+		AssemblyNameReference GetAssemblyName (XPathNavigator nav)
 		{
 			return AssemblyNameReference.Parse (GetFullName (nav));
 		}
 
-		static void ProcessReferences (AssemblyDefinition assembly, LinkContext context)
+		static string GetSignature (XPathNavigator nav)
 		{
-			context.ResolveReferences (assembly);
-		}
-
-		protected static string GetSignature (XPathNavigator nav)
-		{
-			return GetAttribute (nav, _signature);
+			return GetAttribute (nav, "signature");
 		}
 
 		static string GetFullName (XPathNavigator nav)
 		{
-			return GetAttribute (nav, _fullname);
+			return GetAttribute (nav, "fullname");
 		}
 
-		protected static string[] GetAccessors (XPathNavigator nav)
+		static string GetAttribute (XPathNavigator nav, string attribute)
 		{
-			string accessorsValue = GetAttribute (nav, _accessors);
-
-			if (accessorsValue != null) {
-				string[] accessors = accessorsValue.Split (
-					_accessorsSep, StringSplitOptions.RemoveEmptyEntries);
-
-				if (accessors.Length > 0) {
-					for (int i = 0; i < accessors.Length; ++i)
-						accessors[i] = accessors[i].ToLower ();
-
-					return accessors;
-				}
-			}
-			return _accessorsAll;
-		}
-
-		protected static string GetAttribute (XPathNavigator nav, string attribute)
-		{
-			return nav.GetAttribute (attribute, _ns);
+			return nav.GetAttribute (attribute, string.Empty);
 		}
 
 		private struct AnnotatedMethod
@@ -670,21 +569,27 @@ namespace Mono.Linker.Dataflow
 				properties = _properties;
 			}
 		}
-
-#if !FEATURE_ILLINK
-		protected virtual bool IsExcluded (XPathNavigator nav)
+		bool ShouldProcessSubstitutions (XPathNavigator nav)
 		{
-			var value = GetAttribute (nav, "feature");
-			if (string.IsNullOrEmpty (value))
+			var feature = GetAttribute (nav, "feature");
+			if (string.IsNullOrEmpty (feature))
+				return true;
+
+			var value = GetAttribute (nav, "featurevalue");
+			if (string.IsNullOrEmpty (value)) {
+				_context.LogMessage (MessageContainer.CreateErrorMessage ($"Feature {feature} does not specify a \"featurevalue\" attribute", 1001));
+				return false;
+			}
+
+			if (!bool.TryParse (value, out bool bValue)) {
+				_context.LogMessage (MessageContainer.CreateErrorMessage ($"Unsupported non-boolean feature definition {feature}", 1002));
+				return false;
+			}
+
+			if (_context.FeatureSettings == null || !_context.FeatureSettings.TryGetValue (feature, out bool featureSetting))
 				return false;
 
-			return _context.IsFeatureExcluded (value);
-		}
-#endif
-
-		public override string ToString ()
-		{
-			return "XmlFlowAnnotationSource: " + _document;
+			return bValue == featureSetting;
 		}
 	}
 }
