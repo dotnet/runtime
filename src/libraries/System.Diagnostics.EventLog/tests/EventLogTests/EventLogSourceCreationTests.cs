@@ -9,9 +9,8 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogSourceCreationTests
     {
-        [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135", TestPlatforms.Windows)]
         public void CheckSourceExistenceAndDeletion()
         {
             string source = "Source_" + nameof(EventLogSourceCreationTests);
@@ -30,7 +29,7 @@ namespace System.Diagnostics.Tests
             Assert.False(EventLog.SourceExists(source));
         }
 
-        [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void LogNameWithSame8FirstChars_NetCore()
@@ -57,7 +56,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public void LogNameWithSame8FirstChars_NetFramework()
@@ -146,7 +145,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentNullException>(() => EventLog.CreateEventSource(null));
         }
 
-        [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void SourceAlreadyExistsWhenCreatingSource()
         {
