@@ -107,12 +107,11 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
         GUID iid;
         pMT->GetGuid(&iid, /*bGenerateIfNotFound*/ FALSE, /*bClassic*/ FALSE);
 
-        SafeComHolder<IUnknown> pvObj;
-        hr = pUnk->QueryInterface(iid, &pvObj);
+        IUnknown* pvObj;
+        hr = SafeQueryInterface(pUnk, iid, &pvObj);
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
-        pvObj.SuppressRelease();
         RETURN pvObj;
     }
 
@@ -185,15 +184,20 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
     {
         hr = S_OK;
 
-        SafeComHolder<IUnknown> pvObj;
+        IUnknown* pvObj;
         if (ReqIpType & ComIpType_Dispatch)
         {
-            hr = pUnk->QueryInterface(IID_IDispatch, &pvObj);
+            hr = SafeQueryInterface(pUnk, IID_IDispatch, &pvObj);
+            pUnk->Release();
         }
         else if (ReqIpType & ComIpType_Inspectable)
         {
-            SafeComHolder<IInspectable> pvObj;
-            hr = pUnk->QueryInterface(IID_IInspectable, &pvObj);
+            hr = SafeQueryInterface(pUnk, IID_IInspectable, &pvObj);
+            pUnk->Release();
+        }
+        else
+        {
+            pvObj = pUnk;
         }
 
         if (FAILED(hr))
@@ -202,13 +206,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         if (pFetchedIpType != NULL)
             *pFetchedIpType = ReqIpType;
 
-        if (pvObj != NULL)
-        {
-            pUnk->Release();
-            pUnk = pvObj.Extract();
-        }
-
-        RETURN pUnk;
+        RETURN pvObj;
     }
 
     MethodTable *pMT = (*poref)->GetMethodTable();
@@ -478,14 +476,13 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
-        SafeComHolder<IUnknown> pvObj;
-        hr = pUnk->QueryInterface(iid, &pvObj);
+        IUnknown* pvObj;
+        hr = SafeQueryInterface(pUnk, iid, &pvObj);
         pUnk->Release();
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
-        pUnk = pvObj.Extract();
-        RETURN pUnk;
+        RETURN pvObj;
     }
 
     MethodTable *pMT = (*poref)->GetMethodTable();
