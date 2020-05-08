@@ -5,6 +5,8 @@ using System;
 
 namespace TestRunningMono
 {
+   class Program
+   {
         public static int Main(string[] args)
         {
             const int Pass = 100, Fail = 1;
@@ -16,8 +18,9 @@ namespace TestRunningMono
 	    }
             else
             {
-		returun Fail;
+		return Fail;
             }
-         }
+        }
+   }
 }
 
