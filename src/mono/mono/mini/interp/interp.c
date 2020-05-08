@@ -2941,7 +2941,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		}
 	} else {
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
-		mono_error_assertf_ok (error, "couldn't compile wrapper \"%s\" for \"%s\"",
+		g_assertion_message ("couldn't compile wrapper \"%s\" for \"%s\"",
 				mono_method_get_name_full (wrapper, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL),
 				mono_method_get_name_full (method,  TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
 #else
