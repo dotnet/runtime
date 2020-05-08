@@ -7,6 +7,7 @@
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
     <MonoRuntimeDir>$(ArtifactsDir)bin\mono\iOS.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+    <AppleAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder'))</AppleAppBuilder>
   </PropertyGroup>
 
   <Target Name="RebuildAppleAppBuilder">
