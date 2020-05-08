@@ -156,7 +156,7 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync.ConfigureAwait(continueOnCapturedContext: true)))
+                            using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync().ConfigureAwait(continueOnCapturedContext: true)))
                             {
                                 requestObject.SetObjectProperty("body", uint8Buffer);
                             }
