@@ -1613,7 +1613,8 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
 
     if (roDataSize > 0)
     {
-        size_t roDataAlignment = sizeof(void*);
+        size_t roDataAlignment   = sizeof(void*);
+        size_t roDataAlignedSize = static_cast<size_t>(roDataSize);
 
         if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
         {
@@ -1633,9 +1634,9 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
         // we can offset roDataBlock to be an aligned address and that the
         // allocation contains at least the originally requested size after
 
-        roDataSize   = ALIGN_UP_SPMI(static_cast<size_t>(roDataSize), roDataAlignment);
-        roDataSize   = roDataSize + (roDataAlignment - sizeof(void*));
-        *roDataBlock = jitInstance->mc->cr->allocateMemory(roDataSize);
+        roDataAlignedSize = ALIGN_UP_SPMI(roDataAlignedSize, roDataAlignment);
+        roDataAlignedSize = roDataAlignedSize + (roDataAlignment - sizeof(void*));
+        *roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
         *roDataBlock = ALIGN_UP_SPMI(*roDataBlock, roDataAlignment);
     }
     else
