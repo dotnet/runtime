@@ -25,9 +25,9 @@ internal static partial class Interop
         {
             protected CoreObject(int jsHandle) : base(jsHandle)
             {
-                var result = Runtime.BindCoreObject(jsHandle, (int)(IntPtr)Handle, out int exception);
+                object result = Runtime.BindCoreObject(jsHandle, (int)(IntPtr)Handle, out int exception);
                 if (exception != 0)
-                    throw new JSException($"CoreObject Error binding: {result.ToString()}");
+                    throw new JSException($"CoreObject Error binding: {result}");
 
             }
 

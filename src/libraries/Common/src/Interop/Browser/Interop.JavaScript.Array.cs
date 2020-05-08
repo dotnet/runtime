@@ -84,7 +84,7 @@ internal static partial class Interop
             {
                 get
                 {
-                    var indexValue = Runtime.GetByIndex(JSHandle, i, out int exception);
+                    object indexValue = Runtime.GetByIndex(JSHandle, i, out int exception);
 
                     if (exception != 0)
                         throw new JSException((string)indexValue);
@@ -92,7 +92,7 @@ internal static partial class Interop
                 }
                 set
                 {
-                    var res = Runtime.SetByIndex(JSHandle, i, value, out int exception);
+                    object res = Runtime.SetByIndex(JSHandle, i, value, out int exception);
 
                     if (exception != 0)
                         throw new JSException((string)res);

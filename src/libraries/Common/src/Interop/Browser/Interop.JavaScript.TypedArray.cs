@@ -105,7 +105,7 @@ internal static partial class Interop
             {
                 get
                 {
-                    var jsValue = Runtime.GetByIndex(JSHandle, i, out int exception);
+                    object jsValue = Runtime.GetByIndex(JSHandle, i, out int exception);
 
                     if (exception != 0)
                         throw new JSException((string)jsValue);
@@ -128,13 +128,13 @@ internal static partial class Interop
                 if (jsValue == null)
                     return null;
 
-                var type = jsValue.GetType();
+                Type type = jsValue.GetType();
                 return (U)Convert.ChangeType(jsValue, typeof(U));
             }
 
             public U[] ToArray()
             {
-                var res = Runtime.TypedArrayToArray(JSHandle, out int exception);
+                object res = Runtime.TypedArrayToArray(JSHandle, out int exception);
 
                 if (exception != 0)
                     throw new JSException((string)res);
@@ -154,10 +154,10 @@ internal static partial class Interop
                 if (type == TypedArrayTypeCode.Uint8Array && typeof(T) == typeof(Uint8ClampedArray))
                     type = TypedArrayTypeCode.Uint8ClampedArray;  // This is only passed to the JavaScript side so it knows it will be a Uint8ClampedArray
 
-                var bytes = MemoryMarshal.AsBytes(span);
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);
                 fixed (byte* ptr = bytes)
                 {
-                    var res = Runtime.TypedArrayFrom((int)ptr, 0, span.Length, Marshal.SizeOf<U>(), (int)type, out int exception);
+                    object res = Runtime.TypedArrayFrom((int)ptr, 0, span.Length, Marshal.SizeOf<U>(), (int)type, out int exception);
                     if (exception != 0)
                         throw new JSException((string)res);
                     return (T)res;
@@ -167,10 +167,10 @@ internal static partial class Interop
 
             public unsafe int CopyTo(Span<U> span)
             {
-                var bytes = MemoryMarshal.AsBytes(span);
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);
                 fixed (byte* ptr = bytes)
                 {
-                    var res = Runtime.TypedArrayCopyTo(JSHandle, (int)ptr, 0, span.Length, Marshal.SizeOf<U>(), out int exception);
+                    object res = Runtime.TypedArrayCopyTo(JSHandle, (int)ptr, 0, span.Length, Marshal.SizeOf<U>(), out int exception);
                     if (exception != 0)
                         throw new JSException((string)res);
                     return (int)res / Marshal.SizeOf<U>();
@@ -185,10 +185,10 @@ internal static partial class Interop
                     throw new System.ArgumentException($"Invalid argument: {nameof(span)} can not be null and must have a length");
                 }
 
-                var bytes = MemoryMarshal.AsBytes(span);
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);
                 fixed (byte* ptr = bytes)
                 {
-                    var res = Runtime.TypedArrayCopyFrom(JSHandle, (int)ptr, 0, span.Length, Marshal.SizeOf<U>(), out int exception);
+                    object res = Runtime.TypedArrayCopyFrom(JSHandle, (int)ptr, 0, span.Length, Marshal.SizeOf<U>(), out int exception);
                     if (exception != 0)
                         throw new JSException((string)res);
                     return (int)res / Marshal.SizeOf<U>();

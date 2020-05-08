@@ -30,11 +30,11 @@ internal static partial class Interop
 
         public abstract class HostObjectBase : JSObject, IHostObject
         {
-            protected HostObjectBase(int js_handle) : base(js_handle)
+            protected HostObjectBase(int jHandle) : base(jHandle)
             {
-                var result = Runtime.BindHostObject(js_handle, (int)(IntPtr)Handle, out int exception);
+                object result = Runtime.BindHostObject(jHandle, (int)(IntPtr)Handle, out int exception);
                 if (exception != 0)
-                    throw new JSException($"HostObject Error binding: {result.ToString()}");
+                    throw new JSException($"HostObject Error binding: {result}");
             }
 
             internal HostObjectBase(IntPtr js_handle) : base(js_handle)

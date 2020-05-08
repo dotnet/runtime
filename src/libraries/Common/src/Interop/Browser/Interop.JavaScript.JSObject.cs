@@ -26,9 +26,9 @@ internal static partial class Interop
 
             public JSObject() : this(Runtime.New<object>())
             {
-                var result = Runtime.BindCoreObject(JSHandle, (int)(IntPtr)Handle, out int exception);
+                object result = Runtime.BindCoreObject(JSHandle, (int)(IntPtr)Handle, out int exception);
                 if (exception != 0)
-                    throw new JSException($"JSObject Error binding: {result.ToString()}");
+                    throw new JSException($"JSObject Error binding: {result}");
 
             }
 
@@ -45,7 +45,7 @@ internal static partial class Interop
 
             public object Invoke(string method, params object?[] args)
             {
-                var res = Runtime.InvokeJSWithArgs(JSHandle, method, args, out int exception);
+                object res = Runtime.InvokeJSWithArgs(JSHandle, method, args, out int exception);
                 if (exception != 0)
                     throw new JSException((string)res);
                 return res;
@@ -54,7 +54,7 @@ internal static partial class Interop
             public object GetObjectProperty(string name)
             {
 
-                var propertyValue = Runtime.GetObjectProperty(JSHandle, name, out int exception);
+                object propertyValue = Runtime.GetObjectProperty(JSHandle, name, out int exception);
 
                 if (exception != 0)
                     throw new JSException((string)propertyValue);
@@ -66,7 +66,7 @@ internal static partial class Interop
             public void SetObjectProperty(string name, object value, bool createIfNotExists = true, bool hasOwnProperty = false)
             {
 
-                var setPropResult = Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
+                object setPropResult = Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
                 if (exception != 0)
                     throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' mono '{(IntPtr)Handle} raw '{RawObject != null})");
 

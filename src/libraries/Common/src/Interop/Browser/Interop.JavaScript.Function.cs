@@ -22,7 +22,7 @@ internal static partial class Interop
             public Function(params object[] args) : base(Runtime.New<Function>(args))
             { }
 
-            internal Function(IntPtr js_handle) : base(js_handle)
+            internal Function(IntPtr jHandle) : base(jHandle)
             { }
 
             /// <summary>

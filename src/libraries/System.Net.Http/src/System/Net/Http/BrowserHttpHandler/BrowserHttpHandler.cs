@@ -156,11 +156,7 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            // 2.1.801 seems to have a problem with the line
-                            // using (var uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync ()))
-                            // so we split it up into two lines.
-                            var byteAsync = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(continueOnCapturedContext: true);
-                            using (Uint8Array uint8Buffer = Uint8Array.From(byteAsync))
+                            using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync.ConfigureAwait(continueOnCapturedContext: true)))
                             {
                                 requestObject.SetObjectProperty("body", uint8Buffer);
                             }

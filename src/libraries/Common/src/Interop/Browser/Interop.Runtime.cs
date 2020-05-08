@@ -61,7 +61,7 @@ internal static partial class Interop
         // / <param name="str">String.</param>
         public static string InvokeJS(string str)
         {
-            var res = InvokeJS(str, out int exception);
+            string res = InvokeJS(str, out int exception);
             if (exception != 0)
                 throw new JSException(res);
             return res;
@@ -69,7 +69,7 @@ internal static partial class Interop
 
         public static Interop.JavaScript.Function? CompileFunction(string snippet)
         {
-            var res = CompileFunction(snippet, out int exception);
+            object res = CompileFunction(snippet, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             return res as Interop.JavaScript.Function;
@@ -77,7 +77,7 @@ internal static partial class Interop
 
         public static int New<T>(params object[] parms)
         {
-            var res = New(typeof(T).Name, parms, out int exception);
+            object res = New(typeof(T).Name, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             return (int)res;
@@ -85,7 +85,7 @@ internal static partial class Interop
 
         public static int New(string hostClassName, params object[] parms)
         {
-            var res = New(hostClassName, parms, out int exception);
+            object res = New(hostClassName, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             return (int)res;
@@ -93,7 +93,7 @@ internal static partial class Interop
 
         public static JSObject? NewJSObject(JSObject? jsFuncPtr = null, params object[] parms)
         {
-            var res = NewObjectJS(jsFuncPtr?.JSHandle ?? 0, parms, out int exception);
+            object res = NewObjectJS(jsFuncPtr?.JSHandle ?? 0, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             return res as JSObject;
@@ -127,7 +127,7 @@ internal static partial class Interop
         public static object GetGlobalObject(string? str = null)
         {
             int exception;
-            var globalHandle = Runtime.GetGlobalObject(str, out exception);
+            object globalHandle = Runtime.GetGlobalObject(str, out exception);
 
             if (exception != 0)
                 throw new JSException($"Error obtaining a handle to global {str}");

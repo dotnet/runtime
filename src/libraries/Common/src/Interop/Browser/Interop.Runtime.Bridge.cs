@@ -40,7 +40,7 @@ internal static partial class Interop
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj;
 
-            if (_boundObjects.TryGetValue(jsId, out var existingObj))
+            if (_boundObjects.TryGetValue(jsId, out JSObject? existingObj))
             {
                 if (existingObj?.Handle != h && h.IsAllocated)
                     throw new JSException($"Multiple handles pointing at js_id: {jsId}");
@@ -59,7 +59,7 @@ internal static partial class Interop
         {
             if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
             {
-                var jsobjectnew = mappedType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding,
+                ConstructorInfo? jsobjectnew = mappedType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding,
                         null, new Type[] { typeof(IntPtr) }, null);
                 _boundObjects[jsId] = obj = jsobjectnew == null ? null : (JSObject)jsobjectnew.Invoke(new object[] { (IntPtr)jsId });
             }
@@ -68,7 +68,7 @@ internal static partial class Interop
 
         internal static int UnBindJSObject(int jsId)
         {
-            if (_boundObjects.TryGetValue(jsId, out var obj))
+            if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
             {
                 _boundObjects.Remove(jsId);
                 return obj == null ? 0 : (int)(IntPtr)obj.Handle;
@@ -79,7 +79,7 @@ internal static partial class Interop
 
         internal static void UnBindJSObjectAndFree(int jsId)
         {
-            if (_boundObjects.TryGetValue(jsId, out var obj))
+            if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
             {
                 if (_boundObjects[jsId] != null)
                 {
@@ -212,20 +212,20 @@ internal static partial class Interop
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
 
-            var mb = MethodBase.GetMethodFromHandle(tmp.handle);
+            MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
             if (mb == null)
                 return string.Empty;
 
             ParameterInfo[] parms = mb.GetParameters();
-            var parmsLength = parms.Length;
+            int parmsLength = parms.Length;
             if (parmsLength == 0)
                 return string.Empty;
 
-            var res = new char[parmsLength];
+            char[] res = new char[parmsLength];
 
             for (int c = 0; c < parmsLength; c++)
             {
-                var t = parms[c].ParameterType;
+                Type t = parms[c].ParameterType;
                 switch (Type.GetTypeCode(t))
                 {
                     case TypeCode.Byte:
@@ -341,7 +341,7 @@ internal static partial class Interop
 
         internal static DateTime CreateDateTime(double ticks)
         {
-            var unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
+            DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
             return unixTime.DateTime;
         }
 
@@ -361,13 +361,13 @@ internal static partial class Interop
         // Called by the AOT profiler to save profile data into Module.aot_profile_data
         internal static unsafe void DumpAotProfileData(ref byte buf, int len, string s)
         {
-            var arr = new byte[len];
+            byte[] arr = new byte[len];
             fixed (void* p = &buf)
             {
-                var span = new ReadOnlySpan<byte>(p, len);
+                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(p, len);
 
                 // Send it to JS
-                var jsDump = (JSObject)Runtime.GetGlobalObject("Module");
+                JSObject jsDump = (JSObject)Runtime.GetGlobalObject("Module");
                 //jsDump.SetObjectProperty("aot_profile_data", WebAssembly.Core.Uint8Array.From(span));
             }
         }
@@ -376,7 +376,7 @@ internal static partial class Interop
         internal static void DumpCoverageProfileData(string data, string s)
         {
             // Send it to JS
-            var jsDump = (JSObject)Runtime.GetGlobalObject("Module");
+            JSObject jsDump = (JSObject)Runtime.GetGlobalObject("Module");
             jsDump.SetObjectProperty("coverage_profile_data", data);
         }
     }
