@@ -89,7 +89,7 @@ namespace Mono.Linker.Dataflow
 						try {
 							return (DynamicallyAccessedMemberTypes) Enum.Parse (typeof (DynamicallyAccessedMemberTypes), argument);
 						} catch (ArgumentException) {
-							_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not parse argument {argument} specified in {_xmlDocumentLocation} as a DynamicallyAccessedMemberTypes", 2020));
+							_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not parse argument '{argument}' specified in '{_xmlDocumentLocation}' as a DynamicallyAccessedMemberTypes", 2020));
 						}
 					}
 				}
@@ -371,7 +371,7 @@ namespace Mono.Linker.Dataflow
 		{
 			MethodDefinition method = GetMethod (type, signature);
 			if (method == null) {
-				_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find method '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2017));
+				_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find method '{signature}' in type '{type.FullName}' specified in '{_xmlDocumentLocation}'", 2009));
 				return;
 			}
 			ProcessMethodChildren (type, method, iterator);
