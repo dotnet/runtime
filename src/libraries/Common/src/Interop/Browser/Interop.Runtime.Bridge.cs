@@ -48,7 +48,9 @@ internal static partial class Interop
                 obj = existingObj;
             }
             else
+            {
                 obj = h.Target as JSObject;
+            }
 
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
