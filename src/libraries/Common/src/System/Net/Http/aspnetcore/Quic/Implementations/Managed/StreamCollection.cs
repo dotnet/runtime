@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     All streams which require updating flow control bounds.
         /// </summary>
-        private readonly LinkedList<ManagedQuicStream> _flowControlUpdateQueue = new LinkedList<ManagedQuicStream>();
+        private readonly LinkedList<ManagedQuicStream> _updateQueue = new LinkedList<ManagedQuicStream>();
 
         /// <summary>
         ///     Channel of streams that were opened by the peer but not yet accepted by this endpoint.
@@ -63,17 +63,17 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal ManagedQuicStream? GetFirstStreamForFlowControlUpdate()
+        internal ManagedQuicStream? GetFirstStreamForUpdate()
         {
-            lock (_flowControlUpdateQueue)
+            lock (_updateQueue)
             {
-                var first = _flowControlUpdateQueue.First;
+                var first = _updateQueue.First;
                 if (first == null)
                 {
                     return null;
                 }
 
-                _flowControlUpdateQueue.RemoveFirst();
+                _updateQueue.RemoveFirst();
                 return first.Value;
             }
         }
@@ -153,11 +153,11 @@ namespace System.Net.Quic.Implementations.Managed
             AddToListSynchronized(_flushable, stream._flushableListNode);
         }
 
-        internal void MarkForFlowControlUpdate(ManagedQuicStream stream)
+        internal void MarkForUpdate(ManagedQuicStream stream)
         {
             Debug.Assert(stream.CanRead);
 
-            AddToListSynchronized(_flowControlUpdateQueue, stream._flowControlUpdateQueueListNode);
+            AddToListSynchronized(_updateQueue, stream._updateQueueListNode);
         }
 
         private static void AddToListSynchronized(LinkedList<ManagedQuicStream> list, LinkedListNode<ManagedQuicStream> node)

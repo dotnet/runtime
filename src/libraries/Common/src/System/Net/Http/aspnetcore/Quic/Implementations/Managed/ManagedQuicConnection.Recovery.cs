@@ -43,6 +43,11 @@ namespace System.Net.Quic.Implementations.Managed
                 stream.InboundBuffer.UpdateRemoteMaxData(frame.MaximumStreamData);
             }
 
+            foreach (long streamId in packet.StreamsReset)
+            {
+                GetStream(streamId).OutboundBuffer!.OnResetAcked();
+            }
+
             if (packet.MaxDataFrame != null)
             {
                 MaxDataFrameSent = false;
@@ -99,8 +104,18 @@ namespace System.Net.Quic.Implementations.Managed
                 // TODO-RZ: send these frames less often
                 if (frame.MaximumStreamData > stream.InboundBuffer!.RemoteMaxData)
                 {
-                    _streams.MarkForFlowControlUpdate(stream);
+                    _streams.MarkForUpdate(stream);
                 }
+            }
+
+            foreach (long streamId in packet.StreamsReset)
+            {
+                GetStream(streamId).OutboundBuffer!.OnResetLost();
+            }
+
+            foreach (long streamId in packet.StreamsStopped)
+            {
+                GetStream(streamId).InboundBuffer!.OnStopSendingLost();
             }
 
             if (packet.MaxDataFrame != null)

@@ -102,18 +102,20 @@ namespace System.Net.Quic.Implementations.Managed
         private bool TryGetOrCreateStream(long streamId, out ManagedQuicStream? stream)
         {
             // check whether the stream can be opened based on local limits
-            if (!StreamHelpers.IsLocallyInitiated(_isServer, streamId))
-            {
-                long index = StreamHelpers.GetStreamIndex(streamId);
-                long limit = StreamHelpers.IsBidirectional(streamId)
-                    ? _localLimits.MaxStreamsBidi
-                    : _localLimits.MaxStreamsUni;
 
-                if (index > limit)
-                {
-                    stream = null;
-                    return false;
-                }
+            long index = StreamHelpers.GetStreamIndex(streamId);
+            var param = StreamHelpers.IsLocallyInitiated(_isServer, streamId)
+                ? _peerLimits
+                : _localLimits;
+
+            long limit = StreamHelpers.IsBidirectional(streamId)
+                ? param.MaxStreamsBidi
+                : param.MaxStreamsUni;
+
+            if (index > limit)
+            {
+                stream = null;
+                return false;
             }
 
             stream = _streams.GetOrCreateStream(streamId, _localTransportParameters, _peerTransportParameters, _isServer, this);
@@ -135,7 +137,13 @@ namespace System.Net.Quic.Implementations.Managed
         internal void OnStreamDataRead(ManagedQuicStream stream, int bytesRead)
         {
             _localLimits.AddMaxData(bytesRead);
-            _streams.MarkForFlowControlUpdate(stream);
+            OnStreamStateUpdated(stream);
+        }
+
+        internal void OnStreamStateUpdated(ManagedQuicStream stream)
+        {
+            _streams.MarkForUpdate(stream);
+            _socketContext.Ping();
         }
     }
 }

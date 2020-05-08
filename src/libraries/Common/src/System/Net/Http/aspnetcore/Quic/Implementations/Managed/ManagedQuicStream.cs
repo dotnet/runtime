@@ -20,9 +20,10 @@ namespace System.Net.Quic.Implementations.Managed
         internal readonly LinkedListNode<ManagedQuicStream> _flushableListNode;
 
         /// <summary>
-        ///     Node to the linked list of all streams needing flow control update. Should be accessed only by the <see cref="StreamCollection"/> class.
+        ///     Node to the linked list of all streams needing some kind of update other than sending data. This
+        ///     includes Flow Control limits update and aborts.
         /// </summary>
-        internal readonly LinkedListNode<ManagedQuicStream> _flowControlUpdateQueueListNode;
+        internal readonly LinkedListNode<ManagedQuicStream> _updateQueueListNode;
 
         /// <summary>
         ///     Value task source for signalling that <see cref="ShutdownWriteCompleted"/> has finished.
@@ -61,7 +62,7 @@ namespace System.Net.Quic.Implementations.Managed
             _connection = connection;
 
             _flushableListNode = new LinkedListNode<ManagedQuicStream>(this);
-            _flowControlUpdateQueueListNode = new LinkedListNode<ManagedQuicStream>(this);
+            _updateQueueListNode = new LinkedListNode<ManagedQuicStream>(this);
         }
 
         private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, bool endStream,
@@ -91,9 +92,11 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override int Read(Span<byte> buffer)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotReadable();
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             int result = InboundBuffer!.Deliver(buffer);
             if (result > 0)
@@ -109,6 +112,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotReadable();
 
             int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -121,19 +125,49 @@ namespace System.Net.Quic.Implementations.Managed
             return result;
         }
 
-        internal override void AbortRead(long errorCode) => throw new NotImplementedException();
+        internal override void AbortRead(long errorCode)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotReadable();
 
-        internal override void AbortWrite(long errorCode) => throw new NotImplementedException();
+            if (InboundBuffer!.Error != null) return;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            InboundBuffer.RequestAbort(errorCode);
+            _connection.OnStreamStateUpdated(this);
+
+            // TODO-RZ: abort current reads
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
+        internal override void AbortWrite(long errorCode)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
+
+            if (OutboundBuffer!.Error != null) return;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            OutboundBuffer.Abort(errorCode);
+            _shutdownCompleted.TryCompleteException(new QuicStreamAbortedException("Stream was aborted", errorCode));
+            // TODO-RZ: abort current writes
+            // TODO-RZ: send RESET_STREAM
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
 
         internal override bool CanWrite => OutboundBuffer != null;
         internal override void Write(ReadOnlySpan<byte> buffer) => Write(buffer, false);
 
         internal void Write(ReadOnlySpan<byte> buffer, bool endStream)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotWritable();
 
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             OutboundBuffer!.Enqueue(buffer);
 
             if (endStream)
@@ -154,6 +188,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotWritable();
 
             // TODO-RZ: optimize away some of the copying
@@ -163,6 +198,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotWritable();
 
             foreach (ReadOnlyMemory<byte> buffer in buffers)
@@ -174,6 +210,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotWritable();
 
             foreach (ReadOnlyMemory<byte> buffer in buffers)
@@ -192,6 +229,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotWritable();
 
             for (int i = 0; i < buffers.Span.Length; i++)
@@ -203,16 +241,20 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotWritable();
 
-            if (CanWrite)
-            {
-                OutboundBuffer!.MarkEndOfData();
-                await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
-                _connection.OnStreamDataWritten(this);
-            }
+            // TODO-RZ: should we do flush?
+            OutboundBuffer!.MarkEndOfData();
+            await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
+            _connection.OnStreamDataWritten(this);
 
-            // TODO-RZ: cancellation
+            await using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            {
+                _shutdownCompleted.TryCompleteException(
+                    new OperationCanceledException("Shutdown was cancelled", cancellationToken));
+            });
+
             await _shutdownCompleted.GetTask();
         }
 
@@ -223,20 +265,22 @@ namespace System.Net.Quic.Implementations.Managed
             NotifyShutdownWriteCompleted();
 
             // TODO-RZ: handle callers blocking on other async tasks
+            // TODO-RZ: make sure an error is always passed
             if (inboundError != null)
             {
                 InboundBuffer?.OnConnectionError(inboundError);
-                _shutdownCompleted.TryCompleteException(new QuicErrorException(inboundError));
             }
         }
 
         internal override void Shutdown()
         {
             ThrowIfDisposed();
-            // ThrowIfNotWritable();
+            ThrowIfError();
+            ThrowIfNotWritable();
+
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // TODO-RZ: is this really intened use for this method?
+            // TODO-RZ: is this really intended use for this method?
             if (CanWrite)
             {
                 OutboundBuffer!.MarkEndOfData();
@@ -249,20 +293,24 @@ namespace System.Net.Quic.Implementations.Managed
         internal override void Flush()
         {
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotWritable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             OutboundBuffer!.FlushChunk();
+            _connection.OnStreamDataWritten(this);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override async Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
+            ThrowIfError();
             ThrowIfNotWritable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
+            _connection.OnStreamDataWritten(this);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
@@ -292,6 +340,12 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 throw new InvalidOperationException("Writing is not allowed on this stream.");
             }
+
+            // OutboundBuffer not null is implied by CanWrite
+            if (OutboundBuffer!.Error != null)
+            {
+                throw new QuicStreamAbortedException("Writing was aborted on the stream",  OutboundBuffer.Error.Value);
+            }
         }
 
         private void ThrowIfNotReadable()
@@ -300,6 +354,18 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 throw new InvalidOperationException("Reading is not allowed on this stream.");
             }
+
+            // InboundBuffer not null is implied by CanRead
+            if (InboundBuffer!.Error != null)
+            {
+                throw new QuicStreamAbortedException("Reading was aborted on the stream",  InboundBuffer.Error.Value);
+            }
+        }
+
+        private void ThrowIfError()
+        {
+            _connection.ThrowIfError();
+            // TODO-RZ: check stream-local errors
         }
     }
 }

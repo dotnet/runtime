@@ -29,6 +29,8 @@ namespace System.Net.Quic.Implementations.Managed
         internal const string StreamMaxDataViolated = "Streams max data limit violated";
         internal const string MaxDataViolated = "Connection max data limit violated";
         internal const string StreamNotWritable = "Stream is not writable";
+        internal const string StreamNotReadable = "Stream is not readable";
+        internal const string StreamNotCreated = "Stream was not created";
         internal const string InconsistentFinalSize = "Inconsistent stream final size";
         internal const string WritingPastFinalSize = "Writing data past stream final size";
         internal const string UnableToDeserialize = "Unable to deserialize";

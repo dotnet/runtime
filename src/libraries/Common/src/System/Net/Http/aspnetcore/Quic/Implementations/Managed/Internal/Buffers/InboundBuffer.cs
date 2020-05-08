@@ -18,6 +18,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         private StreamChunk _deliveryLeftoverChunk;
 
         /// <summary>
+        ///     Current state of the stream.
+        /// </summary>
+        internal RecvStreamState StreamState { get; private set; }
+
+        /// <summary>
         ///     Channel for producing chunks for the user to read.
         /// </summary>
         private readonly Channel<StreamChunk> _deliverableChannel =
@@ -98,6 +103,48 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Number of bytes ready to be read from the stream.
         /// </summary>
         internal long BytesAvailable => _bytesDeliverable - BytesRead;
+
+        /// <summary>
+        ///     Error code if the inbound buffer was aborted.
+        /// </summary>
+        public long? Error { get; private set; }
+
+        /// <summary>
+        ///     Request that the stream be aborted by the sender with specified error code.
+        /// </summary>
+        /// <param name="errorCode">Application provided error code.</param>
+        internal void RequestAbort(long errorCode)
+        {
+            // TODO-RZ: what to do in terminal states?
+            Debug.Assert(Error == null);
+            Error = errorCode;
+            StreamState = RecvStreamState.WantStopSending;
+        }
+
+        internal void Reset(long errorCode, long finalSize)
+        {
+            // RFC allows use to ignore error code if we sent STOP_SENDING
+            if (Error == null)
+            {
+                Error = errorCode;
+            }
+
+            StreamState = RecvStreamState.ResetReceived;
+            // TODO-RZ: drop all buffered data
+            // TODO-RZ: stop all async operations
+        }
+
+        internal void OnStopSendingSent()
+        {
+            Debug.Assert(StreamState == RecvStreamState.WantStopSending);
+            StreamState = RecvStreamState.StopSendingSent;
+        }
+
+        public void OnStopSendingLost()
+        {
+            Debug.Assert(StreamState == RecvStreamState.StopSendingSent);
+            StreamState = RecvStreamState.WantStopSending;
+        }
 
         /// <summary>
         ///     Receives a chunk of data and buffers it for delivery.

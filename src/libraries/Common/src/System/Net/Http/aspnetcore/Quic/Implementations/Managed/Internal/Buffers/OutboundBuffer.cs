@@ -18,6 +18,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         private const int MaximumHeldChunks = 20;
 
         /// <summary>
+        ///     Current state of the stream.
+        /// </summary>
+        internal SendStreamState StreamState { get; private set; }
+
+        /// <summary>
         ///     Ranges of bytes acked by the peer.
         /// </summary>
         private readonly RangeSet _acked = new RangeSet();
@@ -62,6 +67,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// </summary>
         private long _dequedBytes;
 
+        /// <summary>
+        ///     Error code if the stream was aborted.
+        /// </summary>
+        internal long? Error { get; private set; }
+
         public OutboundBuffer(long maxData)
         {
             UpdateMaxData(maxData);
@@ -91,7 +101,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal long MaxData { get; private set; }
 
         /// <summary>
-        ///     Number of bytes from the beginning of the stream which were sent (and not necessarily delivered).
+        ///     Number of bytes from the beginning of the stream which were sent (and not necessarily acknowledged).
         /// </summary>
         internal long SentBytes { get; private set; }
 
@@ -121,6 +131,38 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     True if there is data that has not been confirmed received.
         /// </summary>
         internal bool HasUnackedData => _pending.Count + _checkedOut.Count != 0;
+
+        /// <summary>
+        ///     Aborts the outbound stream with given error code.
+        /// </summary>
+        /// <param name="errorCode"></param>
+        internal void Abort(long errorCode)
+        {
+            // TODO-RZ: what to do in terminal state?
+            Debug.Assert(Error == null);
+            Error = errorCode;
+            StreamState = SendStreamState.WantReset;
+
+            // TODO-RZ: Can we drop all buffered data?
+        }
+
+        internal void OnResetSent()
+        {
+            Debug.Assert(StreamState == SendStreamState.WantReset);
+            StreamState = SendStreamState.ResetSent;
+        }
+
+        internal void OnResetAcked()
+        {
+            Debug.Assert(StreamState == SendStreamState.ResetSent);
+            StreamState = SendStreamState.ResetReceived;
+        }
+
+        internal void OnResetLost()
+        {
+            Debug.Assert(StreamState == SendStreamState.ResetSent);
+            StreamState = SendStreamState.WantReset;
+        }
 
         /// <summary>
         ///     Queues the not yet full chunk of stream into flush queue, blocking when control flow limit is not

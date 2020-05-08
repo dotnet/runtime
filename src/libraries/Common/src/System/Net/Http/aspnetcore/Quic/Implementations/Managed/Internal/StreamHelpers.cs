@@ -35,13 +35,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return (streamId & StreamTypeServerInitiationMask) != 0;
         }
 
-        internal static bool IsReadable(bool isServer, long streamId)
+        internal static bool CanRead(bool isServer, long streamId)
         {
             return (isServer, GetStreamType(streamId)) switch
             {
-                (true, var type) => type != StreamType.ClientInitiatedUnidirectional,
-                (false, var type) => type != StreamType.ServerInitiatedUnidirectional,
+                (true, var type) => type != StreamType.ServerInitiatedUnidirectional,
+                (false, var type) => type != StreamType.ClientInitiatedUnidirectional,
             };
+        }
+
+        internal static bool CanWrite(bool isServer, long streamId)
+        {
+            // what is readable for client, is writable for server and vice versa
+            return CanRead(!isServer, streamId);
         }
 
         internal static bool IsLocallyInitiated(bool isServer, long streamId)

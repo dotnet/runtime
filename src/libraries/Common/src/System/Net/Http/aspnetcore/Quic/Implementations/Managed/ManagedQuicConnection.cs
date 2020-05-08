@@ -619,11 +619,12 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void ThrowIfError()
+        internal void ThrowIfError()
         {
-            if (_inboundError != null)
+            var error = _inboundError ?? _outboundError;
+            if (error != null)
             {
-                throw new QuicErrorException(_inboundError!);
+                throw new QuicErrorException(error);
             }
         }
 
@@ -650,9 +651,11 @@ namespace System.Net.Quic.Implementations.Managed
         ///     Starts closing period.
         /// </summary>
         /// <param name="now">Timestamp of the current moment.</param>
-        private void StartClosing(long now)
+        /// <param name="error">Error which led to connection closing.</param>
+        private void StartClosing(long now, QuicError error)
         {
             Debug.Assert(_closingPeriodEnd == null);
+            Debug.Assert(error != null);
 
             // The closing and draining states SHOULD exists for at least three times the current PTO interval
             // Note: this is to properly discard reordered/delayed packets.
@@ -661,7 +664,7 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: data race with user who is trying to open a new stream?
             foreach (var stream in _streams.AllStreams)
             {
-                stream.OnConnectionClosed(_inboundError!);
+                stream.OnConnectionClosed(error);
             }
         }
 

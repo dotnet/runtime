@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Tests.Harness;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -265,6 +267,64 @@ namespace System.Net.Quic.Tests
             Send1Rtt(Client, Server)
                 .ShouldHaveConnectionClose(TransportErrorCode.StreamLimitError,
                     QuicError.StreamsLimitViolated, FrameType.MaxStreamData);
+        }
+
+        [Fact]
+        public async Task ShutdownWriteCompleted_Cancelled()
+        {
+            var stream = Client.OpenStream(true);
+            var cts = new CancellationTokenSource();
+            var testTask = Assert.ThrowsAsync<OperationCanceledException>(
+                () => stream.ShutdownWriteCompleted(cts.Token).AsTask());
+
+            // signal the cancellation
+            cts.Cancel();
+
+            await testTask;
+        }
+
+        [Fact]
+        public async Task ShutdownWriteCompleted_CompletedOnConnectionClose()
+        {
+            var stream = Client.OpenStream(true);
+            var shutdownWriteCompletedTask = stream.ShutdownWriteCompleted();
+
+            // receiving connection close implicitly closes all streams
+            Server.Ping();
+            Intercept1Rtt(Server, Client, packet =>
+            {
+                packet.Frames.Add(new ConnectionCloseFrame()
+                {
+                    ErrorCode = TransportErrorCode.InternalError,
+                    ReasonPhrase = "Test Error",
+                });
+            });
+
+            await shutdownWriteCompletedTask.AsTask().TimeoutAfter(500);
+        }
+
+        [Fact]
+        public async Task ShutdownWriteCompleted_ExceptionWhenWriteAborted()
+        {
+            var stream = Client.OpenStream(true);
+            var testTask =
+                Assert.ThrowsAsync<QuicStreamAbortedException>(async () => await stream.ShutdownWriteCompleted());
+
+            stream.AbortWrite(0);
+
+            await testTask;
+        }
+
+        [Fact]
+        public void AbortRead_ShouldElicitStopSendingFrame()
+        {
+            var stream = Client.OpenStream(false);
+            long errorCode = 15;
+            stream.AbortRead(errorCode);
+
+            var frame = Send1RttWithFrame<StopSendingFrame>(Client, Server);
+            Assert.Equal(stream.StreamId, frame.StreamId);
+            Assert.Equal(errorCode, frame.ApplicationErrorCode);
         }
     }
 }

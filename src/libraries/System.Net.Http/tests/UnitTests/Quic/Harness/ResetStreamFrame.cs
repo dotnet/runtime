@@ -27,9 +27,12 @@ namespace System.Net.Quic.Tests.Harness
 
         internal override FrameType FrameType => FrameType.ResetStream;
 
+        protected override string GetAdditionalInfo() =>
+            $"[StreamId={StreamId}, ErrorCode={ApplicationErrorCode}, FinalSize={FinalSize}]";
+
         internal override void Serialize(QuicWriter writer)
         {
-            ImplFrame.Write(writer, new ImplFrame(FinalSize, ApplicationErrorCode, FinalSize));
+            ImplFrame.Write(writer, new ImplFrame(StreamId, ApplicationErrorCode, FinalSize));
         }
 
         internal override bool Deserialize(QuicReader reader)

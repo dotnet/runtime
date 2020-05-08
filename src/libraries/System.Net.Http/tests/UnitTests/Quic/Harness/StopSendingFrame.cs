@@ -23,6 +23,8 @@ namespace System.Net.Quic.Tests.Harness
 
         internal override FrameType FrameType => FrameType.StopSending;
 
+        protected override string GetAdditionalInfo() => $"[StreamId={StreamId}, ErrorCode={ApplicationErrorCode}]";
+
         internal override void Serialize(QuicWriter writer)
         {
             ImplFrame.Write(writer, new ImplFrame(StreamId, ApplicationErrorCode));

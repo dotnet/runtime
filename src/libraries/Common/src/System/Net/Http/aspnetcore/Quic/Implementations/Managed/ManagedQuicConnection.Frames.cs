@@ -234,8 +234,24 @@ namespace System.Net.Quic.Implementations.Managed
             if (!ResetStreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
-            // TODO-RZ: Implement RESET_STREAM
-            return FrameNotSupported(FrameType.ResetStream);
+            if (!StreamHelpers.CanRead(_isServer, frame.StreamId))
+                return CloseConnection(TransportErrorCode.StreamStateError,
+                    QuicError.StreamNotReadable,
+                    FrameType.ResetStream);
+
+            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
+                return CloseConnection(TransportErrorCode.StreamLimitError,
+                    QuicError.StreamsLimitViolated,
+                    FrameType.ResetStream);
+
+            // TODO-RZ: Receiver can discard any data that it already received
+            // TODO-RZ: Return control flow budget
+
+            Debug.Assert(stream!.CanRead);
+
+            // TODO-RZ: check stream state against duplicate receipt
+            stream.InboundBuffer!.Reset(frame.ApplicationErrorCode, frame.FinalSize);
+            return ProcessPacketResult.Ok;
         }
 
         private ProcessPacketResult ProcessStopSendingFrame(QuicReader reader)
@@ -243,8 +259,31 @@ namespace System.Net.Quic.Implementations.Managed
             if (!StopSendingFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
-            // TODO-RZ: Implement STOP_SENDING
-            return FrameNotSupported(FrameType.StopSending);
+            if (!StreamHelpers.CanWrite(_isServer, frame.StreamId))
+                return CloseConnection(TransportErrorCode.StreamStateError,
+                    QuicError.StreamNotWritable,
+                    FrameType.StopSending);
+
+            // RFC: Receiving a STOP_SENDING frame for a locally-initiated stream that has not yet been created MUST be
+            // treated as a connection error of type STREAM_STATE_ERROR.
+            if (StreamHelpers.IsLocallyInitiated(_isServer, frame.StreamId) &&
+                StreamHelpers.GetStreamIndex(frame.StreamId) >= _streams.GetStreamCount(StreamHelpers.GetStreamType(frame.StreamId)))
+                return CloseConnection(TransportErrorCode.StreamStateError,
+                    QuicError.StreamNotCreated,
+                    FrameType.StopSending);
+
+            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
+                return CloseConnection(TransportErrorCode.StreamLimitError,
+                    QuicError.StreamsLimitViolated,
+                    FrameType.StopSending);
+
+            Debug.Assert(stream!.CanWrite);
+
+            // TODO-RZ: check stream state against duplicate receipt
+            stream.OutboundBuffer!.Abort(frame.ApplicationErrorCode);
+            _streams.MarkForUpdate(stream);
+
+            return ProcessPacketResult.Ok;
         }
 
         private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, QuicSocketContext.RecvContext context)
@@ -254,7 +293,7 @@ namespace System.Net.Quic.Implementations.Managed
             EncryptionLevel level = GetEncryptionLevel(packetType);
             var stream = GetPacketNumberSpace(level).CryptoInboundBuffer;
 
-            // TODO-RZ: don't buffer if not needed
+            // TODO-RZ: don't buffer if not needed, just pass directly to tls
             stream.Receive(crypto.Offset, crypto.CryptoData);
 
             // process also buffered data received earlier
@@ -292,7 +331,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (!MaxStreamDataFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
-            if (!StreamHelpers.IsReadable(_isServer, frame.StreamId))
+            if (!StreamHelpers.CanRead(_isServer, frame.StreamId))
                 // TODO-RZ: check stream state
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.NotInRecvState, FrameType.MaxStreamData);
@@ -338,6 +377,11 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!StreamDataBlockedFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+
+            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
+                return CloseConnection(TransportErrorCode.StreamLimitError,
+                    QuicError.StreamsLimitViolated,
+                    FrameType.StreamDataBlocked);
 
             // TODO-RZ: Implement STREAM_DATA_BLOCKED
             return FrameNotSupported(FrameType.StreamDataBlocked);
@@ -438,7 +482,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 if (_closingPeriodEnd == null)
                 {
-                    StartClosing(context.Timestamp);
+                    StartClosing(context.Timestamp, _inboundError);
                 }
 
                 if (_outboundError == null)
@@ -467,19 +511,17 @@ namespace System.Net.Quic.Implementations.Managed
             if (!StreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
-            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
-            {
-                // Flow control violated
-                return CloseConnection(TransportErrorCode.StreamLimitError, QuicError.StreamsLimitViolated,
+            if (!StreamHelpers.CanRead(_isServer, frame.StreamId))
+                return CloseConnection(TransportErrorCode.StreamStateError,
+                    QuicError.StreamNotWritable,
                     frameType);
-            }
 
-            if (!stream!.CanRead)
-            {
-                // Flow trying to write into receive only stream
-                return CloseConnection(TransportErrorCode.StreamStateError, QuicError.StreamNotWritable,
+            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
+                return CloseConnection(TransportErrorCode.StreamLimitError,
+                    QuicError.StreamsLimitViolated,
                     frameType);
-            }
+
+            Debug.Assert(stream!.CanRead);
 
             var buffer = stream.InboundBuffer!;
             long writtenOffset = frame.Offset + frame.StreamData.Length;
@@ -576,7 +618,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (packetType == PacketType.OneRtt)
             {
-                WriteStreamMaxDataFrames(writer, context);
+                WriteStreamUpdateFrames(writer, context);
                 WriteMaxDataFrame(writer, context);
                 WriteStreamFrames(writer, context);
             }
@@ -600,7 +642,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (_closingPeriodEnd == null)
             {
                 // After sending a CONNECTION_CLOSE frame, an endpoint immediately enters the closing state.
-                StartClosing(context.Timestamp);
+                StartClosing(context.Timestamp, _outboundError);
             }
 
             // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
@@ -734,30 +776,98 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void WriteStreamMaxDataFrames(QuicWriter writer, QuicSocketContext.SendContext context)
+        private void WriteStreamUpdateFrames(QuicWriter writer, QuicSocketContext.SendContext context)
         {
             ManagedQuicStream? stream;
-            while (writer.BytesAvailable > StreamFrame.MinSize && (stream = _streams.GetFirstStreamForFlowControlUpdate()) != null)
+            while (writer.BytesAvailable > 0 && (stream = _streams.GetFirstStreamForUpdate()) != null)
             {
-                var buffer = stream!.InboundBuffer!;
-
-                if (buffer.MaxData == buffer.RemoteMaxData)
+                if (!WriteStreamMaxDataFrame(writer, stream, context) ||
+                    !WriteStopSendingFrame(writer, stream, context) ||
+                    !WriteResetStreamFrame(writer, stream, context))
                 {
-                    // nothing to update, this may happen due to a race condition, should not happen terribly often
-                    continue;
+                    // some update was not written to the packet due to size constraints, queue stream for retry
+                    _streams.MarkForUpdate(stream);
+                    break;
                 }
-
-                var frame = new MaxStreamDataFrame(stream.StreamId, buffer.MaxData);
-                if (writer.BytesAvailable < frame.GetSerializedLength())
-                {
-                    // cannot fit the frame into packet, be sure to try next time
-                    _streams.MarkForFlowControlUpdate(stream);
-                    return;
-                }
-
-                context.SentPacket.MaxStreamDataFrames.Add(frame);
-                MaxStreamDataFrame.Write(writer, frame);
             }
+        }
+
+        private bool WriteStreamMaxDataFrame(QuicWriter writer, ManagedQuicStream stream,
+            QuicSocketContext.SendContext context)
+        {
+            var buffer = stream.InboundBuffer;
+
+            if (buffer == null ||
+                // buffer.StreamState != RecvStreamState.Receive ||
+                buffer.MaxData == buffer.RemoteMaxData)
+            {
+                // nothing to update
+                return true;
+            }
+
+            // only in Receive state do the frames make any sense
+            Debug.Assert(buffer.StreamState == RecvStreamState.Receive);
+
+            var frame = new MaxStreamDataFrame(stream.StreamId, buffer.MaxData);
+            if (writer.BytesAvailable < frame.GetSerializedLength())
+            {
+                return false;
+            }
+
+            MaxStreamDataFrame.Write(writer, frame);
+            context.SentPacket.MaxStreamDataFrames.Add(frame);
+
+            return true;
+        }
+
+        private bool WriteStopSendingFrame(QuicWriter writer, ManagedQuicStream stream,
+            QuicSocketContext.SendContext context)
+        {
+            var buffer = stream.InboundBuffer;
+
+            if (buffer?.Error == null ||
+                buffer.StreamState != RecvStreamState.WantStopSending)
+            {
+                // nothing to update
+                return true;
+            }
+
+            var frame = new StopSendingFrame(stream.StreamId, buffer.Error.Value);
+            if (writer.BytesAvailable < frame.GetSerializedLength())
+            {
+                return false;
+            }
+
+            StopSendingFrame.Write(writer, frame);
+            context.SentPacket.StreamsStopped.Add(frame.StreamId);
+            buffer.OnStopSendingSent();
+
+            return true;
+        }
+
+        private bool WriteResetStreamFrame(QuicWriter writer, ManagedQuicStream stream,
+            QuicSocketContext.SendContext context)
+        {
+            var buffer = stream.OutboundBuffer;
+
+            if (buffer?.Error == null ||
+                buffer.StreamState != SendStreamState.WantReset)
+            {
+                // nothing to update
+                return true;
+            }
+
+            var frame = new ResetStreamFrame(stream.StreamId, buffer.Error.Value, buffer.SentBytes);
+            if (writer.BytesAvailable < frame.GetSerializedLength())
+            {
+                return false;
+            }
+
+            ResetStreamFrame.Write(writer, frame);
+            context.SentPacket.StreamsReset.Add(stream.StreamId);
+            buffer.OnResetSent();
+
+            return true;
         }
 
         private void WriteMaxDataFrame(QuicWriter writer, QuicSocketContext.SendContext context)

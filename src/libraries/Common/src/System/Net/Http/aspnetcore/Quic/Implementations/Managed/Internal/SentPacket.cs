@@ -81,6 +81,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal List<MaxStreamDataFrame> MaxStreamDataFrames { get; } = new List<MaxStreamDataFrame>();
 
         /// <summary>
+        ///     List of ids of streams for which a <see cref="StopSendingFrame"/> was sent.
+        /// </summary>
+        internal List<long> StreamsStopped { get; } = new List<long>();
+
+        /// <summary>
+        ///     List of ids of streams fo which a <see cref="ResetStreamFrame"/> was sent.
+        /// </summary>
+        internal List<long> StreamsReset { get; } = new List<long>();
+
+        /// <summary>
         ///     Contains data from <see cref="MaxDataFrame"/>, if it was sent in the packet.
         /// </summary>
         internal MaxDataFrame? MaxDataFrame { get; set; }
@@ -119,6 +129,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             AckedRanges.Clear();
             StreamFrames.Clear();
             MaxStreamDataFrames.Clear();
+            StreamsReset.Clear();
+            StreamsStopped.Clear();
             MaxDataFrame = null;
 
             HandshakeDoneSent = false;
