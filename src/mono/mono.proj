@@ -936,10 +936,10 @@
   </Target>
 
   <Target Name="BuildAndroidAppBuilder">
-    <MSBuild Projects="$(MonoProjectRoot)msbuild\AndroidAppBuilder\AndroidAppBuilder.csproj"
+    <MSBuild Projects="$(AndroidAppBuilderProjDirectory)AndroidAppBuilder.csproj"
              Properties="Configuration=$(Configuration);Platform=$(HostArch)"
              Targets="Restore;Build" />
-    <MSBuild Projects="$(MonoProjectRoot)msbuild\AndroidTestRunner\AndroidTestRunner.csproj"
+    <MSBuild Projects="$(AndroidTestRunnerProjDirectory)AndroidTestRunner.csproj"
              Properties="Configuration=$(Configuration)"
              Targets="Restore;Build" />
   </Target>
