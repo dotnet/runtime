@@ -1268,7 +1268,11 @@ retry_with_libcoreclr:
 #if defined(ENABLE_NETCORE) && !defined(HOST_WIN32)
 		if (strcmp (new_scope, "__Internal") == 0) {
 			g_free ((char *)new_scope);
+#if defined(TARGET_OSX)
+			new_scope = g_strdup ("libcoreclr.dylib");
+#else			
 			new_scope = g_strdup ("libcoreclr.so");
+#endif			
 			goto retry_with_libcoreclr;
 		}
 #endif		
