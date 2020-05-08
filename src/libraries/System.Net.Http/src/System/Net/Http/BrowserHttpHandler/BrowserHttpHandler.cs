@@ -182,7 +182,7 @@ namespace System.Net.Http
                                 }
                             }
                         }
-                        if (request.Content?.Headers != null)
+                        if (request.Content != null)
                         {
                             foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
                             {
