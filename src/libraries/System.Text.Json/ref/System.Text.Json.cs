@@ -489,6 +489,8 @@ namespace System.Text.Json.Serialization
     {
         protected internal JsonConverter() { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
+        public virtual bool HandleNull { get { throw null; } }
+        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
         public abstract T Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
         public abstract void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
     }

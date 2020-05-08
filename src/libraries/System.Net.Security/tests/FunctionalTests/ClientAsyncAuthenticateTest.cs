@@ -59,6 +59,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36100")]
         public async Task ClientAsyncAuthenticate_Ssl2WithSelf_Success()
         {
             // Test Ssl2 against itself.  This is a standalone test as even on versions where Windows supports Ssl2,

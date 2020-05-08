@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -42,10 +43,15 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { "VVVV", new object[] { null, new byte[][] { new byte[] { 0, 1, 2, 3 }, null }, new byte[][] { new byte[0] }, new byte[0][] }, new byte[] { 4, 4, 0, 1, 2, 3, 4, 0, 4, 0 } };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(Encode_TestData))]
         public void Encode_Objects_ReturnsExpected(string format, object[] values, byte[] expected)
         {
+            if (PlatformDetection.IsArm64Process && format.Contains("tetie"))
+            {
+                throw new SkipTestException("Active issue: https://github.com/dotnet/runtime/issues/36087");
+            }
+
             AssertExtensions.Equal(expected, BerConverter.Encode(format, values));
         }
 

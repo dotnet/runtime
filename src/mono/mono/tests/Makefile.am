@@ -2034,6 +2034,14 @@ INTERP_DISABLED_TESTS += \
 	pinvoke3.exe
 endif
 
+if X86
+INTERP_DISABLED_TESTS += \
+	bug-60862.exe \
+	cominterop.exe \
+	dim-diamondshape.exe \
+	pinvoke3.exe
+endif
+
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
 TESTS_IL=$(filter-out $(DISABLED_TESTS),$(TESTS_IL_SRC:.il=.exe))
 TESTS_BENCH=$(filter-out $(DISABLED_TESTS),$(TESTS_BENCH_SRC:.cs=.exe))

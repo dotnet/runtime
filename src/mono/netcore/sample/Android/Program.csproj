@@ -6,15 +6,16 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+    <AndroidAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder'))</AndroidAppBuilder>
   </PropertyGroup>
 
   <Target Name="RebuildAndroidAppBuilder">
-    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\AndroidAppBuilder\AndroidAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)" Targets="Restore;Build" />
+    <MSBuild Projects="$(AndroidAppBuilderProjDirectory)\AndroidAppBuilder.csproj"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
   </Target>
 
   <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AndroidAppBuilder\$(TargetArchitecture)\$(Configuration)\AndroidAppBuilder.dll" />
+             AssemblyFile="$(AndroidAppBuilder)\$(HostArch)\$(Configuration)\AndroidAppBuilder.dll" />
 
   <Target Name="BuildAppBundle" DependsOnTargets="RebuildAndroidAppBuilder">
     <PropertyGroup>
