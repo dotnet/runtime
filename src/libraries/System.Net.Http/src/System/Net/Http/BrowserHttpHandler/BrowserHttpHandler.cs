@@ -210,7 +210,7 @@ namespace System.Net.Http
                     }
 
                     // Process headers
-                    // Cors has it's own restrictions on headers.
+                    // Cors has its own restrictions on headers.
                     // https://developer.mozilla.org/en-US/docs/Web/API/Headers
                     using (HostObject jsHeaders = new HostObject("Headers"))
                     {
