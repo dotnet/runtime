@@ -4,7 +4,9 @@
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
     <NETCoreAppFrameworkIdentifier>$(TargetFrameworkIdentifier)</NETCoreAppFrameworkIdentifier>
+  </PropertyGroup>
 
+  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
     <!-- Create an intermediate runsettings file to enable VSTest discovery. -->
     <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
     <CreateIntermediateRunSettingsFile>true</CreateIntermediateRunSettingsFile>
@@ -24,7 +26,7 @@
   </Target>
 
   <Target Name="CreateIntermediateRunSettingsFile"
-          Condition="'$(ContinuousIntegrationBuild)' != 'true'"
+          Condition="'$(CreateIntermediateRunSettingsFile)' == 'true'"
           DependsOnTargets="GenerateRunSettingsFile"
           BeforeTargets="Build" />
 
