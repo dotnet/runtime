@@ -775,12 +775,6 @@ static size_t g_RestrictedPhysicalMemoryLimit = (size_t)MAX_PTR;
 // memory on the machine/in the container, we need to restrict by the VM.
 static bool g_UseRestrictedVirtualMemory = false;
 
-typedef BOOL (WINAPI *PGET_PROCESS_MEMORY_INFO)(HANDLE handle, PROCESS_MEMORY_COUNTERS* memCounters, uint32_t cb);
-static PGET_PROCESS_MEMORY_INFO GCGetProcessMemoryInfo = 0;
-
-typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle, BOOL* result);
-typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECTINFOCLASS jobObjectInfoClass, void* lpJobObjectInfo, DWORD cbJobObjectInfoLength, LPDWORD lpReturnLength);
-
 static size_t GetRestrictedPhysicalMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
@@ -793,34 +787,14 @@ static size_t GetRestrictedPhysicalMemoryLimit()
     uint64_t total_virtual = 0;
     uint64_t total_physical = 0;
     BOOL in_job_p = FALSE;
-    HINSTANCE hinstKernel32 = 0;
 
-    PIS_PROCESS_IN_JOB GCIsProcessInJob = 0;
-    PQUERY_INFORMATION_JOB_OBJECT GCQueryInformationJobObject = 0;
-
-    GCIsProcessInJob = &(::IsProcessInJob);
-
-    if (!GCIsProcessInJob(GetCurrentProcess(), NULL, &in_job_p))
+    if (!IsProcessInJob(GetCurrentProcess(), NULL, &in_job_p))
         goto exit;
 
     if (in_job_p)
     {
-        hinstKernel32 = WszLoadLibrary(L"kernel32.dll");
-        if (!hinstKernel32)
-            goto exit;
-
-        GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstKernel32, "K32GetProcessMemoryInfo");
-
-        if (!GCGetProcessMemoryInfo)
-            goto exit;
-
-        GCQueryInformationJobObject = &(::QueryInformationJobObject);
-
-        if (!GCQueryInformationJobObject)
-            goto exit;
-
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION limit_info;
-        if (GCQueryInformationJobObject (NULL, JobObjectExtendedLimitInformation, &limit_info,
+        if (QueryInformationJobObject(NULL, JobObjectExtendedLimitInformation, &limit_info,
             sizeof(limit_info), NULL))
         {
             size_t job_memory_limit = (size_t)MAX_PTR;
@@ -867,12 +841,6 @@ exit:
     if (job_physical_memory_limit == (size_t)MAX_PTR)
     {
         job_physical_memory_limit = 0;
-
-        if (hinstKernel32 != 0)
-        {
-            FreeLibrary(hinstKernel32);
-            GCGetProcessMemoryInfo = 0;
-        }
     }
 
     // Check to see if we are limited by VM.
@@ -892,13 +860,6 @@ exit:
 
     if (total_virtual < total_physical)
     {
-        if (hinstKernel32 != 0)
-        {
-            // We can also free the lib here - if we are limited by VM we will not be calling
-            // GetProcessMemoryInfo.
-            FreeLibrary(hinstKernel32);
-            GCGetProcessMemoryInfo = 0;
-        }
         g_UseRestrictedVirtualMemory = true;
         job_physical_memory_limit = (size_t)total_virtual;
     }
@@ -962,7 +923,6 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 bool GCToOSInterface::SetRestrictedPhysicalMemoryLimit(uint64_t totalPhysicalMemory)
 {
     LIMITED_METHOD_CONTRACT;
-    HINSTANCE hinstKernel32 = 0;
 
 #ifndef TARGET_UNIX
     MEMORYSTATUSEX ms;
@@ -974,31 +934,10 @@ bool GCToOSInterface::SetRestrictedPhysicalMemoryLimit(uint64_t totalPhysicalMem
         g_UseRestrictedVirtualMemory = true;
         totalPhysicalMemory = total_virtual;
     }
-
-    if (!g_UseRestrictedVirtualMemory)
-    {
-        hinstKernel32 = WszLoadLibrary(L"kernel32.dll");
-        if (!hinstKernel32)
-            goto exit;
-
-        GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstKernel32, "K32GetProcessMemoryInfo");
-
-        if (!GCGetProcessMemoryInfo)
-            goto exit;
-    }
 #endif //!TARGET_UNIX
 
     VolatileStore(&g_RestrictedPhysicalMemoryLimit, (size_t)totalPhysicalMemory);
     return true;
-
-exit:
-    if (hinstKernel32 != 0)
-    {
-        FreeLibrary(hinstKernel32);
-        GCGetProcessMemoryInfo = 0;
-    }
-
-    return false;
 }
 
 // Get memory status
@@ -1022,7 +961,7 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
         if (!g_UseRestrictedVirtualMemory)
         {
             PROCESS_MEMORY_COUNTERS pmc;
-            status = GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+            status = GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
             workingSetSize = pmc.WorkingSetSize;
         }
 #else
