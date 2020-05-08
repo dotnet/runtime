@@ -110,18 +110,6 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException("Property MaxConnectionsPerServer is not supported.");
         }
 
-        public int MaxResponseDrainSize
-        {
-            get => throw new PlatformNotSupportedException("Property MaxResponseDrainSize is not supported.");
-            set => throw new PlatformNotSupportedException("Property MaxResponseDrainSize is not supported.");
-        }
-
-        public TimeSpan ResponseDrainTimeout
-        {
-            get => throw new PlatformNotSupportedException("Property ResponseDrainTimeout is not supported.");
-            set => throw new PlatformNotSupportedException("Property ResponseDrainTimeout is not supported.");
-        }
-
         public int MaxResponseHeadersLength
         {
             get => throw new PlatformNotSupportedException("Property MaxResponseHeadersLength is not supported.");
@@ -132,30 +120,6 @@ namespace System.Net.Http
         {
             get => throw new PlatformNotSupportedException("Property SslOptions is not supported.");
             set => throw new PlatformNotSupportedException("Property SslOptions is not supported.");
-        }
-
-        public TimeSpan PooledConnectionLifetime
-        {
-            get => throw new PlatformNotSupportedException("Property PooledConnectionLifetime is not supported.");
-            set => throw new PlatformNotSupportedException("Property PooledConnectionLifetime is not supported.");
-        }
-
-        public TimeSpan PooledConnectionIdleTimeout
-        {
-            get => throw new PlatformNotSupportedException("Property PooledConnectionLifetime is not supported.");
-            set => throw new PlatformNotSupportedException("Property PooledConnectionLifetime is not supported.");
-        }
-
-        public TimeSpan ConnectTimeout
-        {
-            get => throw new PlatformNotSupportedException("Property ConnectTimeout is not supported.");
-            set => throw new PlatformNotSupportedException("Property ConnectTimeout is not supported.");
-        }
-
-        public TimeSpan Expect100ContinueTimeout
-        {
-            get => throw new PlatformNotSupportedException("Property Expect100ContinueTimeout is not supported.");
-            set => throw new PlatformNotSupportedException("Property Expect100ContinueTimeout is not supported.");
         }
 
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException("Property Properties is not supported.");
