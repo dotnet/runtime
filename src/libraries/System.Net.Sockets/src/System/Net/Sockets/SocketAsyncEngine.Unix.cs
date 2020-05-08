@@ -194,7 +194,6 @@ namespace System.Net.Sockets
             Debug.Assert(added, "Add should always succeed");
             _nextHandle = IntPtr.Add(_nextHandle, 1);
 
-            Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
             return handle;
         }
 
