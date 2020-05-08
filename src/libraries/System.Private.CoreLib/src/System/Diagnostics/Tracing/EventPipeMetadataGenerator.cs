@@ -219,9 +219,12 @@ namespace System.Diagnostics.Tracing
                 // Increase the metadataLength for parameters.
                 foreach (var parameter in parameters)
                 {
-                    int pMetadataLength = parameter.GetMetadataLengthV2();
-                    // TODO: handle errors
-                    metadataLength += (uint)pMetadataLength;
+                    if (!parameter.GetMetadataLengthV2(out uint pMetadataLength))
+                    {
+                        return null;
+                    }
+
+                    metadataLength += pMetadataLength;
                 }
 
                 metadata = new byte[metadataLength];
@@ -454,7 +457,11 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(pMetadataBlob != null);
 
-            uint length = GetMetadataLengthForNamedTypeV2(name, typeInfo);
+            if (!GetMetadataLengthForNamedTypeV2(name, typeInfo, out uint length))
+            {
+                return false;
+            }
+
             EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, length);
 
             // Write the property name.
@@ -733,22 +740,27 @@ namespace System.Diagnostics.Tracing
             return Type.GetTypeCode(parameterType);
         }
 
-        internal int GetMetadataLengthV2()
+        internal bool GetMetadataLengthV2(out uint size)
         {
-            return (int)GetMetadataLengthForNamedTypeV2(ParameterName, TypeInfo);
+            return GetMetadataLengthForNamedTypeV2(ParameterName, TypeInfo, out size);
         }
 
         //TODO: error handling for bad types
-        private static uint GetMetadataLengthForTypeV2(TraceLoggingTypeInfo? typeInfo)
+        private static bool GetMetadataLengthForTypeV2(TraceLoggingTypeInfo? typeInfo, out uint size)
         {
-            uint ret = 0;
+            size = 0;
+            if (typeInfo == null)
+            {
+                return false;
+            }
+
             if (typeInfo is InvokeTypeInfo invokeTypeInfo)
             {
                 // Struct is serialized as:
                 //     TypeCode.Object      : 4 bytes
                 //     Number of properties : 4 bytes
                 //     Property description 0...N
-                ret += sizeof(uint)  // TypeCode
+                size += sizeof(uint)  // TypeCode
                      + sizeof(uint); // Property count
 
                 // Get the set of properties to be serialized.
@@ -757,7 +769,12 @@ namespace System.Diagnostics.Tracing
                 {
                     foreach (PropertyAnalysis prop in properties)
                     {
-                        ret += GetMetadataLengthForNamedTypeV2(prop.name, prop.typeInfo);
+                        if (!GetMetadataLengthForNamedTypeV2(prop.name, prop.typeInfo, out uint typeSize))
+                        {
+                            return false;
+                        }
+
+                        size += typeSize;
                     }
                 }
             }
@@ -766,35 +783,55 @@ namespace System.Diagnostics.Tracing
                 // IEnumerable<T> is serialized as:
                 //     TypeCode            : 4 bytes
                 //     ElementType         : N bytes
-                ret += sizeof(uint)
-                     + GetMetadataLengthForTypeV2(enumerableTypeInfo.ElementInfo);
+                size += sizeof(uint);
+                if (!GetMetadataLengthForTypeV2(enumerableTypeInfo.ElementInfo, out uint typeSize))
+                {
+                    return false;
+                }
+
+                size += typeSize;
             }
             else if (typeInfo is ScalarArrayTypeInfo arrayTypeInfo)
             {
                 TraceLoggingTypeInfo? elementTypeInfo;
-                if (arrayTypeInfo.DataType.HasElementType
-                    && GetTypeInfoFromType(arrayTypeInfo.DataType.GetElementType(), out elementTypeInfo))
+                if (!arrayTypeInfo.DataType.HasElementType
+                    || !GetTypeInfoFromType(arrayTypeInfo.DataType.GetElementType(), out elementTypeInfo))
                 {
-                    ret += sizeof(uint)
-                         + GetMetadataLengthForTypeV2(elementTypeInfo);
+                    return false;
                 }
+
+                size += sizeof(uint);
+                if (!GetMetadataLengthForTypeV2(elementTypeInfo, out uint typeSize))
+                {
+                    return false;
+                }
+
+                size += typeSize;
             }
             else
             {
-                ret += (uint)sizeof(uint);
+                size += (uint)sizeof(uint);
             }
-            return ret;
+
+            return true;
         }
 
-        private static uint GetMetadataLengthForNamedTypeV2(string name, TraceLoggingTypeInfo? typeInfo)
+        private static bool GetMetadataLengthForNamedTypeV2(string name, TraceLoggingTypeInfo? typeInfo, out uint size)
         {
             // Named type is serialized
             //     SizeOfTypeDescription    : 4 bytes
             //     Name                     : NULL-terminated UTF16 string
             //     Type                     : N bytes
-            return (uint)(sizeof(uint) +
-                   ((name.Length + 1) * 2)) +
-                   GetMetadataLengthForTypeV2(typeInfo);
+            size = (uint)(sizeof(uint) +
+                   ((name.Length + 1) * 2));
+
+            if (!GetMetadataLengthForTypeV2(typeInfo, out uint typeSize))
+            {
+                return false;
+            }
+
+            size += typeSize;
+            return true;
         }
     }
 
