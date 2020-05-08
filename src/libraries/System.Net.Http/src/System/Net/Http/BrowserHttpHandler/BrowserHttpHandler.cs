@@ -20,7 +20,6 @@ using Function = Interop.JavaScript.Function;
 
 namespace System.Net.Http
 {
-
     // **Note** on `Task.ConfigureAwait(continueOnCapturedContext: true)` for the WebAssembly Browser.
     // The current implementation of WebAssembly for the Browser does not have a SynchronizationContext nor a Scheduler
     // thus forcing the callbacks to run on the main browser thread.  When threading is eventually implemented using
