@@ -7,8 +7,14 @@ using System;
 internal static partial class Interop
 {
     /// <summary>
-    /// The Function constructor creates a new Function object. Calling the constructor directly can create functions dynamically, but suffers from security and similar (but far less significant) performance issues similar to eval. However, unlike eval, the Function constructor allows executing code in the global scope, prompting better programming habits and allowing for more efficient code minification.
+    /// The Function constructor creates a new Function object.
     /// </summary>
+    /// <remarks>
+    /// Calling the constructor directly can create functions dynamically, but suffers from security and similar
+    /// (but far less significant) performance issues similar to eval. However, unlike eval, the Function constructor
+    /// allows executing code in the global scope, prompting better programming habits and allowing for more efficient
+    /// code minification.
+    /// </remarks>
     internal static partial class JavaScript
     {
         public class Function : CoreObject

@@ -11,20 +11,20 @@ internal static partial class Interop
         public class ArrayBuffer : CoreObject
         {
             /// <summary>
-            /// Initializes a new instance of the ArrayBuffer class.
+            /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
             /// </summary>
             public ArrayBuffer() : base(Runtime.New<ArrayBuffer>())
             { }
 
             /// <summary>
-            /// Initializes a new instance of the ArrayBuffer class.
+            /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
             /// </summary>
             /// <param name="length">Length.</param>
             public ArrayBuffer(int length) : base(Runtime.New<ArrayBuffer>(length))
             { }
 
             /// <summary>
-            /// Initializes a new instance of the ArrayBuffer class.
+            /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
             /// </summary>
             /// <param name="jsHandle">Js handle.</param>
             internal ArrayBuffer(IntPtr jsHandle) : base(jsHandle)

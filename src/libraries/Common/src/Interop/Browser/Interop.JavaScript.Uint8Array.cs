@@ -10,6 +10,9 @@ internal static partial class Interop
     {
         public sealed class Uint8Array : TypedArray<Uint8Array, byte>
         {
+            /// <summary>
+            /// Initializes a new instance of the JavaScript Core Uint8Array class.
+            /// </summary>
             public Uint8Array()
             { }
 
@@ -38,6 +41,9 @@ internal static partial class Interop
             internal Uint8Array(IntPtr js_handle) : base(js_handle)
             { }
 
+            /// <summary>
+            /// Defines an implicit conversion of JavaScript Core Uint8Array class to a <see cref="Span<byte>"/>
+            /// </summary>
             public static implicit operator Span<byte>(Uint8Array typedarray) => typedarray.ToArray();
 
             public static implicit operator Uint8Array(Span<byte> span) => From(span);

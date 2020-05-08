@@ -750,7 +750,7 @@
     <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8Array.cs"
              Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
+             Link="Common\Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.TypedArray.cs"
              Link="Common\Interop\Browser\Interop.JavaScript.TypedArray.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Array.cs"

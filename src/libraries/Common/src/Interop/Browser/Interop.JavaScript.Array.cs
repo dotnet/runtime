@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class JavaScript
     {
         /// <summary>
-        /// Initializes a new instance of the Array class.
+        /// Initializes a new instance of JavaScript Core Array class.
         /// </summary>
         public class Array : CoreObject
         {

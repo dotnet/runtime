@@ -9,8 +9,10 @@ internal static partial class Interop
     internal static partial class JavaScript
     {
         /// <summary>
-        /// Core objects are the standard built-in objects and functions.  These
-        /// objects are part of the JavaScript environment.  Not to be confused
+        /// Core objects are the standard built-in objects and functions.
+        /// </summary>
+        /// <remarks>
+        /// These objects are part of the JavaScript environment.  Not to be confused
         /// with objects provided by the host application or the browser context
         /// such as DOM.  For more information about the distinction between the
         /// DOM and core JavaScript, see JavaScript technologies overview:
@@ -18,7 +20,7 @@ internal static partial class Interop
         ///
         /// Core objects are treated differently in the bridge code as they are
         /// guaranteed to be there.
-        /// </summary>
+        /// </remarks>
         public abstract class CoreObject : JSObject
         {
             protected CoreObject(int jsHandle) : base(jsHandle)

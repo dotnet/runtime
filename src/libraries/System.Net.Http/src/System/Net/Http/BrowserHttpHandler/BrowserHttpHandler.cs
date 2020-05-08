@@ -159,7 +159,7 @@ namespace System.Net.Http
         }
 
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException("Property Properties is not supported.");
-        
+
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return DoFetch(request, cancellationToken);
