@@ -227,11 +227,11 @@ namespace System.Net.Http
 
                     var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
 
-                    HttpResponseMessage httpresponse = new HttpResponseMessage((HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), status.Status.ToString()));
+                    HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), status.Status.ToString()));
 
                     bool streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
 
-                    httpresponse.Content = StreamingSupported && streamingEnabled
+                    httpResponse.Content = StreamingSupported && streamingEnabled
                         ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
                         : (HttpContent)new BrowserHttpContent(status);
 
@@ -259,9 +259,8 @@ namespace System.Net.Http
                                         {
                                             var name = (string)resultValue[0];
                                             var value = (string)resultValue[1];
-                                            if (!httpresponse.Headers.TryAddWithoutValidation(name, value))
-                                                if (httpresponse.Content != null)
-                                                    httpresponse.Content.Headers.TryAddWithoutValidation(name, value);
+                                            if (!httpResponse.Headers.TryAddWithoutValidation(name, value))
+                                                httpResponse.Content.Headers.TryAddWithoutValidation(name, value);
                                         }
                                         nextResult?.Dispose();
                                         nextResult = (JSObject)entriesIterator.Invoke("next");
@@ -275,7 +274,7 @@ namespace System.Net.Http
                         }
                     }
 
-                    tcs.SetResult(httpresponse);
+                    tcs.SetResult(httpResponse);
                 }
                 catch (JSException jsExc)
                 {
