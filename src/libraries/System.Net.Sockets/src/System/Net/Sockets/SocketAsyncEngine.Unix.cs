@@ -167,21 +167,7 @@ namespace System.Net.Sockets
                 engine = s_currentEngines[s_allocateFromEngine];
                 if (engine == null)
                 {
-                    // We minimize the number of engines on applications that have a low number of concurrent sockets.
-                    for (int i = 0; i < s_allocateFromEngine; i++)
-                    {
-                        var previousEngine = s_currentEngines[i];
-                        if (previousEngine == null)
-                        {
-                            s_allocateFromEngine = i;
-                            engine = previousEngine;
-                            break;
-                        }
-                    }
-                    if (engine == null)
-                    {
-                        s_currentEngines[s_allocateFromEngine] = engine = new SocketAsyncEngine();
-                    }
+                    s_currentEngines[s_allocateFromEngine] = engine = new SocketAsyncEngine();
                 }
 
                 handle = engine.AllocateHandle(context);
