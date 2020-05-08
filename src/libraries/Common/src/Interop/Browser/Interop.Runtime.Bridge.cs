@@ -16,8 +16,8 @@ internal static partial class Interop
 {
     internal static partial class Runtime
     {
-        private static Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
-        private static Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
+        private static readonly Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
+        private static readonly Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
 
         internal static int BindJSObject(int jsId, Type mappedType)
         {
