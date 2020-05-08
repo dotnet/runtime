@@ -168,14 +168,11 @@ namespace System.Net.Http
                     // https://developer.mozilla.org/en-US/docs/Web/API/Headers
                     using (HostObject jsHeaders = new HostObject("Headers"))
                     {
-                        if (request.Headers != null)
+                        foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
                         {
-                            foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
+                            foreach (string value in header.Value)
                             {
-                                foreach (string value in header.Value)
-                                {
-                                    jsHeaders.Invoke("append", header.Key, value);
-                                }
+                                jsHeaders.Invoke("append", header.Key, value);
                             }
                         }
                         if (request.Content != null)
@@ -332,6 +329,7 @@ namespace System.Net.Http
                     // Free any other managed objects here.
                     //
                     _abortCts.Cancel();
+                    _abortCts.Dispose();
 
                     _abortRegistration.Dispose();
                 }
