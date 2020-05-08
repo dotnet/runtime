@@ -755,7 +755,16 @@ namespace System.Collections.Concurrent
                     }
                 }
             }
+
+            if (waitForSemaphoreWasSuccessful)
+            {
+                Debug.Assert(item != null);
+            }
+
+#pragma warning disable CS8762
+            // Compiler can't automatically deduce 'item' has a non-null value when returning false.
             return waitForSemaphoreWasSuccessful;
+#pragma warning restore CS8762
         }
 
 
