@@ -1921,7 +1921,7 @@
 	</ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64')  and '$(TargetsWindows)' != 'true' " >
         <ExcludeList Include = "$(XunitTestBinBase)/Methodical/eh/finallyexec/loopinfinally_ro/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
