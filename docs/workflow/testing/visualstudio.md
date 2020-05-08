@@ -1,6 +1,6 @@
 # Visual Studio Test Explorer support
 For Visual Studio Test Explorer to work in dotnet/runtime, the following test settings need to be enabled: 
-- Test parameters (like which `dotnet` host to use) are persisted in an auto-generated .runsettings file which is placed under the test app's output folder. For that to work, make sure that the `Auto detect runsettings Files` (`Options -> Test`) option is enabled.
+- Test parameters (like which `dotnet` host to use) are persisted in an auto-generated .runsettings file. For that to work, make sure that the `Auto detect runsettings Files` (`Options -> Test`) option is enabled.
 - Make sure that the `Processor Architecture for AnyCPU project` (`Test Explore pane -> Test Explorer toolbar options --> Settings`) value is set to `auto`.
 
 # Visual Studio F5 Debugging support
