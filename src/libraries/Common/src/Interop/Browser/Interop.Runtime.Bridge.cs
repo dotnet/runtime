@@ -349,35 +349,5 @@ internal static partial class Interop
         {
             return new Uri(uri);
         }
-
-        //
-        // Can be called by the app to stop profiling
-        //
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void StopProfile()
-        {
-        }
-
-        // Called by the AOT profiler to save profile data into Module.aot_profile_data
-        internal static unsafe void DumpAotProfileData(ref byte buf, int len, string s)
-        {
-            byte[] arr = new byte[len];
-            fixed (void* p = &buf)
-            {
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(p, len);
-
-                // Send it to JS
-                JSObject jsDump = (JSObject)Runtime.GetGlobalObject("Module");
-                //jsDump.SetObjectProperty("aot_profile_data", WebAssembly.Core.Uint8Array.From(span));
-            }
-        }
-
-        // Called by the coverage profiler to save profile data into Module.coverage_profile_data
-        internal static void DumpCoverageProfileData(string data, string s)
-        {
-            // Send it to JS
-            JSObject jsDump = (JSObject)Runtime.GetGlobalObject("Module");
-            jsDump.SetObjectProperty("coverage_profile_data", data);
-        }
     }
 }
