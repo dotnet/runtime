@@ -51,7 +51,7 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
         # Disable warning due to labs function called on unsigned argument
         add_compile_options(-Wno-absolute-value)
     endif()
-    // Issue https://github.com/libunwind/libunwind/issues/176
+    # Issue https://github.com/libunwind/libunwind/issues/176
     if (CLR_CMAKE_TARGET_ALPINE_LINUX)
       add_definitions("-D__sigset_t=sigset_t")
     endif()
