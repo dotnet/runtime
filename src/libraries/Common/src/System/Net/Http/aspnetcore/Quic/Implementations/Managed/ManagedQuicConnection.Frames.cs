@@ -331,7 +331,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (!MaxStreamDataFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
-            if (!StreamHelpers.CanRead(_isServer, frame.StreamId))
+            if (!StreamHelpers.CanWrite(_isServer, frame.StreamId))
                 // TODO-RZ: check stream state
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.NotInRecvState, FrameType.MaxStreamData);
@@ -340,7 +340,9 @@ namespace System.Net.Quic.Implementations.Managed
                 return CloseConnection(TransportErrorCode.StreamLimitError,
                     QuicError.StreamsLimitViolated, FrameType.MaxStreamData);
 
-            var buffer = stream!.OutboundBuffer!;
+            Debug.Assert(stream!.CanWrite);
+
+            var buffer = stream.OutboundBuffer!;
             buffer.UpdateMaxData(frame.MaximumStreamData);
 
             if (buffer.IsFlushable)

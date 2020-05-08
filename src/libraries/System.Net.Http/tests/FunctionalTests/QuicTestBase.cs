@@ -39,7 +39,15 @@ namespace System.Net.Quic.Tests
 
         internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            QuicListener listener = new QuicListener(_provider, endpoint, GetSslServerAuthenticationOptions());
+            var options = new QuicListenerOptions()
+            {
+                CertificateFilePath = "Certs/cert.crt",
+                PrivateKeyFilePath = "Certs/cert.key",
+                ListenEndPoint = endpoint,
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+            };
+
+            QuicListener listener = new QuicListener(_provider, options);
             listener.Start();
             return listener;
         }

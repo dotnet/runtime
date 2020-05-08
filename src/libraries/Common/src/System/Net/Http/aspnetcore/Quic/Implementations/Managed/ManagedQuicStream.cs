@@ -93,7 +93,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override int Read(Span<byte> buffer)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            // ThrowIfError();
             ThrowIfNotReadable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -110,10 +110,11 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
-            ThrowIfError();
+            // ThrowIfError();
             ThrowIfNotReadable();
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (result > 0)
