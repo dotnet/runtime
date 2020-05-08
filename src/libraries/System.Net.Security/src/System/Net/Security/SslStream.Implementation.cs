@@ -357,7 +357,7 @@ namespace System.Net.Security
 #pragma warning disable 0618
                 _lastFrame.Header.Version = SslProtocols.Ssl2;
 #pragma warning restore 0618
-                _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+                _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan) - TlsFrameHelper.HeaderSize;
             }
             else
             {
