@@ -251,7 +251,7 @@ namespace System.Numerics
                 // Vector64.CreateScalar(uint) generates suboptimal code by storing and
                 // loading the result to memory.
                 // See https://github.com/dotnet/runtime/issues/35976 for details.
-                // Hence use Vector4.Create(ulong) to create Vector64<ulong> and operate on that.
+                // Hence use Vector64.Create(ulong) to create Vector64<ulong> and operate on that.
                 Vector64<ulong> input = Vector64.Create((ulong)value);
                 Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
                 return AdvSimd.Extract(aggregated, 0);
