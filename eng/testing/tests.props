@@ -20,6 +20,13 @@
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <AppleAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder'))</AppleAppBuilder>
+    <AppleTestRunner>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner'))</AppleTestRunner>
+    <AndroidAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder'))</AndroidAppBuilder>
+    <AndroidTestRunner>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner'))</AndroidTestRunner>
+  </PropertyGroup>
+
   <!--
     Unit/Functional/Integration test support.
     Supported runners: xunit.

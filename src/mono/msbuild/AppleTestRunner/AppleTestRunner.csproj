@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputPath>bin</OutputPath>
+    <OutputPath>$(AppleTestRunner)</OutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>

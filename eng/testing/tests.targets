@@ -104,11 +104,10 @@
  <!-- Generate a self-contained app bundle for Android with tests.
        This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
   <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AndroidAppBuilder\$(HostArch)\$(Configuration)\AndroidAppBuilder.dll" />
+             AssemblyFile="$(AndroidAppBuilder)\$(HostArch)\$(Configuration)\AndroidAppBuilder.dll" />
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <BundleDir>$(OutDir)\Bundle</BundleDir>
-      <AndroidTestRunner>$(RepoRoot)\src\mono\msbuild\AndroidTestRunner\bin</AndroidTestRunner>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
@@ -165,11 +164,10 @@
   <!-- Generate a self-contained app bundle for iOS with tests.
        This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
   <UsingTask TaskName="AppleAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(HostArch)\$(Configuration)\AppleAppBuilder.dll" />
+             AssemblyFile="$(AppleAppBuilder)\$(HostArch)\$(Configuration)\AppleAppBuilder.dll" />
   <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <BundleDir>$(OutDir)\Bundle</BundleDir>
-      <AppleTestRunner>$(RepoRoot)\src\mono\msbuild\AppleTestRunner\bin</AppleTestRunner>
     </PropertyGroup>
     <!-- We need to copy additional stuff into $(OutDir)\Bundle
          1) The whole BCL

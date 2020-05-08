@@ -7,15 +7,16 @@
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
     <MonoRuntimeDir>$(ArtifactsDir)bin\mono\iOS.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+    <AppleAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder'))</AppleAppBuilder>
   </PropertyGroup>
 
   <Target Name="RebuildAppleAppBuilder">
-    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)" Targets="Restore;Build" />
+    <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
   </Target>
 
   <UsingTask TaskName="AppleAppBuilderTask" 
-      AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
+      AssemblyFile="$(AppleAppBuilder)\$(HostArch)\$(Configuration)\AppleAppBuilder.dll" />
 
   <Target Name="BuildAppBundle" DependsOnTargets="RebuildAppleAppBuilder">
     <PropertyGroup>
