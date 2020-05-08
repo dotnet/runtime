@@ -488,8 +488,13 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal int HandleSendAlert(EncryptionLevel level, TlsAlert alert)
         {
-            Console.WriteLine($"SendAlert({level}): {(byte)alert} (0x{(byte)alert:x2}) - {alert}");
+            // RFC: A TLS alert is turned into a QUIC connection error by converting the
+            // one-byte alert description into a QUIC error code.  The alert
+            // description is added to 0x100 to produce a QUIC error code from the
+            // range reserved for CRYPTO_ERROR.  The resulting value is sent in a
+            // QUIC CONNECTION_CLOSE frame.
 
+            _outboundError = new QuicError((TransportErrorCode) alert + 0x100, $"Tls alert - {alert}");
             return 1;
         }
 
