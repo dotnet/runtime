@@ -358,11 +358,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Blend_SetNullBlendPositions_ThrowsArgumentNullException()
+        public void Blend_SetNullBlendPositions_ThrowsArgumentException()
         {
             using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
             {
-                AssertExtensions.Throws<ArgumentNullException>("source", () => brush.Blend = new Blend { Factors = new float[2], Positions = null });
+                AssertExtensions.Throws<ArgumentException>("value", () => brush.Blend = new Blend { Factors = new float[2], Positions = null });
             }
         }
 

@@ -3983,9 +3983,7 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
-                throw new ArgumentNullException("remoteEP");
-#pragma warning restore CA2208
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
 
             EndPoint endPointSnapshot = e.RemoteEndPoint;
@@ -4118,9 +4116,7 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applcable
-                throw new ArgumentNullException(nameof(e.RemoteEndPoint));
-#pragma warning restore CA2208
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
             if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
             {
@@ -4170,9 +4166,7 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
-                throw new ArgumentNullException(nameof(e.RemoteEndPoint));
-#pragma warning restore CA2208
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
             if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
             {
@@ -4256,9 +4250,7 @@ namespace System.Net.Sockets
             }
             if (e.SendPacketsElements == null)
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
-                throw new ArgumentNullException("e.SendPacketsElements");
-#pragma warning restore CA2208
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.SendPacketsElements"), nameof(e));
             }
             if (!Connected)
             {

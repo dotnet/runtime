@@ -604,7 +604,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectAsync_Static_NullRemoteEndPoint_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, s_eventArgs));
+            Assert.Throws<ArgumentException>("e", () => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, s_eventArgs));
         }
 
         [Fact]
@@ -622,7 +622,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ReceiveFromAsync_NullRemoteEndPoint_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveFromAsync(s_eventArgs));
+            Assert.Throws<ArgumentException>("e", () => GetSocket().ReceiveFromAsync(s_eventArgs));
         }
 
         [Fact]
@@ -644,7 +644,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ReceiveMessageFromAsync_NullRemoteEndPoint_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveMessageFromAsync(s_eventArgs));
+            Assert.Throws<ArgumentException>("e", () => GetSocket().ReceiveMessageFromAsync(s_eventArgs));
         }
 
         [Fact]
@@ -672,7 +672,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SendPacketsAsync_NullSendPacketsElements_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().SendPacketsAsync(s_eventArgs));
+            Assert.Throws<ArgumentException>("e", () => GetSocket().SendPacketsAsync(s_eventArgs));
         }
 
         [Fact]

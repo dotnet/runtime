@@ -378,9 +378,7 @@ namespace System
 
             uriString = serializationInfo.GetString("RelativeUri");  // Do not rename (binary serialization)
             if ((object?)uriString == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, arguments not applicable
-                throw new ArgumentNullException(nameof(uriString));
-#pragma warning restore CA2208
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "RelativeUri"), nameof(serializationInfo));
 
             CreateThis(uriString, false, UriKind.Relative);
         }

@@ -639,11 +639,8 @@ namespace System.Drawing
                 {
                     try
                     {
-                        // We threw this way on NetFX
                         if (outputStream == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, NetFX compatability
-                            throw new ArgumentNullException("dataStream");
-#pragma warning restore CA2208
+                            throw new ArgumentNullException(nameof(outputStream));
 
                         picture.SaveAsFile(new GPStream(outputStream, makeSeekable: false), -1, out int temp);
                     }

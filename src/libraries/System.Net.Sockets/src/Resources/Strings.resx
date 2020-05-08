@@ -194,7 +194,7 @@
     <value>The specified value cannot be negative.</value>
   </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
-    <value>Argument {2} must be between {0} and {1}.</value>
+    <value>Argument '{2}' must be between {0} and {1}.</value>
   </data>
   <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">
     <value>Sockets on this platform are invalid for use after a failed connection attempt.</value>
@@ -258,5 +258,8 @@
   </data>
   <data name="net_sockets_asyncoperations_notallowed" xml:space="preserve">
     <value>Asynchronous operations are not allowed on this socket. The underlying OS handle might have been already bound to an IO completion port.</value>
+  </data>
+  <data name="InvalidNullArgument" xml:space="preserve">
+    <value>Null is not a valid value for {0}.</value>
   </data>
 </root>

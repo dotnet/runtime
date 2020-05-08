@@ -45,9 +45,7 @@ namespace System.Security.Cryptography.Pkcs
             if (contentInfo == null)
                 throw new ArgumentNullException(nameof(contentInfo));
             if (contentInfo.Content == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
-                throw new ArgumentNullException("contentInfo.Content");
-#pragma warning restore CA2208
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString, "contentInfo.Content"), nameof(contentInfo));
 
             // Normalize the subject identifier type the same way as .NET Framework.
             // This value is only used in the zero-argument ComputeSignature overload,

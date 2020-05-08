@@ -261,7 +261,7 @@ namespace System.Reflection.Emit
             if (interfaceType == null)
                 throw new ArgumentNullException(nameof(interfaceType));
             if (interfaceType.IsByRef)
-                throw new ArgumentException(null, nameof(interfaceType));
+                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
             check_not_created();
 
             if (interfaces != null)
@@ -479,7 +479,7 @@ namespace System.Reflection.Emit
             if (IsInterface)
                 throw new InvalidOperationException();
             if ((attributes & (MethodAttributes.Static | MethodAttributes.Virtual)) > 0)
-                throw new ArgumentException(null, nameof(attributes));
+                throw new ArgumentException(SR.Arg_NoStaticVirtual);
 
             if (parent != null)
                 parent_type = parent;
@@ -1597,7 +1597,7 @@ namespace System.Reflection.Emit
             else
             {
                 if (parent.IsInterface)
-                    throw new ArgumentException(null, nameof(parent));
+                    throw new ArgumentException(SR.Argument_CannotSetParentToInterface);
                 this.parent = parent;
             }
             this.parent = ResolveUserType(this.parent);

@@ -185,12 +185,8 @@ namespace System.Drawing.Drawing2D
                 if (value == null || value.Factors == null)
                     throw new NullReferenceException();
 
-                // The Desktop implementation throws ArgumentNullException("source") because it never validates the value of value.Positions, and then passes it
-                // on to Marshal.Copy(value.Positions, 0, positions, count);. The first argument of Marshal.Copy is source, hence this exception.
                 if (value.Positions == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, Desktop compatability
-                    throw new ArgumentNullException("source");
-#pragma warning restore CA2208
+                    throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "value.Positions", value.Positions), nameof(value));
 
                 int count = value.Factors.Length;
 
@@ -300,18 +296,14 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                // The Desktop implementation will throw various exceptions - ranging from NullReferenceExceptions to Argument(OutOfRange)Exceptions
-                // depending on how sane the input is. These checks exist to replicate the exact Desktop behavior.
                 int count = value.Colors.Length;
 
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, Desktop compatability
                 if (value.Positions == null)
-                    throw new ArgumentNullException("source");
+                    throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "value.Positions", value.Positions), nameof(value));
                 if (value.Colors.Length > value.Positions.Length)
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 if (value.Colors.Length < value.Positions.Length)
-                    throw new ArgumentException();
-#pragma warning restore CS2208
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 float[] positions = value.Positions;
                 int[] argbs = new int[count];
