@@ -18,6 +18,9 @@ endif ()
 # JIT_BUILD disables certain PAL_TRY debugging features
 add_definitions(-DJIT_BUILD)
 
+# enable ad-hoc profile
+add_definitions(-DJIT_ADHOC_PROFILE)
+
 if(CLR_CMAKE_TARGET_WIN32)
   set(JIT_RESOURCES Native.rc)
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -69,6 +72,7 @@ set( JIT_SOURCES
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
+  profile.cpp
   rangecheck.cpp
   rationalize.cpp
   regalloc.cpp
@@ -161,6 +165,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     objectalloc.h
     opcode.h
     phase.h
+    profile.h
     rangecheck.h
     rationalize.h
     regalloc.h

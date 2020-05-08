@@ -18,6 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "allocacheck.h" // for alloca
 #include "lower.h"       // for LowerRange()
+#include "profile.h"
 
 /*****************************************************************************/
 
@@ -179,6 +180,7 @@ void Compiler::fgInit()
 
 bool Compiler::fgHaveProfileData()
 {
+    // TODO:ad-hoc allow profile counts for inlinees
     if (compIsForInlining() || compIsForImportOnly())
     {
         return false;
@@ -237,6 +239,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     {
         if (fgBlockCounts[i].ILOffset == offset)
         {
+            JITDUMP("Found profile count for IL offset %u: %u\n", offset, fgBlockCounts[i].ExecutionCount);
             weight = fgBlockCounts[i].ExecutionCount;
 
             *weightWB = weight;
@@ -382,6 +385,122 @@ void Compiler::fgInstrumentMethod()
 
     fgInsertStmtAtEnd(fgFirstBB, stmt);
 }
+
+#if defined(JIT_ADHOC_PROFILE)
+
+//------------------------------------------------------------------------
+// fgInstrumentMethodJitProfile: instrument method for in-process profile
+//   collection
+//
+// Notes:
+//   If this is the first method to be instrumented, we first allocate the
+//   in process profile buffer. This must persist throughout the life of the process.
+//
+//   We then determine how much buffer space this method needs and grab a suitable
+//   sub-range of the buffer for use by this method. This range is split into a header
+//   portion and then one record per block. We initialize the header details
+//   and set the IL offset for each record.
+//
+//   Codegen then adds probes to each block to increment the counter portion
+//   of the corresponding record when the jitted code is run.
+//
+void Compiler::fgInstrumentMethodJitProfile()
+{
+    // Only instrument jitted code
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    {
+        return;
+    }
+
+    // Only instrument root methods (for now)
+    // We can support probes inlinees with a bit more work.
+    //
+    if (compIsForInlining())
+    {
+        return;
+    }
+
+    // Determine how many probes we'll need for this method.
+    // For now we just instrument each non-internal block
+    // like we would for IBC.
+    //
+    unsigned probeCount = 0;
+    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    {
+        if (!(block->bbFlags & BBF_IMPORTED) || (block->bbFlags & BBF_INTERNAL))
+        {
+            continue;
+        }
+
+        probeCount++;
+    }
+
+    JITDUMP("Adhoc profile: need %u probes\n", probeCount);
+
+    // Request profile buffer space
+    //
+    const unsigned                  recordCount   = probeCount + 2;
+    ICorJitInfo::BlockCounts* const profileBuffer = Profile::allocateMethodData(recordCount);
+
+    if (profileBuffer == nullptr)
+    {
+        JITDUMP("Adhoc profile: unable to get profile buffer for this method\n");
+        return;
+    }
+
+    // Write method header
+    //
+    Profile::Header* header = (Profile::Header*)profileBuffer;
+    header->recordCount     = recordCount;
+    header->token           = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+    header->hash            = info.compCompHnd->getMethodHash(info.compMethodHnd);
+    header->ilSize          = info.compILCodeSize;
+
+    // Set up the block probes
+    //
+    ICorJitInfo::BlockCounts* const blockBuffer = &profileBuffer[2];
+    unsigned                        count       = 0;
+
+    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    {
+        if (!(block->bbFlags & BBF_IMPORTED) || (block->bbFlags & BBF_INTERNAL))
+        {
+            continue;
+        }
+
+        // Each Record is (IL offset, count).
+        // IL offset is static so we write it now.
+        //
+        blockBuffer[count].ILOffset = block->bbCodeOffs;
+
+        // Add code to increment the count at runtime.
+        //
+        const size_t blockCountPtr = (size_t)&blockBuffer[count].ExecutionCount;
+
+        GenTree*   oldValue = gtNewIndOfIconHandleNode(TYP_INT, blockCountPtr, GTF_ICON_BBC_PTR, true);
+        GenTree*   newValue = gtNewOperNode(GT_ADD, TYP_INT, oldValue, gtNewIconNode(1));
+        GenTree*   address  = gtNewIndOfIconHandleNode(TYP_INT, blockCountPtr, GTF_ICON_BBC_PTR, true);
+        GenTree*   result   = gtNewAssignNode(address, newValue);
+        Statement* stmt     = gtNewStmt(result);
+
+        if (block == fgFirstBB)
+        {
+            fgEnsureFirstBBisScratch();
+            fgInsertStmtAtBeg(fgFirstBB, stmt);
+        }
+        else
+        {
+            fgInsertStmtAtBeg(block, stmt);
+        }
+
+        count++;
+    }
+
+    assert(count == probeCount);
+}
+
+#endif // defined(JIT_ADHOC_PROFILE)
 
 /*****************************************************************************
  *

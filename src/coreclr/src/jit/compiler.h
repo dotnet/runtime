@@ -5334,6 +5334,13 @@ protected:
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weight);
     void fgInstrumentMethod();
 
+#if defined(JIT_ADHOC_PROFILE)
+
+    void fgInstrumentMethodJitProfile();
+    void findProfileData();
+
+#endif // defined(JIT_ADHOC_PROFILE)
+
 public:
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method
     //                           or if we have some fake profile data for the stress mode
@@ -9020,12 +9027,12 @@ public:
         double      compPerfScore;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG) || defined(INLINE_DATA) || defined(JIT_ADHOC_PROFILE)
         // Method hash is logcally const, but computed
         // on first demand.
         mutable unsigned compMethodHashPrivate;
         unsigned         compMethodHash() const;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(JIT_ADHOC_PROFILE)
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
         // things for pseudorandom nop insertion

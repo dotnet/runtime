@@ -23,6 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
 #include "patchpointinfo.h"
+#include "profile.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -1697,7 +1698,86 @@ void Compiler::compShutdown()
 #endif // DEBUG
     fprintf(fout, "   NYI:                 %u\n", fatal_NYI);
 #endif // MEASURE_FATAL
+
+#if defined(JIT_ADHOC_PROFILE)
+    Profile::writeProfileData();
+#endif // defined(JIT_ADHOC_PROFILE)
 }
+
+#if defined(JIT_ADHOC_PROFILE)
+
+//------------------------------------------------------------------------
+// findProfileData: locate in-process profile for a method
+//
+// Notes:
+//   Searches the in-process profile buffer for data for the method
+//   currently being jitted.
+//
+//   If the search is successful, the data is made available to jit
+//   phases exactly as IBC data is made available, via compiler fields
+//   fgBlockCounts, fgBlockCountCounts, and fgNumProfileRuns.
+//
+//   If the search fails, these fields retain their default values.
+//
+void Compiler::findProfileData()
+{
+    // Bail if there's no profile data.
+    //
+    if (Profile::s_ProfileData == nullptr)
+    {
+        JITDUMP("No profile buffer\n");
+        return;
+    }
+
+    // See if we can find counts for this method from our internal profile buffer.
+    //
+    const unsigned maxIndex = Profile::s_ProfileIndex;
+    const unsigned token    = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+    const unsigned hash     = info.compCompHnd->getMethodHash(info.compMethodHnd);
+
+    unsigned index = 0;
+
+    while (index < maxIndex)
+    {
+        // The first two "records" of each entry are actually header data
+        // to identify the method.
+        //
+        Profile::Header* const header = (Profile::Header*)&Profile::s_ProfileData[index];
+
+        // Sanity check that header data looks reasonable. If not, just
+        // fail the lookup.
+        //
+        if ((header->recordCount < Profile::MIN_RECORD_COUNT) || (header->recordCount > Profile::MAX_RECORD_COUNT))
+        {
+            break;
+        }
+
+        // See if the header info matches the current method.
+        //
+        if ((header->token == token) && (header->hash == hash) && (header->ilSize == info.compILCodeSize))
+        {
+            // Yep, found data.
+            //
+            fgBlockCounts      = &Profile::s_ProfileData[index + 2];
+            fgBlockCountsCount = header->recordCount - 2;
+            fgNumProfileRuns   = 1;
+            break;
+        }
+
+        index += header->recordCount;
+    }
+
+    if (fgBlockCounts == nullptr)
+    {
+        JITDUMP("Failed to find profile data for %s, checked %u records\n", info.compFullName, maxIndex);
+    }
+    else
+    {
+        JITDUMP("Found profile data for %s at index %u\n", info.compFullName, index + 2);
+    }
+}
+
+#endif // defined(JIT_ADHOC_PROFILE)
 
 /*****************************************************************************
  *  Display static data structure sizes.
@@ -3145,6 +3225,28 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
     }
 
+#if defined(JIT_ADHOC_PROFILE)
+    if (fgBlockCounts == nullptr)
+    {
+        bool checkForData = false;
+
+        if (JitConfig.JitTieredPGO() && (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1)))
+        {
+            checkForData = true;
+        }
+        else if (JitConfig.JitReadProfileData() != nullptr)
+        {
+            Profile::readProfileData();
+            checkForData = true;
+        }
+
+        if (checkForData)
+        {
+            findProfileData();
+        }
+    }
+#endif // defined(JIT_ADHOC_PROFILE)
+
 #ifdef DEBUG
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
     if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
@@ -4296,6 +4398,13 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
+#if defined(JIT_ADHOC_PROFILE)
+    else if ((JitConfig.JitWriteProfileData() != nullptr) ||
+             (JitConfig.JitTieredPGO() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0)))
+    {
+        fgInstrumentMethodJitProfile();
+    }
+#endif // defined(JIT_ADHOC_PROBES)
 
     // We could allow ESP frames. Just need to reserve space for
     // pushing EBP if the method becomes an EBP-frame after an edit.
@@ -5216,7 +5325,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG) || defined(INLINE_DATA) || defined(JIT_ADHOC_PROFILE)
     info.compMethodHashPrivate = 0;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -5430,7 +5539,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         return param.result;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG) || defined(INLINE_DATA) || defined(JIT_ADHOC_PROFILE)
 unsigned Compiler::Info::compMethodHash() const
 {
     if (compMethodHashPrivate == 0)
@@ -5444,7 +5553,7 @@ unsigned Compiler::Info::compMethodHash() const
     }
     return compMethodHashPrivate;
 }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(JIT_ADHOC_PROFILE)
 
 void Compiler::compCompileFinish()
 {

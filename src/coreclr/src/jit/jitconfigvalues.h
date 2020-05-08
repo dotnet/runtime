@@ -445,6 +445,17 @@ CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow 
                                                                        // when possible.
 #endif                                                                 // FEATURE_MULTIREG_RET
 
+#if defined(DEBUG) || defined(JIT_ADHOC_PROFILE)
+// instrument all jitted code and write profile data to
+// indicated file at jit shutdown
+CONFIG_STRING(JitWriteProfileData, W("JitWriteProfileData"))
+// read profile data from indicated file
+CONFIG_STRING(JitReadProfileData, W("JitReadProfileData"))
+// instrument tier0 code and write profile data to memory, read
+// profile data during tier1
+CONFIG_INTEGER(JitTieredPGO, W("JitTieredPGO"), 0)
+#endif // defined(DEBUG) || defined(JIT_ADHOC_PROFILE)
+
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING
 #undef CONFIG_METHODSET
