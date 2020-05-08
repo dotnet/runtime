@@ -132,11 +132,11 @@ namespace System
 
             static ulong SoftwareFallback(ulong a, ulong b, out ulong low)
             {
-                // it's adoption of algorithm for multiplication
+                // It's adoption of algorithm for multiplication
                 // of 32-bit unsigned integers described
                 // in Hacker's Delight by Henry S. Warren, Jr. (ISBN 0-201-91465-4), Chapter 8
                 // Basically, it's an optimized version of FOIL method applied to
-                // low and high dwords of each operand 
+                // low and high dwords of each operand
                 const ulong lowBitsMask = 0xFFFFFFFFU;
 
                 ulong al = a & lowBitsMask;
