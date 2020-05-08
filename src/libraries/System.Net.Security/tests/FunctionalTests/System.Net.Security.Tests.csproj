@@ -66,6 +66,8 @@
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="..\..\src\System\Net\Security\SniHelper.cs"
              Link="src\SniHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
+             Link="src\TlsFrameHelper.cs" />
     <Compile Include="SniHelperTest.cs" />
     <Compile Include="SslAuthenticationOptionsTest.cs" />
     <Compile Include="SslStreamAlertsTest.cs" />

@@ -63,13 +63,3 @@ Each test project can potentially have multiple target frameworks. There are som
 ```cmd
 dotnet build src\libraries\System.Runtime\tests\System.Runtime.Tests.csproj /p:BuildTargetFramework=net472
 ```
-
-## Running tests from Visual Studio
-
-**Test Explorer** will be able to discover the tests only if the solution is opened with `build -vs` command, e.g.:
-```cmd
-build -vs System.Net.Http
-```
-If running the tests from **Test Explorer** does nothing, it probably tries to use x86 dotnet installation instead of the x64 one. It can be fixed by setting the x64 architecture manually in the test settings.
-
-It is also possible to execute the tests by simply debugging the test project once it's been built. It will underneath call the same command as `dotnet build /t:Test` does.

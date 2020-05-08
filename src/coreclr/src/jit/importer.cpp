@@ -4504,7 +4504,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
         {
-            result = HWIntrinsicInfo::lookupId(this, className, methodName, enclosingClassName);
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(method, &sig);
+
+            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
         }
         else if (strcmp(methodName, "get_IsSupported") == 0)
         {
@@ -17494,7 +17497,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 #ifdef DEBUG
             char buffer[400];
             sprintf_s(buffer, sizeof(buffer),
-                      "Block at offset %4.4x to %4.4x in %s entered with different stack depths.\n"
+                      "Block at offset %4.4x to %4.4x in %0.200s entered with different stack depths.\n"
                       "Previous depth was %d, current depth is %d",
                       block->bbCodeOffs, block->bbCodeOffsEnd, info.compFullName, block->bbStkDepth,
                       verCurrentState.esStackDepth);

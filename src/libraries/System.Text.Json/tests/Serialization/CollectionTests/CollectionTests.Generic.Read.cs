@@ -1116,6 +1116,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void Kvp_NullKeyIsFine()
+        {
+            KeyValuePair<string, string> kvp = JsonSerializer.Deserialize<KeyValuePair<string, string>>(@"{""Key"":null,""Value"":null}");
+            Assert.Null(kvp.Key);
+            Assert.Null(kvp.Value);
+        }
+
+        [Fact]
         public static void ReadSimpleTestClass_GenericCollectionWrappers()
         {
             SimpleTestClassWithGenericCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithGenericCollectionWrappers>(SimpleTestClassWithGenericCollectionWrappers.s_json);

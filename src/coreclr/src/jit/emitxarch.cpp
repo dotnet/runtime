@@ -10765,7 +10765,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
-        assert((emitChkAlign == false) || (ins == INS_lea) || (((size_t)addr & (byteSize - 1)) == 0));
+        assert((emitChkAlign == false) || (ins == INS_lea) ||
+               ((byteSize < 16) && (((size_t)addr & (byteSize - 1)) == 0)) || (((size_t)addr & (16 - 1)) == 0));
     }
     else
     {

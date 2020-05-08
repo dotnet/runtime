@@ -45,6 +45,8 @@
     <PropertyGroup>
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
       <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' == 'true'">hostpolicy</HostPolicyFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' != 'true'">libhostpolicy</HostPolicyFileName>
 
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
@@ -53,6 +55,7 @@
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
+      <HostPolicyFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostPolicyFileName)'" />
       <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
     </ItemGroup>
 
@@ -68,6 +71,12 @@
 
     <Copy SourceFiles="@(DotnetExe)"
           DestinationFolder="$(TestHostRootPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
+    <Copy Condition="'$(RuntimeFlavor)' == 'Mono'"
+          SourceFiles="@(HostPolicyFile)"
+          DestinationFolder="$(TestHostRootPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 

@@ -1334,7 +1334,13 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
         else if (arg->OperIs(GT_SIMD, GT_HWINTRINSIC))
         {
             GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
-            assert((jitIntrinsic->gtSIMDSize == 12) || (jitIntrinsic->gtSIMDSize == 16));
+
+            // For HWIntrinsic, there are some intrinsics like ExtractVector128 which have
+            // a gtType of TYP_SIMD16 but a gtSIMDSize of 32, so we need to include that in
+            // the assert below.
+
+            assert((jitIntrinsic->gtSIMDSize == 12) || (jitIntrinsic->gtSIMDSize == 16) ||
+                   (jitIntrinsic->gtSIMDSize == 32));
 
             if (jitIntrinsic->gtSIMDSize == 12)
             {
