@@ -1990,14 +1990,22 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
             return;
         }
     }
+
+    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(storeLoc))
     {
-        if (op1->IsCnsIntOrI())
+        assert(!op1->IsCnsIntOrI());
+        if (storeLoc->TypeIs(TYP_SIMD12) && op1->IsSIMDZero() && varDsc->lvDoNotEnregister)
         {
-            // For an InitBlk we want op1 to be contained; otherwise we want it to
-            // be evaluated into an xmm register.
+            // For a SIMD12 store we can zero from integer registers more easily.
             MakeSrcContained(storeLoc, op1);
+            GenTree* constNode = op1->gtGetOp1();
+            assert(constNode->OperIsConst());
+            constNode->ClearContained();
+            constNode->gtType = TYP_INT;
+            constNode->SetOper(GT_CNS_INT);
         }
         return;
     }
@@ -2006,8 +2014,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
-    var_types        type   = varDsc->GetRegisterType(storeLoc);
+    var_types type = varDsc->GetRegisterType(storeLoc);
     if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(type)))
     {
         MakeSrcContained(storeLoc, op1);
