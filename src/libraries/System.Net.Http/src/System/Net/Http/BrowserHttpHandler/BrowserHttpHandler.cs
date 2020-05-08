@@ -167,7 +167,7 @@ namespace System.Net.Http
         private async Task<HttpResponseMessage> DoFetch(HttpRequestMessage request, CancellationToken cancellationToken)
         {
 
-            var tcs = new TaskCompletionSource<HttpResponseMessage>();
+            var tcs = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // Wrap the cancellationToken in a using so that it can be disposed of whether
             // we successfully fetched or failed trying.
