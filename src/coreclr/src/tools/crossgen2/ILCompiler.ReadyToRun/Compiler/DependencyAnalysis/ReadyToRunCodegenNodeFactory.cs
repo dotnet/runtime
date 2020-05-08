@@ -67,19 +67,20 @@ namespace ILCompiler.DependencyAnalysis
             _markingComplete = true;
         }
 
-        public IMethodNode CompiledMethodNode(MethodDesc method)
-        {
-            EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
-            ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
+        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
 
-            return CreateMethodEntrypointNodeHelper(new MethodWithToken(method, moduleToken, constrainedType: null));
+        public MethodWithGCInfo CompiledMethodNode(MethodDesc method)
+        {
+            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(method, false));
+            Debug.Assert(method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            return _localMethodCache.GetOrAdd(method);
         }
 
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
 
         public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
         {
-            return _allMethodsOnType.GetOrAdd(type);
+            return _allMethodsOnType.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
@@ -350,7 +351,8 @@ namespace ILCompiler.DependencyAnalysis
             bool isUnboxingStub = key.IsUnboxingStub;
             bool isInstantiatingStub = key.IsInstantiatingStub;
             bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
-            if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
+            MethodDesc compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (CompilationModuleGroup.ContainsMethodBody(compilableMethod, false))
             {
                 if (isPrecodeImportRequired)
                 {
@@ -358,7 +360,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method),
+                        CompiledMethodNode(compilableMethod),
                         isUnboxingStub,
                         isInstantiatingStub);
                 }
@@ -368,7 +370,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method),
+                        CompiledMethodNode(compilableMethod),
                         isUnboxingStub,
                         isInstantiatingStub);
                 }
@@ -389,15 +391,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, isPrecodeImportRequired);
             return _importMethods.GetOrAdd(key);
-        }
-
-        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
-
-        private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod)
-        {
-            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
-
-            return _localMethodCache.GetOrAdd(targetMethod.Method);
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
