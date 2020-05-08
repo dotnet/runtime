@@ -729,7 +729,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 }
 
 // Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
-// arguments. If not a phi argument, check if we assertions about local variables.
+// arguments. If not a phi argument, check if we have assertions about local variables.
 void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of " FMT_BB " for op [%06d] " FMT_VN "\n", block->bbNum,
