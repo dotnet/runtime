@@ -2549,7 +2549,7 @@ namespace System
         public static double Atanh(double d) { throw null; }
         public static long BigMul(int a, int b) { throw null; }
         [System.CLSCompliantAttribute(false)]
-	    public static ulong BigMul(ulong a, ulong b, out ulong low) { throw null; }
+        public static ulong BigMul(ulong a, ulong b, out ulong low) { throw null; }
         public static long BigMul(long a, long b, out long low) { throw null; }
         public static double BitDecrement(double x) { throw null; }
         public static double BitIncrement(double x) { throw null; }
