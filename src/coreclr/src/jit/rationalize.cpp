@@ -785,10 +785,19 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // type(s).
             if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->gtSIMDSize == TARGET_POINTER_SIZE))
             {
-                // This happens when it is consumed by a GT_RET_EXPR.
-                // It can only be a Vector2f or Vector2i.
-                assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
-                hwIntrinsicNode->gtType = TYP_SIMD8;
+                // Special case for GetElement/ToScalar because they take Vector64<T> and return T which can be
+                // long/ulong.
+#ifdef TARGET_ARM64
+                if (!(hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_GetElement ||
+                      hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_ToScalar))
+#endif
+                {
+                    // This happens when it is consumed by a GT_RET_EXPR.
+                    // It can only be a Vector2f or Vector2i.
+                    assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
+                    hwIntrinsicNode->gtType = TYP_SIMD8;
+                }
+                
             }
             break;
         }
