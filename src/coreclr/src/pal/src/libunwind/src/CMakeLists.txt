@@ -52,7 +52,7 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
         add_compile_options(-Wno-absolute-value)
     endif()
     # Issue https://github.com/libunwind/libunwind/issues/176
-    if (CLR_CMAKE_TARGET_ALPINE_LINUX)
+    if (CLR_CMAKE_HOST_ALPINE_LINUX)
       add_definitions("-D__sigset_t=sigset_t")
     endif()
     # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
