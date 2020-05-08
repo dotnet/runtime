@@ -3257,9 +3257,6 @@ public:
     PER_HEAP_ISOLATED
     size_t gc_last_ephemeral_decommit_time;
 
-    PER_HEAP_ISOLATED
-    size_t gc_gen0_desired_high;
-
     PER_HEAP
     size_t gen0_big_free_spaces;
 

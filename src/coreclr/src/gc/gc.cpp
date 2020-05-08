@@ -1866,7 +1866,11 @@ const int max_snoop_level = 128;
 #define MH_TH_CARD_BUNDLE  (180*1024*1024)
 #endif //CARD_BUNDLE
 
-#define GC_EPHEMERAL_DECOMMIT_TIMEOUT 5000
+// max size to decommit per millisecond
+#define DECOMMIT_SIZE_PER_MILLISECOND (160*1024)
+
+// time in milliseconds between decommit steps
+#define DECOMMIT_TIME_STEP_MILLISECONDS (100)
 
 inline
 size_t align_on_page (size_t add)
@@ -2138,8 +2142,6 @@ gc_mechanisms  gc_heap::settings;
 gc_history_global gc_heap::gc_data_global;
 
 size_t      gc_heap::gc_last_ephemeral_decommit_time = 0;
-
-size_t      gc_heap::gc_gen0_desired_high;
 
 CLRCriticalSection gc_heap::check_commit_cs;
 
@@ -5396,8 +5398,7 @@ void gc_heap::gc_thread_function ()
 
         if (heap_number == 0)
         {
-            const int DECOMMIT_TIME_STEP = 100; // milliseconds
-            uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? DECOMMIT_TIME_STEP : INFINITE, FALSE);
+            uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? DECOMMIT_TIME_STEP_MILLISECONDS : INFINITE, FALSE);
             if (wait_result == WAIT_TIMEOUT)
             {
                 gradual_decommit_in_progress_p = decommit_step ();
@@ -31787,7 +31788,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
         gradual_decommit_in_progress_p = TRUE;
     }
     // these are only for checking against logic errors
-    ephemeral_heap_segment->saved_committed = heap_segment_committed(ephemeral_heap_segment);
+    ephemeral_heap_segment->saved_committed = heap_segment_committed (ephemeral_heap_segment);
     ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation(dd0);
 #endif // MULTIPLE_HEAPS
 
@@ -31800,10 +31801,10 @@ void gc_heap::decommit_ephemeral_segment_pages()
     // this is the amount we were planning to decommit
     ptrdiff_t decommit_size = heap_segment_committed (ephemeral_heap_segment) - decommit_target;
 
-    // we do a max of 160 kB per millisecond (160 MB per second) of pause time
-    // we don't want to take large pause times too seriously - limit to 10 seconds
-    ptrdiff_t max_decommit_size = min(ephemeral_elapsed, 10*1000) * 160 * 1024;
-    decommit_size = min(decommit_size, max_decommit_size);
+    // we do a max of DECOMMIT_SIZE_PER_MILLISECOND per millisecond of elapsed time since the last GC
+    // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
+    ptrdiff_t max_decommit_size = min (ephemeral_elapsed, (10*1000)) * DECOMMIT_SIZE_PER_MILLISECOND;
+    decommit_size = min (decommit_size, max_decommit_size);
 
     slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment) - decommit_size;
     decommit_heap_segment_pages (ephemeral_heap_segment, slack_space);
@@ -31850,11 +31851,16 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
             GCToOSInterface::DebugBreak();
         }
 
-        const size_t DECOMMIT_STEP_SIZE = max (4096 / n_heaps, 100) * OS_PAGE_SIZE;
-        uint8_t* page_start = align_on_page ( max (decommit_target, committed - DECOMMIT_STEP_SIZE) );
-        size_t size = committed - page_start;
-        virtual_decommit(page_start, size, heap_number);
-        dprintf(3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
+        // limit the decommit size to some reasonable value per time interval
+        size_t decommit_size = align_on_page ((DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS) / n_heaps);
+
+        // but do at least 100 pages to make the OS call worthwhile
+        decommit_size = max (decommit_size, 100 * OS_PAGE_SIZE);
+
+        uint8_t* page_start = align_on_page ( max (decommit_target, (committed - decommit_size)));
+        size_t size = (committed - page_start);
+        virtual_decommit (page_start, size, heap_number);
+        dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
             (size_t)page_start,
             (size_t)(page_start + size),
             size));
