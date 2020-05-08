@@ -160,14 +160,8 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException("Property Properties is not supported.");
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            return DoFetch(request, cancellationToken);
-        }
-
-        private async Task<HttpResponseMessage> DoFetch(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-
             var tcs = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // Wrap the cancellationToken in a using so that it can be disposed of whether
