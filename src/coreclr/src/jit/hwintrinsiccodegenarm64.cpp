@@ -430,6 +430,35 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;
 
+            case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+            case NI_AdvSimd_DuplicateSelectedScalarToVector128:
+            case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+            {
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                // The emitSize is currently set off of node->gtSIMDSize which tracks
+                // the size of the first operand and is used to tell if the index
+                // is in range. However, when actually emitting it needs to be the size
+                // of the return and the size of the operand is interpreted based on the
+                // index value.
+
+                assert(
+                    GetEmitter()->isValidVectorIndex(emitSize, GetEmitter()->optGetElemsize(opt), helper.ImmValue()));
+
+                emitSize = emitActualTypeSize(node->gtType);
+                opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    assert(opt != INS_OPTS_NONE);
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, elementIndex, opt);
+                }
+
+                break;
+            }
+
             case NI_AdvSimd_Extract:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);

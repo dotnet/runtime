@@ -641,6 +641,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vdupq_laneq_f64 (float64x2_t vec, const int lane)
+            ///   A64: DUP Vd.2D, Vn.D[index]
+            /// </summary>
+            public static System.Runtime.Intrinsics.Vector128<double> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<double> value, byte index) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vdupq_laneq_s64 (int64x2_t vec, const int lane)
+            ///   A64: DUP Vd.2D, Vn.D[index]
+            /// </summary>
+            public static System.Runtime.Intrinsics.Vector128<long> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<long> value, byte index) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vdupq_laneq_u64 (uint64x2_t vec, const int lane)
+            ///   A64: DUP Vd.2D, Vn.D[index]
+            /// </summary>
+            public static System.Runtime.Intrinsics.Vector128<ulong> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vdupq_n_f64 (float64_t value)
             ///   A64: DUP Vd.2D, Vn.D[0]
             /// </summary>
@@ -4218,6 +4236,202 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vdup_lane_u8 (uint8x8_t vec, const int lane)
+        ///   A32: VDUP.8 Dd, Dm[index]
+        ///   A64: DUP Vd.8B, Vn.B[index]
+        /// </summary>
+        public static Vector64<byte> DuplicateSelectedScalarToVector64(Vector64<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vdup_lane_s16 (int16x4_t vec, const int lane)
+        ///   A32: VDUP.16 Dd, Dm[index]
+        ///   A64: DUP Vd.4H, Vn.H[index]
+        /// </summary>
+        public static Vector64<short> DuplicateSelectedScalarToVector64(Vector64<short> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vdup_lane_s32 (int32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<int> DuplicateSelectedScalarToVector64(Vector64<int> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vdup_lane_f32 (float32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<float> DuplicateSelectedScalarToVector64(Vector64<float> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vdup_lane_s8 (int8x8_t vec, const int lane)
+        ///   A32: VDUP.8 Dd, Dm[index]
+        ///   A64: DUP Vd.8B, Vn.B[index]
+        /// </summary>
+        public static Vector64<sbyte> DuplicateSelectedScalarToVector64(Vector64<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vdup_lane_u16 (uint16x4_t vec, const int lane)
+        ///   A32: VDUP.16 Dd, Dm[index]
+        ///   A64: DUP Vd.4H, Vn.H[index]
+        /// </summary>
+        public static Vector64<ushort> DuplicateSelectedScalarToVector64(Vector64<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vdup_lane_u32 (uint32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<uint> DuplicateSelectedScalarToVector64(Vector64<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vdup_laneq_u8 (uint8x16_t vec, const int lane)
+        ///   A32: VDUP.8 Dd, Dm[index]
+        ///   A64: DUP Vd.8B, Vn.B[index]
+        /// </summary>
+        public static Vector64<byte> DuplicateSelectedScalarToVector64(Vector128<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vdup_laneq_s16 (int16x8_t vec, const int lane)
+        ///   A32: VDUP.16 Dd, Dm[index]
+        ///   A64: DUP Vd.4H, Vn.H[index]
+        /// </summary>
+        public static Vector64<short> DuplicateSelectedScalarToVector64(Vector128<short> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vdup_laneq_s32 (int32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<int> DuplicateSelectedScalarToVector64(Vector128<int> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vdup_laneq_f32 (float32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<float> DuplicateSelectedScalarToVector64(Vector128<float> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vdup_laneq_s8 (int8x16_t vec, const int lane)
+        ///   A32: VDUP.8 Dd, Dm[index]
+        ///   A64: DUP Vd.8B, Vn.B[index]
+        /// </summary>
+        public static Vector64<sbyte> DuplicateSelectedScalarToVector64(Vector128<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vdup_laneq_u16 (uint16x8_t vec, const int lane)
+        ///   A32: VDUP.16 Dd, Dm[index]
+        ///   A64: DUP Vd.4H, Vn.H[index]
+        /// </summary>
+        public static Vector64<ushort> DuplicateSelectedScalarToVector64(Vector128<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vdup_laneq_u32 (uint32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<uint> DuplicateSelectedScalarToVector64(Vector128<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vdupq_lane_u8 (uint8x8_t vec, const int lane)
+        ///   A32: VDUP.8 Qd, Dm[index]
+        ///   A64: DUP Vd.16B, Vn.B[index]
+        /// </summary>
+        public static Vector128<byte> DuplicateSelectedScalarToVector128(Vector64<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vdupq_lane_s16 (int16x4_t vec, const int lane)
+        ///   A32: VDUP.16 Qd, Dm[index]
+        ///   A64: DUP Vd.8H, Vn.H[index]
+        /// </summary>
+        public static Vector128<short> DuplicateSelectedScalarToVector128(Vector64<short> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vdupq_lane_s32 (int32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<int> DuplicateSelectedScalarToVector128(Vector64<int> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vdupq_lane_f32 (float32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<float> DuplicateSelectedScalarToVector128(Vector64<float> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vdupq_lane_s8 (int8x8_t vec, const int lane)
+        ///   A32: VDUP.8 Qd, Dm[index]
+        ///   A64: DUP Vd.16B, Vn.B[index]
+        /// </summary>
+        public static Vector128<sbyte> DuplicateSelectedScalarToVector128(Vector64<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vdupq_lane_u16 (uint16x4_t vec, const int lane)
+        ///   A32: VDUP.16 Qd, Dm[index]
+        ///   A64: DUP Vd.8H, Vn.H[index]
+        /// </summary>
+        public static Vector128<ushort> DuplicateSelectedScalarToVector128(Vector64<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vdupq_lane_u32 (uint32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<uint> DuplicateSelectedScalarToVector128(Vector64<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vdupq_lane_u8 (uint8x16_t vec, const int lane)
+        ///   A32: VDUP.8 Qd, Dm[index]
+        ///   A64: DUP Vd.16B, Vn.B[index]
+        /// </summary>
+        public static Vector128<byte> DuplicateSelectedScalarToVector128(Vector128<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vdupq_lane_s16 (int16x8_t vec, const int lane)
+        ///   A32: VDUP.16 Qd, Dm[index]
+        ///   A64: DUP Vd.8H, Vn.H[index]
+        /// </summary>
+        public static Vector128<short> DuplicateSelectedScalarToVector128(Vector128<short> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vdupq_lane_s32 (int32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<int> DuplicateSelectedScalarToVector128(Vector128<int> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vdupq_lane_f32 (float32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<float> DuplicateSelectedScalarToVector128(Vector128<float> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vdupq_lane_s8 (int8x16_t vec, const int lane)
+        ///   A32: VDUP.8 Qd, Dm[index]
+        ///   A64: DUP Vd.16B, Vn.B[index]
+        /// </summary>
+        public static Vector128<sbyte> DuplicateSelectedScalarToVector128(Vector128<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vdupq_lane_u16 (uint16x8_t vec, const int lane)
+        ///   A32: VDUP.16 Qd, Dm[index]
+        ///   A64: DUP Vd.8H, Vn.H[index]
+        /// </summary>
+        public static Vector128<ushort> DuplicateSelectedScalarToVector128(Vector128<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vdupq_lane_u32 (uint32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<uint> DuplicateSelectedScalarToVector128(Vector128<uint> value, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vdup_n_u8 (uint8_t value)
