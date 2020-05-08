@@ -22,7 +22,7 @@
           </attribute>
         </parameter>
       </method>
-      <method signature="SingleAnnotatedParameter (System.Type, System.Boolean)">
+      <method signature="SpacesBetweenParametersWrongArgument (System.Type, System.Boolean)">
         <parameter name="type">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
             <argument>NonValidArgument</argument>
