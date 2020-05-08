@@ -352,7 +352,7 @@ namespace System.Net.Security
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            if (_framing == Framing.BeforeSSL3)
+            if (_framing == Framing.BeforeSSL3 || _framing == Framing.Unified)
             {
 #pragma warning disable 0618
                 _lastFrame.Header.Version = SslProtocols.Ssl2;
@@ -410,7 +410,7 @@ namespace System.Net.Security
             _handshakeBuffer.Discard(frameSize);
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
+            while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize && _framing != Framing.BeforeSSL3 && _framing == Framing.Unified)
             {
                 TlsFrameHeader nextHeader = default;
 
