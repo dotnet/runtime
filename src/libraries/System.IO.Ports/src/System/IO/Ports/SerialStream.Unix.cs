@@ -464,7 +464,7 @@ namespace System.IO.Ports
         // Will wait `timeout` miliseconds or until reading or writing is possible
         // If no operation is requested it will throw
         // Returns event which has happened
-        private Interop.Sys.PollEvents PollEvents(int timeout, bool pollReadEvents, bool pollWriteEvents, out Interop.ErrorInfo? error)
+        private Interop.Serial.PollEvents PollEvents(int timeout, bool pollReadEvents, bool pollWriteEvents, out Interop.ErrorInfo? error)
         {
             if (!pollReadEvents && !pollWriteEvents)
             {
@@ -472,20 +472,20 @@ namespace System.IO.Ports
                 throw new Exception();
             }
 
-            Interop.Sys.PollEvents eventsToPoll = Interop.Sys.PollEvents.POLLERR;
+            Interop.Serial.PollEvents eventsToPoll = Interop.Serial.PollEvents.POLLERR;
 
             if (pollReadEvents)
             {
-                eventsToPoll |= Interop.Sys.PollEvents.POLLIN;
+                eventsToPoll |= Interop.Serial.PollEvents.POLLIN;
             }
 
             if (pollWriteEvents)
             {
-                eventsToPoll |= Interop.Sys.PollEvents.POLLOUT;
+                eventsToPoll |= Interop.Serial.PollEvents.POLLOUT;
             }
 
-            Interop.Sys.PollEvents events = Interop.Sys.PollEvents.POLLNONE;
-            Interop.Error ret = Interop.Sys.Poll(
+            Interop.Serial.PollEvents events = Interop.Serial.PollEvents.POLLNONE;
+            Interop.Error ret = Interop.Serial.Poll(
                 _handle,
                 eventsToPoll,
                 timeout,
@@ -699,7 +699,7 @@ namespace System.IO.Ports
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
-                int numBytes = Interop.Sys.Read(_handle, bufPtr, buff.Length);
+                int numBytes = Interop.Serial.Read(_handle, bufPtr, buff.Length);
 
                 if (numBytes < 0)
                 {
@@ -731,7 +731,7 @@ namespace System.IO.Ports
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
-                int numBytes = Interop.Sys.Write(_handle, bufPtr, buff.Length);
+                int numBytes = Interop.Serial.Write(_handle, bufPtr, buff.Length);
 
                 if (numBytes <= 0)
                 {
@@ -843,7 +843,7 @@ namespace System.IO.Ports
                 }
                 else
                 {
-                    Interop.Sys.PollEvents events = PollEvents(1,
+                    Interop.Serial.PollEvents events = PollEvents(1,
                                                                pollReadEvents: hasPendingReads,
                                                                pollWriteEvents: hasPendingWrites,
                                                                out Interop.ErrorInfo? error);
@@ -854,21 +854,21 @@ namespace System.IO.Ports
                         break;
                     }
 
-                    if (events.HasFlag(Interop.Sys.PollEvents.POLLNVAL) ||
-                        events.HasFlag(Interop.Sys.PollEvents.POLLERR))
+                    if (events.HasFlag(Interop.Serial.PollEvents.POLLNVAL) ||
+                        events.HasFlag(Interop.Serial.PollEvents.POLLERR))
                     {
                         // bad descriptor or some other error we can't handle
                         FinishPendingIORequests();
                         break;
                     }
 
-                    if (events.HasFlag(Interop.Sys.PollEvents.POLLIN))
+                    if (events.HasFlag(Interop.Serial.PollEvents.POLLIN))
                     {
                         int bytesRead = DoIORequest(_readQueue, _processReadDelegate);
                         _totalBytesRead += bytesRead;
                     }
 
-                    if (events.HasFlag(Interop.Sys.PollEvents.POLLOUT))
+                    if (events.HasFlag(Interop.Serial.PollEvents.POLLOUT))
                     {
                         DoIORequest(_writeQueue, _processWriteDelegate);
                     }

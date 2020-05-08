@@ -129,14 +129,6 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Read.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Write.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Shutdown.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Shutdown.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
