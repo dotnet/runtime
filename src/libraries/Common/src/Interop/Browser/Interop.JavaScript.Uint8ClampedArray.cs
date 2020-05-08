@@ -42,7 +42,7 @@ internal static partial class Interop
             { }
 
             /// <summary>
-            /// Defines an implicit conversion of JavaScript Core Uint8ClampedArray class to a Span of byte
+            /// Defines an implicit conversion of JavaScript Core Uint8ClampedArray class to a Span&lt;byte&gt;
             /// </summary>
             public static implicit operator Span<byte>(Uint8ClampedArray typedarray) => typedarray.ToArray();
 

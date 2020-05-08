@@ -42,7 +42,7 @@ internal static partial class Interop
             { }
 
             /// <summary>
-            /// Defines an implicit conversion of JavaScript Core Uint8Array class to a <see cref="Span<byte>"/>
+            /// Defines an implicit conversion of JavaScript Core Uint8Array class to a Span&lt;byte&gt;
             /// </summary>
             public static implicit operator Span<byte>(Uint8Array typedarray) => typedarray.ToArray();
 
