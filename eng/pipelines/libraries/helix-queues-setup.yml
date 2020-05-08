@@ -88,15 +88,17 @@ jobs:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-          - Windows.7.Amd64.Open
+          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
+          # - Windows.7.Amd64.Open
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
             - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-          - Windows.7.Amd64.Open
-          - Windows.81.Amd64.Open
+          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
+          # - Windows.7.Amd64.Open
+          # - Windows.81.Amd64.Open
           - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
             - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
@@ -115,19 +117,29 @@ jobs:
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.7.Amd64.Open
-          - Windows.81.Amd64.Open
+          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
+          # - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
-            - Windows.7.Amd64.Open
-            - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
+            # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
+            # - Windows.7.Amd64.Open
+            # - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.Open
 
       # NET472
       - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
         - Windows.10.Amd64.Client19H1.Open
+
+    # Windows_NT arm
+    - ${{ if eq(parameters.platform, 'Windows_NT_arm') }}:
+      - Windows.10.Arm64v8.Open
+
+    # Windows_NT arm64
+    - ${{ if eq(parameters.platform, 'Windows_NT_arm64') }}:
+      - Windows.10.Arm64.Open
 
     ${{ insert }}: ${{ parameters.jobParameters }}

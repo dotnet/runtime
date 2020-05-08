@@ -73,6 +73,8 @@ namespace System
                     (uint)Math.Min(newSize, larray.Length));
                 array = newArray;
             }
+
+            Debug.Assert(array != null);
         }
 
         public static Array CreateInstance(Type elementType, params long[] lengths)

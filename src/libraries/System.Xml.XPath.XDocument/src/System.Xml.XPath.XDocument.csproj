@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Xml.XPath.XDocument</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
@@ -8,7 +7,7 @@
   <ItemGroup>
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
   </ItemGroup>

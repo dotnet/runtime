@@ -859,6 +859,7 @@ FCFuncStart(gInterlockedFuncs)
     FCIntrinsicSig("ExchangeAdd", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::ExchangeAdd64, CORINFO_INTRINSIC_InterlockedXAdd64)
 
     FCIntrinsic("MemoryBarrier", COMInterlocked::FCMemoryBarrier, CORINFO_INTRINSIC_MemoryBarrier)
+    FCIntrinsic("ReadMemoryBarrier", COMInterlocked::FCMemoryBarrierLoad, CORINFO_INTRINSIC_MemoryBarrierLoad)
     QCFuncElement("_MemoryBarrierProcessWide", COMInterlocked::MemoryBarrierProcessWide)
 FCFuncEnd()
 
@@ -984,7 +985,8 @@ FCFuncStart(gComWrappersFuncs)
     QCFuncElement("GetIUnknownImplInternal", ComWrappersNative::GetIUnknownImpl)
     QCFuncElement("TryGetOrCreateComInterfaceForObjectInternal", ComWrappersNative::TryGetOrCreateComInterfaceForObject)
     QCFuncElement("TryGetOrCreateObjectForComInstanceInternal", ComWrappersNative::TryGetOrCreateObjectForComInstance)
-    QCFuncElement("SetGlobalInstanceRegistered", GlobalComWrappers::SetGlobalInstanceRegistered)
+    QCFuncElement("SetGlobalInstanceRegisteredForMarshalling", GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling)
+    QCFuncElement("SetGlobalInstanceRegisteredForTrackerSupport", GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 

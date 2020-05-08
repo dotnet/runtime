@@ -1502,7 +1502,7 @@ InternalDispatchImpl_Invoke
         hr = pDispInfo->InvokeMember(pSimpleWrap, dispidMember, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, NULL, puArgErr);
 
     }
-    END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS; // This will ensure that entry points wont swallow CE and continue to let them propagate out.
+    END_EXTERNAL_ENTRYPOINT;
 
     return hr;
 }

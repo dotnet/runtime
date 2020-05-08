@@ -105,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Don't bother sorting if we're not emitting the contents
             if (!relocsOnly)
-                _items.Sort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
+                _items.MergeSort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
 
             // ReadyToRunHeader.Flags
             builder.EmitInt((int)_flags);

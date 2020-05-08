@@ -9,11 +9,9 @@ namespace System.Diagnostics
 {
     public sealed class ActivitySource : IDisposable
     {
-        private static SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
-        private static SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
+        private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
+        private static readonly SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
         private SynchronizedList<ActivityListener>? _listeners;
-
-        private ActivitySource() { throw new InvalidOperationException(); }
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -250,10 +248,10 @@ namespace System.Diagnostics
     // SynchronizedList<T> is a helper collection which ensure thread safety on the collection
     // and allow enumerating the collection items and execute some action on the enumerated item and can detect any change in the collection
     // during the enumeration which force restarting the enumeration again.
-    // Causion: We can have the action executed on the same item more than once which is ok in our scenarios.
+    // Caution: We can have the action executed on the same item more than once which is ok in our scenarios.
     internal class SynchronizedList<T>
     {
-        private List<T> _list;
+        private readonly List<T> _list;
         private uint _version;
 
         public SynchronizedList() => _list = new List<T>();

@@ -28,7 +28,7 @@ namespace
         _Outptr_ IUnknown** wrapperRaw)
     {
 #ifdef FEATURE_COMWRAPPERS
-        return GlobalComWrappers::TryGetOrCreateComInterfaceForObject(instance, (void**)wrapperRaw);
+        return GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(instance, (void**)wrapperRaw);
 #else
         return false;
 #endif // FEATURE_COMWRAPPERS
@@ -40,7 +40,7 @@ namespace
         _Out_ OBJECTREF *pObjOut)
     {
 #ifdef FEATURE_COMWRAPPERS
-        return GlobalComWrappers::TryGetOrCreateObjectForComInstance(pUnknown, dwFlags, pObjOut);
+        return GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(pUnknown, dwFlags, pObjOut);
 #else
         return false;
 #endif // FEATURE_COMWRAPPERS
@@ -80,7 +80,7 @@ namespace
 //--------------------------------------------------------------------------------
 // IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, ...)
 // Convert ObjectRef to a COM IP, based on MethodTable* pMT.
-IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecurityCheck, BOOL bEnableCustomizedQueryInterface)
+IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnableCustomizedQueryInterface)
 {
     CONTRACT (IUnknown*)
     {
@@ -119,7 +119,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
         CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(poref);
 
         GetComIPFromCCW::flags flags = GetComIPFromCCW::None;
-        if (!bSecurityCheck)                    { flags |= GetComIPFromCCW::SuppressSecurityCheck; }
         if (!bEnableCustomizedQueryInterface)   { flags |= GetComIPFromCCW::SuppressCustomizedQueryInterface; }
 
         pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, GUID_NULL, pMT, flags);

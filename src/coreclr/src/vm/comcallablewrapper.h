@@ -957,8 +957,7 @@ struct GetComIPFromCCW
     {
         None                                = 0,
         CheckVisibility                     = 1,
-        SuppressSecurityCheck               = 2,
-        SuppressCustomizedQueryInterface    = 4
+        SuppressCustomizedQueryInterface    = 2
     };
 };
 

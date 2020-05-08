@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
     internal enum CborMajorType : byte
     {

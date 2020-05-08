@@ -1194,8 +1194,10 @@ namespace System.Net.Http.Headers
             return values;
         }
 
-        internal static int GetValuesAsStrings(HeaderDescriptor descriptor, object sourceValues, ref string[] values)
+        internal static int GetValuesAsStrings(HeaderDescriptor descriptor, object sourceValues, [NotNull] ref string[]? values)
         {
+            values ??= Array.Empty<string>();
+
             HeaderStoreItemInfo? info = sourceValues as HeaderStoreItemInfo;
             if (info is null)
             {
@@ -1210,7 +1212,6 @@ namespace System.Net.Http.Headers
                 return 1;
             }
 
-            Debug.Assert(values != null);
             int length = GetValueCount(info);
 
             if (length > 0)

@@ -209,11 +209,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Lerp(Vector4 value1, Vector4 value2, float amount)
         {
-            return new Vector4(
-                value1.X + (value2.X - value1.X) * amount,
-                value1.Y + (value2.Y - value1.Y) * amount,
-                value1.Z + (value2.Z - value1.Z) * amount,
-                value1.W + (value2.W - value1.W) * amount);
+            return value1 + (value2 - value1) * amount;
         }
 
         /// <summary>

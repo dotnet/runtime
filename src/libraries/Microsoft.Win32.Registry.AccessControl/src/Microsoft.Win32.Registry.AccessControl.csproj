@@ -10,10 +10,10 @@
   <PropertyGroup>
     <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Security.AccessControl" />
   </ItemGroup>

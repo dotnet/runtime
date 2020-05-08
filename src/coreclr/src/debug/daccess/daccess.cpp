@@ -8252,7 +8252,7 @@ void CALLBACK DacHandleWalker::EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF handle, u
     if (param->Type == HNDTYPE_DEPENDENT)
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
 #ifdef FEATURE_COMINTEROP
-    else if (param->Type == HNDTYPE_WEAK_WINRT)
+    else if (param->Type == HNDTYPE_WEAK_NATIVE_COM)
         data.Secondary = HndGetHandleExtraInfo(handle.GetAddr());
 #endif // FEATURE_COMINTEROP
     else

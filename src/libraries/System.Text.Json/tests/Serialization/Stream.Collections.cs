@@ -95,8 +95,9 @@ namespace System.Text.Json.Serialization.Tests
                     serialized = JsonSerializer.Serialize(deserialized, options);
                 }
 
+                // TODO: https://github.com/dotnet/runtime/issues/35611.
                 // Can't control order of dictionary elements when serializing, so reference metadata might not match up.
-                if(!(DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandling == ReferenceHandling.Preserve))
+                if (!(DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandling == ReferenceHandling.Preserve))
                 {
                     JsonTestHelper.AssertJsonEqual(expectedJson, serialized);
                 }

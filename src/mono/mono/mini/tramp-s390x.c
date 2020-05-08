@@ -1,12 +1,15 @@
 /**
- * \file
- * Function    - JIT trampoline code for S/390.
+ * @file
  *
- * Name	       - Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com)
+ * @author Neale Ferguson <neale@sinenomine.net>
+ *
+ * @section description
+ *
+ * Function    - JIT trampoline code for S/390.
  *
  * Date        - January, 2004
  *
- * Derivation  - From exceptions-x86 & exceptions-ppc
+ * Derivation  - From tramp-x86 & tramp-ppc
  * 	         Paolo Molaro (lupus@ximian.com)
  * 		 Dietmar Maurer (dietmar@ximian.com)
  *
@@ -50,6 +53,7 @@
 #include "mini-runtime.h"
 #include "support-s390x.h"
 #include "jit-icalls.h"
+#include "debugger-agent.h"
 #include "mono/utils/mono-tls-inline.h"
 
 /*========================= End of Includes ========================*/
@@ -79,20 +83,19 @@ typedef struct {
 
 /*====================== End of Global Variables ===================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_get_unbox_trampoline                    */
-/*                                                                  */
-/* Function	- Return a pointer to a trampoline which does the   */
-/*		  unboxing before calling the method.		    */
-/*                                                                  */
-/*                When value type methods are called through the    */
-/*		  vtable we need to unbox the 'this' argument.	    */
-/*		                               		 	    */
-/* Parameters   - method - Methd pointer			    */
-/*		  addr   - Pointer to native code for method	    */
-/*		                               		 	    */
-/*------------------------------------------------------------------*/
+/**
+ *                                 
+ * @brief Build the unbox trampoline
+ *
+ * @param[in] Method pointer
+ * @param[in] Pointer to native code for method
+ *
+ * Return a pointer to a trampoline which does the unboxing before 
+ * calling the method.
+ *
+ * When value type methods are called through the  
+ * vtable we need to unbox the 'this' argument.	   
+ */
 
 gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
@@ -121,6 +124,127 @@ mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 }
 
 /*========================= End of Function ========================*/
+
+/**
+ *                                 
+ * @brief Build the SDB trampoline
+ *
+ * @param[in] Type of trampoline (ss or bp)
+ * @param[in] MonoTrampInfo
+ * @param[in] Ahead of time indicator
+ *
+ * Return a trampoline which captures the current context, passes it to
+ * mono_debugger_agent_single_step_from_context ()/mono_debugger_agent_breakpoint_from_context (),
+ * then restores the (potentially changed) context.
+ */
+
+guint8 *
+mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot)
+{
+	int tramp_size = 512;
+	int i, framesize, ctx_offset, 
+	    gr_offset, fp_offset, ip_offset,
+	    sp_offset;
+	guint8 *code, *buf;
+	void *ep;
+	GSList *unwind_ops = NULL;
+	MonoJumpInfo *ji = NULL;
+
+	code = buf = (guint8 *)mono_global_codeman_reserve (tramp_size);
+
+	framesize = S390_MINIMAL_STACK_SIZE;
+
+	ctx_offset = framesize;
+	framesize += sizeof (MonoContext);
+
+	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
+
+	/** 
+	 * Create unwind information - On entry s390_r1 has value of method's frame reg
+	 */
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, STK_BASE, 0);
+	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+	gr_offset = S390_REG_SAVE_OFFSET;
+	for (i = s390_r6; i < s390_r15; i++) {
+		mono_add_unwind_op_offset (unwind_ops, code, buf, i, gr_offset);
+		gr_offset += sizeof(uintptr_t);
+	}
+		
+	s390_lgr  (code, s390_r0, STK_BASE);
+	s390_aghi (code, STK_BASE, -framesize);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, framesize);
+	mono_add_unwind_op_fp_alloc (unwind_ops, code, buf, STK_BASE, 0);
+	s390_stg  (code, s390_r0, 0, STK_BASE, 0);
+
+	gr_offset = ctx_offset + G_STRUCT_OFFSET(MonoContext, uc_mcontext.gregs);
+	sp_offset = ctx_offset + G_STRUCT_OFFSET(MonoContext, uc_mcontext.gregs[15]);
+	ip_offset = ctx_offset + G_STRUCT_OFFSET(MonoContext, uc_mcontext.psw.addr);
+
+	/* Initialize a MonoContext structure on the stack */
+	s390_stmg (code, s390_r0, s390_r14, STK_BASE, gr_offset);
+	s390_stg  (code, s390_r1, 0, STK_BASE, sp_offset);
+	sp_offset = ctx_offset + G_STRUCT_OFFSET(MonoContext, uc_stack.ss_sp);
+	s390_stg  (code, s390_r1, 0, STK_BASE, sp_offset);
+	s390_stg  (code, s390_r14, 0, STK_BASE, ip_offset);
+	
+	fp_offset = ctx_offset + G_STRUCT_OFFSET(MonoContext, uc_mcontext.fpregs.fprs);
+	for (i = s390_f0; i < s390_f15; ++i) {
+		s390_std (code, i, 0, STK_BASE, fp_offset);
+		fp_offset += sizeof(double);
+	}
+
+	/* 
+	 * Call the single step/breakpoint function in sdb using
+	 * the context address as the parameter
+	 */
+	s390_la (code, s390_r2, 0, STK_BASE, ctx_offset);
+
+	if (single_step) 
+		ep = (mini_get_dbg_callbacks())->single_step_from_context;
+	else
+		ep = (mini_get_dbg_callbacks())->breakpoint_from_context;
+
+	S390_SET  (code, s390_r1, ep);
+	s390_basr (code, s390_r14, s390_r1);
+
+	/*
+	 * Restore volatiles
+	 */ 
+	s390_lmg (code, s390_r0, s390_r5, STK_BASE, gr_offset);
+
+	/*
+	 * Restore FP registers
+	 */ 
+	fp_offset = ctx_offset + G_STRUCT_OFFSET(MonoContext, uc_mcontext.fpregs.fprs);
+	for (i = s390_f0; i < s390_f15; ++i) {
+		s390_ld (code, i, 0, STK_BASE, fp_offset);
+		fp_offset += sizeof(double);
+	}
+
+	/*
+	 * Load the IP from the context to pick up any SET_IP command results
+	 */ 
+	s390_lg   (code, s390_r14, 0, STK_BASE, ip_offset);
+
+	/*
+	 * Restore everything else from the on-entry values
+	 */ 
+	s390_aghi (code, STK_BASE, framesize);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, -framesize);
+	s390_lmg  (code, s390_r6, s390_r13, STK_BASE, S390_REG_SAVE_OFFSET);
+	s390_br   (code, s390_r14);
+
+	g_assertf ((code - buf) <= tramp_size, "%d %d", (int)(code - buf), tramp_size);
+	mono_arch_flush_icache (code, code - buf);
+
+	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
+	g_assert (code - buf <= tramp_size);
+
+	const char *tramp_name = single_step ? "sdb_single_step_trampoline" : "sdb_breakpoint_trampoline";
+	*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
+
+	return buf;
+}
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
@@ -204,9 +328,17 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	  stack size big enough to save our registers.
 	  -----------------------------------------------------------*/
 		
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, STK_BASE, 0);
 	s390_stmg (buf, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
+	offset = S390_REG_SAVE_OFFSET;
+	for (i = s390_r6; i < s390_r15; i++) {
+		mono_add_unwind_op_offset (unwind_ops, code, buf, i, offset);
+		offset += sizeof(uintptr_t);
+	}
+		
 	s390_lgr  (buf, s390_r11, s390_r15);
 	s390_aghi (buf, STK_BASE, -sizeof(trampStack_t));
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, sizeof(trampStack_t));
 	s390_stg  (buf, s390_r11, 0, STK_BASE, 0);
 
 	/*---------------------------------------------------------------*/
@@ -360,6 +492,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * R14 contains the return address to our caller 
 	 */
 	s390_lgr  (buf, STK_BASE, s390_r11);
+	// mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, -sizeof(trampStack_t));
 	s390_lmg  (buf, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 
 	if (MONO_TRAMPOLINE_TYPE_MUST_RETURN(tramp_type)) {
