@@ -572,7 +572,7 @@ namespace System.Net.Http
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                throw new PlatformNotSupportedException("Synchronous reads are not supported, use ReadAsync instead");
+                throw new NotSupportedException("Synchronous reads are not supported, use ReadAsync instead");
             }
 
             public override long Seek(long offset, SeekOrigin origin)
