@@ -11,11 +11,11 @@
 
   <Target Name="RebuildAppleAppBuilder">
     <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)" Targets="Restore;Build" />
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
   </Target>
 
   <UsingTask TaskName="AppleAppBuilderTask" 
-      AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
+      AssemblyFile="$(AppleAppBuilder)\$(HostArch)\$(Configuration)\AppleAppBuilder.dll" />
 
   <Target Name="BuildAppBundle" DependsOnTargets="RebuildAppleAppBuilder">
     <PropertyGroup>
