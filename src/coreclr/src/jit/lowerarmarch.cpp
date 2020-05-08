@@ -933,7 +933,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_CreateScalarUnsafe:
         case NI_AdvSimd_DuplicateToVector64:
         case NI_AdvSimd_DuplicateToVector128:
-        case NI_AdvSimd_Arm64_DuplicateToVector64:
         case NI_AdvSimd_Arm64_DuplicateToVector128:
             if (intrin.op1->IsCnsIntOrI())
             {
