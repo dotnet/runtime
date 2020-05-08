@@ -19,9 +19,9 @@ namespace System.Net.Security.Tests
     {
         private readonly ITestOutputHelper _log;
 
-        public ClientAsyncAuthenticateTest()
+        public ClientAsyncAuthenticateTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
         }
 
         [Fact]

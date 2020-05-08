@@ -23,9 +23,9 @@ namespace System.Net.Security.Tests
         private readonly ITestOutputHelper _logVerbose;
         private readonly X509Certificate2 _serverCertificate;
 
-        public ServerAsyncAuthenticateTest()
+        public ServerAsyncAuthenticateTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
             _logVerbose = VerboseTestLogging.GetInstance();
             _serverCertificate = Configuration.Certificates.GetServerCertificate();
         }
