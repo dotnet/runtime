@@ -436,8 +436,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
-                // The emitSize is currently set off of node->gtSIMDSize which tracks
-                // the size of the first operand and is used to tell if the index
+                // Prior to codegen, the emitSize is based on node->gtSIMDSize which
+                // tracks the size of the first operand and is used to tell if the index
                 // is in range. However, when actually emitting it needs to be the size
                 // of the return and the size of the operand is interpreted based on the
                 // index value.
@@ -587,8 +587,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector128_Create:
             case NI_AdvSimd_DuplicateToVector64:
             case NI_AdvSimd_DuplicateToVector128:
-            case NI_AdvSimd_Arm64_DuplicateToVector64:
             case NI_AdvSimd_Arm64_DuplicateToVector128:
+            {
                 if (varTypeIsFloating(intrin.baseType))
                 {
                     if (intrin.op1->isContainedFltOrDblImmed())
@@ -596,28 +596,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
                         GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
                     }
-                    else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
-                    {
-                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
-                    }
                     else
                     {
                         GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 0, opt);
                     }
                 }
+                else if (intrin.op1->isContainedIntOrIImmed())
+                {
+                    const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                }
                 else
                 {
-                    if (intrin.op1->isContainedIntOrIImmed())
-                    {
-                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
-                        GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
-                    }
-                    else
-                    {
-                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
-                    }
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                 }
                 break;
+            }
 
             default:
                 unreached();
