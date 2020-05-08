@@ -327,6 +327,7 @@
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <EnableTestSupport>true</EnableTestSupport>
+    <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
     <EnableCoverageSupport>true</EnableCoverageSupport>
   </PropertyGroup>
 
