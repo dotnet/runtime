@@ -24,19 +24,12 @@ EMSCRIPTEN_VERSION=1.39.11
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(CURDIR)/emsdk_env.sh && emcc
 
-emsdk:
-	git clone https://github.com/emscripten-core/emsdk $(EMSDK_PATH)
-
-$(EMSDK_PATH)/.emscripten: | $(EMSDK_PATH)
-	touch $@
-
-.stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION): .stamp-wasm-checkout-and-update-emsdk $(EMSDK_PATH)/.emscripten
-	cd emsdk && ./emsdk install $(EMSCRIPTEN_VERSION)
-	cd emsdk && ./emsdk activate --embedded $(EMSCRIPTEN_VERSION)
-	touch $@
-
-.stamp-wasm-checkout-and-update-emsdk: | $(EMSDK_PATH)
-	cd emsdk && git reset --hard && git clean -xdff && git pull
+.stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
+	rm -rf $(EMSDK_LOCAL_PATH)
+	git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_LOCAL_PATH)
+	cd $(EMSDK_LOCAL_PATH) && git checkout $(EMSCRIPTEN_VERSION)
+	cd $(EMSDK_LOCAL_PATH) && ./emsdk install $(EMSCRIPTEN_VERSION)
+	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate --embedded $(EMSCRIPTEN_VERSION)
 	touch $@
 
 ifeq ($(EMSDK_PATH),emsdk)
