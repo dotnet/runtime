@@ -8,11 +8,14 @@
 
   <PropertyGroup>
     <WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\browser-wasm\lib\$(NetCoreAppCurrent)</RuntimePackDir>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmPInvokeModules Include="libSystem.Native"/>
-    <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)/System.Private.CoreLib.dll"/>
+    <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)\System.Private.CoreLib.dll"/>
+    <WasmPInvokeAssemblies Include="$(RuntimePackDir)\System.Runtime.dll"/>
+    <WasmPInvokeAssemblies Include="$(RuntimePackDir)\System.Console.dll"/>
   </ItemGroup>
 
   <Target Name="CheckEnv">

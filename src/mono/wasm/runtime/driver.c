@@ -16,7 +16,7 @@
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
 
-#include PINVOKE_TABLE
+#include "pinvoke-table.h"
 
 #ifdef CORE_BINDINGS
 void core_initialize_internals ();

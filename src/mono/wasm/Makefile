@@ -78,8 +78,11 @@ $(BUILDS_OBJ_DIR)/$(1)/:
 $(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
-$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
-	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -DPINVOKE_TABLE=\"$(PINVOKE_TABLE)\" -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
+$(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h: $(PINVOKE_TABLE)
+	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
+
+$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
+	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR)/$(1) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/$(1)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(3) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
