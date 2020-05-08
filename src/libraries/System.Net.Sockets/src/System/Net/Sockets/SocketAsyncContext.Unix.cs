@@ -1189,6 +1189,8 @@ namespace System.Net.Sockets
             _sendQueue.Init();
         }
 
+        internal IntPtr GetSocketFileDescriptor() => _socket.DangerousGetHandle();
+
         private void Register()
         {
             Debug.Assert(_nonBlockingSet);
