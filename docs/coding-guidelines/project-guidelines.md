@@ -99,6 +99,8 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 # Library project guidelines
 
 ## TargetFramework conditions
+`TargetFramework` conditions should be avoided in the first PropertyGroup as that causes DesignTimeBuild issues: https://github.com/dotnet/project-system/issues/6143
+
 1. Use an equality check if the TargetFramework isn't overloaded with the OS portion.
 Example:
 ```
