@@ -94,6 +94,7 @@ namespace System.Diagnostics.Tracing
                             (EventKeywords)descriptor.Keywords,
                             (EventLevel)descriptor.Level,
                             descriptor.Version,
+                            (EventOpcode)descriptor.Opcode,
                             eventTypes);
                         uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 

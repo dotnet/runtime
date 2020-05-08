@@ -19,7 +19,8 @@ namespace System.Diagnostics.Tracing
             EventParameterInfo[] eventParams = new EventParameterInfo[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
             {
-                eventParams[i].SetInfo(parameters[i].Name!, parameters[i].ParameterType);
+                EventParameterInfo.GetTypeInfoFromType(parameters[i].ParameterType, out TraceLoggingTypeInfo? paramTypeInfo);
+                eventParams[i].SetInfo(parameters[i].Name!, parameters[i].ParameterType, paramTypeInfo);
             }
 
             return GenerateMetadata(
@@ -28,6 +29,7 @@ namespace System.Diagnostics.Tracing
                 eventMetadata.Descriptor.Keywords,
                 eventMetadata.Descriptor.Level,
                 eventMetadata.Descriptor.Version,
+                (EventOpcode)eventMetadata.Descriptor.Opcode,
                 eventParams);
         }
 
@@ -37,6 +39,7 @@ namespace System.Diagnostics.Tracing
             EventKeywords keywords,
             EventLevel level,
             uint version,
+            EventOpcode opcode,
             TraceLoggingEventTypes eventTypes)
         {
             TraceLoggingTypeInfo[] typeInfos = eventTypes.typeInfos;
@@ -52,7 +55,7 @@ namespace System.Diagnostics.Tracing
                 eventParams[i].SetInfo(paramName, typeInfos[i].DataType, typeInfos[i]);
             }
 
-            return GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, eventParams);
+            return GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, opcode, eventParams);
         }
 
         internal unsafe byte[]? GenerateMetadata(
@@ -61,14 +64,14 @@ namespace System.Diagnostics.Tracing
             long keywords,
             uint level,
             uint version,
+            EventOpcode opcode,
             EventParameterInfo[] parameters)
 
         {
-            // TODO: I would like this to not allocate 2x what it needs to
             byte[]? metadataV1 = GenerateMetadata(eventId, eventName, keywords, level, version, parameters,
                 out bool hasUnsupportedParamTypes);
             byte[]? metadataV2 = null;
-            if (hasUnsupportedParamTypes)
+            if (hasUnsupportedParamTypes || opcode != EventOpcode.Info)
             {
                 if (metadataV1 == null)
                 {
@@ -76,9 +79,10 @@ namespace System.Diagnostics.Tracing
                     return null;
                 }
 
-                metadataV2 = GenerateMetadataV2(eventId, eventName, keywords, level, version, parameters);
+                metadataV2 = GenerateMetadataV2(eventId, eventName, keywords, level, version, opcode, parameters);
                 if (metadataV2 != null)
                 {
+                    // TODO: I would like this to not allocate 2x what it needs to
                     // Append the new metadata to the end of the original metadata.
                     byte[] temp = new byte[metadataV1.Length + metadataV2.Length];
                     Array.Copy(metadataV1, 0, temp, 0, metadataV1.Length);
@@ -179,6 +183,7 @@ namespace System.Diagnostics.Tracing
             long keywords,
             uint level,
             uint version,
+            EventOpcode opcode,
             EventParameterInfo[] parameters)
         {
             byte[]? metadata = null;
@@ -191,7 +196,8 @@ namespace System.Diagnostics.Tracing
                 // keywords              : 8 bytes
                 // eventVersion          : 4 bytes
                 // level                 : 4 bytes
-                uint metadataLength = 24 + ((uint)eventName.Length + 1) * 2;
+                // opcode                : 4 bytes
+                uint metadataLength = 28 + ((uint)eventName.Length + 1) * 2;
                 uint metadataHeaderLength = metadataLength;
 
                 // "V2" identifier       : 6 bytes
@@ -225,10 +231,12 @@ namespace System.Diagnostics.Tracing
                 fixed (byte* pMetadata = metadata)
                 {
                     uint offset = 0;
-                    // Write "V2" in to the stream to indicate that we are adding V2 metadata
+                    // Write the special code "V2" in to the stream to indicate that we are
+                    // adding V2 metadata
                     WriteToBuffer(pMetadata, metadataLength, ref offset, 'V');
                     WriteToBuffer(pMetadata, metadataLength, ref offset, '2');
                     WriteToBuffer(pMetadata, metadataLength, ref offset, '\0');
+
                     WriteToBuffer(pMetadata, metadataLength, ref offset, metadataHeaderLength);
                     WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)eventId);
                     fixed (char* pEventName = eventName)
@@ -238,6 +246,7 @@ namespace System.Diagnostics.Tracing
                     WriteToBuffer(pMetadata, metadataLength, ref offset, keywords);
                     WriteToBuffer(pMetadata, metadataLength, ref offset, version);
                     WriteToBuffer(pMetadata, metadataLength, ref offset, level);
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)opcode);
                     WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)parameters.Length);
                     foreach (var parameter in parameters)
                     {
@@ -457,7 +466,7 @@ namespace System.Diagnostics.Tracing
             return GenerateMetadataForTypeV2(typeInfo, pMetadataBlob, ref offset, blobSize);
         }
 
-        private static unsafe bool GenerateMetadataForTypeV2(TraceLoggingTypeInfo typeInfo, byte* pMetadataBlob, ref uint offset, uint blobSize)
+        private static unsafe bool GenerateMetadataForTypeV2(TraceLoggingTypeInfo? typeInfo, byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
             Debug.Assert(typeInfo != null);
             Debug.Assert(pMetadataBlob != null);
@@ -510,7 +519,7 @@ namespace System.Diagnostics.Tracing
                     return false;
                 }
 
-                TraceLoggingTypeInfo elementTypeInfo;
+                TraceLoggingTypeInfo? elementTypeInfo;
                 if (!GetTypeInfoFromType(arrayTypeInfo.DataType.GetElementType(), out elementTypeInfo))
                 {
                     return false;
@@ -537,7 +546,7 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
-        internal static bool GetTypeInfoFromType(Type? type, out TraceLoggingTypeInfo typeInfo)
+        internal static bool GetTypeInfoFromType(Type? type, out TraceLoggingTypeInfo? typeInfo)
         {
             if (type == typeof(bool))
             {
@@ -616,7 +625,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                typeInfo = new NullTypeInfo();
+                typeInfo = null;
                 return false;
             }
         }
@@ -762,7 +771,7 @@ namespace System.Diagnostics.Tracing
             }
             else if (typeInfo is ScalarArrayTypeInfo arrayTypeInfo)
             {
-                TraceLoggingTypeInfo elementTypeInfo;
+                TraceLoggingTypeInfo? elementTypeInfo;
                 if (arrayTypeInfo.DataType.HasElementType
                     && GetTypeInfoFromType(arrayTypeInfo.DataType.GetElementType(), out elementTypeInfo))
                 {

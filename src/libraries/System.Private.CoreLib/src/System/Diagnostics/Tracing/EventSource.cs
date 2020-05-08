@@ -2221,7 +2221,7 @@ namespace System.Diagnostics.Tracing
                                     string eventName = "EventSourceMessage";
                                     EventParameterInfo paramInfo = default(EventParameterInfo);
                                     paramInfo.SetInfo("message", typeof(string));
-                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, new EventParameterInfo[] { paramInfo });
+                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, EventOpcode.Info, new EventParameterInfo[] { paramInfo });
                                     uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 
                                     fixed (byte* pMetadata = metadata)
