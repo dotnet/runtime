@@ -107,7 +107,6 @@
              AssemblyFile="$(ArtifactsObjDir)mono\AndroidAppBuilder\$(HostArch)\$(Configuration)\AndroidAppBuilder.dll" />
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
-      <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
       <BundleDir>$(OutDir)\Bundle</BundleDir>
       <AndroidTestRunner>$(RepoRoot)\src\mono\msbuild\AndroidTestRunner\bin</AndroidTestRunner>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
@@ -122,17 +121,17 @@
     <ItemGroup>
       <TestBinaries Include="$(OutDir)\*.*"/>
       <AndroidTestRunnerBinaries Include="$(AndroidTestRunner)\*.*" />
-      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" 
-                   Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\libmono.dylib" />
+      <BclBinaries Include="$(NETCoreAppRuntimePackLibPath)\*.*"
+                   Exclude="$(NETCoreAppRuntimePackLibPath)\System.Runtime.WindowsRuntime.dll" />
+      <BclBinaries Include="$(NETCoreAppRuntimePackNativePath)\*.*" Exclude="$(NETCoreAppRuntimePackNativePath)\libmono.dylib" />
       
       <!-- remove PDBs and DBGs to save some space until we integrate ILLink -->
-      <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
-      <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.dbg" />
+      <BclBinaries Remove="$(NETCoreAppRuntimePackLibPath)\*.pdb" />
+      <BclBinaries Remove="$(NETCoreAppRuntimePackLibPath)\*.dbg" />
     </ItemGroup>
 
     <Error Condition="!Exists('$(AndroidTestRunner)')" Text="AndroidTestRunner=$(AndroidTestRunner) doesn't exist" />
-    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
+    <Error Condition="!Exists('$(NETCoreAppRuntimePackRIDPath)')" Text="NETCoreAppRuntimePackRIDPath=$(NETCoreAppRuntimePackRIDPath) doesn't exist" />
     <RemoveDir Directories="$(BundleDir)" />
     <Copy SourceFiles="@(TestBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
@@ -151,7 +150,7 @@
     <AndroidAppBuilderTask 
         Abi="$(AndroidAbi)"
         ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
+        MonoRuntimeHeaders="$(NETCoreAppRuntimePackNativePath)\include\mono-2.0"
         MainLibraryFileName="AndroidTestRunner.dll"
         OutputDir="$(BundleDir)"
         SourceDir="$(BundleDir)">
@@ -169,7 +168,6 @@
              AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(HostArch)\$(Configuration)\AppleAppBuilder.dll" />
   <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
-      <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
       <BundleDir>$(OutDir)\Bundle</BundleDir>
       <AppleTestRunner>$(RepoRoot)\src\mono\msbuild\AppleTestRunner\bin</AppleTestRunner>
     </PropertyGroup>
@@ -180,14 +178,14 @@
     <ItemGroup>
       <TestBinaries Include="$(OutDir)\*.*"/>
       <AppleTestRunnerBinaries Include="$(AppleTestRunner)\*.*" />
-      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\libmono.dylib" /> <!-- we use static libmono.a -->
+      <BclBinaries Include="$(NETCoreAppRuntimePackLibPath)\*.*" Exclude="$(NETCoreAppRuntimePackLibPath)\System.Runtime.WindowsRuntime.dll" />
+      <BclBinaries Include="$(NETCoreAppRuntimePackNativePath)\*.*" Exclude="$(NETCoreAppRuntimePackNativePath)\libmono.dylib" /> <!-- we use static libmono.a -->
       
       <!-- remove PDBs to save some space until we integrate ILLink -->
-      <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
+      <BclBinaries Remove="$(NETCoreAppRuntimePackLibPath)\*.pdb" />
     </ItemGroup>
     <Error Condition="!Exists('$(AppleTestRunner)')" Text="AppleTestRunner=$(AppleTestRunner) doesn't exist" />
-    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
+    <Error Condition="!Exists('$(NETCoreAppRuntimePackRIDPath)')" Text="NETCoreAppRuntimePackRIDPath=$(NETCoreAppRuntimePackRIDPath) doesn't exist" />
     <RemoveDir Directories="$(BundleDir)" />
     <Copy SourceFiles="@(TestBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
@@ -199,15 +197,15 @@
     <AppleAppBuilderTask 
         Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
-        CrossCompiler="$(RuntimePackDir)\native\cross\mono-aot-cross"
+        MonoRuntimeHeaders="$(NETCoreAppRuntimePackNativePath)\include\mono-2.0"
+        CrossCompiler="$(NETCoreAppRuntimePackNativePath)\cross\mono-aot-cross"
         MainLibraryFileName="AppleTestRunner.dll"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
         Optimized="True"
         UseLlvm="$(MonoEnableLLVM)"
-        LlvmPath="$(RuntimePackDir)\native\cross"
+        LlvmPath="$(NETCoreAppRuntimePackNativePath)\cross"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
         AppDir="$(BundleDir)">

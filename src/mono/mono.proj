@@ -926,7 +926,6 @@
 
   <Import Project="Directory.Build.targets" />
 
-
   <Target Name="BuildAppleAppBuilder">
     <MSBuild Projects="$(MonoProjectRoot)msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
              Properties="Configuration=$(Configuration);Platform=$(HostArch)"
