@@ -178,8 +178,8 @@ namespace System.Net.Http
                 {
                     var requestObject = new JSObject();
 
-                    if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out object? fetchOoptionsValue) &&
-                        fetchOoptionsValue is IDictionary<string, object> fetchOptions)
+                    if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out object? fetchOptionsValue) &&
+                        fetchOptionsValue is IDictionary<string, object> fetchOptions)
                     {
                         foreach (KeyValuePair<string, object> item in fetchOptions)
                         {
