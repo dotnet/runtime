@@ -163,6 +163,7 @@ namespace System.Tests
             // verify that the Environment.OSVersion.Version matches the current RID
             Assert.Contains(version.ToString(2), RuntimeInformation.RuntimeIdentifier);
 
+            Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
             Assert.Equal(-1, version.Revision); // Revision is never set on OSX
         }
 
