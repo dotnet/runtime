@@ -14,7 +14,7 @@
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <DefineConstants>$(DefineConstants);BROWSER_DOES_NOT_SUPPORT_QUIC;TARGETS_BROWSER</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGETS_BROWSER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
@@ -731,9 +731,6 @@
     
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CancellationHelper.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
-
     <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
 

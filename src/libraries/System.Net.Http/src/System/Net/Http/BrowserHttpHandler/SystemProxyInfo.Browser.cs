@@ -9,7 +9,7 @@ namespace System.Net.Http
         // On Browser we do not support proxy.
         public static IWebProxy ConstructSystemProxy()
         {
-            throw new PlatformNotSupportedException("WebProxy is not supported.");
+            return new HttpNoProxy();
         }
     }
 }

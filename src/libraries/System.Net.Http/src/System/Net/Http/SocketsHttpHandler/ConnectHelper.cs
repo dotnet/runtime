@@ -4,9 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
-#if !BROWSER_DOES_NOT_SUPPORT_QUIC
 using System.Net.Quic;
-#endif
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
