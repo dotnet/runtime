@@ -1995,7 +1995,8 @@ namespace System.Net.Sockets
         // be scheduled instead. It's not functionally incorrect to schedule the release of a synchronous operation, just it may
         // lead to thread pool starvation issues if the synchronous operations are blocking thread pool threads (typically not
         // advised) and more threads are not immediately available to run work items that would release those operations.
-        public unsafe Interop.Sys.SocketEvents HandleSyncEventsSpeculatively(Interop.Sys.SocketEvents events)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Interop.Sys.SocketEvents HandleSyncEventsSpeculatively(Interop.Sys.SocketEvents events)
         {
             if ((events & Interop.Sys.SocketEvents.Error) != 0)
             {

@@ -513,7 +513,7 @@ jobs:
 
 - template: /eng/pipelines/installer/installer-matrix.yml
   parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     platforms:
       - OSX_x64
       - Linux_x64
@@ -527,7 +527,7 @@ jobs:
 
 - template: /eng/pipelines/installer/installer-matrix.yml
   parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     runtimeFlavor: mono
     platforms:
     - Android_x64
