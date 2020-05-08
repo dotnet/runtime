@@ -11,6 +11,7 @@ namespace System.Diagnostics.Tests
     {
         [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135", TestPlatforms.Windows)]
         public void CheckSourceExistenceAndDeletion()
         {
             string source = "Source_" + nameof(EventLogSourceCreationTests);
