@@ -5,17 +5,23 @@
 namespace System.Text.Json
 {
     /// <summary>
-    /// Signifies what default options are instantiated in <see cref="JsonSerializerOptions"/>.
+    /// Signifies what default options are used by <see cref="JsonSerializerOptions"/>.
     /// </summary>
-    public enum JsonSerializerDefaults : byte
+    public enum JsonSerializerDefaults
     {
         /// <summary>
-        /// General-purpose defaults
+        /// Specifies that general-purpose values should be used. These are the same settings applied if a <see cref="JsonSerializerDefaults"/> isn't specified.
         /// </summary>
+        /// <remarks>
+        /// This option implies that property names are treated as case-sensitive and that "PascalCase" name formatting should be employed.
+        /// </remarks>
         General = 0,
         /// <summary>
-        /// Web scenarios defaults
+        /// Specifies that values should be used more appropriate to web-based scenarios.
         /// </summary>
+        /// <remarks>
+        /// This option implies that property names are treated as case-insensitive and that "camelCase" name formatting should be employed.
+        /// </remarks>
         Web = 1
     }
 }

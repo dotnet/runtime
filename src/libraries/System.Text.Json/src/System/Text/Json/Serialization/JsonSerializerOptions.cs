@@ -86,7 +86,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Constructs a new <see cref="JsonSerializerOptions"/> instance with predefined set of options determined by <see cref="JsonSerializerDefaults"/>.
+        /// Constructs a new <see cref="JsonSerializerOptions"/> instance with a predefined set of options determined by the specified <see cref="JsonSerializerDefaults"/>.
         /// </summary>
         /// <param name="defaults"> The <see cref="JsonSerializerDefaults"/> to reason about.</param>
         public JsonSerializerOptions(JsonSerializerDefaults defaults) : this()
@@ -95,6 +95,10 @@ namespace System.Text.Json
             {
                 _propertyNameCaseInsensitive = true;
                 _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            }
+            else if (defaults != JsonSerializerDefaults.General)
+            {
+                throw new ArgumentOutOfRangeException(nameof(defaults));
             }
         }
 

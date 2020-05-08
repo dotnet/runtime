@@ -225,10 +225,10 @@ namespace System.Text.Json
         public bool WriteIndented { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
     }
-    public enum JsonSerializerDefaults: byte
+    public enum JsonSerializerDefaults
     {
-        General = (byte)0,
-        Web = (byte)1,
+        General = 0,
+        Web = 1,
     }
     public enum JsonTokenType : byte
     {
