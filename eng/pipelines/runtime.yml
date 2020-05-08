@@ -500,6 +500,20 @@ jobs:
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isFullMatrix: false
+      framework: sourceBuild
+      runTests: false
+      liveRuntimeBuildConfig: release
+      isSourceBuild: true
+
 #
 # Installer Build and Test
 # These are always built since they only take like 15 minutes
