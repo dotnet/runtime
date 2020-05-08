@@ -122,8 +122,6 @@ namespace System.Net.Sockets
         //
         private static readonly IntPtr MaxHandles = IntPtr.Size == 4 ? (IntPtr)int.MaxValue : (IntPtr)long.MaxValue;
 #endif
-        private static readonly IntPtr MinHandlesForAdditionalEngine = s_maxEngineCount == 1 ? MaxHandles : (IntPtr)32;
-
         //
         // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop
         // processing events.
@@ -135,12 +133,6 @@ namespace System.Net.Sockets
         // Must be accessed under s_lock.
         //
         private IntPtr _nextHandle;
-
-        //
-        // Count of handles that have been allocated for this event port, but not yet freed.
-        // Must be accessed under s_lock.
-        //
-        private IntPtr _outstandingHandles;
 
         //
         // Maps handle values to SocketAsyncContext instances.
@@ -165,16 +157,6 @@ namespace System.Net.Sockets
         //
         private bool IsFull { get { return _nextHandle == MaxHandles; } }
 
-        // True if we've don't have sufficient active sockets to allow allocating a new engine.
-        private bool HasLowNumberOfSockets
-        {
-            get
-            {
-                return IntPtr.Size == 4 ? _outstandingHandles.ToInt32() < MinHandlesForAdditionalEngine.ToInt32() :
-                                          _outstandingHandles.ToInt64() < MinHandlesForAdditionalEngine.ToInt64();
-            }
-        }
-
         //
         // Allocates a new {SocketAsyncEngine, handle} pair.
         //
@@ -185,21 +167,7 @@ namespace System.Net.Sockets
                 engine = s_currentEngines[s_allocateFromEngine];
                 if (engine == null)
                 {
-                    // We minimize the number of engines on applications that have a low number of concurrent sockets.
-                    for (int i = 0; i < s_allocateFromEngine; i++)
-                    {
-                        var previousEngine = s_currentEngines[i];
-                        if (previousEngine == null || previousEngine.HasLowNumberOfSockets)
-                        {
-                            s_allocateFromEngine = i;
-                            engine = previousEngine;
-                            break;
-                        }
-                    }
-                    if (engine == null)
-                    {
-                        s_currentEngines[s_allocateFromEngine] = engine = new SocketAsyncEngine();
-                    }
+                    s_currentEngines[s_allocateFromEngine] = engine = new SocketAsyncEngine();
                 }
 
                 handle = engine.AllocateHandle(context);
@@ -211,10 +179,7 @@ namespace System.Net.Sockets
                 }
 
                 // Round-robin to the next engine once we have sufficient sockets on this one.
-                if (!engine.HasLowNumberOfSockets)
-                {
-                    s_allocateFromEngine = (s_allocateFromEngine + 1) % s_maxEngineCount;
-                }
+                s_allocateFromEngine = (s_allocateFromEngine + 1) % s_maxEngineCount;
             }
         }
 
@@ -225,12 +190,10 @@ namespace System.Net.Sockets
 
             IntPtr handle = _nextHandle;
             Debug.Assert(handle != ShutdownHandle, "ShutdownHandle must not be added to the dictionary");
-            _handleToContextMap.TryAdd(handle, new SocketAsyncContextWrapper(context));
-
+            bool added = _handleToContextMap.TryAdd(handle, new SocketAsyncContextWrapper(context));
+            Debug.Assert(added, "Add should always succeed");
             _nextHandle = IntPtr.Add(_nextHandle, 1);
-            _outstandingHandles = IntPtr.Add(_outstandingHandles, 1);
 
-            Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
             return handle;
         }
 
@@ -244,14 +207,11 @@ namespace System.Net.Sockets
             {
                 if (_handleToContextMap.TryRemove(handle, out _))
                 {
-                    _outstandingHandles = IntPtr.Subtract(_outstandingHandles, 1);
-                    Debug.Assert(_outstandingHandles.ToInt64() >= 0, $"Unexpected _outstandingHandles: {_outstandingHandles}");
-
                     //
                     // If we've allocated all possible handles for this instance, and freed them all, then
                     // we don't need the event loop any more, and can reclaim resources.
                     //
-                    if (IsFull && _outstandingHandles == IntPtr.Zero)
+                    if (IsFull && _handleToContextMap.IsEmpty)
                     {
                         shutdownNeeded = true;
                     }

@@ -4676,17 +4676,6 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             genStoreLclTypeSIMD12(tree);
             return;
         }
-
-        // TODO-CQ: It would be better to simply contain the zero, rather than
-        // generating zero into a register.
-        if (varTypeIsSIMD(targetType) && (targetReg != REG_NA) && op1->IsCnsIntOrI())
-        {
-            // This is only possible for a zero-init.
-            noway_assert(op1->IsIntegralConst(0));
-            genSIMDZero(targetType, varDsc->lvBaseType, targetReg);
-            genProduceReg(tree);
-            return;
-        }
 #endif // FEATURE_SIMD
 
         genConsumeRegs(op1);

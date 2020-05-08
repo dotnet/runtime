@@ -33,28 +33,28 @@ namespace System.Text.Json.Serialization.Converters
                     success = ((JsonParameterInfo<TArg0>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg0 arg0);
                     if (success)
                     {
-                        arguments.Arg0 = arg0;
+                        arguments.Arg0 = arg0!;
                     }
                     break;
                 case 1:
                     success = ((JsonParameterInfo<TArg1>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg1 arg1);
                     if (success)
                     {
-                        arguments.Arg1 = arg1;
+                        arguments.Arg1 = arg1!;
                     }
                     break;
                 case 2:
                     success = ((JsonParameterInfo<TArg2>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg2 arg2);
                     if (success)
                     {
-                        arguments.Arg2 = arg2;
+                        arguments.Arg2 = arg2!;
                     }
                     break;
                 case 3:
                     success = ((JsonParameterInfo<TArg3>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg3 arg3);
                     if (success)
                     {
-                        arguments.Arg3 = arg3;
+                        arguments.Arg3 = arg3!;
                     }
                     break;
                 default:
