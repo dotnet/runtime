@@ -5,7 +5,7 @@ For Visual Studio Test Explorer to work in dotnet/runtime, the following test se
 
 # Visual Studio F5 Debugging support
 dotnet/runtime uses `dotnet test` ([VSTest](https://github.com/Microsoft/vstest)) which spawns child processes during test execution.
-Visual Studio by doesn't automaticaly debug child processes, therefore preliminary steps need to be done to enable Debugging "F5" support.
+Visual Studio by default doesn't automatically debug child processes, therefore preliminary steps need to be done to enable Debugging "F5" support.
 Note that these steps aren't necessary for Visual Studio Test Explorer support.
 1. Install the [Microsoft Child Process Debugging Power Tool](https://marketplace.visualstudio.com/items?itemName=vsdbgplat.MicrosoftChildProcessDebuggingPowerTool) extension.
 2. Go to the child process debug settings (`Debug -> Other Debug Targets -> Child Process Debugging Settings...`), enable the `Enable child process debugging` checkbox.: `true` and hit save.
