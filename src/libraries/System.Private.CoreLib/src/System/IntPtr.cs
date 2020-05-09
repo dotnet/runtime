@@ -9,13 +9,6 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nint = System.Int64;
-#else
-using nint = System.Int32;
-#endif
-
 namespace System
 {
     [Serializable]
@@ -159,7 +152,7 @@ namespace System
         public static unsafe IntPtr operator -(IntPtr pointer, int offset) =>
             new IntPtr((nint)pointer._value - offset);
 
-        public static int Size
+        public static unsafe int Size
         {
             [NonVersionable]
             get => sizeof(nint);
