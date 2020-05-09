@@ -348,7 +348,13 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
-            return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1, false);
+            if (op2->AsIntConCommon()->IconValue() < 0)
+            {
+                JITDUMP("Not monotonically increasing because of encountered negative constant");
+                return false;
+            }
+
+            return IsMonotonicallyIncreasing(op1, false);
 
         default:
             JITDUMP("Not monotonically increasing because expression is not recognized.\n");
