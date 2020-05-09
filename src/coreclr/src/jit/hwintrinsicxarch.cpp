@@ -469,22 +469,25 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    intrinsic  -- id of the intrinsic function.
 //    clsHnd     -- class handle containing the intrinsic function.
 //    method     -- method handle of the intrinsic function.
-//    sig        -- signature of the intrinsic call
-//
+//    sig        -- signature of the intrinsic call.
+//    baseType   -- generic argument of the intrinsic.
+//    retType    -- return type of the intrinsic.
 // Return Value:
 //    the expanded intrinsic.
 //
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig)
+                                       CORINFO_SIG_INFO*     sig,
+                                       var_types             baseType,
+                                       var_types             retType)
 {
     // other intrinsics need special importation
     switch (HWIntrinsicInfo::lookupIsa(intrinsic))
     {
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
-            return impBaseIntrinsic(intrinsic, clsHnd, method, sig);
+            return impBaseIntrinsic(intrinsic, clsHnd, method, sig, baseType, retType);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig);
         case InstructionSet_SSE2:
@@ -509,15 +512,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 // Arguments:
 //    intrinsic  -- id of the intrinsic function.
 //    method     -- method handle of the intrinsic function.
-//    sig        -- signature of the intrinsic call
-//
+//    sig        -- signature of the intrinsic call.
+//    baseType   -- generic argument of the intrinsic.
+//    retType    -- return type of the intrinsic.
 // Return Value:
 //    the expanded intrinsic.
 //
 GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig)
+                                    CORINFO_SIG_INFO* sig,
+                                    var_types             baseType,
+                                    var_types             retType)
 {
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
@@ -529,39 +535,21 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     unsigned  simdSize = 0;
-    var_types baseType = TYP_UNKNOWN;
-    var_types retType  = JITtype2varType(sig->retType);
 
     assert(!sig->hasThis());
+    assert(varTypeIsArithmetic(baseType));
 
     if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
     {
-        baseType = getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
-
-        if (retType == TYP_STRUCT)
-        {
-            unsigned  retSimdSize = 0;
-            var_types retBasetype = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &retSimdSize);
-            if (!varTypeIsArithmetic(retBasetype))
-            {
-                return nullptr;
-            }
-            retType = getSIMDTypeForSize(retSimdSize);
-        }
+        getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
     }
     else if (retType == TYP_STRUCT)
     {
-        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
-        retType  = getSIMDTypeForSize(simdSize);
+        getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
     }
     else
     {
-        baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
-    }
-
-    if (!varTypeIsArithmetic(baseType))
-    {
-        return nullptr;
+        getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
     }
 
     switch (intrinsic)
@@ -618,7 +606,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
             {
                 // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector128.ToVector256
-                return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig);
+                return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType);
             }
 
             assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
@@ -686,7 +674,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_SIMD32:
                 {
                     // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector256.GetLower
-                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig);
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, baseType, retType);
                 }
 
                 default:
@@ -725,12 +713,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (intrinsic == NI_Vector256_AsVector)
                 {
-                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig);
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, baseType, retType);
                 }
                 else
                 {
                     assert(intrinsic == NI_Vector256_AsVector256);
-                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig);
+                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType);
                 }
             }
 

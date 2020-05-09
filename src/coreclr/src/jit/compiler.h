@@ -3751,7 +3751,9 @@ protected:
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig);
+                                 CORINFO_SIG_INFO*     sig,
+                                 var_types             baseType,
+                                 var_types             retType);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr = false);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
@@ -3761,7 +3763,9 @@ protected:
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
                               CORINFO_CLASS_HANDLE  clsHnd,
                               CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig);
+                              CORINFO_SIG_INFO*     sig,
+                              var_types             baseType,
+                              var_types             retType);
     GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
