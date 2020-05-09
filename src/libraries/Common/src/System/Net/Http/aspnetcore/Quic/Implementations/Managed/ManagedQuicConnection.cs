@@ -90,11 +90,6 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly Tls _tls;
 
         /// <summary>
-        ///     Local endpoint address, can be null for yet unconnected clients.
-        /// </summary>
-        private readonly IPEndPoint? _localEndpoint;
-
-        /// <summary>
         ///     Remote endpoint address.
         /// </summary>
         private readonly IPEndPoint _remoteEndpoint;
@@ -233,7 +228,6 @@ namespace System.Net.Quic.Implementations.Managed
         {
             _isServer = true;
             _socketContext = socketContext;
-            _localEndpoint = options.ListenEndPoint;
             _remoteEndpoint = remoteEndpoint;
             _localTransportParameters = TransportParameters.FromListenerOptions(options);
 
@@ -579,7 +573,7 @@ namespace System.Net.Quic.Implementations.Managed
             AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            // ThrowIfError();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 

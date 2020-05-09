@@ -13,9 +13,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class OutboundBuffer
     {
-        private const int PreferredChunkSize = 16 * 1024;
-
-        private const int MaximumHeldChunks = 20;
+        private const int PreferredChunkSize = 32 * 1024;
+        // TODO-RZ: tie this to control flow limits
+        private const int MaximumHeldChunks = 8;
 
         private object SyncObject => _toSendChannel;
 
@@ -329,7 +329,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             while (copied < destination.Length)
             {
                 int inChunkStart = (int)(start - _chunks[i].StreamOffset) + copied;
-                int inChunkCount = Math.Min((int)_chunks[i].Length - inChunkStart, destination.Length - copied);
+                int inChunkCount = Math.Min(_chunks[i].Length - inChunkStart, destination.Length - copied);
                 _chunks[i].Memory.Span.Slice(inChunkStart, inChunkCount).CopyTo(destination.Slice(copied));
 
                 copied += inChunkCount;

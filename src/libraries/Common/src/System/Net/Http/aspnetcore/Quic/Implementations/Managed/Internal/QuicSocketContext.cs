@@ -50,7 +50,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _reader = new QuicReader(_recvBuffer);
             _writer = new QuicWriter(_sendBuffer);
 
-            var sentPacketPool = new ObjectPool<SentPacket>(128);
+            var sentPacketPool = new ObjectPool<SentPacket>(256);
             _sendContext = new SendContext(sentPacketPool);
             _recvContext = new RecvContext(sentPacketPool);
         }
