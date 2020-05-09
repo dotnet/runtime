@@ -63,6 +63,7 @@ namespace System
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsSsl3 => GetSsl3Support();
+        public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
 #if NETCOREAPP
         public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;

@@ -10,15 +10,6 @@ using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-using nint = System.Int64;
-#else
-using nuint = System.UInt32;
-using nint = System.Int32;
-#endif
-
 namespace System
 {
     internal static partial class SpanHelpers // .Char
@@ -66,7 +57,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static int SequenceCompareTo(ref char first, int firstLength, ref char second, int secondLength)
+        public static unsafe int SequenceCompareTo(ref char first, int firstLength, ref char second, int secondLength)
         {
             Debug.Assert(firstLength >= 0);
             Debug.Assert(secondLength >= 0);
@@ -79,7 +70,7 @@ namespace System
             nuint minLength = (nuint)(((uint)firstLength < (uint)secondLength) ? (uint)firstLength : (uint)secondLength);
             nuint i = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if (minLength >= (sizeof(nuint) / sizeof(char)))
+            if (minLength >= (nuint)(sizeof(nuint) / sizeof(char)))
             {
                 if (Vector.IsHardwareAccelerated && minLength >= (nuint)Vector<ushort>.Count)
                 {
@@ -96,14 +87,14 @@ namespace System
                     while (nLength >= i);
                 }
 
-                while (minLength >= (i + sizeof(nuint) / sizeof(char)))
+                while (minLength >= (i + (nuint)(sizeof(nuint) / sizeof(char))))
                 {
                     if (Unsafe.ReadUnaligned<nuint> (ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
                         Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                     {
                         break;
                     }
-                    i += sizeof(nuint) / sizeof(char);
+                    i += (nuint)(sizeof(nuint) / sizeof(char));
                 }
             }
 

@@ -23,9 +23,9 @@ namespace System.Net.Security.Tests
         private readonly ITestOutputHelper _logVerbose;
         private readonly X509Certificate2 _serverCertificate;
 
-        public ServerAsyncAuthenticateTest()
+        public ServerAsyncAuthenticateTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
             _logVerbose = VerboseTestLogging.GetInstance();
             _serverCertificate = Configuration.Certificates.GetServerCertificate();
         }
@@ -72,11 +72,18 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> ProtocolMismatchData()
         {
+            if (PlatformDetection.SupportsSsl3)
+            {
 #pragma warning disable 0618
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
-            yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
+                yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
+                if (PlatformDetection.SupportsSsl2)
+                {
+                    yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
+                    yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
+                }
 #pragma warning restore 0618
+            }
+
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };

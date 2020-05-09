@@ -116,6 +116,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Interfaces/Interfaces001/*">
             <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
         </ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
+            <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
+	</ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
