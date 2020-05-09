@@ -21,10 +21,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AppleAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder'))</AppleAppBuilder>
-    <AppleTestRunner>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner'))</AppleTestRunner>
-    <AndroidAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder'))</AndroidAppBuilder>
-    <AndroidTestRunner>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner'))</AndroidTestRunner>
+    <MobileHelpersDirSuffix>$(NetCoreAppCurrent)-$(MonoConfiguration)</MobileHelpersDirSuffix>
+    <AppleTestBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelpersDirSuffix)'))</AppleTestBuilderDir>
+    <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileHelpersDirSuffix)'))</AppleTestRunnerDir>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(MobileHelpersDirSuffix)'))</AndroidAppBuilderDir>
+    <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileHelpersDirSuffix)'))</AndroidTestRunnerDir>
   </PropertyGroup>
 
   <!--
