@@ -26,7 +26,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void CollectionSyncProperties()
         {
-            AttributeCollection collection = new AttributeCollection(null);
+            var collection = new EventDescriptorCollection(null);
 
             Assert.Null(((ICollection)collection).SyncRoot);
             Assert.False(((ICollection)collection).IsSynchronized);
