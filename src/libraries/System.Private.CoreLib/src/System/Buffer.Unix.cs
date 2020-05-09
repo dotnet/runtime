@@ -7,14 +7,14 @@ namespace System
     public static partial class Buffer
     {
 #if TARGET_ARM64
-            // Managed code is currently faster than glibc unoptimized memmove
-            // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
-            // https://github.com/dotnet/runtime/issues/8897
-            private const nuint MemmoveNativeThreshold = ulong.MaxValue;
+        // Managed code is currently faster than glibc unoptimized memmove
+        // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
+        // https://github.com/dotnet/runtime/issues/8897
+        private static nuint MemmoveNativeThreshold => nuint.MaxValue;
 #elif TARGET_ARM
-            private const nuint MemmoveNativeThreshold = 512;
+        private const nuint MemmoveNativeThreshold = 512;
 #else
-            private const nuint MemmoveNativeThreshold = 2048;
+        private const nuint MemmoveNativeThreshold = 2048;
 #endif
     }
 }

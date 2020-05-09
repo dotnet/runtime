@@ -357,7 +357,7 @@ namespace System
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
 #else
-                    if ((uint)desiredStartIndex > (uint)lengthOfUnderlyingSpan || (uint)desiredLength > (uint)(lengthOfUnderlyingSpan - desiredStartIndex))
+                    if ((uint)desiredStartIndex > (uint)lengthOfUnderlyingSpan || (uint)desiredLength > (uint)lengthOfUnderlyingSpan - (uint)desiredStartIndex)
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
