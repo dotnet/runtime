@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
@@ -144,6 +145,41 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe delegate*<MethodTable*, object> GetNewobjHelper(RuntimeType type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsFastInstantiable(RuntimeType type);
+
+        public static unsafe Func<object> GetUninitializedObjectFactory(Type type)
+        {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (!(type.UnderlyingSystemType is RuntimeType rt))
+            {
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
+
+            type = null!; // just to make sure we don't use Type for the rest of the method
+
+            if (rt.IsPointer || rt.IsByRef || rt.IsByRefLike || !RuntimeHelpers.IsFastInstantiable(rt))
+            {
+                throw new ArgumentException(
+                    paramName: nameof(type),
+                    message: SR.NotSupported_Type);
+            }
+
+            // Compat with GetUninitializedObject: if incoming type T is really
+            // Nullable<U>, then this factory should return a boxed default(U)
+            // instead of a boxed default(Nullable<U>).
+
+            rt = (RuntimeType?)Nullable.GetUnderlyingType(rt) ?? rt;
+            return (Func<object>)new UninitializedObjectFactory(rt).CreateUninitializedInstance;
+        }
 
         /// <returns>true if given type is reference type or value type that contains references</returns>
         [Intrinsic]
@@ -332,10 +368,15 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
-        // WFLAGS_HIGH_ENUM
+        // WFLAGS_HIGH_ENUM & WFLAGS_LOW_ENUM
+        private const uint enum_flag_Category_Mask = 0x000F0000;
+        private const uint enum_flag_Category_Nullable = 0x00050000;
+        private const uint enum_flag_Category_ValueType = 0x00040000;
+        private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
-        private const uint enum_flag_HasTypeEquivalence = 0x00004000;
+        private const uint enum_flag_HasDefaultCtor = 0x00000200;
+        private const uint enum_flag_HasTypeEquivalence = 0x00004000; // TODO: shouldn't this be 0x02000000?
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
@@ -388,6 +429,30 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
+            }
+        }
+
+        public bool HasDefaultConstructor
+        {
+            get
+            {
+                return (Flags & enum_flag_HasDefaultCtor) != 0;
+            }
+        }
+
+        public bool IsNullable
+        {
+            get
+            {
+                return (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable;
+            }
+        }
+
+        public bool IsValueType
+        {
+            get
+            {
+                return (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
             }
         }
 

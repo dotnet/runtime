@@ -67,6 +67,8 @@ namespace System
     public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9);
     public static partial class Activator
     {
+        public static System.Func<object?> CreateFactory(System.Type type, bool nonPublic) { throw null; }
+        public static System.Func<T> CreateFactory<T>() { throw null; }
         public static System.Runtime.Remoting.ObjectHandle? CreateInstance(string assemblyName, string typeName) { throw null; }
         public static System.Runtime.Remoting.ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
         public static System.Runtime.Remoting.ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes) { throw null; }
@@ -9103,6 +9105,7 @@ namespace System.Runtime.CompilerServices
         public static object? GetObjectValue(object? obj) { throw null; }
         public static T[] GetSubArray<T>(T[] array, System.Range range) { throw null; }
         public static object GetUninitializedObject(System.Type type) { throw null; }
+        public static System.Func<object> GetUninitializedObjectFactory(System.Type type) { throw null; }
         public static void InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle) { }
         public static bool IsReferenceOrContainsReferences<T>() { throw null; }
         public static void PrepareConstrainedRegions() { }

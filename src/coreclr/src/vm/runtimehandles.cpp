@@ -679,7 +679,44 @@ FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pT
 
     return pRetMethod;
 }
+FCIMPLEND
 
+FCIMPL1(MethodTable *, RuntimeTypeHandle::GetMethodTable, ReflectClassBaseObject *pTypeUNSAFE) {
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+
+    if (refType == NULL)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    TypeHandle typeHandle = refType->GetType();
+    return typeHandle.GetMethodTable();
+}
+FCIMPLEND
+
+FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetDefaultConstructor, ReflectClassBaseObject *pTypeUNSAFE) {
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+
+    if (refType == NULL)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    TypeHandle typeHandle = refType->GetType();
+    MethodDesc* pRetMethod = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+    pRetMethod = typeHandle.GetMethodTable()->GetDefaultConstructor();
+    HELPER_METHOD_FRAME_END();
+
+    return pRetMethod;
+}
 FCIMPLEND
 
 FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pTypeUNSAFE, INT32 **result, INT32 *pCount) {

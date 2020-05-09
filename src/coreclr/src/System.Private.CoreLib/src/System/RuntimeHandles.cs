@@ -249,6 +249,12 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static unsafe extern MethodTable* GetMethodTable(RuntimeType type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern RuntimeMethodHandleInternal GetDefaultConstructor(RuntimeType type);
+
         // This is managed wrapper for MethodTable::IntroducedMethodIterator
         internal struct IntroducedMethodEnumerator
         {

@@ -2383,6 +2383,137 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
 }
 FCIMPLEND
 
+FCIMPL1(void*, ReflectionSerialization::GetNewobjHelper, ReflectClassBaseObject* objTypeUNSAFE) {
+    FCALL_CONTRACT;
+
+    void*               retVal = NULL;
+    REFLECTCLASSBASEREF objType = (REFLECTCLASSBASEREF)objTypeUNSAFE;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
+
+    TypeHandle type = objType->GetType();
+
+    // Don't allow arrays, pointers, byrefs or function pointers.
+    if (type.IsTypeDesc() || type.IsArray())
+        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+
+    MethodTable* pMT = type.AsMethodTable();
+    PREFIX_ASSUME(pMT != NULL);
+
+    //We don't allow unitialized Strings or Utf8Strings.
+    if (pMT->HasComponentSize())
+    {
+        COMPlusThrow(kArgumentException, W("Argument_NoUninitializedStrings"));
+    }
+
+    // if this is an abstract class or an interface type then we will
+    //  fail this
+    if (pMT->IsAbstract()) {
+        COMPlusThrow(kMemberAccessException, W("Acc_CreateAbst"));
+    }
+
+    if (pMT->ContainsGenericVariables()) {
+        COMPlusThrow(kMemberAccessException, W("Acc_CreateGeneric"));
+    }
+
+    if (pMT->IsByRefLike()) {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
+    }
+
+    // Never allow allocation of generics actually instantiated over __Canon
+    if (pMT->IsSharedByGenericInstantiations()) {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+
+    // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
+    // transparent proxy or the jit will get confused.
+
+#ifdef FEATURE_COMINTEROP
+    // Also do not allow allocation of uninitialized RCWs (COM objects).
+    if (pMT->IsComObjectType())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
+#endif // FEATURE_COMINTEROP
+
+    Assembly* pAssem = pMT->GetAssembly();
+
+    if (!pMT->IsClassInited())
+    {
+        pMT->CheckRestore();
+        pMT->EnsureInstanceActive();
+        pMT->CheckRunClassInitThrowing();
+    }
+
+    // TODO: Don't use a void* cast below.
+
+    retVal = (void*)CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT));
+
+    HELPER_METHOD_FRAME_END();
+    return retVal;
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, ReflectionSerialization::IsFastInstantiable, ReflectClassBaseObject* objTypeUNSAFE) {
+    FCALL_CONTRACT;
+
+    BOOL retVal = FALSE;
+    REFLECTCLASSBASEREF objType = (REFLECTCLASSBASEREF)objTypeUNSAFE;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
+
+    TypeHandle type = objType->GetType();
+
+    // Don't allow arrays, pointers, byrefs or function pointers.
+    if (type.IsTypeDesc() || type.IsArray())
+        goto Return;
+
+    MethodTable* pMT = type.AsMethodTable();
+    PREFIX_ASSUME(pMT != NULL);
+
+    //We don't allow unitialized Strings or Utf8Strings.
+    if (pMT->HasComponentSize())
+    {
+        goto Return;
+    }
+
+    // if this is an abstract class or an interface type then we will
+    //  fail this
+    if (pMT->IsAbstract()) {
+        goto Return;
+    }
+
+    if (pMT->ContainsGenericVariables()) {
+        goto Return;
+    }
+
+    if (pMT->IsByRefLike()) {
+        goto Return;
+    }
+
+    // Never allow allocation of generics actually instantiated over __Canon
+    if (pMT->IsSharedByGenericInstantiations()) {
+        goto Return;
+    }
+
+    // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
+    // transparent proxy or the jit will get confused.
+
+#ifdef FEATURE_COMINTEROP
+    // Also do not allow allocation of uninitialized RCWs (COM objects).
+    if (pMT->IsComObjectType())
+        goto Return;
+#endif // FEATURE_COMINTEROP
+
+    retVal = TRUE; // all checks succeeded
+
+Return:
+
+    do { /* dummy required for macro below to compile */ } while (0);
+
+    HELPER_METHOD_FRAME_END();
+    FC_RETURN_BOOL(retVal);
+}
+FCIMPLEND
+
 //*************************************************************************************************
 //*************************************************************************************************
 //*************************************************************************************************

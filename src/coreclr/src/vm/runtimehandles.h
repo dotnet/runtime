@@ -243,6 +243,8 @@ public:
     static FCDECL1(ReflectClassBaseObject*, GetElementType, ReflectClassBaseObject* pType);
 
     static FCDECL2(MethodDesc*, GetMethodAt, PTR_ReflectClassBaseObject pType, INT32 slot);
+    static FCDECL1(MethodTable*, GetMethodTable, PTR_ReflectClassBaseObject pType);
+    static FCDECL1(MethodDesc*, GetDefaultConstructor, PTR_ReflectClassBaseObject pType);
     static FCDECL1(INT32, GetNumVirtuals, ReflectClassBaseObject *pType);
 
     static

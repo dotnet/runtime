@@ -3890,46 +3890,6 @@ namespace System
             return instance;
         }
 
-        // the cache entry
-        private sealed class ActivatorCache
-        {
-            // the delegate containing the call to the ctor
-            internal readonly RuntimeMethodHandleInternal _hCtorMethodHandle;
-            internal MethodAttributes _ctorAttributes;
-            internal CtorDelegate? _ctor;
-
-            // Lazy initialization was performed
-            internal volatile bool _isFullyInitialized;
-
-            private static ConstructorInfo? s_delegateCtorInfo;
-
-            internal ActivatorCache(RuntimeMethodHandleInternal rmh)
-            {
-                _hCtorMethodHandle = rmh;
-            }
-
-            private void Initialize()
-            {
-                if (!_hCtorMethodHandle.IsNullHandle())
-                {
-                    _ctorAttributes = RuntimeMethodHandle.GetAttributes(_hCtorMethodHandle);
-
-                    // The default ctor path is optimized for reference types only
-                    ConstructorInfo delegateCtorInfo = s_delegateCtorInfo ??= typeof(CtorDelegate).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) })!;
-
-                    // No synchronization needed here. In the worst case we create extra garbage
-                    _ctor = (CtorDelegate)delegateCtorInfo.Invoke(new object?[] { null, RuntimeMethodHandle.GetFunctionPointer(_hCtorMethodHandle) });
-                }
-                _isFullyInitialized = true;
-            }
-
-            public void EnsureInitialized()
-            {
-                if (!_isFullyInitialized)
-                    Initialize();
-            }
-        }
-
         /// <summary>
         /// The slow path of CreateInstanceDefaultCtor
         /// </summary>
@@ -3947,8 +3907,17 @@ namespace System
 
             if (canBeCached && fillCache)
             {
-                // cache the ctor
-                GenericCache = new ActivatorCache(runtimeCtor);
+                if (runtimeCtor.IsNullHandle())
+                {
+                    // value types with no parameterless ctor
+                    Debug.Assert(this.IsValueType);
+                    GenericCache = ObjectFactory.CreateFactoryForValueTypeDefaultOfT(this);
+                }
+                else
+                {
+                    // reference types or value types with a parameterless ctor
+                    GenericCache = new ObjectFactory(runtimeCtor);
+                }
             }
 
             return instance;
@@ -3961,36 +3930,22 @@ namespace System
         [DebuggerHidden]
         internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
-            // Call the cached
-            if (GenericCache is ActivatorCache cacheEntry)
+            // Call the cached factory if it exists
+            if (GenericCache is ObjectFactory cachedFactory)
             {
-                cacheEntry.EnsureInitialized();
-
-                if (publicOnly)
+                if (cachedFactory.IsNonPublicCtor && publicOnly)
                 {
-                    if (cacheEntry._ctor != null &&
-                        (cacheEntry._ctorAttributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public)
-                    {
-                        throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
-                    }
+                    throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
                 }
 
-                // Allocate empty object and call the default constructor if present.
-                object instance = RuntimeTypeHandle.Allocate(this);
-                Debug.Assert(cacheEntry._ctor != null || IsValueType);
-                if (cacheEntry._ctor != null)
+                try
                 {
-                    try
-                    {
-                        cacheEntry._ctor(instance);
-                    }
-                    catch (Exception e) when (wrapExceptions)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
+                    return cachedFactory.CreateInstance();
                 }
-
-                return instance;
+                catch (Exception e) when (wrapExceptions)
+                {
+                    throw new TargetInvocationException(e);
+                }
             }
 
             if (!skipCheckThis)
