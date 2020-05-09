@@ -14,11 +14,11 @@ using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
+using nint_t = System.Int64;
+using nuint_t = System.UInt64;
 #else
-using nint = System.Int32;
-using nuint = System.UInt32;
+using nint_t = System.Int32;
+using nuint_t = System.UInt32;
 #endif
 
 namespace System
@@ -36,23 +36,23 @@ namespace System
             if (dst == null)
                 throw new ArgumentNullException(nameof(dst));
 
-            nuint uSrcLen = (nuint)src.LongLength;
+            nuint_t uSrcLen = (nuint_t)src.LongLength;
             if (src.GetType() != typeof(byte[]))
             {
                 if (!src.GetCorElementTypeOfElementType().IsPrimitiveType())
                     throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(src));
-                uSrcLen *= (nuint)src.GetElementSize();
+                uSrcLen *= (nuint_t)src.GetElementSize();
             }
 
-            nuint uDstLen = uSrcLen;
+            nuint_t uDstLen = uSrcLen;
             if (src != dst)
             {
-                uDstLen = (nuint)dst.LongLength;
+                uDstLen = (nuint_t)dst.LongLength;
                 if (dst.GetType() != typeof(byte[]))
                 {
                     if (!dst.GetCorElementTypeOfElementType().IsPrimitiveType())
                         throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(dst));
-                    uDstLen *= (nuint)dst.GetElementSize();
+                    uDstLen *= (nuint_t)dst.GetElementSize();
                 }
             }
 
@@ -63,9 +63,9 @@ namespace System
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_MustBeNonNegInt32);
 
-            nuint uCount = (nuint)count;
-            nuint uSrcOffset = (nuint)srcOffset;
-            nuint uDstOffset = (nuint)dstOffset;
+            nuint_t uCount = (nuint_t)count;
+            nuint_t uSrcOffset = (nuint_t)srcOffset;
+            nuint_t uDstOffset = (nuint_t)dstOffset;
 
             if ((uSrcLen < uSrcOffset + uCount) || (uDstLen < uDstOffset + uCount))
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -83,7 +83,7 @@ namespace System
             if (!array.GetCorElementTypeOfElementType().IsPrimitiveType())
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
-            nuint byteLength = (nuint)array.LongLength * (nuint)array.GetElementSize();
+            nuint_t byteLength = (nuint_t)array.LongLength * (nuint_t)array.GetElementSize();
 
             // This API is explosed both as Buffer.ByteLength and also used indirectly in argument
             // checks for Buffer.GetByte/SetByte.
@@ -115,7 +115,7 @@ namespace System
         }
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        internal static unsafe void ZeroMemory(byte* dest, nuint len)
+        internal static unsafe void ZeroMemory(byte* dest, nuint_t len)
         {
             SpanHelpers.ClearWithoutReferences(ref *dest, len);
         }
@@ -130,7 +130,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
             }
-            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
+            Memmove((byte*)destination, (byte*)source, checked((nuint_t)sourceBytesToCopy));
         }
 
         // The attributes on this method are chosen for best JIT performance.
@@ -143,14 +143,14 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
             }
-            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
+            Memmove((byte*)destination, (byte*)source, checked((nuint_t)sourceBytesToCopy));
         }
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
+        internal static unsafe void Memmove(byte* dest, byte* src, nuint_t len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
-            if (((nuint)dest - (nuint)src < len) || ((nuint)src - (nuint)dest < len))
+            if (((nuint_t)dest - (nuint_t)src < len) || ((nuint_t)src - (nuint_t)dest < len))
             {
                 goto PInvoke;
             }
@@ -258,7 +258,7 @@ namespace System
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
             Debug.Assert(len > 64 && len <= MemmoveNativeThreshold);
-            nuint n = len >> 6;
+            nuint_t n = len >> 6;
 
         MCPY06:
 #if HAS_CUSTOM_BLOCKS
@@ -314,7 +314,6 @@ namespace System
             _Memmove(dest, src, len);
         }
 
-        // This method has different signature for x64 and other platforms and is done for performance reasons.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void Memmove<T>(ref T destination, ref T source, nuint elementCount)
         {
@@ -325,7 +324,7 @@ namespace System
                 Memmove(
                     ref Unsafe.As<T, byte>(ref destination),
                     ref Unsafe.As<T, byte>(ref source),
-                    elementCount * (nuint)Unsafe.SizeOf<T>());
+                    (nuint_t)(elementCount * (nuint)Unsafe.SizeOf<T>()));
             }
             else
             {
@@ -333,23 +332,46 @@ namespace System
                 BulkMoveWithWriteBarrier(
                     ref Unsafe.As<T, byte>(ref destination),
                     ref Unsafe.As<T, byte>(ref source),
-                    elementCount * (nuint)Unsafe.SizeOf<T>());
+                    (nuint_t)(elementCount * (nuint)Unsafe.SizeOf<T>()));
             }
         }
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        private static void Memmove(ref byte dest, ref byte src, nuint len)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void Memmove<T>(ref T destination, ref T source, nuint_t elementCount)
+        {
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                // Blittable memmove
+
+                Memmove(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount * (nuint_t)Unsafe.SizeOf<T>());
+            }
+            else
+            {
+                // Non-blittable memmove
+                BulkMoveWithWriteBarrier(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount * (nuint_t)Unsafe.SizeOf<T>());
+            }
+        }
+
+        // This method has different signature for x64 and other platforms and is done for performance reasons.
+        private static void Memmove(ref byte dest, ref byte src, nuint_t len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
-            if (((nuint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len))
+            if (((nuint_t)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint_t)Unsafe.ByteOffset(ref dest, ref src) < len))
             {
                 goto BuffersOverlap;
             }
 
             // Use "(IntPtr)(nint)len" to avoid overflow checking on the explicit cast to IntPtr
 
-            ref byte srcEnd = ref Unsafe.Add(ref src, (IntPtr)(nint)len);
-            ref byte destEnd = ref Unsafe.Add(ref dest, (IntPtr)(nint)len);
+            ref byte srcEnd = ref Unsafe.Add(ref src, (IntPtr)(nint_t)len);
+            ref byte destEnd = ref Unsafe.Add(ref dest, (IntPtr)(nint_t)len);
 
             if (len <= 16)
                 goto MCPY02;
@@ -459,7 +481,7 @@ namespace System
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
             Debug.Assert(len > 64 && len <= MemmoveNativeThreshold);
-            nuint n = len >> 6;
+            nuint_t n = len >> 6;
 
         MCPY06:
 #if HAS_CUSTOM_BLOCKS
@@ -527,7 +549,7 @@ namespace System
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void _Memmove(byte* dest, byte* src, nuint len)
+        private static unsafe void _Memmove(byte* dest, byte* src, nuint_t len)
         {
             __Memmove(dest, src, len);
         }
@@ -535,7 +557,7 @@ namespace System
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void _Memmove(ref byte dest, ref byte src, nuint len)
+        private static unsafe void _Memmove(ref byte dest, ref byte src, nuint_t len)
         {
             fixed (byte* pDest = &dest)
             fixed (byte* pSrc = &src)

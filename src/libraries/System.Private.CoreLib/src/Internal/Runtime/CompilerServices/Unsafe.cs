@@ -10,11 +10,11 @@ using System.Runtime.Versioning;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
-using nuint = System.UInt64;
-using nint = System.Int64;
+using nuint_t = System.UInt64;
+using nint_t = System.Int64;
 #else
-using nuint = System.UInt32;
-using nint = System.Int32;
+using nuint_t = System.UInt32;
+using nint_t = System.Int32;
 #endif
 
 //
@@ -109,7 +109,7 @@ namespace Internal.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
+            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint_t)SizeOf<T>()));
 #endif
         }
 
@@ -125,7 +125,7 @@ namespace Internal.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
+            return ref AddByteOffset(ref source, (IntPtr)((nint_t)elementOffset * (nint_t)SizeOf<T>()));
 #endif
         }
 
@@ -141,7 +141,7 @@ namespace Internal.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return (byte*)source + (elementOffset * (nint)SizeOf<T>());
+            return (byte*)source + (elementOffset * (nint_t)SizeOf<T>());
 #endif
         }
 
@@ -152,11 +152,22 @@ namespace Internal.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref T Add<T>(ref T source, nint elementOffset)
+        internal static ref T Add<T>(ref T source, nint_t elementOffset)
         {
             return ref Unsafe.Add(ref source, (IntPtr)(void*)elementOffset);
         }
 #endif
+
+        /// <summary>
+        /// Adds an byte offset to the given reference.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ref T AddByteOffset<T>(ref T source, nuint_t byteOffset)
+        {
+            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
+        }
 
         /// <summary>
         /// Adds an byte offset to the given reference.

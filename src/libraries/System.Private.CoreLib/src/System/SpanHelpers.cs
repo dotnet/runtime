@@ -8,9 +8,9 @@ using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
-using nuint = System.UInt64;
+using nuint_t = System.UInt64;
 #else
-using nuint = System.UInt32;
+using nuint_t = System.UInt32;
 #endif
 
 namespace System
@@ -18,6 +18,11 @@ namespace System
     internal static partial class SpanHelpers
     {
         public static unsafe void ClearWithoutReferences(ref byte b, nuint byteLength)
+        {
+            ClearWithoutReferences(ref b, (nuint_t)byteLength);
+        }
+
+        public static unsafe void ClearWithoutReferences(ref byte b, nuint_t byteLength)
         {
             if (byteLength == 0)
                 return;
@@ -232,15 +237,15 @@ namespace System
             // P/Invoke into the native version for large lengths
             if (byteLength >= 512) goto PInvoke;
 
-            nuint i = 0; // byte offset at which we're copying
+            nuint_t i = 0; // byte offset at which we're copying
 
-            if (((nuint)Unsafe.AsPointer(ref b) & 3) != 0)
+            if (((nuint_t)Unsafe.AsPointer(ref b) & 3) != 0)
             {
-                if (((nuint)Unsafe.AsPointer(ref b) & 1) != 0)
+                if (((nuint_t)Unsafe.AsPointer(ref b) & 1) != 0)
                 {
                     b = 0;
                     i += 1;
-                    if (((nuint)Unsafe.AsPointer(ref b) & 2) != 0)
+                    if (((nuint_t)Unsafe.AsPointer(ref b) & 2) != 0)
                         goto IntAligned;
                 }
                 Unsafe.As<byte, short>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
@@ -257,13 +262,13 @@ namespace System
             // The thing 1, 2, 3, and 4 have in common that the others don't is that if you
             // subtract one from them, their 3rd lsb will not be set. Hence, the below check.
 
-            if ((((nuint)Unsafe.AsPointer(ref b) - 1) & 4) == 0)
+            if ((((nuint_t)Unsafe.AsPointer(ref b) - 1) & 4) == 0)
             {
                 Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
                 i += 4;
             }
 
-            nuint end = byteLength - 16;
+            nuint_t end = byteLength - 16;
             byteLength -= i; // lower 4 bits of byteLength represent how many bytes are left *after* the unrolled loop
 
             // We know due to the above switch-case that this loop will always run 1 iteration; max
@@ -274,7 +279,7 @@ namespace System
             // This is separated out into a different variable, so the i + 16 addition can be
             // performed at the start of the pipeline and the loop condition does not have
             // a dependency on the writes.
-            nuint counter;
+            nuint_t counter;
 
             do
             {
@@ -339,6 +344,11 @@ namespace System
         }
 
         public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
+        {
+            ClearWithReferences(ref ip, (nuint_t)pointerSizeLength);
+        }
+
+        public static unsafe void ClearWithReferences(ref IntPtr ip, nuint_t pointerSizeLength)
         {
             Debug.Assert((int)Unsafe.AsPointer(ref ip) % sizeof(IntPtr) == 0, "Should've been aligned on natural word boundary.");
 
