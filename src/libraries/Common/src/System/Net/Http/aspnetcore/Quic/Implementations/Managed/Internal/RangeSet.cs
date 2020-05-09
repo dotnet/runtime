@@ -14,10 +14,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     {
         private List<Range> _ranges;
 
-        internal class Range
+        internal readonly struct Range
         {
-            internal long Start;
-            internal long End;
+            internal long Start { get; }
+            internal long End { get; }
 
             internal long Length => End - Start + 1;
 
@@ -25,6 +25,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 Start = start;
                 End = end;
+            }
+
+            internal Range WithStart(long start)
+            {
+                return new Range(start, End);
+            }
+
+            internal Range WithEnd(long end)
+            {
+                return new Range(Start, end);
             }
 
             internal bool Includes(Range other)
@@ -150,10 +160,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
             else
             {
-                // remove all except one range, which will be reused
+                // remove all except one range, which will be overwritten
                 _ranges.RemoveRange(index, removeCount - 1);
-                _ranges[index].Start = start;
-                _ranges[index].End = end;
+                _ranges[index] = new Range(start, end);
             }
         }
 
@@ -254,7 +263,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     else
                     {
                         // shorten from the left, and we are done
-                        range.Start = end + 1;
+                        _ranges[index] = range.WithStart(end + 1);
                         return;
                     }
                 }
@@ -262,12 +271,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 {
                     // split the range and we are done
                     _ranges.Insert(index + 1, new Range(end + 1, range.End));
-                    range.End = start - 1;
+                    _ranges[index] = range.WithEnd(start - 1);
                     return;
                 }
                 else // shorten the range from the right
                 {
-                    range.End = Math.Min(range.End, start - 1);
+                    _ranges[index] = range.WithEnd(Math.Min(range.End, start - 1));
                     index++;
                 }
             }
@@ -283,7 +292,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 if (end < range.End)
                 {
                     // possible only partial overlap, adjust the range
-                    range.Start = Math.Max(range.Start, end);
+                    _ranges[index] = range.WithStart(Math.Max(range.Start, end));
                     break;
                 }
 

@@ -15,7 +15,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     {
         private const int PreferredChunkSize = 32 * 1024;
         // TODO-RZ: tie this to control flow limits
-        private const int MaximumHeldChunks = 8;
+        private const int MaximumHeldChunks = 20;
 
         private object SyncObject => _toSendChannel;
 
