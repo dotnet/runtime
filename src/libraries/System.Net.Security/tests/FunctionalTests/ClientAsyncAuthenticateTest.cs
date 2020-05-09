@@ -63,7 +63,7 @@ namespace System.Net.Security.Tests
         {
             // Test Ssl2 against itself.  This is a standalone test as even on versions where Windows supports Ssl2,
             // it appears to have rules around not using it when other protocols are mentioned.
-            if (!PlatformDetection.IsWindows10Version1607OrGreater)
+            if (PlatformDetection.SupportsSsl2)
             {
 #pragma warning disable 0618
                 await ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2);

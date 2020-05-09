@@ -197,7 +197,7 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> NotSupportedSSLVersionServers()
         {
 #pragma warning disable 0618
-            if (PlatformDetection.IsWindows10Version1607OrGreater)
+            if (PlatformDetection.SupportsSsl2)
             {
                 yield return new object[] { SslProtocols.Ssl2, Configuration.Http.SSLv2RemoteServer };
             }
