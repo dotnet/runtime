@@ -30,7 +30,6 @@ namespace System.Text.Unicode
 #if DEBUG && SYSTEM_PRIVATE_CORELIB
         static Utf16Utility()
         {
-            Debug.Assert(sizeof(nint_t) == IntPtr.Size && nint.MinValue < 0, "nint_t is defined incorrectly.");
             Debug.Assert(sizeof(nuint_t) == IntPtr.Size && nuint.MinValue == 0, "nuint_t is defined incorrectly.");
         }
 #endif // DEBUG && SYSTEM_PRIVATE_CORELIB

@@ -54,7 +54,7 @@ namespace System
 
             int lowerBound = array.GetLowerBound(0);
             int elementSize = array.GetElementSize();
-            nuint numComponents = (nuint)Unsafe.As<RawData>(array).Count;
+            nuint numComponents = (nuint)(nint)Unsafe.As<RawData>(array).Count;
 
             int offset = index - lowerBound;
 
