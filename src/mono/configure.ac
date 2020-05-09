@@ -6801,7 +6801,7 @@ if test x$with_core = xonly; then
 	if test x$cross_compiling = xno; then
 		AC_CHECK_FILE($srcdir/../libraries/Native/Unix/System.Globalization.Native/pal_icushim.h, [have_shim_globalization=yes], [have_shim_globalization=no])
 	fi
-	if test x$have_shim_globalization = xyes || x$cross_compiling = xyes; then
+	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
 		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
 		if test x$target_osx = xyes; then
 			ORIG_CPPFLAGS=$CPPFLAGS
