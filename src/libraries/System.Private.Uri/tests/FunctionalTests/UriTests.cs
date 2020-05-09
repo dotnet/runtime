@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.PrivateUri.Tests
@@ -706,6 +708,35 @@ namespace System.PrivateUri.Tests
 
             Assert.Equal("http://www.contoso.com/", u.AbsoluteUri);
             Assert.Equal(80, u.Port);
+        }
+
+        [Fact]
+        public static void Uri_DoesNotLockOnString()
+        {
+            // Don't intern the string we lock on
+            string uriString = "*http://www.contoso.com".Substring(1);
+
+            bool timedOut = false;
+
+            var enteredLockMre = new ManualResetEvent(false);
+            var finishedParsingMre = new ManualResetEvent(false);
+
+            Task.Factory.StartNew(() =>
+            {
+                lock (uriString)
+                {
+                    enteredLockMre.Set();
+                    timedOut = !finishedParsingMre.WaitOne(TimeSpan.FromSeconds(10));
+                }
+            }, TaskCreationOptions.LongRunning);
+
+            enteredLockMre.WaitOne();
+            int port = new Uri(uriString).Port;
+            finishedParsingMre.Set();
+            Assert.Equal(80, port);
+
+            Assert.True(Monitor.TryEnter(uriString, TimeSpan.FromSeconds(10)));
+            Assert.False(timedOut);
         }
     }
 }
