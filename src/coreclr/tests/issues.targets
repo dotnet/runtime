@@ -1922,7 +1922,7 @@
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64')  and '$(TargetsWindows)' != 'true' " >
-        <ExcludeList Include = "$XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizearray/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizearray/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/**">
