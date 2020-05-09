@@ -18,7 +18,13 @@ namespace System.Net.Quic.Tests
     ///     There are many overloads in an attempt to keep testing code short and expressive. It is intened that you
     ///     use:
     /// <para>
-    ///       - Get*ToSend functions if you don't intend the recipient to actually receive the packet (simulate packet loss)
+    ///       - Lose* functions if you intend the packet not be delivered at all. This function logs the contents to the
+    ///         test output.
+    /// </para>
+    /// <para>
+    ///       - Get*ToSend functions if you aren't sure that the packet should be delivered (e.g. for dropping packets
+    ///         containing specific frames. The data can then be sent using one of the Send* overloads. This is the only
+    ///         function which do not log the sent packets.
     /// </para>
     /// <para>
     ///       - Send* functions if you want to transmit the packets and want to inspect the contents.
@@ -284,7 +290,7 @@ namespace System.Net.Quic.Tests
         {
             TestHarnessContext testHarness = new TestHarnessContext(source, _sealMap);
 
-            LogFlightPackets(packets, source == Client);
+            LogFlightPackets(packets, source);
 
             _writer.Reset(buffer);
             int written = 0;
@@ -354,7 +360,7 @@ namespace System.Net.Quic.Tests
 
             var packets = PacketBase.ParseMany(copy, new TestHarnessContext(source, _sealMap));
 
-            LogFlightPackets(packets, source == Client);
+            LogFlightPackets(packets, source);
 
             _reader.Reset(buffer.AsMemory(0, written));
             _recvContext.Timestamp = CurrentTimestamp;
@@ -363,9 +369,70 @@ namespace System.Net.Quic.Tests
             return new PacketFlight(packets, written, source, CurrentTimestamp);
         }
 
-        private void LogFlightPackets(IEnumerable<PacketBase> packets, bool clientSending, bool lost = false)
+        /// <summary>
+        ///     Expects the connection to send <see cref="OneRttPacket"/>, logs it as lost and returns it for further
+        ///     inspection.
+        /// </summary>
+        /// <param name="source">The source connection.</param>
+        internal OneRttPacket Lose1RttPacket(ManagedQuicConnection source)
         {
-            LogFlightPackets(new PacketFlight(packets.ToList(), 0, clientSending ? Client : null, CurrentTimestamp), lost);
+            var flight = GetFlightToSend(source);
+            var packet = Assert.IsType<OneRttPacket>(Assert.Single(flight.Packets));
+            LogFlightPackets(flight, true);
+            return packet;
+        }
+
+        /// <summary>
+        ///     Expects the connection to send <see cref="OneRttPacket"/> containing given frame, logs it as lost and
+        ///     returns the frame for further inspection.
+        /// </summary>
+        /// <param name="source">The source connection.</param>
+        internal TFrame Lose1RttPacketWithFrame<TFrame>(ManagedQuicConnection source) where TFrame : FrameBase
+        {
+            var flight = GetFlightToSend(source);
+            var packet = Assert.IsType<OneRttPacket>(Assert.Single(flight.Packets));
+            LogFlightPackets(flight, true);
+            return packet.ShouldHaveFrame<TFrame>();
+        }
+
+        /// <summary>
+        ///     Helper function for checking that a particular frame is resent after loss. The function expects
+        ///     that the <paramref name="source"/> connection will send <see cref="OneRttPacket"/> with
+        ///     <typeparamref name="TFrame"/> frame. This packet is discarded (simulated loss), and the
+        ///     <paramref name="destination"/> connection is pinged with a long enough delay in order for the original
+        ///     packet be deemed lost and data resent.
+        /// </summary>
+        /// <param name="source">The source connection.</param>
+        /// <param name="destination">The destination connection.</param>
+        /// <typeparam name="TFrame">The type of frame expected to be (re)sent.</typeparam>
+        internal void Lose1RttWithFrameAndCheckIfItIsResentLater<TFrame>(ManagedQuicConnection source,
+            ManagedQuicConnection destination) where TFrame : FrameBase
+        {
+            Lose1RttPacketWithFrame<TFrame>(source);
+
+            CurrentTimestamp += RecoveryController.InitialRtt;
+            // ping the destination to elicit ack
+            // TODO-RZ: calculate exact delta time needed for the packet to be deemed lost
+            Client.Ping();
+            // no retransmission yet
+            Send1Rtt(source, destination).ShouldNotHaveFrame<TFrame>();
+
+            // receive ack late enough for the original packet be deemed lost.
+            CurrentTimestamp += 3 * RecoveryController.InitialRtt;
+            Send1RttWithFrame<AckFrame>(destination, source);
+
+            // check that the frame got resent.
+            Send1RttWithFrame<TFrame>(source, destination);
+        }
+
+        internal void LogFlightPackets(IEnumerable<PacketBase> packets, ManagedQuicConnection sender, bool lost = false)
+        {
+            LogFlightPackets(new PacketFlight(packets.ToList(), 0, sender, CurrentTimestamp), lost);
+        }
+
+        internal void LogFlightPackets(PacketBase packet, ManagedQuicConnection sender, bool lost = false)
+        {
+            LogFlightPackets(new []{packet}, sender, lost);
         }
     }
 }

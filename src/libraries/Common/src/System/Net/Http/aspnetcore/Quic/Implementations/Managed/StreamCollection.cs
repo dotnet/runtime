@@ -155,8 +155,6 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void MarkForUpdate(ManagedQuicStream stream)
         {
-            Debug.Assert(stream.CanRead);
-
             AddToListSynchronized(_updateQueue, stream._updateQueueListNode);
         }
 

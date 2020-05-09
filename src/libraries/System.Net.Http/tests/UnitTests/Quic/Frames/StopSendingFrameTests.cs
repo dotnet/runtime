@@ -1,11 +1,10 @@
-using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Quic.Tests
+namespace System.Net.Quic.Tests.Frames
 {
     public class StopSendingFrameTests : ManualTransmissionQuicTestBase
     {
@@ -76,6 +75,16 @@ namespace System.Net.Quic.Tests
                     ApplicationErrorCode = 14
                 },
                 TransportErrorCode.StreamLimitError, QuicError.StreamsLimitViolated);
+        }
+
+        [Fact]
+        public void RetransmittedAfterLoss()
+        {
+            var stream = Client.OpenStream(false);
+            long errorCode = 15;
+            stream.AbortRead(errorCode);
+
+            Lose1RttWithFrameAndCheckIfItIsResentLater<StopSendingFrame>(Client, Server);
         }
     }
 }

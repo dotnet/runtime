@@ -4,7 +4,7 @@ using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Quic.Tests
+namespace System.Net.Quic.Tests.Frames
 {
     public class ResetStreamFrameTests : ManualTransmissionQuicTestBase
     {
@@ -65,6 +65,16 @@ namespace System.Net.Quic.Tests
                     ApplicationErrorCode = 14
                 },
                 TransportErrorCode.StreamLimitError, QuicError.StreamsLimitViolated);
+        }
+
+        [Fact]
+        public void RetransmittedAfterLoss()
+        {
+            var stream = Client.OpenStream(false);
+            long errorCode = 15;
+            stream.AbortWrite(errorCode);
+
+            Lose1RttWithFrameAndCheckIfItIsResentLater<ResetStreamFrame>(Client, Server);
         }
     }
 }

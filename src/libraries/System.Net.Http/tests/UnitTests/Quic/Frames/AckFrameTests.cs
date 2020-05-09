@@ -7,11 +7,11 @@ using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Quic.Tests
+namespace System.Net.Quic.Tests.Frames
 {
-    public class AckTests : ManualTransmissionQuicTestBase
+    public class AckFrameTests : ManualTransmissionQuicTestBase
     {
-        public AckTests(ITestOutputHelper output)
+        public AckFrameTests(ITestOutputHelper output)
             : base(output)
         {
             // all tests start after connection has been established
@@ -104,6 +104,7 @@ namespace System.Net.Quic.Tests
                 }
 
                 // else drop the packet
+                LogFlightPackets(packet, Client, true);
             }
 
             // send ack back to server

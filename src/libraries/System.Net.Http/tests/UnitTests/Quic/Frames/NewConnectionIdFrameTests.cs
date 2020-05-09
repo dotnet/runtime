@@ -4,7 +4,7 @@ using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Quic.Tests
+namespace System.Net.Quic.Tests.Frames
 {
     public class NewConnectionIdFrameTests : ManualTransmissionQuicTestBase
     {

@@ -153,8 +153,8 @@ namespace System.Net.Quic.Implementations.Managed
 
             OutboundBuffer.Abort(errorCode);
             _shutdownCompleted.TryCompleteException(new QuicStreamAbortedException("Stream was aborted", errorCode));
+            _connection.OnStreamStateUpdated(this);
             // TODO-RZ: abort current writes
-            // TODO-RZ: send RESET_STREAM
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }

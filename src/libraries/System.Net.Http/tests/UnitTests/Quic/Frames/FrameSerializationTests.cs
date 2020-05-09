@@ -2,7 +2,7 @@ using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using Xunit;
 
-namespace System.Net.Quic.Tests
+namespace System.Net.Quic.Tests.Frames
 {
     public class FrameSerializationTests
     {
