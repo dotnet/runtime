@@ -421,7 +421,7 @@ BOOL Assembler::AddMethod(Method *pMethod)
             }
             if(pEx->Flags & COR_ILEXCEPTION_CLAUSE_FILTER)
             {
-                if(!((pEx->GetFilterOffset() >= TryEnd)||(pEx->GetTryOffset() >= HandlerEnd)))
+                if(pEx->GetFilterOffset() < TryEnd && pEx->GetTryOffset() < HandlerEnd)
                 {
                     report->error("Invalid SEH clause #%d: Try and Filter/Handler blocks overlap\n",dwEx+1);
                 }
@@ -435,7 +435,7 @@ BOOL Assembler::AddMethod(Method *pMethod)
                 }
             }
             else
-            if(!((pEx->GetHandlerOffset() >= TryEnd)||(pEx->GetTryOffset() >= HandlerEnd)))
+            if(pEx->GetHandlerOffset() < TryEnd && pEx->GetTryOffset() < HandlerEnd)
             {
                 report->error("Invalid SEH clause #%d: Try and Handler blocks overlap\n",dwEx+1);
             }
