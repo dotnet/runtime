@@ -684,7 +684,7 @@ namespace System.Net.Security
                     Debug.Assert(_internalBufferCount >= SecureChannel.ReadHeaderSize);
 
                     // Parse the frame header to determine the payload size (which includes the header size).
-                    int payloadBytes = TlsFrameHelper.GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+                    int payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                     if (payloadBytes < 0)
                     {
                         throw new IOException(SR.net_frame_read_size);
