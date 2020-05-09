@@ -115,22 +115,24 @@ namespace System.Net.Quic.Tests
             buffer.UpdateMaxData(50);
             EnqueueBytes(10);
 
+            Assert.Equal(SendStreamState.Ready, buffer.StreamState);
             Assert.False(buffer.SizeKnown);
             buffer.MarkEndOfData();
+
             Assert.True(buffer.SizeKnown);
-            Assert.False(buffer.Finished);
+            // still no transition
+            Assert.Equal(SendStreamState.Ready, buffer.StreamState);
 
             byte[] destination = new byte[5];
             buffer.CheckOut(destination);
             buffer.OnAck(0, 5);
-            Assert.True(buffer.HasUnackedData);
-            Assert.False(buffer.Finished);
+            Assert.Equal(SendStreamState.Send, buffer.StreamState);
 
             buffer.CheckOut(destination);
+            Assert.Equal(SendStreamState.DataSent, buffer.StreamState);
             buffer.OnAck(5, 5, true);
 
-            Assert.True(buffer.Finished);
-            Assert.False(buffer.HasUnackedData);
+            Assert.Equal(SendStreamState.DataReceived, buffer.StreamState);
         }
     }
 }

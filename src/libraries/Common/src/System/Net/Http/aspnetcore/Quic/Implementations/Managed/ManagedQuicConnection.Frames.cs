@@ -250,7 +250,7 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(stream!.CanRead);
 
             // TODO-RZ: check stream state against duplicate receipt
-            stream.InboundBuffer!.Reset(frame.ApplicationErrorCode, frame.FinalSize);
+            stream.InboundBuffer!.OnResetStream(frame.ApplicationErrorCode);
             return ProcessPacketResult.Ok;
         }
 
@@ -509,6 +509,11 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ProcessStreamFrame(QuicReader reader)
         {
+            // TODO-RZ: Discard data if STOP_SENDING requested.
+            // STREAM frames received after sending STOP_SENDING are still counted
+            // toward connection and stream flow control, even though these frames
+            // can be discarded upon receipt.
+
             var frameType = reader.PeekFrameType();
             if (!StreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;

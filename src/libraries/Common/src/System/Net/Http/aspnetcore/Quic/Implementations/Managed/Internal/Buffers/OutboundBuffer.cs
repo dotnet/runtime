@@ -17,6 +17,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         private const int MaximumHeldChunks = 20;
 
+        private object SyncObject => _toSendChannel;
+
         /// <summary>
         ///     Current state of the stream.
         /// </summary>
@@ -91,11 +93,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         private long BytesInChannel => WrittenBytes - _dequedBytes;
 
         /// <summary>
-        ///     Number of contiguous bytes that were acknowledged by the peer.
-        /// </summary>
-        internal long AckedOffset => _acked.Count > 0 ? _acked[0].End + 1 : 0;
-
-        /// <summary>
         ///     Total number of bytes allowed to transport in this stream.
         /// </summary>
         internal long MaxData { get; private set; }
@@ -116,21 +113,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal bool SizeKnown { get; private set; }
 
         /// <summary>
-        ///     True if all data has been transmitted and acknowledged.
-        /// </summary>
-        internal bool Finished => SizeKnown && AckedOffset == WrittenBytes && _finAcked;
-
-        /// <summary>
         ///     Returns true if buffer contains any sendable data below <see cref="MaxData" /> limit.
         /// </summary>
-        // TODO-RZ: this is not threadsafe
         internal bool IsFlushable => _pending.Count > 0 && _pending[0].Start < MaxData ||
                                      _dequedBytes < MaxData && BytesInChannel > 0;
-
-        /// <summary>
-        ///     True if there is data that has not been confirmed received.
-        /// </summary>
-        internal bool HasUnackedData => _pending.Count + _checkedOut.Count != 0;
 
         /// <summary>
         ///     Aborts the outbound stream with given error code.
@@ -138,28 +124,43 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="errorCode"></param>
         internal void Abort(long errorCode)
         {
-            // TODO-RZ: what to do in terminal state?
-            Debug.Assert(Error == null);
-            Error = errorCode;
-            StreamState = SendStreamState.WantReset;
+            // TODO-RZ: should we throw if already aborted?
+
+            // TODO-RZ: this is the only situation when state is set from user thread, maybe we can
+            // find a way to remove the need for the lock
+            if (StreamState < SendStreamState.WantReset)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState < SendStreamState.WantReset)
+                    {
+                        Debug.Assert(Error == null);
+                        Error = errorCode;
+                        StreamState = SendStreamState.WantReset;
+                    }
+                }
+            }
 
             // TODO-RZ: Can we drop all buffered data?
         }
 
         internal void OnResetSent()
         {
+            // we are past WantReset, no synchronization needed
             Debug.Assert(StreamState == SendStreamState.WantReset);
             StreamState = SendStreamState.ResetSent;
         }
 
         internal void OnResetAcked()
         {
+            // we are past WantReset, no synchronization needed
             Debug.Assert(StreamState == SendStreamState.ResetSent);
             StreamState = SendStreamState.ResetReceived;
         }
 
         internal void OnResetLost()
         {
+            // we are past WantReset, no synchronization needed
             Debug.Assert(StreamState == SendStreamState.ResetSent);
             StreamState = SendStreamState.WantReset;
         }
@@ -303,6 +304,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             if (destination.IsEmpty)
                 return;
 
+            if (StreamState == SendStreamState.Ready)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState == SendStreamState.Ready)
+                    {
+                        StreamState = SendStreamState.Send;
+                    }
+                }
+            }
+
             DrainIncomingChunks();
             Debug.Assert(destination.Length <= GetNextSendableRange().count);
 
@@ -325,6 +337,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             }
 
             SentBytes = Math.Max(SentBytes, end + 1);
+
+            if (SizeKnown && StreamState == SendStreamState.Send && SentBytes == WrittenBytes)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState == SendStreamState.Send)
+                    {
+                        StreamState = SendStreamState.DataSent;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -402,6 +425,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             }
 
             _chunks.RemoveRange(0, toRemove);
+
+            if (_finAcked && _acked[0].Length == WrittenBytes && StreamState == SendStreamState.DataSent)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState == SendStreamState.DataSent)
+                    {
+                        StreamState = SendStreamState.DataReceived;
+                    }
+                }
+            }
         }
 
         private byte[] RentBuffer()

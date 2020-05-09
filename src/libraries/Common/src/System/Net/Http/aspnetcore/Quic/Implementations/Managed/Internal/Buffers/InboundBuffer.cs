@@ -12,6 +12,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class InboundBuffer
     {
+        private object SyncObject => _deliverableChannel;
+
         /// <summary>
         ///     Chunk containing leftover data from the last delivery.
         /// </summary>
@@ -34,7 +36,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Received stream chunks which cannot be delivered yet because of out of order delivery of frames.
         /// </summary>
-        private readonly SortedSet<StreamChunk> _outOfOrderChunks = new SortedSet<StreamChunk>(StreamChunk.OffsetComparer);
+        private readonly SortedSet<StreamChunk> _outOfOrderChunks =
+            new SortedSet<StreamChunk>(StreamChunk.OffsetComparer);
 
         /// <summary>
         ///     Total number of bytes allowed to transport in this stream. Receiving data at this offset or higher
@@ -115,35 +118,116 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="errorCode">Application provided error code.</param>
         internal void RequestAbort(long errorCode)
         {
-            // TODO-RZ: what to do in terminal states?
-            Debug.Assert(Error == null);
-            Error = errorCode;
-            StreamState = RecvStreamState.WantStopSending;
-        }
-
-        internal void Reset(long errorCode, long finalSize)
-        {
-            // RFC allows use to ignore error code if we sent STOP_SENDING
-            if (Error == null)
+            // requesting that STOP_SENDING be sent for streams in states other than
+            // Receive and SizeKnown does not make sense. Also, there is a data race with incoming
+            // RESET_STREAM frames sent on peers own behalf.
+            if (StreamState < RecvStreamState.DataReceived)
             {
-                Error = errorCode;
+                lock (SyncObject)
+                {
+                    if (StreamState < RecvStreamState.DataReceived)
+                    {
+                        Debug.Assert(Error == null);
+
+                        Error = errorCode;
+                        StreamState = RecvStreamState.WantStopSending;
+                    }
+                }
             }
 
-            StreamState = RecvStreamState.ResetReceived;
+            // TODO-RZ: drop all incoming unread data
+        }
+
+        /// <summary>
+        ///     Performs state transition when RESET_FRAME was received.
+        /// </summary>
+        /// <param name="errorCode">Error code from the frame.</param>
+        internal void OnResetStream(long errorCode)
+        {
+            if (StreamState < RecvStreamState.ResetReceived)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState < RecvStreamState.ResetReceived)
+                    {
+                        // Error can be set if application requested that STOP_SENDING frame be sent.
+                        // RFC allows use to ignore incoming error code in such case.
+                        if (Error == null)
+                        {
+                            Error = errorCode;
+                        }
+
+                        StreamState = RecvStreamState.ResetReceived;
+                    }
+                }
+            }
+
+            Debug.Assert(StreamState == RecvStreamState.DataRead || StreamState >= RecvStreamState.ResetReceived);
+
+            _deliverableChannel.Writer.TryComplete(new QuicStreamAbortedException(errorCode));
             // TODO-RZ: drop all buffered data
-            // TODO-RZ: stop all async operations
         }
 
         internal void OnStopSendingSent()
         {
-            Debug.Assert(StreamState == RecvStreamState.WantStopSending);
-            StreamState = RecvStreamState.StopSendingSent;
+            if (StreamState == RecvStreamState.WantStopSending)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState == RecvStreamState.WantStopSending)
+                    {
+                        StreamState = RecvStreamState.StopSendingSent;
+                    }
+                }
+            }
         }
 
         public void OnStopSendingLost()
         {
-            Debug.Assert(StreamState == RecvStreamState.StopSendingSent);
-            StreamState = RecvStreamState.WantStopSending;
+            if (StreamState == RecvStreamState.StopSendingSent)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState == RecvStreamState.StopSendingSent)
+                    {
+                        StreamState = RecvStreamState.WantStopSending;
+                    }
+                }
+            }
+        }
+
+        private void OnFinalSize(long finalSize)
+        {
+            Debug.Assert(FinalSize == null || FinalSize == finalSize);
+
+            if (StreamState == RecvStreamState.Receive)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState == RecvStreamState.Receive)
+                    {
+                        // TODO-RZ: leftover flow control credit
+                        StreamState = RecvStreamState.SizeKnown;
+                        FinalSize = finalSize;
+                    }
+                }
+            }
+        }
+
+        private void OnAllReceived()
+        {
+            // TODO-RZ: allow transmission from ResetReceived? (optional in RFC)
+            if (StreamState == RecvStreamState.SizeKnown)
+            {
+                lock (SyncObject)
+                {
+                    if (StreamState == RecvStreamState.SizeKnown)
+                    {
+                        StreamState = RecvStreamState.DataReceived;
+                        _deliverableChannel.Writer.TryComplete();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -158,8 +242,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
             if (fin)
             {
-                Debug.Assert(FinalSize == null || FinalSize == offset + data.Length);
-                FinalSize = offset + data.Length;
+                OnFinalSize(offset + data.Length);
             }
 
             // deliver new data if present
@@ -178,7 +261,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                     var buffer = ArrayPool<byte>.Shared.Rent(data.Length);
                     data.CopyTo(buffer);
                     _bytesDeliverable += data.Length;
-                    _deliverableChannel.Writer.TryWrite(new StreamChunk(offset, buffer.AsMemory(0, data.Length), buffer));
+                    _deliverableChannel.Writer.TryWrite(
+                        new StreamChunk(offset, buffer.AsMemory(0, data.Length), buffer));
                 }
                 else
                 {
@@ -192,8 +276,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                     foreach (var range in toDeliver)
                     {
                         var buffer = ArrayPool<byte>.Shared.Rent((int)range.Length);
-                        data.Slice((int) (range.Start - offset), (int) range.Length).CopyTo(buffer);
-                        _outOfOrderChunks.Add(new StreamChunk(range.Start, buffer.AsMemory(0, (int) range.Length), buffer));
+                        data.Slice((int)(range.Start - offset), (int)range.Length).CopyTo(buffer);
+                        _outOfOrderChunks.Add(new StreamChunk(range.Start, buffer.AsMemory(0, (int)range.Length),
+                            buffer));
                     }
 
                     _undelivered.Add(offset, offset + data.Length - 1);
@@ -203,7 +288,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
             if (FinalSize == _bytesDeliverable)
             {
-                _deliverableChannel.Writer.TryComplete();
+                OnAllReceived();
             }
         }
 

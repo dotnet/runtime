@@ -628,8 +628,7 @@ namespace System.Net.Quic.Implementations.Managed
             var error = _inboundError ?? _outboundError;
             if (error != null)
             {
-                // TODO-RZ: We should probably format reason phrase into the exception message
-                throw new QuicConnectionAbortedException(error.ReasonPhrase, (long) error.ErrorCode);
+                throw MakeAbortedException(error);
             }
         }
 
@@ -665,8 +664,8 @@ namespace System.Net.Quic.Implementations.Managed
             // The closing and draining states SHOULD exists for at least three times the current PTO interval
             // Note: this is to properly discard reordered/delayed packets.
             _closingPeriodEnd = now + 3 * Recovery.GetProbeTimeoutInterval();
-            _streams.IncomingStreams.Writer.TryComplete(
-                new QuicConnectionAbortedException(error.ReasonPhrase, (long)error.ErrorCode));
+
+            _streams.IncomingStreams.Writer.TryComplete(MakeAbortedException(error));
 
 
             // TODO-RZ: data race with user who is trying to open a new stream?
@@ -718,6 +717,14 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (NetEventSource.IsEnabled) NetEventSource.Connected(this);
             _connectTcs.TryComplete();
+        }
+
+        private static QuicConnectionAbortedException MakeAbortedException(QuicError error)
+        {
+            return error.ReasonPhrase != null
+                // TODO-RZ: We should probably format reason phrase into the exception message
+                ? new QuicConnectionAbortedException(error.ReasonPhrase, (long)error.ErrorCode)
+                : new QuicConnectionAbortedException((long)error.ErrorCode);
         }
     }
 }

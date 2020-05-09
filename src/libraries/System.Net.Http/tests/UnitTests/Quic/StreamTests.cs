@@ -200,7 +200,7 @@ namespace System.Net.Quic.Tests
             clientStream.Flush();
 
             // lose the first packet with stream data
-            Get1RttToSend(Client).ShouldHaveFrame<StreamFrame>();
+            Lose1RttPacketWithFrame<StreamFrame>(Client);
 
             clientStream.Write(data);
             clientStream.Flush();

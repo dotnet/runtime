@@ -25,11 +25,10 @@ namespace System.Net.Quic.Implementations.Managed
 
                     var stream = _streams[data.StreamId];
                     var buffer = stream.OutboundBuffer!;
-                    bool wasFinished = buffer.Finished;
 
                     buffer.OnAck(data.Offset, data.Count, data.Fin);
 
-                    if (buffer.Finished && !wasFinished)
+                    if (buffer.StreamState == SendStreamState.DataReceived)
                     {
                         stream.NotifyShutdownWriteCompleted();
                     }
@@ -110,12 +109,16 @@ namespace System.Net.Quic.Implementations.Managed
 
             foreach (long streamId in packet.StreamsReset)
             {
-                GetStream(streamId).OutboundBuffer!.OnResetLost();
+                var stream = GetStream(streamId);
+                stream.OutboundBuffer!.OnResetLost();
+                _streams.MarkForUpdate(stream);
             }
 
             foreach (long streamId in packet.StreamsStopped)
             {
-                GetStream(streamId).InboundBuffer!.OnStopSendingLost();
+                var stream= GetStream(streamId);
+                stream.InboundBuffer!.OnStopSendingLost();
+                _streams.MarkForUpdate(stream);
             }
 
             if (packet.MaxDataFrame != null)
