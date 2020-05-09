@@ -50,7 +50,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _acceptNewConnections = false;
         }
 
-        protected override async Task OnSignal()
+        protected override async ValueTask OnSignal()
         {
             // TODO-RZ: make connections signal which connection wishes to do something
             long nextTimeout = long.MaxValue;
@@ -64,7 +64,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             UpdateTimeout(nextTimeout);
         }
 
-        protected override async Task OnTimeout()
+        protected override async ValueTask OnTimeout()
         {
             long now = Timestamp.Now;
 

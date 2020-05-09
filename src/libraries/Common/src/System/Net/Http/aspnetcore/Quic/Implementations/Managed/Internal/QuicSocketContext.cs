@@ -72,7 +72,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _signalTcs.TrySetResult(0);
         }
 
-        private async Task UpdateAsync(ManagedQuicConnection connection, QuicConnectionState previousState)
+        private async ValueTask UpdateAsync(ManagedQuicConnection connection, QuicConnectionState previousState)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -109,7 +109,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        protected Task UpdateAsync(ManagedQuicConnection connection)
+        protected ValueTask UpdateAsync(ManagedQuicConnection connection)
         {
             return UpdateAsync(connection, connection.ConnectionState);
         }
@@ -141,7 +141,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected abstract ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender);
 
-        private async Task DoReceive(QuicReader reader, IPEndPoint sender)
+        private async ValueTask DoReceive(QuicReader reader, IPEndPoint sender)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -160,7 +160,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        private async Task DoSignal()
+        private async ValueTask DoSignal()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -171,7 +171,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        private async Task DoTimeout()
+        private async ValueTask DoTimeout()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -184,9 +184,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        protected abstract Task OnSignal();
+        protected abstract ValueTask OnSignal();
 
-        protected abstract Task OnTimeout();
+        protected abstract ValueTask OnTimeout();
 
         protected abstract void
             OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState);
