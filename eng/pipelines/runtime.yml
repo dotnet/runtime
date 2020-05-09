@@ -691,6 +691,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -711,6 +712,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
+    - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
