@@ -785,9 +785,9 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // type(s).
             if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->gtSIMDSize == TARGET_POINTER_SIZE))
             {
-                // Special case for GetElement/ToScalar because they take Vector64<T> and return T which can be
-                // long/ulong.
 #ifdef TARGET_ARM64
+                // Special case for GetElement/ToScalar because they take Vector64<T> and return T
+                // and T can be long or ulong.
                 if (!(hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_GetElement ||
                       hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_ToScalar))
 #endif
