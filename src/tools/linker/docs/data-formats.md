@@ -224,22 +224,107 @@ are applied.
 
 ## Custom Attributes Annotations Format
 
-```json
-{
-  "[assembly-name]": {
-    "[namespace-name]": {
-      "[type-name]": {
-        "[field-or-property-name]": {
-          "[attribute-name]": "[attribute-value]"
-        },
+### Custom attribute on type field
 
-        "[method-name]([method-signature])": {
-          "[parameter-name]": {
-            "[attribute-name]": "[attribute-value]"
-          }
-        }
-      }
-    }
-  }
-}
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <field name="MyNumericField">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <argument>DefaultConstructor</argument>
+        </attribute>
+      </field>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on property field
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <property name="MyNumericField">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <argument>DefaultConstructor</argument>
+        </attribute>
+      </property>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on method
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <method signature="System.Void Method1(System.Boolean)">
+        <parameter name="boolParameter">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+      </method>
+      <method signature="System.Boolean Method2()">
+        <return>
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>PublicConstructors</argument>
+          </attribute>
+        </return>
+      </method>
+      <method signature="Method3&lt;T&gt;(T)">
+        <parameter name="genericParameter">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+      </method>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on nested type
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <type name="NestedType">
+        <property name="MyNumericField">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </property>
+      </type>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Conditional custom attributes
+
+The `feature` and `featurevalue` attributes are optional, but must be used together when used.
+They can be applied to any element to specify conditions under which the contained custom 
+attributes are applied.
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <!-- The substitution will apply only if "--feature EnableOptionalFeature false" are also used -->
+    <type fullname="Assembly.A" feature="EnableOptionalFeature" featurevalue="false">
+      <method signature="System.String TestMethod()">
+        <return>
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>PublicConstructors</argument>
+          </attribute>
+        </return>
+      </method>
+    </type>
+  </assembly>
+</linker>
 ```
