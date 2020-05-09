@@ -118,7 +118,7 @@ namespace System.Text
 #if SYSTEM_PRIVATE_CORELIB
             return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
 #else
-            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index);
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (nint)index);
 #endif
         }
 

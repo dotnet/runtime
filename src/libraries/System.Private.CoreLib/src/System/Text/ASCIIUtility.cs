@@ -502,7 +502,9 @@ namespace System.Text
 
             char* pOriginalBuffer = pBuffer;
 
+#if SYSTEM_PRIVATE_CORELIB
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
+#endif
 
             // Before we drain off char-by-char, try a generic vectorized loop.
             // Only run the loop if we have at least two vectors we can pull out.
@@ -665,7 +667,9 @@ namespace System.Text
             Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
             const uint NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether 'currentMask' contains non-ASCII data
 
+#if SYSTEM_PRIVATE_CORELIB
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
+#endif
 
             // Read the first vector unaligned.
 
