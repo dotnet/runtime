@@ -420,6 +420,10 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         }
         return true;
     }
+    else if (expr->OperGet() == GT_COMMA)
+    {
+        return IsMonotonicallyIncreasing(expr->gtEffectiveVal(), rejectNegativeConst);
+    }
     JITDUMP("Unknown tree type\n");
     return false;
 }
@@ -1216,6 +1220,10 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         }
 
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
+    else if(expr->OperGet() == GT_COMMA)
+    {
+        range = GetRange(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
     }
     else
     {
