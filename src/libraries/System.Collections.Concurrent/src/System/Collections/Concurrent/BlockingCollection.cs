@@ -756,13 +756,10 @@ namespace System.Collections.Concurrent
                 }
             }
 
-            if (waitForSemaphoreWasSuccessful)
-            {
-                Debug.Assert(item != null);
-            }
-
 #pragma warning disable CS8762
-            // Compiler can't automatically deduce 'item' has a non-null value when returning false.
+            // https://github.com/dotnet/runtime/issues/36132
+            // Compiler can't automatically deduce that nullability constraints
+            // for 'item' are satisfied at this exit point.
             return waitForSemaphoreWasSuccessful;
 #pragma warning restore CS8762
         }

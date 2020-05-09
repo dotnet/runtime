@@ -220,8 +220,9 @@ namespace System.Collections.Concurrent
                 if (gotItem)
                 {
 #pragma warning disable CS8762
-                    // Compiler can't automatically deduce that 'result' is set to a valid value
-                    // (which may be null if T allows it) at this exit point.
+                    // https://github.com/dotnet/runtime/issues/36132
+                    // Compiler can't automatically deduce that nullability constraints
+                    // for 'result' are satisfied at this exit point.
                     return true;
 #pragma warning restore CS8762
                 }
