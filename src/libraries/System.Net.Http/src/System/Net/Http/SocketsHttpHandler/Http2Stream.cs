@@ -27,7 +27,7 @@ namespace System.Net.Http
                 1024;
 #endif
 
-            private static readonly byte[] s_statusHeaderName = Encoding.ASCII.GetBytes(":status");
+            private static ReadOnlySpan<byte> StatusHeaderName => new byte[] { (byte)':', (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
 
             private readonly Http2Connection _connection;
             private readonly int _streamId;
@@ -436,7 +436,7 @@ namespace System.Net.Http
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
                 if (NetEventSource.IsEnabled) Trace($"{Encoding.ASCII.GetString(name)}: {Encoding.ASCII.GetString(value)}");
-                Debug.Assert(name != null && name.Length > 0);
+                Debug.Assert(name.Length > 0);
 
                 _headerBudgetRemaining -= name.Length + value.Length;
                 if (_headerBudgetRemaining < 0)
@@ -462,7 +462,7 @@ namespace System.Net.Http
                             throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
                         }
 
-                        if (name.SequenceEqual(s_statusHeaderName))
+                        if (name.SequenceEqual(StatusHeaderName))
                         {
                             if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
                             {
