@@ -125,8 +125,11 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentException>("asyncResult", () => listener.EndAcceptTcpClient(Task.CompletedTask));
         }
 
-        [Fact]
-        public async Task Accept_AcceptsPendingSocketOrClient()
+        [Theory]
+        [InlineData(0)] // Sync
+        [InlineData(1)] // Async
+        [InlineData(2)] // APM
+        public async Task Accept_AcceptsPendingSocketOrClient(int mode)
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
@@ -134,7 +137,12 @@ namespace System.Net.Sockets.Tests
             using (var client = new TcpClient())
             {
                 Task connectTask = client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
-                using (Socket s = listener.AcceptSocket())
+                using (Socket s = mode switch
+                {
+                    0 => listener.AcceptSocket(),
+                    1 => await listener.AcceptSocketAsync(),
+                    _ => await Task.Factory.FromAsync(listener.BeginAcceptSocket, listener.EndAcceptSocket, null),
+                })
                 {
                     Assert.False(listener.Pending());
                 }
@@ -144,7 +152,12 @@ namespace System.Net.Sockets.Tests
             using (var client = new TcpClient())
             {
                 Task connectTask = client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
-                using (TcpClient c = listener.AcceptTcpClient())
+                using (TcpClient c = mode switch
+                {
+                    0 => listener.AcceptTcpClient(),
+                    1 => await listener.AcceptTcpClientAsync(),
+                    _ => await Task.Factory.FromAsync(listener.BeginAcceptTcpClient, listener.EndAcceptTcpClient, null),
+                })
                 {
                     Assert.False(listener.Pending());
                 }

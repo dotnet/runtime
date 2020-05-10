@@ -38,8 +38,8 @@ parameters:
   platforms: []
 
 jobs:
-- job: ${{ format('installer_{0}_{1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-  displayName: ${{ format('Installer Build and Test {0} {1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+- job: ${{ format('installer_{0}_{1}_{2}', parameters.runtimeFlavor, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+  displayName: ${{ format('Installer Build and Test {0} {1} {2}', parameters.runtimeFlavor, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
@@ -65,8 +65,16 @@ jobs:
   - name: SkipTests
     value: ${{ or(
       not(in(parameters.archType, 'x64', 'x86')),
+      eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
       ne(parameters.crossrootfsDir, '')) }}
+
+  - name: BuildAction
+    value: -test
+
+  - ${{ if eq(variables.SkipTests, true) }}:
+    - name: BuildAction
+      value: ''
 
   - name: SignType
     value: test
@@ -79,10 +87,10 @@ jobs:
       value: /p:OfficialBuildId=$(Build.BuildNumber)
 
   - name: buildCommandSourcesDirectory
-    ${{ if ne(parameters.osGroup, 'Linux') }}:
+    ${{ if not(in(parameters.osGroup, 'Linux', 'FreeBSD')) }}:
       value: '$(Build.SourcesDirectory)/'
     # This job runs within Docker containers, so Build.SourcesDirectory is not accurate.
-    ${{ if eq(parameters.osGroup, 'Linux') }}:
+    ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
       value: '/root/runtime/'
 
   ###
@@ -96,6 +104,7 @@ jobs:
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
+        /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         $(OfficialBuildArg)
     - name: MsbuildSigningArguments
       value: >-
@@ -106,7 +115,8 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        installer.cmd -restore -build -ci -test
+        build.cmd -subset installer -ci
+        $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -118,16 +128,37 @@ jobs:
       value: >-
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
+        /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
-  - ${{ if eq(parameters.osGroup, 'Linux') }}:
+  - ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'Android', 'Browser') }}:
+
+    - name: CommonMSBuildArgs
+      value: >-
+        /p:PortableBuild=true
+        /p:SkipTests=$(SkipTests)
+
+    - name: BaseJobBuildCommand
+      value: >-
+        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(BuildAction)
+        -configuration $(_BuildConfig)
+        -os ${{ parameters.osGroup }}
+        -arch ${{ parameters.archType }}
+        /p:StripSymbols=true
+        $(LiveOverridePathArgs)
+        $(CommonMSBuildArgs)
+        $(OfficialBuildArg)
+
+  - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
 
     # Preserve the NuGet authentication env vars into the Docker container.
     # The 'NuGetAuthenticate' build step may have set these.
@@ -146,32 +177,27 @@ jobs:
           -e ROOTFS_DIR=${{ parameters.crossrootfsDir }}
           ${{ parameters.container }}
 
-    - ${{ if eq(parameters.name, 'FreeBSD_x64') }}:
-      - name: RunArguments
-        value: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
-
     - name: BuildScript
-      value: ./installer.sh
+      value: ./build.sh
     - name: MSBuildScript
       value: /root/runtime/eng/common/msbuild.sh
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: BuildScript
-        value: ./eng/install-nuget-credprovider-then-build.sh --subsetCategory installer
+        value: ./eng/install-nuget-credprovider-then-build.sh --subset installer
       - name: MSBuildScript
         value: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
     - name: CommonMSBuildArgs
       value: >-
         /p:Configuration=$(_BuildConfig)
+        /p:TargetOS=${{ parameters.osGroup }}
         /p:TargetArchitecture=${{ parameters.archType }}
+        /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         $(OfficialBuildArg)
 
     - name: _PortableBuild
       value: ${{ eq(parameters.osSubgroup, '') }}
-
-    - name: _DisableCrossgen
-      value: false
 
     - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
       # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
@@ -183,9 +209,9 @@ jobs:
 
     - name: BuildArguments
       value: >-
-        --restore --build --ci --test
+        -subset installer -ci
+        $(BuildAction)
         /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
-        /p:DisableCrossgen=$(_DisableCrossgen)
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)
@@ -416,11 +442,26 @@ jobs:
         displayName: 'Libraries artifacts (AllConfigurations)'
         cleanUnpackFolder: false
 
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+      displayName: Install Build Dependencies
+
+    - script: |
+        du -sh $(Build.SourcesDirectory)/*
+        df -h
+      displayName: Disk Usage before Build
+
   - script: $(BaseJobBuildCommand)
     displayName: Build
 
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - script: |
+        du -sh $(Build.SourcesDirectory)/*
+        df -h
+      displayName: Disk Usage after Build
+
   # Only in glibc leg, we produce RPMs and Debs
-  - ${{ if and(eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
+  - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
     - task: CopyFiles@2
       displayName: 'Copy built Portable linux-x64 binaries to staging directory'
       inputs:
@@ -433,7 +474,6 @@ jobs:
       # independent installers on this leg, but we need to do it somewhere.)
       - template: steps/build-linux-package.yml
         parameters:
-          buildTraversalBuildDependencies: true
           distroRid: ${{ packageBuild.imageRid }}
           image: ${{ packageBuild.image }}
           packageStepDescription: Runtime Deps, Runtime, Framework Packs installers
@@ -481,6 +521,7 @@ jobs:
   - template: steps/upload-job-artifacts.yml
     parameters:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
 

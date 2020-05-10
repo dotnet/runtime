@@ -40,17 +40,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<NameValueHeaderValue> Parameters
-        {
-            get
-            {
-                if (_parameters == null)
-                {
-                    _parameters = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _parameters;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
 
         public string? Name
         {
@@ -209,7 +199,7 @@ namespace System.Net.Http.Headers
                 null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out ContentDispositionHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out ContentDispositionHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
@@ -322,7 +312,7 @@ namespace System.Net.Http.Headers
                 {
                     dateString = dateString.Slice(1, dateString.Length - 2);
                 }
-                if (HttpDateParser.TryStringToDate(dateString, out date))
+                if (HttpDateParser.TryParse(dateString, out date))
                 {
                     return date;
                 }

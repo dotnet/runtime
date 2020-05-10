@@ -11,6 +11,7 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -313,7 +314,7 @@ namespace System
             return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(string? s, out float result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out float result)
         {
             if (s == null)
             {
@@ -329,7 +330,7 @@ namespace System
             return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out float result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
 

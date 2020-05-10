@@ -9,7 +9,7 @@
 
 #include <Security/Security.h>
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Get a CFRetain()ed SecKeychainRef value for the keychain to which the keychain item belongs.
 

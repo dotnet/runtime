@@ -11,6 +11,7 @@ namespace System.Globalization.Tests
     public class StringNormalizationTests
     {
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34577", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData("\u00C4\u00C7", NormalizationForm.FormC, true)]
         [InlineData("\u00C4\u00C7", NormalizationForm.FormD, false)]
         [InlineData("A\u0308C\u0327", NormalizationForm.FormC, false)]

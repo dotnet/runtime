@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -14,7 +15,6 @@ namespace System.Text.Json
     internal class JsonParameterInfo<T> : JsonParameterInfo
     {
         private JsonConverter<T> _converter = null!;
-        private bool _ignoreNullValues;
         private Type _runtimePropertyType = null!;
 
         public override JsonConverter ConverterBase => _converter;
@@ -36,7 +36,6 @@ namespace System.Text.Json
                 options);
 
             _converter = (JsonConverter<T>)matchingProperty.ConverterBase;
-            _ignoreNullValues = matchingProperty.IgnoreNullValues;
             _runtimePropertyType = runtimePropertyType;
 
             if (parameterInfo.HasDefaultValue)
@@ -55,9 +54,14 @@ namespace System.Text.Json
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
 
-            if (isNullToken && !_converter.HandleNullValue && !state.IsContinuation)
+            if (isNullToken && !_converter.HandleNull && !state.IsContinuation)
             {
-                // Don't have to check for IgnoreNullValue option here because we set the default value (likely null) regardless
+                if (!_converter.CanBeNull)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(_converter.TypeToConvert);
+                }
+
+                // Don't have to check for IgnoreNullValue option here because we set the default value regardless.
                 value = DefaultValue;
                 return true;
             }
@@ -79,13 +83,19 @@ namespace System.Text.Json
             return success;
         }
 
-        public bool ReadJsonTyped(ref ReadStack state, ref Utf8JsonReader reader, out T value)
+        public bool ReadJsonTyped(ref ReadStack state, ref Utf8JsonReader reader, [MaybeNull] out T value)
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
 
-            if (isNullToken && !_converter.HandleNullValue && !state.IsContinuation)
+            if (isNullToken && !_converter.HandleNull && !state.IsContinuation)
             {
+                if (!_converter.CanBeNull)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(_converter.TypeToConvert);
+                }
+
+                // Don't have to check for IgnoreNullValue option here because we set the default value regardless.
                 value = TypedDefaultValue;
                 return true;
             }

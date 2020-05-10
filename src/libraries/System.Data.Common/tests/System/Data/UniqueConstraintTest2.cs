@@ -99,7 +99,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public new void ToString()
+        public void ToStringTest()
         {
             DataTable dtParent = DataProvider.CreateParentDataTable();
 

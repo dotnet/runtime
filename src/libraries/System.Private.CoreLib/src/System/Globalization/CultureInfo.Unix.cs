@@ -14,8 +14,7 @@ namespace System.Globalization
                 return CultureInfo.InvariantCulture;
 
             CultureInfo cultureInfo;
-            string? localeName;
-            if (CultureData.GetDefaultLocaleName(out localeName))
+            if (CultureData.GetDefaultLocaleName(out string? localeName))
             {
                 Debug.Assert(localeName != null);
                 cultureInfo = GetCultureByName(localeName);
@@ -26,16 +25,6 @@ namespace System.Globalization
             }
 
             return cultureInfo;
-        }
-
-        private static CultureInfo GetPredefinedCultureInfo(string name)
-        {
-            if (!Interop.Globalization.IsPredefinedLocale(name))
-            {
-                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
-            }
-
-            return GetCultureInfo(name);
         }
 
         private static CultureInfo GetUserDefaultUICulture()

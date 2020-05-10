@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
         : JsonCollectionConverter<TCollection, TElement>
     {
         protected abstract void Add(TElement value, ref ReadStack state);
-        protected abstract void CreateCollection(ref ReadStack state, JsonSerializerOptions options);
+        protected abstract void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options);
         protected virtual void ConvertCollection(ref ReadStack state, JsonSerializerOptions options) { }
 
         protected static JsonConverter<TElement> GetElementConverter(ref ReadStack state)
@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }
 
-                CreateCollection(ref state, options);
+                CreateCollection(ref reader, ref state, options);
 
                 JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
                 if (elementConverter.CanUseDirectReadOrWrite)
@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         // Obtain the CLR value from the JSON and apply to the object.
                         TElement element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
-                        Add(element, ref state);
+                        Add(element!, ref state);
                     }
                 }
                 else
@@ -83,7 +83,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         // Get the value from the converter and add it.
                         elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement element);
-                        Add(element, ref state);
+                        Add(element!, ref state);
                     }
                 }
             }
@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (reader.TokenType == JsonTokenType.StartArray)
                     {
-                        state.Current.ObjectState = StackFrameObjectState.MetadataPropertyValue;
+                        state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                     }
                     else if (shouldReadPreservedReferences)
                     {
@@ -113,11 +113,11 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (shouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.MetadataPropertyValue)
+                if (shouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                     {
-                        if (state.Current.ObjectState == StackFrameObjectState.MetadataRefPropertyEndObject)
+                        if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
                             value = (TCollection)state.Current.ReturnValue!;
                             return true;
@@ -132,7 +132,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
-                    CreateCollection(ref state, options);
+                    CreateCollection(ref reader, ref state, options);
 
                     if (state.Current.MetadataId != null)
                     {
@@ -184,7 +184,7 @@ namespace System.Text.Json.Serialization.Converters
                                 return false;
                             }
 
-                            Add(element, ref state);
+                            Add(element!, ref state);
 
                             // No need to set PropertyState to TryRead since we're done with this element now.
                             state.Current.EndElement();

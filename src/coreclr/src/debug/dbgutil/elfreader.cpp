@@ -104,7 +104,7 @@ ElfReader::ElfReader() :
 ElfReader::~ElfReader()
 {
     if (m_buckets != nullptr) {
-        delete m_buckets;
+        free(m_buckets);
     }
 }
 
@@ -237,7 +237,7 @@ ElfReader::InitializeGnuHashTable()
         TRACE("ERROR: InitializeGnuHashTable invalid BucketCount or SymbolOffset\n");
         return false;
     }
-    m_buckets = new (std::nothrow) int32_t[m_hashTable.BucketCount];
+    m_buckets = (int32_t*)malloc(m_hashTable.BucketCount * sizeof(int32_t));
     if (m_buckets == nullptr) {
         return false;
     }

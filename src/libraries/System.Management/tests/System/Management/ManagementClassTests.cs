@@ -12,6 +12,7 @@ namespace System.Management.Tests
     public class ManagementClassTests
     {
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -26,6 +27,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(CodeLanguage.CSharp)]
         [InlineData(CodeLanguage.VB)]
         public void Get_SourceFile_For_Win32_Processor(CodeLanguage lang)
@@ -47,6 +49,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(CodeLanguage.JScript)]
         [InlineData(CodeLanguage.Mcpp)]
         [InlineData(CodeLanguage.VJSharp)]
@@ -74,6 +77,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ClassMembers_For_Win32_LogicalDisk()
         {
             var managementClass = new ManagementClass(new ManagementPath("Win32_LogicalDisk"));
@@ -94,6 +98,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void EnumerateInstances_For_Win32_LogicalDisk()
         {
             using (var managementClass = new ManagementClass(new ManagementPath("Win32_LogicalDisk")))
@@ -112,6 +117,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsElevatedAndSupportsWmi))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Create_Delete_Namespace()
         {
             using (var rootNamespace = new ManagementClass("root:__namespace"))

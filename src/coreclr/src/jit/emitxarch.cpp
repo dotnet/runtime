@@ -1937,13 +1937,14 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 
         /* Is this a stack parameter reference? */
 
-        if (emitComp->lvaIsParameter(var)
+        if ((emitComp->lvaIsParameter(var)
 #if !defined(TARGET_AMD64) || defined(UNIX_AMD64_ABI)
-            && !emitComp->lvaIsRegArgument(var)
+             && !emitComp->lvaIsRegArgument(var)
 #endif // !TARGET_AMD64 || UNIX_AMD64_ABI
-                )
+                 ) ||
+            (static_cast<unsigned>(var) == emitComp->lvaRetAddrVar))
         {
-            /* If no EBP frame, arguments are off of ESP, above temps */
+            /* If no EBP frame, arguments and ret addr are off of ESP, above temps */
 
             if (!EBPbased)
             {
@@ -2322,9 +2323,16 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         }
         else
         {
-            if (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx))
+            // When we are using the SIB or VSIB format with EBP or R13 as a base, we must emit at least
+            // a 1 byte displacement (this is a special case in the encoding to allow for the case of no
+            // base register at all). In order to avoid this when we have no scaling, we can reverse the
+            // registers so that we don't have to add that extra byte. However, we can't do that if the
+            // index register is a vector, such as for a gather instruction.
+            //
+            if (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx) &&
+                !isFloatReg(rgx))
             {
-                /* Swap reg and rgx, such that reg is not EBP/R13 */
+                // Swap reg and rgx, such that reg is not EBP/R13.
                 regNumber tmp                       = reg;
                 id->idAddr()->iiaAddrMode.amBaseReg = reg = rgx;
                 id->idAddr()->iiaAddrMode.amIndxReg = rgx = tmp;
@@ -9440,7 +9448,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Use the large version if this is not a byte. This trick will not
         // work in case of SSE2 and AVX instructions.
-        if ((size != EA_1BYTE) && (ins != INS_imul) && !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
+        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && !IsSSEInstruction(ins) &&
+            !IsAVXInstruction(ins))
         {
             code++;
         }
@@ -10206,8 +10215,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Use the large version if this is not a byte
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (!insIsCMOV(ins)) && !IsSSEInstruction(ins) &&
-            !IsAVXInstruction(ins))
+        // TODO-XArch-Cleanup Can the need for the 'w' size bit be encoded in the instruction flags?
+        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && (!insIsCMOV(ins)) &&
+            !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
         {
             code |= 0x1;
         }
@@ -10755,7 +10765,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
-        assert((emitChkAlign == false) || (ins == INS_lea) || (((size_t)addr & (byteSize - 1)) == 0));
+        assert((emitChkAlign == false) || (ins == INS_lea) ||
+               ((byteSize < 16) && (((size_t)addr & (byteSize - 1)) == 0)) || (((size_t)addr & (16 - 1)) == 0));
     }
     else
     {
@@ -11240,7 +11251,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #endif // TARGET_AMD64
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if ((ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) || (ins == INS_tzcnt))
+    else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
+             (ins == INS_tzcnt))
     {
         code = insEncodeRMreg(ins, code);
         if ((ins == INS_crc32) && (size > EA_1BYTE))
@@ -14818,6 +14830,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency += PERFSCORE_LATENCY_2C;
             break;
 
+        case INS_bsf:
+        case INS_bsr:
         case INS_pextrb:
         case INS_pextrd:
         case INS_pextrw:

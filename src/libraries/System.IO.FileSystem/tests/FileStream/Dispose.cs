@@ -111,7 +111,7 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow()
         {
             RemoteExecutor.Invoke(() =>
@@ -185,7 +185,7 @@ namespace System.IO.Tests
             Assert.False(disposeInvoked, "Expected finalizer to have been suppressed");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void Finalizer_CallsVirtualDispose_FalseArg()
         {
             bool disposeInvoked = false;

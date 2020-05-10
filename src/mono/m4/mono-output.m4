@@ -9,7 +9,6 @@ AC_DEFUN([AC_MONO_OUTPUT], [
 		Makefile
 		llvm/Makefile
 		mono/Makefile
-		mono/btls/Makefile
 		mono/utils/Makefile
 		mono/metadata/Makefile
 		mono/zlib/Makefile

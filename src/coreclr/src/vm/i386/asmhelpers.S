@@ -1401,7 +1401,7 @@ NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT, NoHandler
 
     // Align the stack for the call
     lea     ebx, [esp - 8]
-    and     ebx, 0fh
+    and     ebx, 0x0f
     sub     esp, ebx
 
     push    eax // stub-identifying token, see OnCallCountThresholdReachedStub

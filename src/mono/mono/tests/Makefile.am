@@ -1720,6 +1720,11 @@ LLVM_DISABLED_TESTS = \
 LLVM_DISABLED_TESTS += \
 	weak-fields.exe
 
+if HOST_WIN32
+# https://github.com/mono/mono/issues/19603
+LLVM_DISABLED_TESTS += sgen-bridge.exe
+endif
+
 LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS) $(AOT_BUILD_FLAGS))
 
 # The two finalizer tests only work under sgen
@@ -2023,6 +2028,14 @@ if AMD64
 INTERP_DISABLED_TESTS += \
 	assemblyresolve_event6.exe \
 	bug-48015.exe \
+	bug-60862.exe \
+	cominterop.exe \
+	dim-diamondshape.exe \
+	pinvoke3.exe
+endif
+
+if X86
+INTERP_DISABLED_TESTS += \
 	bug-60862.exe \
 	cominterop.exe \
 	dim-diamondshape.exe \

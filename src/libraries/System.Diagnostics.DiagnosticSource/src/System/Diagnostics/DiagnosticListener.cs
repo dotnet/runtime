@@ -279,7 +279,7 @@ namespace System.Diagnostics
             //    - IsEnabled1Arg invoked for DiagnosticSource.IsEnabled(string)
             //    - IsEnabled3Arg invoked for DiagnosticSource.IsEnabled(string, obj, obj)
             // Subscriber MUST set both IsEnabled1Arg and IsEnabled3Arg or none of them:
-            //     when Predicate<string> is provided in DiagosticListener.Subscribe,
+            //     when Predicate<string> is provided in DiagnosticListener.Subscribe,
             //       - IsEnabled1Arg is set to predicate
             //       - IsEnabled3Arg falls back to predicate ignoring extra arguments.
             //     similarly, when Func<string, obj, obj, bool> is provided,

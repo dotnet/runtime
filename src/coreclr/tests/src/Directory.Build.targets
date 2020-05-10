@@ -4,6 +4,7 @@
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Library'">SharedLibrary</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+    <CLRTestNeedTarget Condition="'$(CLRTestNeedTarget)' == ''">0</CLRTestNeedTarget>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
@@ -72,6 +73,8 @@
     <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' == 'targetGeneric' And '$(CLRTestNeedTarget)' == '1'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' == 'targetSpecific' And '$(CLRTestNeedTarget)' != '1'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
 
@@ -102,6 +105,7 @@
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
 
     <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
+    <SkipImportILTargets Condition="'$(CLRTestNeedTargetToBuild)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestNeedTargetToBuild)'">true</SkipImportILTargets>
   </PropertyGroup>
 
   <Import Project="CLRTest.Execute.targets" />

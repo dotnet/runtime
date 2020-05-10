@@ -87,9 +87,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 
 #ifndef CROSSGEN_COMPILE
 
-    // Not expected to be called for array EEClass
-    _ASSERTE(!pOwningMT->IsArray());
-
 #ifdef _DEBUG
     _ASSERTE(!IsDestroyed());
     SetDestroyed();
@@ -1198,10 +1195,6 @@ int MethodTable::GetVectorSize()
         {
             vectorSize = 16;
         }
-        else if (strcmp(className, "Vector256`1") == 0)
-        {
-            vectorSize = 32;
-        }
         else if (strcmp(className, "Vector64`1") == 0)
         {
             vectorSize = 8;
@@ -1256,11 +1249,6 @@ CorElementType MethodTable::GetHFAType()
         {
         case ELEMENT_TYPE_VALUETYPE:
             pMT = pFirstField->LookupApproxFieldTypeHandle().GetMethodTable();
-            vectorSize = pMT->GetVectorSize();
-            if (vectorSize != 0)
-            {
-                return (vectorSize == 8) ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_VALUETYPE;
-            }
             break;
 
         case ELEMENT_TYPE_R4:

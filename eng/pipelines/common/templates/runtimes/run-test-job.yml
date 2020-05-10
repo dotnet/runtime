@@ -1,0 +1,464 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  managedTestBuildOsGroup: ''
+  managedTestBuildOsSubgroup: ''
+  container: ''
+  testGroup: ''
+  crossrootfsDir: ''
+  readyToRun: false
+  liveLibrariesBuildConfig: ''
+  crossgen2: false
+  compositeBuildMode: false
+  helixQueues: ''
+  # If true, run the corefx tests instead of the coreclr ones
+  corefxTests: false
+  condition: true
+  stagedBuild: false
+  displayNameArgs: ''
+  runInUnloadableContext: false
+  variables: {}
+  pool: ''
+  runtimeFlavor: 'coreclr'
+  runtimeFlavorDisplayName: 'CoreCLR'
+  runtimeMode: ''
+  runtimeModeDisplayName: ''
+
+### Test run job
+
+### Each test run job depends on a corresponding test build job with the same
+### buildConfig and archType.
+
+jobs:
+- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
+    managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
+    container: ${{ parameters.container }}
+    testGroup: ${{ parameters.testGroup }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    corefxTests: ${{ parameters.corefxTests }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    helixType: 'build/tests/'
+    pool: ${{ parameters.pool }}
+    condition: ${{ parameters.condition }}
+
+    # Test jobs should continue on error for internal builds
+    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      continueOnError: true
+
+    dependsOn:
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - ${{ if eq(parameters.testGroup, 'innerloop') }}:
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+      - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+    - ${{ if ne(parameters.stagedBuild, true) }}:
+      - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+
+    # Compute job name from template parameters
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeMode }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeModeDisplayName}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+
+    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeModeDisplayName }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+
+    variables:
+    - name: testhostArg
+      value: 'generatetesthostonly'
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: testhostArg
+        value: 'buildtesthostonly'
+
+    - name: runtimeFlavorArgs
+      value: ''
+
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      - name: runtimeFlavorArgs
+        value: '-excludemonofailures'
+
+    - name: crossgenArg
+      value: ''
+    - name: LogNamePrefix
+      value: TestRunLogs
+
+    - ${{ if eq(parameters.readyToRun, true) }}:
+      - name: crossgenArg
+        value: 'crossgen'
+      - name: LogNamePrefix
+        value: TestRunLogs_R2R
+      - ${{ if eq(parameters.crossgen2, true) }}:
+        - name: crossgenArg
+          value: 'crossgen2'
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2
+      - ${{ if eq(parameters.compositeBuildMode, true) }}:
+        - name: crossgenArg
+          value: 'composite'
+
+    - ${{ if eq(parameters.runtimeMode, 'interpreter') }}:
+      - name: RuntimeModeDisplayName
+        value: 'Interpreter' 
+
+    # Set job timeouts
+    #
+    # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
+    # In case xUnit test wrappers get refactored this number should also be adjusted.
+    #
+    # "timeoutPerTestInMinutes" corresponds to individual test running time. This is implemented by setting
+    # the __TestTimeout variable, which is later read by the coreclr xunit test wrapper code (the code in the
+    # xunit test dlls that invokes the actual tests). Note this doesn't apply to CoreFX testing.
+    #
+    # Please note that for Crossgen / Crossgen2 R2R runs, the "test running time" also includes the
+    # time needed to compile the test into native code with the Crossgen compiler.
+
+    - name: timeoutPerTestInMinutes
+      value: 10
+    - name: timeoutPerTestCollectionInMinutes
+      value: 30
+    - ${{ if eq(parameters.corefxTests, true) }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 10
+    - ${{ if in(parameters.testGroup, 'outerloop') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
+    - ${{ if eq(parameters.crossgen2, true) }}:
+        - name: timeoutPerTestCollectionInMinutes
+          value: 90
+        - name: timeoutPerTestInMinutes
+          value: 30
+    - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 360
+      # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
+      - name: timeoutPerTestInMinutes
+        value: 240
+    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
+      - name: timeoutPerTestInMinutes
+        value: 30
+    - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 240
+      - name: timeoutPerTestInMinutes
+        value: 60
+    - ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 300
+      - name: timeoutPerTestInMinutes
+        value: 90
+
+    - ${{ if eq(parameters.compositeBuildMode, true) }}:
+      - name: crossgenArg
+        value: 'composite'
+
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - group: DotNet-HelixApi-Access
+
+    - ${{ parameters.variables }}
+
+    # TODO: update these numbers as they were determined long ago
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      timeoutInMinutes: 200
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental') }}:
+      timeoutInMinutes: 270
+    ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
+      timeoutInMinutes: 480
+    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc') }}:
+      timeoutInMinutes: 390
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'gcstress-extra', 'r2r-extra') }}:
+      timeoutInMinutes: 510
+
+    steps:
+
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
+          displayName: 'live-built libraries'
+
+
+    # Download and unzip managed test artifacts
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(managedTestArtifactRootFolderPath)'
+          artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
+          artifactName: '$(managedTestArtifactName)'
+          displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+
+
+    # Download product binaries directory
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'product build'
+
+
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      # We need to explictly download CoreCLR for Mono
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(coreClrProductRootFolderPath)
+          artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
+          artifactName: '$(coreClrProductArtifactName)'
+          displayName: 'CoreCLR product download for Mono'
+
+    # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
+    # ilproj test projects during copynativeonly.
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(microsoftNetSdkIlFolderPath)'
+          artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
+          artifactName: '$(microsoftNetSdkIlArtifactName)'
+          displayName: 'Microsoft.NET.Sdk.IL package'
+
+
+    # Download and unzip native test artifacts
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(nativeTestArtifactRootFolderPath)'
+          artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
+          artifactName: '$(nativeTestArtifactName)'
+          displayName: 'native test artifacts'
+
+
+    # Publish native test components to test output folder. Sadly we cannot do this
+    # during product build (so that we could zip up the files in their final test location
+    # and directly unzip them there after download). Unfortunately the logic to copy
+    # the native artifacts to the final test folders is dependent on availability of the
+    # managed test artifacts.
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+        displayName: Copy native test components to test output folder
+
+
+    # Generate test host
+    - ${{ if eq(parameters.corefxTests, true) }}:
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+        displayName: Generate test host
+
+
+    # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      displayName: Generate test wrappers
+
+
+    # Crossgen framework assemblies prior to triggering readyToRun execution runs.
+    - ${{ if eq(parameters.readyToRun, true) }}:
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+        displayName: Crossgen framework assemblies
+
+    # Overwrite coreclr runtime binaries with mono ones
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      - script: $(_msbuildCommand)
+                $(Build.SourcesDirectory)/src/mono/mono.proj
+                /t:PatchCoreClrCoreRoot
+                /p:Configuration=$(buildConfigUpper)
+                /p:TargetArchitecture=$(archType)
+        displayName: "Patch dotnet with mono"
+
+    # Send tests to Helix
+    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+      parameters:
+        displayName: Send tests to Helix
+        buildConfig: $(buildConfigUpper)
+        archType: ${{ parameters.archType }}
+        osGroup: ${{ parameters.osGroup }}
+        coreClrRepoRoot: $(coreClrRepoRoot)
+        runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          creator: $(Build.DefinitionName)
+
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+
+        # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
+        # but don't add it to new ones.
+        ${{ if and(eq(parameters.corefxTests, true), eq(parameters.readyToRun, true)) }}:
+          helixType: 'test/functional/r2r_corefx/'
+        ${{ if and(eq(parameters.corefxTests, true), ne(parameters.readyToRun, true)) }}:
+          helixType: 'test/functional/corefx/'
+        ${{ if and(ne(parameters.corefxTests, true), eq(parameters.readyToRun, true)) }}:
+          helixType: 'test/functional/r2r/cli/'
+        ${{ if and(ne(parameters.corefxTests, true), ne(parameters.readyToRun, true)) }}:
+          helixType: 'test/functional/cli/'
+
+        helixQueues: ${{ parameters.helixQueues }}
+
+        # This tests whether an array is empty
+        ${{ if eq(join('', parameters.helixQueues), '') }}:
+          condition: false
+
+        publishTestResults: true
+
+        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+
+        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        compositeBuildMode: ${{ parameters.compositeBuildMode }}
+        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          # Access token variable for internal project from the
+          # DotNet-HelixApi-Access variable group
+          helixAccessToken: $(HelixApiAccessToken)
+
+        # Choose which tests to send to Helix: CoreFX or CoreCLR.
+        ${{ if eq(parameters.corefxTests, true) }}:
+          helixProjectArguments: '$(Build.SourcesDirectory)/eng/helixcorefxtests.proj'
+        ${{ if ne(parameters.corefxTests, true) }}:
+          helixProjectArguments: '$(coreClrRepoRoot)/tests/helixpublishwitharcade.proj'
+
+        ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
+          scenarios:
+          - normal
+          - no_tiered_compilation
+        ${{ if in(parameters.testGroup, 'jitstress') }}:
+          scenarios:
+          - jitminopts
+          - jitstress1
+          - jitstress1_tiered
+          - jitstress2
+          - jitstress2_tiered
+          - zapdisable
+          - tailcallstress
+        ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
+          scenarios:
+          - jitstress_isas_incompletehwintrinsic
+          - jitstress_isas_nohwintrinsic
+          - jitstress_isas_nohwintrinsic_nosimd
+          - jitstress_isas_nosimd
+        ${{ if in(parameters.testGroup, 'jitstress-isas-x86') }}:
+          scenarios:
+          - jitstress_isas_incompletehwintrinsic
+          - jitstress_isas_nohwintrinsic
+          - jitstress_isas_nohwintrinsic_nosimd
+          - jitstress_isas_nosimd
+          - jitstress_isas_x86_noaes
+          - jitstress_isas_x86_noavx
+          - jitstress_isas_x86_noavx2
+          - jitstress_isas_x86_nobmi1
+          - jitstress_isas_x86_nobmi2
+          - jitstress_isas_x86_nofma
+          - jitstress_isas_x86_nohwintrinsic
+          - jitstress_isas_x86_nolzcnt
+          - jitstress_isas_x86_nopclmulqdq
+          - jitstress_isas_x86_nopopcnt
+          - jitstress_isas_x86_nosse
+          - jitstress_isas_x86_nosse2
+          - jitstress_isas_x86_nosse3
+          - jitstress_isas_x86_nosse3_4
+          - jitstress_isas_x86_nosse41
+          - jitstress_isas_x86_nosse42
+          - jitstress_isas_x86_nossse3
+        ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
+          scenarios:
+          - jitstressregs1_x86_noavx
+          - jitstressregs2_x86_noavx
+          - jitstressregs3_x86_noavx
+          - jitstressregs4_x86_noavx
+          - jitstressregs8_x86_noavx
+          - jitstressregs0x10_x86_noavx
+          - jitstressregs0x80_x86_noavx
+          - jitstressregs0x1000_x86_noavx
+        ${{ if in(parameters.testGroup, 'jitstressregs' ) }}:
+          scenarios:
+          - jitstressregs1
+          - jitstressregs2
+          - jitstressregs3
+          - jitstressregs4
+          - jitstressregs8
+          - jitstressregs0x10
+          - jitstressregs0x80
+          - jitstressregs0x1000
+        ${{ if in(parameters.testGroup, 'jitstress2-jitstressregs') }}:
+          scenarios:
+          - jitstress2_jitstressregs1
+          - jitstress2_jitstressregs2
+          - jitstress2_jitstressregs3
+          - jitstress2_jitstressregs4
+          - jitstress2_jitstressregs8
+          - jitstress2_jitstressregs0x10
+          - jitstress2_jitstressregs0x80
+          - jitstress2_jitstressregs0x1000
+        ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
+          scenarios:
+          - gcstress0x3
+          - gcstress0xc
+        ${{ if in(parameters.testGroup, 'gcstress-extra') }}:
+          scenarios:
+          - heapverify1
+          - gcstress0xc_zapdisable
+          - gcstress0xc_zapdisable_jitstress2
+          - gcstress0xc_zapdisable_heapverify1
+          - gcstress0xc_jitstress1
+          - gcstress0xc_jitstress2
+          - gcstress0xc_jitminopts_heapverify1
+        ${{ if in(parameters.testGroup, 'r2r-extra') }}:
+          scenarios:
+          - jitstress1
+          - jitstress2
+          - jitstress1_tiered
+          - jitstress2_tiered
+          - jitstressregs1
+          - jitstressregs2
+          - jitstressregs3
+          - jitstressregs4
+          - jitstressregs8
+          - jitstressregs0x10
+          - jitstressregs0x80
+          - jitstressregs0x1000
+          - jitminopts
+          - forcerelocs
+          - gcstress15
+        ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
+          longRunningGcTests: true
+          scenarios:
+          - normal
+        ${{ if in(parameters.testGroup, 'gc-simulator') }}:
+          gcSimulatorTests: true
+          scenarios:
+          - normal
+        ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
+          scenarios:
+          - jitelthookenabled
+          - jitelthookenabled_tiered
+        ${{ if in(parameters.testGroup, 'jit-experimental') }}:
+          scenarios:
+          - jitosr
+          - jitosr_stress
+          - jitguardeddevirtualization
+          - jitehwritethru
+          - jitobjectstackallocation
+
+    # Publish Logs
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeMode }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+      continueOnError: true
+      condition: always()

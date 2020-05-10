@@ -768,13 +768,16 @@ mini_llvmonly_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, 
 	return res;
 }
 
-static void
-init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoClass *init_class)
+/* Called from LLVM code to initialize a method */
+// FIXME: This should be somewhere else
+void
+mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer method_info, MonoVTable *vtable)
 {
-	ERROR_DECL (error);
 	gboolean res;
+	MonoAotModule *amodule = (MonoAotModule *)aot_module;
+	ERROR_DECL (error);
 
-	res = mono_aot_init_llvmonly_method (amodule, method_index, init_class, error);
+	res = mono_aot_init_llvm_method (amodule, method_info, vtable ? vtable->klass : NULL, error);
 	if (!res || !is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
 		if (ex) {
@@ -786,15 +789,6 @@ init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoClass *i
 			}
 		}
 	}
-}
-
-/* Called from generated code to initialize a method */
-void
-mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoVTable *vtable)
-{
-	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-
-	init_llvmonly_method (amodule, method_index, vtable ? vtable->klass : NULL);
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (nullref, "System", "NullReferenceException")

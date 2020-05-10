@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
@@ -6,18 +6,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs</Link>
-    </Compile>
+    <Compile Include="..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs"
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs" />
+    <Compile Include="..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs"
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection" />
     <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection.Abstractions" Aliases="DIAbstractions" />
-    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 
 </Project>

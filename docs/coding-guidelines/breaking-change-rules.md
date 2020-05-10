@@ -135,6 +135,7 @@ Breaking Change Rules
     So long as it does not introduce any new abstract members or change the semantics or behavior of existing members, a type can be introduced into a hierarchy between two existing types. For example, between .NET Framework 1.1 and .NET Framework 2.0, we introduced `DbConnection` as a new base class for `SqlConnection` which previously derived from `Component`.
 
 * Adding an interface implementation to a type
+    
     This is acceptable because it will not adversely affect existing clients. Any changes which could be made to the type being changed in this situation, will have to work within the boundaries of acceptable changes defined here, in order for the new implementation to remain acceptable.
     Extreme caution is urged when adding interfaces that directly affect the ability of the designer or serializer to generate code or data, that cannot be consumed down-level. An example is the `ISerializable` interface.
     Care should be taken when the interface (or one of the interfaces that this interface requires) has default interface implementations for other interface methods. The default implementation could conflict with other default implementations in a derived class.

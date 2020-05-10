@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -44,7 +43,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(json));
             }
 
-            return Deserialize<TValue>(json, typeof(TValue), options)!;
+            return Deserialize<TValue>(json, typeof(TValue), options);
         }
 
         /// <summary>
@@ -86,6 +85,7 @@ namespace System.Text.Json
             return value;
         }
 
+        [return: MaybeNull]
         private static TValue Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
         {
             const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;

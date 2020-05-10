@@ -13,8 +13,6 @@
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
-    <!-- Use runtime assemblies for the TargetFramework, using TargetOS -->
-    <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)/</RefPath>
     <CoreCLRTargetOS>$(TargetOS)</CoreCLRTargetOS>
     <MonoTargetOS>$(TargetOS)</MonoTargetOS>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
@@ -22,8 +20,8 @@
 
   <ItemGroup>
     <ReferencePath
-      Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
-      Exclude="$(RefPath)$(MSBuildProjectName).dll" />
+      Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.Win32.*.dll;$(RuntimePath)netstandard.dll"
+      Exclude="$(RuntimePath)$(MSBuildProjectName).dll" />
   </ItemGroup>
 
   <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="GetFilesFromRuntime" BeforeTargets="ResolveReferences">

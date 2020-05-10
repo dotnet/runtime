@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Runtime.InteropServices;
@@ -14,11 +13,11 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct DirectoryStringAsn
     {
-        internal string TeletexString;
-        internal string PrintableString;
+        internal string? TeletexString;
+        internal string? PrintableString;
         internal ReadOnlyMemory<byte>? UniversalString;
-        internal string Utf8String;
-        internal string BmpString;
+        internal string? Utf8String;
+        internal string? BmpString;
 
 #if DEBUG
         static DirectoryStringAsn()

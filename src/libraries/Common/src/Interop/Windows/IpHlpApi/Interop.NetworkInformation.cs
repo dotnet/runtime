@@ -424,10 +424,9 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct MibTcp6RowOwnerPid
+        internal unsafe struct MibTcp6RowOwnerPid
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] localAddr;
+            internal fixed byte localAddr[16];
             internal uint localScopeId;
             internal byte localPort1;
             internal byte localPort2;
@@ -435,8 +434,7 @@ internal static partial class Interop
             // There are reports where the high order bytes have garbage in them.
             internal byte ignoreLocalPort3;
             internal byte ignoreLocalPort4;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] remoteAddr;
+            internal fixed byte remoteAddr[16];
             internal uint remoteScopeId;
             internal byte remotePort1;
             internal byte remotePort2;
@@ -446,6 +444,9 @@ internal static partial class Interop
             internal byte ignoreRemotePort4;
             internal TcpState state;
             internal uint owningPid;
+
+            internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
+            internal ReadOnlySpan<byte> remoteAddrAsSpan => MemoryMarshal.CreateSpan(ref remoteAddr[0], 16);
         }
 
         internal enum TcpTableClass
@@ -493,10 +494,9 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct MibUdp6RowOwnerPid
+        internal unsafe struct MibUdp6RowOwnerPid
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] localAddr;
+            internal fixed byte localAddr[16];
             internal uint localScopeId;
             internal byte localPort1;
             internal byte localPort2;
@@ -505,6 +505,8 @@ internal static partial class Interop
             internal byte ignoreLocalPort3;
             internal byte ignoreLocalPort4;
             internal uint owningPid;
+
+            internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
         }
 
         internal delegate void StableUnicastIpAddressTableDelegate(IntPtr context, IntPtr table);

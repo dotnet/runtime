@@ -22,6 +22,10 @@
 #include "gcenv.unix.inl"
 #include "volatile.h"
 
+#if HAVE_SWAPCTL
+#include <sys/swap.h>
+#endif
+
 #undef min
 #undef max
 
@@ -731,7 +735,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 #endif
     {
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = madvise(address, size, MADV_DONTNEED);
+        st = posix_madvise(address, size, MADV_DONTNEED);
     }
 
     return (st == 0);
@@ -953,7 +957,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 
 // Return the size of the user-mode portion of the virtual address space of this process.
 // Return:
-//  non zero if it has succeeded, 0 if it has failed
+//  non zero if it has succeeded, (size_t)-1 if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
 #ifdef HOST_64BIT
@@ -1112,6 +1116,13 @@ uint64_t GetAvailablePageFile()
             available += avail * pagesize;
         }
     }
+#elif HAVE_SWAPCTL
+    struct anoninfo ai;
+    if (swapctl(SC_AINFO, &ai) != -1)
+    {
+        int pagesize = getpagesize();
+        available = ai.ani_free * pagesize;
+    }
 #elif HAVE_SYSINFO
     // Linux
     struct sysinfo info;
@@ -1132,11 +1143,13 @@ uint64_t GetAvailablePageFile()
 
 // Get memory status
 // Parameters:
+//  restricted_limit - The amount of physical memory in bytes that the current process is being restricted to. If non-zero, it used to calculate
+//      memory_load and available_physical. If zero, memory_load and available_physical is calculate based on all available memory.
 //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
 //      that is in use (0 indicates no memory use and 100 indicates full memory use).
 //  available_physical - The amount of physical memory currently available, in bytes.
 //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
-void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
+void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
     uint64_t available = 0;
     uint32_t load = 0;
@@ -1144,16 +1157,14 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
     if (memory_load != nullptr || available_physical != nullptr)
     {
         size_t used;
-        bool isRestricted;
-        uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
-        if (isRestricted)
+        if (restricted_limit != 0)
         {
             // Get the physical memory in use - from it, we can get the physical memory available.
             // We do this only when we have the total physical memory available.
             if (GetPhysicalMemoryUsed(&used))
             {
-                available = total > used ? total-used : 0;
-                load = (uint32_t)(((float)used * 100) / (float)total);
+                available = restricted_limit > used ? restricted_limit - used : 0;
+                load = (uint32_t)(((float)used * 100) / (float)restricted_limit);
             }
         }
         else
@@ -1162,7 +1173,9 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
             if (memory_load != NULL)
             {
-                uint32_t load = 0;
+                bool isRestricted;
+                uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
+
                 if (total > available)
                 {
                     used = total - available;
@@ -1180,7 +1193,6 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
     if (available_page_file != nullptr)
         *available_page_file = GetAvailablePageFile();
-
 }
 
 // Get a high precision performance counter

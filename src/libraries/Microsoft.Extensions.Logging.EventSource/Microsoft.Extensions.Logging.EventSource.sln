@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.EventSource.Tests", "tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj", "{F4B45EFE-9DA0-4190-8267-50230E1FF413}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{4CB74585-BCBA-48E4-9532-3D2B343EC9CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{F4B45EFE-9DA0-4190-8267-50230E1FF413}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F4B45EFE-9DA0-4190-8267-50230E1FF413}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F4B45EFE-9DA0-4190-8267-50230E1FF413}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CB74585-BCBA-48E4-9532-3D2B343EC9CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CB74585-BCBA-48E4-9532-3D2B343EC9CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CB74585-BCBA-48E4-9532-3D2B343EC9CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CB74585-BCBA-48E4-9532-3D2B343EC9CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -41,6 +47,7 @@ Global
 		{57FC3126-1841-4D21-A52E-7C13807DA68B} = {DDE5A3F1-C3F4-4BA7-807B-FC6632E38C19}
 		{D7E3D698-2812-4FF2-98DF-A45C4377E4C4} = {C612E0EC-DDF8-4D6F-B775-3EE98721D562}
 		{F4B45EFE-9DA0-4190-8267-50230E1FF413} = {F476F7BA-2F47-4AAB-AF22-20D8ECBAE2E1}
+		{4CB74585-BCBA-48E4-9532-3D2B343EC9CB} = {F476F7BA-2F47-4AAB-AF22-20D8ECBAE2E1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A390B1E5-F45D-479F-B295-661C927B203B}

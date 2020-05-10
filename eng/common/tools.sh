@@ -77,7 +77,7 @@ function ResolvePath {
 function ReadGlobalVersion {
   local key=$1
 
-  local line=`grep -m 1 "$key" "$global_json_file"`
+  local line=$(awk "/$key/ {print; exit}" "$global_json_file")
   local pattern="\"$key\" *: *\"(.*)\""
 
   if [[ ! $line =~ $pattern ]]; then
@@ -201,7 +201,14 @@ function InstallDotNet {
 
       local runtimeSourceFeedKey=''
       if [[ -n "${7:-}" ]]; then
-        decodedFeedKey=`echo $7 | base64 --decode`
+        # The 'base64' binary on alpine uses '-d' and doesn't support '--decode'
+        # '-d'. To work around this, do a simple detection and switch the parameter
+        # accordingly.
+        decodeArg="--decode"
+        if base64 --help 2>&1 | grep -q "BusyBox"; then
+            decodeArg="-d"
+        fi
+        decodedFeedKey=`echo $7 | base64 $decodeArg`
         runtimeSourceFeedKey="--feed-credential $decodedFeedKey"
       fi
 
@@ -415,11 +422,17 @@ function MSBuild-Core {
     warnaserror_switch="/warnaserror"
   fi
 
-  "$_InitializeBuildTool" "$_InitializeBuildToolCommand" /m /nologo /clp:Summary /v:$verbosity /nr:$node_reuse $warnaserror_switch /p:TreatWarningsAsErrors=$warn_as_error /p:ContinuousIntegrationBuild=$ci "$@" || {
-    local exit_code=$?
-    Write-PipelineTelemetryError -category 'Build'  "Build failed (exit code '$exit_code')."
-    ExitWithExitCode $exit_code
+  function RunBuildTool {
+    export ARCADE_BUILD_TOOL_COMMAND="$_InitializeBuildTool $@"
+
+    "$_InitializeBuildTool" "$@" || {
+      local exit_code=$?
+      Write-PipelineTaskError "Build failed (exit code '$exit_code')."
+      ExitWithExitCode $exit_code
+    }
   }
+
+  RunBuildTool "$_InitializeBuildToolCommand" /m /nologo /clp:Summary /v:$verbosity /nr:$node_reuse $warnaserror_switch /p:TreatWarningsAsErrors=$warn_as_error /p:ContinuousIntegrationBuild=$ci "$@"
 }
 
 ResolvePath "${BASH_SOURCE[0]}"
@@ -438,7 +451,7 @@ temp_dir="$artifacts_dir/tmp/$configuration"
 global_json_file="$repo_root/global.json"
 # determine if global.json contains a "runtimes" entry
 global_json_has_runtimes=false
-dotnetlocal_key=`grep -m 1 "runtimes" "$global_json_file"` || true
+dotnetlocal_key=$(awk "/runtimes/ {print; exit}" "$global_json_file") || true
 if [[ -n "$dotnetlocal_key" ]]; then
   global_json_has_runtimes=true
 fi

@@ -115,37 +115,6 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 }
 
 //------------------------------------------------------------------------
-// lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
-//
-// Arguments:
-//    id -- The NamedIntrinsic associated with the HWIntrinsic to lookup
-//
-// Return Value:
-//     The upper bound for the imm-value of the intrinsic associated with id
-//
-int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
-{
-    assert(HWIntrinsicInfo::HasFullRangeImm(id));
-    return 255;
-}
-
-//------------------------------------------------------------------------
-// isInImmRange: Check if ival is valid for the intrinsic
-//
-// Arguments:
-//    id   -- The NamedIntrinsic associated with the HWIntrinsic to lookup
-//    ival -- the imm value to be checked
-//
-// Return Value:
-//     true if ival is valid for the intrinsic
-//
-bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival)
-{
-    assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
-    return ival <= lookupImmUpperBound(id) && ival >= 0;
-}
-
-//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:
@@ -208,6 +177,64 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
+// lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
+//
+// Arguments:
+//    intrinsic -- NamedIntrinsic associated with the HWIntrinsic to lookup
+//    simdType  -- vector size
+//    baseType  -- base type of the Vector64/128<T>
+//
+// Return Value:
+//     The upper bound for a value of the intrinsic immediate operand
+int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types baseType)
+{
+    assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_IMM);
+
+    int immUpperBound = 0;
+
+    if (HWIntrinsicInfo::HasFullRangeImm(intrinsic))
+    {
+        immUpperBound = 255;
+    }
+    else
+    {
+        switch (intrinsic)
+        {
+            case NI_AdvSimd_Extract:
+            case NI_AdvSimd_ExtractVector128:
+            case NI_AdvSimd_ExtractVector64:
+            case NI_AdvSimd_Insert:
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType);
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    return immUpperBound;
+}
+
+//------------------------------------------------------------------------
+// isInImmRange: Check if ival is valid for the intrinsic
+//
+// Arguments:
+//    id        -- the NamedIntrinsic associated with the HWIntrinsic to lookup
+//    ival      -- the imm value to be checked
+//    simdType  -- vector size
+//    baseType  -- base type of the Vector64/128<T>
+//
+// Return Value:
+//     true if ival is valid for the intrinsic
+//
+bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival, int simdSize, var_types baseType)
+{
+    assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
+
+    return ival <= lookupImmUpperBound(id, simdSize, baseType) && ival >= 0;
+}
+
+//------------------------------------------------------------------------
 // impNonConstFallback: generate alternate code when the imm-arg is not a compile-time constant
 //
 // Arguments:
@@ -254,7 +281,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         if (!varTypeIsArithmetic(baseType))
         {
-            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As));
+            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As) ||
+                   (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_get_AllBitsSet) ||
+                   (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_get_AllBitsSet));
             return nullptr;
         }
     }
@@ -336,7 +365,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = countNode;
             break;
         }
+        case NI_Vector64_get_Zero:
+        case NI_Vector64_get_AllBitsSet:
+        case NI_Vector128_get_Zero:
+        case NI_Vector128_get_AllBitsSet:
+        {
+            assert(!sig->hasThis());
+            assert(numArgs == 0);
 
+            retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
+            break;
+        }
         default:
         {
             return nullptr;

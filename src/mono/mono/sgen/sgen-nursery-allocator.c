@@ -793,7 +793,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section)
 		SGEN_LOG (1, "Nursery fully pinned");
 		for (pin_entry = pin_start; pin_entry < pin_end; ++pin_entry) {
 			GCObject *p = (GCObject *)*pin_entry;
-			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %ld", p, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (p)), (long)sgen_safe_object_get_size (p));
+			SGEN_LOG (3, "Bad pinning obj %p (%s), size: %ld", p, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (p)), (long)sgen_safe_object_get_size (p));
 		}
 	}
 	return fragment_total;

@@ -128,7 +128,7 @@ namespace System.Linq.Tests
             Assert.Equal(1, source.CopyToTouched);
         }
 
-        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public void ToArray_FailOnExtremelyLargeCollection()
         {
             var largeSeq = new FastInfiniteEnumerator<byte>();
@@ -332,9 +332,7 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [MemberData(nameof(JustBelowPowersOfTwoLengths))]
-        [MemberData(nameof(PowersOfTwoLengths))]
-        [MemberData(nameof(JustAbovePowersOfTwoLengths))]
+        [MemberData(nameof(ToArrayShouldWorkWithSpecialLengthLazyEnumerables_MemberData))]
         public void ToArrayShouldWorkWithSpecialLengthLazyEnumerables(int length)
         {
             Debug.Assert(length >= 0);
@@ -371,34 +369,17 @@ namespace System.Linq.Tests
             Assert.Equal(new[] { Enum1.First, Enum1.Second, Enum1.Third }, castArray);
         }
 
-        public static IEnumerable<object[]> JustBelowPowersOfTwoLengths()
+        public static IEnumerable<object[]> ToArrayShouldWorkWithSpecialLengthLazyEnumerables_MemberData()
         {
-            return SmallPowersOfTwo.Select(p => new object[] { p - 1 });
-        }
-
-        public static IEnumerable<object[]> PowersOfTwoLengths()
-        {
-            return SmallPowersOfTwo.Select(p => new object[] { p });
-        }
-
-        public static IEnumerable<object[]> JustAbovePowersOfTwoLengths()
-        {
-            return SmallPowersOfTwo.Select(p => new object[] { p + 1 });
-        }
-
-        private static IEnumerable<int> SmallPowersOfTwo
-        {
-            get
+            // Return array sizes that should be small enough not to OOM
+            const int MaxPower = 18;
+            yield return new object[] { 1 };
+            yield return new object[] { 2 };
+            for (int i = 2; i <= MaxPower; i++)
             {
-                // By N being "small" we mean that allocating an array of
-                // size N doesn't come close to the risk of causing an OOME
-
-                const int MaxPower = 18;
-
-                for (int i = 0; i <= MaxPower; i++)
-                {
-                    yield return 1 << i; // equivalent to pow(2, i)
-                }
+                yield return new object[] { (i << i) - 1 };
+                yield return new object[] { (i << i) };
+                yield return new object[] { (i << i) + 1 };
             }
         }
     }

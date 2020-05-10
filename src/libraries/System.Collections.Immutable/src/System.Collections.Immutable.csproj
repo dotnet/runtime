@@ -83,14 +83,12 @@
     <Compile Include="System\Linq\ImmutableArrayExtensions.cs" />
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="Validation\ValidatedNotNullAttribute.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
-      <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs"
+             Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.3'">
-    <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs"
+             Link="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Interfaces.cd" />
@@ -105,7 +103,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">

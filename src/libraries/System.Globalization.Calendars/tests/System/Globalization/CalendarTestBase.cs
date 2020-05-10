@@ -430,8 +430,8 @@ namespace System.Globalization.Tests
             Calendar calendar = Calendar;
             Assert.All(DateTime_TestData(calendar), dt =>
             {
-                // JapaneseCalendar throws on Unix (ICU), but not on Windows
-                if ((calendar is JapaneseCalendar && PlatformDetection.IsWindows) || calendar is HebrewCalendar || calendar is TaiwanLunisolarCalendar || calendar is JapaneseLunisolarCalendar)
+                // JapaneseCalendar throws on ICU, but not on NLS
+                if ((calendar is JapaneseCalendar && PlatformDetection.IsNlsGlobalization) || calendar is HebrewCalendar || calendar is TaiwanLunisolarCalendar || calendar is JapaneseLunisolarCalendar)
                 {
                     calendar.GetEra(dt);
                 }

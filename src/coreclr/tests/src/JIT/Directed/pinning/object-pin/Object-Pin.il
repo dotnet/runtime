@@ -140,6 +140,7 @@ FAILURE3:
     stloc.1
 
     ldloc 1
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     stloc 3
 
@@ -148,6 +149,7 @@ FAILURE3:
     stloc.2
 
     ldloc 2
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     stloc 4
 
@@ -158,6 +160,7 @@ FAILURE3:
 
     call       void [mscorlib]System.GC::Collect()
     ldloc 1
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     ldloc 3
     conv.i
@@ -165,6 +168,7 @@ FAILURE3:
 
 SOFT2:
     ldloc 2
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     ldloc 4
     conv.i
@@ -202,6 +206,7 @@ AA_3:
     stloc.1
 
     ldloc 1
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     stloc 3
 
@@ -210,6 +215,7 @@ AA_3:
     stloc.2
 
     ldloc 2
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     stloc 4
 
@@ -220,6 +226,7 @@ AA_3:
 
     call       void [mscorlib]System.GC::Collect()
     ldloc 1
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     ldloc 3
     conv.i
@@ -227,6 +234,7 @@ AA_3:
 
 SOFT4:
     ldloc 2
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     ldloc 4
     conv.i
@@ -263,6 +271,7 @@ AA_3:
     stloc.1
 
     ldloc 1
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     stloc 3
 
@@ -271,6 +280,7 @@ AA_3:
     stloc.2
 
     ldloc 2
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     stloc 4
 
@@ -285,7 +295,8 @@ AA_3:
     ldloc 5
     stfld      int32 Consume::yucko
  
-    ldloc 2 
+    ldloc 2
+    conv.i
     ldflda      int32 Consume::yucko
     ldc.i4 66
     call       void Pin1_Test::Set_Val(void*,int32)
@@ -301,7 +312,8 @@ Yippie1:
     ldloc 5
     stfld      int32 Consume::yucko
  
-    ldloc 2 
+    ldloc 2
+    conv.i
     ldflda      int32 Consume::yucko
     ldc.i4 88
     call       void Pin1_Test::Set_Val(void*,int32)
@@ -314,6 +326,7 @@ Yippie1:
 Yippie2:
     call       void [mscorlib]System.GC::Collect()
     ldloc 1
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     ldloc 3
     conv.i
@@ -321,6 +334,7 @@ Yippie2:
 
 SOFT5:
     ldloc 2
+    conv.i
     call       int32 Pin1_Test::Ret_Ptr(void*)
     ldloc 4
     conv.i

@@ -14,17 +14,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ExistsDoesntRefreshOnDelete()
+        public void DeleteInvalidatesDirectoryInfo()
         {
-            DirectoryInfo dir = Directory.CreateDirectory(Path.Combine(TestDirectory, Path.GetRandomFileName()));
-
-            Assert.True(dir.Exists);
-
-            dir.Delete();
-
-            Assert.True(dir.Exists);
-            dir.Refresh();
-            Assert.False(dir.Exists);
+            string testDir = Path.Combine(GetTestFilePath(), "DirectoryCreate");
+            DirectoryInfo testDirectoryInfo = new DirectoryInfo(testDir);
+            testDirectoryInfo.Create();
+            Assert.True(testDirectoryInfo.Exists);
+            testDirectoryInfo.Delete();
+            Assert.False(testDirectoryInfo.Exists);
         }
     }
 

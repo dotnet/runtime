@@ -92,16 +92,11 @@ namespace System.Net.Security
                     MemoryHandle memHandle = input.Pin();
                     try
                     {
-                        PAL_TlsIo status;
-
-                        lock (sslHandle)
-                        {
-                            status = Interop.AppleCrypto.SslWrite(
+                        PAL_TlsIo status = Interop.AppleCrypto.SslWrite(
                                 sslHandle,
                                 (byte*)memHandle.Pointer,
                                 input.Length,
                                 out int written);
-                        }
 
                         if (status < 0)
                         {
@@ -154,19 +149,13 @@ namespace System.Net.Security
                 SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
                 SafeSslHandle sslHandle = sslContext.SslContext;
 
-                sslContext.Write(buffer, offset, count);
+                sslContext.Write(buffer.AsSpan(offset, count));
 
                 unsafe
                 {
                     fixed (byte* offsetInput = &buffer[offset])
                     {
-                        int written;
-                        PAL_TlsIo status;
-
-                        lock (sslHandle)
-                        {
-                            status = Interop.AppleCrypto.SslRead(sslHandle, offsetInput, count, out written);
-                        }
+                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, offsetInput, count, out int written);
 
                         if (status < 0)
                         {
@@ -248,9 +237,8 @@ namespace System.Net.Security
                     sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                     context = sslContext;
 
-                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost))
+                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
                     {
-                        Debug.Assert(!sslAuthenticationOptions.IsServer, "targetName should not be set for server-side handshakes");
                         Interop.AppleCrypto.SslSetTargetName(sslContext.SslContext, sslAuthenticationOptions.TargetHost);
                     }
 
@@ -266,12 +254,7 @@ namespace System.Net.Security
                 }
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
-                SecurityStatusPal status;
-
-                lock (sslHandle)
-                {
-                    status = PerformHandshake(sslHandle);
-                }
+                SecurityStatusPal status = PerformHandshake(sslHandle);
 
                 outputBuffer = sslContext.ReadPendingWrites();
                 return status;
@@ -329,12 +312,8 @@ namespace System.Net.Security
         {
             SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
             SafeSslHandle sslHandle = sslContext.SslContext;
-            int osStatus;
 
-            lock (sslHandle)
-            {
-                osStatus = Interop.AppleCrypto.SslShutdown(sslHandle);
-            }
+            int osStatus = Interop.AppleCrypto.SslShutdown(sslHandle);
 
             if (osStatus == 0)
             {

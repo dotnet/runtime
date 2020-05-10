@@ -4,7 +4,7 @@
 
 #include "pal_signverify.h"
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static int32_t ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut);
 static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErrorOut);
 

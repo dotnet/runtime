@@ -28,7 +28,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void IPGlobalProperties_AccessAllMethods_NoErrors()
         {
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
@@ -54,7 +53,6 @@ namespace System.Net.NetworkInformation.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [MemberData(nameof(Loopbacks))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -79,8 +77,8 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(Loopbacks))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -110,7 +108,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void IPGlobalProperties_TcpActiveConnections_NotListening()
         {
             TcpConnectionInformation[] tcpCconnections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
@@ -118,6 +115,15 @@ namespace System.Net.NetworkInformation.Tests
             {
                 Assert.NotEqual(TcpState.Listen, ti.State);
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        public async Task GetUnicastAddresses_NotEmpty()
+        {
+            IPGlobalProperties props = IPGlobalProperties.GetIPGlobalProperties();
+            Assert.NotEmpty(props.GetUnicastAddresses());
+            Assert.NotEmpty(await props.GetUnicastAddressesAsync());
+            Assert.NotEmpty(await Task.Factory.FromAsync(props.BeginGetUnicastAddresses, props.EndGetUnicastAddresses, null));
         }
     }
 }

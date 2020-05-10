@@ -21,17 +21,7 @@ namespace System.Net.Http.Headers
             get { return _value; }
         }
 
-        public ICollection<NameValueHeaderValue> Parameters
-        {
-            get
-            {
-                if (_parameters == null)
-                {
-                    _parameters = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _parameters;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
 
         internal TransferCodingHeaderValue()
         {
@@ -65,7 +55,7 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out TransferCodingHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out TransferCodingHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

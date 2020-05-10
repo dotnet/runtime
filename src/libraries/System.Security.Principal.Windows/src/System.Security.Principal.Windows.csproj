@@ -2,12 +2,15 @@
   <PropertyGroup>
     <AssemblyName>System.Security.Principal.Windows</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;netstandard2.0;netcoreapp2.0-Windows_NT;netcoreapp2.0-Unix;netcoreapp2.1-Windows_NT;netcoreapp2.1-Unix;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
@@ -17,7 +20,7 @@
     <Nullable>annotations</Nullable>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="($(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2'))) and '$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
     <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />
     <Compile Include="System\Security\Principal\IdentityReference.cs" />
@@ -28,166 +31,115 @@
     <Compile Include="System\Security\Principal\Win32.cs" />
     <Compile Include="System\Security\Principal\WindowsIdentity.cs" />
     <Compile Include="System\Security\Principal\WindowsPrincipal.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.UNICODE_STRING.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.OBJECT_ATTRIBUTES.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.TOKENS.cs">
-      <Link>Common\Interop\Interop.TOKENS.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
-      <Link>Common\Interop\Interop.WinError.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.Winnt.cs">
-      <Link>Common\Interop\Interop.Winnt.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs">
-      <Link>Common\Interop\Interop.NtStatus.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LSAStructs.cs">
-      <Link>Common\Interop\Interop.LSAStructs.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SECURITY_LOGON_SESSION_DATA.cs">
-      <Link>Common\Interop\Interop.SECURITY_LOGON_SESSION_DATA.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
-      <Link>Common\Interop\Interop.GetCurrentProcess.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThread.cs">
-      <Link>Common\Interop\Interop.GetCurrentThread.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ClaimSecurityAttributes.cs">
-      <Link>Common\Interop\Interop.ClaimSecurityAttributes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
-      <Link>Common\Interop\Interop.OpenProcessToken.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation.cs">
-      <Link>Common\Interop\Interop.GetTokenInformation.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DuplicateTokenEx.cs">
-      <Link>Common\Interop\Interop.DuplicateTokenEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle.cs">
-      <Link>Common\Interop\Interop.DuplicateHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Interop.CloseHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaGetLogonSessionData.cs">
-      <Link>Common\Interop\Interop.LsaGetLogonSessionData.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaFreeReturnBuffer.cs">
-      <Link>Common\Interop\Interop.LsaFreeReturnBuffer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaLookupNames2.cs">
-      <Link>Common\Interop\Interop.LsaLookupNames2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaLookupSids.cs">
-      <Link>Common\Interop\Interop.LsaLookupSids.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaClose.cs">
-      <Link>Common\Interop\Interop.LsaClose.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs">
-      <Link>Common\Interop\Interop.LsaFreeMemory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaOpenPolicy.cs">
-      <Link>Common\Interop\Interop.LsaOpenPolicy.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ConvertStringSidToSid.cs">
-      <Link>Common\Interop\Interop.ConvertStringSidToSid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CreateWellKnownSid.cs">
-      <Link>Common\Interop\Interop.CreateWellKnownSid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetWindowsAccountDomainSid.cs">
-      <Link>Common\Interop\Interop.GetWindowsAccountDomainSid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.IsWellKnownSid.cs">
-      <Link>Common\Interop\Interop.IsWellKnownSid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.IsEqualDomainSid.cs">
-      <Link>Common\Interop\Interop.IsEqualDomainSid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenThreadToken.cs">
-      <Link>Common\Interop\Interop.OpenThreadToken.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RevertToSelf.cs">
-      <Link>Common\Interop\Interop.RevertToSelf.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ImpersonateLoggedOnUser.cs">
-      <Link>Common\Interop\Interop.ImpersonateLoggedOnUser.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaNtStatusToWinError.cs">
-      <Link>Common\Interop\Interop.LsaNtStatusToWinError.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LSA_STRING.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.LSA_STRING.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.AuthenticationPackageNames.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.AuthenticationPackageNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.KerbLogonSubmitType.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.KerbLogonSubmitType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.KerbS4uLogin.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.KerbS4uLogin.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaConnectUntrusted.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.LsaConnectUntrusted.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaDeregisterLogonProcess.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.LsaDeregisterLogonProcess.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaLogonUser.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.LsaLogonUser.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaLookupAuthenticationPackage.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.LsaLookupAuthenticationPackage.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.QuotaLimits.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.QuotaLimits.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SecurityLogonType.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.SecurityLogonType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.TokenSource.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.TokenSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.AllocateLocallyUniqueId.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.AllocateLocallyUniqueId.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaReturnBufferHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaReturnBufferHandle.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.OBJECT_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.TOKENS.cs"
+             Link="Common\Interop\Interop.TOKENS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
+             Link="Common\Interop\Interop.WinError.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.Winnt.cs"
+             Link="Common\Interop\Interop.Winnt.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs"
+             Link="Common\Interop\Interop.NtStatus.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LSAStructs.cs"
+             Link="Common\Interop\Interop.LSAStructs.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SECURITY_LOGON_SESSION_DATA.cs"
+             Link="Common\Interop\Interop.SECURITY_LOGON_SESSION_DATA.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs"
+             Link="Common\Interop\Interop.GetCurrentProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThread.cs"
+             Link="Common\Interop\Interop.GetCurrentThread.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ClaimSecurityAttributes.cs"
+             Link="Common\Interop\Interop.ClaimSecurityAttributes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs"
+             Link="Common\Interop\Interop.OpenProcessToken.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation.cs"
+             Link="Common\Interop\Interop.GetTokenInformation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DuplicateTokenEx.cs"
+             Link="Common\Interop\Interop.DuplicateTokenEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle.cs"
+             Link="Common\Interop\Interop.DuplicateHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaGetLogonSessionData.cs"
+             Link="Common\Interop\Interop.LsaGetLogonSessionData.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaFreeReturnBuffer.cs"
+             Link="Common\Interop\Interop.LsaFreeReturnBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaLookupNames2.cs"
+             Link="Common\Interop\Interop.LsaLookupNames2.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaLookupSids.cs"
+             Link="Common\Interop\Interop.LsaLookupSids.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaClose.cs"
+             Link="Common\Interop\Interop.LsaClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs"
+             Link="Common\Interop\Interop.LsaFreeMemory.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaOpenPolicy.cs"
+             Link="Common\Interop\Interop.LsaOpenPolicy.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ConvertStringSidToSid.cs"
+             Link="Common\Interop\Interop.ConvertStringSidToSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CreateWellKnownSid.cs"
+             Link="Common\Interop\Interop.CreateWellKnownSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetWindowsAccountDomainSid.cs"
+             Link="Common\Interop\Interop.GetWindowsAccountDomainSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.IsWellKnownSid.cs"
+             Link="Common\Interop\Interop.IsWellKnownSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.IsEqualDomainSid.cs"
+             Link="Common\Interop\Interop.IsEqualDomainSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenThreadToken.cs"
+             Link="Common\Interop\Interop.OpenThreadToken.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RevertToSelf.cs"
+             Link="Common\Interop\Interop.RevertToSelf.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ImpersonateLoggedOnUser.cs"
+             Link="Common\Interop\Interop.ImpersonateLoggedOnUser.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaNtStatusToWinError.cs"
+             Link="Common\Interop\Interop.LsaNtStatusToWinError.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LSA_STRING.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LSA_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.AuthenticationPackageNames.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.AuthenticationPackageNames.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.KerbLogonSubmitType.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.KerbLogonSubmitType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.KerbS4uLogin.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.KerbS4uLogin.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaConnectUntrusted.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.LsaConnectUntrusted.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaDeregisterLogonProcess.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.LsaDeregisterLogonProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaLogonUser.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.LsaLogonUser.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaLookupAuthenticationPackage.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.LsaLookupAuthenticationPackage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.QuotaLimits.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.QuotaLimits.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SecurityLogonType.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.SecurityLogonType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.TokenSource.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.TokenSource.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.AllocateLocallyUniqueId.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.AllocateLocallyUniqueId.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaReturnBufferHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLsaReturnBufferHandle.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CheckTokenMembership.cs">
-      <Link>Common\Interop\Interop.CheckTokenMembership.cs</Link>
-    </Compile>
+  <ItemGroup Condition="($(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2'))) and '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CheckTokenMembership.cs"
+             Link="Common\Interop\Interop.CheckTokenMembership.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />

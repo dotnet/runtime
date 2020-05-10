@@ -41,10 +41,8 @@ class DumpDiagnosticProtocolHelper
 {
 public:
     // IPC event handlers.
-#ifdef HOST_UNIX
     static void GenerateCoreDump(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream); // `dotnet-dump collect`
     static void HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream* pStream);
-#endif
 
 private:
     const static uint32_t IpcStreamReadBufferSize = 8192;

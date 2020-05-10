@@ -45,6 +45,7 @@
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
+#include <mono/metadata/mono-private-unstable.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -1983,7 +1984,7 @@ mono_install_assembly_load_hook_v1 (MonoAssemblyLoadFunc func, gpointer user_dat
 }
 
 void
-mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_data)
+mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_data, gboolean append)
 {
 	g_return_if_fail (func != NULL);
 
@@ -1991,8 +1992,16 @@ mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_d
 	hook->version = 2;
 	hook->func.v2 = func;
 	hook->user_data = user_data;
-	hook->next = assembly_load_hook;
-	assembly_load_hook = hook;
+
+	if (append && assembly_load_hook != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblyLoadHook *old = assembly_load_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_load_hook;
+		assembly_load_hook = hook;
+	}
 }
 
 /**
@@ -2081,7 +2090,7 @@ mono_install_assembly_search_hook_internal_v1 (MonoAssemblySearchFunc func, gpoi
 }
 
 void
-mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload)
+mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload, gboolean append)
 {
 	if (func == NULL)
 		return;
@@ -2092,14 +2101,22 @@ mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer us
 	hook->user_data = user_data;
 	hook->refonly = refonly;
 	hook->postload = postload;
-	hook->next = assembly_search_hook;
-	assembly_search_hook = hook;
+
+	if (append && assembly_search_hook != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblySearchHook *old = assembly_search_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_search_hook;
+		assembly_search_hook = hook;
+	}
 }
 
 /**
  * mono_install_assembly_search_hook:
  */
-void          
+void
 mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE, FALSE);
@@ -2128,7 +2145,7 @@ mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer
 /**
  * mono_install_assembly_postload_search_hook:
  */
-void          
+void
 mono_install_assembly_postload_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE, TRUE);
@@ -2145,8 +2162,9 @@ typedef struct AssemblyPreLoadHook AssemblyPreLoadHook;
 struct AssemblyPreLoadHook {
 	AssemblyPreLoadHook *next;
 	union {
-		MonoAssemblyPreLoadFunc v1;
-		MonoAssemblyPreLoadFuncV2 v2;
+		MonoAssemblyPreLoadFunc v1; // legacy internal use
+		MonoAssemblyPreLoadFuncV2 v2; // current internal use
+		MonoAssemblyPreLoadFuncV3 v3; // netcore external use
 	} func;
 	gpointer user_data;
 	gint32 version;
@@ -2166,8 +2184,18 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 			assembly = hook->func.v1 (aname, apath, hook->user_data);
 		else {
 			ERROR_DECL (error);
-			g_assert (hook->version == 2);
-			assembly = hook->func.v2 (alc, aname, apath, FALSE, hook->user_data, error);
+			g_assert (hook->version == 2 || hook->version == 3);
+			if (hook->version == 2)
+				assembly = hook->func.v2 (alc, aname, apath, FALSE, hook->user_data, error);
+			else { // v3
+#ifdef ENABLE_NETCORE
+				MonoGCHandle strong_gchandle = mono_gchandle_from_handle (mono_gchandle_get_target_handle (alc->gchandle), TRUE);
+				assembly = hook->func.v3 (strong_gchandle, aname, apath, hook->user_data, error);
+				mono_gchandle_free_internal (strong_gchandle);
+#else
+				assembly = hook->func.v3 (NULL, aname, apath, hook->user_data, error);
+#endif
+			}
 			/* TODO: propagage error out to callers */
 			mono_error_assert_ok (error);
 		}
@@ -2238,7 +2266,7 @@ mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func, gpoint
 }
 
 void
-mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly)
+mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly, gboolean append)
 {
 	AssemblyPreLoadHook *hook;
 
@@ -2250,9 +2278,39 @@ mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer 
 	hook->version = 2;
 	hook->func.v2 = func;
 	hook->user_data = user_data;
-	hook->next = *hooks;
 
-	*hooks = hook;
+	if (append && *hooks != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblyPreLoadHook *old = *hooks;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = *hooks;
+		*hooks = hook;
+	}
+}
+
+void
+mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data, gboolean append)
+{
+	AssemblyPreLoadHook *hook;
+
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblyPreLoadHook, 1);
+	hook->version = 3;
+	hook->func.v3 = func;
+	hook->user_data = user_data;
+
+	if (append && assembly_preload_hook != NULL) {
+		AssemblyPreLoadHook *old = assembly_preload_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_preload_hook;
+		assembly_preload_hook = hook;
+	}
 }
 
 static void
@@ -4783,9 +4841,8 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 		result = prevent_reference_assembly_from_running (result, refonly);
 	}
 #else
-	result = netcore_load_reference (aname, req->request.alc, req->requesting_assembly, !req->no_postload_search);
-
-	if (!result && bundles != NULL) {
+	result = NULL;
+	if (bundles != NULL) {
 		MonoImageOpenStatus status;
 		MonoImage *image;
 		image = mono_assembly_open_from_bundle (req->request.alc, aname->name, &status, FALSE);
@@ -4796,8 +4853,29 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 		if (image)
 			result = mono_assembly_request_load_from (image, aname->name, &req->request, &status);
 	}
+	if (!result)
+		result = netcore_load_reference (aname, req->request.alc, req->requesting_assembly, !req->no_postload_search);
 #endif
 	return result;
+}
+
+MonoAssembly *
+mono_assembly_load_full_alc (MonoGCHandle alc_gchandle, MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
+{
+	MonoAssembly *res;
+	MONO_ENTER_GC_UNSAFE;
+	MonoAssemblyByNameRequest req;
+#ifdef ENABLE_NETCORE
+	MonoAssemblyLoadContext *alc = mono_alc_from_gchandle (alc_gchandle);
+#else
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+#endif
+	mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+	req.requesting_assembly = NULL;
+	req.basedir = basedir;
+	res = mono_assembly_request_byname (aname, &req, status);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**

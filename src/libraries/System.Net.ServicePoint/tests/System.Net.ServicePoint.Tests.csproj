@@ -5,8 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ServicePointManagerTest.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="TlsSystemDefault.cs" />
   </ItemGroup>
 </Project>

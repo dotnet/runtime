@@ -298,7 +298,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 56
+#define MINOR_VERSION 57
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -1829,6 +1829,21 @@ buffer_add_data (Buffer *buf, guint8 *data, int len)
 {
 	buffer_make_room (buf, len);
 	memcpy (buf->p, data, len);
+	buf->p += len;
+}
+
+static void
+buffer_add_utf16 (Buffer *buf, guint8 *data, int len)
+{
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	buffer_make_room (buf, len);
+	memcpy (buf->p, data, len);
+#else
+	for (int i=0; i<len; i +=2) {
+		buf->p[i] = data[i+1];
+		buf->p[i+1] = data[i];
+	}
+#endif
 	buf->p += len;
 }
 
@@ -4992,7 +5007,6 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 	if (MONO_CONTEXT_GET_IP (ctx) == orig_ip - 1)
 		MONO_CONTEXT_SET_IP (ctx, orig_ip);
 }
-
 static void
 ss_args_destroy (SingleStepArgs *ss_args)
 {
@@ -5003,6 +5017,8 @@ ss_args_destroy (SingleStepArgs *ss_args)
 static int
 handle_multiple_ss_requests (void)
 {
+	if (!CHECK_PROTOCOL_VERSION (2, 57))
+		return DE_ERR_NOT_IMPLEMENTED;
 	return 1;
 }
 
@@ -5034,7 +5050,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	mono_loader_unlock ();
 	g_assert (tls);
 	if (!tls->context.valid) {
-		DEBUG_PRINTF (1, "Received a single step request on a thread with no managed frames.");
+		DEBUG_PRINTF (1, "Received a single step request on a thread with no managed frames.\n");
 		return ERR_INVALID_ARGUMENT;
 	}
 
@@ -6548,7 +6564,10 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 			else {
 				ERROR_DECL (error);
 				this_arg = mono_object_new_checked (domain, m->klass, error);
-				mono_error_assert_ok (error);
+				if (!is_ok (error)) {
+					mono_error_cleanup (error);
+					return ERR_INVALID_ARGUMENT;
+				}
 			}
 		} else {
 			return ERR_INVALID_ARGUMENT;
@@ -9133,7 +9152,8 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		mono_loader_lock ();
 		tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
 		mono_loader_unlock ();
-		g_assert (tls);
+		if (tls == NULL)
+			return ERR_UNLOADED;
 
 		compute_frame_info (thread, tls, TRUE); //the last parameter is TRUE to force that the frame info that will be send is synchronised with the debugged thread
 
@@ -9570,7 +9590,7 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		if (use_utf16) {
 			buffer_add_int (buf, mono_string_length_internal (str) * 2);
-			buffer_add_data (buf, (guint8*)mono_string_chars_internal (str), mono_string_length_internal (str) * 2);
+			buffer_add_utf16 (buf, (guint8*)mono_string_chars_internal (str), mono_string_length_internal (str) * 2);
 		} else {
 			ERROR_DECL (error);
 			s = mono_string_to_utf8_checked_internal (str, error);

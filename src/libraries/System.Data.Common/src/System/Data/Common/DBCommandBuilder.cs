@@ -293,8 +293,8 @@ namespace System.Data.Common
 
         private const string Comma = ", ";
         private const string Equal = " = ";
-        private const string LeftParenthesis = "(";
-        private const string RightParenthesis = ")";
+        private const char LeftParenthesis = '(';
+        private const char RightParenthesis = ')';
         private const string NameSeparator = ".";
 
         private const string IsNull = " IS NULL";

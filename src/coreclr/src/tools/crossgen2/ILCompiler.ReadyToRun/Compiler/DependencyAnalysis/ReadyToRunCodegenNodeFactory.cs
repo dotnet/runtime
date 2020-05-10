@@ -67,22 +67,20 @@ namespace ILCompiler.DependencyAnalysis
             _markingComplete = true;
         }
 
-        public IMethodNode MethodEntrypoint(MethodDesc method)
+        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
+
+        public MethodWithGCInfo CompiledMethodNode(MethodDesc method)
         {
-            EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
-            ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
-            return MethodEntrypoint(
-                new MethodWithToken(method, moduleToken, constrainedType: null),
-                isUnboxingStub: false,
-                isInstantiatingStub: false,
-                isPrecodeImportRequired: false);
+            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(method, false));
+            Debug.Assert(method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            return _localMethodCache.GetOrAdd(method);
         }
 
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
 
         public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
         {
-            return _allMethodsOnType.GetOrAdd(type);
+            return _allMethodsOnType.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
@@ -97,13 +95,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
-        }
-
-        private NodeCache<Utf8String, SettableReadOnlyDataBlob> _readOnlyDataBlobs;
-
-        public SettableReadOnlyDataBlob SettableReadOnlyDataBlob(Utf8String name)
-        {
-            return _readOnlyDataBlobs.GetOrAdd(name);
         }
 
         private struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
@@ -212,11 +203,6 @@ namespace ILCompiler.DependencyAnalysis
                     TypeSignature(
                         ReadyToRunFixupKind.Invalid,
                         (TypeDesc)helperKey.Target));
-            });
-
-            _readOnlyDataBlobs = new NodeCache<Utf8String, SettableReadOnlyDataBlob>(key =>
-            {
-                return new SettableReadOnlyDataBlob(key, ObjectNodeSection.ReadOnlyDataSection);
             });
 
             _constructedHelpers = new NodeCache<ReadyToRunHelper, Import>(helperId =>
@@ -365,7 +351,8 @@ namespace ILCompiler.DependencyAnalysis
             bool isUnboxingStub = key.IsUnboxingStub;
             bool isInstantiatingStub = key.IsInstantiatingStub;
             bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
-            if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
+            MethodDesc compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (CompilationModuleGroup.ContainsMethodBody(compilableMethod, false))
             {
                 if (isPrecodeImportRequired)
                 {
@@ -373,7 +360,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method),
+                        CompiledMethodNode(compilableMethod),
                         isUnboxingStub,
                         isInstantiatingStub);
                 }
@@ -383,7 +370,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method),
+                        CompiledMethodNode(compilableMethod),
                         isUnboxingStub,
                         isInstantiatingStub);
                 }
@@ -406,30 +393,33 @@ namespace ILCompiler.DependencyAnalysis
             return _importMethods.GetOrAdd(key);
         }
 
-        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
-
-        private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod)
-        {
-            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
-
-            MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            return _localMethodCache.GetOrAdd(localMethod);
-        }
-
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
         {
-            foreach (MethodDesc method in MetadataManager.GetCompiledMethods())
+            return EnumerateCompiledMethods(null, CompiledMethodCategory.All);
+        }
+
+        public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods(EcmaModule moduleToEnumerate, CompiledMethodCategory methodCategory)
+        {
+            foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
-                IMethodNode methodNode = MethodEntrypoint(method);
+                MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
-                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
+#if DEBUG
+                EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
+
+                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null), false, false, false);
+                MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
+                if (methodCodeNodeDebug == null && methodNodeDebug is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = localMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = localMethodImport.MethodCodeNode;
                 }
-                if (methodCodeNode == null && methodNode is PrecodeMethodImport precodeMethodImport)
+                if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
                 {
-                    methodCodeNode = precodeMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = precodeMethodImport.MethodCodeNode;
                 }
+                Debug.Assert(methodCodeNodeDebug == methodCodeNode);
+#endif
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
                 {
@@ -536,7 +526,7 @@ namespace ILCompiler.DependencyAnalysis
 
             AssemblyTableNode assemblyTable = null;
 
-            if (CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
+            if (CompilationModuleGroup.IsCompositeBuildMode)
             {
                 assemblyTable = new AssemblyTableNode(Target);
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);

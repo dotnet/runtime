@@ -597,9 +597,14 @@ namespace Internal.TypeSystem.Interop
         protected void LoadNativeArg(ILCodeStream stream)
         {
             if (IsNativeByRef)
+            {
                 _nativeHome.LoadAddr(stream);
+                stream.Emit(ILOpcode.conv_i);
+            }
             else
+            {
                 _nativeHome.LoadValue(stream);
+            }
         }
 
         protected void LoadNativeAddr(ILCodeStream stream)
@@ -904,7 +909,7 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitMarshalArgumentNativeToManaged()
         {
-            if (Out)
+            if (Out && !IsNativeByRef)
             {
                 base.EmitMarshalArgumentNativeToManaged();
             }

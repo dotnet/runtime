@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Encoding.Tests
+namespace System.Formats.Cbor
 {
     // https://tools.ietf.org/html/rfc7049#section-2.4
-    internal enum CborTag : ulong
+    public enum CborTag : ulong
     {
         DateTimeString = 0,
-        EpochDateTime  = 1,
-        PositiveBigNum = 2,
+        UnixTimeSeconds = 1,
+        UnsignedBigNum = 2,
         NegativeBigNum = 3,
         DecimalFraction = 4,
         BigFloat = 5,
@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Encoding.Tests
     }
 
     // https://tools.ietf.org/html/rfc7049#section-2.3
-    internal enum CborSpecialValue : byte
+    public enum CborSimpleValue : byte
     {
         False = 20,
         True = 21,
