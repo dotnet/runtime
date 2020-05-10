@@ -190,15 +190,12 @@ HRESULT DwGetFileVersionInfo(
     {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
     major = minor = build = revision = 0;
     ULARGE_INTEGER appVersion = { 0, 0 };
-
-    // Preempt to let GC suspend
-    GCX_PREEMP();
 
     HRESULT result = GetFileVersion(wszFilePath, &appVersion);
     if (SUCCEEDED(result))
