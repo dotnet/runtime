@@ -118,8 +118,8 @@ namespace System.Text
         private bool _isReadOnly = true;
 
         // Encoding (encoder) fallback
-        internal EncoderFallback encoderFallback = null!;
-        internal DecoderFallback decoderFallback = null!;
+        internal EncoderFallback encoderFallback;
+        internal DecoderFallback decoderFallback;
 
         protected Encoding() : this(0)
         {
@@ -159,6 +159,8 @@ namespace System.Text
         }
 
         // Default fallback that we'll use.
+        [MemberNotNull(nameof(encoderFallback))]
+        [MemberNotNull(nameof(decoderFallback))]
         internal virtual void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an "\xFFFD" string,

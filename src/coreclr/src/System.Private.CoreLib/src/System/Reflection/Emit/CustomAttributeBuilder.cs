@@ -14,14 +14,19 @@
 ===========================================================*/
 
 using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
-using System.Diagnostics;
 
 namespace System.Reflection.Emit
 {
     public class CustomAttributeBuilder
     {
+        internal ConstructorInfo m_con;
+        internal object?[] m_constructorArgs;
+        internal byte[] m_blob;
+
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs)
@@ -96,6 +101,9 @@ namespace System.Reflection.Emit
             return t == typeof(object);
         }
 
+        [MemberNotNull(nameof(m_con))]
+        [MemberNotNull(nameof(m_constructorArgs))]
+        [MemberNotNull(nameof(m_blob))]
         internal void InitCustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                                                  PropertyInfo[] namedProperties, object?[] propertyValues,
                                                  FieldInfo[] namedFields, object?[] fieldValues)
@@ -549,9 +557,5 @@ namespace System.Reflection.Emit
             TypeBuilder.DefineCustomAttribute(mod, tkOwner, tkAttrib, m_blob, toDisk,
                                                       typeof(System.Diagnostics.DebuggableAttribute) == m_con.DeclaringType);
         }
-
-        internal ConstructorInfo m_con = null!;
-        internal object?[] m_constructorArgs = null!;
-        internal byte[] m_blob = null!;
     }
 }

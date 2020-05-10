@@ -45,7 +45,7 @@ namespace System.Globalization
         private IntPtr _sortHandle;
 
         [NonSerialized]
-        private string _sortName = null!; // The name that defines our behavior
+        private string _sortName; // The name that defines our behavior
 
         [OptionalField(VersionAdded = 3)]
         private SortVersion? m_SortVersion; // Do not rename (binary serialization)
@@ -181,6 +181,7 @@ namespace System.Globalization
             return IsSortable(valueAsUtf16.Slice(0, charCount));
         }
 
+        [MemberNotNull(nameof(_sortName))]
         private void InitSort(CultureInfo culture)
         {
             _sortName = culture.SortName;
