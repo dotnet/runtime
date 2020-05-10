@@ -1738,6 +1738,10 @@ public:
 #else
         unsigned int regSize = 1;
 #endif
+
+        if (numRegs > MAX_ARG_REG_COUNT)
+            NO_WAY("Multireg argument exceeds the maximum length");
+
         for (unsigned int regIndex = 1; regIndex < numRegs; regIndex++)
         {
             argReg = (regNumber)(argReg + regSize);
