@@ -15,7 +15,6 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -24,89 +23,33 @@ namespace System.Reflection.Emit
     public class CustomAttributeBuilder
     {
         internal ConstructorInfo m_con;
-        internal object?[] m_constructorArgs;
-        internal byte[] m_blob;
+        private object?[] m_constructorArgs;
+        private byte[] m_blob;
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs) :
+            this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), Array.Empty<FieldInfo>(), Array.Empty<object>())
         {
-            InitCustomAttributeBuilder(con, constructorArgs,
-                                       Array.Empty<PropertyInfo>(), Array.Empty<object>(),
-                                       Array.Empty<FieldInfo>(), Array.Empty<object>());
         }
 
         // public constructor to form the custom attribute with constructor, constructor
         // parameters and named properties.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      PropertyInfo[] namedProperties, object?[] propertyValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues) :
+            this(con, constructorArgs, namedProperties, propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>())
         {
-            InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
-                                       propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>());
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      FieldInfo[] namedFields, object?[] fieldValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, FieldInfo[] namedFields, object?[] fieldValues) :
+            this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), namedFields, fieldValues)
         {
-            InitCustomAttributeBuilder(con, constructorArgs, Array.Empty<PropertyInfo>(),
-                                       Array.Empty<object>(), namedFields, fieldValues);
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      PropertyInfo[] namedProperties, object?[] propertyValues,
-                                      FieldInfo[] namedFields, object?[] fieldValues)
-        {
-            InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
-                                       propertyValues, namedFields, fieldValues);
-        }
-
-        // Check that a type is suitable for use in a custom attribute.
-        private bool ValidateType(Type t)
-        {
-            if (t.IsPrimitive)
-            {
-                return t != typeof(IntPtr) && t != typeof(UIntPtr);
-            }
-            if (t == typeof(string) || t == typeof(Type))
-            {
-                return true;
-            }
-            if (t.IsEnum)
-            {
-                switch (Type.GetTypeCode(Enum.GetUnderlyingType(t)))
-                {
-                    case TypeCode.SByte:
-                    case TypeCode.Byte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-            if (t.IsArray)
-            {
-                if (t.GetArrayRank() != 1)
-                    return false;
-                return ValidateType(t.GetElementType()!);
-            }
-            return t == typeof(object);
-        }
-
-        [MemberNotNull(nameof(m_con))]
-        [MemberNotNull(nameof(m_constructorArgs))]
-        [MemberNotNull(nameof(m_blob))]
-        internal void InitCustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                                 PropertyInfo[] namedProperties, object?[] propertyValues,
-                                                 FieldInfo[] namedFields, object?[] fieldValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues, FieldInfo[] namedFields, object?[] fieldValues)
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
@@ -295,6 +238,43 @@ namespace System.Reflection.Emit
 
             // Create the blob array.
             m_blob = ((MemoryStream)writer.BaseStream).ToArray();
+        }
+
+        // Check that a type is suitable for use in a custom attribute.
+        private bool ValidateType(Type t)
+        {
+            if (t.IsPrimitive)
+            {
+                return t != typeof(IntPtr) && t != typeof(UIntPtr);
+            }
+            if (t == typeof(string) || t == typeof(Type))
+            {
+                return true;
+            }
+            if (t.IsEnum)
+            {
+                switch (Type.GetTypeCode(Enum.GetUnderlyingType(t)))
+                {
+                    case TypeCode.SByte:
+                    case TypeCode.Byte:
+                    case TypeCode.Int16:
+                    case TypeCode.UInt16:
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            if (t.IsArray)
+            {
+                if (t.GetArrayRank() != 1)
+                    return false;
+                return ValidateType(t.GetElementType()!);
+            }
+            return t == typeof(object);
         }
 
         private static void VerifyTypeAndPassedObjectType(Type type, Type passedType, string paramName)

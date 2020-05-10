@@ -571,7 +571,7 @@ namespace System.Reflection.Emit
         internal DynamicResolver(DynamicILGenerator ilGenerator)
         {
             m_stackSize = ilGenerator.GetMaxStackSize();
-            m_exceptions = ilGenerator.GetExceptions()!;
+            m_exceptions = ilGenerator.GetExceptions();
             m_code = ilGenerator.BakeByteArray()!;
             m_localSignature = ilGenerator.m_localSignature.InternalGetSignatureArray();
             m_scope = ilGenerator.m_scope;
@@ -739,10 +739,7 @@ namespace System.Reflection.Emit
 
         internal override unsafe void GetEHInfo(int excNumber, void* exc)
         {
-            if (m_exceptions is null)
-            {
-                return;
-            }
+            Debug.Assert(m_exceptions != null);
 
             CORINFO_EH_CLAUSE* exception = (CORINFO_EH_CLAUSE*)exc;
             for (int i = 0; i < m_exceptions.Length; i++)
