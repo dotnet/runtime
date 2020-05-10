@@ -125,10 +125,8 @@ namespace System
                 low = tmp;
                 return high;
             }
-            else
-            {
-                return SoftwareFallback(a, b, out low);
-            }
+
+            return SoftwareFallback(a, b, out low);
 
             static ulong SoftwareFallback(ulong a, ulong b, out ulong low)
             {
