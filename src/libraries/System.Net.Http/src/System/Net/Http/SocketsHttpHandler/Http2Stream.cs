@@ -167,21 +167,25 @@ namespace System.Net.Http
 
                 // Create a linked cancellation token source so that we can cancel the request in the event of receiving RST_STREAM
                 // and similiar situations where we need to cancel the request body (see Cancel method).
-                _requestBodyCancellationToken = cancellationToken.CanBeCanceled ?
-                    CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token).Token :
-                    _requestBodyCancellationSource.Token;
+                CancellationTokenSource? linkedCts = null;
+                if (cancellationToken.CanBeCanceled)
+                {
+                    linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token);
+                    _requestBodyCancellationToken = linkedCts.Token;
+                }
+                else
+                {
+                    _requestBodyCancellationToken = _requestBodyCancellationSource.Token;
+                }
 
                 try
                 {
-                    bool sendRequestContent = true;
-                    if (_expect100ContinueWaiter != null)
-                    {
-                        sendRequestContent = await WaitFor100ContinueAsync(_requestBodyCancellationToken).ConfigureAwait(false);
-                    }
-
+                    bool sendRequestContent =
+                        _expect100ContinueWaiter == null ||
+                        await WaitFor100ContinueAsync(_requestBodyCancellationToken).ConfigureAwait(false);
                     if (sendRequestContent)
                     {
-                        using (Http2WriteStream writeStream = new Http2WriteStream(this))
+                        using (var writeStream = new Http2WriteStream(this))
                         {
                             await _request.Content.InternalCopyToAsync(writeStream, null, _requestBodyCancellationToken).ConfigureAwait(false);
                         }
@@ -192,9 +196,7 @@ namespace System.Net.Http
                 catch (Exception e)
                 {
                     if (NetEventSource.IsEnabled) Trace($"Failed to send request body: {e}");
-
-                    bool signalWaiter = false;
-                    bool sendReset = false;
+                    bool signalWaiter;
 
                     Debug.Assert(!Monitor.IsEntered(SyncObject));
                     lock (SyncObject)
@@ -213,25 +215,25 @@ namespace System.Net.Http
                         }
 
                         // This should not cause RST_STREAM to be sent because the request is still marked as in progress.
+                        bool sendReset;
                         (signalWaiter, sendReset) = CancelResponseBody();
                         Debug.Assert(!sendReset);
 
                         _requestCompletionState = StreamCompletionState.Failed;
-                        sendReset = true;
                         Complete();
                     }
 
-                    if (sendReset)
-                    {
-                        SendReset();
-                    }
-
+                    SendReset();
                     if (signalWaiter)
                     {
                         _waitSource.SetResult(true);
                     }
 
                     throw;
+                }
+                finally
+                {
+                    linkedCts?.Dispose();
                 }
 
                 // New scope here to avoid variable name conflict on "sendReset"
@@ -241,20 +243,13 @@ namespace System.Net.Http
                     lock (SyncObject)
                     {
                         Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
-
                         _requestCompletionState = StreamCompletionState.Completed;
-                        if (_responseCompletionState == StreamCompletionState.Failed)
+
+                        if (_responseCompletionState != StreamCompletionState.InProgress)
                         {
                             // Note, we can reach this point if the response stream failed but cancellation didn't propagate before we finished.
-                            sendReset = true;
+                            sendReset = _responseCompletionState == StreamCompletionState.Failed;
                             Complete();
-                        }
-                        else
-                        {
-                            if (_responseCompletionState == StreamCompletionState.Completed)
-                            {
-                                Complete();
-                            }
                         }
                     }
 
