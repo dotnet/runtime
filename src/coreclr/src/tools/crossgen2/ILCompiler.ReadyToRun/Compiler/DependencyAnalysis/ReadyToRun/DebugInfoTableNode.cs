@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 using Internal.JitInterface;
@@ -70,6 +71,42 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunDebugInfoTable");
         }
 
+        private class DebugInfoSignature
+        {
+            public readonly byte[] MethodDebugBlob;
+
+            public DebugInfoSignature(byte[] methodDebugBlob)
+            {
+                MethodDebugBlob = methodDebugBlob;
+            }
+
+            public override bool Equals(object obj)
+            {
+                DebugInfoSignature other = obj as DebugInfoSignature;
+                if (other == null)
+                    return false;
+
+                if (MethodDebugBlob.Length != other.MethodDebugBlob.Length)
+                    return false;
+
+                for (int i = 0; i < MethodDebugBlob.Length; i++)
+                {
+                    if (MethodDebugBlob[i] != other.MethodDebugBlob[i])
+                        return false;
+                }
+
+                return true;
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = 317;
+                for (int i = 0; i < MethodDebugBlob.Length; i++)
+                    hash += (hash << 5) + MethodDebugBlob[i] * 19;
+                return hash;
+            }
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
@@ -81,6 +118,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexArray vertexArray = new VertexArray(section);
             section.Place(vertexArray);
 
+            Dictionary<DebugInfoSignature, BlobVertex> blobCache = new Dictionary<DebugInfoSignature, BlobVertex>();
+            
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
                 MemoryStream methodDebugBlob = new MemoryStream();
@@ -105,8 +144,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     methodDebugBlob.Write(vars, 0, vars.Length);
                 }
 
-                BlobVertex debugBlob = new BlobVertex(methodDebugBlob.ToArray());
-
+                DebugInfoSignature debugInfoSignature = new DebugInfoSignature(methodDebugBlob.ToArray());
+                if (!blobCache.TryGetValue(debugInfoSignature, out BlobVertex debugBlob))
+                {
+                    debugBlob = new BlobVertex(methodDebugBlob.ToArray());
+                    blobCache.Add(debugInfoSignature, debugBlob);
+                }
                 vertexArray.Set(factory.RuntimeFunctionsTable.GetIndex(method), new DebugInfoVertex(debugBlob));
             }
 
