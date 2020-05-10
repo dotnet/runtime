@@ -11,6 +11,8 @@ namespace System.Xml.XPath
     /// </summary>
     public abstract class XPathItem
     {
+        protected XPathItem() { }
+        
         /// <summary>
         /// True if this item is a node, and not an atomic value.
         /// </summary>
