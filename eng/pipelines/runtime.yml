@@ -421,7 +421,7 @@ jobs:
     - Android_x64
     - Android_arm
     - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -533,7 +533,7 @@ jobs:
     - Android_x64
     - Android_arm
     - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
