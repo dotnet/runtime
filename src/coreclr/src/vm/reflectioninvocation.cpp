@@ -2397,7 +2397,7 @@ FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBas
     VALIDATEOBJECT(target);
     TypeHandle th = target->GetType();
     if (!th.IsEnum())
-        FCThrowArgument(NULL, NULL);
+        FCThrowArgument("enumType", NULL);
 
     OBJECTREF result = NULL;
 
