@@ -331,7 +331,14 @@ namespace System.Runtime.InteropServices
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
             }
+
+            SetGlobalInstanceRegisteredForTrackerSupport();
         }
+
+
+        [DllImport(RuntimeHelpers.QCall)]
+        [SuppressGCTransition]
+        private static extern void SetGlobalInstanceRegisteredForTrackerSupport();
 
         /// <summary>
         /// Register a <see cref="ComWrappers" /> instance to be used as the global instance for marshalling in the runtime.

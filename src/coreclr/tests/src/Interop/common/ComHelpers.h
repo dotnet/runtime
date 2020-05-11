@@ -105,6 +105,12 @@ public:
         return c;
     }
 
+protected:
+    ULONG GetRefCount()
+    {
+        return _refCount;
+    }
+
 private:
     std::atomic<ULONG> _refCount = 1;
 };

@@ -867,6 +867,9 @@ namespace System.Text.Json
                 case JsonValueKind.String:
                     Assert.Equal(expected.GetString(), actual.GetString());
                     break;
+                case JsonValueKind.Number:
+                    Assert.Equal(expected.GetRawText(), actual.GetRawText());
+                    break;
                 default:
                     throw new NotImplementedException();
             }

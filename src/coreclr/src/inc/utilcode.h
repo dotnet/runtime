@@ -4715,13 +4715,6 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 
 extern HINSTANCE g_hmodCoreCLR;
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-
-// Corrupting Exception limited support for outside the VM folder
-BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 namespace UtilCode
 {
     // These are type-safe versions of Interlocked[Compare]Exchange

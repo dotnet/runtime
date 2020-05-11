@@ -132,9 +132,9 @@ namespace System.Net
             }
         }
 
-#pragma warning disable CS8610 // Nullability of parameter 'name' doesn't match overridden member
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override void Set(string name, string? value)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -241,9 +241,9 @@ namespace System.Net
         //     header      - Name of the header.
         // Return Value:
         //     string[] - array of parsed string objects
-#pragma warning disable CS8610 // Nullability of parameter 'header' doesn't match overridden member
+#pragma warning disable CS8765 // Nullability of parameter 'header' doesn't match overridden member
         public override string[]? GetValues(string header)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             // First get the information about the header and the values for
             // the header.
@@ -385,9 +385,9 @@ namespace System.Net
             InnerCollection.Add(name, value);
         }
 
-#pragma warning disable CS8610 // Nullability of parameter 'name' doesn't match overridden member
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override void Add(string name, string? value)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             if (name == null)
             {
@@ -460,9 +460,9 @@ namespace System.Net
         /// <devdoc>
         ///    <para>Removes the specified header.</para>
         /// </devdoc>
-#pragma warning disable CS8610 // Nullability of parameter 'name' doesn't match overridden member
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override void Remove(string name)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             if (string.IsNullOrEmpty(name))
             {

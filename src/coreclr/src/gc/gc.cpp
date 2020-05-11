@@ -2175,6 +2175,8 @@ uint32_t    gc_heap::m_high_memory_load_th;
 
 uint32_t    gc_heap::v_high_memory_load_th;
 
+bool        gc_heap::is_restricted_physical_mem;
+
 uint64_t    gc_heap::total_physical_mem = 0;
 
 uint64_t    gc_heap::entry_available_physical_mem = 0;
@@ -19628,7 +19630,7 @@ void gc_heap::get_memory_info (uint32_t* memory_load,
                                uint64_t* available_physical,
                                uint64_t* available_page_file)
 {
-    GCToOSInterface::GetMemoryStatus(memory_load, available_physical, available_page_file);
+    GCToOSInterface::GetMemoryStatus(is_restricted_physical_mem ? total_physical_mem  : 0,  memory_load, available_physical, available_page_file);
 }
 
 void fire_mark_event (int heap_num, int root_type, size_t bytes_marked)
@@ -34925,11 +34927,14 @@ HRESULT GCHeap::Initialize()
     g_num_processors = GCToOSInterface::GetTotalProcessorCount();
     assert(g_num_processors != 0);
 
-    bool is_restricted;
     gc_heap::total_physical_mem = (size_t)GCConfig::GetGCTotalPhysicalMemory();
-    if (!(gc_heap::total_physical_mem))
+    if (gc_heap::total_physical_mem != 0)
     {
-        gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted);
+        gc_heap::is_restricted_physical_mem = true;
+    }
+    else
+    {
+        gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&gc_heap::is_restricted_physical_mem);
     }
 
 #ifdef HOST_64BIT
@@ -34948,7 +34953,7 @@ HRESULT GCHeap::Initialize()
     // running in a container, use this limit for the GC heap.
     if (!(gc_heap::heap_hard_limit))
     {
-        if (is_restricted)
+        if (gc_heap::is_restricted_physical_mem)
         {
             uint64_t physical_mem_for_gc = gc_heap::total_physical_mem * (uint64_t)75 / (uint64_t)100;
             gc_heap::heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);

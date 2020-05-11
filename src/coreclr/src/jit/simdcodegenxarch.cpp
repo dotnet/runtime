@@ -2973,12 +2973,25 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
         offs = treeNode->AsLclFld()->GetLclOffs();
     }
 
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+    GenTree*  op1    = treeNode->AsOp()->gtOp1;
+    if (op1->isContained())
+    {
+        // This is only possible for a zero-init.
+        assert(op1->IsIntegralConst(0) || op1->IsSIMDZero());
+        genSIMDZero(TYP_SIMD16, op1->AsSIMD()->gtSIMDBaseType, tmpReg);
+
+        // store lower 8 bytes
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, tmpReg, varNum, offs);
+
+        // Store upper 4 bytes
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, tmpReg, varNum, offs + 8);
+
+        return;
+    }
+
     assert(!op1->isContained());
     regNumber operandReg = genConsumeReg(op1);
-
-    // Need an addtional Xmm register to extract upper 4 bytes from data.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // store lower 8 bytes
     GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, varNum, offs);

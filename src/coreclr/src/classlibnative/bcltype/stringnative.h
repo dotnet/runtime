@@ -42,10 +42,8 @@
 class COMString {
 public:
     //
-    // Search/Query Methods
+    // Query Methods
     //
-    static FCDECL6(INT32, CompareOrdinalEx, StringObject* strA, INT32 indexA, INT32 countA, StringObject* strB, INT32 indexB, INT32 countB);
-
     static FCDECL2(FC_CHAR_RET, GetCharAt, StringObject* pThisRef, INT32 index);
     static FCDECL1(INT32, Length, StringObject* pThisRef);
 
