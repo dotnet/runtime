@@ -742,6 +742,8 @@ namespace System.Net.Sockets
                 _sequenceNumber = 0;
             }
 
+            internal bool IsReady_Speculative() => _state == QueueState.Ready || _state == QueueState.Stopped;
+
             // IsReady returns the current _sequenceNumber, which must be passed to StartAsyncOperation below.
             public bool IsReady(SocketAsyncContext context, out int observedSequenceNumber)
             {
@@ -1818,9 +1820,16 @@ namespace System.Net.Sockets
 
             bytesSent = 0;
             SocketError errorCode;
-            int observedSequenceNumber;
-            if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            int observedSequenceNumber = 0;
+
+            // The default size of the OS send buffer is 16KB. Because of that, sending a low number of bytes is almost never blocking.
+            // For such scenarios, the lock taken in "IsReady" is relatively expensive compared to the send operation itself.
+            // To avoid the expensive lock for "fast sends", a lock-free speculative check is performed.
+            bool isReady = count <= 1024
+                    ? _sendQueue.IsReady_Speculative()
+                    : _sendQueue.IsReady(this, out observedSequenceNumber);
+
+            if (isReady && SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
             {
                 return errorCode;
             }
