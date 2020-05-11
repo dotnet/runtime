@@ -555,20 +555,19 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    if (_responseProtocolState == ResponseProtocolState.Aborted)
+                    switch (_responseProtocolState)
                     {
-                        return;
-                    }
+                        case ResponseProtocolState.ExpectingStatus:
+                        case ResponseProtocolState.Aborted:
+                            break;
 
-                    if (_responseProtocolState != ResponseProtocolState.ExpectingStatus && _responseProtocolState != ResponseProtocolState.ExpectingData)
-                    {
-                        throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
-                    }
+                        case ResponseProtocolState.ExpectingData:
+                            _responseProtocolState = ResponseProtocolState.ExpectingTrailingHeaders;
+                            _trailers ??= new List<KeyValuePair<HeaderDescriptor, string>>();
+                            break;
 
-                    if (_responseProtocolState == ResponseProtocolState.ExpectingData)
-                    {
-                        _responseProtocolState = ResponseProtocolState.ExpectingTrailingHeaders;
-                        _trailers ??= new List<KeyValuePair<HeaderDescriptor, string>>();
+                        default:
+                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                     }
                 }
             }
@@ -579,45 +578,37 @@ namespace System.Net.Http
                 bool signalWaiter;
                 lock (SyncObject)
                 {
-                    if (_responseProtocolState == ResponseProtocolState.Aborted)
+                    switch (_responseProtocolState)
                     {
-                        return;
-                    }
+                        case ResponseProtocolState.Aborted:
+                            return;
 
-                    if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingTrailingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingIgnoredHeaders)
-                    {
-                        throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
-                    }
+                        case ResponseProtocolState.ExpectingHeaders:
+                            _responseProtocolState = endStream ? ResponseProtocolState.Complete : ResponseProtocolState.ExpectingData;
+                            break;
 
-                    if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders)
-                    {
-                        _responseProtocolState = endStream ? ResponseProtocolState.Complete : ResponseProtocolState.ExpectingData;
-                    }
-                    else if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
-                    {
-                        if (!endStream)
-                        {
-                            if (NetEventSource.IsEnabled) Trace("Trailing headers received without endStream");
+                        case ResponseProtocolState.ExpectingTrailingHeaders:
+                            if (!endStream)
+                            {
+                                if (NetEventSource.IsEnabled) Trace("Trailing headers received without endStream");
+                                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                            }
+                            _responseProtocolState = ResponseProtocolState.Complete;
+                            break;
+
+                        case ResponseProtocolState.ExpectingIgnoredHeaders:
+                            if (endStream)
+                            {
+                                // we should not get endStream while processing 1xx response.
+                                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                            }
+
+                            // We should wait for final response before signaling to waiter.
+                            _responseProtocolState = ResponseProtocolState.ExpectingStatus;
+                            return;
+
+                        default:
                             throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
-                        }
-
-                        _responseProtocolState = ResponseProtocolState.Complete;
-                    }
-                    else if (_responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders)
-                    {
-                        if (endStream)
-                        {
-                            // we should not get endStream while processing 1xx response.
-                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
-                        }
-
-                        _responseProtocolState = ResponseProtocolState.ExpectingStatus;
-                        // We should wait for final response before signaling to waiter.
-                        return;
-                    }
-                    else
-                    {
-                        _responseProtocolState = ResponseProtocolState.ExpectingData;
                     }
 
                     if (endStream)
@@ -651,15 +642,17 @@ namespace System.Net.Http
                 bool signalWaiter;
                 lock (SyncObject)
                 {
-                    if (_responseProtocolState == ResponseProtocolState.Aborted)
+                    switch (_responseProtocolState)
                     {
-                        return;
-                    }
+                        case ResponseProtocolState.ExpectingData:
+                            break;
 
-                    if (_responseProtocolState != ResponseProtocolState.ExpectingData)
-                    {
-                        // Flow control messages are not valid in this state.
-                        throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                        case ResponseProtocolState.Aborted:
+                            return;
+
+                        default:
+                            // Flow control messages are not valid in this state.
+                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                     }
 
                     if (_responseBuffer.ActiveLength + buffer.Length > StreamWindowSize)
@@ -986,7 +979,7 @@ namespace System.Net.Http
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
                 {
-                    // Generallly the same logic as in ReadData, but wrapped in a loop where every read segment is written to the destination.
+                    // Generally the same logic as in ReadData, but wrapped in a loop where every read segment is written to the destination.
                     while (true)
                     {
                         (bool wait, int bytesRead) = TryReadFromBuffer(buffer, partOfSyncRead: true);
@@ -1022,7 +1015,7 @@ namespace System.Net.Http
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
                 {
-                    // Generallly the same logic as in ReadDataAsync, but wrapped in a loop where every read segment is written to the destination.
+                    // Generally the same logic as in ReadDataAsync, but wrapped in a loop where every read segment is written to the destination.
                     while (true)
                     {
                         (bool wait, int bytesRead) = TryReadFromBuffer(buffer);
