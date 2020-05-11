@@ -2092,6 +2092,26 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Draws the image stored in the a <see cref="CachedBitmap"/> object.
+        /// </summary>
+        /// <param name="cachedBitmap">The <see cref="CachedBitmap"/> that contains the image to be drawn.</param>
+        /// <param name="x">The x-coordinate of the upper-left corner of the drawn image.</param>
+        /// <param name="y">The y-coordinate of the upper-left corner of the drawn image.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="cachedBitmap"/> is <see langword="null"/>.</exception>
+        public void DrawCachedBitmap(CachedBitmap cachedBitmap, int x, int y)
+        {
+            if (cachedBitmap is null)
+                throw new ArgumentNullException(nameof(cachedBitmap));
+
+            int status = Gdip.GdipDrawCachedBitmap(
+                new HandleRef(this, NativeGraphics),
+                new HandleRef(cachedBitmap, cachedBitmap.nativeCachedBitmap),
+                x, y);
+
+            CheckErrorStatus(status);
+        }
+
+        /// <summary>
         /// Draws a line connecting the two specified points.
         /// </summary>
         public void DrawLine(Pen pen, PointF pt1, PointF pt2)

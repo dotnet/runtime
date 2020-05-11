@@ -27,6 +27,7 @@
     <Compile Include="System\Drawing\GraphicsUnit.cs" />
     <Compile Include="System\Drawing\Image.cs" />
     <Compile Include="System\Drawing\ImageType.cs" />
+    <Compile Include="System\Drawing\Imaging\CachedBitmap.cs" />
     <Compile Include="System\Drawing\Pen.cs" />
     <Compile Include="System\Drawing\Pens.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
@@ -186,6 +187,7 @@
     <Compile Include="System\Drawing\ImageAnimator.Windows.cs" />
     <Compile Include="System\Drawing\ImageInfo.cs" />
     <Compile Include="System\Drawing\Imaging\BitmapData.Windows.cs" />
+    <Compile Include="System\Drawing\Imaging\CachedBitmap.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\Metafile.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeader.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetaHeader.Windows.cs" />
@@ -303,6 +305,7 @@
     <Compile Include="System\Drawing\Icon.Unix.cs" />
     <Compile Include="System\Drawing\SystemFonts.Unix.cs" />
     <Compile Include="System\Drawing\Imaging\BitmapData.Unix.cs" />
+    <Compile Include="System\Drawing\Imaging\CachedBitmap.Unix.cs" />
     <Compile Include="System\Drawing\Imaging\Metafile.Unix.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeader.Unix.cs" />
     <Compile Include="System\Drawing\Imaging\MetaHeader.Unix.cs" />

@@ -408,6 +408,7 @@ namespace System.Drawing
         public void DrawBezier(System.Drawing.Pen pen, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) { }
         public void DrawBeziers(System.Drawing.Pen pen, System.Drawing.PointF[] points) { }
         public void DrawBeziers(System.Drawing.Pen pen, System.Drawing.Point[] points) { }
+        public void DrawCachedBitmap(System.Drawing.Imaging.CachedBitmap cachedBitmap, int x, int y) { }
         public void DrawClosedCurve(System.Drawing.Pen pen, System.Drawing.PointF[] points) { }
         public void DrawClosedCurve(System.Drawing.Pen pen, System.Drawing.PointF[] points, float tension, System.Drawing.Drawing2D.FillMode fillmode) { }
         public void DrawClosedCurve(System.Drawing.Pen pen, System.Drawing.Point[] points) { }
@@ -1751,6 +1752,11 @@ namespace System.Drawing.Imaging
         public System.IntPtr Scan0 { get { throw null; } set { } }
         public int Stride { get { throw null; } set { } }
         public int Width { get { throw null; } set { } }
+    }
+    public sealed class CachedBitmap : System.IDisposable
+    {
+        public CachedBitmap(System.Drawing.Bitmap bitmap, System.Drawing.Graphics graphics) { throw null; }
+        public void Dispose() { }
     }
     public enum ColorAdjustType
     {

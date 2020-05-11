@@ -88,6 +88,9 @@
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="Imaging\CachedBitmapTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" GeneratePathProperty="true" />    
     <EmbeddedResource Include="$(PkgSystem_Drawing_Common_TestData)\contentFiles\any\any\bitmaps\48x48_multiple_entries_4bit.ico">

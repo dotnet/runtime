@@ -19,6 +19,8 @@ namespace System.Drawing
             internal const string LibraryName = "libgdiplus";
             public static IntPtr Display = IntPtr.Zero;
 
+            public static GetLibgdiplusVersion? GetLibgdiplusVersion;
+
             // Indicates whether X11 is available. It's available on Linux but not on recent macOS versions
             // When set to false, where Carbon Drawing is used instead.
             // macOS users can force X11 by setting the SYSTEM_DRAWING_COMMON_FORCE_X11 flag.
@@ -43,8 +45,16 @@ namespace System.Drawing
                     // the name suffixed with ".0".
                     if (!NativeLibrary.TryLoad("libgdiplus.so", assembly, default, out lib))
                     {
-                         NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
+                        NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
                     }
+                }
+
+                // The GetLibgdiplusVersion function is relatively new. It is needed to check for CachedBitmap support.
+                // Instead of blindly P/Invoking into this function, we should safely search for the export.
+                // If it's not present, then we will know that CachedBitmap is not supported anyway.
+                if (lib != IntPtr.Zero && NativeLibrary.TryGetExport(lib, "GetLibgdiplusVersion", out IntPtr func))
+                {
+                    GetLibgdiplusVersion = Marshal.GetDelegateForFunctionPointer<GetLibgdiplusVersion>(func);
                 }
 
                 // This function may return a null handle. If it does, individual functions loaded from it will throw a DllNotFoundException,
@@ -418,4 +428,7 @@ namespace System.Drawing
     internal unsafe delegate int StreamPutBytesDelegate(byte* buf, int bufsz);
     internal delegate void StreamCloseDelegate();
     internal delegate long StreamSizeDelegate();
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet = CharSet.Ansi)]
+    internal unsafe delegate string GetLibgdiplusVersion();
 }

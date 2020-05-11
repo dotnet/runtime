@@ -461,4 +461,8 @@
   <data name="SystemDrawingCommon_PlatformNotSupported" xml:space="preserve">
     <value>System.Drawing.Common is not supported on this platform.</value>
   </data>
+  <data name="CachedBitmapNotSupported" xml:space="preserve">
+    <value>CachedBitmap is not supported on the installed version of libgdiplus. It is supported from version 6.1 onwards.</value>
+  </data>
 </root>
+

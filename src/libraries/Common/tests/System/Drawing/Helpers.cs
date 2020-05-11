@@ -14,6 +14,7 @@ namespace System.Drawing
     {
         public const string IsDrawingSupported = nameof(Helpers) + "." + nameof(GetIsDrawingSupported);
         public const string IsWindowsOrAtLeastLibgdiplus6 = nameof(Helpers) + "." + nameof(GetIsWindowsOrAtLeastLibgdiplus6);
+        public const string IsCachedBitmapSupported = nameof(Helpers) + "." + nameof(GetIsCachedBitmapSupported);
         public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
         public const string RecentGdiplusIsAvailable2 = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable2);
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
@@ -23,7 +24,10 @@ namespace System.Drawing
 
         public static bool GetIsDrawingSupported() => PlatformDetection.IsDrawingSupported;
 
-        public static bool GetIsWindowsOrAtLeastLibgdiplus6()
+        public static bool GetIsCachedBitmapSupported() => GetIsWindowsOrAtLeastLibgdiplus(6, 1);
+        public static bool GetIsWindowsOrAtLeastLibgdiplus6() => GetIsWindowsOrAtLeastLibgdiplus(6, 0);
+
+        public static bool GetIsWindowsOrAtLeastLibgdiplus(int major, int minor)
         {
             if (!PlatformDetection.IsDrawingSupported)
             {
@@ -50,7 +54,7 @@ namespace System.Drawing
                 return false;
             }
 
-            return installedVersion.Major >= 6;
+            return installedVersion.Major > major || installedVersion.Major == major && installedVersion.Minor >= minor;
         }
 
         public static bool IsNotUnix => PlatformDetection.IsWindows;
