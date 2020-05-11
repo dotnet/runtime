@@ -38,7 +38,14 @@
     <RuntimeGroup Include="centos">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7;8</Versions>
+      <Versions>7</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+    <RuntimeGroup Include="centos">
+      <Parent>rhel</Parent>
+      <Architectures>x64;arm64</Architectures>
+      <Versions>8;9</Versions>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
@@ -53,7 +60,7 @@
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>23;24;25;26;27;28;29;30;31;32;33</Versions>
+      <Versions>23;24;25;26;27;28;29;30;31;32;33;34</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -139,6 +146,11 @@
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
       <Versions>8;8.0;8.1</Versions>
+    </RuntimeGroup>
+    <RuntimeGroup Include="rhel">
+      <Parent>linux</Parent>
+      <Architectures>x64;arm64</Architectures>
+      <Versions>9</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="sles">
