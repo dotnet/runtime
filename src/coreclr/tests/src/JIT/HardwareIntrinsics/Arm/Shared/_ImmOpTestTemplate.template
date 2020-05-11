@@ -104,7 +104,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
 
             var result = {Isa}.{Method}(
-                {Imm}
+                ({Op1BaseType}){Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -115,9 +115,9 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
 
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(byte) })
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}) })
                                      .Invoke(null, new object[] {
-                                        (byte){Imm}
+                                        ({Op1BaseType}){Imm}
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
