@@ -26,7 +26,13 @@ namespace System.Net.Sockets
 
             internal bool WasAllocated => _engine != null;
 
-            internal void Free() => _engine.RemoveFromMap(_context);
+            internal void Free()
+            {
+                if (WasAllocated)
+                {
+                    _engine.RemoveFromMap(_context);
+                }
+            }
 
             internal bool TryRegister(SafeSocketHandle socket, out Interop.Error error) => _engine.TryRegister(socket, out error);
         }
