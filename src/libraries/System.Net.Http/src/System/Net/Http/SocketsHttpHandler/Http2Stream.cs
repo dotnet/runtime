@@ -166,18 +166,37 @@ namespace System.Net.Http
                 // so it's fine to cancel the source representing the whole request body, and doing so allows us to avoid
                 // creating another CTS instance and the associated nodes inside of it.  With this, cancellation will be
                 // requested on _requestBodyCancellationSource when we need to cancel the request stream for any reason,
-                // such as receiving an RST_STREAM or when the passed in token has cancellation requested.
-                CancellationTokenRegistration linkedRegistration = cancellationToken.UnsafeRegister(s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource);
+                // such as receiving an RST_STREAM or when the passed in token has cancellation requested. However, to
+                // avoid unnecessarily registering with the cancellation token unless we have to, we wait to do so until
+                // either we know we need to do a Expect: 100-continue send or until we know that the copying of our
+                // content completed asynchronously.
+                CancellationTokenRegistration linkedRegistration = default;
                 try
                 {
-                    bool sendRequestContent =
-                        _expect100ContinueWaiter == null ||
-                        await WaitFor100ContinueAsync(_requestBodyCancellationSource.Token).ConfigureAwait(false);
+                    bool sendRequestContent = true;
+                    if (_expect100ContinueWaiter != null)
+                    {
+                        linkedRegistration = RegisterRequestBodyCancellation(cancellationToken);
+                        sendRequestContent = await WaitFor100ContinueAsync(_requestBodyCancellationSource.Token).ConfigureAwait(false);
+                    }
+
                     if (sendRequestContent)
                     {
-                        using (var writeStream = new Http2WriteStream(this))
+                        using var writeStream = new Http2WriteStream(this);
+
+                        ValueTask vt = _request.Content.InternalCopyToAsync(writeStream, context: null, _requestBodyCancellationSource.Token);
+                        if (vt.IsCompleted)
                         {
-                            await _request.Content.InternalCopyToAsync(writeStream, null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
+                            vt.GetAwaiter().GetResult();
+                        }
+                        else
+                        {
+                            if (linkedRegistration.Equals(default))
+                            {
+                                linkedRegistration = RegisterRequestBodyCancellation(cancellationToken);
+                            }
+
+                            await vt.ConfigureAwait(false);
                         }
                     }
 
@@ -1059,7 +1078,7 @@ namespace System.Net.Http
                 // Custom HttpContent classes do not get passed the cancellationToken.
                 // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
                 CancellationTokenRegistration linkedRegistration = cancellationToken.CanBeCanceled && cancellationToken != _requestBodyCancellationSource.Token ?
-                    cancellationToken.UnsafeRegister(s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource) :
+                    RegisterRequestBodyCancellation(cancellationToken) :
                     default;
                 try
                 {
@@ -1128,6 +1147,9 @@ namespace System.Net.Http
 
                 _responseBuffer.Dispose();
             }
+
+            private CancellationTokenRegistration RegisterRequestBodyCancellation(CancellationToken cancellationToken) =>
+                cancellationToken.UnsafeRegister(s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource);
 
             // This object is itself usable as a backing source for ValueTask.  Since there's only ever one awaiter
             // for this object's state transitions at a time, we allow the object to be awaited directly. All functionality
