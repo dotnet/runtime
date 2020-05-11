@@ -160,22 +160,13 @@ namespace System.Formats.Cbor.Tests
 
             static bool IsValidKtyCrvCombination(CoseKeyType kty, CoseCrvId crv)
             {
-                switch (crv)
+                return (kty, crv) switch
                 {
-                    case CoseCrvId.P256:
-                    case CoseCrvId.P384:
-                    case CoseCrvId.P521:
-                        return kty == CoseKeyType.EC2;
-
-                    case CoseCrvId.X255519:
-                    case CoseCrvId.X448:
-                    case CoseCrvId.Ed25519:
-                    case CoseCrvId.Ed448:
-                        return kty == CoseKeyType.OKP;
-
-                    default:
-                        return false;
+                    (CoseKeyType.EC2, CoseCrvId.P256 or CoseCrvId.P384 or CoseCrvId.P521) => true,
+                    (CoseKeyType.OKP, CoseCrvId.X255519 or CoseCrvId.X448 or CoseCrvId.Ed25519 or CoseCrvId.Ed448) => true,
+                    _ => false,
                 };
+                ;
             }
 
             static ECCurve MapCoseCrvToECCurve(CoseCrvId crv)
@@ -185,10 +176,10 @@ namespace System.Formats.Cbor.Tests
                     CoseCrvId.P256 => ECCurve.NamedCurves.nistP256,
                     CoseCrvId.P384 => ECCurve.NamedCurves.nistP384,
                     CoseCrvId.P521 => ECCurve.NamedCurves.nistP521,
-                    //(CoseCrvId.X255519 or
-                    //CoseCrvId.X448 or
-                    //CoseCrvId.Ed25519 or
-                    //CoseCrvId.Ed448) => throw new NotImplementedException("OKP type curves not implemented."),
+                    CoseCrvId.X255519 or
+                    CoseCrvId.X448 or
+                    CoseCrvId.Ed25519 or
+                    CoseCrvId.Ed448 => throw new NotImplementedException("OKP type curves not implemented."),
                     _ => throw new FormatException("Unrecognized COSE crv value."),
                 };
             }
