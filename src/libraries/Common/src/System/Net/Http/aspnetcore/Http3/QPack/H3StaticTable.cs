@@ -40,8 +40,6 @@ namespace System.Net.Http.QPack
 
         public static int Count => _staticTable.Length;
 
-        public static HeaderField this[int index] => _staticTable[index];
-
         // TODO: just use Dictionary directly to avoid interface dispatch.
         public static IReadOnlyDictionary<int, int> StatusIndex => _statusIndex;
         public static IReadOnlyDictionary<HttpMethod, int> MethodIndex => _methodIndex;
