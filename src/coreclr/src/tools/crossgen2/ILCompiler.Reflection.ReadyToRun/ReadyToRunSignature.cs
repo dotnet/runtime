@@ -15,7 +15,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// <summary>
     /// This represents all possible signatures that is 
     /// </summary>
-    public interface ReadyToRunSignature
+    public class ReadyToRunSignature
     {
     }
 
