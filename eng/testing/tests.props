@@ -22,7 +22,7 @@
 
   <PropertyGroup>
     <MobileHelpersDirSuffix>$(NetCoreAppCurrent)-$(MonoConfiguration)</MobileHelpersDirSuffix>
-    <AppleTestBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelpersDirSuffix)'))</AppleTestBuilderDir>
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelpersDirSuffix)'))</AppleAppBuilderDir>
     <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileHelpersDirSuffix)'))</AppleTestRunnerDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(MobileHelpersDirSuffix)'))</AndroidAppBuilderDir>
     <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileHelpersDirSuffix)'))</AndroidTestRunnerDir>
