@@ -34,8 +34,6 @@ jobs:
     buildConfig: checked
     platforms:
     - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
     jobParameters:
       testGroup: jitstress-isas-x86
       liveLibrariesBuildConfig: Release

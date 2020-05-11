@@ -28,10 +28,6 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup>
-    <CLRTestNeedTarget>1</CLRTestNeedTarget>
-  </PropertyGroup>
-
   <Target Name="AddLibrariesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>
       <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />

@@ -22,7 +22,6 @@
 
     <BaseOutputPath>$(RepoRoot)/artifacts/tests/coreclr/$(OSPlatformConfig)/$(BuildProjectRelativeDir)</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
-
   </PropertyGroup>
   
   <PropertyGroup>

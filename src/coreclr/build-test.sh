@@ -512,8 +512,7 @@ usage_list+=("-crossgen2: Precompiles the framework managed assemblies in corero
 usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
-usage_list+=("-targetGeneric: Only build tests which run on any target platform.")
-usage_list+=("-targetSpecific: Only build tests which run on a specific target platform.")
+usage_list+=("-allTargets: Build managed tests for all target platforms.")
 
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
@@ -573,12 +572,8 @@ handle_arguments_local() {
             __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
             ;;
 
-        targetGeneric|-targetGeneric)
-            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetGeneric")
-            ;;
-
-        targetSpecific|-targetSpecific)
-            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetSpecific")
+        allTargets|-allTargets)
+            __UnprocessedBuildArgs+=("/p:CLRTestBuildAllTargets=allTargets")
             ;;
 
         rebuild|-rebuild)
