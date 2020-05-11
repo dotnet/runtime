@@ -3,13 +3,13 @@ Mscorlib (a.k.a. `System.Private.CoreLib`) and calling into the Runtime
 
 # Introduction
 
-Mscorlib is the assembly for defining the core parts of the type system, and a good portion of the Base Class Library in .NET Framework. It has been renamed to `System.Private.CoreLib` (SPCL) in .NET Core, though many places in the code and documentation still refer to it as mscorlib. This document will endevour to stick to using `System.Private.CoreLib` or SPCL. Base data types live in this assembly, and it has a tight coupling with the CLR. Here you will learn exactly how and why SPCL is special, and the basics about calling into the CLR from managed code via QCall and FCall methods. It also discusses calling from within the CLR into managed code.
+`System.Private.CoreLib.dll` is the assembly for defining the core parts of the type system, and a good portion of the Base Class Library in .NET Framework. It was originally named `mscorlib` in .NET Core, though many places in the code and documentation still refer to it as `mscorlib`. This document will endeavour to stick to using `System.Private.CoreLib` or SPCL. Base data types live in this assembly, and it has a tight coupling with the CLR. Here you will learn exactly how and why SPCL is special and the basics about calling into the CLR from managed code via QCall and FCall methods. It also discusses calling from within the CLR into managed code.
 
 ## Dependencies
 
 Since SPCL defines base data types like `Object`, `Int32`, and `String`, SPCL cannot depend on other managed assemblies. However, there is a strong dependency between SPCL and the CLR. Many of the types in SPCL need to be accessed from native code, so the layout of many managed types is defined both in managed code and in native code inside the CLR. Additionally, some fields may be defined only in Debug, Checked, or Release builds, so typically SPCL must be compiled separately for each type of build.
 
-For 64 bit platforms, some constants are also defined at compile time. So a 64 bit `System.Private.CoreLib.dll` is slightly different from a 32 bit `System.Private.CoreLib.dll`. Due to these constants, such as `IntPtr.Size`, most libraries above SPCL should not need to build separately for 32 bit vs. 64 bit.
+`System.Private.CoreLib.dll` builds separately for 64 bit and 32 bit, and some public constants it exposes differ by bitness. By using these constants, such as `IntPtr.Size`, most libraries above SPCL should not need to build separately for 32 bit vs. 64 bit.
 
 ## What makes `System.Private.CoreLib` special?
 
@@ -189,7 +189,7 @@ Failing to properly report an `OBJECTREF` or to update an interior pointer is co
 
 Note that QCall's programming model is restrictive to sidestep GC holes by forcing you to pass in the address of an object reference on the stack. This guarantees that the object reference is GC protected by the JIT's reporting logic, and that the actual object reference will not move because it is not allocated in the GC heap. QCall is our recommended approach, precisely because it makes GC holes harder to write.
 
-### FCall epilogue walker for x86
+### FCall epilog walker for x86
 
 The managed stack walker needs to be able to find its way from FCalls. It is relative easy on newer platforms that define conventions for stack unwinding as part of the ABI. The stack unwinding conventions are not defined by an ABI for x86. The runtime works around this by implementing an epilog walker. The epilog walker computes the FCall return address and callee save registers by simulating the FCall execution. This imposes limits on what constructs are allowed in the FCall implementation.
 
