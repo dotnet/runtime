@@ -204,7 +204,7 @@ namespace System.Net.Http
                 }
 
                 _incomingBuffer.Discard(FrameHeader.Size);
-                throw new Http2ConnectionException(initialFrame ? Http2ProtocolErrorCode.ProtocolError : Http2ProtocolErrorCode.FrameSizeError);
+                ThrowProtocolError(initialFrame ? Http2ProtocolErrorCode.ProtocolError : Http2ProtocolErrorCode.FrameSizeError);
             }
             _incomingBuffer.Discard(FrameHeader.Size);
 
@@ -236,7 +236,7 @@ namespace System.Net.Http
                 FrameHeader frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
                 if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
                 {
-                    throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                    ThrowProtocolError();
                 }
                 if (NetEventSource.IsEnabled) Trace($"Frame 0: {frameHeader}.");
 
@@ -318,7 +318,8 @@ namespace System.Net.Http
                         case FrameType.PushPromise:     // Should not happen, since we disable this in our initial SETTINGS
                         case FrameType.Continuation:    // Should only be received while processing headers in ProcessHeadersFrame
                         default:
-                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                            ThrowProtocolError();
+                            break;
                     }
                 }
             }
@@ -338,7 +339,7 @@ namespace System.Net.Http
         {
             if (streamId <= 0 || streamId >= _nextStream)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                ThrowProtocolError();
             }
 
             lock (SyncObject)
@@ -380,7 +381,7 @@ namespace System.Net.Http
                 if (frameHeader.Type != FrameType.Continuation ||
                     frameHeader.StreamId != streamId)
                 {
-                    throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                    ThrowProtocolError();
                 }
 
                 _hpackDecoder.Decode(
@@ -404,7 +405,7 @@ namespace System.Net.Http
             {
                 if (frameData.Length == 0)
                 {
-                    throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                    ThrowProtocolError();
                 }
 
                 int padLength = frameData[0];
@@ -412,7 +413,7 @@ namespace System.Net.Http
 
                 if (frameData.Length < padLength)
                 {
-                    throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                    ThrowProtocolError();
                 }
 
                 frameData = frameData.Slice(0, frameData.Length - padLength);
@@ -422,7 +423,7 @@ namespace System.Net.Http
             {
                 if (frameData.Length < FrameHeader.PriorityInfoLength)
                 {
-                    throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                    ThrowProtocolError();
                 }
 
                 // We ignore priority info.
@@ -499,19 +500,19 @@ namespace System.Net.Http
 
             if (frameHeader.StreamId != 0)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                ThrowProtocolError();
             }
 
             if (frameHeader.AckFlag)
             {
                 if (frameHeader.Length != 0)
                 {
-                    throw new Http2ConnectionException(Http2ProtocolErrorCode.FrameSizeError);
+                    ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
                 }
 
                 if (!_expectingSettingsAck)
                 {
-                    throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                    ThrowProtocolError();
                 }
 
                 // We only send SETTINGS once initially, so we don't need to do anything in response to the ACK.
@@ -522,7 +523,7 @@ namespace System.Net.Http
             {
                 if ((frameHeader.Length % 6) != 0)
                 {
-                    throw new Http2ConnectionException(Http2ProtocolErrorCode.FrameSizeError);
+                    ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
                 }
 
                 // Parse settings and process the ones we care about.
@@ -545,7 +546,7 @@ namespace System.Net.Http
                         case SettingId.InitialWindowSize:
                             if (settingValue > 0x7FFFFFFF)
                             {
-                                throw new Http2ConnectionException(Http2ProtocolErrorCode.FlowControlError);
+                                ThrowProtocolError(Http2ProtocolErrorCode.FlowControlError);
                             }
 
                             ChangeInitialWindowSize((int)settingValue);
@@ -554,7 +555,7 @@ namespace System.Net.Http
                         case SettingId.MaxFrameSize:
                             if (settingValue < 16384 || settingValue > 16777215)
                             {
-                                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                                ThrowProtocolError();
                             }
 
                             // We don't actually store this value; we always send frames of the minimum size (16K).
@@ -613,7 +614,7 @@ namespace System.Net.Http
 
             if (frameHeader.StreamId == 0 || frameHeader.Length != FrameHeader.PriorityInfoLength)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                ThrowProtocolError();
             }
 
             // Ignore priority info.
@@ -627,18 +628,18 @@ namespace System.Net.Http
 
             if (frameHeader.StreamId != 0)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                ThrowProtocolError();
             }
 
             if (frameHeader.AckFlag)
             {
                 // We never send PING, so an ACK indicates a protocol error
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                ThrowProtocolError();
             }
 
             if (frameHeader.Length != FrameHeader.PingLength)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.FrameSizeError);
+                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
 
             // We don't wait for SendPingAckAsync to complete before discarding
@@ -659,7 +660,7 @@ namespace System.Net.Http
 
             if (frameHeader.Length != FrameHeader.WindowUpdateLength)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.FrameSizeError);
+                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
 
             int amount = BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF;
@@ -668,7 +669,7 @@ namespace System.Net.Http
             Debug.Assert(amount >= 0);
             if (amount == 0)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                ThrowProtocolError();
             }
 
             _incomingBuffer.Discard(frameHeader.Length);
@@ -696,12 +697,12 @@ namespace System.Net.Http
 
             if (frameHeader.Length != FrameHeader.RstStreamLength)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.FrameSizeError);
+                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
 
             if (frameHeader.StreamId == 0)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                ThrowProtocolError();
             }
 
             Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
@@ -733,14 +734,14 @@ namespace System.Net.Http
 
             if (frameHeader.Length < FrameHeader.GoAwayMinLength)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.FrameSizeError);
+                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
 
             // GoAway frames always apply to the whole connection, never to a single stream.
             // According to RFC 7540 section 6.8, this should be a connection error.
             if (frameHeader.StreamId != 0)
             {
-                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                ThrowProtocolError();
             }
 
             int lastValidStream = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
@@ -800,7 +801,7 @@ namespace System.Net.Http
             if (_abortException != null)
             {
                 _writerLock.Exit();
-                throw new IOException(SR.net_http_request_aborted, _abortException);
+                ThrowRequestAborted(_abortException);
             }
 
             // Flush anything necessary, and return back the write buffer to use.
@@ -932,7 +933,7 @@ namespace System.Net.Http
             if (_abortException != null)
             {
                 _writerLock.Exit();
-                throw new IOException(SR.net_http_request_aborted, _abortException);
+                ThrowRequestAborted(_abortException);
             }
         }
 
@@ -1233,7 +1234,8 @@ namespace System.Net.Http
                 innerException = new ObjectDisposedException(nameof(Http2Connection));
             }
 
-            return new HttpRequestException(SR.net_http_client_execution_error, innerException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
+            ThrowRetry(SR.net_http_client_execution_error, innerException);
+            return null!;
         }
 
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool mustFlush)
@@ -1898,5 +1900,16 @@ namespace System.Net.Http
                 memberName,                   // method name
                 message);                     // message
 
+        private static void ThrowRetry(string message, Exception innerException) =>
+            throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
+
+        private static void ThrowRequestAborted(Exception? innerException = null) =>
+            throw new IOException(SR.net_http_request_aborted, innerException);
+
+        private static void ThrowProtocolError() =>
+            ThrowProtocolError(Http2ProtocolErrorCode.ProtocolError);
+
+        private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode) =>
+            throw new Http2ConnectionException(errorCode);
     }
 }

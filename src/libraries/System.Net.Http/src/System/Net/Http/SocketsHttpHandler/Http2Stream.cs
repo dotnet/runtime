@@ -567,7 +567,8 @@ namespace System.Net.Http
                             break;
 
                         default:
-                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                            ThrowProtocolError();
+                            break;
                     }
                 }
             }
@@ -591,7 +592,7 @@ namespace System.Net.Http
                             if (!endStream)
                             {
                                 if (NetEventSource.IsEnabled) Trace("Trailing headers received without endStream");
-                                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                                ThrowProtocolError();
                             }
                             _responseProtocolState = ResponseProtocolState.Complete;
                             break;
@@ -600,7 +601,7 @@ namespace System.Net.Http
                             if (endStream)
                             {
                                 // we should not get endStream while processing 1xx response.
-                                throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                                ThrowProtocolError();
                             }
 
                             // We should wait for final response before signaling to waiter.
@@ -608,7 +609,8 @@ namespace System.Net.Http
                             return;
 
                         default:
-                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                            ThrowProtocolError();
+                            break;
                     }
 
                     if (endStream)
@@ -652,13 +654,14 @@ namespace System.Net.Http
 
                         default:
                             // Flow control messages are not valid in this state.
-                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
+                            ThrowProtocolError();
+                            break;
                     }
 
                     if (_responseBuffer.ActiveLength + buffer.Length > StreamWindowSize)
                     {
                         // Window size exceeded.
-                        throw new Http2ConnectionException(Http2ProtocolErrorCode.FlowControlError);
+                        ThrowProtocolError(Http2ProtocolErrorCode.FlowControlError);
                     }
 
                     _responseBuffer.EnsureAvailableSpace(buffer.Length);
@@ -770,19 +773,20 @@ namespace System.Net.Http
             {
                 Debug.Assert(Monitor.IsEntered(SyncObject));
 
-                if (_resetException != null)
+                Exception? resetException = _resetException;
+                if (resetException != null)
                 {
                     if (_canRetry)
                     {
-                        throw new HttpRequestException(SR.net_http_request_aborted, _resetException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
+                        ThrowRetry(SR.net_http_request_aborted, resetException);
                     }
 
-                    throw new IOException(SR.net_http_request_aborted, _resetException);
+                    ThrowRequestAborted(resetException);
                 }
 
                 if (_responseProtocolState == ResponseProtocolState.Aborted)
                 {
-                    throw new IOException(SR.net_http_request_aborted);
+                    ThrowRequestAborted();
                 }
             }
 
