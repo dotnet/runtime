@@ -169,6 +169,10 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="GenerateReferenceSource" DependsOnTargets="GenerateReferenceAssemblySource">
+    <Message Text="This is a deprecated target. It will be removed in next infra rollout changes." Importance="high" />
+  </Target>
+
   <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 
   <!-- Import Packaging targets -->
