@@ -124,12 +124,12 @@
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20257.4</MicrosoftNETILLinkTasksVersion>
     <!-- Mono LLVM -->
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>6.0.1-alpha.1.20254.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>6.0.1-alpha.1.20254.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>6.0.1-alpha.1.20254.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>6.0.1-alpha.1.20254.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>6.0.1-alpha.1.20254.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>6.0.1-alpha.1.20254.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>6.0.1-alpha.1.20261.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>6.0.1-alpha.1.20261.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>6.0.1-alpha.1.20261.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>6.0.1-alpha.1.20261.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>6.0.1-alpha.1.20261.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>6.0.1-alpha.1.20261.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
   </PropertyGroup>
   <!-- Package names -->
   <PropertyGroup>
