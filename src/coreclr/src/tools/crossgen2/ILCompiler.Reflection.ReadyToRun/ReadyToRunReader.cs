@@ -97,6 +97,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         // ImportSections
         private List<ReadyToRunImportSection> _importSections;
         private Dictionary<int, string> _importCellNames;
+        private Dictionary<int, ReadyToRunSignature> _importSignatures;
 
         // AvailableType
         private Dictionary<ReadyToRunSection, List<string>> _availableTypes;
@@ -304,6 +305,19 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureImportSections();
                 return _importCellNames;
+            }
+
+        }
+
+        /// <summary>
+        /// Map from import cell addresses to their symbolic names.
+        /// </summary>
+        public IReadOnlyDictionary<int, ReadyToRunSignature> ImportSignatures
+        {
+            get
+            {
+                EnsureImportSections();
+                return _importSignatures;
             }
 
         }
@@ -945,6 +959,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             _importSections = new List<ReadyToRunImportSection>();
             _importCellNames = new Dictionary<int, string>();
+            _importSignatures = new Dictionary<int, ReadyToRunSignature>();
             if (!ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ImportSections, out ReadyToRunSection importSectionsSection))
             {
                 return;
@@ -997,9 +1012,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     long section = NativeReader.ReadInt64(Image, ref sectionOffset);
                     uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
-                    string cellName = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);
+                    ReadyToRunSignature signature;
+                    string cellName = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset, out signature);
                     entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, cellName));
                     _importCellNames.Add(rva + entrySize * i, cellName);
+                    _importSignatures.Add(rva + entrySize * i, signature);
                 }
 
                 int auxDataRVA = NativeReader.ReadInt32(Image, ref offset);
