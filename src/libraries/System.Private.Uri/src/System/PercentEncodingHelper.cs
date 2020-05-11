@@ -39,16 +39,18 @@ namespace System
             }
             else goto NoMoreOrInvalidInput; // First character wasn't hex or was <= 7F (Ascii)
 
-            uint second = input[i + 2];
-            if ((second - '0') <= 9)
+            uint second = (uint)input[i + 2] - '0';
+            if (second <= 9)
             {
-                value = ((value << 4) + second) - '0';
+                // second is already [0, 9]
             }
-            else if ((uint)((second - 'A') & ~0x20) <= ('F' - 'A'))
+            else if ((uint)((second - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
             {
-                value = ((value << 4) + (second | 0x20)) - 'a' + 10;
+                second = ((second + '0') | 0x20) - 'a' + 10;
             }
             else goto NoMoreOrInvalidInput; // Second character wasn't Hex
+
+            value = (value << 4) | second;
 
             Debug.Assert(value >= 128);
 
