@@ -1,32 +1,32 @@
-Mscorlib (a.k.a. `System.Private.CoreLib`) and calling into the Runtime
+`System.Private.CoreLib` and calling into the runtime
 ===
 
 # Introduction
 
-`System.Private.CoreLib.dll` is the assembly for defining the core parts of the type system, and a good portion of the Base Class Library in .NET Framework. It was originally named `mscorlib` in .NET Core, though many places in the code and documentation still refer to it as `mscorlib`. This document will endeavour to stick to using `System.Private.CoreLib` or SPCL. Base data types live in this assembly, and it has a tight coupling with the CLR. Here you will learn exactly how and why SPCL is special and the basics about calling into the CLR from managed code via QCall and FCall methods. It also discusses calling from within the CLR into managed code.
+`System.Private.CoreLib.dll` is the assembly for defining the core parts of the type system, and a good portion of the Base Class Library in .NET Framework. It was originally named `mscorlib` in .NET Core, though many places in the code and documentation still refer to it as `mscorlib`. This document will endeavour to stick to using `System.Private.CoreLib` or CoreLib. Base data types live in this assembly, and it has a tight coupling with the CLR. Here you will learn exactly how and why CoreLib is special and the basics about calling into the CLR from managed code via QCall and FCall methods. It also discusses calling from within the CLR into managed code.
 
 ## Dependencies
 
-Since SPCL defines base data types like `Object`, `Int32`, and `String`, SPCL cannot depend on other managed assemblies. However, there is a strong dependency between SPCL and the CLR. Many of the types in SPCL need to be accessed from native code, so the layout of many managed types is defined both in managed code and in native code inside the CLR. Additionally, some fields may be defined only in Debug, Checked, or Release builds, so typically SPCL must be compiled separately for each type of build.
+Since CoreLib defines base data types like `Object`, `Int32`, and `String`, CoreLib cannot depend on other managed assemblies. However, there is a strong dependency between CoreLib and the CLR. Many of the types in CoreLib need to be accessed from native code, so the layout of many managed types is defined both in managed code and in native code inside the CLR. Additionally, some fields may be defined only in Debug, Checked, or Release builds, so typically CoreLib must be compiled separately for each type of build.
 
-`System.Private.CoreLib.dll` builds separately for 64 bit and 32 bit, and some public constants it exposes differ by bitness. By using these constants, such as `IntPtr.Size`, most libraries above SPCL should not need to build separately for 32 bit vs. 64 bit.
+`System.Private.CoreLib.dll` builds separately for 64 bit and 32 bit, and some public constants it exposes differ by bitness. By using these constants, such as `IntPtr.Size`, most libraries above CoreLib should not need to build separately for 32 bit vs. 64 bit.
 
 ## What makes `System.Private.CoreLib` special?
 
-SPCL has several unique properties, many of which are due to its tight coupling to the CLR.
+CoreLib has several unique properties, many of which are due to its tight coupling to the CLR.
 
-- SPCL defines the core types necessary to implement the CLR's Virtual Object System, such as the base data types (`Object`, `Int32`, `String`, etc).
-- The CLR must load SPCL on startup to load certain system types.
-- Can only have one SPCL loaded in the process at a time, due to layout issues. Loading multiple SPCLs would require formalizing a contract of behavior, FCall methods, and datatype layout between CLR and SPCL, and keeping that contract relatively stable across versions.
-- SPCL's types are used heavily for native interop and managed exceptions should map correctly to native error codes/formats.
-- The CLR's multiple JIT compilers may special case a small group of certain methods in SPCL for performance reasons, both in terms of optimizing away the method (such as `Math.Cos(double)`), or calling a method in peculiar ways (such as `Array.Length`, or some implementation details on `StringBuilder` for getting the current thread).
-- SPCL will need to call into native code, via P/Invoke where appropriate, primarily into the underlying operating system or occasionally a platform adaptation layer.
-- SPCL will require calling into the CLR to expose some CLR-specific functionality, such as triggering a garbage collection, to load classes, or to interact with the type system in a non-trivial way. This requires a bridge between managed code and native, "manually managed" code within the CLR.
+- CoreLib defines the core types necessary to implement the CLR's Virtual Object System, such as the base data types (`Object`, `Int32`, `String`, etc).
+- The CLR must load CoreLib on startup to load certain system types.
+- Can only have one CoreLib loaded in the process at a time, due to layout issues. Loading multiple CoreLibs would require formalizing a contract of behavior, FCall methods, and datatype layout between CLR and CoreLib, and keeping that contract relatively stable across versions.
+- CoreLib's types are used heavily for native interop and managed exceptions should map correctly to native error codes/formats.
+- The CLR's multiple JIT compilers may special case a small group of certain methods in CoreLib for performance reasons, both in terms of optimizing away the method (such as `Math.Cos(double)`), or calling a method in peculiar ways (such as `Array.Length`, or some implementation details on `StringBuilder` for getting the current thread).
+- CoreLib will need to call into native code, via P/Invoke where appropriate, primarily into the underlying operating system or occasionally a platform adaptation layer.
+- CoreLib will require calling into the CLR to expose some CLR-specific functionality, such as triggering a garbage collection, to load classes, or to interact with the type system in a non-trivial way. This requires a bridge between managed code and native, "manually managed" code within the CLR.
 - The CLR will need to call into managed code to call managed methods, and to get at certain functionality that is only implemented in managed code.
 
 # Interface between managed and CLR code
 
-To reiterate, the needs of managed code in SPCL include:
+To reiterate, the needs of managed code in CoreLib include:
 
 - The ability to access fields of some managed data structures in both managed code and "manually managed" code within the CLR.
 - Managed code must be able to call into the CLR.
@@ -46,7 +46,7 @@ There is a small variant of FCall called HCall (for Helper call) for implementin
 
 ### Choosing between FCall, QCall, P/Invoke, and writing in managed code
 
-First, remember that you should be writing as much as possible in managed code. You avoid a raft of potential GC hole issues, you get a better debugging experience, and the code is often simpler. It also continues the ongoing refactoring of SPCL into smaller layered fully [managed libraries](https://github.com/dotnet/runtime/src/libraries).
+First, remember that you should be writing as much as possible in managed code. You avoid a raft of potential GC hole issues, you get a better debugging experience, and the code is often simpler.
 
 Reasons to write FCalls in the past generally fell into three camps: missing language features, better performance, or implementing unique interactions with the runtime. C# now has almost every useful language feature that you could get from C++, including unsafe code and stack-allocated buffers, and this eliminates the first two reasons for FCalls. We have ported some parts of the CLR that were heavily reliant on FCalls to managed code in the past (such as Reflection, some Encoding, and String operations) and we intend to continue this momentum.
 
@@ -62,7 +62,7 @@ As a result, QCalls give you some advantageous marshaling for `SafeHandle`s auto
 
 ## QCall functional behavior
 
-QCalls are very much like a normal P/Invoke from SPCL to CLR. Unlike FCalls, QCalls will marshal all arguments as unmanaged types like a normal P/Invoke. QCall also switch to preemptive GC mode like a normal P/Invoke. These two features should make QCalls easier to write reliably compared to FCalls. QCalls are not prone to GC holes and GC starvation bugs that are common with FCalls.
+QCalls are very much like a normal P/Invoke from CoreLib to CLR. Unlike FCalls, QCalls will marshal all arguments as unmanaged types like a normal P/Invoke. QCall also switch to preemptive GC mode like a normal P/Invoke. These two features should make QCalls easier to write reliably compared to FCalls. QCalls are not prone to GC holes and GC starvation bugs that are common with FCalls.
 
 QCalls perform better than FCalls that erect a `HelperMethodFrame`. The overhead is about 1.4x less compared to FCall w/ `HelperMethodFrame` overhead on x86 and x64.
 
@@ -175,9 +175,7 @@ FCalls require a lot of boilerplate code, too much to describe here. Refer to [f
 
 [fcall]: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/fcall.h
 
-<a name="gcholes"></a>
-
-### GC Holes, FCall, and QCall
+### <a name="gcholes"></a> GC holes, FCall, and QCall
 
 A more complete discussion on GC holes can be found in the [CLR Code Guide](../../../coding-guidelines/clr-code-guide.md). Look for ["Is your code GC-safe?"](../../../coding-guidelines/clr-code-guide.md#2.1). This tailored discussion motivates some of the reasons why FCall and QCall have some of their strange conventions.
 
@@ -250,9 +248,7 @@ FCIMPL1(Object*, AppDomainNative::IsStringInterned, StringObject* pStringUNSAFE)
 FCIMPLEND
 ```
 
-<a name="register"></a>
-
-## Registering your QCall or FCall method
+## <a name="register"></a> Registering your QCall or FCall method
 
 The CLR must know the name of your QCall and FCall methods, both in terms of the managed class and method names, as well as which native methods to call. That is done in [ecalllist.h][ecalllist], with two arrays. The first array maps namespace and class names to an array of function elements. That array of function elements then maps individual method names and signatures to function pointers.
 
@@ -307,7 +303,7 @@ DEFINE_METHOD(SAFE_HANDLE,          DISPOSE_BOOL,           Dispose,            
 
 Then, you can use the `REF<T>` template to create a type name like `SAFEHANDLEREF`. All the error checking from `OBJECTREF` is built into the `REF<T>` template, and you can freely dereference this `SAFEHANDLEREF` and use fields off of it in native code. You still must GC protect these references.
 
-# Calling Into Managed Code From Native
+# Calling into managed code from unmanaged code
 
 Clearly there are places where the CLR must call into managed code from native. For this purpose, we have added a `MethodDescCallSite` class to handle a lot of plumbing for you. Conceptually, all you need to do is find the `MethodDesc*` for the method you want to call, find a managed object for the "this" pointer (if you're calling an instance method), pass in an array of arguments, and deal with the return value. Internally, you'll need to potentially toggle your thread's state to allow the GC to run in preemptive mode, etc.
 
@@ -337,7 +333,7 @@ void SafeHandle::RunReleaseMethod(SafeHandle* psh)
 }
 ```
 
-# Interactions with Other Subsystems
+# Interactions with other subsystems
 
 ## Debugger
 
@@ -345,7 +341,7 @@ One limitation of FCalls today is that you cannot easily debug both managed code
 
 # Physical architecture
 
-When the CLR starts up, SPCL is loaded by a method called `SystemDomain::LoadBaseSystemClasses()`. Here, the base data types and other similar classes (like `Exception`) are loaded, and appropriate global pointers are set up to refer to SPCL's types.
+When the CLR starts up, CoreLib is loaded by a method called `SystemDomain::LoadBaseSystemClasses()`. Here, the base data types and other similar classes (like `Exception`) are loaded, and appropriate global pointers are set up to refer to CoreLib's types.
 
 For FCalls, look in [fcall.h][fcall] for infrastructure, and [ecalllist.h][ecalllist] to properly inform the runtime about your FCall method.
 
