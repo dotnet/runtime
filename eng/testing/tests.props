@@ -18,7 +18,6 @@
     <_withoutCategories Condition="'$(ArchiveTests)' == 'true'">$(_withoutCategories);IgnoreForCI</_withoutCategories>
     <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
-    <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(MonoEnableInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
