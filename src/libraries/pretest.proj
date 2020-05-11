@@ -6,6 +6,12 @@
     <NETCoreAppFrameworkIdentifier>$(TargetFrameworkIdentifier)</NETCoreAppFrameworkIdentifier>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
+    <!-- Create an intermediate runsettings file to enable VSTest discovery. -->
+    <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
+    <CreateIntermediateRunSettingsFile>true</CreateIntermediateRunSettingsFile>
+  </PropertyGroup>
+
   <!-- Explicitly build the runtime.depproj project first to correctly set up the testhost. -->
   <ItemGroup>
     <RuntimeProject Include="restore\runtime\runtime.depproj" />
@@ -18,6 +24,11 @@
              Projects="@(RuntimeProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
+
+  <Target Name="CreateIntermediateRunSettingsFile"
+          Condition="'$(CreateIntermediateRunSettingsFile)' == 'true'"
+          DependsOnTargets="GenerateRunSettingsFile"
+          BeforeTargets="Build" />
 
   <!-- Microsoft.XmlSerializer.Generator should not be marked as a platform item and be copy-local instead. -->
   <Target Name="CollectSharedFrameworkRuntimeFiles"
@@ -67,15 +78,15 @@
           AfterTargets="RestoreTestHost">
     <PropertyGroup>
       <FrameworkListFilename>RuntimeList.xml</FrameworkListFilename>
-      <FrameworkListFile>$(NETCoreAppRuntimePackPath)/data/$(FrameworkListFilename)</FrameworkListFile>
+      <FrameworkListFile>$(RuntimePackDir)/data/$(FrameworkListFilename)</FrameworkListFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <_runtimePackLibFiles Include="$(NETCoreAppRuntimePackLibPath)*.*">
+      <_runtimePackLibFiles Include="$(RuntimePackLibDir)*.*">
         <TargetPath>$(RuntimePackTargetFrameworkPath)/lib/$(NETCoreAppFramework)</TargetPath>
         <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
       </_runtimePackLibFiles>
-      <_runtimePackNativeFiles Include="$(NETCoreAppRuntimePackNativePath)*.*">
+      <_runtimePackNativeFiles Include="$(RuntimePackNativeDir)*.*">
         <TargetPath>$(RuntimePackTargetFrameworkPath)/native</TargetPath>
         <IsNative>true</IsNative>
       </_runtimePackNativeFiles>

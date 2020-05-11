@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -70,6 +70,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryKeyValueConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Enum.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Exceptions.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.HandleNull.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Int32.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.List.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullValueType.cs" />

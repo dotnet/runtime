@@ -12,8 +12,12 @@ Param(
     [string] $RunCategories="Libraries Runtime",
     [string] $Csproj="src\benchmarks\micro\MicroBenchmarks.csproj",
     [string] $Kind="micro",
+    [switch] $LLVM,
+    [switch] $MonoInterpreter,
+    [switch] $MonoAOT, 
     [switch] $Internal,
     [switch] $Compare,
+    [string] $MonoDotnet="",
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind"
 )
 
@@ -50,6 +54,21 @@ if ($Internal) {
     $HelixSourcePrefix = "official"
 }
 
+if($MonoDotnet -ne "")
+{
+    $Configurations += " LLVM=$LLVM MonoInterpreter=$MonoInterpreter MonoAOT=$MonoAOT"
+    if($ExtraBenchmarkDotNetArguments -eq "")
+    {
+        #FIX ME: We need to block these tests as they don't run on mono for now
+        $ExtraBenchmarkDotNetArguments = "--exclusion-filter *Perf_Image* *Perf_NamedPipeStream*"
+    }
+    else
+    {
+        #FIX ME: We need to block these tests as they don't run on mono for now
+        $ExtraBenchmarkDotNetArguments += " --exclusion-filter *Perf_Image* *Perf_NamedPipeStream*"
+    }
+}
+
 # FIX ME: This is a workaround until we get this from the actual pipeline
 $CommonSetupArguments="--channel master --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
@@ -68,6 +87,13 @@ if ($RunFromPerformanceRepo) {
 }
 else {
     git clone --branch master --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+}
+
+if($MonoDotnet -ne "")
+{
+    $UsingMono = "true"
+    $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
+    Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
 }
 
 if ($UseCoreRun) {
@@ -105,6 +131,7 @@ Write-PipelineSetVariable -Name 'UseCoreRun' -Value "$UseCoreRun" -IsMultiJobVar
 Write-PipelineSetVariable -Name 'UseBaselineCoreRun' -Value "$UseBaselineCoreRun" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRepo" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false

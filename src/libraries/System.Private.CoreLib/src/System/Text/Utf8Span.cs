@@ -15,20 +15,6 @@ using Internal.Runtime.CompilerServices;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Utf8Span.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif
-#else
-using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
-using nuint = System.UInt64;
-#endif
-
 namespace System.Text
 {
     [StructLayout(LayoutKind.Auto)]
@@ -132,7 +118,7 @@ namespace System.Text
 #if SYSTEM_PRIVATE_CORELIB
             return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
 #else
-            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index);
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (nint)index);
 #endif
         }
 

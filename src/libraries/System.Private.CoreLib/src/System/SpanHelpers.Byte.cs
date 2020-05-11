@@ -10,15 +10,6 @@ using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-using nint = System.Int64;
-#else
-using nuint = System.UInt32;
-using nint = System.Int32;
-#endif // TARGET_64BIT
-
 namespace System
 {
     internal static partial class SpanHelpers // .Byte
@@ -1311,11 +1302,11 @@ namespace System
 
         // Optimized byte-based SequenceEquals. The "length" parameter for this one is declared a nuint rather than int as we also use it for types other than byte
         // where the length can exceed 2Gb once scaled by sizeof(T).
-        public static bool SequenceEqual(ref byte first, ref byte second, nuint length)
+        public static unsafe bool SequenceEqual(ref byte first, ref byte second, nuint length)
         {
             bool result;
             // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (length >= sizeof(nuint))
+            if (length >= (nuint)sizeof(nuint))
             {
                 // Conditional jmp foward to favor shorter lengths. (See comment at "Equal:" label)
                 // The longer lengths can make back the time due to branch misprediction
@@ -1473,9 +1464,9 @@ namespace System
 #if TARGET_64BIT
             if (Sse2.IsSupported)
             {
-                Debug.Assert(length <= sizeof(nuint) * 2);
+                Debug.Assert(length <= (nuint)sizeof(nuint) * 2);
 
-                nuint offset = length - sizeof(nuint);
+                nuint offset = length - (nuint)sizeof(nuint);
                 nuint differentBits = LoadNUInt(ref first) - LoadNUInt(ref second);
                 differentBits |= LoadNUInt(ref first, offset) - LoadNUInt(ref second, offset);
                 result = (differentBits == 0);
@@ -1484,10 +1475,10 @@ namespace System
             else
 #endif
             {
-                Debug.Assert(length >= sizeof(nuint));
+                Debug.Assert(length >= (nuint)sizeof(nuint));
                 {
                     nuint offset = 0;
-                    nuint lengthToExamine = length - sizeof(nuint);
+                    nuint lengthToExamine = length - (nuint)sizeof(nuint);
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
                     Debug.Assert(lengthToExamine < length);
                     if (lengthToExamine > 0)
@@ -1499,7 +1490,7 @@ namespace System
                             {
                                 goto NotEqual;
                             }
-                            offset += sizeof(nuint);
+                            offset += (nuint)sizeof(nuint);
                         } while (lengthToExamine > offset);
                     }
 
@@ -1540,7 +1531,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static int SequenceCompareTo(ref byte first, int firstLength, ref byte second, int secondLength)
+        public static unsafe int SequenceCompareTo(ref byte first, int firstLength, ref byte second, int secondLength)
         {
             Debug.Assert(firstLength >= 0);
             Debug.Assert(secondLength >= 0);
@@ -1693,16 +1684,16 @@ namespace System
                 }
             }
 
-            if (lengthToExamine > sizeof(nuint))
+            if (lengthToExamine > (nuint)sizeof(nuint))
             {
-                lengthToExamine -= sizeof(nuint);
+                lengthToExamine -= (nuint)sizeof(nuint);
                 while (lengthToExamine > offset)
                 {
                     if (LoadNUInt(ref first, offset) != LoadNUInt(ref second, offset))
                     {
                         goto BytewiseCheck;
                     }
-                    offset += sizeof(nuint);
+                    offset += (nuint)sizeof(nuint);
                 }
             }
 

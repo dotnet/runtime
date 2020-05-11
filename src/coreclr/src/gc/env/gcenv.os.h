@@ -66,8 +66,9 @@ struct VirtualReserveFlags
 // are run on process exit, potentially concurrently with other threads that may still be
 // operating on the static event. To avoid these sorts of unsafety, GCEvent chooses to
 // not have a destructor at all. The cost of this is leaking a small amount of memory, but
-// this is not a problem since a majority of the uses of GCEvent are static. See CoreCLR#11111
-// for more details on the hazards of static destructors.
+// this is not a problem since a majority of the uses of GCEvent are static.
+// See https://github.com/dotnet/runtime/issues/7919 for more details on the hazards of
+// static destructors.
 class GCEvent {
 private:
     class Impl;
@@ -433,20 +434,19 @@ public:
     // Remarks:
     //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
     //  specified, it returns amount of actual physical memory.
-    //
-    // PERF TODO: Requires more work to not treat the restricted case to be special.
-    // To be removed before 3.0 ships.
     static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL);
 
     // Get memory status
     // Parameters:
+    //  restricted_limit - The amount of physical memory in bytes that the current process is being restricted to. If non-zero, it used to calculate
+    //      memory_load and available_physical. If zero, memory_load and available_physical is calculate based on all available memory.
     //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
     //      that is in use (0 indicates no memory use and 100 indicates full memory use).
     //  available_physical - The amount of physical memory currently available, in bytes.
     //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
     // Remarks:
     //  Any parameter can be null.
-    static void GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
+    static void GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
 
     // Get size of an OS memory page
     static size_t GetPageSize();

@@ -61,6 +61,7 @@ if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $
 
 # VS Test Explorer support for libraries
 if ($vs) {
+  Write-Host "!!! VS Test Explorer now works without the -vs switch. The switch will be removed eventually. !!! "
   . $PSScriptRoot\common\tools.ps1
 
   # Microsoft.DotNet.CoreSetup.sln is special - hosting tests are currently meant to run on the
