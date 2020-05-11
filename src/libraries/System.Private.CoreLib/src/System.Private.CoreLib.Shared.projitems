@@ -146,6 +146,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\INonRandomizedEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyList.cs" />

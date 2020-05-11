@@ -84,10 +84,24 @@ namespace System.Collections.Generic
                 _comparer = comparer;
             }
 
-            if (typeof(TKey) == typeof(string) && _comparer == null)
+            // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
+            // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
+            // hash buckets become unbalanced.
+
+            if (typeof(TKey) == typeof(string))
             {
-                // To start, move off default comparer for string which is randomised
-                _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.Default;
+                if (_comparer is null)
+                {
+                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.AroundDefaultComparer;
+                }
+                else if (ReferenceEquals(_comparer, StringComparer.Ordinal))
+                {
+                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.AroundStringComparerOrdinal;
+                }
+                else if (ReferenceEquals(_comparer, StringComparer.OrdinalIgnoreCase))
+                {
+                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringOrdinalIgnoreCaseEqualityComparer.Instance;
+                }
             }
         }
 
@@ -151,9 +165,9 @@ namespace System.Collections.Generic
         }
 
         public IEqualityComparer<TKey> Comparer =>
-            (_comparer == null || _comparer is NonRandomizedStringEqualityComparer) ?
-                EqualityComparer<TKey>.Default :
-                _comparer;
+            (_comparer is INonRandomizedEqualityComparer<TKey> castComparer)
+            ? castComparer.GetComparerForSerialization()
+            : (_comparer ?? EqualityComparer<TKey>.Default);
 
         public int Count => _count - _freeCount;
 
@@ -315,7 +329,12 @@ namespace System.Collections.Generic
             }
 
             info.AddValue(VersionName, _version);
-            info.AddValue(ComparerName, _comparer ?? EqualityComparer<TKey>.Default, typeof(IEqualityComparer<TKey>));
+
+            IEqualityComparer<TKey> comparerToSerialize = (_comparer is INonRandomizedEqualityComparer<TKey> castComparer)
+                ? castComparer.GetComparerForSerialization()
+                : (_comparer ?? EqualityComparer<TKey>.Default);
+
+            info.AddValue(ComparerName, comparerToSerialize, typeof(IEqualityComparer<TKey>));
             info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
 
             if (_buckets != null)
@@ -655,11 +674,10 @@ namespace System.Collections.Generic
             _version++;
 
             // Value types never rehash
-            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
+            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is INonRandomizedEqualityComparer<TKey>)
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
-                _comparer = null;
                 Resize(entries.Length, true);
             }
 
@@ -728,13 +746,20 @@ namespace System.Collections.Generic
 
             if (!typeof(TKey).IsValueType && forceNewHashCodes)
             {
+                Debug.Assert(_comparer is INonRandomizedEqualityComparer<TKey>);
+                _comparer = ((INonRandomizedEqualityComparer<TKey>)_comparer).GetRandomizedComparer();
+
                 for (int i = 0; i < count; i++)
                 {
                     if (entries[i].next >= -1)
                     {
-                        Debug.Assert(_comparer == null);
-                        entries[i].hashCode = (uint)entries[i].key.GetHashCode();
+                        entries[i].hashCode = (uint)_comparer.GetHashCode(entries[i].key);
                     }
+                }
+
+                if (ReferenceEquals(_comparer, EqualityComparer<TKey>.Default))
+                {
+                    _comparer = null;
                 }
             }
 
