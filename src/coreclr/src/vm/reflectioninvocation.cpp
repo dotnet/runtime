@@ -2396,14 +2396,11 @@ FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBas
 
     VALIDATEOBJECT(target);
     TypeHandle th = target->GetType();
-
+    _ASSERTE(th.IsEnum());
+    
     OBJECTREF result = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
-    
-    if (!th.IsEnum())
-        COMPlusThrow(kArgumentException, W("Arg_MustBeEnum"), W("enumType"));
-    
     MethodTable *pMT = MscorlibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
     result = pMT->GetManagedClassObject();
     HELPER_METHOD_FRAME_END();
