@@ -37,7 +37,7 @@ namespace System.Drawing
             // If the value is a 6 digit hex number only, then
             // we want to treat the Alpha as 255, not 0
             //
-            if (text.IndexOf(sep) == -1)
+            if (!text.Contains(sep))
             {
                 // text can be '' (empty quoted string)
                 if (text.Length >= 2 && (text[0] == '\'' || text[0] == '"') && text[0] == text[text.Length - 1])

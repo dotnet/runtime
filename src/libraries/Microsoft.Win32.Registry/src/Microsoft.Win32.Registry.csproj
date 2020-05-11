@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <NoWarn>$(NoWarn);CS1573;CA2249</NoWarn>
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
     <NoWarn Condition="'$(TargetsUnix)' == 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-Windows_NT;netstandard2.0-Windows_NT;netstandard2.0-Unix;netstandard2.0;net461-Windows_NT</TargetFrameworks>

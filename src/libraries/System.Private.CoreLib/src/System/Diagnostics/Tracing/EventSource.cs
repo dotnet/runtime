@@ -5489,10 +5489,10 @@ namespace System.Diagnostics.Tracing
             byteArrArgIndices = null;
 
             events.Append("  <event").
-                 Append(" value=\"").Append(eventAttribute.EventId).Append("\"").
-                 Append(" version=\"").Append(eventAttribute.Version).Append("\"").
-                 Append(" level=\"").Append(GetLevelName(eventAttribute.Level)).Append("\"").
-                 Append(" symbol=\"").Append(eventName).Append("\"");
+                 Append(" value=\"").Append(eventAttribute.EventId).Append('"').
+                 Append(" version=\"").Append(eventAttribute.Version).Append('"').
+                 Append(" level=\"").Append(GetLevelName(eventAttribute.Level)).Append('"').
+                 Append(" symbol=\"").Append(eventName).Append('"');
 
             // at this point we add to the manifest's stringTab a message that is as-of-yet
             // "untranslated to manifest convention", b/c we don't have the number or position
@@ -5500,15 +5500,15 @@ namespace System.Diagnostics.Tracing
             WriteMessageAttrib(events, "event", eventName, eventAttribute.Message);
 
             if (eventAttribute.Keywords != 0)
-                events.Append(" keywords=\"").Append(GetKeywords((ulong)eventAttribute.Keywords, eventName)).Append("\"");
+                events.Append(" keywords=\"").Append(GetKeywords((ulong)eventAttribute.Keywords, eventName)).Append('"');
             if (eventAttribute.Opcode != 0)
-                events.Append(" opcode=\"").Append(GetOpcodeName(eventAttribute.Opcode, eventName)).Append("\"");
+                events.Append(" opcode=\"").Append(GetOpcodeName(eventAttribute.Opcode, eventName)).Append('"');
             if (eventAttribute.Task != 0)
-                events.Append(" task=\"").Append(GetTaskName(eventAttribute.Task, eventName)).Append("\"");
+                events.Append(" task=\"").Append(GetTaskName(eventAttribute.Task, eventName)).Append('"');
 #if FEATURE_MANAGED_ETW_CHANNELS
             if (eventAttribute.Channel != 0)
             {
-                events.Append(" channel=\"").Append(GetChannelName(eventAttribute.Channel, eventName, eventAttribute.Message)).Append("\"");
+                events.Append(" channel=\"").Append(GetChannelName(eventAttribute.Channel, eventName, eventAttribute.Message)).Append('"');
             }
 #endif
         }
@@ -5529,7 +5529,7 @@ namespace System.Diagnostics.Tracing
                 templates.Append("   <data name=\"").Append(name).AppendLine("Size\" inType=\"win:UInt32\"/>");
             }
             numParams++;
-            templates.Append("   <data name=\"").Append(name).Append("\" inType=\"").Append(GetTypeName(type)).Append("\"");
+            templates.Append("   <data name=\"").Append(name).Append("\" inType=\"").Append(GetTypeName(type)).Append('"');
             // TODO: for 'byte*' types it assumes the user provided length is named using the same naming convention
             //       as for 'byte[]' args (blob_arg_name + "Size")
             if ((type.IsArray || type.IsPointer) && type.GetElementType() == typeof(byte))
@@ -5540,7 +5540,7 @@ namespace System.Diagnostics.Tracing
             // ETW does not support 64-bit value maps, so we don't specify these as ETW maps
             if (type.IsEnum() && Enum.GetUnderlyingType(type) != typeof(ulong) && Enum.GetUnderlyingType(type) != typeof(long))
             {
-                templates.Append(" map=\"").Append(type.Name).Append("\"");
+                templates.Append(" map=\"").Append(type.Name).Append('"');
                 mapsTab ??= new Dictionary<string, Type>();
                 if (!mapsTab.ContainsKey(type.Name))
                     mapsTab.Add(type.Name, type);        // Remember that we need to dump the type enumeration
@@ -5680,16 +5680,16 @@ namespace System.Diagnostics.Tracing
                     fullName ??= providerName + "/" + channelInfo.Name;
 
                     sb.Append("  <").Append(ElementName);
-                    sb.Append(" chid=\"").Append(channelInfo.Name).Append("\"");
-                    sb.Append(" name=\"").Append(fullName).Append("\"");
+                    sb.Append(" chid=\"").Append(channelInfo.Name).Append('"');
+                    sb.Append(" name=\"").Append(fullName).Append('"');
                     if (ElementName == "channel")   // not applicable to importChannels.
                     {
                         Debug.Assert(channelInfo.Name != null);
                         WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
-                        sb.Append(" value=\"").Append(channel).Append("\"");
+                        sb.Append(" value=\"").Append(channel).Append('"');
                         if (channelType != null)
-                            sb.Append(" type=\"").Append(channelType).Append("\"");
-                        sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append("\"");
+                            sb.Append(" type=\"").Append(channelType).Append('"');
+                        sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
                         if (access != null)
                             sb.Append(" access=\"").Append(access).Append("\"");
@@ -5747,7 +5747,7 @@ namespace System.Diagnostics.Tracing
                             // TODO: Warn people about the dropping of values.
                             if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
                                 continue;
-                            sb.Append("   <map value=\"0x").Append(hexValue.ToString("x", CultureInfo.InvariantCulture)).Append("\"");
+                            sb.Append("   <map value=\"0x").Append(hexValue.ToString("x", CultureInfo.InvariantCulture)).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
                             sb.AppendLine("/>");
                             anyValuesWritten = true;
@@ -5847,7 +5847,7 @@ namespace System.Diagnostics.Tracing
 #region private
         private void WriteNameAndMessageAttribs(StringBuilder stringBuilder, string elementName, string name)
         {
-            stringBuilder.Append(" name=\"").Append(name).Append("\"");
+            stringBuilder.Append(" name=\"").Append(name).Append('"');
             WriteMessageAttrib(sb, elementName, name, name);
         }
         private void WriteMessageAttrib(StringBuilder stringBuilder, string elementName, string name, string? value)

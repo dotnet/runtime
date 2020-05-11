@@ -194,7 +194,7 @@ namespace System.Data
                 {
                     if (text[i] == esc)
                     {
-                        if (i + 1 < pos && charsToEscape.IndexOf(text[i + 1]) >= 0)
+                        if (i + 1 < pos && charsToEscape.Contains(text[i + 1]))
                         {
                             i++;
                         }

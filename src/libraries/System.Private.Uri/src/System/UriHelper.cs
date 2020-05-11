@@ -721,7 +721,7 @@ namespace System
                 return true;
             }
 
-            return RFC3986ReservedMarks.IndexOf(ch) >= 0 || AdditionalUnsafeToUnescape.IndexOf(ch) >= 0;
+            return RFC3986ReservedMarks.Contains(ch) || AdditionalUnsafeToUnescape.Contains(ch);
         }
 
         // "Reserved" and "Unreserved" characters are based on RFC 3986.

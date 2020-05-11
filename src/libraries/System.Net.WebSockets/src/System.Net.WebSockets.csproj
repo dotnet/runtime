@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Net.WebSockets</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <NoWarn>$(NoWarn);CS1573;CA2249</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
