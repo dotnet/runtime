@@ -22,9 +22,9 @@ namespace System.Net.Mime
         {
         }
 
-#pragma warning disable CS8610 // Nullability of reference types in type of parameter doesn't match overridden member.
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override void Remove(string name)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             if (name == null)
             {
@@ -51,9 +51,9 @@ namespace System.Net.Mime
         }
 
 
-#pragma warning disable CS8610 // Nullability of reference types in type of parameter doesn't match overridden member.
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override string? Get(string name)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             if (name == null)
             {
@@ -78,9 +78,9 @@ namespace System.Net.Mime
             return base.Get(name);
         }
 
-#pragma warning disable CS8610 // Nullability of reference types in type of parameter doesn't match overridden member.
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override string[]? GetValues(string name)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             if (name == null)
             {
@@ -124,9 +124,9 @@ namespace System.Net.Mime
             }
         }
 
-#pragma warning disable CS8610 // Nullability of reference types in type of parameter doesn't match overridden member.
+#pragma warning disable CS8765 // Nullability of parameters 'name' and 'value' don't match overridden member
         public override void Set(string name, string value)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             if (name == null)
             {
@@ -175,9 +175,9 @@ namespace System.Net.Mime
         }
 
 
-#pragma warning disable CS8610 // Nullability of reference types in type of parameter doesn't match overridden member.
+#pragma warning disable CS8765 // Nullability of parameters 'name' and 'value' don't match overridden member
         public override void Add(string name, string value)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             if (name == null)
             {

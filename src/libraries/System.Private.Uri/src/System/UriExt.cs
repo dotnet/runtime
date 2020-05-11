@@ -16,6 +16,8 @@ namespace System
         //
         private void CreateThis(string? uri, bool dontEscape, UriKind uriKind)
         {
+            DebugAssertInCtor();
+
             // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow
             // to be used here.
             if ((int)uriKind < (int)UriKind.RelativeOrAbsolute || (int)uriKind > (int)UriKind.Relative)
@@ -23,21 +25,22 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
             }
 
-            _string = uri == null ? string.Empty : uri;
+            _string = uri ?? string.Empty;
 
             if (dontEscape)
                 _flags |= Flags.UserEscaped;
 
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
-            UriFormatException? e;
 
-            InitializeUri(err, uriKind, out e);
+            InitializeUri(err, uriKind, out UriFormatException? e);
             if (e != null)
                 throw e;
         }
 
         private void InitializeUri(ParsingError err, UriKind uriKind, out UriFormatException? e)
         {
+            DebugAssertInCtor();
+
             if (err == ParsingError.None)
             {
                 if (IsImplicitFile)
@@ -157,7 +160,8 @@ namespace System
                         if (err != ParsingError.None || InFact(Flags.ErrorOrParsingRecursion))
                         {
                             // User parser took over on an invalid Uri
-                            SetUserDrivenParsing();
+                            // we use = here to clear all parsing flags for a uri that we think is invalid.
+                            _flags = Flags.UserDrivenParsing | (_flags & Flags.UserEscaped);
                         }
                         else if (uriKind == UriKind.Relative)
                         {
@@ -263,20 +267,20 @@ namespace System
         //
         public static bool TryCreate(string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
-            if ((object?)uriString == null)
+            if (uriString is null)
             {
                 result = null;
                 return false;
             }
             UriFormatException? e = null;
             result = CreateHelper(uriString, false, uriKind, ref e);
-            return (object?)e == null && result != null;
+            result?.DebugSetLeftCtor();
+            return e is null && result != null;
         }
 
         public static bool TryCreate(Uri? baseUri, string? relativeUri, [NotNullWhen(true)] out Uri? result)
         {
-            Uri? relativeLink;
-            if (TryCreate(relativeUri, UriKind.RelativeOrAbsolute, out relativeLink))
+            if (TryCreate(relativeUri, UriKind.RelativeOrAbsolute, out Uri? relativeLink))
             {
                 if (!relativeLink.IsAbsoluteUri)
                     return TryCreate(baseUri, relativeLink, out result);
@@ -292,7 +296,7 @@ namespace System
         {
             result = null;
 
-            if ((object?)baseUri == null || (object?)relativeUri == null)
+            if (baseUri is null || relativeUri is null)
                 return false;
 
             if (baseUri.IsNotAbsoluteUri)
@@ -306,6 +310,7 @@ namespace System
             {
                 dontEscape = relativeUri.UserEscaped;
                 result = ResolveHelper(baseUri, relativeUri, ref newUriString, ref dontEscape, out e);
+                Debug.Assert(e is null || result is null);
             }
             else
             {
@@ -316,10 +321,11 @@ namespace System
             if (e != null)
                 return false;
 
-            if ((object?)result == null)
+            if (result is null)
                 result = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
 
-            return (object?)e == null && result != null && result.IsAbsoluteUri;
+            result?.DebugSetLeftCtor();
+            return e is null && result != null && result.IsAbsoluteUri;
         }
 
         public string GetComponents(UriComponents components, UriFormat format)
@@ -590,6 +596,13 @@ namespace System
             _flags = flags;
             _syntax = uriParser!;
             _string = uri;
+
+            if (uriParser is null)
+            {
+                // Relative Uris are fully initialized after the call to this constructor
+                // Absolute Uris will be initialized with a call to InitializeUri on the newly created instance
+                DebugSetLeftCtor();
+            }
         }
 
         //
@@ -622,6 +635,7 @@ namespace System
             }
 
             // Cannot be relative Uri if came here
+            Debug.Assert(syntax != null);
             Uri result = new Uri(flags, syntax, uriString);
 
             // Validate instance using ether built in or a user Parser
@@ -630,7 +644,10 @@ namespace System
                 result.InitializeUri(err, uriKind, out e);
 
                 if (e == null)
+                {
+                    result.DebugSetLeftCtor();
                     return result;
+                }
 
                 return null;
             }
@@ -893,6 +910,8 @@ namespace System
         //
         private void CreateThisFromUri(Uri otherUri)
         {
+            DebugAssertInCtor();
+
             // Clone the other URI but develop own UriInfo member
             _info = null!;
 

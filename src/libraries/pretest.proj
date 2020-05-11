@@ -78,15 +78,15 @@
           AfterTargets="RestoreTestHost">
     <PropertyGroup>
       <FrameworkListFilename>RuntimeList.xml</FrameworkListFilename>
-      <FrameworkListFile>$(NETCoreAppRuntimePackPath)/data/$(FrameworkListFilename)</FrameworkListFile>
+      <FrameworkListFile>$(RuntimePackDir)/data/$(FrameworkListFilename)</FrameworkListFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <_runtimePackLibFiles Include="$(NETCoreAppRuntimePackLibPath)*.*">
+      <_runtimePackLibFiles Include="$(RuntimePackLibDir)*.*">
         <TargetPath>$(RuntimePackTargetFrameworkPath)/lib/$(NETCoreAppFramework)</TargetPath>
         <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
       </_runtimePackLibFiles>
-      <_runtimePackNativeFiles Include="$(NETCoreAppRuntimePackNativePath)*.*">
+      <_runtimePackNativeFiles Include="$(RuntimePackNativeDir)*.*">
         <TargetPath>$(RuntimePackTargetFrameworkPath)/native</TargetPath>
         <IsNative>true</IsNative>
       </_runtimePackNativeFiles>
