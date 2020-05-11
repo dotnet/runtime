@@ -1207,7 +1207,7 @@ namespace System.Net.Http
                     {
                         // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
                         thisRef._waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(
-                            CancellationHelper.CreateOperationCanceledException(null, _waitSourceCancellation.Token)));
+                            CancellationHelper.CreateOperationCanceledException(null, thisRef._waitSourceCancellation.Token)));
                     }
                 }, this);
 
