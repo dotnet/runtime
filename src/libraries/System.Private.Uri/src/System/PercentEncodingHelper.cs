@@ -70,10 +70,10 @@ namespace System
         DecodeRune:
             Debug.Assert(totalCharsConsumed % 3 == 0);
             Debug.Assert(bytesLeftInBuffer == 2 || bytesLeftInBuffer == 3 || bytesLeftInBuffer == 4);
-            Debug.Assert((fourByteBuffer & (BitConverter.IsLittleEndian ? 0x000000FF : 0xFF000000)) >= 128);
-            Debug.Assert((fourByteBuffer & (BitConverter.IsLittleEndian ? 0x0000FF00 : 0x00FF0000)) >= 128);
-            Debug.Assert(bytesLeftInBuffer < 3 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0x00FF0000 : 0x0000FF00)) >= 128);
-            Debug.Assert(bytesLeftInBuffer < 4 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0xFF000000 : 0x000000FF)) >= 128);
+            Debug.Assert((fourByteBuffer & (BitConverter.IsLittleEndian ? 0x00000080 : 0x80000000)) != 0);
+            Debug.Assert((fourByteBuffer & (BitConverter.IsLittleEndian ? 0x00008000 : 0x00800000)) != 0);
+            Debug.Assert(bytesLeftInBuffer < 3 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0x00800000 : 0x00008000)) != 0);
+            Debug.Assert(bytesLeftInBuffer < 4 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0x80000000 : 0x00000080)) != 0);
 
             uint temp = fourByteBuffer; // make a copy so that the *copy* (not the original) is marked address-taken
             if (Rune.DecodeFromUtf8(new ReadOnlySpan<byte>(&temp, bytesLeftInBuffer), out Rune rune, out bytesConsumed) == OperationStatus.Done)
