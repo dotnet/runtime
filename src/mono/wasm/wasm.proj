@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <UsingTask TaskName="PInvokeTableGenerator"
-      AssemblyFile="$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\publish\WasmAppBuilder.dll"/>
+    AssemblyFile="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', '$(NetCoreAppCurrent)-$(MonoConfiguration)'))publish\WasmAppBuilder.dll"/>
 
   <PropertyGroup>
     <WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
