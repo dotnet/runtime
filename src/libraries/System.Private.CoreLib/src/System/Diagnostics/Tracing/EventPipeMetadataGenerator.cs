@@ -745,7 +745,6 @@ namespace System.Diagnostics.Tracing
             return GetMetadataLengthForNamedTypeV2(ParameterName, TypeInfo, out size);
         }
 
-        //TODO: error handling for bad types
         private static bool GetMetadataLengthForTypeV2(TraceLoggingTypeInfo? typeInfo, out uint size)
         {
             size = 0;
