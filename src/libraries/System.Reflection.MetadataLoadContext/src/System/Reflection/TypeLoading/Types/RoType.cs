@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.TypeLoading
@@ -192,9 +193,7 @@ namespace System.Reflection.TypeLoading
                 }
             }
 
-            // todo: use IEnumerable<T> extension: return ifcs.ToArray()
-            List<RoType> list = new List<RoType>(ifcs);
-            return list.ToArray();
+            return ifcs.ToArray();
         }
 
         private volatile RoType[]? _lazyInterfaces;
