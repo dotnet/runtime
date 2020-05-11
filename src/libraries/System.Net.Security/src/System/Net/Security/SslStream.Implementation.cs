@@ -35,7 +35,7 @@ namespace System.Net.Security
         private Framing _framing = Framing.Unknown;
 
         private TlsAlertDescription _lastAlertDescription;
-        private TlsFrameHandshakeInfo _lastFrame;
+        private TlsFrameHelper.TlsFrameHandshakeInfo _lastFrame;
 
         private readonly object _handshakeLock = new object();
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
@@ -249,6 +249,15 @@ namespace System.Net.Security
                     if (message.Size > 0)
                     {
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                        if (NetEventSource.IsEnabled)
+                        {
+                            TlsFrameHelper.TlsFrameHandshakeInfo info = default;
+                            TlsFrameHelper.TryGetHandshakeInfo(message.Payload, ref info);
+                            if (info.HandshakeType == TlsHandshakeType.ClientHello || info.HandshakeType == TlsHandshakeType.ServerHello)
+                            {
+                                NetEventSource.Log.SentFrame(this, info.ToString());
+                            }
+                        }
                     }
 
                     if (message.Failed)
@@ -277,6 +286,16 @@ namespace System.Net.Security
                     {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+
+                        if (NetEventSource.IsEnabled)
+                        {
+                            TlsFrameHelper.TlsFrameHandshakeInfo info = default;
+                            TlsFrameHelper.TryGetHandshakeInfo(message.Payload, ref info);
+                            if (info.HandshakeType == TlsHandshakeType.ClientHello || info.HandshakeType == TlsHandshakeType.ServerHello)
+                            {
+                                NetEventSource.Log.SentFrame(this, info.ToString());
+                            }
+                        }
                     }
 
                     if (message.Failed)
@@ -387,12 +406,27 @@ namespace System.Net.Security
             }
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
-                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                TlsFrameHelper.ProcessingOptions options = NetEventSource.IsEnabled ?
+                    TlsFrameHelper.ProcessingOptions.ServerName : TlsFrameHelper.ProcessingOptions.All;
+
+                if (NetEventSource.IsEnabled ||
+                    _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
                     _sslAuthenticationOptions!.ServerCertSelectionDelegate != null)
                 {
                     // Process SNI from Client Hello message
-                    TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame);
-                    _sslAuthenticationOptions.TargetHost = _lastFrame.TargetName;
+                    TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options);
+                    if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
+                    {
+                        _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                    }
+
+                    if (NetEventSource.IsEnabled)
+                    {
+                        if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello || _lastFrame.HandshakeType == TlsHandshakeType.ServerHello)
+                        {
+                            NetEventSource.Log.ReceivedFrame(this, _lastFrame.ToString());
+                        }
+                    }
                 }
             }
 

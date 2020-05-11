@@ -34,6 +34,8 @@ namespace System.Net
         private const int RemoteVertificateValidId = RemoteCertificateErrorId + 1;
         private const int RemoteCertificateSuccesId = RemoteVertificateValidId + 1;
         private const int RemoteCertificateInvalidId = RemoteCertificateSuccesId + 1;
+        private const int SentFrameId = RemoteCertificateInvalidId + 1;
+        private const int ReceivedFrameId = SentFrameId + 1;
 
         [Event(EnumerateSecurityPackagesId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
         public void EnumerateSecurityPackages(string? securityPackage)
@@ -311,6 +313,30 @@ namespace System.Net
         [Event(RemoteCertificateInvalidId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
         private void RemoteCertUserDeclaredInvalid(int secureChannelHash) =>
             WriteEvent(RemoteCertificateInvalidId, secureChannelHash);
+
+        [NonEvent]
+        public void SentFrame(SslStream sslStream, string frameInfo)
+        {
+            if (IsEnabled())
+            {
+                SentFrame(GetHashCode(sslStream), frameInfo);
+            }
+        }
+        [Event(SentFrameId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        private void SentFrame(int  sslStreamHash, string frameInfo) =>
+            WriteEvent(SentFrameId, sslStreamHash, frameInfo);
+
+        [NonEvent]
+        public void ReceivedFrame(SslStream sslStream, string frameInfo)
+        {
+            if (IsEnabled())
+            {
+                ReceivedFrame(GetHashCode(sslStream), frameInfo);
+            }
+        }
+        [Event(ReceivedFrameId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        private void ReceivedFrame(int  sslStreamHash, string frameInfo) =>
+            WriteEvent(ReceivedFrameId, sslStreamHash, frameInfo);
 
         static partial void AdditionalCustomizedToString<T>(T value, ref string? result)
         {
