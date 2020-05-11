@@ -13,7 +13,7 @@ namespace System.Net.Sockets
     internal sealed unsafe class SocketAsyncEngine : IThreadPoolWorkItem
     {
         // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.
-        internal readonly struct Token
+        internal class Token
         {
             private readonly SocketAsyncContext _context;
             private readonly SafeSocketHandle _socket;
@@ -26,18 +26,12 @@ namespace System.Net.Sockets
                 _engine = AllocateSocketAsyncEngine(context);
             }
 
-            internal bool WasAllocated => _engine != null;
-
             internal void Free()
             {
-                if (WasAllocated)
-                {
-                    _engine.TryUnregister(_socket, out Interop.Error error);
+                _engine.RemoveFromMap(_context);
 
-                    Debug.Assert(error == Interop.Error.SUCCESS, "Unregister should always succeed");
-
-                    _engine.RemoveFromMap(_context);
-                }
+                _engine.TryUnregister(_socket, out Interop.Error error);
+                Debug.Assert(error == Interop.Error.SUCCESS, "Unregister should always succeed");
             }
 
             internal bool TryRegister(out Interop.Error error) => _engine.TryRegister(_socket, out error);

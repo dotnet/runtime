@@ -1175,7 +1175,7 @@ namespace System.Net.Sockets
         private readonly SafeSocketHandle _socket;
         private OperationQueue<ReadOperation> _receiveQueue;
         private OperationQueue<WriteOperation> _sendQueue;
-        private SocketAsyncEngine.Token _asyncEngineToken;
+        private SocketAsyncEngine.Token? _asyncEngineToken;
         private bool _registered;
         private bool _nonBlockingSet;
 
@@ -1184,6 +1184,7 @@ namespace System.Net.Sockets
         public SocketAsyncContext(SafeSocketHandle socket)
         {
             _socket = socket;
+            _asyncEngineToken = null;
 
             _receiveQueue.Init();
             _sendQueue.Init();
@@ -1198,7 +1199,7 @@ namespace System.Net.Sockets
             {
                 if (!_registered)
                 {
-                    Debug.Assert(!_asyncEngineToken.WasAllocated);
+                    Debug.Assert(_asyncEngineToken == null);
                     var token = new SocketAsyncEngine.Token(this, _socket);
 
                     Interop.Error errorCode;
@@ -1235,7 +1236,8 @@ namespace System.Net.Sockets
             {
                 // Freeing the token will prevent any future event delivery.  This socket will be unregistered
                 // from the event port automatically by the OS when it's closed.
-                _asyncEngineToken.Free();
+                _asyncEngineToken?.Free();
+                _asyncEngineToken = null;
             }
 
             return aborted;
