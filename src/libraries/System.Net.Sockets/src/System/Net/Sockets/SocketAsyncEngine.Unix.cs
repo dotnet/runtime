@@ -16,11 +16,13 @@ namespace System.Net.Sockets
         internal readonly struct Token
         {
             private readonly SocketAsyncContext _context;
+            private readonly SafeSocketHandle _socket;
             private readonly SocketAsyncEngine _engine;
 
-            internal Token(SocketAsyncContext context)
+            internal Token(SocketAsyncContext context, SafeSocketHandle socket)
             {
                 _context = context;
+                _socket = socket;
                 _engine = AllocateSocketAsyncEngine(context);
             }
 
@@ -30,11 +32,15 @@ namespace System.Net.Sockets
             {
                 if (WasAllocated)
                 {
+                    _engine.TryUnregister(_socket, out Interop.Error error);
+
+                    Debug.Assert(error == Interop.Error.SUCCESS, "Unregister should always succeed");
+
                     _engine.RemoveFromMap(_context);
                 }
             }
 
-            internal bool TryRegister(SafeSocketHandle socket, out Interop.Error error) => _engine.TryRegister(socket, out error);
+            internal bool TryRegister(out Interop.Error error) => _engine.TryRegister(_socket, out error);
         }
 
         private const int EventBufferCount = 1024;
@@ -364,6 +370,14 @@ namespace System.Net.Sockets
         {
             error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, Interop.Sys.SocketEvents.None,
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socket.DangerousGetHandle());
+            return error == Interop.Error.SUCCESS;
+        }
+
+        private bool TryUnregister(SafeSocketHandle socket, out Interop.Error error)
+        {
+            error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket,
+                Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write,
+                Interop.Sys.SocketEvents.None, socket.DangerousGetHandle());
             return error == Interop.Error.SUCCESS;
         }
 

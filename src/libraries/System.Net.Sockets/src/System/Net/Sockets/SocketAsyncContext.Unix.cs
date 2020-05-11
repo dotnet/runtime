@@ -1199,10 +1199,10 @@ namespace System.Net.Sockets
                 if (!_registered)
                 {
                     Debug.Assert(!_asyncEngineToken.WasAllocated);
-                    var token = new SocketAsyncEngine.Token(this);
+                    var token = new SocketAsyncEngine.Token(this, _socket);
 
                     Interop.Error errorCode;
-                    if (!token.TryRegister(_socket, out errorCode))
+                    if (!token.TryRegister(out errorCode))
                     {
                         token.Free();
                         if (errorCode == Interop.Error.ENOMEM || errorCode == Interop.Error.ENOSPC)
