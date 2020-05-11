@@ -28,15 +28,17 @@ namespace System.Net.Sockets
 
             internal bool TryRegister(out Interop.Error error)
             {
+                IntPtr socketFileDescriptor = _socket.DangerousGetHandle();
+
                 // add context to the map first to make sure that the very first epoll|kqueue notification
                 // can be handled as soon as we receive it
-                _engine.AddToMap(_context);
+                _engine.AddToMap(socketFileDescriptor, _context);
 
                 bool result = _engine.TryRegister(_socket, out error);
 
                 if (!result)
                 {
-                    _engine.RemoveFromMap(_context);
+                    _engine.RemoveFromMap(socketFileDescriptor);
                 }
 
                 return result;
@@ -45,7 +47,8 @@ namespace System.Net.Sockets
             internal void Free()
             {
                 // remove context from the map to make sure that we stop handling notifications first
-                _engine.RemoveFromMap(_context);
+                IntPtr socketFileDescriptor = _socket.DangerousGetHandle();
+                _engine.RemoveFromMap(socketFileDescriptor);
 
                 _engine.TryUnregister(_socket, out Interop.Error error);
                 Debug.Assert(error == Interop.Error.SUCCESS, "Unregister should always succeed");
@@ -181,18 +184,16 @@ namespace System.Net.Sockets
             }
         }
 
-        private void AddToMap(SocketAsyncContext context)
+        private void AddToMap(IntPtr socketFileDescriptor, SocketAsyncContext context)
         {
-            IntPtr socketFileDescriptor = context.GetSocketFileDescriptor();
             Debug.Assert(socketFileDescriptor != (IntPtr)_shutdownReadPipe, "ShutdownHandle must not be added to the dictionary");
 
             bool added = _handleToContextMap.TryAdd(socketFileDescriptor, new SocketAsyncContextWrapper(context));
             Debug.Assert(added, "TryAdd should always succeed");
         }
 
-        private void RemoveFromMap(SocketAsyncContext context)
+        private void RemoveFromMap(IntPtr socketFileDescriptor)
         {
-            IntPtr socketFileDescriptor = context.GetSocketFileDescriptor();
             Debug.Assert(socketFileDescriptor != (IntPtr)_shutdownReadPipe, "ShutdownHandle must not be added to the dictionary");
 
             bool removed = _handleToContextMap.TryRemove(socketFileDescriptor, out _);
