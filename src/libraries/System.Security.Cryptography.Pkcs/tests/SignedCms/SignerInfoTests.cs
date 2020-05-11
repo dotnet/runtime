@@ -474,6 +474,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception not updated on NetFX")]
         public static void RemoveCounterSignature_Negative()
         {
             SignedCms cms = new SignedCms();
@@ -482,6 +483,21 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             ArgumentOutOfRangeException ex = AssertExtensions.Throws<ArgumentOutOfRangeException>(
                 "index",
+                () => signer.RemoveCounterSignature(-1));
+
+            Assert.Null(ex.ActualValue);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
+        public static void RemoveCounterSignature_Negative_NetFx()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
+            SignerInfo signer = cms.SignerInfos[0];
+
+            ArgumentOutOfRangeException ex = AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "childIndex",
                 () => signer.RemoveCounterSignature(-1));
 
             Assert.Null(ex.ActualValue);

@@ -103,11 +103,23 @@ namespace System.Drawing.Text.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void AddFontFile_NullFileName_ThrowsArgumentNullException()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Argument not updated on NetFX")]
+        public void AddFontFile_NullFileName_ThrowsArgumentNullException_NetCore()
         {
             using (var fontCollection = new PrivateFontCollection())
             {
                 AssertExtensions.Throws<ArgumentNullException>("filename", () => fontCollection.AddFontFile(null));
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Argument not updated on NetFX")]
+        public void AddFontFile_NullFileName_ThrowsArgumentNullException_NetFx()
+        {
+            using (var fontCollection = new PrivateFontCollection())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("path", () => fontCollection.AddFontFile(null));
             }
         }
 

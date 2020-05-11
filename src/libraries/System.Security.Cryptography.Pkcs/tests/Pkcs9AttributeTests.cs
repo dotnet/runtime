@@ -20,11 +20,21 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception not updated on NetFX")]
         public static void Pkcs9AttributeAsnEncodedDataCtorNullOid()
         {
             AsnEncodedData a = new AsnEncodedData(new byte[3]);
             object ign;
             Assert.Throws<ArgumentException>("asnEncodedData", () => ign = new Pkcs9AttributeObject(a));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
+        public static void Pkcs9AttributeAsnEncodedDataCtorNullOid_NetFx()
+        {
+            AsnEncodedData a = new AsnEncodedData(new byte[3]);
+            object ign;
+            Assert.Throws<ArgumentNullException>(() => ign = new Pkcs9AttributeObject(a));
         }
 
         [Fact]
@@ -105,6 +115,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception not updated on NetFX")]
         public static void Pkcs9AttributeAsnEncodedDataCtorNullOidValue()
         {
             Oid oid = new Oid(Oids.Aes128);
@@ -116,6 +127,19 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
+        public static void Pkcs9AttributeAsnEncodedDataCtorNullOidValue_NetFx()
+        {
+            Oid oid = new Oid(Oids.Aes128);
+            oid.Value = null;
+
+            AsnEncodedData a = new AsnEncodedData(oid, new byte[3]);
+            object ign;
+            Assert.Throws<ArgumentNullException>(() => ign = new Pkcs9AttributeObject(a));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Argument not updated on NetFX")]
         public static void Pkcs9AttributeAsnEncodedDataCtorEmptyOidValue()
         {
             Oid oid = new Oid(Oids.Aes128);
@@ -124,6 +148,18 @@ namespace System.Security.Cryptography.Pkcs.Tests
             AsnEncodedData a = new AsnEncodedData(oid, new byte[3]);
             object ign;
             AssertExtensions.Throws<ArgumentException>("asnEncodedData", () => ign = new Pkcs9AttributeObject(a));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
+        public static void Pkcs9AttributeAsnEncodedDataCtorEmptyOidValue_NetFx()
+        {
+            Oid oid = new Oid(Oids.Aes128);
+            oid.Value = string.Empty;
+
+            AsnEncodedData a = new AsnEncodedData(oid, new byte[3]);
+            object ign;
+            AssertExtensions.Throws<ArgumentException>("oid.Value", () => ign = new Pkcs9AttributeObject(a));
         }
 
         [Fact]

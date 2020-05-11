@@ -518,6 +518,7 @@ namespace System.Drawing.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Argument not updated on NetFX")]
         public void Save_NullOutputStreamNoIconData_ThrowsArgumentNullException()
         {
             using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
@@ -526,6 +527,21 @@ namespace System.Drawing.Tests
                 icon.Dispose();
 
                 AssertExtensions.Throws<ArgumentNullException>("outputStream", () => icon.Save(null));
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
+        public void Save_NullOutputStreamNoIconData_ThrowsArgumentNullException_NetFx()
+        {
+            using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            {
+                var icon = Icon.FromHandle(source.Handle);
+                icon.Dispose();
+
+                AssertExtensions.Throws<ArgumentNullException>("dataStream", () => icon.Save(null));
             }
         }
 
