@@ -103,14 +103,7 @@ internal static partial class Interop
                     throw new JSException($"Error releasing handle on (js-obj js '{JSHandle}' mono '{(IntPtr)Handle} raw '{RawObject != null})");
             }
 
-            public override bool Equals(object? obj)
-            {
-                if (obj == null || GetType() != obj.GetType())
-                {
-                    return false;
-                }
-                return JSHandle == (obj as JSObject)?.JSHandle;
-            }
+            public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
             public override int GetHashCode()
             {
