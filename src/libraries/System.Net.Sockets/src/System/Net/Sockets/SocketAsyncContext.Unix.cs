@@ -1205,7 +1205,6 @@ namespace System.Net.Sockets
                     Interop.Error errorCode;
                     if (!token.TryRegister(out errorCode))
                     {
-                        token.Free();
                         if (errorCode == Interop.Error.ENOMEM || errorCode == Interop.Error.ENOSPC)
                         {
                             throw new OutOfMemoryException();

@@ -23,18 +23,33 @@ namespace System.Net.Sockets
             {
                 _context = context;
                 _socket = socket;
-                _engine = AllocateSocketAsyncEngine(context);
+                _engine = GetSocketAsyncEngine();
+            }
+
+            internal bool TryRegister(out Interop.Error error)
+            {
+                // add context to the map first to make sure that the very first epoll|kqueue notification
+                // can be handled as soon as we receive it
+                _engine.AddToMap(_context);
+
+                bool result = _engine.TryRegister(_socket, out error);
+
+                if (!result)
+                {
+                    _engine.RemoveFromMap(_context);
+                }
+
+                return result;
             }
 
             internal void Free()
             {
+                // remove context from the map to make sure that we stop handling notifications first
                 _engine.RemoveFromMap(_context);
 
                 _engine.TryUnregister(_socket, out Interop.Error error);
                 Debug.Assert(error == Interop.Error.SUCCESS, "Unregister should always succeed");
             }
-
-            internal bool TryRegister(out Interop.Error error) => _engine.TryRegister(_socket, out error);
         }
 
         private const int EventBufferCount = 1024;
@@ -84,16 +99,7 @@ namespace System.Net.Sockets
             return Math.Max(1, (int)Math.Round(Environment.ProcessorCount / (double)coresPerEngine));
         }
 
-        private static SocketAsyncEngine AllocateSocketAsyncEngine(SocketAsyncContext context)
-        {
-            int index = Interlocked.Increment(ref s_previousEngineIndex);
-
-            SocketAsyncEngine engine = s_engines[index % s_engines.Length];
-
-            engine.AddToMap(context);
-
-            return engine;
-        }
+        private static SocketAsyncEngine GetSocketAsyncEngine() => s_engines[Interlocked.Increment(ref s_previousEngineIndex) % s_engines.Length];
 
         private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
