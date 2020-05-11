@@ -18,14 +18,14 @@ using Microsoft.Build.Utilities;
 public class PInvokeTableGenerator : Task
 {
     [Required]
-    public ITaskItem[] Modules { get; set; }
+    public ITaskItem[]? Modules { get; set; }
     [Required]
-    public ITaskItem[] Assemblies { get; set; }
+    public ITaskItem[]? Assemblies { get; set; }
     [Required]
-    public string OutputPath { get; set; }
+    public string? OutputPath { get; set; }
 
     public override bool Execute () {
-        GenPInvokeTable (Modules.Select (item => item.ItemSpec).ToArray (), Assemblies.Select (item => item.ItemSpec).ToArray ());
+        GenPInvokeTable (Modules!.Select (item => item.ItemSpec).ToArray (), Assemblies!.Select (item => item.ItemSpec).ToArray ());
         return true;
     }
 
@@ -46,7 +46,7 @@ public class PInvokeTableGenerator : Task
 
         Log.LogMessage (MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
 
-        using (var w = File.CreateText (OutputPath)) {
+        using (var w = File.CreateText (OutputPath!)) {
             EmitPInvokeTable (w, modules, pinvokes);
         }
     }
@@ -56,8 +56,8 @@ public class PInvokeTableGenerator : Task
             if ((method.Attributes & MethodAttributes.PinvokeImpl) == 0)
                 continue;
             var dllimport = method.CustomAttributes.First (attr => attr.AttributeType.Name == "DllImportAttribute");
-            var module = (string)dllimport.ConstructorArguments [0].Value;
-            var entrypoint = (string)dllimport.NamedArguments.First (arg => arg.MemberName == "EntryPoint").TypedValue.Value;
+            var module = (string)dllimport.ConstructorArguments [0].Value!;
+            var entrypoint = (string)dllimport.NamedArguments.First (arg => arg.MemberName == "EntryPoint").TypedValue.Value!;
             pinvokes.Add (new PInvoke (entrypoint, module, method));
         }
     }
