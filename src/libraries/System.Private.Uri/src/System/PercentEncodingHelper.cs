@@ -16,7 +16,6 @@ namespace System
 
             uint fourByteBuffer = 0;
             int bytesLeftInBuffer = 0;
-            var fourByteSpan = new ReadOnlySpan<byte>(&fourByteBuffer, sizeof(uint));
 
             int totalCharsConsumed = 0;
             int charsToCopy = 0;
@@ -76,7 +75,8 @@ namespace System
             Debug.Assert(bytesLeftInBuffer < 3 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0x00FF0000 : 0x0000FF00)) >= 128);
             Debug.Assert(bytesLeftInBuffer < 4 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0xFF000000 : 0x000000FF)) >= 128);
 
-            if (Rune.DecodeFromUtf8(fourByteSpan.Slice(0, bytesLeftInBuffer), out Rune rune, out bytesConsumed) == OperationStatus.Done)
+            uint temp = fourByteBuffer; // make a copy so that the *copy* (not the original) is marked address-taken
+            if (Rune.DecodeFromUtf8(new ReadOnlySpan<byte>(&temp, bytesLeftInBuffer), out Rune rune, out bytesConsumed) == OperationStatus.Done)
             {
                 Debug.Assert(bytesConsumed >= 2);
 
