@@ -939,7 +939,7 @@ namespace System
 
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (name == null) throw new ArgumentNullException();
 
             bool ignoreCase;
             MemberListType listType;

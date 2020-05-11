@@ -2814,7 +2814,7 @@ namespace System
 
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException(nameof(name));
+            if (name is null) throw new ArgumentNullException();
 
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
