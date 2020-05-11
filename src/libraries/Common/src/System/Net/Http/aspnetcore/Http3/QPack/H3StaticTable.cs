@@ -44,6 +44,8 @@ namespace System.Net.Http.QPack
         public static IReadOnlyDictionary<int, int> StatusIndex => _statusIndex;
         public static IReadOnlyDictionary<HttpMethod, int> MethodIndex => _methodIndex;
 
+        public static HeaderField GetHeaderFieldAt(int index) => _staticTable[index];
+
         private static readonly HeaderField[] _staticTable = new HeaderField[]
         {
             CreateHeaderField(":authority", ""), // 0
