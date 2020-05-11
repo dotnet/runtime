@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "GetComputerNameW")]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "GetComputerNameW", ExactSpelling = true)]
         private static extern unsafe int GetComputerName(ref char lpBuffer, ref uint nSize);
 
         // maximum length of the NETBIOS name (not including NULL)

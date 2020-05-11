@@ -5333,7 +5333,7 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
     }
 
     // Just look for the user-provided name without charset suffixes.
-    // If  it is unicode fcn, we are going
+    // If it is a unicode function, we are going
     // to need to check for the 'W' API because it takes precedence over the
     // unmangled one (on NT some APIs have unmangled ANSI exports).
     FARPROC pFunc = FindEntryPointWithMangling(hMod, funcName);
@@ -5342,29 +5342,21 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
         return reinterpret_cast<LPVOID>(pFunc);
     }
 
-    DWORD probedEntrypointNameLength = (DWORD)(strlen(funcName) + 1); // +1 for charset decorations
-
     // Allocate space for a copy of the entry point name.
+    DWORD probedEntrypointNameLength = (DWORD)(strlen(funcName) + 1); // +1 for charset decorations
     int dstbufsize = (int)(sizeof(char) * (probedEntrypointNameLength + 1)); // +1 for the null terminator
-
     LPSTR szProbedEntrypointName = ((LPSTR)_alloca(dstbufsize));
 
     // Copy the name so we can mangle it.
     strcpy_s(szProbedEntrypointName, dstbufsize, funcName);
-    szProbedEntrypointName[probedEntrypointNameLength] = '\0'; // Add an extra '\0'.
+    szProbedEntrypointName[probedEntrypointNameLength] = '\0'; // Null terminator
+    szProbedEntrypointName[probedEntrypointNameLength - 1] = IsNativeAnsi() ? 'A' : 'W'; // Charset suffix
 
-    if(!IsNativeNoMangled())
+    // Look for entry point with the suffix based on charset
+    FARPROC pProbedFunc = FindEntryPointWithMangling(hMod, szProbedEntrypointName);
+    if (pProbedFunc != NULL)
     {
-        szProbedEntrypointName[probedEntrypointNameLength - 1] = IsNativeAnsi() ? 'A' : 'W';
-
-        FARPROC pProbedFunc = FindEntryPointWithMangling(hMod, szProbedEntrypointName);
-
-        if(pProbedFunc != NULL)
-        {
-            pFunc = pProbedFunc;
-        }
-
-        probedEntrypointNameLength++;
+        pFunc = pProbedFunc;
     }
 
     return reinterpret_cast<LPVOID>(pFunc);
