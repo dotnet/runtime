@@ -236,7 +236,7 @@ namespace System
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-                
+
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
