@@ -29,8 +29,6 @@
     <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />
-
   <ItemGroup>
     <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
     <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />

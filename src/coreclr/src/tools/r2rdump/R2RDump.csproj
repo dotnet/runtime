@@ -15,6 +15,13 @@
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />
+
+  <ItemGroup>
+    <Compile Include="..\Common\DiaSymReader\**.cs" />
+    <Compile Include="..\Common\DiaSymReader\NGenWriter\**.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.CoreDisTools">
       <Version>1.0.1-prerelease-00005</Version>

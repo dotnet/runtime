@@ -19,6 +19,7 @@ namespace Microsoft.DiaSymReader
 
         private const string CreateSymReaderFactoryName = "CreateSymReader";
         private const string CreateSymWriterFactoryName = "CreateSymWriter";
+        private const string CreateNGenPdbWriterFactoryName = "CreateNGenPdbWriter";
 
         // CorSymWriter_SxS from corsym.idl
         private const string SymWriterClsid = "0AE2DEB0-F901-478b-BB9F-881EE8066788";
@@ -46,6 +47,14 @@ namespace Microsoft.DiaSymReader
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
         [DllImport(DiaSymReaderModuleName64, EntryPoint = CreateSymWriterFactoryName)]
         private extern static void CreateSymWriter64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)] out object symWriter);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
+        [DllImport(DiaSymReaderModuleName32, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriter32(string ngenImagePath, string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
+        [DllImport(DiaSymReaderModuleName64, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriter64(string ngenImagePath, string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
 
         [DllImport("kernel32")]
         private static extern IntPtr LoadLibrary(string path);
@@ -150,6 +159,21 @@ namespace Microsoft.DiaSymReader
             }
 
             return lazyType;
+        }
+
+        internal static ISymNGenWriter2 CreateNGenWriter(string ngenImagePath, string pdbPath)
+        {
+            object instance;
+
+            if (IntPtr.Size == 4)
+            {
+                CreateNGenPdbWriter32(ngenImagePath, pdbPath, out instance);
+            }
+            else
+            {
+                CreateNGenPdbWriter64(ngenImagePath, pdbPath, out instance);
+            }
+            return (ISymNGenWriter2)instance;
         }
 
         internal static object CreateObject(bool createReader, bool useAlternativeLoadPath, bool useComRegistry, out string moduleName, out Exception loadException)
