@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.TypeLoading
@@ -192,8 +191,9 @@ namespace System.Reflection.TypeLoading
                     }
                 }
             }
-
-            return ifcs.ToArray();
+            RoType[] arr = new RoType[ifcs.Count];
+            ifcs.CopyTo(arr, 0);
+            return arr;
         }
 
         private volatile RoType[]? _lazyInterfaces;
