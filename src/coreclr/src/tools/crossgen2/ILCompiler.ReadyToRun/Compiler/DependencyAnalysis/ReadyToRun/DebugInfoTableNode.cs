@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 using Internal.JitInterface;
@@ -81,6 +82,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexArray vertexArray = new VertexArray(section);
             section.Place(vertexArray);
 
+            Dictionary<byte[], BlobVertex> blobCache = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
+            
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
                 MemoryStream methodDebugBlob = new MemoryStream();
@@ -105,8 +108,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     methodDebugBlob.Write(vars, 0, vars.Length);
                 }
 
-                BlobVertex debugBlob = new BlobVertex(methodDebugBlob.ToArray());
-
+                byte[] debugBlobArrayKey = methodDebugBlob.ToArray();
+                if (!blobCache.TryGetValue(debugBlobArrayKey, out BlobVertex debugBlob))
+                {
+                    debugBlob = new BlobVertex(methodDebugBlob.ToArray());
+                    blobCache.Add(debugBlobArrayKey, debugBlob);
+                }
                 vertexArray.Set(factory.RuntimeFunctionsTable.GetIndex(method), new DebugInfoVertex(debugBlob));
             }
 
