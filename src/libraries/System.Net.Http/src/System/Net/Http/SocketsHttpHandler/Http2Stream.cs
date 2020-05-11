@@ -272,29 +272,31 @@ namespace System.Net.Http
             // If we get response status >= 300, we will not send the request body.
             public async ValueTask<bool> WaitFor100ContinueAsync(CancellationToken cancellationToken)
             {
-                Debug.Assert(_request.Content != null);
+                Debug.Assert(_request?.Content != null);
                 if (NetEventSource.IsEnabled) Trace($"Waiting to send request body content for 100-Continue.");
 
-                // use TCS created in constructor. It will complete when one of two things occurs:
-                // 1. if a timer fires before we receive the relevant response from the server.
-                // 2. if we receive the relevant response from the server before a timer fires.
-                // In the first case, we could run this continuation synchronously, but in the latter, we shouldn't,
-                // as we could end up starting the body copy operation on the main event loop thread, which could
-                // then starve the processing of other requests.  So, we make the TCS RunContinuationsAsynchronously.
-                bool sendRequestContent;
+                // Use TCS created in constructor. It will complete when one of three things occurs:
+                // 1. we receive the relevant response from the server.
+                // 2. the timer fires before we receive the relevant response from the server.
+                // 3. cancellation is requested before we receive the relevant response from the server.
+                // We need to run the continuation asynchronously for cases 1 and 3 (for 1 so that we don't starve the body copy operation, and
+                // for 3 so that we don't run a lot of work as part of code calling Cancel), so the TCS is created to run continuations asynchronously.
+                // We await the created Timer's disposal so that we ensure any work associated with it has quiesced prior to this method
+                // returning, just in case this object is pooled and potentially reused for another operation in the future.
                 TaskCompletionSource<bool> waiter = _expect100ContinueWaiter!;
-                using (var expect100Timer = new Timer(s =>
+                using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSource<bool>)s!).TrySetResult(false), waiter))
+                await using (new Timer(s =>
                 {
                     var thisRef = (Http2Stream)s!;
                     if (NetEventSource.IsEnabled) thisRef.Trace($"100-Continue timer expired.");
                     thisRef._expect100ContinueWaiter?.TrySetResult(true);
-                }, this, _connection._pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan))
+                }, this, _connection._pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan).ConfigureAwait(false))
                 {
-                    sendRequestContent = await waiter.Task.ConfigureAwait(false);
-                    // By now, either we got a response from the server or the timer expired.
+                    bool shouldSendContent = await waiter.Task.ConfigureAwait(false);
+                    // By now, either we got a response from the server or the timer expired or cancellation was requested.
+                    CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
+                    return shouldSendContent;
                 }
-
-                return sendRequestContent;
             }
 
             private void SendReset()
