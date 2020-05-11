@@ -191,7 +191,13 @@ namespace System.Reflection.TypeLoading
                     }
                 }
             }
-            RoType[] arr = new RoType[ifcs.Count];
+
+            if (ifcs.Count == 0)
+            {
+                return Array.Empty<RoType>();
+            }
+            
+            var arr = new RoType[ifcs.Count];
             ifcs.CopyTo(arr);
             return arr;
         }
