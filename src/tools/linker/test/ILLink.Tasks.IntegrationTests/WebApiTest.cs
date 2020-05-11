@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Xml.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -30,7 +31,7 @@ namespace ILLink.Tests
 			}
 
 			Directory.CreateDirectory (projectRoot);
-			int ret = CommandHelper.Dotnet ("new webapi", projectRoot);
+			int ret = CommandHelper.Dotnet ("new webapi --no-https", projectRoot);
 			if (ret != 0) {
 				LogMessage ("dotnet new failed");
 				Assert.True (false);
@@ -78,6 +79,11 @@ namespace ILLink.Tests
 		[Fact]
 		public void RunWebApiStandalone ()
 		{
+			if (RuntimeInformation.IsOSPlatform (OSPlatform.OSX) && !String.IsNullOrEmpty (Environment.GetEnvironmentVariable ("TF_BUILD"))) {
+				// CI has issues with the HTTPS dev cert
+				return;
+			}
+
 			string executablePath = BuildAndLink (fixture.csproj, selfContained: true);
 			CheckOutput (executablePath, selfContained: true);
 		}

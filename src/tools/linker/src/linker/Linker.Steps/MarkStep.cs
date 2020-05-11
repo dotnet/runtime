@@ -276,7 +276,7 @@ namespace Mono.Linker.Steps
 			}
 
 			Annotations.Mark (type, reason);
-			var baseTypeDefinition = type.BaseType?.Resolve();
+			var baseTypeDefinition = type.BaseType?.Resolve ();
 			if (includeBaseTypes && baseTypeDefinition != null) {
 				MarkEntireType (baseTypeDefinition, includeBaseTypes: true, new DependencyInfo (DependencyKind.BaseType, type));
 			}
