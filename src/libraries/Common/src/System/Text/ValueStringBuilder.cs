@@ -179,6 +179,31 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Append(Rune rune)
+        {
+            int pos = _pos;
+            Span<char> chars = _chars;
+            if ((uint)(pos + 1) < (uint)chars.Length)
+            {
+                if (rune.Value <= 0xFFFF)
+                {
+                    chars[pos] = (char)rune.Value;
+                    _pos = pos + 1;
+                }
+                else
+                {
+                    chars[pos] = (char)((rune.Value + ((0xD800u - 0x40u) << 10)) >> 10);
+                    chars[pos + 1] = (char)((rune.Value & 0x3FFu) + 0xDC00u);
+                    _pos = pos + 2;
+                }
+            }
+            else
+            {
+                GrowAndAppend(rune);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(string? s)
         {
             if (s == null)
@@ -271,6 +296,13 @@ namespace System.Text
         {
             Grow(1);
             Append(c);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void GrowAndAppend(Rune rune)
+        {
+            Grow(2);
+            Append(rune);
         }
 
         /// <summary>

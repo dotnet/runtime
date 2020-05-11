@@ -88,18 +88,7 @@ namespace System
                         charsToCopy = 0;
                     }
 
-                    if (bytesConsumed == 4)
-                    {
-                        // Surrogate pair
-                        Debug.Assert(rune.Utf16SequenceLength == 2);
-                        dest.Append((char)((rune.Value + ((0xD800u - 0x40u) << 10)) >> 10));
-                        dest.Append((char)((rune.Value & 0x3FFu) + 0xDC00u));
-                    }
-                    else
-                    {
-                        Debug.Assert(rune.Utf16SequenceLength == 1);
-                        dest.Append((char)rune.Value);
-                    }
+                    dest.Append(rune);
                     goto AfterDecodeRune;
                 }
             }
