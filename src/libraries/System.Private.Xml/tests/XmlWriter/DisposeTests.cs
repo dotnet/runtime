@@ -278,6 +278,10 @@ namespace System.Xml.Tests
             {
                 return Task.CompletedTask;
             }
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            {
+                return default;
+            }
         }
     }
 }
