@@ -18,7 +18,6 @@ RyuJIT is the re-architected JIT for .NET.
 ### Why "RyuJIT"?
 - Ryujin is a Japanese Sea Dragon
 
-We came up with the code name "RyuJIT" because our original code name had possible issues.
 We wanted something with "JIT" in the name, and the idea of a dragon came to mind because of the Dragon book that we all know and love.
 So – we just adapted the name of the Japanese sea dragon, Ryujin.
 
