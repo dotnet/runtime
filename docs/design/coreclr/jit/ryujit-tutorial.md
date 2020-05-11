@@ -5,9 +5,8 @@
 ### .NET Runtime
 - An implementation of the Common Language Infrastructure [ECMA 335]
   - Supports multiple languages, including C#, F# and VB
-- Sources are mostly shared between the "desktop" version and the open-source coreclr implementation:
-    http://www.github.com/dotnet/runtime/src/coreclr
 - RyuJIT is the "next generation" just in time compiler for .NET
+- Sources are at https://github.com/dotnet/runtime/tree/master/src/coreclr/src/jit
 
 #### Notes
 For context, the .NET runtime has been around since about the turn of the millennium. It is a virtual machine that supports the execution of a number of languages, primarily C#, Visual Basic, and F#.
