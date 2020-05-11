@@ -8916,7 +8916,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
 
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         NOTHROW;
         PRECONDITION(GetThread() != NULL);
@@ -9336,7 +9336,7 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
 #ifndef DACCESS_COMPILE
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         NOTHROW;
         PRECONDITION(GetThread() != NULL);
@@ -10877,7 +10877,7 @@ void EHWatsonBucketTracker::CaptureUnhandledInfoForWatson(TypeOfReportedError to
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(IsWatsonEnabled());
     }
