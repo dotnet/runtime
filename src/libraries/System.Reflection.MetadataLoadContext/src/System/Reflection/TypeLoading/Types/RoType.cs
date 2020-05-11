@@ -192,7 +192,7 @@ namespace System.Reflection.TypeLoading
                 }
             }
             RoType[] arr = new RoType[ifcs.Count];
-            ifcs.CopyTo(arr, 0);
+            ifcs.CopyTo(arr);
             return arr;
         }
 
