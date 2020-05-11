@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Runtime.InteropServices;
-using System.Xml.Linq;
 
 namespace System
 {
@@ -35,13 +35,12 @@ namespace System
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
         public static Version OSXVersion => IsOSX ?
-            ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion) :
+            Environment.OSVersion.Version :
             throw new PlatformNotSupportedException();
-        private static Lazy<Version> m_osxProductVersion = new Lazy<Version>(GetOSXProductVersion);
-        public static bool IsMacOsHighSierraOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 13));
+        public static bool IsMacOsHighSierraOrHigher => IsOSX && OSXVersion >= new Version(10, 13);
         public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
-        public static bool IsMacOsMojaveOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 14));
-        public static bool IsMacOsCatalinaOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 15));
+        public static bool IsMacOsMojaveOrHigher => IsOSX && OSXVersion >= new Version(10, 14);
+        public static bool IsMacOsCatalinaOrHigher => IsOSX && OSXVersion >= new Version(10, 15);
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
@@ -106,56 +105,6 @@ namespace System
             }
         }
 
-        private static Version GetOSXProductVersion()
-        {
-            if (IsOSX)
-            {
-                try
-                {
-                    // <plist version="1.0">
-                    // <dict>
-                    //         <key>ProductBuildVersion</key>
-                    //         <string>17A330h</string>
-                    //         <key>ProductCopyright</key>
-                    //         <string>1983-2017 Apple Inc.</string>
-                    //         <key>ProductName</key>
-                    //         <string>Mac OS X</string>
-                    //         <key>ProductUserVisibleVersion</key>
-                    //         <string>10.13</string>
-                    //         <key>ProductVersion</key>
-                    //         <string>10.13</string>
-                    // </dict>
-                    // </plist>
-
-                    XElement dict = XDocument.Load("/System/Library/CoreServices/SystemVersion.plist").Root.Element("dict");
-                    if (dict != null)
-                    {
-                        foreach (XElement key in dict.Elements("key"))
-                        {
-                            if ("ProductVersion".Equals(key.Value))
-                            {
-                                XElement stringElement = key.NextNode as XElement;
-                                if (stringElement != null && stringElement.Name.LocalName.Equals("string"))
-                                {
-                                    string versionString = stringElement.Value;
-                                    if (versionString != null)
-                                    {
-                                        return Version.Parse(versionString);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            // In case of exception, couldn't get the version or non osx
-            return new Version(0, 0, 0);
-        }
-
         private static Version s_opensslVersion;
         private static Version GetOpenSslVersion()
         {
@@ -204,11 +153,24 @@ namespace System
             }
         }
 
-        private static DistroInfo GetDistroInfo() => new DistroInfo()
+        private static DistroInfo GetDistroInfo()
         {
-            Id = Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystem,
-            VersionId = ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion)
-        };
+            DistroInfo result = new DistroInfo();
+
+            foreach (string line in File.ReadAllLines("/etc/os-release"))
+            {
+                if (line.StartsWith("ID=", StringComparison.Ordinal))
+                {
+                    result.Id = line.Substring(3).Trim('"', '\'');
+                }
+                else if (line.StartsWith("VERSION_ID=", StringComparison.Ordinal))
+                {
+                    result.VersionId = ToVersion(line.Substring(11).Trim('"', '\''));
+                }
+            }
+
+            return result;
+        }
 
         private static bool IsRedHatFamilyAndVersion(int major = -1, int minor = -1, int build = -1, int revision = -1)
         {

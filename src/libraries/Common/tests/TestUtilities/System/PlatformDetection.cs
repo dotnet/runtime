@@ -142,7 +142,7 @@ namespace System
             }
             else if (IsOSX)
             {
-                return "OSX Version=" + m_osxProductVersion.Value.ToString();
+                return "OSX Version=" + OSXVersion.ToString();
             }
             else
             {
