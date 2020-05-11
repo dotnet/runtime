@@ -164,7 +164,7 @@
   <!-- Generate a self-contained app bundle for iOS with tests.
        This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
   <UsingTask TaskName="AppleAppBuilderTask" 
-             AssemblyFile="$(AppleTestBuilderDir)AppleAppBuilder.dll" />
+             AssemblyFile="$(AppleAppBuilderDir)AppleAppBuilder.dll" />
   <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <BundleDir>$(OutDir)\Bundle</BundleDir>
