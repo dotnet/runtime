@@ -126,163 +126,151 @@ namespace System.Net.Http
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            // Wrap the cancellationToken in a using so that it can be disposed of whether
-            // we successfully fetched or failed trying.
-            using (cancellationToken.Register(() => tcs.TrySetCanceled()))
+            try
             {
-                try
-                {
-                    var requestObject = new JSObject();
+                var requestObject = new JSObject();
 
-                    if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out object? fetchOptionsValue) &&
-                        fetchOptionsValue is IDictionary<string, object> fetchOptions)
+                if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out object? fetchOptionsValue) &&
+                    fetchOptionsValue is IDictionary<string, object> fetchOptions)
+                {
+                    foreach (KeyValuePair<string, object> item in fetchOptions)
                     {
-                        foreach (KeyValuePair<string, object> item in fetchOptions)
+                        requestObject.SetObjectProperty(item.Key, item.Value);
+                    }
+                }
+
+                requestObject.SetObjectProperty("method", request.Method.Method);
+
+                // We need to check for body content
+                if (request.Content != null)
+                {
+                    if (request.Content is StringContent)
+                    {
+                        requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(continueOnCapturedContext: true));
+                    }
+                    else
+                    {
+                        using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync().ConfigureAwait(continueOnCapturedContext: true)))
                         {
-                            requestObject.SetObjectProperty(item.Key, item.Value);
+                            requestObject.SetObjectProperty("body", uint8Buffer);
                         }
                     }
+                }
 
-                    requestObject.SetObjectProperty("method", request.Method.Method);
-
-                    // We need to check for body content
+                // Process headers
+                // Cors has its own restrictions on headers.
+                // https://developer.mozilla.org/en-US/docs/Web/API/Headers
+                using (HostObject jsHeaders = new HostObject("Headers"))
+                {
+                    foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
+                    {
+                        foreach (string value in header.Value)
+                        {
+                            jsHeaders.Invoke("append", header.Key, value);
+                        }
+                    }
                     if (request.Content != null)
                     {
-                        if (request.Content is StringContent)
-                        {
-                            requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(continueOnCapturedContext: true));
-                        }
-                        else
-                        {
-                            using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync().ConfigureAwait(continueOnCapturedContext: true)))
-                            {
-                                requestObject.SetObjectProperty("body", uint8Buffer);
-                            }
-                        }
-                    }
-
-                    // Process headers
-                    // Cors has its own restrictions on headers.
-                    // https://developer.mozilla.org/en-US/docs/Web/API/Headers
-                    using (HostObject jsHeaders = new HostObject("Headers"))
-                    {
-                        foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
+                        foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
                         {
                             foreach (string value in header.Value)
                             {
                                 jsHeaders.Invoke("append", header.Key, value);
                             }
                         }
-                        if (request.Content != null)
-                        {
-                            foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
-                            {
-                                foreach (string value in header.Value)
-                                {
-                                    jsHeaders.Invoke("append", header.Key, value);
-                                }
-                            }
-                        }
-                        requestObject.SetObjectProperty("headers", jsHeaders);
                     }
+                    requestObject.SetObjectProperty("headers", jsHeaders);
+                }
 
-                    WasmHttpReadStream? wasmHttpReadStream = null;
 
-                    JSObject abortController = new HostObject("AbortController");
-                    JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
-                    requestObject.SetObjectProperty("signal", signal);
-                    signal.Dispose();
+                WasmHttpReadStream? wasmHttpReadStream = null;
 
-                    CancellationTokenSource abortCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    CancellationTokenRegistration abortRegistration = abortCts.Token.Register((Action)(() =>
+                JSObject abortController = new HostObject("AbortController");
+                JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
+                requestObject.SetObjectProperty("signal", signal);
+                signal.Dispose();
+
+                CancellationTokenSource abortCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                CancellationTokenRegistration abortRegistration = abortCts.Token.Register((Action)(() =>
+                {
+                    if (abortController.JSHandle != -1)
                     {
-                        if (abortController.JSHandle != -1)
-                        {
-                            abortController.Invoke("abort");
-                            abortController?.Dispose();
-                        }
-                        wasmHttpReadStream?.Dispose();
-                    }));
-
-                    var args = new Interop.JavaScript.Array();
-                    if (request.RequestUri != null)
-                    {
-                        args.Push(request.RequestUri.ToString());
-                        args.Push(requestObject);
+                        abortController.Invoke("abort");
+                        abortController?.Dispose();
                     }
+                    wasmHttpReadStream?.Dispose();
+                }));
 
-                    requestObject.Dispose();
+                var args = new Interop.JavaScript.Array();
+                if (request.RequestUri != null)
+                {
+                    args.Push(request.RequestUri.ToString());
+                    args.Push(requestObject);
+                }
 
-                    var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
-                    args.Dispose();
-                    if (response == null)
-                        throw new Exception("Internal error marshalling the response Promise from `fetch`.");
+                requestObject.Dispose();
 
-                    JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
+                var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
+                args.Dispose();
+                if (response == null)
+                    throw new Exception("Internal error marshalling the response Promise from `fetch`.");
 
-                    var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
+                JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
-                    HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), status.Status.ToString()));
+                var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
 
-                    bool streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
+                HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), status.Status.ToString()));
 
-                    httpResponse.Content = StreamingSupported && streamingEnabled
-                        ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
-                        : (HttpContent)new BrowserHttpContent(status);
+                bool streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
 
-                    // Fill the response headers
-                    // CORS will only allow access to certain headers.
-                    // If a request is made for a resource on another origin which returns the CORs headers, then the type is cors.
-                    // cors and basic responses are almost identical except that a cors response restricts the headers you can view to
-                    // `Cache-Control`, `Content-Language`, `Content-Type`, `Expires`, `Last-Modified`, and `Pragma`.
-                    // View more information https://developers.google.com/web/updates/2015/03/introduction-to-fetch#response_types
-                    //
-                    // Note: Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
-                    using (JSObject respHeaders = status.Headers)
+                httpResponse.Content = StreamingSupported && streamingEnabled
+                    ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
+                    : (HttpContent)new BrowserHttpContent(status);
+
+                // Fill the response headers
+                // CORS will only allow access to certain headers.
+                // If a request is made for a resource on another origin which returns the CORs headers, then the type is cors.
+                // cors and basic responses are almost identical except that a cors response restricts the headers you can view to
+                // `Cache-Control`, `Content-Language`, `Content-Type`, `Expires`, `Last-Modified`, and `Pragma`.
+                // View more information https://developers.google.com/web/updates/2015/03/introduction-to-fetch#response_types
+                //
+                // Note: Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
+                using (JSObject respHeaders = status.Headers)
+                {
+                    if (respHeaders != null)
                     {
-                        if (respHeaders != null)
+                        using (var entriesIterator = (JSObject)respHeaders.Invoke("entries"))
                         {
-                            using (var entriesIterator = (JSObject)respHeaders.Invoke("entries"))
+                            JSObject? nextResult = null;
+                            try
                             {
-                                JSObject? nextResult = null;
-                                try
+                                nextResult = (JSObject)entriesIterator.Invoke("next");
+                                while (!(bool)nextResult.GetObjectProperty("done"))
                                 {
-                                    nextResult = (JSObject)entriesIterator.Invoke("next");
-                                    while (!(bool)nextResult.GetObjectProperty("done"))
+                                    using (var resultValue = (Interop.JavaScript.Array)nextResult.GetObjectProperty("value"))
                                     {
-                                        using (var resultValue = (Interop.JavaScript.Array)nextResult.GetObjectProperty("value"))
-                                        {
-                                            var name = (string)resultValue[0];
-                                            var value = (string)resultValue[1];
-                                            if (!httpResponse.Headers.TryAddWithoutValidation(name, value))
-                                                httpResponse.Content.Headers.TryAddWithoutValidation(name, value);
-                                        }
-                                        nextResult?.Dispose();
-                                        nextResult = (JSObject)entriesIterator.Invoke("next");
+                                        var name = (string)resultValue[0];
+                                        var value = (string)resultValue[1];
+                                        if (!httpResponse.Headers.TryAddWithoutValidation(name, value))
+                                            httpResponse.Content.Headers.TryAddWithoutValidation(name, value);
                                     }
-                                }
-                                finally
-                                {
                                     nextResult?.Dispose();
+                                    nextResult = (JSObject)entriesIterator.Invoke("next");
                                 }
+                            }
+                            finally
+                            {
+                                nextResult?.Dispose();
                             }
                         }
                     }
+                }
+                return httpResponse;
 
-                    tcs.SetResult(httpResponse);
-                }
-                catch (JSException jsExc)
-                {
-                    var httpExc = new System.Net.Http.HttpRequestException(jsExc.Message);
-                    tcs.SetException(httpExc);
-                }
-                catch (Exception exception)
-                {
-                    tcs.SetException(exception);
-                }
-                return await tcs.Task.ConfigureAwait(continueOnCapturedContext: true);
+            }
+            catch (JSException jsExc)
+            {
+                throw new System.Net.Http.HttpRequestException(jsExc.Message);
             }
         }
 
