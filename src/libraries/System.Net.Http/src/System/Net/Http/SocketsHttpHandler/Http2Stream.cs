@@ -34,7 +34,7 @@ namespace System.Net.Http
             private readonly HttpRequestMessage _request;
             private HttpResponseMessage? _response;
             /// <summary>Stores any trailers received after returning the response content to the caller.</summary>
-            private List<KeyValuePair<HeaderDescriptor, string>>? _trailers;
+            private HttpResponseHeaders? _trailers;
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
@@ -540,7 +540,7 @@ namespace System.Net.Http
                         {
                             Debug.Assert(_trailers != null);
                             string headerValue = descriptor.GetHeaderValue(value);
-                            _trailers.Add(KeyValuePair.Create((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue));
+                            _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         }
                         else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
                         {
@@ -571,7 +571,7 @@ namespace System.Net.Http
 
                         case ResponseProtocolState.ExpectingData:
                             _responseProtocolState = ResponseProtocolState.ExpectingTrailingHeaders;
-                            _trailers ??= new List<KeyValuePair<HeaderDescriptor, string>>();
+                            _trailers ??= new HttpResponseHeaders(containsTrailingHeaders: true);
                             break;
 
                         default:
@@ -856,7 +856,7 @@ namespace System.Net.Http
                 {
                     // If there are any trailers, copy them over to the response.  Normally this would be handled by
                     // the response stream hitting EOF, but if there is no response body, we do it here.
-                    CopyTrailersToResponseMessage(_response);
+                    MoveTrailersToResponseMessage(_response);
                     responseContent.SetStream(EmptyReadStream.Instance);
                 }
                 else
@@ -951,7 +951,7 @@ namespace System.Net.Http
                 else
                 {
                     // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
-                    CopyTrailersToResponseMessage(responseMessage);
+                    MoveTrailersToResponseMessage(responseMessage);
                 }
 
                 return bytesRead;
@@ -980,7 +980,7 @@ namespace System.Net.Http
                 else
                 {
                     // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
-                    CopyTrailersToResponseMessage(responseMessage);
+                    MoveTrailersToResponseMessage(responseMessage);
                 }
 
                 return bytesRead;
@@ -1011,7 +1011,7 @@ namespace System.Net.Http
                         else
                         {
                             // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
-                            CopyTrailersToResponseMessage(responseMessage);
+                            MoveTrailersToResponseMessage(responseMessage);
                             return;
                         }
                     }
@@ -1047,7 +1047,7 @@ namespace System.Net.Http
                         else
                         {
                             // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
-                            CopyTrailersToResponseMessage(responseMessage);
+                            MoveTrailersToResponseMessage(responseMessage);
                             return;
                         }
                     }
@@ -1058,15 +1058,11 @@ namespace System.Net.Http
                 }
             }
 
-            private void CopyTrailersToResponseMessage(HttpResponseMessage responseMessage)
+            private void MoveTrailersToResponseMessage(HttpResponseMessage responseMessage)
             {
-                if (_trailers != null && _trailers.Count > 0)
+                if (_trailers != null)
                 {
-                    foreach (KeyValuePair<HeaderDescriptor, string> trailer in _trailers)
-                    {
-                        responseMessage.TrailingHeaders.TryAddWithoutValidation(trailer.Key, trailer.Value);
-                    }
-                    _trailers.Clear();
+                    responseMessage.StoreReceivedTrailingHeaders(_trailers);
                 }
             }
 
