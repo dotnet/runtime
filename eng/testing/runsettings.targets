@@ -1,9 +1,18 @@
 <Project>
   <PropertyGroup>
-    <RunSettingsInputFilePath Condition="'$(RunSettingsInputFilePath)' == ''">$(MSBuildThisFileDirectory).runsettings</RunSettingsInputFilePath>
-    <RunSettingsOutputFilePath Condition="'$(RunSettingsOutputFilePath)' == ''">$(OutDir).runsettings</RunSettingsOutputFilePath>
+    <RunSettingsInputFilePath>$(MSBuildThisFileDirectory).runsettings</RunSettingsInputFilePath>
+    <RunSettingsIntermediateOutputFilePath>$(ArtifactsObjDir)$(TargetOS)-$(Configuration)-$(TargetArchitecture).runsettings</RunSettingsIntermediateOutputFilePath>
+    <RunSettingsAppOutputFilePath>$(OutDir).runsettings</RunSettingsAppOutputFilePath>
+
+    <CreateIntermediateRunSettingsFile Condition="'$(CreateIntermediateRunSettingsFile)' == ''">false</CreateIntermediateRunSettingsFile>
+    <RunSettingsOutputFilePath Condition="'$(CreateIntermediateRunSettingsFile)' == 'true'">$(RunSettingsIntermediateOutputFilePath)</RunSettingsOutputFilePath>
+    <RunSettingsOutputFilePath Condition="'$(CreateIntermediateRunSettingsFile)' != 'true'">$(RunSettingsAppOutputFilePath)</RunSettingsOutputFilePath>
+
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
-    <RunSettingsFilePath Condition="Exists('$(RunSettingsOutputFilePath)')">$(RunSettingsOutputFilePath)</RunSettingsFilePath>
+    <RunSettingsFilePath Condition="Exists('$(RunSettingsAppOutputFilePath)')">$(RunSettingsAppOutputFilePath)</RunSettingsFilePath>
+    <!-- Use an intermediate runsettings file if the app hasn't been built yet to enable VSTest discovery. -->
+    <RunSettingsFilePath Condition="'$(RunSettingsFilePath)' == '' and Exists('$(RunSettingsIntermediateOutputFilePath)')">$(RunSettingsIntermediateOutputFilePath)</RunSettingsFilePath>
+
     <PrepareForRunDependsOn>GenerateRunSettingsFile;$(PrepareForRunDependsOn)</PrepareForRunDependsOn>
   </PropertyGroup>
 
@@ -40,16 +49,5 @@
     <PropertyGroup>
       <RunSettingsFilePath>$(RunSettingsOutputFilePath)</RunSettingsFilePath>
     </PropertyGroup>
-  </Target>
-
-  <!--
-    Clean the test results directory to guarantee that a report is generated from the
-    newest coverage results file.
-    Tracking issue https://github.com/microsoft/vstest/issues/2378.
-  -->
-  <Target Name="ClearTestResults"
-          BeforeTargets="VSTest"
-          Condition="'$(Coverage)' == 'true'">
-    <RemoveDir Directories="$(OutDir)TestResults" />
   </Target>
 </Project>

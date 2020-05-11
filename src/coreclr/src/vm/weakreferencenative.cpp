@@ -16,6 +16,7 @@
 #include "typestring.h"
 #include "typeparse.h"
 #include "threadsuspend.h"
+#include "interoplibinterface.h"
 
 //************************************************************************
 
@@ -34,7 +35,7 @@ const LPVOID specialWeakReferenceHandles[3] = { 0, 0, 0 };
 
 //
 // A WeakReference instance can hold one of three types of handles - short or long weak handles,
-// or a WinRT weak reference handle.  The WinRT weak reference handle has the extra capability
+// or a native COM weak reference handle.  The native COM weak reference handle has the extra capability
 // of recreating an RCW for a COM object which is still alive even though the previous RCW had
 // been collected.   In order to differentiate this type of handle from the standard weak handles,
 // the bottom bit is stolen.
@@ -50,23 +51,23 @@ const LPVOID specialWeakReferenceHandles[3] = { 0, 0, 0 };
 // The following functions are to set, test, and unset that bit before the handle is used.
 //
 
-// Determine if an object handle is a WinRT weak reference handle
-bool IsWinRTWeakReferenceHandle(OBJECTHANDLE handle)
+// Determine if an object handle is a native COM weak reference handle
+bool IsNativeComWeakReferenceHandle(OBJECTHANDLE handle)
 {
     STATIC_CONTRACT_LEAF;
     return (reinterpret_cast<UINT_PTR>(handle) & 0x1) != 0x0;
 }
 
-// Mark an object handle as being a WinRT weak reference handle
-OBJECTHANDLE SetWinRTWeakReferenceHandle(OBJECTHANDLE handle)
+// Mark an object handle as being a native COM weak reference handle
+OBJECTHANDLE SetNativeComWeakReferenceHandle(OBJECTHANDLE handle)
 {
     STATIC_CONTRACT_LEAF;
 
-    _ASSERTE(!IsWinRTWeakReferenceHandle(handle));
+    _ASSERTE(!IsNativeComWeakReferenceHandle(handle));
     return reinterpret_cast<OBJECTHANDLE>(reinterpret_cast<UINT_PTR>(handle) | 0x1);
 }
 
-// Get the object handle value even if the object is a WinRT weak reference
+// Get the object handle value even if the object is a native COM weak reference
 OBJECTHANDLE GetHandleValue(OBJECTHANDLE handle)
 {
     STATIC_CONTRACT_LEAF;
@@ -102,17 +103,17 @@ private:
 
 #ifdef FEATURE_COMINTEROP
 
-// Get a WinRT weak reference for the object underlying an RCW if applicable.  If the incoming object cannot
-// use a WinRT weak reference, nullptr is returned.  Otherwise, an AddRef-ed IWeakReference* for the COM
+// Get a native COM weak reference for the object underlying an RCW if applicable.  If the incoming object cannot
+// use a native COM weak reference, nullptr is returned.  Otherwise, an AddRef-ed IWeakReference* for the COM
 // object underlying the RCW is returned.
 //
-// In order to qualify to be used with a HNDTYPE_WEAK_WINRT, the incoming object must:
+// In order to qualify to be used with a HNDTYPE_WEAK_NATIVE_COM, the incoming object must:
 //  * be an RCW
 //  * respond to a QI for IWeakReferenceSource
 //  * succeed when asked for an IWeakReference*
 //
 // Note that *pObject should be GC protected on the way into this method
-IWeakReference* GetWinRTWeakReference(OBJECTREF* pObject)
+IWeakReference* GetComWeakReference(OBJECTREF* pObject)
 {
     CONTRACTL
     {
@@ -132,21 +133,24 @@ IWeakReference* GetWinRTWeakReference(OBJECTREF* pObject)
 
     MethodTable* pMT = (*pObject)->GetMethodTable();
 
-    // If the object is not an RCW, then we do not want to use a WinRT weak reference to it
-    if (!pMT->IsComObjectType())
-    {
-        return nullptr;
-    }
+    SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(nullptr);
 
-    // If the object is a managed type deriving from a COM type, then we also do not want to use a WinRT
+    // If the object is not an RCW, then we do not want to use a native COM weak reference to it
+    // If the object is a managed type deriving from a COM type, then we also do not want to use a native COM
     // weak reference to it.  (Otherwise, we'll wind up resolving IWeakReference-s back into the CLR
     // when we don't want to have reentrancy).
-    if (pMT != g_pBaseCOMObject && pMT->IsExtensibleRCW())
+    if (pMT->IsComObjectType()
+     && (pMT == g_pBaseCOMObject || !pMT->IsExtensibleRCW()))
     {
-        return nullptr;
+        pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(pObject, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
     }
+#ifdef FEATURE_COMWRAPPERS
+    else
+    {
+        pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(pObject, IID_IWeakReferenceSource));
+    }
+#endif
 
-    SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(pObject, IID_IWeakReferenceSource, false /* throwIfNoComIP */)));
     if (pWeakReferenceSource == nullptr)
     {
         return nullptr;
@@ -162,17 +166,17 @@ IWeakReference* GetWinRTWeakReference(OBJECTREF* pObject)
     return pWeakReference.Extract();
 }
 
-// Given an object handle that stores a WinRT weak reference, attempt to create an RCW
-// and store it back in the handle, returning the RCW.  If the underlying WinRT object
+// Given an object handle that stores a native COM weak reference, attempt to create an RCW
+// and store it back in the handle, returning the RCW.  If the underlying native COM object
 // is not alive, then the result is NULL.
 //
 // In order to create a new RCW, we must:
-//   * Have an m_handle of HNDTYPE_WEAK_WINRT (ie the bottom bit of m_handle is set)
+//   * Have an m_handle of HNDTYPE_WEAK_NATIVE_COM (ie the bottom bit of m_handle is set)
 //   * Have stored an IWeakReference* in the handle extra info when setting up the handle
-//     (see GetWinRTWeakReference)
+//     (see GetComWeakReference)
 //   * The IWeakReference* must respond to a Resolve request for IID_IInspectable
 //   *
-NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, TypeHandle targetType, LPVOID __me)
+NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, TypeHandle targetType, LPVOID __me)
 {
     CONTRACTL
     {
@@ -200,14 +204,14 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
     //
     // Since we're acquiring and releasing the lock multiple times, we need to check the handle state each time we
     // reacquire the lock to make sure that another thread hasn't reassigned the target of the handle or finalized it
-    SafeComHolder<IWeakReference> pWinRTWeakReference = nullptr;
+    SafeComHolder<IWeakReference> pComWeakReference = nullptr;
     {
         WeakHandleSpinLockHolder handle(AcquireWeakHandleSpinLock(gc.weakReference), &gc.weakReference);
         GCX_NOTRIGGER();
 
         // Make sure that while we were not holding the spin lock, another thread did not change the target of
         // this weak reference.  Only fetch the IWeakReference* if we still have a valid handle holding a NULL object
-        // and the handle is still a HNDTYPE_WEAK_WINRT type handle.
+        // and the handle is still a HNDTYPE_WEAK_NATIVE_COM type handle.
         if ((handle.Handle != NULL) && !IS_SPECIAL_HANDLE(handle.Handle))
         {
             if (*(Object **)(handle.Handle) != NULL)
@@ -217,22 +221,22 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
                 // weak reference is targeting.
                 gc.target = ObjectToOBJECTREF(*(Object **)(handle.Handle));
             }
-            else if(IsWinRTWeakReferenceHandle(handle.RawHandle))
+            else if(IsNativeComWeakReferenceHandle(handle.RawHandle))
             {
-                _ASSERTE(GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handle.Handle) == HNDTYPE_WEAK_WINRT);
+                _ASSERTE(GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handle.Handle) == HNDTYPE_WEAK_NATIVE_COM);
 
                 // Retrieve the associated IWeakReference* for this weak reference.  Add a reference to it while we release
                 // the spin lock so that another thread doesn't release it out from underneath us.
                 //
-                // Setting pWinRTWeakReference will claim that it triggers a GC, however that's not true in this case because
+                // Setting pComWeakReference will claim that it triggers a GC, however that's not true in this case because
                 // it's always set to NULL here and there's nothing for it to release.
-                _ASSERTE(pWinRTWeakReference.IsNull());
+                _ASSERTE(pComWeakReference.IsNull());
                 CONTRACT_VIOLATION(GCViolation);
                 IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-                pWinRTWeakReference = reinterpret_cast<IWeakReference*>(mgr->GetExtraInfoFromHandle(handle.Handle));
-                if (!pWinRTWeakReference.IsNull())
+                pComWeakReference = reinterpret_cast<IWeakReference*>(mgr->GetExtraInfoFromHandle(handle.Handle));
+                if (!pComWeakReference.IsNull())
                 {
-                    pWinRTWeakReference->AddRef();
+                    pComWeakReference->AddRef();
                 }
             }
         }
@@ -242,16 +246,16 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
     // identity of the underlying COM object (assuming that object is still alive).  This work is done without holding the
     // spin lock since it will call out to arbitrary code and as such we need to switch to preemptive mode.
     SafeComHolder<IUnknown> pTargetIdentity = nullptr;
-    if (pWinRTWeakReference != nullptr)
+    if (pComWeakReference != nullptr)
     {
         _ASSERTE(gc.target == NULL);
 
         GCX_PREEMP();
 
-        // Using the IWeakReference*, get ahold of the target WinRT object's IInspectable*.  If this resolve fails, then we
-        // assume that the underlying WinRT object is no longer alive, and thus we cannot create a new RCW for it.
+        // Using the IWeakReference*, get ahold of the target native COM object's IInspectable*.  If this resolve fails, then we
+        // assume that the underlying native COM object is no longer alive, and thus we cannot create a new RCW for it.
         SafeComHolderPreemp<IInspectable> pTarget = nullptr;
-        if (SUCCEEDED(pWinRTWeakReference->Resolve(IID_IInspectable, &pTarget)))
+        if (SUCCEEDED(pComWeakReference->Resolve(IID_IInspectable, &pTarget)))
         {
             if (!pTarget.IsNull())
             {
@@ -264,7 +268,11 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
     // If we were able to get an IUnkown identity for the object, then we can find or create an associated RCW for it.
     if (!pTargetIdentity.IsNull())
     {
-        GetObjectRefFromComIP(&gc.rcw, pTargetIdentity);
+        // Try the global COM wrappers first before falling back to the built-in system.
+        if (!GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(pTargetIdentity, &gc.rcw))
+        {
+            GetObjectRefFromComIP(&gc.rcw, pTargetIdentity);
+        }
     }
 
     // If we were able to get an RCW, then we need to reacquire the spin lock and store the RCW in the handle.  Note that
@@ -272,7 +280,7 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
     // building the RCW.  In that case, we will defer to the hadle that the other thread set, and let the RCW die.
     if (gc.rcw != NULL)
     {
-        // Make sure the type we got back from the WinRT object is compatible with the type the managed
+        // Make sure the type we got back from the native COM object is compatible with the type the managed
         // weak reference expects.  (For instance, in the WeakReference<T> case, the returned type
         // had better be compatible with T).
         TypeHandle rcwType(gc.rcw->GetMethodTable());
@@ -284,7 +292,7 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
             SString resolvedTypeName;
             TypeString::AppendType(resolvedTypeName, rcwType, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
 
-            COMPlusThrow(kInvalidCastException, IDS_EE_WINRT_WEAKREF_BAD_TYPE, weakReferenceTypeName.GetUnicode(), resolvedTypeName.GetUnicode());
+            COMPlusThrow(kInvalidCastException, IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE, weakReferenceTypeName.GetUnicode(), resolvedTypeName.GetUnicode());
         }
 
         WeakHandleSpinLockHolder handle(AcquireWeakHandleSpinLock(gc.weakReference), &gc.weakReference);
@@ -420,12 +428,21 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
 
     // Create the handle.
 #ifdef FEATURE_COMINTEROP
-    IWeakReference* pRawWinRTWeakReference = GetWinRTWeakReference(&gc.pTarget);
-    if (pRawWinRTWeakReference != nullptr)
+    IWeakReference* pRawComWeakReference = nullptr;
+    if (gc.pTarget != NULL)
     {
-        SafeComHolder<IWeakReference> pWinRTWeakReferenceHolder(pRawWinRTWeakReference);
-        gc.pThis->m_Handle = SetWinRTWeakReferenceHandle(GetAppDomain()->CreateWinRTWeakHandle(gc.pTarget, pWinRTWeakReferenceHolder));
-        pWinRTWeakReferenceHolder.SuppressRelease();
+        SyncBlock* pSyncBlock = gc.pTarget->PassiveGetSyncBlock();
+        if (pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr)
+        {
+            pRawComWeakReference = GetComWeakReference(&gc.pTarget);
+        }
+    }
+
+    if (pRawComWeakReference != nullptr)
+    {
+        SafeComHolder<IWeakReference> pComWeakReferenceHolder(pRawComWeakReference);
+        gc.pThis->m_Handle = SetNativeComWeakReferenceHandle(GetAppDomain()->CreateNativeComWeakHandle(gc.pTarget, pComWeakReferenceHolder));
+        pComWeakReferenceHolder.SuppressRelease();
     }
     else
 #endif // FEATURE_COMINTEROP
@@ -463,12 +480,21 @@ FCIMPL3(void, WeakReferenceOfTNative::Create, WeakReferenceObject * pThisUNSAFE,
 
     // Create the handle.
 #ifdef FEATURE_COMINTEROP
-    IWeakReference* pRawWinRTWeakReference = GetWinRTWeakReference(&gc.pTarget);
-    if (pRawWinRTWeakReference != nullptr)
+    IWeakReference* pRawComWeakReference = nullptr;
+    if (gc.pTarget != NULL)
     {
-        SafeComHolder<IWeakReference> pWinRTWeakReferenceHolder(pRawWinRTWeakReference);
-        gc.pThis->m_Handle = SetWinRTWeakReferenceHandle(GetAppDomain()->CreateWinRTWeakHandle(gc.pTarget, pWinRTWeakReferenceHolder));
-        pWinRTWeakReferenceHolder.SuppressRelease();
+        SyncBlock* pSyncBlock = gc.pTarget->PassiveGetSyncBlock();
+        if (pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr)
+        {
+            pRawComWeakReference = GetComWeakReference(&gc.pTarget);
+        }
+    }
+
+    if (pRawComWeakReference != nullptr)
+    {
+        SafeComHolder<IWeakReference> pComWeakReferenceHolder(pRawComWeakReference);
+        gc.pThis->m_Handle = SetNativeComWeakReferenceHandle(GetAppDomain()->CreateNativeComWeakHandle(gc.pTarget, pComWeakReferenceHolder));
+        pComWeakReferenceHolder.SuppressRelease();
     }
     else
 #endif // FEATURE_COMINTEROP
@@ -499,7 +525,7 @@ void FinalizeWeakReference(Object * obj)
     // The suspension state of the runtime must be prevented from changing while in this function in order for this to be safe.
     OBJECTHANDLE handle = ThreadSuspend::SysIsSuspended() ? pThis->m_Handle.LoadWithoutBarrier() : AcquireWeakHandleSpinLock(pThis);
     OBJECTHANDLE handleToDestroy = NULL;
-    bool isWeakWinRTHandle = false;
+    bool isWeakNativeComHandle = false;
 
     // Check for not yet constructed or already finalized handle
     if ((handle != NULL) && !IS_SPECIAL_HANDLE(handle))
@@ -509,8 +535,8 @@ void FinalizeWeakReference(Object * obj)
         // Cache the old handle value
         HandleType handleType = GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handleToDestroy);
 #ifdef FEATURE_COMINTEROP
-        _ASSERTE(handleType == HNDTYPE_WEAK_LONG || handleType == HNDTYPE_WEAK_SHORT || handleType == HNDTYPE_WEAK_WINRT);
-        isWeakWinRTHandle = handleType == HNDTYPE_WEAK_WINRT;
+        _ASSERTE(handleType == HNDTYPE_WEAK_LONG || handleType == HNDTYPE_WEAK_SHORT || handleType == HNDTYPE_WEAK_NATIVE_COM);
+        isWeakNativeComHandle = handleType == HNDTYPE_WEAK_NATIVE_COM;
 #else // !FEATURE_COMINTEROP
         _ASSERTE(handleType == HNDTYPE_WEAK_LONG || handleType == HNDTYPE_WEAK_SHORT);
 #endif // FEATURE_COMINTEROP
@@ -528,9 +554,9 @@ void FinalizeWeakReference(Object * obj)
     if (handleToDestroy != NULL)
     {
 #ifdef FEATURE_COMINTEROP
-        if (isWeakWinRTHandle)
+        if (isWeakNativeComHandle)
         {
-            DestroyWinRTWeakHandle(handleToDestroy);
+            DestroyNativeComWeakHandle(handleToDestroy);
         }
         else
 #endif // FEATURE_COMINTEROP
@@ -645,14 +671,14 @@ FCIMPL1(Object *, WeakReferenceNative::GetTarget, WeakReferenceObject * pThisUNS
     OBJECTREF pTarget = GetWeakReferenceTarget(pThis);
 
 #ifdef FEATURE_COMINTEROP
-    // If we found an object, or we're not a WinRT weak reference, then we're done.  Othewrise
-    // we can try to create a new RCW to the underlying WinRT object if it's still alive.
-    if (pTarget != NULL || !IsWinRTWeakReferenceHandle(pThis->m_Handle))
+    // If we found an object, or we're not a native COM weak reference, then we're done.  Othewrise
+    // we can try to create a new RCW to the underlying native COM object if it's still alive.
+    if (pTarget != NULL || !IsNativeComWeakReferenceHandle(pThis->m_Handle))
     {
         FC_GC_POLL_AND_RETURN_OBJREF(pTarget);
     }
 
-    FC_INNER_RETURN(Object*, LoadWinRTWeakReferenceTarget(pThis, g_pObjectClass, GetEEFuncEntryPointMacro(WeakReferenceNative::GetTarget)));
+    FC_INNER_RETURN(Object*, LoadComWeakReferenceTarget(pThis, g_pObjectClass, GetEEFuncEntryPointMacro(WeakReferenceNative::GetTarget)));
 #else // !FEATURE_COMINTEROP
     FC_GC_POLL_AND_RETURN_OBJREF(pTarget);
 #endif // FEATURE_COMINTEROP
@@ -673,14 +699,14 @@ FCIMPL1(Object *, WeakReferenceOfTNative::GetTarget, WeakReferenceObject * pThis
 
 
 #ifdef FEATURE_COMINTEROP
-    // If we found an object, or we're not a WinRT weak reference, then we're done.  Othewrise
-    // we can try to create a new RCW to the underlying WinRT object if it's still alive.
-    if (pTarget != NULL || !IsWinRTWeakReferenceHandle(pThis->m_Handle))
+    // If we found an object, or we're not a native COM weak reference, then we're done.  Othewrise
+    // we can try to create a new RCW to the underlying native COM object if it's still alive.
+    if (pTarget != NULL || !IsNativeComWeakReferenceHandle(pThis->m_Handle))
     {
         FC_GC_POLL_AND_RETURN_OBJREF(pTarget);
     }
 
-    FC_INNER_RETURN(Object*, LoadWinRTWeakReferenceTarget(pThis, pThis->GetMethodTable()->GetInstantiation()[0], GetEEFuncEntryPointMacro(WeakReferenceOfTNative::GetTarget)));
+    FC_INNER_RETURN(Object*, LoadComWeakReferenceTarget(pThis, pThis->GetMethodTable()->GetInstantiation()[0], GetEEFuncEntryPointMacro(WeakReferenceOfTNative::GetTarget)));
 #else // !FEATURE_COMINTEROP
     FC_GC_POLL_AND_RETURN_OBJREF(pTarget);
 #endif // FEATURE_COMINTEROP
@@ -711,7 +737,7 @@ FCIMPLEND
 
 #include <optsmallperfcritical.h>
 
-// Slow path helper for setting the target of a weak reference.  This code is used if a WinRT weak reference might
+// Slow path helper for setting the target of a weak reference.  This code is used if a native COM weak reference might
 // be required.
 NOINLINE void SetWeakReferenceTarget(WEAKREFERENCEREF weakReference, OBJECTREF target, LPVOID __me)
 {
@@ -721,7 +747,7 @@ NOINLINE void SetWeakReferenceTarget(WEAKREFERENCEREF weakReference, OBJECTREF t
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_2(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, target, weakReference);
 
 #ifdef FEATURE_COMINTEROP
-    SafeComHolder<IWeakReference> pTargetWeakReference(GetWinRTWeakReference(&target));
+    SafeComHolder<IWeakReference> pTargetWeakReference(GetComWeakReference(&target));
 #endif // FEATURE_COMINTEROP
 
 
@@ -735,30 +761,30 @@ NOINLINE void SetWeakReferenceTarget(WEAKREFERENCEREF weakReference, OBJECTREF t
     // Existing target is a GC object, new target is a GC object:
     //  * Just store the new object in the handle
     //
-    // Existing target is WinRT, new target is WinRT:
+    // Existing target is native COM weak reference, new target is native COM weak reference:
     //   * Release the existing IWeakReference*
     //   * Store the new IWeakReference*
     //   * Store the new object in the handle
     //
-    // Existing target is WinRT, new target is GC:
+    // Existing target is native COM weak reference, new target is GC:
     //   * Release the existing IWeakReference*
     //   * Store null to the IWeakReference* field
     //   * Store the new object in the handle
     //
-    // Existing target is GC, new target is WinRT:
+    // Existing target is GC, new target is native COM weak reference:
     //   * Destroy the existing handle
-    //   * Allocate a new WinRT weak handle for the new target
+    //   * Allocate a new native COM weak handle for the new target
     //
 
-    if (IsWinRTWeakReferenceHandle(handle.RawHandle))
+    if (IsNativeComWeakReferenceHandle(handle.RawHandle))
     {
-        // If the existing reference is a WinRT weak reference, we need to release its IWeakReference pointer
+        // If the existing reference is a native COM weak reference, we need to release its IWeakReference pointer
         // and update it with the new weak reference pointer.  If the incoming object is not an RCW that can
         // use IWeakReference, then pTargetWeakReference will be null.  Therefore, no matter what the incoming
         // object type is, we can unconditionally store pTargetWeakReference to the object handle's extra data.
         IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
         IWeakReference* pExistingWeakReference = reinterpret_cast<IWeakReference*>(mgr->GetExtraInfoFromHandle(handle.Handle));
-        mgr->SetExtraInfoForHandle(handle.Handle, HNDTYPE_WEAK_WINRT, reinterpret_cast<void*>(pTargetWeakReference.GetValue()));
+        mgr->SetExtraInfoForHandle(handle.Handle, HNDTYPE_WEAK_NATIVE_COM, reinterpret_cast<void*>(pTargetWeakReference.GetValue()));
         StoreObjectInHandle(handle.Handle, target);
 
         if (pExistingWeakReference != nullptr)
@@ -768,15 +794,15 @@ NOINLINE void SetWeakReferenceTarget(WEAKREFERENCEREF weakReference, OBJECTREF t
     }
     else if (pTargetWeakReference != nullptr)
     {
-        // The existing handle is not a WinRT weak reference, but we need to store the new object in
-        // a WinRT weak reference.  Therefore we need to destroy the old handle and create a new WinRT
+        // The existing handle is not a native COM weak reference, but we need to store the new object in
+        // a native COM weak reference.  Therefore we need to destroy the old handle and create a new native COM
         // handle.  The new handle needs to be allocated first to prevent the weak reference from holding
         // a destroyed handle if we fail to allocate the new one.
-        _ASSERTE(!IsWinRTWeakReferenceHandle(handle.RawHandle));
+        _ASSERTE(!IsNativeComWeakReferenceHandle(handle.RawHandle));
         OBJECTHANDLE previousHandle = handle.RawHandle;
 
-        handle.Handle = GetAppDomain()->CreateWinRTWeakHandle(target, pTargetWeakReference);
-        handle.RawHandle = SetWinRTWeakReferenceHandle(handle.Handle);
+        handle.Handle = GetAppDomain()->CreateNativeComWeakHandle(target, pTargetWeakReference);
+        handle.RawHandle = SetNativeComWeakReferenceHandle(handle.Handle);
 
         DestroyTypedHandle(previousHandle);
     }
@@ -822,7 +848,7 @@ FCIMPL2(void, WeakReferenceNative::SetTarget, WeakReferenceObject * pThisUNSAFE,
 
         // If the existing handle is a GC weak handle and the new target is not an RCW, then
         // we can avoid setting up a helper method frame and just reset the handle directly.
-        if (!IsWinRTWeakReferenceHandle(handle))
+        if (!IsNativeComWeakReferenceHandle(handle))
         {
             if (pTarget == NULL || !pTarget->GetMethodTable()->IsComObjectType())
             {
@@ -875,7 +901,7 @@ FCIMPL2(void, WeakReferenceOfTNative::SetTarget, WeakReferenceObject * pThisUNSA
 
         // If the existing handle is a GC weak handle and the new target is not an RCW, then
         // we can avoid setting up a helper method frame and just reset the handle directly.
-        if (!IsWinRTWeakReferenceHandle(handle))
+        if (!IsNativeComWeakReferenceHandle(handle))
         {
             if (pTarget == NULL || !pTarget->GetMethodTable()->IsComObjectType())
             {

@@ -40,7 +40,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
     EX_CATCH
     {
     }
-    EX_END_CATCH(RethrowCorruptingExceptions)
+    EX_END_CATCH(RethrowTerminalExceptions)
 
     if (!table)
     {
@@ -54,7 +54,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
         EX_CATCH
         {
         }
-        EX_END_CATCH(RethrowCorruptingExceptions)
+        EX_END_CATCH(RethrowTerminalExceptions)
 
         if (!table)
         {

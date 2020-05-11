@@ -1290,16 +1290,9 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 			break;
 #endif
 		case MONO_TYPE_R4:
-#if SIZEOF_VOID_P == 8
 		case MONO_TYPE_R8:
-#endif
 			margs->flen++;
 			break;
-#if SIZEOF_VOID_P == 4
-		case MONO_TYPE_R8:
-			margs->flen += 2;
-			break;
-#endif
 		default:
 			g_error ("build_args_from_sig: not implemented yet (1): 0x%x\n", ptype);
 		}
@@ -1384,11 +1377,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 #if DEBUG_INTERP
 			g_print ("build_args_from_sig: margs->fargs [%d]: %p (%f) (frame @ %d)\n", int_f, margs->fargs [int_f], margs->fargs [int_f], i);
 #endif
-#if SIZEOF_VOID_P == 4
-			int_f += 2;
-#else
-			int_f++;
-#endif
+			int_f ++;
 			break;
 		default:
 			g_error ("build_args_from_sig: not implemented yet (2): 0x%x\n", ptype);
@@ -2952,7 +2941,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		}
 	} else {
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
-		mono_error_assertf_ok (error, "couldn't compile wrapper \"%s\" for \"%s\"",
+		g_assertion_message ("couldn't compile wrapper \"%s\" for \"%s\"",
 				mono_method_get_name_full (wrapper, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL),
 				mono_method_get_name_full (method,  TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
 #else
@@ -5143,26 +5132,13 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_CTOR) {
-			MonoMethodSignature *csig;
-			guint32 token;
-
-			frame->ip = ip;
-			token = ip [1];
-			ip += 2;
-
-			InterpMethod *cmethod = (InterpMethod*)frame->imethod->data_items [token];
-			csig = mono_method_signature_internal (cmethod->method);
-
-			g_assert (csig->hasthis);
-			sp -= csig->param_count;
-
-			gpointer arg0 = sp [0].data.p;
-
+			gpointer arg0 = sp [-1].data.p;
 			gpointer *byreference_this = (gpointer*)vt_sp;
 			*byreference_this = arg0;
 
 			/* Followed by a VTRESULT opcode which will push the result on the stack */
-			++sp;
+			/* FIXME kill MINT_VTRESULT */
+			ip++;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_GET_VALUE) {

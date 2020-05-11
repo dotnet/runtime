@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class DirSyncRequestControlTests
     {
         [Fact]
@@ -20,13 +23,19 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.841", control.Type);
 
-            Assert.Equal(new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 }, control.GetValue());
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 };
+            Assert.Equal(expected, control.GetValue());
+        }
+
+        public static IEnumerable<object[]> Ctor_Cookie_Data()
+        {
+            yield return new object[] { null, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 13, 2, 1, 0, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } : new byte[] { 48, 13, 2, 1, 0, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } };
         }
 
         [Theory]
-        [InlineData(null, new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 })]
-        [InlineData(new byte[0], new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 })]
-        [InlineData(new byte[] { 97, 98, 99 }, new byte[] { 48, 132, 0, 0, 0, 13, 2, 1, 0, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 })]
+        [MemberData(nameof(Ctor_Cookie_Data))]
         public void Ctor_Cookie(byte[] cookie, byte[] expectedValue)
         {
             var control = new DirSyncRequestControl(cookie);
@@ -41,10 +50,15 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(expectedValue, control.GetValue());
         }
 
+        public static IEnumerable<object[]> Ctor_Cookie_Options_Data()
+        {
+            yield return new object[] { null, DirectorySynchronizationOptions.None, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], DirectorySynchronizationOptions.None - 1, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 13, 2, 4, 255, 255, 255, 255, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 255, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 13, 2, 1, 1, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } : new byte[] { 48, 13, 2, 1, 1, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } };
+        }
+
         [Theory]
-        [InlineData(null, DirectorySynchronizationOptions.None, new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 })]
-        [InlineData(new byte[0], DirectorySynchronizationOptions.None - 1, new byte[] { 48, 132, 0, 0, 0, 13, 2, 4, 255, 255, 255, 255, 2, 3, 16, 0, 0, 4, 0 })]
-        [InlineData(new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, new byte[] { 48, 132, 0, 0, 0, 13, 2, 1, 1, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 })]
+        [MemberData(nameof(Ctor_Cookie_Options_Data))]
         public void Ctor_Cookie_Options(byte[] cookie, DirectorySynchronizationOptions option, byte[] expectedValue)
         {
             var control = new DirSyncRequestControl(cookie, option);
@@ -59,10 +73,15 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(expectedValue, control.GetValue());
         }
 
+        public static IEnumerable<object[]> Ctor_Cookie_Options_AttributeCount_Data()
+        {
+            yield return new object[] { null, DirectorySynchronizationOptions.None, 1048576, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], DirectorySynchronizationOptions.None - 1, 0, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 4, 255, 255, 255, 255, 2, 1, 0, 4, 0 } : new byte[] { 48, 8, 2, 1, 255, 2, 1, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, 10, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 1, 2, 1, 10, 4, 3, 97, 98, 99 } : new byte[] { 48, 11, 2, 1, 1, 2, 1, 10, 4, 3, 97, 98, 99 } };
+        }
+
         [Theory]
-        [InlineData(null, DirectorySynchronizationOptions.None, 1048576, new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 })]
-        [InlineData(new byte[0], DirectorySynchronizationOptions.None - 1, 0, new byte[] { 48, 132, 0, 0, 0, 11, 2, 4, 255, 255, 255, 255, 2, 1, 0, 4, 0 })]
-        [InlineData(new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, 10, new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 1, 2, 1, 10, 4, 3, 97, 98, 99 })]
+        [MemberData(nameof(Ctor_Cookie_Options_AttributeCount_Data))]
         public void Ctor_Cookie_Options_AttributeCount(byte[] cookie, DirectorySynchronizationOptions option, int attributeCount , byte[] expectedValue)
         {
             var control = new DirSyncRequestControl(cookie, option, attributeCount);

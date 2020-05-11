@@ -45,6 +45,30 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
+  <!-- Clean up artifacts that dotnet-publish generates which we don't need -->
+  <Target Name="DeleteUnnecessaryPublishOutputs" AfterTargets="Publish">
+    <ItemGroup>
+      <ToDelete Include="$(PublishDir)apphost$(ExeSuffix)" />
+      <ToDelete Include="$(PublishDir)singlefilehost$(ExeSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)comhost$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)hostfxr$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost.h" />
+      <!--
+        On Windows, LibSuffix is .dll (for dynamic libraries), but for this particular file, we also
+        build a .lib (static library). Make sure neither is included.
+
+        We only build this library on Windows, so other static library formats don't need to be
+        handled yet.
+      -->
+      <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost.lib" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost.lib" />
+    </ItemGroup>
+
+    <Delete Files="@(ToDelete)" />
+  </Target>
+
   <!--
     Since the libraries configuration might be different than the installer configuration, we need to add additional restore sources
     to be able to find packages produced in the libraries phase and consumed in the installer phase.

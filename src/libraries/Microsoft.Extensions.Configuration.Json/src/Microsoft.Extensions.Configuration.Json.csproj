@@ -16,7 +16,7 @@
     <Reference Include="System.Text.Json" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />

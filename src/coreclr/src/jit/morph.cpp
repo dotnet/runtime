@@ -13095,6 +13095,30 @@ DONE_MORPHING_CHILDREN:
                 op2 = tree->AsOp()->gtOp2;
             }
 
+            // See if we can fold floating point operations (can regress minopts mode)
+            if (opts.OptimizationEnabled() && varTypeIsFloating(tree->TypeGet()) && !optValnumCSE_phase)
+            {
+                if ((oper == GT_MUL) && !op1->IsCnsFltOrDbl() && op2->IsCnsFltOrDbl())
+                {
+                    if (op2->AsDblCon()->gtDconVal == 2.0)
+                    {
+                        // Fold "x*2.0" to "x+x"
+                        op2  = op1->OperIsLeaf() ? gtCloneExpr(op1) : fgMakeMultiUse(&tree->AsOp()->gtOp1);
+                        op1  = tree->AsOp()->gtOp1;
+                        oper = GT_ADD;
+                        tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
+                        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    }
+                    else if (op2->AsDblCon()->gtDconVal == 1.0)
+                    {
+                        // Fold "x*1.0" to "x"
+                        DEBUG_DESTROY_NODE(op2);
+                        DEBUG_DESTROY_NODE(tree);
+                        return op1;
+                    }
+                }
+            }
+
             /* See if we can fold GT_ADD nodes. */
 
             if (oper == GT_ADD)
@@ -17407,7 +17431,8 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
 
             var_types treeType  = tree->TypeGet();
             var_types fieldType = fldVarDsc->TypeGet();
-            if (fldOffset != BAD_VAR_NUM && (genTypeSize(fieldType) == genTypeSize(treeType)))
+            if (fldOffset != BAD_VAR_NUM &&
+                ((genTypeSize(fieldType) == genTypeSize(treeType)) || (varDsc->lvFieldCnt == 1)))
             {
                 // There is an existing sub-field we can use.
                 tree->AsLclFld()->SetLclNum(fieldLclIndex);
