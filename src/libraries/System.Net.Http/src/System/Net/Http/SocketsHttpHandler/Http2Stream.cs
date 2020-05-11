@@ -81,9 +81,6 @@ namespace System.Net.Http
 
             private readonly CancellationTokenSource? _requestBodyCancellationSource;
 
-            // This is a linked token combining the above source and the user-supplied token to SendRequestBodyAsync
-            private CancellationToken _requestBodyCancellationToken;
-
             private readonly TaskCompletionSource<bool>? _expect100ContinueWaiter;
 
             private int _headerBudgetRemaining;
@@ -162,32 +159,25 @@ namespace System.Net.Http
                 }
 
                 if (NetEventSource.IsEnabled) Trace($"{_request.Content}");
-
                 Debug.Assert(_requestBodyCancellationSource != null);
 
-                // Create a linked cancellation token source so that we can cancel the request in the event of receiving RST_STREAM
-                // and similiar situations where we need to cancel the request body (see Cancel method).
-                CancellationTokenSource? linkedCts = null;
-                if (cancellationToken.CanBeCanceled)
-                {
-                    linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token);
-                    _requestBodyCancellationToken = linkedCts.Token;
-                }
-                else
-                {
-                    _requestBodyCancellationToken = _requestBodyCancellationSource.Token;
-                }
-
+                // Cancel the request body sending if cancellation is requested on the supplied cancellation token.
+                // Normally we might create a linked token, but once cancellation is requested, we can't recover anyway,
+                // so it's fine to cancel the source representing the whole request body, and doing so allows us to avoid
+                // creating another CTS instance and the associated nodes inside of it.  With this, cancellation will be
+                // requested on _requestBodyCancellationSource when we need to cancel the request stream for any reason,
+                // such as receiving an RST_STREAM or when the passed in token has cancellation requested.
+                CancellationTokenRegistration linkedRegistration = cancellationToken.UnsafeRegister(s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource);
                 try
                 {
                     bool sendRequestContent =
                         _expect100ContinueWaiter == null ||
-                        await WaitFor100ContinueAsync(_requestBodyCancellationToken).ConfigureAwait(false);
+                        await WaitFor100ContinueAsync(_requestBodyCancellationSource.Token).ConfigureAwait(false);
                     if (sendRequestContent)
                     {
                         using (var writeStream = new Http2WriteStream(this))
                         {
-                            await _request.Content.InternalCopyToAsync(writeStream, null, _requestBodyCancellationToken).ConfigureAwait(false);
+                            await _request.Content.InternalCopyToAsync(writeStream, null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                         }
                     }
 
@@ -233,7 +223,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    linkedCts?.Dispose();
+                    linkedRegistration.Dispose();
                 }
 
                 // New scope here to avoid variable name conflict on "sendReset"
@@ -354,11 +344,8 @@ namespace System.Net.Http
                     (signalWaiter, sendReset) = CancelResponseBody();
                 }
 
-                if (requestBodyCancellationSource != null)
-                {
-                    // When cancellation propagates, SendRequestBodyAsync will set _requestCompletionState to Failed
-                    requestBodyCancellationSource.Cancel();
-                }
+                // When cancellation propagates, SendRequestBodyAsync will set _requestCompletionState to Failed
+                requestBodyCancellationSource?.Cancel();
 
                 if (sendReset)
                 {
@@ -1066,22 +1053,14 @@ namespace System.Net.Http
 
             private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
+                Debug.Assert(_requestBodyCancellationSource != null);
+
                 // Deal with [ActiveIssue("https://github.com/dotnet/runtime/issues/17492")]
                 // Custom HttpContent classes do not get passed the cancellationToken.
                 // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
-                CancellationTokenSource? customCancellationSource = null;
-                if (!cancellationToken.CanBeCanceled)
-                {
-                    cancellationToken = _requestBodyCancellationToken;
-                }
-                else if (cancellationToken != _requestBodyCancellationToken)
-                {
-                    // User passed a custom CancellationToken.
-                    // We can't tell if it includes our Token or not, so assume it doesn't.
-                    customCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource!.Token);
-                    cancellationToken = customCancellationSource.Token;
-                }
-
+                CancellationTokenRegistration linkedRegistration = cancellationToken.CanBeCanceled && cancellationToken != _requestBodyCancellationSource.Token ?
+                    cancellationToken.UnsafeRegister(s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource) :
+                    default;
                 try
                 {
                     while (buffer.Length > 0)
@@ -1098,12 +1077,12 @@ namespace System.Net.Http
                             {
                                 if (_creditWaiter is null)
                                 {
-                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, cancellationToken);
+                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, _requestBodyCancellationSource.Token);
                                 }
                                 else
                                 {
                                     Debug.Assert(!_creditWaiter.IsPending);
-                                    _creditWaiter.ResetForAwait(cancellationToken);
+                                    _creditWaiter.ResetForAwait(_requestBodyCancellationSource.Token);
                                 }
                                 _creditWaiter.Amount = buffer.Length;
                             }
@@ -1119,12 +1098,12 @@ namespace System.Net.Http
                         ReadOnlyMemory<byte> current;
                         (current, buffer) = SplitBuffer(buffer, sendSize);
 
-                        await _connection.SendStreamDataAsync(_streamId, current, cancellationToken).ConfigureAwait(false);
+                        await _connection.SendStreamDataAsync(_streamId, current, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                     }
                 }
                 finally
                 {
-                    customCancellationSource?.Dispose();
+                    linkedRegistration.Dispose();
                 }
             }
 
