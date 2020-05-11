@@ -104,7 +104,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
 
             var result = AdvSimd.DuplicateToVector64(
-                31
+                (Single)31
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -115,9 +115,9 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.DuplicateToVector64), new Type[] { typeof(byte) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.DuplicateToVector64), new Type[] { typeof(Single) })
                                      .Invoke(null, new object[] {
-                                        (byte)31
+                                        (Single)31
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector64<Single>)(result));

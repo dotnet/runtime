@@ -104,7 +104,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
 
             var result = AdvSimd.DuplicateToVector128(
-                31
+                (Byte)31
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -115,9 +115,9 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.DuplicateToVector128), new Type[] { typeof(byte) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.DuplicateToVector128), new Type[] { typeof(Byte) })
                                      .Invoke(null, new object[] {
-                                        (byte)31
+                                        (Byte)31
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Byte>)(result));
