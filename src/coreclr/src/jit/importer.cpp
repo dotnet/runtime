@@ -4273,7 +4273,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if (mustExpand && (retNode == nullptr))
     {
         assert(!"Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
-        return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+
+        for (unsigned i = 0; i < sig->numArgs; i++)
+        {
+            impPopStack();
+        }
+
+        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, JITtype2varType(sig->retType), sig->retTypeClass);
     }
 
     // Optionally report if this intrinsic is special
