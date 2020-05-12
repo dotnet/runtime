@@ -8617,7 +8617,7 @@ MethodDesc *MethodTable::MethodDataInterfaceImpl::GetImplMethodDesc(UINT32 slotN
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
         return NULL;
     }
-    return m_pImpl->GetImplMethodDesc(MapToImplSlotNumber(slotNumber));
+    return m_pImpl->GetImplMethodDesc(implSlotNumber);
 }
 
 //==========================================================================================
@@ -8628,7 +8628,7 @@ void MethodTable::MethodDataInterfaceImpl::InvalidateCachedVirtualSlot(UINT32 sl
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
         return;
     }
-    return m_pImpl->InvalidateCachedVirtualSlot(MapToImplSlotNumber(slotNumber));
+    return m_pImpl->InvalidateCachedVirtualSlot(implSlotNumber);
 }
 
 //==========================================================================================
