@@ -95,7 +95,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 
 	/* An rgctx wrapper is added by the trampolines no need to do it here */
 	gboolean need_unbox = m_class_is_valuetype (res->klass) && !m_class_is_valuetype (method->klass);
-	if (need_unbox) {
+	if (need_unbox && !mono_use_interpreter) {
 		/*
 		 * We can't return a jump trampoline here, because the trampoline code
 		 * can't determine whenever to add an unbox trampoline (ldvirtftn) or
