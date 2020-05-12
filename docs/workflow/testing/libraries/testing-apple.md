@@ -21,7 +21,7 @@ cd src/libraries/System.Numerics.Vectors/tests
 for devices you need to specify `DevTeamProvisioning`:
 ```
 cd src/libraries/System.Numerics.Vectors/tests
-../../../.././dotnet.sh build /t:Test /p:TargetOS=iOS /p:TargetArchitecture=arm64 /p:DevTeamProvisioning=...
+~runtime/dotnet.sh build /t:Test /p:TargetOS=iOS /p:TargetArchitecture=arm64 /p:DevTeamProvisioning=...
 ```
 AppleAppBuilder generates temp Xcode projects you can manually open and resolve provisioning there using native UI and deploy to your devices and start debugging.
 
