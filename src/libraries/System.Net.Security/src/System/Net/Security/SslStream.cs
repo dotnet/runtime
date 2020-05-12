@@ -306,6 +306,11 @@ namespace System.Net.Security
 
         public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
+            if (sslClientAuthenticationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
+            }
+
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
@@ -339,6 +344,11 @@ namespace System.Net.Security
 
         public void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
+            if (sslServerAuthenticationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
+            }
+
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
@@ -367,6 +377,11 @@ namespace System.Net.Security
 
         public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
         {
+            if (sslClientAuthenticationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
+            }
+
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
@@ -417,6 +432,11 @@ namespace System.Net.Security
 
         public Task AuthenticateAsServerAsync(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
         {
+            if (sslServerAuthenticationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
+            }
+
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
