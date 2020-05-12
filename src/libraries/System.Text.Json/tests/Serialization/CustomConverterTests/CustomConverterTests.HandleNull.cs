@@ -380,17 +380,18 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new UriNullConverter_NullOptIn());
 
-            // Converter is not called.
+            // Converter is called - JsonIgnoreCondition.WhenWritingDefault does not apply to deserialization.
             ClassWithIgnoredUri obj = JsonSerializer.Deserialize<ClassWithIgnoredUri>(@"{""MyUri"":null}", options);
-            Assert.Equal(new Uri("https://microsoft.com"), obj.MyUri);
+            Assert.Equal(new Uri("https://default"), obj.MyUri);
 
             obj.MyUri = null;
+            // Converter is not called - value is ignored on serialization.
             Assert.Equal("{}", JsonSerializer.Serialize(obj, options));
         }
 
         private class ClassWithIgnoredUri
         {
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenNull)]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public Uri MyUri { get; set; } = new Uri("https://microsoft.com");
         }
 
