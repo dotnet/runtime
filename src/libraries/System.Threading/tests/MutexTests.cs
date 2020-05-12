@@ -394,14 +394,14 @@ namespace System.Threading.Tests
 
         public static IEnumerable<object[]> CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData()
         {
-            var nameGuidStr = Guid.NewGuid().ToString("N");
             foreach (var namePrefix in GetNamePrefixes())
             {
-                yield return new object[] { namePrefix + nameGuidStr };
+                yield return new object[] { namePrefix };
             }
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36307", TestRuntimes.Mono)]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
         {

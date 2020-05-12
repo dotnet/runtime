@@ -1632,19 +1632,14 @@ void NamedMutexProcessData::Abandon()
     _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(m_lockCount != 0);
 
-    bool hasRefFromLockOwnerThread = m_hasRefFromLockOwnerThread;
-    if (hasRefFromLockOwnerThread)
-    {
-        m_hasRefFromLockOwnerThread = false;
-    }
-
     sharedData->SetIsAbandoned(true);
     m_lockCount = 0;
     SetLockOwnerThread(nullptr);
     ActuallyReleaseLock();
 
-    if (hasRefFromLockOwnerThread)
+    if (m_hasRefFromLockOwnerThread)
     {
+        m_hasRefFromLockOwnerThread = false;
         m_processDataHeader->DecRefCount();
     }
 }
