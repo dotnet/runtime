@@ -26,7 +26,7 @@ namespace System.Linq.Tests
                     where !string.IsNullOrEmpty(x)
                     select x;
 
-            Assert.Equal(q.Contains('X'), q.Contains('X'));
+            Assert.Equal(q.Contains("X"), q.Contains("X"));
         }
 
         public static IEnumerable<object[]> Int_TestData()
