@@ -1,5 +1,5 @@
 # escape=`
-# Simple Dockerfile which copies clr and library build artifacts into target dotnet sdk image
+# Simple Dockerfile which copies clr and library build artifacts into target dotnet sdk image 
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-nanoserver-1809
 FROM $SDK_BASE_IMAGE as target
 
