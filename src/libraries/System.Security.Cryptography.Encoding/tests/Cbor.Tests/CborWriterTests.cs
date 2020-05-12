@@ -27,7 +27,7 @@ namespace System.Formats.Cbor.Tests
         public static void GetEncoding_OnInCompleteValue_ShouldThrowInvalidOperationExceptoin()
         {
             var writer = new CborWriter();
-            Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
+            Assert.Throws<InvalidOperationException>(() => writer.Encode());
         }
 
         [Fact]
@@ -54,7 +54,7 @@ namespace System.Formats.Cbor.Tests
                 Helpers.WriteValue(writer, value);
             }
 
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Fact]
@@ -69,7 +69,7 @@ namespace System.Formats.Cbor.Tests
             writer.WriteDouble(3.14);
             // misses writer.WriteEndArray();
 
-            Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
+            Assert.Throws<InvalidOperationException>(() => writer.Encode());
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             writer.WriteEncodedValue(encodedValue);
 
-            string hexResult = writer.GetEncoding().ByteArrayToHex();
+            string hexResult = writer.Encode().ByteArrayToHex();
             Assert.Equal(hexEncodedValue, hexResult.ToLower());
         }
 
@@ -111,10 +111,10 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             Helpers.WriteValue(writer, value);
 
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             byte[] target = new byte[encoding.Length];
 
-            bool result = writer.TryWriteEncoding(target, out int bytesWritten);
+            bool result = writer.TryEncode(target, out int bytesWritten);
 
             Assert.True(result);
             Assert.Equal(encoding.Length, bytesWritten);
@@ -130,10 +130,10 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             Helpers.WriteValue(writer, value);
 
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             byte[] target = new byte[encoding.Length - 1];
 
-            bool result = writer.TryWriteEncoding(target, out int bytesWritten);
+            bool result = writer.TryEncode(target, out int bytesWritten);
 
             Assert.False(result);
             Assert.Equal(0, bytesWritten);
@@ -153,7 +153,7 @@ namespace System.Formats.Cbor.Tests
             writer.WriteTextString("");
             writer.WriteEndArray();
 
-            string hexResult = writer.GetEncoding().ByteArrayToHex();
+            string hexResult = writer.Encode().ByteArrayToHex();
             Assert.Equal("8301" + hexEncodedValue + "60", hexResult.ToLower());
         }
 
@@ -173,7 +173,7 @@ namespace System.Formats.Cbor.Tests
 
             Helpers.WriteValue(writer, value, useDefiniteLengthCollections: useDefiniteLength);
 
-            string hexEncoding = writer.GetEncoding().ByteArrayToHex().ToLower();
+            string hexEncoding = writer.Encode().ByteArrayToHex().ToLower();
             Assert.Equal(hexExpectedEncoding, hexEncoding);
         }
 
@@ -187,7 +187,7 @@ namespace System.Formats.Cbor.Tests
             writer.WriteEncodedValue("63626172".HexToByteArray());
             writer.WriteEndTextString();
 
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             Assert.Equal("7f63666f6f63626172ff", encoding.ByteArrayToHex().ToLower());
         }
 
@@ -201,7 +201,7 @@ namespace System.Formats.Cbor.Tests
             writer.WriteEncodedValue("43020202".HexToByteArray());
             writer.WriteEndByteString();
 
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             Assert.Equal("5f4301010143020202ff", encoding.ByteArrayToHex().ToLower());
         }
 

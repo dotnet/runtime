@@ -28,7 +28,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter();
             Helpers.WriteMap(writer, values);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -41,7 +41,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter();
             Helpers.WriteMap(writer, values);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -55,7 +55,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -68,7 +68,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -82,7 +82,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter();
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -95,7 +95,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter();
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -109,7 +109,7 @@ namespace System.Formats.Cbor.Tests
         byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
         var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
         Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
-        byte[] actualEncoding = writer.GetEncoding();
+        byte[] actualEncoding = writer.Encode();
         AssertHelper.HexEqual(expectedEncoding, actualEncoding);
     }
 
@@ -123,7 +123,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter();
             Helpers.WriteValue(writer, value);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -152,7 +152,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter(level);
             Helpers.WriteValue(writer, value);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -167,7 +167,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter(level);
             Helpers.WriteValue(writer, value);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -178,7 +178,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter();
             Helpers.WriteMap(writer, values);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -234,7 +234,7 @@ namespace System.Formats.Cbor.Tests
                 writer.WriteInt32(0);
                 writer.WriteEndMap();
 
-                return writer.GetEncoding();
+                return writer.Encode();
             }
         }
 

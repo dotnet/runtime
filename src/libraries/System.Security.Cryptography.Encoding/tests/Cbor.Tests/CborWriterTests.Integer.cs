@@ -48,7 +48,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteInt64(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -80,7 +80,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteInt32(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -107,7 +107,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteUInt64(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -131,7 +131,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteUInt32(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -149,7 +149,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteCborNegativeIntegerEncoding(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
     }
 

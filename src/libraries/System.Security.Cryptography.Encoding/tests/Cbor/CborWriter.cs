@@ -99,9 +99,9 @@ namespace System.Formats.Cbor
             }
         }
 
-        public byte[] GetEncoding() => GetSpanEncoding().ToArray();
+        public byte[] Encode() => GetSpanEncoding().ToArray();
 
-        public bool TryWriteEncoding(Span<byte> destination, out int bytesWritten)
+        public bool TryEncode(Span<byte> destination, out int bytesWritten)
         {
             ReadOnlySpan<byte> encoding = GetSpanEncoding();
 
@@ -123,7 +123,7 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException("Buffer contains incomplete CBOR document.");
             }
 
-            return (_offset == 0) ? ReadOnlySpan<byte>.Empty : new ReadOnlySpan<byte>(_buffer, 0, _offset);
+            return new ReadOnlySpan<byte>(_buffer, 0, _offset);
         }
 
         private void EnsureWriteCapacity(int pendingCount)

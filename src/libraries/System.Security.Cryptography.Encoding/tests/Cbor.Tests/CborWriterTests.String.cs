@@ -24,7 +24,7 @@ namespace System.Formats.Cbor.Tests
             byte[] input = hexInput.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteByteString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -39,7 +39,7 @@ namespace System.Formats.Cbor.Tests
 
             var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteChunkedByteString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -54,7 +54,7 @@ namespace System.Formats.Cbor.Tests
 
             var writer = new CborWriter();
             Helpers.WriteChunkedByteString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -70,7 +70,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteTextString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -83,7 +83,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteChunkedTextString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -96,7 +96,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter(encodeIndefiniteLengths: false);
             Helpers.WriteChunkedTextString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Fact]
