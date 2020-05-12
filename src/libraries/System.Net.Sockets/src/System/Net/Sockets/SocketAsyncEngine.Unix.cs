@@ -51,6 +51,7 @@ namespace System.Net.Sockets
 #else
             1024;
 #endif
+
         private static readonly object s_lock = new object();
 
         private static readonly int s_maxEngineCount = GetEngineCount();
@@ -344,75 +345,69 @@ namespace System.Net.Sockets
         {
             try
             {
-                EventLoopBody();
+                bool shutdown = false;
+                Interop.Sys.SocketEvent* buffer = _buffer;
+                ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
+                ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
+                IntPtr shutdownHandle = ShutdownHandle;
+                SocketAsyncContext? context = null;
+                while (!shutdown)
+                {
+                    int numEvents = EventBufferCount;
+                    Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, buffer, &numEvents);
+                    if (err != Interop.Error.SUCCESS)
+                    {
+                        throw new InternalException(err);
+                    }
+
+                    // The native shim is responsible for ensuring this condition.
+                    Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
+
+                    bool enqueuedEvent = false;
+                    foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(buffer, numEvents))
+                    {
+                        IntPtr handle = socketEvent.Data;
+
+                        if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
+                        {
+                            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
+
+                            Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
+                            if (events != Interop.Sys.SocketEvents.None)
+                            {
+                                var ev = new SocketIOEvent(context, events);
+                                eventQueue.Enqueue(ev);
+                                enqueuedEvent = true;
+
+                                // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                                // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                                // such code may keep the stack location live for longer than necessary
+                                ev = default;
+                            }
+
+                            // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                            // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                            // such code may keep the stack location live for longer than necessary
+                            context = null;
+                            contextWrapper = default;
+                        }
+                        else if (handle == shutdownHandle)
+                        {
+                            shutdown = true;
+                        }
+                    }
+
+                    if (enqueuedEvent)
+                    {
+                        ScheduleToProcessEvents();
+                    }
+                }
 
                 FreeNativeResources();
             }
             catch (Exception e)
             {
                 Environment.FailFast("Exception thrown from SocketAsyncEngine event loop: " + e.ToString(), e);
-            }
-        }
-
-        private void EventLoopBody()
-        {
-            bool shutdown = false;
-            Interop.Sys.SocketEvent* buffer = _buffer;
-            ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
-            ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-            IntPtr shutdownHandle = ShutdownHandle;
-            SocketAsyncContext? context = null;
-
-            while (!shutdown)
-            {
-                int numEvents = EventBufferCount;
-                Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, buffer, &numEvents);
-                if (err != Interop.Error.SUCCESS)
-                {
-                    throw new InternalException(err);
-                }
-
-                // The native shim is responsible for ensuring this condition.
-                Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
-
-                bool enqueuedEvent = false;
-                foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(buffer, numEvents))
-                {
-                    IntPtr handle = socketEvent.Data;
-
-                    if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
-                    {
-                        Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-
-                        Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
-                        if (events != Interop.Sys.SocketEvents.None)
-                        {
-                            var ev = new SocketIOEvent(context, events);
-                            eventQueue.Enqueue(ev);
-                            enqueuedEvent = true;
-
-                            // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                            // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                            // such code may keep the stack location live for longer than necessary
-                            ev = default;
-                        }
-
-                        // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                        // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                        // such code may keep the stack location live for longer than necessary
-                        context = null;
-                        contextWrapper = default;
-                    }
-                    else if (handle == shutdownHandle)
-                    {
-                        shutdown = true;
-                    }
-                }
-
-                if (enqueuedEvent)
-                {
-                    ScheduleToProcessEvents();
-                }
             }
         }
 
@@ -494,7 +489,7 @@ namespace System.Net.Sockets
             ScheduleToProcessEvents();
         }
 
-        private void Execute()
+        private void ExecuteAio()
         {
             // Indicate that a work item is no longer scheduled to process events. The change needs to be visible to enqueuer
             // threads (only for EventLoop() currently) before an event is attempted to be dequeued. In particular, if an
