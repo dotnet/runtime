@@ -196,7 +196,7 @@ namespace System.Reflection.TypeLoading
             {
                 return Array.Empty<RoType>();
             }
-            
+
             var arr = new RoType[ifcs.Count];
             ifcs.CopyTo(arr);
             return arr;
