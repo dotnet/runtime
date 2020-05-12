@@ -521,7 +521,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO* sig,
+                                    CORINFO_SIG_INFO*     sig,
                                     var_types             baseType,
                                     var_types             retType)
 {
@@ -534,7 +534,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    unsigned  simdSize = 0;
+    unsigned  simdSize   = 0;
     var_types sigRetType = JITtype2varType(sig->retType);
 
     if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))

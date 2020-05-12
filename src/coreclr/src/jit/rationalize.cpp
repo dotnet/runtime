@@ -797,7 +797,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                     assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
                     hwIntrinsicNode->gtType = TYP_SIMD8;
                 }
-                
             }
             break;
         }

@@ -278,7 +278,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 {
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     int                 numArgs  = sig->numArgs;
-    unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+    unsigned            simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
 
     assert(numArgs >= 0);
     assert(varTypeIsArithmetic(baseType));
