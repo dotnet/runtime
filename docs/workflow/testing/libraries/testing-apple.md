@@ -8,7 +8,7 @@ Build Librarires for iOS:
 ```
 Run tests one by one for each test suite on a simulator:
 ```
-./build.sh -os iOS -arch x64 -subset Libs.Tests -test
+./build.sh libs.tests -os iOS -arch x64 -test
 ```
 Unlike XHarness-Android, XHarness for iOS is able to boot simulators by its own.
 
