@@ -12,6 +12,14 @@ namespace System.Net.Sockets
 {
     internal sealed unsafe class SocketAsyncEngine : IThreadPoolWorkItem
     {
+        // Socket continuations are dispatched to the ThreadPool from the event thread.
+        // This avoids continuations blocking the event handling.
+        // Setting DOTNET_SYSTEM_NET_SOCKETS_INLINE_CONTINUATIONS to '1'
+        // runs continuations directly on the event thread.
+        // This removes the overhead of context switching to the ThreadPool,
+        // at the risk of potentially blocking the event thread.
+        internal static readonly bool InlineSocketContinuations = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_CONTINUATIONS") == "1";
+
         //
         // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.
         //
@@ -73,6 +81,12 @@ namespace System.Net.Sockets
             if (uint.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT"), out uint count))
             {
                 return (int)count;
+            }
+
+            // // When inlining continuations, we default to ProcessorCount to make sure event threads cannot be a bottleneck.
+            if (InlineSocketContinuations)
+            {
+                return Environment.ProcessorCount;
             }
 
             Architecture architecture = RuntimeInformation.ProcessArchitecture;
@@ -297,6 +311,7 @@ namespace System.Net.Sockets
                 Interop.Sys.SocketEvent* buffer = _buffer;
                 ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
                 ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
+                bool inlineSocketContinuations = InlineSocketContinuations;
                 IntPtr shutdownHandle = ShutdownHandle;
                 SocketAsyncContext? context = null;
                 while (!shutdown)
@@ -320,7 +335,8 @@ namespace System.Net.Sockets
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
 
-                            Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
+                            Interop.Sys.SocketEvents events = inlineSocketContinuations ? context.HandleSyncAndInlineEvents(socketEvent.Events) :
+                                                                                          context.HandleSyncEventsSpeculatively(socketEvent.Events);
                             if (events != Interop.Sys.SocketEvents.None)
                             {
                                 var ev = new SocketIOEvent(context, events);
