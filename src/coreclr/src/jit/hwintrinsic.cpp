@@ -662,6 +662,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         // Immediately return if this is non-arithmetic type.
         if (!varTypeIsArithmetic(baseType))
         {
+            // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+            // rather than deferring the decision after getting the baseType of arg.
 #ifdef TARGET_XARCH
             assert(intrinsic == NI_Vector128_As || intrinsic == NI_Vector128_get_AllBitsSet ||
                    intrinsic == NI_Vector128_get_Zero || intrinsic == NI_Vector128_WithElement ||
@@ -670,8 +672,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                    intrinsic == NI_Vector256_As || intrinsic == NI_Vector256_WithElement ||
                    intrinsic == NI_Vector256_GetLower);
 #else
-            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As) ||
-                   (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_get_AllBitsSet) ||
+            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector64_get_Zero) ||
+                   (intrinsic == NI_Vector64_get_AllBitsSet) || (intrinsic == NI_Vector128_As) ||
                    (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_get_AllBitsSet));
 #endif
             return nullptr;
