@@ -101,26 +101,29 @@ internal static partial class Interop
 
         public static void FreeObject(object obj)
         {
-            if (_rawToJS.TryGetValue(obj, out JSObject? jsobj))
+            lock (_rawToJS)
             {
-                //raw_to_js [obj].RawObject = null;
-                _rawToJS.Remove(obj);
-                if (jsobj != null)
+                if (_rawToJS.TryGetValue(obj, out JSObject? jsobj))
                 {
-                    int exception;
-                    Runtime.ReleaseObject(jsobj.JSHandle, out exception);
-                    if (exception != 0)
-                        throw new JSException($"Error releasing object on (raw-obj)");
+                    //raw_to_js [obj].RawObject = null;
+                    _rawToJS.Remove(obj);
+                    if (jsobj != null)
+                    {
+                        int exception;
+                        Runtime.ReleaseObject(jsobj.JSHandle, out exception);
+                        if (exception != 0)
+                            throw new JSException($"Error releasing object on (raw-obj)");
 
-                    jsobj.JSHandle = -1;
-                    jsobj.RawObject = null;
-                    jsobj.IsDisposed = true;
-                    jsobj.Handle.Free();
+                        jsobj.JSHandle = -1;
+                        jsobj.RawObject = null;
+                        jsobj.IsDisposed = true;
+                        jsobj.Handle.Free();
+                    }
                 }
-            }
-            else
-            {
-                throw new JSException($"Error releasing object on (obj)");
+                else
+                {
+                    throw new JSException($"Error releasing object on (obj)");
+                }
             }
         }
 

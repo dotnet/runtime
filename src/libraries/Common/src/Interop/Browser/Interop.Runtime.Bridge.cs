@@ -21,18 +21,21 @@ internal static partial class Interop
 
         internal static int BindJSObject(int jsId, Type mappedType)
         {
-            if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
+            lock (_boundObjects)
             {
-                if (mappedType != null)
+                if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
                 {
-                    return BindJSType(jsId, mappedType);
+                    if (mappedType != null)
+                    {
+                        return BindJSType(jsId, mappedType);
+                    }
+                    else
+                    {
+                        _boundObjects[jsId] = obj = new JSObject((IntPtr)jsId);
+                    }
                 }
-                else
-                {
-                    _boundObjects[jsId] = obj = new JSObject((IntPtr)jsId);
-                }
+                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
             }
-            return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
         internal static int BindCoreCLRObject(int jsId, int gcHandle)
@@ -40,86 +43,95 @@ internal static partial class Interop
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj;
 
-            if (_boundObjects.TryGetValue(jsId, out JSObject? existingObj))
+            lock (_boundObjects)
             {
-                if (existingObj?.Handle != h && h.IsAllocated)
-                    throw new JSException($"Multiple handles pointing at js_id: {jsId}");
+                if (_boundObjects.TryGetValue(jsId, out JSObject? existingObj))
+                {
+                    if (existingObj?.Handle != h && h.IsAllocated)
+                        throw new JSException($"Multiple handles pointing at js_id: {jsId}");
 
-                obj = existingObj;
+                    obj = existingObj;
+                }
+                else
+                {
+                    obj = h.Target as JSObject;
+                }
+                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
             }
-            else
-            {
-                obj = h.Target as JSObject;
-            }
-
-            return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
         internal static int BindJSType(int jsId, Type mappedType)
         {
-            if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
+            lock (_boundObjects)
             {
-                ConstructorInfo? jsobjectnew = mappedType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding,
-                        null, new Type[] { typeof(IntPtr) }, null);
-                _boundObjects[jsId] = obj = jsobjectnew == null ? null : (JSObject)jsobjectnew.Invoke(new object[] { (IntPtr)jsId });
+                if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
+                {
+                    ConstructorInfo? jsobjectnew = mappedType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding,
+                            null, new Type[] { typeof(IntPtr) }, null);
+                    _boundObjects[jsId] = obj = jsobjectnew == null ? null : (JSObject)jsobjectnew.Invoke(new object[] { (IntPtr)jsId });
+                }
+                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
             }
-            return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
         internal static int UnBindJSObject(int jsId)
         {
-            if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
+            lock (_boundObjects)
             {
-                _boundObjects.Remove(jsId);
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
+                {
+                    _boundObjects.Remove(jsId);
+                    return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                }
+                return 0;
             }
-
-            return 0;
         }
 
         internal static void UnBindJSObjectAndFree(int jsId)
         {
-            if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
+            lock (_boundObjects)
             {
-                if (_boundObjects[jsId] != null)
+                if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
                 {
-                    //bound_objects[jsIs].RawObject = null;
-                    _boundObjects.Remove(jsId);
-                }
-                if (obj != null)
-                {
-                    obj.JSHandle = -1;
-                    obj.IsDisposed = true;
-                    obj.RawObject = null;
-                    obj.Handle.Free();
+                    if (_boundObjects[jsId] != null)
+                    {
+                        _boundObjects.Remove(jsId);
+                    }
+                    if (obj != null)
+                    {
+                        obj.JSHandle = -1;
+                        obj.IsDisposed = true;
+                        obj.RawObject = null;
+                        obj.Handle.Free();
+                    }
                 }
             }
-
         }
 
         internal static void UnBindRawJSObjectAndFree(int gcHandle)
         {
-
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj = h.Target as JSObject;
-            if (obj?.RawObject != null)
+            lock (_rawToJS)
             {
-                _rawToJS.Remove(obj.RawObject);
+                if (obj?.RawObject != null)
+                {
+                    _rawToJS.Remove(obj.RawObject);
 
-                int exception;
-                ReleaseHandle(obj.JSHandle, out exception);
-                if (exception != 0)
-                    throw new JSException($"Error releasing handle on (js-obj js '{obj.JSHandle}' mono '{(IntPtr)obj.Handle} raw '{obj.RawObject != null})");
+                    int exception;
+                    ReleaseHandle(obj.JSHandle, out exception);
+                    if (exception != 0)
+                        throw new JSException($"Error releasing handle on (js-obj js '{obj.JSHandle}' mono '{(IntPtr)obj.Handle} raw '{obj.RawObject != null})");
 
-                // Calling Release Handle above only removes the reference from the JavaScript side but does not
-                // release the bridged JSObject associated with the raw object so we have to do that ourselves.
-                obj.JSHandle = -1;
-                obj.IsDisposed = true;
-                obj.RawObject = null;
+                    // Calling Release Handle above only removes the reference from the JavaScript side but does not
+                    // release the bridged JSObject associated with the raw object so we have to do that ourselves.
+                    obj.JSHandle = -1;
+                    obj.IsDisposed = true;
+                    obj.RawObject = null;
 
-                obj.Handle.Free();
+                    obj.Handle.Free();
+                }
             }
-
         }
 
         internal static object CreateTaskSource(int jsId)
@@ -145,21 +157,25 @@ internal static partial class Interop
         internal static int BindExistingObject(object rawObj, int jsId)
         {
             JSObject? obj = rawObj as JSObject;
+            lock (_rawToJS)
+            {
+                if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
+                    _rawToJS[rawObj] = obj = new JSObject(jsId, rawObj);
 
-            if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
-                _rawToJS[rawObj] = obj = new JSObject(jsId, rawObj);
-
-            return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+            }
         }
 
         internal static int GetJSObjectId(object rawObj)
         {
             JSObject? obj = rawObj as JSObject;
+            lock (_rawToJS)
+            {
+                if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
+                    return -1;
 
-            if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
-                return -1;
-
-            return obj?.JSHandle ?? -1;
+                return obj?.JSHandle ?? -1;
+            }
         }
 
         internal static object? GetMonoObject(int gcHandle)
