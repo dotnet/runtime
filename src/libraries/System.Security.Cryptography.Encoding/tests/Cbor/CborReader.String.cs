@@ -26,7 +26,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 return ReadChunkedByteStringConcatenated();
@@ -49,7 +49,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 return TryReadChunkedByteStringConcatenated(destination, out bytesWritten);
@@ -81,7 +81,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 return ReadChunkedTextStringConcatenated();
@@ -98,7 +98,7 @@ namespace System.Formats.Cbor
             }
             catch (DecoderFallbackException e)
             {
-                throw new FormatException("Text string payload is not a valid UTF8 string.", e);
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding, e);
             }
 
             AdvanceBuffer(1 + additionalBytes + length);
@@ -114,7 +114,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 return TryReadChunkedTextStringConcatenated(destination, out charsWritten);
@@ -140,53 +140,53 @@ namespace System.Formats.Cbor
             return true;
         }
 
-        public void ReadStartTextStringIndefiniteLength()
+        public void ReadStartTextString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
 
             if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
             {
-                throw new InvalidOperationException("CBOR text string is not of indefinite length.");
+                throw new InvalidOperationException(SR.Cbor_Reader_NotIndefiniteLengthString);
             }
 
             if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
-                throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
             }
 
             AdvanceBuffer(1);
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
         }
 
-        public void ReadEndTextStringIndefiniteLength()
+        public void ReadEndTextString()
         {
-            ReadNextIndefiniteLengthBreakByte();
+            ValidateNextByteIsBreakByte();
             PopDataItem(CborMajorType.TextString);
             AdvanceDataItemCounters();
             AdvanceBuffer(1);
         }
 
-        public void ReadStartByteStringIndefiniteLength()
+        public void ReadStartByteString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
 
             if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
             {
-                throw new InvalidOperationException("CBOR text string is not of indefinite length.");
+                throw new InvalidOperationException(SR.Cbor_Reader_NotIndefiniteLengthString);
             }
 
             if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
-                throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
             }
 
             AdvanceBuffer(1);
             PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
         }
 
-        public void ReadEndByteStringIndefiniteLength()
+        public void ReadEndByteString()
         {
-            ReadNextIndefiniteLengthBreakByte();
+            ValidateNextByteIsBreakByte();
             PopDataItem(CborMajorType.ByteString);
             AdvanceDataItemCounters();
             AdvanceBuffer(1);
@@ -330,14 +330,14 @@ namespace System.Formats.Cbor
             static CborInitialByte ReadNextInitialByte(ReadOnlySpan<byte> buffer, CborMajorType expectedType)
             {
                 EnsureBuffer(buffer, 1);
-                var cib = new CborInitialByte(buffer[0]);
+                var header = new CborInitialByte(buffer[0]);
 
-                if (cib.InitialByte != CborInitialByte.IndefiniteLengthBreakByte && cib.MajorType != expectedType)
+                if (header.InitialByte != CborInitialByte.IndefiniteLengthBreakByte && header.MajorType != expectedType)
                 {
-                    throw new FormatException("Indefinite-length CBOR string containing invalid data item.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem);
                 }
 
-                return cib;
+                return header;
             }
         }
 
@@ -370,7 +370,7 @@ namespace System.Formats.Cbor
             }
             catch (DecoderFallbackException e)
             {
-                throw new FormatException("Text string payload is not a valid UTF8 string.", e);
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding, e);
             }
         }
 

@@ -14,7 +14,7 @@ namespace System.Formats.Cbor
         {
             if (_currentMajorType is null)
             {
-                throw new InvalidOperationException("CBOR reader is at the root context.");
+                throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
             }
 
             SkipToAncestor(1, validateConformance);
@@ -49,7 +49,7 @@ namespace System.Formats.Cbor
             CborReaderState state;
 
             // peek, skipping any tags we might encounter
-            while ((state = PeekState()) == CborReaderState.Tag)
+            while ((state = PeekStateCore(throwOnFormatErrors: true)) == CborReaderState.Tag)
             {
                 ReadTag();
             }
@@ -73,24 +73,24 @@ namespace System.Formats.Cbor
                     break;
 
                 case CborReaderState.StartByteString:
-                    ReadStartByteStringIndefiniteLength();
+                    ReadStartByteString();
                     depth++;
                     break;
 
                 case CborReaderState.EndByteString:
                     ValidatePop(state, depth);
-                    ReadEndByteStringIndefiniteLength();
+                    ReadEndByteString();
                     depth--;
                     break;
 
                 case CborReaderState.StartTextString:
-                    ReadStartTextStringIndefiniteLength();
+                    ReadStartTextString();
                     depth++;
                     break;
 
                 case CborReaderState.EndTextString:
                     ValidatePop(state, depth);
-                    ReadEndTextStringIndefiniteLength();
+                    ReadEndTextString();
                     depth--;
                     break;
 
@@ -129,12 +129,13 @@ namespace System.Formats.Cbor
                     break;
 
                 case CborReaderState.EndOfData:
-                    throw new FormatException("Unexpected end of buffer.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
                 case CborReaderState.FormatError:
-                    throw new FormatException("Invalid CBOR format.");
+                    Debug.Fail("Peek format errors should be surfaced as FormatExceptions.");
+                    throw new FormatException();
 
                 default:
-                    throw new InvalidOperationException($"Unexpected CBOR reader state {state}.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_Skip_InvalidState, state));
             }
 
             // guards against cases where the caller attempts to skip when reader is not positioned at the start of a value
@@ -142,7 +143,7 @@ namespace System.Formats.Cbor
             {
                 if (depth == 0)
                 {
-                    throw new InvalidOperationException($"Reader state {state} is not at start of a data item.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_Skip_InvalidState, state));
                 }
             }
         }

@@ -25,7 +25,7 @@ namespace System.Formats.Cbor
             }
         }
 
-        public static bool RequiresMinimalIntegerRepresentation(CborConformanceLevel conformanceLevel)
+        public static bool RequiresCanonicalIntegerRepresentation(CborConformanceLevel conformanceLevel)
         {
             switch (conformanceLevel)
             {
@@ -158,7 +158,7 @@ namespace System.Formats.Cbor
 
                 default:
                     Debug.Fail("Invalid conformance level used in encoding sort.");
-                    throw new Exception("Invalid conformance level used in encoding sort.");
+                    throw new Exception();
             }
         }
     }

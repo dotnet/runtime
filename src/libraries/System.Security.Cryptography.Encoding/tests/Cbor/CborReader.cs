@@ -5,6 +5,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.SqlServer.Server;
 
 namespace System.Formats.Cbor
 {
@@ -82,13 +83,13 @@ namespace System.Formats.Cbor
         {
             if (_cachedState == CborReaderState.Unknown)
             {
-                _cachedState = PeekStateCore();
+                _cachedState = PeekStateCore(false);
             }
 
             return _cachedState;
         }
 
-        private CborReaderState PeekStateCore()
+        private CborReaderState PeekStateCore(bool throwOnFormatErrors)
         {
             if (_remainingDataItems == 0)
             {
@@ -101,7 +102,7 @@ namespace System.Formats.Cbor
                         case CborMajorType.Map: return CborReaderState.EndMap;
                         default:
                             Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
-                            throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                            throw new Exception();
                     };
                 }
                 else
@@ -128,8 +129,9 @@ namespace System.Formats.Cbor
             {
                 if (_isTagContext)
                 {
-                    // indefinite-length collection has ended without providing value for tag
-                    return CborReaderState.FormatError;
+                    return throwOnFormatErrors ?
+                        throw new FormatException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue) :
+                        CborReaderState.FormatError;
                 }
 
                 if (_remainingDataItems is null)
@@ -142,16 +144,22 @@ namespace System.Formats.Cbor
                         case CborMajorType.ByteString: return CborReaderState.EndByteString;
                         case CborMajorType.TextString: return CborReaderState.EndTextString;
                         case CborMajorType.Array: return CborReaderState.EndArray;
-                        case CborMajorType.Map when !_currentItemIsKey: return CborReaderState.FormatError;
+                        case CborMajorType.Map when !_currentItemIsKey:
+                            return throwOnFormatErrors ?
+                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue) :
+                                CborReaderState.FormatError;
+
                         case CborMajorType.Map: return CborReaderState.EndMap;
                         default:
                             Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
-                            throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                            throw new Exception();
                     };
                 }
                 else
                 {
-                    return CborReaderState.FormatError;
+                    return throwOnFormatErrors ?
+                        throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte) :
+                        CborReaderState.FormatError;
                 }
             }
 
@@ -161,10 +169,11 @@ namespace System.Formats.Cbor
                 {
                     case CborMajorType.ByteString:
                     case CborMajorType.TextString:
-                        // indefinite length string contexts can only contain data items of same major type
                         if (initialByte.MajorType != _currentMajorType.Value)
                         {
-                            return CborReaderState.FormatError;
+                            return throwOnFormatErrors ?
+                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem) :
+                                CborReaderState.FormatError;
                         }
 
                         break;
@@ -190,8 +199,8 @@ namespace System.Formats.Cbor
                 case CborMajorType.Tag: return CborReaderState.Tag;
                 case CborMajorType.Simple: return MapSpecialValueTagToReaderState(initialByte.AdditionalInfo);
                 default:
-                    Debug.Fail("CborReader internal error. Invalid major type.");
-                    throw new Exception("CborReader internal error. Invalid major type.");
+                    Debug.Fail("CborReader internal error. Invalid CBOR major type.");
+                    throw new Exception();
             };
 
             static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)
@@ -234,40 +243,43 @@ namespace System.Formats.Cbor
         {
             if (_remainingDataItems == 0)
             {
-                throw new InvalidOperationException("Reading a CBOR data item in the current context exceeds its definite length.");
+                throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
             }
 
             if (_buffer.IsEmpty)
             {
                 if (_currentMajorType is null && _remainingDataItems is null && _bytesRead > 0)
                 {
-                    throw new InvalidOperationException("No remaining root-level CBOR data items in the buffer.");
+                    // we are at the end of a well-formed sequence of root-level CBOR values
+                    throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
                 }
 
-                throw new FormatException("Unexpected end of buffer.");
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
 
-            var result = new CborInitialByte(_buffer.Span[0]);
+            var nextByte = new CborInitialByte(_buffer.Span[0]);
 
             if (_currentMajorType != null)
             {
                 switch (_currentMajorType.Value)
                 {
-                    // indefinite-length string contexts do not permit nesting
                     case CborMajorType.ByteString:
                     case CborMajorType.TextString:
-                        if (result.InitialByte == CborInitialByte.IndefiniteLengthBreakByte ||
-                            result.MajorType == _currentMajorType.Value &&
-                            result.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
+                        // Indefinite-length string contexts allow two possible data items:
+                        // 1) Definite-length string chunks of the same major type OR
+                        // 2) a break byte denoting the end of the indefinite-length string context.
+                        if (nextByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte ||
+                            nextByte.MajorType == _currentMajorType.Value &&
+                            nextByte.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
                         {
                             break;
                         }
 
-                        throw new FormatException("Indefinite-length CBOR string containing invalid data item.");
+                        throw new FormatException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, nextByte.MajorType));
                 }
             }
 
-            return result;
+            return nextByte;
         }
 
         private CborInitialByte PeekInitialByte(CborMajorType expectedType)
@@ -276,19 +288,19 @@ namespace System.Formats.Cbor
 
             if (expectedType != result.MajorType)
             {
-                throw new InvalidOperationException("Data item major type mismatch.");
+                throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, result.MajorType));
             }
 
             return result;
         }
 
-        private void ReadNextIndefiniteLengthBreakByte()
+        private void ValidateNextByteIsBreakByte()
         {
             CborInitialByte result = PeekInitialByte();
 
             if (result.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
             {
-                throw new InvalidOperationException("Next data item is not indefinite-length break byte.");
+                throw new InvalidOperationException(SR.Cbor_Reader_NotAtEndOfIndefiniteLengthDataItem);
             }
         }
 
@@ -322,24 +334,24 @@ namespace System.Formats.Cbor
         {
             if (_currentMajorType is null)
             {
-                throw new InvalidOperationException("No active CBOR nested data item to pop.");
+                throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
             }
 
             Debug.Assert(_nestedDataItems?.Count > 0);
 
             if (expectedType != _currentMajorType)
             {
-                throw new InvalidOperationException("Unexpected major type in nested CBOR data item.");
+                throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypePopMismatch, _currentMajorType.Value));
             }
 
             if (_remainingDataItems > 0)
             {
-                throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
+                throw new InvalidOperationException(SR.Cbor_Reader_NotAtEndOfDefiniteLengthDataItem);
             }
 
             if (_isTagContext)
             {
-                throw new FormatException("CBOR tag should be followed by a data item.");
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue);
             }
 
             if (_currentMajorType == CborMajorType.Map)
@@ -401,7 +413,7 @@ namespace System.Formats.Cbor
         {
             if (_buffer.Length < length)
             {
-                throw new FormatException("Unexpected end of buffer.");
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
         }
 
@@ -409,7 +421,7 @@ namespace System.Formats.Cbor
         {
             if (buffer.Length < requiredLength)
             {
-                throw new FormatException("Unexpected end of buffer.");
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
         }
 

@@ -31,10 +31,10 @@ namespace System.Formats.Cbor
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
-                    throw new InvalidOperationException("Attempting to read double-precision floating point encoding as single-precision.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_ReadingDoubleAsSingle);
 
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a floating point number.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotAFloatEncoding);
 
             }
         }
@@ -69,7 +69,7 @@ namespace System.Formats.Cbor
                     return result;
 
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a floating point number.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotAFloatEncoding);
             }
         }
 
@@ -81,7 +81,7 @@ namespace System.Formats.Cbor
             {
                 CborAdditionalInfo.SimpleValueFalse => false,
                 CborAdditionalInfo.SimpleValueTrue => true,
-                _ => throw new InvalidOperationException("CBOR data item does not encode a boolean value."),
+                _ => throw new InvalidOperationException(SR.Cbor_Reader_NotABooleanEncoding),
             };
 
             AdvanceBuffer(1);
@@ -100,7 +100,7 @@ namespace System.Formats.Cbor
                     AdvanceDataItemCounters();
                     return;
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a null value.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotANullEncoding);
             }
         }
 
@@ -120,14 +120,14 @@ namespace System.Formats.Cbor
 
                     if (value < 32)
                     {
-                        throw new FormatException("Two-byte CBOR simple value must be between 32 and 255.");
+                        throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidSimpleValueEncoding);
                     }
 
                     AdvanceBuffer(2);
                     AdvanceDataItemCounters();
                     return (CborSimpleValue)value;
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a simple value.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotASimpleValueEncoding);
             }
         }
 

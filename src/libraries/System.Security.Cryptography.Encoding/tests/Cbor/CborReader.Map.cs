@@ -24,7 +24,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_RequiresDefiniteLengthItems, ConformanceLevel));
                 }
 
                 AdvanceBuffer(1);
@@ -37,7 +37,7 @@ namespace System.Formats.Cbor
 
                 if (mapSize > int.MaxValue || 2 * mapSize > (ulong)_buffer.Length)
                 {
-                    throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
+                    throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }
 
                 AdvanceBuffer(1 + additionalBytes);
@@ -54,16 +54,11 @@ namespace System.Formats.Cbor
         {
             if (_remainingDataItems == null)
             {
-                CborInitialByte value = PeekInitialByte();
-
-                if (value.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
-                {
-                    throw new InvalidOperationException("Not at end of indefinite-length map.");
-                }
+                ValidateNextByteIsBreakByte();
 
                 if (!_currentItemIsKey)
                 {
-                    throw new FormatException("CBOR map key is missing a value.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
                 }
 
                 PopDataItem(expectedType: CborMajorType.Map);
@@ -126,12 +121,12 @@ namespace System.Formats.Cbor
                 if (cmp > 0)
                 {
                     ResetBuffer(currentKeyRange.Offset);
-                    throw new FormatException("CBOR map keys are not in sorted encoding order.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_KeysNotInSortedOrder, ConformanceLevel));
                 }
                 else if (cmp == 0 && CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
                 {
                     ResetBuffer(currentKeyRange.Offset);
-                    throw new FormatException("CBOR map contains duplicate keys.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
                 }
             }
 
@@ -147,7 +142,7 @@ namespace System.Formats.Cbor
             if (!previousKeys.Add(currentKeyRange))
             {
                 ResetBuffer(currentKeyRange.Offset);
-                throw new FormatException("CBOR map contains duplicate keys.");
+                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
             }
         }
 
