@@ -16,7 +16,7 @@ export ANDROID_NDK_ROOT=/Users/egorbo/android-ndk-r21b
 export ANDROID_NDK_HOME=$ANDROID_NDK_ROOT
 ```
 
-Next we need OpenSSL binaries and headers, we haven't properly integrated it yet (it's an ongoing discussion) but there is a workaround:
+Next, we need OpenSSL binaries and headers, we haven't properly integrated this dependency yet (it's an ongoing discussion) but there is a workaround:
 
 - Download and unzip https://maven.google.com/com/android/ndk/thirdparty/openssl/1.1.1g-alpha-1/openssl-1.1.1g-alpha-1.aar
 - Set these env variables:
@@ -28,7 +28,7 @@ export AndroidOpenSslLib="$GOOGLE_OPENSSL/ssl/libs/android.x86_64/libssl.so"
 ```
 **IMPORTANT:** make sure correct ABIs are used in the path, e.g. `-arch x64` -> `android.x86_64` (TODO: auto-detect)
 
-Now we ready to build the repo:
+Now we're ready to build everything for Android:
 ```
 ./build.sh -os Android -arch x64 -subset Mono+Libs
 ```
@@ -36,9 +36,8 @@ and even run tests one by one for each test suite:
 ```
 ./build.sh -os Android -arch x64 -subset Libs.Tests -test
 ```
-Make sure an emulator is booted or a device is plugged.
-**NOTE**: Xharness doesn't run any UI on android and runs tests using headless testing API so the device/emulator won't show anything (but still must stay active).
-
+Make sure an emulator is booted or a device is plugged and unlocked.
+**NOTE**: Xharness doesn't run any UI on Android and runs tests using headless testing API so the device/emulator won't show anything (but still must stay active).
 
 ### Running individual test suites
 - The following shows how to run tests for a specific library

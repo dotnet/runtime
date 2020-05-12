@@ -10,7 +10,7 @@ Run tests one by one for each test suite on a simulator:
 ```
 ./build.sh -os iOS -arch x64 -subset Libs.Tests -test
 ```
-Unlike XHarness-Android, XHarness for iOS is able to boot simulators itself.
+Unlike XHarness-Android, XHarness for iOS is able to boot simulators by its own.
 
 ### Running individual test suites
 - The following shows how to run tests for a specific library on a simulator
@@ -23,6 +23,7 @@ for devices you need to specify `DevTeamProvisioning`:
 cd src/libraries/System.Numerics.Vectors/tests
 ../../../.././dotnet.sh build /t:Test /p:TargetOS=iOS /p:TargetArchitecture=arm64 /p:DevTeamProvisioning=...
 ```
+AppleAppBuilder generates temp Xcode projects you can manually open and resolve provisioning there using native UI and deploy to your devices and start debugging.
 
 ### Known Issues
 - Most of the test suites crash on devices due to [#35674)(https://github.com/dotnet/runtime/issues/35674)
