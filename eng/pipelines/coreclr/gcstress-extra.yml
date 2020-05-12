@@ -22,7 +22,7 @@ jobs:
     buildConfig: checked
     platformGroup: gcstress
     platforms:
-    - OSX_x64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: gcstress-extra
 
@@ -31,7 +31,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: gcstress-extra
 
