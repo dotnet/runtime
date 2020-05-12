@@ -32,6 +32,15 @@ namespace System.Text.Json
             _utf8Value = utf8Value;
         }
 
+        private JsonEncodedText(string stringValue, byte[] utf8Value)
+        {
+            Debug.Assert(stringValue != null);
+            Debug.Assert(utf8Value != null);
+
+            _value = stringValue;
+            _utf8Value = utf8Value;
+        }
+
         /// <summary>
         /// Encodes the string text value as a JSON string.
         /// </summary>
@@ -122,6 +131,37 @@ namespace System.Text.Json
             else
             {
                 return new JsonEncodedText(utf8Value.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Internal version that keeps the existing string and byte[] references if there is no escaping required.
+        /// </summary>
+        internal static JsonEncodedText Encode(string stringValue, byte[] utf8Value, JavaScriptEncoder? encoder = null)
+        {
+            Debug.Assert(stringValue.Equals(JsonHelpers.Utf8GetString(utf8Value)));
+
+            if (utf8Value.Length == 0)
+            {
+                return new JsonEncodedText(stringValue, utf8Value);
+            }
+
+            JsonWriterHelper.ValidateValue(utf8Value);
+            return EncodeHelper(stringValue, utf8Value, encoder);
+        }
+
+        private static JsonEncodedText EncodeHelper(string stringValue, byte[] utf8Value, JavaScriptEncoder? encoder)
+        {
+            int idx = JsonWriterHelper.NeedsEscaping(utf8Value, encoder);
+
+            if (idx != -1)
+            {
+                return new JsonEncodedText(GetEscapedString(utf8Value, idx, encoder));
+            }
+            else
+            {
+                // Encoding is not necessary; use the same stringValue and utf8Value references.
+                return new JsonEncodedText(stringValue, utf8Value);
             }
         }
 

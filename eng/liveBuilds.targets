@@ -137,6 +137,8 @@
         Include="$(MonoArtifactsPath)\cross\*.*" />
       <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
+      <WasmDistFiles Condition="'$(TargetOS)' == 'Browser'"
+        Include="$(MonoArtifactsPath)\wasm\runtimes\**\*.*" />
     </ItemGroup>
 
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />

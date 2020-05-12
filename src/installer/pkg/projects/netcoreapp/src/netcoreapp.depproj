@@ -71,9 +71,14 @@
         Include="@(MonoCrossFiles)">
         <TargetPath>runtimes/$(PackageRID)/native/cross</TargetPath>
       </RuntimeFiles>
-      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true'"
         Include="@(MonoIncludeFiles)">
         <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
+
+      <RuntimeFiles Condition="'$(TargetsBrowser)' == 'true'"
+        Include="@(WasmDistFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/wasm/runtimes/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">

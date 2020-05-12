@@ -181,7 +181,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="..\..\System.Private.CoreLib\src\System\Security\IStackWalk.cs"
              Link="System\Security\IStackWalk.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Security\PermissionSet.cs"
