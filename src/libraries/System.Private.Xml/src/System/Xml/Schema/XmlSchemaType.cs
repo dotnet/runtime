@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.ComponentModel;
 using System.Xml.Serialization;
@@ -13,15 +14,15 @@ namespace System.Xml.Schema
     /// </devdoc>
     public class XmlSchemaType : XmlSchemaAnnotated
     {
-        private string _name;
+        private string? _name;
         private XmlSchemaDerivationMethod _final = XmlSchemaDerivationMethod.None;
         private XmlSchemaDerivationMethod _derivedBy;
-        private XmlSchemaType _baseSchemaType;
-        private XmlSchemaDatatype _datatype;
+        private XmlSchemaType? _baseSchemaType;
+        private XmlSchemaDatatype? _datatype;
         private XmlSchemaDerivationMethod _finalResolved;
-        private volatile SchemaElementDecl _elementDecl;
+        private volatile SchemaElementDecl? _elementDecl;
         private volatile XmlQualifiedName _qname = XmlQualifiedName.Empty;
-        private XmlSchemaType _redefined;
+        private XmlSchemaType? _redefined;
 
         //compiled information
         private XmlSchemaContentType _contentType;
@@ -35,6 +36,7 @@ namespace System.Xml.Schema
             {
                 throw new ArgumentNullException(nameof(qualifiedName));
             }
+
             return DatatypeImplementation.GetSimpleTypeFromXsdType(qualifiedName);
         }
 
@@ -49,32 +51,36 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaComplexType GetBuiltInComplexType(XmlTypeCode typeCode)
+        public static XmlSchemaComplexType? GetBuiltInComplexType(XmlTypeCode typeCode)
         {
             if (typeCode == XmlTypeCode.Item)
             {
                 return XmlSchemaComplexType.AnyType;
             }
+
             return null;
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaComplexType GetBuiltInComplexType(XmlQualifiedName qualifiedName)
+        public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName)
         {
             if (qualifiedName == null)
             {
                 throw new ArgumentNullException(nameof(qualifiedName));
             }
+
             if (qualifiedName.Equals(XmlSchemaComplexType.AnyType.QualifiedName))
             {
                 return XmlSchemaComplexType.AnyType;
             }
+
             if (qualifiedName.Equals(XmlSchemaComplexType.UntypedAnyType.QualifiedName))
             {
                 return XmlSchemaComplexType.UntypedAnyType;
             }
+
             return null;
         }
 
@@ -82,7 +88,7 @@ namespace System.Xml.Schema
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [XmlAttribute("name")]
-        public string Name
+        public string? Name
         {
             get { return _name; }
             set { _name = value; }
@@ -121,7 +127,7 @@ namespace System.Xml.Schema
         /// </devdoc>
         [XmlIgnore]
         [Obsolete("This property has been deprecated. Please use BaseXmlSchemaType property that returns a strongly typed base schema type. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public object BaseSchemaType
+        public object? BaseSchemaType
         {
             get
             {
@@ -132,6 +138,7 @@ namespace System.Xml.Schema
                 {
                     return _baseSchemaType.Datatype;
                 }
+
                 return _baseSchemaType;
             }
         }
@@ -140,7 +147,7 @@ namespace System.Xml.Schema
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [XmlIgnore]
-        public XmlSchemaType BaseXmlSchemaType
+        public XmlSchemaType? BaseXmlSchemaType
         {
             get { return _baseSchemaType; }
         }
@@ -158,7 +165,7 @@ namespace System.Xml.Schema
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [XmlIgnore]
-        public XmlSchemaDatatype Datatype
+        public XmlSchemaDatatype? Datatype
         {
             get { return _datatype; }
         }
@@ -203,7 +210,7 @@ namespace System.Xml.Schema
             }
         }
 
-        internal XmlReader Validate(XmlReader reader, XmlResolver resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
+        internal XmlReader? Validate(XmlReader reader, XmlResolver resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)
             {
@@ -213,6 +220,7 @@ namespace System.Xml.Schema
                 readerSettings.ValidationEventHandler += valEventHandler;
                 return new XsdValidatingReader(reader, resolver, readerSettings, this);
             }
+
             return null;
         }
 
@@ -249,14 +257,14 @@ namespace System.Xml.Schema
             _datatype = value;
         }
 
-        internal SchemaElementDecl ElementDecl
+        internal SchemaElementDecl? ElementDecl
         {
             get { return _elementDecl; }
             set { _elementDecl = value; }
         }
 
         [XmlIgnore]
-        internal XmlSchemaType Redefined
+        internal XmlSchemaType? Redefined
         {
             get { return _redefined; }
             set { _redefined = value; }
@@ -272,7 +280,7 @@ namespace System.Xml.Schema
             _contentType = value;
         }
 
-        public static bool IsDerivedFrom(XmlSchemaType derivedType, XmlSchemaType baseType, XmlSchemaDerivationMethod except)
+        public static bool IsDerivedFrom(XmlSchemaType? derivedType, XmlSchemaType? baseType, XmlSchemaDerivationMethod except)
         {
             if (derivedType == null || baseType == null)
             {
@@ -288,17 +296,19 @@ namespace System.Xml.Schema
             { //Not checking for restriction blocked since all types are implicitly derived by restriction from xs:anyType
                 return true;
             }
+
             do
             {
-                XmlSchemaSimpleType dt = derivedType as XmlSchemaSimpleType;
-                XmlSchemaSimpleType bt = baseType as XmlSchemaSimpleType;
+                XmlSchemaSimpleType? dt = derivedType as XmlSchemaSimpleType;
+                XmlSchemaSimpleType? bt = baseType as XmlSchemaSimpleType;
                 if (bt != null && dt != null)
                 { //SimpleTypes
                     if (bt == DatatypeImplementation.AnySimpleType)
                     { //Not checking block=restriction
                         return true;
                     }
-                    if ((except & derivedType.DerivedBy) != 0 || !dt.Datatype.IsDerivedFrom(bt.Datatype))
+
+                    if ((except & derivedType.DerivedBy) != 0 || !dt.Datatype!.IsDerivedFrom(bt.Datatype))
                     {
                         return false;
                     }
@@ -310,6 +320,7 @@ namespace System.Xml.Schema
                     {
                         return false;
                     }
+
                     derivedType = derivedType.BaseXmlSchemaType;
                     if (derivedType == baseType)
                     {
@@ -332,7 +343,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal override string NameAttribute
+        internal override string? NameAttribute
         {
             get { return Name; }
             set { Name = value; }

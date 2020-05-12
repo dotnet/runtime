@@ -34,7 +34,7 @@
     <Compile Include="UserDefinedShortCircuitOperators.cs" />
     <Compile Include="VarArgsTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="AccessTests.netcoreapp.cs" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildWasmRuntimes">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <UsingTask TaskName="PInvokeTableGenerator"
+    AssemblyFile="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', '$(NetCoreAppCurrent)-$(MonoConfiguration)'))publish\WasmAppBuilder.dll"/>
+
+  <PropertyGroup>
+    <WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\browser-wasm\lib\$(NetCoreAppCurrent)</RuntimePackDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmPInvokeModules Include="libSystem.Native"/>
+    <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)\System.Private.CoreLib.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Runtime.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Console\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Console.dll"/>
+  </ItemGroup>
+
+  <Target Name="CheckEnv">
+    <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
+    <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
+    <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
+  </Target>
+
+  <Target Name="BuildWasmAppBuilder">
+    <MSBuild Projects="$(MonoProjectRoot)mono.proj"
+             Properties="Configuration=$(Configuration)"
+             Targets="BuildWasmAppBuilder"/>
+  </Target>
+
+  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;BuildWasmAppBuilder">
+    <MakeDir Directories="$(MonoObjDir)wasm"/>
+    <PInvokeTableGenerator
+      Modules="@(WasmPInvokeModules)"
+      Assemblies="@(WasmPInvokeAssemblies)"
+      OutputPath="$(WasmPInvokeTablePath)"
+      />
+  </Target>
+
+  <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable">
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) SYS_NATIVE_DIR=$(ArtifactsBinDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
+  </Target>
+
+</Project>

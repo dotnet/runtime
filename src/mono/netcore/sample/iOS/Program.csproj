@@ -2,9 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
+    <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
-    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-iOS-$(Configuration)-$(TargetArchitecture)\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
     <MonoRuntimeDir>$(ArtifactsDir)bin\mono\iOS.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
     <AppleAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder'))</AppleAppBuilder>
@@ -16,7 +17,7 @@
   </Target>
 
   <UsingTask TaskName="AppleAppBuilderTask" 
-      AssemblyFile="$(AppleAppBuilder)\$(HostArch)\$(Configuration)\AppleAppBuilder.dll" />
+             AssemblyFile="$(AppleAppBuilder)\$(NetCoreAppCurrent)-$(Configuration)\AppleAppBuilder.dll" />
 
   <Target Name="BuildAppBundle" DependsOnTargets="RebuildAppleAppBuilder">
     <PropertyGroup>

@@ -649,12 +649,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2D: // DV_2D   .Q.........iiiii ......nnnnnddddd      Vd Vn[]  (dup - vector)
+            ins      = id->idIns();
             datasize = id->idOpSize();
             assert(isValidVectorDatasize(datasize));
             assert(isValidArrangement(datasize, id->idInsOpt()));
             elemsize = optGetElemsize(id->idInsOpt());
             index    = emitGetInsSC(id);
-            assert(isValidVectorIndex(datasize, elemsize, index));
+            assert((ins == INS_dup) || isValidVectorIndex(datasize, elemsize, index));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -5031,12 +5032,17 @@ void emitter::emitIns_R_R_I(
             {
                 if (insOptsAnyArrangement(opt))
                 {
+                    // The size and opt were modified to be based on the
+                    // return type but the immediate is based on the operand
+                    // which can be of a larger size. As such, we don't
+                    // assert the index is valid here and instead do it in
+                    // codegen.
+
                     // Vector operation
                     assert(isValidVectorDatasize(size));
                     assert(isValidArrangement(size, opt));
                     elemsize = optGetElemsize(opt);
                     assert(isValidVectorElemsize(elemsize));
-                    assert(isValidVectorIndex(size, elemsize, imm));
                     assert(opt != INS_OPTS_1D); // Reserved encoding
                     fmt = IF_DV_2D;
                     break;
