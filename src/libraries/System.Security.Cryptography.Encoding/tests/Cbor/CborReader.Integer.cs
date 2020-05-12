@@ -68,7 +68,7 @@ namespace System.Formats.Cbor
                     throw new OverflowException();
 
                 default:
-                    throw new InvalidOperationException("Data item major type mismatch.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, header.MajorType));
             }
         }
 
@@ -88,7 +88,7 @@ namespace System.Formats.Cbor
                     return value;
 
                 default:
-                    throw new InvalidOperationException("Data item major type mismatch.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, header.MajorType));
             }
         }
 
@@ -152,14 +152,14 @@ namespace System.Formats.Cbor
                     return result;
 
                 default:
-                    throw new FormatException("initial byte contains invalid integer encoding data.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidIntegerEncoding);
             }
 
             void ValidateIsNonStandardIntegerRepresentationSupported()
             {
-                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresMinimalIntegerRepresentation(ConformanceLevel))
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresCanonicalIntegerRepresentation(ConformanceLevel))
                 {
-                    throw new FormatException("Non-minimal integer representations are not permitted under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_NonCanonicalIntegerRepresentation, ConformanceLevel));
                 }
             }
         }

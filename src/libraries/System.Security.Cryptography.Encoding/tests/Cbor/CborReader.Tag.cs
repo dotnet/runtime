@@ -15,7 +15,7 @@ namespace System.Formats.Cbor
 
             if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
             {
-                throw new FormatException("Tagged items are not permitted under the current conformance level.");
+                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_TagsNotSupported, ConformanceLevel));
             }
 
             AdvanceBuffer(1 + additionalBytes);
@@ -29,12 +29,12 @@ namespace System.Formats.Cbor
 
             if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
             {
-                throw new FormatException("Tagged items are not permitted under the current conformance level.");
+                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_TagsNotSupported, ConformanceLevel));
             }
 
             if (expectedTag != tag)
             {
-                throw new InvalidOperationException("CBOR tag mismatch.");
+                throw new InvalidOperationException(SR.Cbor_Reader_TagMismatch);
             }
 
             AdvanceBuffer(1 + additionalBytes);
@@ -67,7 +67,7 @@ namespace System.Formats.Cbor
                     case CborReaderState.StartTextString:
                         break;
                     default:
-                        throw new FormatException("String DateTime semantic tag should annotate string value.");
+                        throw new FormatException(SR.Cbor_Reader_InvalidDateTimeEncoding);
                 }
 
                 string dateString = ReadTextString();
@@ -75,7 +75,7 @@ namespace System.Formats.Cbor
                 // TODO determine if conformance levels should allow inexact date sting parsing
                 if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
                 {
-                    throw new FormatException("DateTime string is not valid RFC3339 format.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidDateTimeEncoding);
                 }
 
                 return result;
@@ -110,14 +110,14 @@ namespace System.Formats.Cbor
 
                         if (double.IsNaN(seconds) || double.IsInfinity(seconds))
                         {
-                            throw new FormatException("Unix time representation cannot be infinity or NaN.");
+                            throw new FormatException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
                         }
 
                         TimeSpan timespan = TimeSpan.FromSeconds(seconds);
                         return DateTimeOffset.UnixEpoch + timespan;
 
                     default:
-                        throw new FormatException("UnixDateTime tag should annotate a numeric value.");
+                        throw new FormatException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
                 }
             }
             catch
@@ -139,7 +139,7 @@ namespace System.Formats.Cbor
                 {
                     CborTag.UnsignedBigNum => false,
                     CborTag.NegativeBigNum => true,
-                    _ => throw new InvalidOperationException("CBOR tag is not a recognized Bignum value."),
+                    _ => throw new InvalidOperationException(SR.Cbor_Reader_InvalidBigNumEncoding),
                 };
 
                 switch (PeekState())
@@ -148,7 +148,7 @@ namespace System.Formats.Cbor
                     case CborReaderState.StartByteString:
                         break;
                     default:
-                        throw new FormatException("BigNum semantic tag should annotate byte string value.");
+                        throw new FormatException(SR.Cbor_Reader_InvalidBigNumEncoding);
                 }
 
                 byte[] unsignedBigEndianEncoding = ReadByteString();
@@ -174,7 +174,7 @@ namespace System.Formats.Cbor
 
                 if (PeekState() != CborReaderState.StartArray || ReadStartArray() != 2)
                 {
-                    throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
 
                 decimal mantissa; // signed integral component of the decimal value
@@ -188,7 +188,7 @@ namespace System.Formats.Cbor
                         break;
 
                     default:
-                        throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+                        throw new FormatException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
 
                 switch (PeekState())
@@ -210,13 +210,13 @@ namespace System.Formats.Cbor
                                 break;
 
                             default:
-                                throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+                                throw new FormatException(SR.Cbor_Reader_InvalidDecimalEncoding);
                         }
 
                         break;
 
                     default:
-                        throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+                        throw new FormatException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
 
                 ReadEndArray();

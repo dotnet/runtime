@@ -302,8 +302,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
@@ -321,8 +320,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
@@ -340,8 +338,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadUInt32());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUInt32());
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
@@ -359,8 +356,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadUInt64());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUInt64());
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
@@ -380,8 +376,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerEncoding());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerEncoding());
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }

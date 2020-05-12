@@ -232,7 +232,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             reader.ReadStartMap();
-            reader.ReadStartTextStringIndefiniteLength();
+            reader.ReadStartTextString();
             for (int i = 0; i < skipOffset; i++)
             {
                 reader.ReadTextString();

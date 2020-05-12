@@ -16,7 +16,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items are not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 AdvanceBuffer(1);
@@ -29,7 +29,7 @@ namespace System.Formats.Cbor
 
                 if (arrayLength > (ulong)_buffer.Length)
                 {
-                    throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
+                    throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }
 
                 AdvanceBuffer(1 + additionalBytes);
@@ -42,13 +42,7 @@ namespace System.Formats.Cbor
         {
             if (_remainingDataItems == null)
             {
-                CborInitialByte value = PeekInitialByte();
-
-                if (value.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
-                {
-                    throw new InvalidOperationException("Not at end of indefinite-length array.");
-                }
-
+                ValidateNextByteIsBreakByte();
                 PopDataItem(expectedType: CborMajorType.Array);
                 AdvanceDataItemCounters();
                 AdvanceBuffer(1);
