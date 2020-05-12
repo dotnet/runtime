@@ -550,16 +550,17 @@ namespace System.Text.Json.Serialization.Tests
         public static void PredefinedSerializerOptions_Web()
         {
             var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-            Assert.True(options.PropertyNameCaseInsensitive);
             JsonNamingPolicy policy = options.PropertyNamingPolicy;
-            Assert.NotNull(policy);
-            Assert.Equal(policy, JsonNamingPolicy.CamelCase);
+            Assert.True(options.PropertyNameCaseInsensitive);
+            Assert.Same(JsonNamingPolicy.CamelCase, policy);
         }
 
-        [Fact]
-        public static void PredefinedSerializerOptions_UnhandledDefaults()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2)]
+        public static void PredefinedSerializerOptions_UnhandledDefaults(int enumValue)
         {
-            var outOfRangeSerializerDefaults = (JsonSerializerDefaults)(-1);
+            var outOfRangeSerializerDefaults = (JsonSerializerDefaults)enumValue;
             Assert.Throws<ArgumentOutOfRangeException>(() => new JsonSerializerOptions(outOfRangeSerializerDefaults));
         }
 
