@@ -628,6 +628,40 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 }
 
 //------------------------------------------------------------------------
+// isSupportedBaseType
+//
+// Arguments:
+//    intrinsicId - HW intrinsic id
+//    baseType - Base type of the intrinsic.
+//
+// Return Value:
+//    returns true if the baseType is supported for given intrinsic.
+//
+static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
+{
+    // We don't actually check the intrinsic outside of the false case as we expect
+    // the exposed managed signatures are either generic and support all types
+    // or they are explicit and support the type indicated.
+    if (varTypeIsArithmetic(baseType))
+    {
+        return true;
+    }
+
+#ifdef TARGET_XARCH
+    assert((intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
+           (intrinsic >= NI_Vector128_get_AllBitsSet && intrinsic <= NI_Vector128_ToVector256Unsafe) ||
+           (intrinsic >= NI_Vector256_As && intrinsic <= NI_Vector256_AsUInt64) ||
+           (intrinsic >= NI_Vector256_get_AllBitsSet && intrinsic <= NI_Vector256_ToScalar));
+#else
+    assert((intrinsic >= NI_Vector64_AsByte && intrinsic <= NI_Vector64_AsUInt32) ||
+           (intrinsic >= NI_Vector64_get_AllBitsSet && intrinsic <= NI_Vector64_ToScalar) ||
+           (intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
+           (intrinsic >= NI_Vector128_get_AllBitsSet && intrinsic <= NI_Vector128_ToScalar));
+#endif
+    return false;
+}
+
+//------------------------------------------------------------------------
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
@@ -659,23 +693,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         retType  = getSIMDTypeForSize(sizeBytes);
         assert(sizeBytes != 0);
 
-        // Immediately return if this is non-arithmetic type.
-        if (!varTypeIsArithmetic(baseType))
+        // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+        // rather than deferring the decision after getting the baseType of arg.
+        if (!isSupportedBaseType(intrinsic, baseType))
         {
-// We want to return early here for cases where retType was TYP_STRUCT as per method signature and
-// rather than deferring the decision after getting the baseType of arg.
-#ifdef TARGET_XARCH
-            assert(intrinsic == NI_Vector128_As || intrinsic == NI_Vector128_get_AllBitsSet ||
-                   intrinsic == NI_Vector128_get_Zero || intrinsic == NI_Vector128_WithElement ||
-                   intrinsic == NI_Vector128_ToVector256 || intrinsic == NI_Vector128_ToVector256Unsafe ||
-                   intrinsic == NI_Vector256_get_Zero || intrinsic == NI_Vector256_get_AllBitsSet ||
-                   intrinsic == NI_Vector256_As || intrinsic == NI_Vector256_WithElement ||
-                   intrinsic == NI_Vector256_GetLower);
-#else
-            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector64_get_Zero) ||
-                   (intrinsic == NI_Vector64_get_AllBitsSet) || (intrinsic == NI_Vector128_As) ||
-                   (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_get_AllBitsSet));
-#endif
             return nullptr;
         }
     }
@@ -696,24 +717,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    // Immediately return if this is non-arithmetic type and category is other than scalar/special.
-    if (!varTypeIsArithmetic(baseType) && category != HW_Category_Special && category != HW_Category_Scalar)
+    // Immediately return if the category is other than scalar/special and this is not a supported base type.
+    if (category != HW_Category_Special && category != HW_Category_Scalar && !isSupportedBaseType(intrinsic, baseType))
     {
-#ifdef TARGET_XARCH
-        assert((intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
-               (intrinsic == NI_Vector128_GetElement || intrinsic == NI_Vector128_get_Count ||
-                intrinsic == NI_Vector128_ToScalar) ||
-               (intrinsic >= NI_Vector256_As && intrinsic <= NI_Vector256_AsUInt64) ||
-               (intrinsic == NI_Vector256_GetElement || intrinsic == NI_Vector256_get_Count ||
-                intrinsic == NI_Vector256_ToScalar));
-#else
-        assert((intrinsic >= NI_Vector64_AsByte && intrinsic <= NI_Vector64_AsUInt32) ||
-               (intrinsic == NI_Vector64_GetElement || intrinsic == NI_Vector64_get_Count ||
-                intrinsic == NI_Vector64_ToScalar) ||
-               (intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
-               (intrinsic == NI_Vector128_GetElement || intrinsic == NI_Vector128_get_Count ||
-                intrinsic == NI_Vector128_ToScalar));
-#endif
         return nullptr;
     }
 
