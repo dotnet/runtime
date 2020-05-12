@@ -65,6 +65,7 @@ private:
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
     uint32_t m_componentAssemblyCount;
+    uint32_t m_manifestAssemblyCount;
     SHash<AssemblyNameIndexHashTraits> m_assemblySimpleNameToIndexMap;
     
     Crst m_eagerFixupsLock;
@@ -93,8 +94,9 @@ public:
     uint32_t GetComponentAssemblyCount() const { return m_componentAssemblyCount; }
     ReadyToRunInfo *GetReadyToRunInfo() const { return m_pReadyToRunInfo; }
     IMDInternalImport *GetManifestMetadata() const { return m_pManifestMetadata; }
+    uint32_t GetManifestAssemblyCount() const { return m_manifestAssemblyCount; }
 
-    Assembly *LoadComponentAssembly(uint32_t rowid);
+    Assembly *LoadManifestAssembly(uint32_t rowid);
     
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(LPCUTF8 assemblySimpleName);
     
