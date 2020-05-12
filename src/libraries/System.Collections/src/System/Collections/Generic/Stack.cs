@@ -44,7 +44,11 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            _array = new T[capacity];
+
+            if (capacity == 0)
+                _array = Array.Empty<T>();
+            else
+                _array = new T[capacity];
         }
 
         // Fills a Stack with the contents of a particular collection.  The items are
