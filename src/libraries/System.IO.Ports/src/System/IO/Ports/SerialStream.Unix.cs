@@ -464,7 +464,7 @@ namespace System.IO.Ports
         // Will wait `timeout` miliseconds or until reading or writing is possible
         // If no operation is requested it will throw
         // Returns event which has happened
-        private Interop.Serial.PollEvents PollEvents(int timeout, bool pollReadEvents, bool pollWriteEvents, out Interop.ErrorInfo? error)
+        private Interop.PollEvents PollEvents(int timeout, bool pollReadEvents, bool pollWriteEvents, out Interop.ErrorInfo? error)
         {
             if (!pollReadEvents && !pollWriteEvents)
             {
@@ -472,19 +472,19 @@ namespace System.IO.Ports
                 throw new Exception();
             }
 
-            Interop.Serial.PollEvents eventsToPoll = Interop.Serial.PollEvents.POLLERR;
+            Interop.PollEvents eventsToPoll = Interop.PollEvents.POLLERR;
 
             if (pollReadEvents)
             {
-                eventsToPoll |= Interop.Serial.PollEvents.POLLIN;
+                eventsToPoll |= Interop.PollEvents.POLLIN;
             }
 
             if (pollWriteEvents)
             {
-                eventsToPoll |= Interop.Serial.PollEvents.POLLOUT;
+                eventsToPoll |= Interop.PollEvents.POLLOUT;
             }
 
-            Interop.Serial.PollEvents events = Interop.Serial.PollEvents.POLLNONE;
+            Interop.PollEvents events = Interop.PollEvents.POLLNONE;
             Interop.Error ret = Interop.Serial.Poll(
                 _handle,
                 eventsToPoll,
@@ -843,7 +843,7 @@ namespace System.IO.Ports
                 }
                 else
                 {
-                    Interop.Serial.PollEvents events = PollEvents(1,
+                    Interop.PollEvents events = PollEvents(1,
                                                                pollReadEvents: hasPendingReads,
                                                                pollWriteEvents: hasPendingWrites,
                                                                out Interop.ErrorInfo? error);
@@ -854,21 +854,21 @@ namespace System.IO.Ports
                         break;
                     }
 
-                    if (events.HasFlag(Interop.Serial.PollEvents.POLLNVAL) ||
-                        events.HasFlag(Interop.Serial.PollEvents.POLLERR))
+                    if (events.HasFlag(Interop.PollEvents.POLLNVAL) ||
+                        events.HasFlag(Interop.PollEvents.POLLERR))
                     {
                         // bad descriptor or some other error we can't handle
                         FinishPendingIORequests();
                         break;
                     }
 
-                    if (events.HasFlag(Interop.Serial.PollEvents.POLLIN))
+                    if (events.HasFlag(Interop.PollEvents.POLLIN))
                     {
                         int bytesRead = DoIORequest(_readQueue, _processReadDelegate);
                         _totalBytesRead += bytesRead;
                     }
 
-                    if (events.HasFlag(Interop.Serial.PollEvents.POLLOUT))
+                    if (events.HasFlag(Interop.PollEvents.POLLOUT))
                     {
                         DoIORequest(_writeQueue, _processWriteDelegate);
                     }

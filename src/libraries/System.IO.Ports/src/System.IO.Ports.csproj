@@ -129,6 +129,8 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
