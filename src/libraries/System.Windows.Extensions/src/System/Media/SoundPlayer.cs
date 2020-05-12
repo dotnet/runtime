@@ -489,7 +489,7 @@ namespace System.Media
 
                 _streamData = new byte[BlockSize];
 
-                int readBytes = await _stream.ReadAsync(_streamData, _currentPos, BlockSize, cancellationToken).ConfigureAwait(false);
+                int readBytes = await _stream.ReadAsync(_streamData.AsMemory(_currentPos, BlockSize), cancellationToken).ConfigureAwait(false);
                 int totalBytes = readBytes;
 
                 while (readBytes > 0)
@@ -501,7 +501,7 @@ namespace System.Media
                         Array.Copy(_streamData, newData, _streamData.Length);
                         _streamData = newData;
                     }
-                    readBytes = await _stream.ReadAsync(_streamData, _currentPos, BlockSize, cancellationToken).ConfigureAwait(false);
+                    readBytes = await _stream.ReadAsync(_streamData.AsMemory(_currentPos, BlockSize), cancellationToken).ConfigureAwait(false);
                     totalBytes += readBytes;
                 }
 
