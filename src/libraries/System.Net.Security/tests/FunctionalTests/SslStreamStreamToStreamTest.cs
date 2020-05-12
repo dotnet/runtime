@@ -511,7 +511,7 @@ namespace System.Net.Security.Tests
                 await WriteAsync(serverSslStream, new byte[] { 1 }, 0, 1)
                     .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
 
-                // Shouldn't throw, the context is diposed now.
+                // Shouldn't throw, the context is disposed now.
                 // Since the server read task is in progress, the read buffer is not returned to ArrayPool.
                 serverSslStream.Dispose();
 
@@ -855,6 +855,70 @@ namespace System.Net.Security.Tests
             catch (Exception e)
             {
                 return Task.FromException<int>(e);
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Handshake_DisposeClient_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            var clientStream = new VirtualNetworkStream(network, isServer: false);
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                clientStream.Dispose();
+
+                await Assert.ThrowsAsync<AggregateException>(() => DoHandshake(clientSslStream, serverSslStream));
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Handshake_DisposeServer_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+            
+            var serverStream = new VirtualNetworkStream(network, isServer: true);
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                serverStream.Dispose();
+
+                await Assert.ThrowsAsync<AggregateException>(() => DoHandshake(clientSslStream, serverSslStream));
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Handshake_DisposeClientSsl_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork() { DisableConnectionBreaking = true };
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate);
+                clientSslStream.Dispose();
+
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => DoHandshake(clientSslStream, serverSslStream));
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Handshake_DisposeServerSsl_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork() {DisableConnectionBreaking = true};
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            {
+                var serverSslStream = new SslStream(serverStream);
+                serverSslStream.Dispose();
+
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => DoHandshake(clientSslStream, serverSslStream));
             }
         }
     }
