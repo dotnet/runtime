@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Logging.Console.cs" />
+    <ProjectReference Include="..\..\System.Text.Json\ref\System.Text.Json.csproj" />
     <ProjectReference Include="..\..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj" />
     <ProjectReference Include="..\..\Microsoft.Extensions.Logging\ref\Microsoft.Extensions.Logging.csproj" />
     <ProjectReference Include="..\..\Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />

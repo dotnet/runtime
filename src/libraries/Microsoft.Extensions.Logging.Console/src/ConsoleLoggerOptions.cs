@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text.Json;
 
 namespace Microsoft.Extensions.Logging.Console
 {
@@ -11,8 +12,6 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     public class ConsoleLoggerOptions
     {
-        private ConsoleLoggerFormat _format = ConsoleLoggerFormat.Default;
-
         /// <summary>
         /// Includes scopes when <see langword="true" />.
         /// </summary>
@@ -28,14 +27,25 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         public ConsoleLoggerFormat Format
         {
-            get => _format;
+            get
+            {
+                try {
+                    return (ConsoleLoggerFormat) Enum.Parse(typeof(ConsoleLoggerFormat), Formatter);
+                }
+                catch (ArgumentException) {
+                    return ConsoleLoggerFormat.Default;
+                }
+            }
             set
             {
-                if (value < ConsoleLoggerFormat.Default || value > ConsoleLoggerFormat.Systemd)
+                if (value == ConsoleLoggerFormat.Systemd)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    Formatter = Enum.GetName(typeof(ConsoleLoggerFormat), ConsoleLoggerFormat.Systemd);
                 }
-                _format = value;
+                else
+                {
+                    Formatter = Enum.GetName(typeof(ConsoleLoggerFormat), ConsoleLoggerFormat.Default);
+                }
             }
         }
 
@@ -43,7 +53,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// 
         /// </summary>
         public string Formatter { get; set; }
-
+        
         /// <summary>
         /// Gets or sets value indicating the minimum level of messaged that would get written to <c>Console.Error</c>.
         /// </summary>
@@ -58,5 +68,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// Gets or sets indication whether or not UTC timezone should be used to for timestamps in logging messages. Defaults to <c>false</c>.
         /// </summary>
         public bool UseUtcTimestamp { get; set; }
+
+        public JsonWriterOptions JsonWriterOptions { get; set; }
     }
 }

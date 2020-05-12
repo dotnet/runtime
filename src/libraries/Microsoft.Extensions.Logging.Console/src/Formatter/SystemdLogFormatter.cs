@@ -1,10 +1,18 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Text;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
 {
     public class SystemdLogFormatter : ILogFormatter
     {
+        private readonly IOptionsMonitor<SystemdLogFormatterOptions> _options;
+        private IDisposable _optionsReloadToken;
+
         private static readonly string _loglevelPadding = ": ";
         private static readonly string _messagePadding;
 
@@ -17,13 +25,23 @@ namespace Microsoft.Extensions.Logging.Console
             _messagePadding = new string(' ', logLevelString.Length + _loglevelPadding.Length);
         }
 
+        public SystemdLogFormatter(IOptionsMonitor<SystemdLogFormatterOptions> options)
+        {
+            _options = options;
+            ReloadLoggerOptions(options.CurrentValue);
+            _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
+        }
+
+        private void ReloadLoggerOptions(SystemdLogFormatterOptions options)
+        {
+            FormatterOptions = options;
+        }
+
         public string Name => "Systemd";
 
-        internal IExternalScopeProvider ScopeProvider { get; set; }
+        public SystemdLogFormatterOptions FormatterOptions { get; set; }
 
-        internal ConsoleLoggerOptions Options { get; set; }
-
-        public LogMessageEntry Format(LogLevel logLevel, string logName, int eventId, string message, Exception exception)
+        public LogMessageEntry Format(LogLevel logLevel, string logName, int eventId, string message, Exception exception, ConsoleLoggerOptions options, IExternalScopeProvider scopeProvider)
         {
             var logBuilder = _logBuilder;
             _logBuilder = null;
@@ -44,10 +62,10 @@ namespace Microsoft.Extensions.Logging.Console
             logBuilder.Append(logLevelString);
 
             // timestamp
-            var timestampFormat = Options.TimestampFormat;
+            var timestampFormat = options.TimestampFormat;
             if (timestampFormat != null)
             {
-                var dateTime = GetCurrentDateTime();
+                var dateTime = GetCurrentDateTime(options);
                 logBuilder.Append(dateTime.ToString(timestampFormat));
             }
 
@@ -58,7 +76,7 @@ namespace Microsoft.Extensions.Logging.Console
             logBuilder.Append("]");
 
             // scope information
-            GetScopeInformation(logBuilder);
+            GetScopeInformation(logBuilder, options, scopeProvider);
 
             // message
             if (!string.IsNullOrEmpty(message))
@@ -90,7 +108,12 @@ namespace Microsoft.Extensions.Logging.Console
 
             return new LogMessageEntry(
                 message: formattedMessage,
-                logAsError: logLevel >= Options.LogToStandardErrorThreshold
+                logAsError: logLevel >= options.LogToStandardErrorThreshold,
+                writeCallback : console =>
+                {
+                    console.Write(formattedMessage, null, null);
+                    console.Flush();
+                }
             );
 
             static void AppendAndReplaceNewLine(StringBuilder sb, string message)
@@ -101,9 +124,9 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private DateTime GetCurrentDateTime()
+        private DateTime GetCurrentDateTime(ConsoleLoggerOptions options)
         {
-            return Options.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
+            return options.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
         }
 
         private static string GetSyslogSeverityString(LogLevel logLevel)
@@ -127,10 +150,9 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private void GetScopeInformation(StringBuilder stringBuilder)
+        private void GetScopeInformation(StringBuilder stringBuilder, ConsoleLoggerOptions options, IExternalScopeProvider scopeProvider)
         {
-            var scopeProvider = ScopeProvider;
-            if (Options.IncludeScopes && scopeProvider != null)
+            if (options.IncludeScopes && scopeProvider != null)
             {
                 var initialLength = stringBuilder.Length;
 

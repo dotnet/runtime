@@ -3,13 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    public class DefaultLogFormatterOptions
+    public class JsonLogFormatterOptions
     {
-        public DefaultLogFormatterOptions() { }
+        public JsonLogFormatterOptions() { }
+        public JsonWriterOptions JsonWriterOptions { get; set; }
+        // or public JsonSerializerOptions JsonSerializerOptions { get; set; }
     }
 }

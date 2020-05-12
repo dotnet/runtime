@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
 
@@ -18,8 +19,8 @@ namespace Microsoft.Extensions.Logging.Console
     {
         private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
+        private readonly ConcurrentDictionary<string, ILogFormatter> _formatters;
         private readonly ConsoleLoggerProcessor _messageQueue;
-        private readonly IEnumerable<ILogFormatter> _formatters;
 
         private IDisposable _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
@@ -33,7 +34,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             _options = options;
             _loggers = new ConcurrentDictionary<string, ConsoleLogger>();
-            _formatters = formatters;
+            _formatters = new ConcurrentDictionary<string, ILogFormatter>(formatters.ToDictionary(f => f.Name)); 
 
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
@@ -51,21 +52,38 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
+        // warning:  ReloadLoggerOptions can be called before the ctor completed,... before registering all of the state used in this method need to be initialized
         private void ReloadLoggerOptions(ConsoleLoggerOptions options)
         {
+            string nameFromFormat = Enum.GetName(typeof(ConsoleLoggerFormat), options?.Format);
+            _formatters.TryGetValue(options?.Formatter ?? nameFromFormat, out ILogFormatter logFormatter);
+            if (logFormatter == null)
+            {
+                logFormatter = _formatters[nameFromFormat];
+            }
+
             foreach (var logger in _loggers)
             {
                 logger.Value.Options = options;
+                logger.Value.Formatter = logFormatter;
             }
         }
 
         /// <inheritdoc />
         public ILogger CreateLogger(string name)
         {
-            return _loggers.GetOrAdd(name, loggerName => new ConsoleLogger(name, _messageQueue, _formatters)
+            string nameFromFormat = Enum.GetName(typeof(ConsoleLoggerFormat), _options.CurrentValue.Format);
+            _formatters.TryGetValue(_options.CurrentValue.Formatter ?? nameFromFormat, out ILogFormatter logFormatter);
+            if (logFormatter == null)
+            {
+                logFormatter = _formatters[nameFromFormat];
+            }
+
+            return _loggers.GetOrAdd(name, loggerName => new ConsoleLogger(name, _messageQueue)
             {
                 Options = _options.CurrentValue,
-                ScopeProvider = _scopeProvider
+                ScopeProvider = _scopeProvider,
+                Formatter = logFormatter
             });
         }
 

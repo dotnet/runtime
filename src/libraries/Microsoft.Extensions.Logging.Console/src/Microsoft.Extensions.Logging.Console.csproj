@@ -24,7 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Text.Json" />
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <Reference Include="Microsoft.Extensions.Logging" />
     <Reference Include="Microsoft.Extensions.Logging.Abstractions" />

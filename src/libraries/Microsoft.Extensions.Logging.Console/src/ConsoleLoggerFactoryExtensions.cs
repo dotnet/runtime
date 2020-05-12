@@ -5,8 +5,16 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Options;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -20,10 +28,18 @@ namespace Microsoft.Extensions.Logging
         {
             builder.AddConfiguration();
 
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILogFormatter, JsonConsoleLogFormatter>());
+            LoggerProviderOptions.RegisterProviderOptions<JsonLogFormatterOptions, JsonConsoleLogFormatter>(builder.Services);
+
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILogFormatter, DefaultLogFormatter>());
+            LoggerProviderOptions.RegisterProviderOptions<DefaultLogFormatterOptions, DefaultLogFormatter>(builder.Services);
+
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILogFormatter, SystemdLogFormatter>());
+            LoggerProviderOptions.RegisterProviderOptions<SystemdLogFormatterOptions, SystemdLogFormatter>(builder.Services);
+
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ConsoleLoggerProvider>());
             LoggerProviderOptions.RegisterProviderOptions<ConsoleLoggerOptions, ConsoleLoggerProvider>(builder.Services);
+
             return builder;
         }
 

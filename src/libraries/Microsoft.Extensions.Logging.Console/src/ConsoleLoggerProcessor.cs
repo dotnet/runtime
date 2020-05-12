@@ -53,19 +53,7 @@ namespace Microsoft.Extensions.Logging.Console
         internal virtual void WriteMessage(LogMessageEntry message)
         {
             var console = message.LogAsError ? ErrorConsole : Console;
-
-            if (message.TimeStamp != null)
-            {
-                console.Write(message.TimeStamp, message.MessageColor, message.MessageColor);
-            }
-
-            if (message.LevelString != null)
-            {
-                console.Write(message.LevelString, message.LevelBackground, message.LevelForeground);
-            }
-
-            console.Write(message.Message, message.MessageColor, message.MessageColor);
-            console.Flush();
+            message.WriteCallback(console);
         }
 
         private void ProcessLogQueue()

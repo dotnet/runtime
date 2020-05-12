@@ -3,19 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Microsoft.Extensions.Logging.Console
 {
     internal class ConsoleLogger : ILogger
     {
-        private readonly IEnumerable<ILogFormatter> _formatters;
 
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;
 
-        internal ConsoleLogger(string name, ConsoleLoggerProcessor loggerProcessor, IEnumerable<ILogFormatter> formatters)
+        internal ConsoleLogger(string name, ConsoleLoggerProcessor loggerProcessor)
         {
             if (name == null)
             {
@@ -24,12 +25,15 @@ namespace Microsoft.Extensions.Logging.Console
 
             _name = name;
             _queueProcessor = loggerProcessor;
-            _formatters = formatters;
+            ScopeProvider = new LoggerExternalScopeProvider();
+
         }
 
         internal IExternalScopeProvider ScopeProvider { get; set; }
 
         internal ConsoleLoggerOptions Options { get; set; }
+
+        internal ILogFormatter Formatter { get; set; }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
@@ -53,8 +57,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         public virtual void WriteMessage(LogLevel logLevel, string logName, int eventId, string message, Exception exception)
         {
-            var formatter = _formatters.Single(f => f.Name == (Options.Formatter ?? Options.Format.ToString()));
-            var entry = formatter.Format(logLevel, logName, eventId, message, exception);
+            var entry = Formatter.Format(logLevel, logName, eventId, message, exception, Options, ScopeProvider);
             _queueProcessor.EnqueueMessage(entry);
         }
 

@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Logging.Console
 {
     public readonly struct LogMessageEntry
     {
-        public LogMessageEntry(string message, string timeStamp = null, string levelString = null, ConsoleColor? levelBackground = null, ConsoleColor? levelForeground = null, ConsoleColor? messageColor = null, bool logAsError = false)
+        public LogMessageEntry(string message, string timeStamp = null, string levelString = null, ConsoleColor? levelBackground = null, ConsoleColor? levelForeground = null, ConsoleColor? messageColor = null, bool logAsError = false, Action<IConsole> writeCallback = null)
         {
             TimeStamp = timeStamp;
             LevelString = levelString;
@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Logging.Console
             MessageColor = messageColor;
             Message = message;
             LogAsError = logAsError;
+            WriteCallback = writeCallback;
         }
 
         public readonly string TimeStamp;
@@ -26,5 +27,6 @@ namespace Microsoft.Extensions.Logging.Console
         public readonly ConsoleColor? MessageColor;
         public readonly string Message;
         public readonly bool LogAsError;
+        public readonly Action<IConsole> WriteCallback;
     }
 }

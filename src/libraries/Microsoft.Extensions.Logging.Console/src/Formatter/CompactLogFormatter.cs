@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    public class DefaultLogFormatter : ILogFormatter
+    internal class CompactLogFormatter : ILogFormatter
     {
         private static readonly string _loglevelPadding = ": ";
         private static readonly string _messagePadding;
@@ -19,21 +19,20 @@ namespace Microsoft.Extensions.Logging.Console
         [ThreadStatic]
         private static StringBuilder _logBuilder;
 
-        static DefaultLogFormatter()
+        static CompactLogFormatter()
         {
             var logLevelString = GetLogLevelString(LogLevel.Information);
             _messagePadding = new string(' ', logLevelString.Length + _loglevelPadding.Length);
             _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
         }
 
-        public DefaultLogFormatter() { }
+        public CompactLogFormatter() { }
 
-        public string Name => "Default";
-
-        public DefaultLogFormatterOptions FormatterOptions { get; set; }
+        public string Name => "Compact";
 
         public LogMessageEntry Format(LogLevel logLevel, string logName, int eventId, string message, Exception exception, ConsoleLoggerOptions options, IExternalScopeProvider scopeProvider)
         {
+            // todo fix later:
             var logBuilder = _logBuilder;
             _logBuilder = null;
 
@@ -53,7 +52,8 @@ namespace Microsoft.Extensions.Logging.Console
             logBuilder.Append(logName);
             logBuilder.Append("[");
             logBuilder.Append(eventId);
-            logBuilder.AppendLine("]");
+            logBuilder.Append("]");
+            // logBuilder.AppendLine("]");
 
             // scope information
             GetScopeInformation(logBuilder, options, scopeProvider);
@@ -65,7 +65,6 @@ namespace Microsoft.Extensions.Logging.Console
 
                 var len = logBuilder.Length;
                 logBuilder.AppendLine(message);
-                logBuilder.Replace(Environment.NewLine, _newLineWithMessagePadding, len, message.Length);
             }
 
             // Example:
@@ -74,7 +73,8 @@ namespace Microsoft.Extensions.Logging.Console
             if (exception != null)
             {
                 // exception message
-                logBuilder.AppendLine(exception.ToString());
+                logBuilder.Append(exception.ToString());
+                // logBuilder.AppendLine(exception.ToString());
             }
 
             string timestamp = null;
@@ -129,17 +129,17 @@ namespace Microsoft.Extensions.Logging.Console
             switch (logLevel)
             {
                 case LogLevel.Trace:
-                    return "trce";
+                    return "compact_trce";
                 case LogLevel.Debug:
-                    return "dbug";
+                    return "compact_dbug";
                 case LogLevel.Information:
-                    return "info";
+                    return "compact_info";
                 case LogLevel.Warning:
-                    return "warn";
+                    return "compact_warn";
                 case LogLevel.Error:
-                    return "fail";
+                    return "compact_fail";
                 case LogLevel.Critical:
-                    return "crit";
+                    return "compact_crit";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(logLevel));
             }
@@ -186,18 +186,15 @@ namespace Microsoft.Extensions.Logging.Console
                     if (padd)
                     {
                         builder.Append(_messagePadding);
-                        builder.Append("=> ");
                     }
-                    else
-                    {
-                        builder.Append(" => ");
-                    }
+                    builder.Append("=> ");
                     builder.Append(scope);
+                    builder.Append(" ");
                 }, (stringBuilder, initialLength));
 
                 if (stringBuilder.Length > initialLength)
                 {
-                    stringBuilder.AppendLine();
+                    // stringBuilder.AppendLine();
                 }
             }
         }
