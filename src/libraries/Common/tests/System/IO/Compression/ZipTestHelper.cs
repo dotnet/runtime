@@ -247,10 +247,10 @@ namespace System.IO.Compression.Tests
 
         private static string FlipSlashes(string name)
         {
-            Debug.Assert(!(name.Contains("\\") && name.Contains("/")));
+            Debug.Assert(!(name.Contains('\\') && name.Contains('/')));
             return
-                name.Contains("\\") ? name.Replace("\\", "/") :
-                name.Contains("/") ? name.Replace("/", "\\") :
+                name.Contains('\\') ? name.Replace('\\', '/') :
+                name.Contains('/') ? name.Replace('/', '\\') :
                 name;
         }
 

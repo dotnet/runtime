@@ -194,7 +194,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
 
             // Only quote if whitespace exists in the string
-            if (argument.Contains(" ") || argument.Contains("\t") || argument.Contains("\n"))
+            if (argument.Contains(' ') || argument.Contains('\t') || argument.Contains('\n'))
             {
                 return true;
             }

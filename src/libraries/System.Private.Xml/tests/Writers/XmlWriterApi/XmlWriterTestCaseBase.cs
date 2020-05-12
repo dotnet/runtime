@@ -74,7 +74,7 @@ namespace System.Xml.Tests
         public bool CompareString(string strExpected)
         {
             CError.WriteLine(WriterFactory.GetString());
-            if (strExpected.Contains("~"))
+            if (strExpected.Contains('~'))
                 return WriterFactory.CompareStringWithPrefixes(strExpected);
 
             return WriterFactory.CompareString(strExpected);

@@ -178,7 +178,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Modify the .deps.json for Microsoft.NETCore.App FX
             JObject root = JObject.Parse(File.ReadAllText(sharedFxDepsJsonPath));
             IEnumerable<JProperty> netCoreAppNativeAssets = root["targets"]
-                .Children<JProperty>().Where(p => p.Name.Contains("/"))
+                .Children<JProperty>().Where(p => p.Name.Contains('/'))
                 .Children().Children().OfType<JProperty>().Where(p => p.Name.Contains("runtime") && p.Name.Contains("Microsoft.NETCore.App"))
                 .Values()["native"].Children().OfType<JProperty>();
 

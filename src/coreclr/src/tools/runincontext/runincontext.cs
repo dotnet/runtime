@@ -109,7 +109,7 @@ public class ArgInput
                 for (i++; i < args.Length; i++)
                 {
                     assemblyArgs.Add(args[i]);
-                    if (args[i].Contains(" ") || args[i].Contains("\t"))
+                    if (args[i].Contains(' ') || args[i].Contains('\t'))
                     {
                         EntryArgStr.Append($"\"{args[i]}\"");
                     }

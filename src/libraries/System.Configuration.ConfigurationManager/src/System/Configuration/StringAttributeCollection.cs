@@ -78,7 +78,7 @@ namespace System.Configuration
 
         private static void ThrowIfContainsDelimiter(string value)
         {
-            if (value.Contains(",")) // string.Contains(char) is .NetCore2.1+ specific
+            if (value.Contains(','))
                 throw new ConfigurationErrorsException(SR.Format(SR.Config_base_value_cannot_contain, ","));
         }
 

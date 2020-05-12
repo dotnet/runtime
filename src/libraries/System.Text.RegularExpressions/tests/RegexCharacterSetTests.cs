@@ -54,7 +54,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[0-9-[2468]]", RegexOptions.None, new[] { '0', '1', '3', '5', '7', '9' })]
         public void SetInclusionsExpected(string set, RegexOptions options, char[] expectedIncluded)
         {
-            bool hasBracket = set.Contains("[");
+            bool hasBracket = set.Contains('[');
             if (hasBracket)
             {
                 ValidateSet(set, options, new HashSet<char>(expectedIncluded), null, validateEveryChar: true);

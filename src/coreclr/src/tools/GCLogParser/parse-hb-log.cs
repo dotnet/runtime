@@ -355,14 +355,14 @@ namespace parse_hb_log
                             bool alloc_count_p = true;
                             bool set_ideal_p = false;
 
-                            if (strRemaining.Contains("|"))
+                            if (strRemaining.Contains('|'))
                             {
                                 strAllocHeap = ParseString(strRemaining, ",", "|", out strRemaining);
-                                if (strRemaining.Contains("m"))
+                                if (strRemaining.Contains('m'))
                                     multiple_procs_p = true;
-                                if (strRemaining.Contains("p"))
+                                if (strRemaining.Contains('p'))
                                     alloc_count_p = false;
-                                if (strRemaining.Contains("i"))
+                                if (strRemaining.Contains('i'))
                                     set_ideal_p = true;
                             }
                             else
