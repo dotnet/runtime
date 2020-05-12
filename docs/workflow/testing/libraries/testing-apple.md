@@ -4,7 +4,7 @@ In order to build librarires and tests for iOS or tvOS you only need some fresh 
 
 Build Librarires for iOS:
 ```
-./build.sh -os iOS -arch x64 -subset Mono+Libs
+./build.sh mono+libs -os iOS -arch x64
 ```
 Run tests one by one for each test suite on a simulator:
 ```
