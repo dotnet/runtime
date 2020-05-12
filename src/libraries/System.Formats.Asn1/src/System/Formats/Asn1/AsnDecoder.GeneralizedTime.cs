@@ -2,93 +2,86 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
-#nullable enable
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal ref partial struct AsnValueReader
+    public static partial class AsnDecoder
     {
         /// <summary>
-        ///   Reads the next value as a GeneralizedTime with tag UNIVERSAL 24.
+        ///   Reads a GeneralizedTime value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules.
         /// </summary>
-        /// <param name="disallowFractions">
-        ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
-        ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
-        ///   Time attribute.
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 24).
         /// </param>
         /// <returns>
-        ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
+        ///   The decoded value.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public DateTimeOffset ReadGeneralizedTime(bool disallowFractions = false) =>
-            ReadGeneralizedTime(Asn1Tag.GeneralizedTime, disallowFractions);
-
-        /// <summary>
-        ///   Reads the next value as a GeneralizedTime with a specified tag.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="disallowFractions">
-        ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
-        ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
-        ///   Time attribute.
-        /// </param>
-        /// <returns>
-        ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public DateTimeOffset ReadGeneralizedTime(Asn1Tag expectedTag, bool disallowFractions = false)
+        public static DateTimeOffset ReadGeneralizedTime(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
             byte[]? rented = null;
-            Span<byte> tmpSpace;
 
-            unsafe
-            {
-                // An X.509 time is 15 characters (yyyyMMddHHmmssZ), beyond that is fractions (no limit) or
-                // BER specified offset.
-                const int StackBufSize = 64;
-                byte* stackBuf = stackalloc byte[StackBufSize];
-                tmpSpace = new Span<byte>(stackBuf, StackBufSize);
-            }
+            // An X.509 time is 15 characters (yyyyMMddHHmmssZ), beyond that is fractions (no limit) or
+            // BER specified offset.
+            const int StackBufSize = 64;
+            Span<byte> tmpSpace = stackalloc byte[StackBufSize];
 
             ReadOnlySpan<byte> contents = GetOctetStringContents(
-                expectedTag,
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.GeneralizedTime,
                 UniversalTagNumber.GeneralizedTime,
                 out int bytesRead,
                 ref rented,
                 tmpSpace);
 
-            DateTimeOffset value = ParseGeneralizedTime(RuleSet, contents, disallowFractions);
+            DateTimeOffset value = ParseGeneralizedTime(ruleSet, contents);
 
             if (rented != null)
             {
                 CryptoPool.Return(rented, contents.Length);
             }
 
-            _data = _data.Slice(bytesRead);
+            bytesConsumed = bytesRead;
             return value;
         }
 
         private static DateTimeOffset ParseGeneralizedTime(
             AsnEncodingRules ruleSet,
-            ReadOnlySpan<byte> contentOctets,
-            bool disallowFractions)
+            ReadOnlySpan<byte> contentOctets)
         {
             // T-REC-X.680-201510 sec 46 defines a lot of formats for GeneralizedTime.
             //
@@ -125,12 +118,12 @@ namespace System.Security.Cryptography.Asn1
             if (strict && contentOctets.Length < 15)
             {
                 // yyyyMMddHHmmssZ
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
             }
             else if (contentOctets.Length < 10)
             {
                 // yyyyMMddHH
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException();
             }
 
             ReadOnlySpan<byte> contents = contentOctets;
@@ -186,7 +179,7 @@ namespace System.Security.Cryptography.Asn1
                     }
                     else
                     {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        throw new AsnContentException();
                     }
                 }
                 else
@@ -197,11 +190,6 @@ namespace System.Security.Cryptography.Asn1
 
             if (state == FracState)
             {
-                if (disallowFractions)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                }
-
                 Debug.Assert(!contents.IsEmpty);
                 byte octet = contents[0];
                 Debug.Assert(state == GetNextState(octet));
@@ -216,20 +204,20 @@ namespace System.Security.Cryptography.Asn1
                     // T-REC-X.690-201510 sec 11.7.4
                     if (strict)
                     {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                     }
                 }
                 else
                 {
                     Debug.Fail($"Unhandled value '{octet:X2}' in {nameof(FracState)}");
-                    throw new CryptographicException();
+                    throw new AsnContentException();
                 }
 
                 contents = contents.Slice(1);
 
                 if (contents.IsEmpty)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException();
                 }
 
                 // There are 36,000,000,000 ticks per hour, and hour is our largest scale.
@@ -239,7 +227,7 @@ namespace System.Security.Cryptography.Asn1
                 if (!Utf8Parser.TryParse(SliceAtMost(contents, 12), out fraction, out int fracLength) ||
                     fracLength == 0)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException();
                 }
 
                 lastFracDigit = (byte)(fraction % 10);
@@ -267,7 +255,7 @@ namespace System.Security.Cryptography.Asn1
 
                     if (nextState == null)
                     {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        throw new AsnContentException();
                     }
 
                     // If this produces FracState we'll finish with a non-empty contents, and still throw.
@@ -302,12 +290,12 @@ namespace System.Security.Cryptography.Asn1
                     else
                     {
                         Debug.Fail($"Unhandled value '{octet:X2}' in {nameof(SuffixState)}");
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        throw new AsnContentException();
                     }
 
                     if (contents.IsEmpty)
                     {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        throw new AsnContentException();
                     }
 
                     int offsetHour = ParseNonNegativeIntAndSlice(ref contents, 2);
@@ -323,7 +311,7 @@ namespace System.Security.Cryptography.Asn1
                     // is bound to [00,14] by DateTimeOffset, so no additional check is required here.
                     if (offsetMinute > 59)
                     {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        throw new AsnContentException();
                     }
 
                     TimeSpan tmp = new TimeSpan(offsetHour, offsetMinute, 0);
@@ -340,7 +328,7 @@ namespace System.Security.Cryptography.Asn1
             // Was there data after a suffix, or fracstate went re-entrant?
             if (!contents.IsEmpty)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException();
             }
 
             // T-REC-X.690-201510 sec 11.7
@@ -348,12 +336,12 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (!isZulu || !second.HasValue)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                 }
 
                 if (lastFracDigit == 0)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                 }
             }
 
@@ -408,60 +396,43 @@ namespace System.Security.Cryptography.Asn1
             }
             catch (Exception e)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                throw new AsnContentException(SR.ContentException_DefaultMessage, e);
             }
         }
     }
 
-    internal partial class AsnReader
+    public partial class AsnReader
     {
-        /// <summary>
-        ///   Reads the next value as a GeneralizedTime with tag UNIVERSAL 24.
-        /// </summary>
-        /// <param name="disallowFractions">
-        ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
-        ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
-        ///   Time attribute.
-        /// </param>
-        /// <returns>
-        ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public DateTimeOffset ReadGeneralizedTime(bool disallowFractions = false) =>
-            ReadGeneralizedTime(Asn1Tag.GeneralizedTime, disallowFractions);
-
         /// <summary>
         ///   Reads the next value as a GeneralizedTime with a specified tag.
         /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="disallowFractions">
-        ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
-        ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
-        ///   Time attribute.
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 24).
         /// </param>
         /// <returns>
-        ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
+        ///   The decoded value.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public DateTimeOffset ReadGeneralizedTime(Asn1Tag expectedTag, bool disallowFractions = false)
+        public DateTimeOffset ReadGeneralizedTime(Asn1Tag? expectedTag = null)
         {
-            AsnValueReader valueReader = OpenValueReader();
-            DateTimeOffset ret = valueReader.ReadGeneralizedTime(expectedTag, disallowFractions);
-            valueReader.MatchSlice(ref _data);
+            DateTimeOffset ret = AsnDecoder.ReadGeneralizedTime(_data.Span, RuleSet, out int consumed, expectedTag);
+            _data = _data.Slice(consumed);
             return ret;
         }
     }

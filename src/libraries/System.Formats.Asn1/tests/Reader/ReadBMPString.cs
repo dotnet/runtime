@@ -5,80 +5,79 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadBMPString : Asn1ReaderTests
+    public sealed class ReadBMPString
     {
         public static IEnumerable<object[]> ValidEncodingData { get; } =
             new object[][]
             {
                 new object[]
                 {
-                    PublicEncodingRules.BER,
+                    AsnEncodingRules.BER,
                     "1E1A004A006F0068006E00200051002E00200053006D006900740068",
                     "John Q. Smith",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.CER,
+                    AsnEncodingRules.CER,
                     "1E1A004A006F0068006E00200051002E00200053006D006900740068",
                     "John Q. Smith",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.DER,
+                    AsnEncodingRules.DER,
                     "1E1A004A006F0068006E00200051002E00200053006D006900740068",
                     "John Q. Smith",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.BER,
+                    AsnEncodingRules.BER,
                     "3E80" + "041A004A006F0068006E00200051002E00200053006D006900740068" + "0000",
                     "John Q. Smith",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.BER,
+                    AsnEncodingRules.BER,
                     "3E1C" + "041A004A006F0068006E00200051002E00200053006D006900740068",
                     "John Q. Smith",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.BER,
+                    AsnEncodingRules.BER,
                     "1E00",
                     "",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.CER,
+                    AsnEncodingRules.CER,
                     "1E00",
                     "",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.DER,
+                    AsnEncodingRules.DER,
                     "1E00",
                     "",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.BER,
+                    AsnEncodingRules.BER,
                     "3E00",
                     "",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.BER,
+                    AsnEncodingRules.BER,
                     "3E80" + "0000",
                     "",
                 },
                 new object[]
                 {
-                    PublicEncodingRules.BER,
+                    AsnEncodingRules.BER,
                     "3E80" +
                       "2480" +
                         // "Dr."
@@ -123,12 +122,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [Theory]
         [MemberData(nameof(ValidEncodingData))]
         public static void GetBMPString_Success(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
             string expectedValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
             string value = reader.ReadCharacterString(UniversalTagNumber.BMPString);
 
             Assert.Equal(expectedValue, value);
@@ -137,14 +136,14 @@ namespace System.Security.Cryptography.Tests.Asn1
         [Theory]
         [MemberData(nameof(ValidEncodingData))]
         public static void TryCopyBMPString(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
             string expectedValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
             char[] output = new char[expectedValue.Length];
 
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
             bool copied;
             int charsWritten;
 
@@ -174,7 +173,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [Theory]
         [MemberData(nameof(ValidEncodingData))]
         public static void TryCopyBMPStringBytes(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
             string expectedString)
         {
@@ -182,7 +181,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             string expectedHex = Text.Encoding.BigEndianUnicode.GetBytes(expectedString).ByteArrayToHex();
             byte[] output = new byte[expectedHex.Length / 2];
 
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
             bool copied;
             int bytesWritten;
 
@@ -211,16 +210,16 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "1E020020", true)]
-        [InlineData(PublicEncodingRules.BER, "3E80" + "04020020" + "0000", false)]
-        [InlineData(PublicEncodingRules.BER, "3E04" + "04020020", false)]
+        [InlineData(AsnEncodingRules.BER, "1E020020", true)]
+        [InlineData(AsnEncodingRules.BER, "3E80" + "04020020" + "0000", false)]
+        [InlineData(AsnEncodingRules.BER, "3E04" + "04020020", false)]
         public static void TryReadBMPStringBytes(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
             bool expectSuccess)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             bool got = reader.TryReadBMPStringBytes(out ReadOnlyMemory<byte> contents);
 
@@ -241,29 +240,29 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData("Incomplete Tag", PublicEncodingRules.BER, "1F")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.CER, "1F")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.DER, "1F")]
-        [InlineData("Missing Length", PublicEncodingRules.BER, "1E")]
-        [InlineData("Missing Length", PublicEncodingRules.CER, "1E")]
-        [InlineData("Missing Length", PublicEncodingRules.DER, "1E")]
-        [InlineData("Missing Contents", PublicEncodingRules.BER, "1E02")]
-        [InlineData("Missing Contents", PublicEncodingRules.CER, "1E02")]
-        [InlineData("Missing Contents", PublicEncodingRules.DER, "1E02")]
-        [InlineData("Length Too Long", PublicEncodingRules.BER, "1E0600480069")]
-        [InlineData("Length Too Long", PublicEncodingRules.CER, "1E0600480069")]
-        [InlineData("Length Too Long", PublicEncodingRules.DER, "1E0600480069")]
-        [InlineData("Constructed Form", PublicEncodingRules.DER, "3E0404020049")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.BER, "1F")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.CER, "1F")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.DER, "1F")]
+        [InlineData("Missing Length", AsnEncodingRules.BER, "1E")]
+        [InlineData("Missing Length", AsnEncodingRules.CER, "1E")]
+        [InlineData("Missing Length", AsnEncodingRules.DER, "1E")]
+        [InlineData("Missing Contents", AsnEncodingRules.BER, "1E02")]
+        [InlineData("Missing Contents", AsnEncodingRules.CER, "1E02")]
+        [InlineData("Missing Contents", AsnEncodingRules.DER, "1E02")]
+        [InlineData("Length Too Long", AsnEncodingRules.BER, "1E0600480069")]
+        [InlineData("Length Too Long", AsnEncodingRules.CER, "1E0600480069")]
+        [InlineData("Length Too Long", AsnEncodingRules.DER, "1E0600480069")]
+        [InlineData("Constructed Form", AsnEncodingRules.DER, "3E0404020049")]
         public static void TryReadBMPStringBytes_Throws(
             string description,
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
                     reader.TryReadBMPStringBytes(out ReadOnlyMemory<byte> contents);
@@ -271,51 +270,51 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData("Empty", PublicEncodingRules.BER, "")]
-        [InlineData("Empty", PublicEncodingRules.CER, "")]
-        [InlineData("Empty", PublicEncodingRules.DER, "")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.BER, "1F")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.CER, "1F")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.DER, "1F")]
-        [InlineData("Missing Length", PublicEncodingRules.BER, "1E")]
-        [InlineData("Missing Length", PublicEncodingRules.CER, "1E")]
-        [InlineData("Missing Length", PublicEncodingRules.DER, "1E")]
-        [InlineData("Missing Contents", PublicEncodingRules.BER, "1E02")]
-        [InlineData("Missing Contents", PublicEncodingRules.CER, "1E02")]
-        [InlineData("Missing Contents", PublicEncodingRules.DER, "1E02")]
-        [InlineData("Missing Contents - Constructed", PublicEncodingRules.BER, "3E02")]
-        [InlineData("Missing Contents - Constructed Indef", PublicEncodingRules.BER, "3E80")]
-        [InlineData("Missing Contents - Constructed Indef", PublicEncodingRules.CER, "3E80")]
-        [InlineData("Length Too Long", PublicEncodingRules.BER, "1E034869")]
-        [InlineData("Length Too Long", PublicEncodingRules.CER, "1E034869")]
-        [InlineData("Length Too Long", PublicEncodingRules.DER, "1E034869")]
-        [InlineData("Definite Constructed Form", PublicEncodingRules.CER, "3E03040149")]
-        [InlineData("Definite Constructed Form", PublicEncodingRules.DER, "3E03040149")]
-        [InlineData("Indefinite Constructed Form - Short Payload", PublicEncodingRules.CER, "3E800401490000")]
-        [InlineData("Indefinite Constructed Form", PublicEncodingRules.DER, "3E800401490000")]
-        [InlineData("No nested content", PublicEncodingRules.CER, "3E800000")]
-        [InlineData("No EoC", PublicEncodingRules.BER, "3E80" + "04024869")]
-        [InlineData("Wrong Tag - Primitive", PublicEncodingRules.BER, "04024869")]
-        [InlineData("Wrong Tag - Primitive", PublicEncodingRules.CER, "04024869")]
-        [InlineData("Wrong Tag - Primitive", PublicEncodingRules.DER, "04024869")]
-        [InlineData("Wrong Tag - Constructed", PublicEncodingRules.BER, "240404024869")]
-        [InlineData("Wrong Tag - Constructed Indef", PublicEncodingRules.BER, "2480" + "04024869" + "0000")]
-        [InlineData("Wrong Tag - Constructed Indef", PublicEncodingRules.CER, "2480" + "04024869" + "0000")]
-        [InlineData("Wrong Tag - Constructed", PublicEncodingRules.DER, "240404024869")]
-        [InlineData("Nested Bad Tag", PublicEncodingRules.BER, "3E04" + "1E024869")]
-        [InlineData("Nested context-specific", PublicEncodingRules.BER, "3E04800400FACE")]
-        [InlineData("Nested context-specific (indef)", PublicEncodingRules.BER, "3E80800400FACE0000")]
-        [InlineData("Nested context-specific (indef)", PublicEncodingRules.CER, "3E80800400FACE0000")]
-        [InlineData("Nested Length Too Long", PublicEncodingRules.BER, "3E07" + ("2402" + "0404") + "04020049")]
-        [InlineData("Nested Simple Length Too Long", PublicEncodingRules.BER, "3E03" + "040548656C6C6F")]
-        [InlineData("Constructed EndOfContents", PublicEncodingRules.BER, "3E8020000000")]
-        [InlineData("Constructed EndOfContents", PublicEncodingRules.CER, "3E8020000000")]
-        [InlineData("NonEmpty EndOfContents", PublicEncodingRules.BER, "3E80000100")]
-        [InlineData("NonEmpty EndOfContents", PublicEncodingRules.CER, "3E80000100")]
-        [InlineData("LongLength EndOfContents", PublicEncodingRules.BER, "3E80008100")]
+        [InlineData("Empty", AsnEncodingRules.BER, "")]
+        [InlineData("Empty", AsnEncodingRules.CER, "")]
+        [InlineData("Empty", AsnEncodingRules.DER, "")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.BER, "1F")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.CER, "1F")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.DER, "1F")]
+        [InlineData("Missing Length", AsnEncodingRules.BER, "1E")]
+        [InlineData("Missing Length", AsnEncodingRules.CER, "1E")]
+        [InlineData("Missing Length", AsnEncodingRules.DER, "1E")]
+        [InlineData("Missing Contents", AsnEncodingRules.BER, "1E02")]
+        [InlineData("Missing Contents", AsnEncodingRules.CER, "1E02")]
+        [InlineData("Missing Contents", AsnEncodingRules.DER, "1E02")]
+        [InlineData("Missing Contents - Constructed", AsnEncodingRules.BER, "3E02")]
+        [InlineData("Missing Contents - Constructed Indef", AsnEncodingRules.BER, "3E80")]
+        [InlineData("Missing Contents - Constructed Indef", AsnEncodingRules.CER, "3E80")]
+        [InlineData("Length Too Long", AsnEncodingRules.BER, "1E034869")]
+        [InlineData("Length Too Long", AsnEncodingRules.CER, "1E034869")]
+        [InlineData("Length Too Long", AsnEncodingRules.DER, "1E034869")]
+        [InlineData("Definite Constructed Form", AsnEncodingRules.CER, "3E03040149")]
+        [InlineData("Definite Constructed Form", AsnEncodingRules.DER, "3E03040149")]
+        [InlineData("Indefinite Constructed Form - Short Payload", AsnEncodingRules.CER, "3E800401490000")]
+        [InlineData("Indefinite Constructed Form", AsnEncodingRules.DER, "3E800401490000")]
+        [InlineData("No nested content", AsnEncodingRules.CER, "3E800000")]
+        [InlineData("No EoC", AsnEncodingRules.BER, "3E80" + "04024869")]
+        [InlineData("Wrong Tag - Primitive", AsnEncodingRules.BER, "04024869")]
+        [InlineData("Wrong Tag - Primitive", AsnEncodingRules.CER, "04024869")]
+        [InlineData("Wrong Tag - Primitive", AsnEncodingRules.DER, "04024869")]
+        [InlineData("Wrong Tag - Constructed", AsnEncodingRules.BER, "240404024869")]
+        [InlineData("Wrong Tag - Constructed Indef", AsnEncodingRules.BER, "2480" + "04024869" + "0000")]
+        [InlineData("Wrong Tag - Constructed Indef", AsnEncodingRules.CER, "2480" + "04024869" + "0000")]
+        [InlineData("Wrong Tag - Constructed", AsnEncodingRules.DER, "240404024869")]
+        [InlineData("Nested Bad Tag", AsnEncodingRules.BER, "3E04" + "1E024869")]
+        [InlineData("Nested context-specific", AsnEncodingRules.BER, "3E04800400FACE")]
+        [InlineData("Nested context-specific (indef)", AsnEncodingRules.BER, "3E80800400FACE0000")]
+        [InlineData("Nested context-specific (indef)", AsnEncodingRules.CER, "3E80800400FACE0000")]
+        [InlineData("Nested Length Too Long", AsnEncodingRules.BER, "3E07" + ("2402" + "0404") + "04020049")]
+        [InlineData("Nested Simple Length Too Long", AsnEncodingRules.BER, "3E03" + "040548656C6C6F")]
+        [InlineData("Constructed Null", AsnEncodingRules.BER, "3E8020000000")]
+        [InlineData("Constructed Null", AsnEncodingRules.CER, "3E8020000000")]
+        [InlineData("NonEmpty Null", AsnEncodingRules.BER, "3E80000100")]
+        [InlineData("NonEmpty Null", AsnEncodingRules.CER, "3E80000100")]
+        [InlineData("LongLength Null", AsnEncodingRules.BER, "3E80008100")]
         public static void TryCopyBMPStringBytes_Throws(
             string description,
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
@@ -325,9 +324,9 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             int bytesWritten = -1;
 
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
                     reader.TryCopyBMPStringBytes(outputData, out bytesWritten);
@@ -337,15 +336,15 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(252, outputData[0]);
         }
 
-        private static void TryCopyBMPString_Throws_Helper(PublicEncodingRules ruleSet, byte[] inputData)
+        private static void TryCopyBMPString_Throws_Helper(AsnEncodingRules ruleSet, byte[] inputData)
         {
             char[] outputData = new char[inputData.Length + 1];
             outputData[0] = 'a';
 
             int bytesWritten = -1;
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
                     reader.TryCopyBMPString(
@@ -358,34 +357,34 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData("Incomplete Tag", PublicEncodingRules.BER, "1F")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.CER, "1F")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.DER, "1F")]
-        [InlineData("Missing Length", PublicEncodingRules.BER, "1E")]
-        [InlineData("Missing Length", PublicEncodingRules.CER, "1E")]
-        [InlineData("Missing Length", PublicEncodingRules.DER, "1E")]
-        [InlineData("Missing Contents", PublicEncodingRules.BER, "1E02")]
-        [InlineData("Missing Contents", PublicEncodingRules.CER, "1E02")]
-        [InlineData("Missing Contents", PublicEncodingRules.DER, "1E02")]
-        [InlineData("Length Too Long", PublicEncodingRules.BER, "1E0600480069")]
-        [InlineData("Length Too Long", PublicEncodingRules.CER, "1E0600480069")]
-        [InlineData("Length Too Long", PublicEncodingRules.DER, "1E0600480069")]
-        [InlineData("Constructed Form", PublicEncodingRules.DER, "3E0404020049")]
-        [InlineData("Bad BMP value (odd length)", PublicEncodingRules.BER, "1E0120")]
-        [InlineData("Bad BMP value (high surrogate)", PublicEncodingRules.BER, "1E02D800")]
-        [InlineData("Bad BMP value (high private surrogate)", PublicEncodingRules.BER, "1E02DB81")]
-        [InlineData("Bad BMP value (low surrogate)", PublicEncodingRules.BER, "1E02DC00")]
-        [InlineData("Wrong Tag", PublicEncodingRules.BER, "04024869")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.BER, "1F")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.CER, "1F")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.DER, "1F")]
+        [InlineData("Missing Length", AsnEncodingRules.BER, "1E")]
+        [InlineData("Missing Length", AsnEncodingRules.CER, "1E")]
+        [InlineData("Missing Length", AsnEncodingRules.DER, "1E")]
+        [InlineData("Missing Contents", AsnEncodingRules.BER, "1E02")]
+        [InlineData("Missing Contents", AsnEncodingRules.CER, "1E02")]
+        [InlineData("Missing Contents", AsnEncodingRules.DER, "1E02")]
+        [InlineData("Length Too Long", AsnEncodingRules.BER, "1E0600480069")]
+        [InlineData("Length Too Long", AsnEncodingRules.CER, "1E0600480069")]
+        [InlineData("Length Too Long", AsnEncodingRules.DER, "1E0600480069")]
+        [InlineData("Constructed Form", AsnEncodingRules.DER, "3E0404020049")]
+        [InlineData("Bad BMP value (odd length)", AsnEncodingRules.BER, "1E0120")]
+        [InlineData("Bad BMP value (high surrogate)", AsnEncodingRules.BER, "1E02D800")]
+        [InlineData("Bad BMP value (high private surrogate)", AsnEncodingRules.BER, "1E02DB81")]
+        [InlineData("Bad BMP value (low surrogate)", AsnEncodingRules.BER, "1E02DC00")]
+        [InlineData("Wrong Tag", AsnEncodingRules.BER, "04024869")]
         public static void GetBMPString_Throws(
             string description,
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
                     reader.ReadCharacterString(UniversalTagNumber.BMPString);
@@ -393,55 +392,55 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData("Empty", PublicEncodingRules.BER, "")]
-        [InlineData("Empty", PublicEncodingRules.CER, "")]
-        [InlineData("Empty", PublicEncodingRules.DER, "")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.BER, "1F")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.CER, "1F")]
-        [InlineData("Incomplete Tag", PublicEncodingRules.DER, "1F")]
-        [InlineData("Missing Length", PublicEncodingRules.BER, "1E")]
-        [InlineData("Missing Length", PublicEncodingRules.CER, "1E")]
-        [InlineData("Missing Length", PublicEncodingRules.DER, "1E")]
-        [InlineData("Missing Contents", PublicEncodingRules.BER, "1E02")]
-        [InlineData("Missing Contents", PublicEncodingRules.CER, "1E02")]
-        [InlineData("Missing Contents", PublicEncodingRules.DER, "1E02")]
-        [InlineData("Missing Contents - Constructed", PublicEncodingRules.BER, "3E02")]
-        [InlineData("Missing Contents - Constructed Indef", PublicEncodingRules.BER, "3E80")]
-        [InlineData("Missing Contents - Constructed Indef", PublicEncodingRules.CER, "3E80")]
-        [InlineData("Length Too Long", PublicEncodingRules.BER, "1E034869")]
-        [InlineData("Length Too Long", PublicEncodingRules.CER, "1E034869")]
-        [InlineData("Length Too Long", PublicEncodingRules.DER, "1E034869")]
-        [InlineData("Definite Constructed Form", PublicEncodingRules.CER, "3E03040149")]
-        [InlineData("Definite Constructed Form", PublicEncodingRules.DER, "3E03040149")]
-        [InlineData("Indefinite Constructed Form - Short Payload", PublicEncodingRules.CER, "3E800401490000")]
-        [InlineData("Indefinite Constructed Form", PublicEncodingRules.DER, "3E800401490000")]
-        [InlineData("No nested content", PublicEncodingRules.CER, "3E800000")]
-        [InlineData("No EoC", PublicEncodingRules.BER, "3E80" + "04024869")]
-        [InlineData("Wrong Tag - Primitive", PublicEncodingRules.BER, "04024869")]
-        [InlineData("Wrong Tag - Primitive", PublicEncodingRules.CER, "04024869")]
-        [InlineData("Wrong Tag - Primitive", PublicEncodingRules.DER, "04024869")]
-        [InlineData("Wrong Tag - Constructed", PublicEncodingRules.BER, "240404024869")]
-        [InlineData("Wrong Tag - Constructed Indef", PublicEncodingRules.BER, "2480" + "04024869" + "0000")]
-        [InlineData("Wrong Tag - Constructed Indef", PublicEncodingRules.CER, "2480" + "04024869" + "0000")]
-        [InlineData("Wrong Tag - Constructed", PublicEncodingRules.DER, "240404024869")]
-        [InlineData("Nested Bad Tag", PublicEncodingRules.BER, "3E04" + "1E024869")]
-        [InlineData("Nested context-specific", PublicEncodingRules.BER, "3E04800400FACE")]
-        [InlineData("Nested context-specific (indef)", PublicEncodingRules.BER, "3E80800400FACE0000")]
-        [InlineData("Nested context-specific (indef)", PublicEncodingRules.CER, "3E80800400FACE0000")]
-        [InlineData("Nested Length Too Long", PublicEncodingRules.BER, "3E07" + ("2402" + "0404") + "04020049")]
-        [InlineData("Nested Simple Length Too Long", PublicEncodingRules.BER, "3E03" + "040548656C6C6F")]
-        [InlineData("Constructed EndOfContents", PublicEncodingRules.BER, "3E8020000000")]
-        [InlineData("Constructed EndOfContents", PublicEncodingRules.CER, "3E8020000000")]
-        [InlineData("NonEmpty EndOfContents", PublicEncodingRules.BER, "3E80000100")]
-        [InlineData("NonEmpty EndOfContents", PublicEncodingRules.CER, "3E80000100")]
-        [InlineData("LongLength EndOfContents", PublicEncodingRules.BER, "3E80008100")]
-        [InlineData("Bad BMP value (odd length)", PublicEncodingRules.BER, "1E0120")]
-        [InlineData("Bad BMP value (high surrogate)", PublicEncodingRules.BER, "1E02D800")]
-        [InlineData("Bad BMP value (high private surrogate)", PublicEncodingRules.BER, "1E02DB81")]
-        [InlineData("Bad BMP value (low surrogate)", PublicEncodingRules.BER, "1E02DC00")]
+        [InlineData("Empty", AsnEncodingRules.BER, "")]
+        [InlineData("Empty", AsnEncodingRules.CER, "")]
+        [InlineData("Empty", AsnEncodingRules.DER, "")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.BER, "1F")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.CER, "1F")]
+        [InlineData("Incomplete Tag", AsnEncodingRules.DER, "1F")]
+        [InlineData("Missing Length", AsnEncodingRules.BER, "1E")]
+        [InlineData("Missing Length", AsnEncodingRules.CER, "1E")]
+        [InlineData("Missing Length", AsnEncodingRules.DER, "1E")]
+        [InlineData("Missing Contents", AsnEncodingRules.BER, "1E02")]
+        [InlineData("Missing Contents", AsnEncodingRules.CER, "1E02")]
+        [InlineData("Missing Contents", AsnEncodingRules.DER, "1E02")]
+        [InlineData("Missing Contents - Constructed", AsnEncodingRules.BER, "3E02")]
+        [InlineData("Missing Contents - Constructed Indef", AsnEncodingRules.BER, "3E80")]
+        [InlineData("Missing Contents - Constructed Indef", AsnEncodingRules.CER, "3E80")]
+        [InlineData("Length Too Long", AsnEncodingRules.BER, "1E034869")]
+        [InlineData("Length Too Long", AsnEncodingRules.CER, "1E034869")]
+        [InlineData("Length Too Long", AsnEncodingRules.DER, "1E034869")]
+        [InlineData("Definite Constructed Form", AsnEncodingRules.CER, "3E03040149")]
+        [InlineData("Definite Constructed Form", AsnEncodingRules.DER, "3E03040149")]
+        [InlineData("Indefinite Constructed Form - Short Payload", AsnEncodingRules.CER, "3E800401490000")]
+        [InlineData("Indefinite Constructed Form", AsnEncodingRules.DER, "3E800401490000")]
+        [InlineData("No nested content", AsnEncodingRules.CER, "3E800000")]
+        [InlineData("No EoC", AsnEncodingRules.BER, "3E80" + "04024869")]
+        [InlineData("Wrong Tag - Primitive", AsnEncodingRules.BER, "04024869")]
+        [InlineData("Wrong Tag - Primitive", AsnEncodingRules.CER, "04024869")]
+        [InlineData("Wrong Tag - Primitive", AsnEncodingRules.DER, "04024869")]
+        [InlineData("Wrong Tag - Constructed", AsnEncodingRules.BER, "240404024869")]
+        [InlineData("Wrong Tag - Constructed Indef", AsnEncodingRules.BER, "2480" + "04024869" + "0000")]
+        [InlineData("Wrong Tag - Constructed Indef", AsnEncodingRules.CER, "2480" + "04024869" + "0000")]
+        [InlineData("Wrong Tag - Constructed", AsnEncodingRules.DER, "240404024869")]
+        [InlineData("Nested Bad Tag", AsnEncodingRules.BER, "3E04" + "1E024869")]
+        [InlineData("Nested context-specific", AsnEncodingRules.BER, "3E04800400FACE")]
+        [InlineData("Nested context-specific (indef)", AsnEncodingRules.BER, "3E80800400FACE0000")]
+        [InlineData("Nested context-specific (indef)", AsnEncodingRules.CER, "3E80800400FACE0000")]
+        [InlineData("Nested Length Too Long", AsnEncodingRules.BER, "3E07" + ("2402" + "0404") + "04020049")]
+        [InlineData("Nested Simple Length Too Long", AsnEncodingRules.BER, "3E03" + "040548656C6C6F")]
+        [InlineData("Constructed Null", AsnEncodingRules.BER, "3E8020000000")]
+        [InlineData("Constructed Null", AsnEncodingRules.CER, "3E8020000000")]
+        [InlineData("NonEmpty Null", AsnEncodingRules.BER, "3E80000100")]
+        [InlineData("NonEmpty Null", AsnEncodingRules.CER, "3E80000100")]
+        [InlineData("LongLength Null", AsnEncodingRules.BER, "3E80008100")]
+        [InlineData("Bad BMP value (odd length)", AsnEncodingRules.BER, "1E0120")]
+        [InlineData("Bad BMP value (high surrogate)", AsnEncodingRules.BER, "1E02D800")]
+        [InlineData("Bad BMP value (high private surrogate)", AsnEncodingRules.BER, "1E02DB81")]
+        [InlineData("Bad BMP value (low surrogate)", AsnEncodingRules.BER, "1E02DC00")]
         public static void TryCopyBMPString_Throws(
             string description,
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
@@ -475,7 +474,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             input[5] = 0xE9;
             // EOC implicit since the byte[] initializes to zeros
 
-            TryCopyBMPString_Throws_Helper(PublicEncodingRules.CER, input);
+            TryCopyBMPString_Throws_Helper(AsnEncodingRules.CER, input);
         }
 
         [Fact]
@@ -513,7 +512,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             input[1011] = 0x02;
             // EOC implicit since the byte[] initializes to zeros
 
-            TryCopyBMPString_Throws_Helper(PublicEncodingRules.CER, input);
+            TryCopyBMPString_Throws_Helper(AsnEncodingRules.CER, input);
         }
 
         [Fact]
@@ -615,13 +614,13 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x1E, 4, 0, (byte)'h', 0, (byte)'i' };
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
@@ -629,7 +628,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () => reader.TryReadBMPStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out _));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
@@ -640,13 +639,13 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x87, 2, 0x20, 0x10 };
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
@@ -654,16 +653,16 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.TryReadBMPStringBytes(out _));
+            Assert.Throws<AsnContentException>(() => reader.TryReadBMPStringBytes(out _));
 
             Assert.True(reader.HasData, "HasData after default tag");
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () => reader.TryReadBMPStringBytes(new Asn1Tag(TagClass.Application, 0), out _));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () => reader.TryReadBMPStringBytes(new Asn1Tag(TagClass.ContextSpecific, 1), out _));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
@@ -678,33 +677,33 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "1E022010", PublicTagClass.Universal, 30)]
-        [InlineData(PublicEncodingRules.CER, "1E022010", PublicTagClass.Universal, 30)]
-        [InlineData(PublicEncodingRules.DER, "1E022010", PublicTagClass.Universal, 30)]
-        [InlineData(PublicEncodingRules.BER, "8002FE60", PublicTagClass.ContextSpecific, 0)]
-        [InlineData(PublicEncodingRules.CER, "4C02FE60", PublicTagClass.Application, 12)]
-        [InlineData(PublicEncodingRules.DER, "DF8A4602FE60", PublicTagClass.Private, 1350)]
+        [InlineData(AsnEncodingRules.BER, "1E022010", TagClass.Universal, 30)]
+        [InlineData(AsnEncodingRules.CER, "1E022010", TagClass.Universal, 30)]
+        [InlineData(AsnEncodingRules.DER, "1E022010", TagClass.Universal, 30)]
+        [InlineData(AsnEncodingRules.BER, "8002FE60", TagClass.ContextSpecific, 0)]
+        [InlineData(AsnEncodingRules.CER, "4C02FE60", TagClass.Application, 12)]
+        [InlineData(AsnEncodingRules.DER, "DF8A4602FE60", TagClass.Private, 1350)]
         public static void ExpectedTag_IgnoresConstructed(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
-            PublicTagClass tagClass,
+            TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             Assert.True(
                 reader.TryReadBMPStringBytes(
-                    new Asn1Tag((TagClass)tagClass, tagValue, true),
+                    new Asn1Tag(tagClass, tagValue, true),
                     out ReadOnlyMemory<byte> val1));
 
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            reader = new AsnReader(inputData, ruleSet);
 
             Assert.True(
                 reader.TryReadBMPStringBytes(
-                    new Asn1Tag((TagClass)tagClass, tagValue, false),
+                    new Asn1Tag(tagClass, tagValue, false),
                     out ReadOnlyMemory<byte> val2));
 
             Assert.False(reader.HasData);
@@ -720,7 +719,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             out ReadOnlyMemory<byte> contents)
         {
             return reader.TryReadPrimitiveCharacterStringBytes(
-                UniversalTagNumber.BMPString,
+                new Asn1Tag(UniversalTagNumber.BMPString),
                 out contents);
         }
 
@@ -731,7 +730,6 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             return reader.TryReadPrimitiveCharacterStringBytes(
                 expectedTag,
-                UniversalTagNumber.BMPString,
                 out contents);
         }
 
@@ -740,9 +738,9 @@ namespace System.Security.Cryptography.Tests.Asn1
             Span<byte> destination,
             out int bytesWritten)
         {
-            return reader.TryCopyCharacterStringBytes(
-                UniversalTagNumber.BMPString,
+            return reader.TryReadCharacterStringBytes(
                 destination,
+                new Asn1Tag(UniversalTagNumber.BMPString),
                 out bytesWritten);
         }
 
@@ -751,9 +749,9 @@ namespace System.Security.Cryptography.Tests.Asn1
             Span<char> destination,
             out int charsWritten)
         {
-            return reader.TryCopyCharacterString(
-                UniversalTagNumber.BMPString,
+            return reader.TryReadCharacterString(
                 destination,
+                UniversalTagNumber.BMPString,
                 out charsWritten);
         }
     }

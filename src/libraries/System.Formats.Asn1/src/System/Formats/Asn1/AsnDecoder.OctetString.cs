@@ -2,100 +2,104 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
-#nullable enable
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal ref partial struct AsnValueReader
+    public static partial class AsnDecoder
     {
         /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, copying the value
-        ///   into a provided destination buffer.
+        ///   Attempts to get an Octet String value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules, copying the value into the provided destination buffer.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
         /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
+        ///   When this method returns, the total number of bytes written to <paramref name="destination"/>.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 4).
         /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
+        ///   <see langword="true"/> if <paramref name="destination"/> is large enough to receive the
+        ///   value of the Octet String;
+        ///   otherwise, <see langword="false"/>.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(out ReadOnlySpan{byte})"/>
-        /// <seealso cref="ReadOctetString()"/>
-        public bool TryCopyOctetStringBytes(
-            Span<byte> destination,
-            out int bytesWritten)
-        {
-            return TryCopyOctetStringBytes(
-                Asn1Tag.PrimitiveOctetString,
-                destination,
-                out bytesWritten);
-        }
-
-        /// <summary>
-        ///   Reads the next value as an OCTET STRING with a specified tag, copying the value
-        ///   into a provided destination buffer.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="destination"/> overlaps <paramref name="source"/>.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(Asn1Tag,out ReadOnlySpan{byte})"/>
-        /// <seealso cref="ReadOctetString(Asn1Tag)"/>
-        public bool TryCopyOctetStringBytes(
-            Asn1Tag expectedTag,
+        /// <seealso cref="TryReadPrimitiveOctetString"/>
+        /// <seealso cref="ReadOctetString"/>
+        public static bool TryReadOctetString(
+            ReadOnlySpan<byte> source,
             Span<byte> destination,
-            out int bytesWritten)
+            AsnEncodingRules ruleSet,
+            out int bytesConsumed,
+            out int bytesWritten,
+            Asn1Tag? expectedTag = null)
         {
-            if (TryReadPrimitiveOctetStringBytes(
-                expectedTag,
-                out Asn1Tag actualTag,
+            if (source.Overlaps(destination))
+            {
+                throw new ArgumentException(
+                    SR.Argument_SourceOverlapsDestination,
+                    nameof(destination));
+            }
+
+            if (TryReadPrimitiveOctetStringCore(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.PrimitiveOctetString,
+                UniversalTagNumber.OctetString,
                 out int? contentLength,
                 out int headerLength,
-                out ReadOnlySpan<byte> contents))
+                out ReadOnlySpan<byte> contents,
+                out int consumed))
             {
                 if (contents.Length > destination.Length)
                 {
                     bytesWritten = 0;
+                    bytesConsumed = 0;
                     return false;
                 }
 
                 contents.CopyTo(destination);
                 bytesWritten = contents.Length;
-                _data = _data.Slice(headerLength + contents.Length);
+                bytesConsumed = consumed;
                 return true;
             }
 
-            Debug.Assert(actualTag.IsConstructed);
-
             bool copied = TryCopyConstructedOctetStringContents(
-                Slice(_data, headerLength, contentLength),
+                Slice(source, headerLength, contentLength),
+                ruleSet,
                 destination,
                 contentLength == null,
                 out int bytesRead,
@@ -103,212 +107,207 @@ namespace System.Security.Cryptography.Asn1
 
             if (copied)
             {
-                _data = _data.Slice(headerLength + bytesRead);
+                bytesConsumed = headerLength + bytesRead;
+            }
+            else
+            {
+                bytesConsumed = 0;
             }
 
             return copied;
         }
 
         /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, returning the value
-        ///   in a byte array.
+        ///   Reads an Octet String value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules, returning the contents in a new array.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 4).
+        /// </param>
         /// <returns>
-        ///   a copy of the contents in a newly allocated, precisely sized, array.
+        ///   An array containing the contents of the Octet String value.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(out ReadOnlySpan{byte})"/>
-        /// <seealso cref="TryCopyOctetStringBytes(Span{byte},out int)"/>
-        /// <seealso cref="ReadOctetString(Asn1Tag)"/>
-        public byte[] ReadOctetString()
-        {
-            return ReadOctetString(Asn1Tag.PrimitiveOctetString);
-        }
-
-        /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, returning the value
-        ///   in a byte array.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <returns>
-        ///   a copy of the value in a newly allocated, precisely sized, array.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(Asn1Tag,out ReadOnlySpan{byte})"/>
-        /// <seealso cref="TryCopyOctetStringBytes(Asn1Tag,Span{byte},out int)"/>
-        /// <seealso cref="ReadOctetString()"/>
-        public byte[] ReadOctetString(Asn1Tag expectedTag)
+        /// <seealso cref="TryReadPrimitiveOctetString"/>
+        /// <seealso cref="TryReadOctetString"/>
+        public static byte[] ReadOctetString(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            ReadOnlySpan<byte> span;
+            byte[]? rented = null;
 
-            if (TryReadPrimitiveOctetStringBytes(expectedTag, out span))
+            ReadOnlySpan<byte> contents = GetOctetStringContents(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.PrimitiveOctetString,
+                UniversalTagNumber.OctetString,
+                out int consumed,
+                ref rented);
+
+            byte[] ret = contents.ToArray();
+
+            if (rented != null)
             {
-                return span.ToArray();
+                CryptoPool.Return(rented, contents.Length);
             }
 
-            span = PeekEncodedValue();
-
-            // Guaranteed long enough
-            byte[] rented = CryptoPool.Rent(span.Length);
-            int dataLength = 0;
-
-            try
-            {
-                if (!TryCopyOctetStringBytes(expectedTag, rented, out dataLength))
-                {
-                    Debug.Fail("TryCopyOctetStringBytes failed with a pre-allocated buffer");
-                    throw new CryptographicException();
-                }
-
-                byte[] alloc = new byte[dataLength];
-                rented.AsSpan(0, dataLength).CopyTo(alloc);
-                return alloc;
-            }
-            finally
-            {
-                CryptoPool.Return(rented, dataLength);
-            }
+            bytesConsumed = consumed;
+            return ret;
         }
 
-        private bool TryReadPrimitiveOctetStringBytes(
+        private static bool TryReadPrimitiveOctetStringCore(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Asn1Tag expectedTag,
-            out Asn1Tag actualTag,
+            UniversalTagNumber universalTagNumber,
             out int? contentLength,
             out int headerLength,
             out ReadOnlySpan<byte> contents,
-            UniversalTagNumber universalTagNumber = UniversalTagNumber.OctetString)
+            out int bytesConsumed)
         {
-            actualTag = ReadTagAndLength(out contentLength, out headerLength);
+            Asn1Tag actualTag = ReadTagAndLength(source, ruleSet, out contentLength, out headerLength);
             CheckExpectedTag(actualTag, expectedTag, universalTagNumber);
+
+            // Ensure the length makes sense.
+            ReadOnlySpan<byte> encodedValue = Slice(source, headerLength, contentLength);
 
             if (actualTag.IsConstructed)
             {
-                if (RuleSet == AsnEncodingRules.DER)
+                if (ruleSet == AsnEncodingRules.DER)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException(SR.ContentException_InvalidUnderDer_TryBerOrCer);
                 }
 
                 contents = default;
+                bytesConsumed = 0;
                 return false;
             }
 
             Debug.Assert(contentLength.HasValue);
-            ReadOnlySpan<byte> encodedValue = Slice(_data, headerLength, contentLength.Value);
 
-            if (RuleSet == AsnEncodingRules.CER && encodedValue.Length > MaxCERSegmentSize)
+            if (ruleSet == AsnEncodingRules.CER && encodedValue.Length > MaxCERSegmentSize)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException(SR.ContentException_InvalidUnderCer_TryBerOrDer);
             }
 
             contents = encodedValue;
+            bytesConsumed = headerLength + encodedValue.Length;
             return true;
         }
 
-        internal bool TryReadPrimitiveOctetStringBytes(
-            Asn1Tag expectedTag,
-            UniversalTagNumber universalTagNumber,
-            out ReadOnlySpan<byte> contents)
-        {
-            if (TryReadPrimitiveOctetStringBytes(
-                expectedTag,
-                out _,
-                out _,
-                out int headerLength,
-                out contents,
-                universalTagNumber))
-            {
-                _data = _data.Slice(headerLength + contents.Length);
-                return true;
-            }
-
-            return false;
-        }
-
         /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, returning the contents
-        ///   as a <see cref="ReadOnlySpan{T}"/> over the original data.
+        ///   Attempts to get an Octet String value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules, if the value is contained in a single (primitive) encoding.
         /// </summary>
-        /// <param name="contents">
-        ///   On success, receives a <see cref="ReadOnlySpan{T}"/> over the original data
-        ///   corresponding to the contents of the OCTET STRING.
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="value">
+        ///   On success, receives a slice of the input buffer that corresponds to
+        ///   the value of the Octet String.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 4).
         /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if the OCTET STRING value had a primitive encoding,
-        ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
+        ///   <see langword="true"/> if the Octet String value has a primitive encoding;
+        ///   otherwise, <see langword="false"/>.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        /// <seealso cref="TryCopyOctetStringBytes(Span{byte},out int)"/>
-        public bool TryReadPrimitiveOctetStringBytes(out ReadOnlySpan<byte> contents) =>
-            TryReadPrimitiveOctetStringBytes(Asn1Tag.PrimitiveOctetString, out contents);
-
-        /// <summary>
-        ///   Reads the next value as an OCTET STRING with a specified tag, returning the contents
-        ///   as a <see cref="ReadOnlySpan{T}"/> over the original data.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="contents">
-        ///   On success, receives a <see cref="ReadOnlySpan{T}"/> over the original data
-        ///   corresponding to the value of the OCTET STRING.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if the OCTET STRING value had a primitive encoding,
-        ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <seealso cref="TryCopyOctetStringBytes(Asn1Tag,Span{byte},out int)"/>
-        public bool TryReadPrimitiveOctetStringBytes(Asn1Tag expectedTag, out ReadOnlySpan<byte> contents)
+        /// <seealso cref="TryReadOctetString"/>
+        public static bool TryReadPrimitiveOctetString(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out ReadOnlySpan<byte> value,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            return TryReadPrimitiveOctetStringBytes(expectedTag, UniversalTagNumber.OctetString, out contents);
+            return TryReadPrimitiveOctetStringCore(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.PrimitiveOctetString,
+                UniversalTagNumber.OctetString,
+                contentLength: out _,
+                headerLength: out _,
+                out value,
+                out bytesConsumed);
         }
 
-        private int CountConstructedOctetString(ReadOnlySpan<byte> source, bool isIndefinite)
+        private static int CountConstructedOctetString(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            bool isIndefinite)
         {
             int contentLength = CopyConstructedOctetString(
                 source,
+                ruleSet,
                 Span<byte>.Empty,
                 false,
                 isIndefinite,
                 out _);
 
             // T-REC-X.690-201508 sec 9.2
-            if (RuleSet == AsnEncodingRules.CER && contentLength <= MaxCERSegmentSize)
+            if (ruleSet == AsnEncodingRules.CER && contentLength <= MaxCERSegmentSize)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
             }
 
             return contentLength;
         }
 
-        private void CopyConstructedOctetString(
+        private static void CopyConstructedOctetString(
             ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Span<byte> destination,
             bool isIndefinite,
             out int bytesRead,
@@ -316,14 +315,16 @@ namespace System.Security.Cryptography.Asn1
         {
             bytesWritten = CopyConstructedOctetString(
                 source,
+                ruleSet,
                 destination,
                 true,
                 isIndefinite,
                 out bytesRead);
         }
 
-        private int CopyConstructedOctetString(
+        private static int CopyConstructedOctetString(
             ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Span<byte> destination,
             bool write,
             bool isIndefinite,
@@ -332,8 +333,7 @@ namespace System.Security.Cryptography.Asn1
             bytesRead = 0;
             int lastSegmentLength = MaxCERSegmentSize;
 
-            ReadOnlySpan<byte> originalSpan = _data;
-            AsnValueReader tmpReader = OpenUnchecked(source, RuleSet);
+            ReadOnlySpan<byte> cur = source;
             Stack<(int Offset, int Length, bool IsIndefinite, int BytesRead)>? readerStack = null;
             int totalLength = 0;
             Asn1Tag tag = Asn1Tag.ConstructedBitString;
@@ -341,35 +341,35 @@ namespace System.Security.Cryptography.Asn1
 
             while (true)
             {
-                while (tmpReader.HasData)
+                while (!cur.IsEmpty)
                 {
-                    tag = tmpReader.ReadTagAndLength(out int? length, out int headerLength);
+                    tag = ReadTagAndLength(cur, ruleSet, out int? length, out int headerLength);
 
                     if (tag == Asn1Tag.PrimitiveOctetString)
                     {
-                        if (RuleSet == AsnEncodingRules.CER && lastSegmentLength != MaxCERSegmentSize)
+                        if (ruleSet == AsnEncodingRules.CER && lastSegmentLength != MaxCERSegmentSize)
                         {
                             // T-REC-X.690-201508 sec 9.2
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
                         Debug.Assert(length != null);
 
                         // The call to Slice here sanity checks the data bounds, length.Value is not
                         // reliable unless this call has succeeded.
-                        ReadOnlySpan<byte> contents = Slice(tmpReader._data, headerLength, length.Value);
+                        ReadOnlySpan<byte> contents = Slice(cur, headerLength, length.Value);
 
                         int localLen = headerLength + contents.Length;
-                        tmpReader._data = tmpReader._data.Slice(localLen);
+                        cur = cur.Slice(localLen);
 
                         bytesRead += localLen;
                         totalLength += contents.Length;
                         lastSegmentLength = contents.Length;
 
-                        if (RuleSet == AsnEncodingRules.CER && lastSegmentLength > MaxCERSegmentSize)
+                        if (ruleSet == AsnEncodingRules.CER && lastSegmentLength > MaxCERSegmentSize)
                         {
                             // T-REC-X.690-201508 sec 9.2
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
                         if (write)
@@ -387,8 +387,8 @@ namespace System.Security.Cryptography.Asn1
                         if (readerStack?.Count > 0)
                         {
                             (int topOffset, int topLength, bool wasIndefinite, int pushedBytesRead) = readerStack.Pop();
-                            ReadOnlySpan<byte> topSpan = originalSpan.Slice(topOffset, topLength);
-                            tmpReader._data = topSpan.Slice(bytesRead);
+                            ReadOnlySpan<byte> topSpan = source.Slice(topOffset, topLength);
+                            cur = topSpan.Slice(bytesRead);
 
                             bytesRead += pushedBytesRead;
                             isIndefinite = wasIndefinite;
@@ -401,10 +401,10 @@ namespace System.Security.Cryptography.Asn1
                     }
                     else if (tag == Asn1Tag.ConstructedOctetString)
                     {
-                        if (RuleSet == AsnEncodingRules.CER)
+                        if (ruleSet == AsnEncodingRules.CER)
                         {
                             // T-REC-X.690-201508 sec 9.2
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
                         if (readerStack == null)
@@ -412,36 +412,36 @@ namespace System.Security.Cryptography.Asn1
                             readerStack = new Stack<(int, int, bool, int)>();
                         }
 
-                        if (!originalSpan.Overlaps(tmpReader._data, out int curOffset))
+                        if (!source.Overlaps(cur, out int curOffset))
                         {
                             Debug.Fail("Non-overlapping data encountered...");
-                            throw new CryptographicException();
+                            throw new AsnContentException();
                         }
 
-                        readerStack.Push((curOffset, tmpReader._data.Length, isIndefinite, bytesRead));
+                        readerStack.Push((curOffset, cur.Length, isIndefinite, bytesRead));
 
-                        tmpReader._data = Slice(tmpReader._data, headerLength, length);
+                        cur = Slice(cur, headerLength, length);
                         bytesRead = headerLength;
                         isIndefinite = (length == null);
                     }
                     else
                     {
                         // T-REC-X.690-201508 sec 8.6.4.1 (in particular, Note 2)
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        throw new AsnContentException();
                     }
                 }
 
                 if (isIndefinite && tag != Asn1Tag.EndOfContents)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException();
                 }
 
                 if (readerStack?.Count > 0)
                 {
                     (int topOffset, int topLength, bool wasIndefinite, int pushedBytesRead) = readerStack.Pop();
-                    ReadOnlySpan<byte> topSpan = originalSpan.Slice(topOffset, topLength);
+                    ReadOnlySpan<byte> topSpan = source.Slice(topOffset, topLength);
 
-                    tmpReader._data = topSpan.Slice(bytesRead);
+                    cur = topSpan.Slice(bytesRead);
 
                     isIndefinite = wasIndefinite;
                     bytesRead += pushedBytesRead;
@@ -453,8 +453,9 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private bool TryCopyConstructedOctetStringContents(
+        private static bool TryCopyConstructedOctetStringContents(
             ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Span<byte> dest,
             bool isIndefinite,
             out int bytesRead,
@@ -462,7 +463,7 @@ namespace System.Security.Cryptography.Asn1
         {
             bytesRead = 0;
 
-            int contentLength = CountConstructedOctetString(source, isIndefinite);
+            int contentLength = CountConstructedOctetString(source, ruleSet, isIndefinite);
 
             if (dest.Length < contentLength)
             {
@@ -470,275 +471,167 @@ namespace System.Security.Cryptography.Asn1
                 return false;
             }
 
-            CopyConstructedOctetString(source, dest, isIndefinite, out bytesRead, out bytesWritten);
+            CopyConstructedOctetString(source, ruleSet, dest, isIndefinite, out bytesRead, out bytesWritten);
 
             Debug.Assert(bytesWritten == contentLength);
             return true;
         }
 
-        private ReadOnlySpan<byte> GetOctetStringContents(
+        private static ReadOnlySpan<byte> GetOctetStringContents(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Asn1Tag expectedTag,
             UniversalTagNumber universalTagNumber,
-            out int bytesRead,
+            out int bytesConsumed,
             ref byte[]? rented,
             Span<byte> tmpSpace = default)
         {
             Debug.Assert(rented == null);
 
-            if (TryReadPrimitiveOctetStringBytes(
+            if (TryReadPrimitiveOctetStringCore(
+                source,
+                ruleSet,
                 expectedTag,
-                out Asn1Tag actualTag,
+                universalTagNumber,
                 out int? contentLength,
                 out int headerLength,
-                out ReadOnlySpan<byte> contentsOctets,
-                universalTagNumber))
+                out ReadOnlySpan<byte> contents,
+                out bytesConsumed))
             {
-                bytesRead = headerLength + contentsOctets.Length;
-                return contentsOctets;
+                return contents;
             }
 
-            Debug.Assert(actualTag.IsConstructed);
+            // If we get here, the tag was appropriate, but the encoding was constructed.
 
-            ReadOnlySpan<byte> source = Slice(_data, headerLength, contentLength);
-            bool isIndefinite = contentLength == null;
-            int octetStringLength = CountConstructedOctetString(source, isIndefinite);
+            // Guaranteed long enough
+            contents = source.Slice(headerLength);
+            int tooBig = contentLength ?? SeekEndOfContents(contents, ruleSet);
 
-            if (tmpSpace.Length < octetStringLength)
+            if (tmpSpace.Length > 0 && tooBig > tmpSpace.Length)
             {
-                rented = CryptoPool.Rent(octetStringLength);
+                bool isIndefinite = contentLength == null;
+                tooBig = CountConstructedOctetString(contents, ruleSet, isIndefinite);
+            }
+
+            if (tooBig > tmpSpace.Length)
+            {
+                rented = CryptoPool.Rent(tooBig);
                 tmpSpace = rented;
             }
 
-            CopyConstructedOctetString(
-                source,
+            if (TryCopyConstructedOctetStringContents(
+                Slice(source, headerLength, contentLength),
+                ruleSet,
                 tmpSpace,
-                isIndefinite,
-                out int localBytesRead,
-                out int bytesWritten);
+                contentLength == null,
+                out int bytesRead,
+                out int bytesWritten))
+            {
+                bytesConsumed = headerLength + bytesRead;
+                return tmpSpace.Slice(0, bytesWritten);
+            }
 
-            Debug.Assert(bytesWritten == octetStringLength);
-
-            bytesRead = headerLength + localBytesRead;
-            return tmpSpace.Slice(0, bytesWritten);
+            Debug.Fail("TryCopyConstructedOctetStringContents failed with a pre-allocated buffer");
+            throw new AsnContentException();
         }
     }
 
-    internal partial class AsnReader
+    public partial class AsnReader
     {
         /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, copying the value
-        ///   into a provided destination buffer.
-        /// </summary>
-        /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="ReadOctetString()"/>
-        public bool TryCopyOctetStringBytes(
-            Span<byte> destination,
-            out int bytesWritten)
-        {
-            return TryCopyOctetStringBytes(
-                Asn1Tag.PrimitiveOctetString,
-                destination,
-                out bytesWritten);
-        }
-
-        /// <summary>
         ///   Reads the next value as an OCTET STRING with a specified tag, copying the value
         ///   into a provided destination buffer.
         /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
         /// <param name="destination">The buffer in which to write.</param>
         /// <param name="bytesWritten">
         ///   On success, receives the number of bytes written to <paramref name="destination"/>.
         /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 4).
+        /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   <see langword="true"/> and advances the reader if <paramref name="destination"/> had sufficient
         ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
+        ///   <see langword="false"/> and the reader does not advance.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(Asn1Tag,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="ReadOctetString(Asn1Tag)"/>
-        public bool TryCopyOctetStringBytes(
-            Asn1Tag expectedTag,
+        /// <seealso cref="TryReadPrimitiveOctetString"/>
+        /// <seealso cref="ReadOctetString"/>
+        public bool TryReadOctetString(
             Span<byte> destination,
-            out int bytesWritten)
+            out int bytesWritten,
+            Asn1Tag? expectedTag = null)
         {
-            AsnValueReader valueReader = OpenValueReader();
+            bool ret = AsnDecoder.TryReadOctetString(
+                _data.Span,
+                destination,
+                RuleSet,
+                out int bytesConsumed,
+                out bytesWritten,
+                expectedTag);
 
-            if (valueReader.TryCopyOctetStringBytes(expectedTag, destination, out bytesWritten))
+            if (ret)
             {
-                valueReader.MatchSlice(ref _data);
-                return true;
+                _data = _data.Slice(bytesConsumed);
             }
 
-            return false;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, copying the value
-        ///   into a provided destination buffer.
-        /// </summary>
-        /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="ReadOctetString()"/>
-        public bool TryCopyOctetStringBytes(
-            ArraySegment<byte> destination,
-            out int bytesWritten)
-        {
-            return TryCopyOctetStringBytes(
-                Asn1Tag.PrimitiveOctetString,
-                destination.AsSpan(),
-                out bytesWritten);
-        }
-
-        /// <summary>
-        ///   Reads the next value as an OCTET STRING with a specified tag, copying the value
-        ///   into a provided destination buffer.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(Asn1Tag,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="ReadOctetString(Asn1Tag)"/>
-        public bool TryCopyOctetStringBytes(
-            Asn1Tag expectedTag,
-            ArraySegment<byte> destination,
-            out int bytesWritten)
-        {
-            return TryCopyOctetStringBytes(
-                expectedTag,
-                destination.AsSpan(),
-                out bytesWritten);
-        }
-
-        /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, returning the value
-        ///   in a byte array.
-        /// </summary>
-        /// <returns>
-        ///   a copy of the contents in a newly allocated, precisely sized, array.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="TryCopyOctetStringBytes(Span{byte},out int)"/>
-        /// <seealso cref="ReadOctetString(Asn1Tag)"/>
-        public byte[] ReadOctetString()
-        {
-            return ReadOctetString(Asn1Tag.PrimitiveOctetString);
-        }
-
-        /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, returning the value
-        ///   in a byte array.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <returns>
-        ///   a copy of the value in a newly allocated, precisely sized, array.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveOctetStringBytes(Asn1Tag,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="TryCopyOctetStringBytes(Asn1Tag,Span{byte},out int)"/>
-        /// <seealso cref="ReadOctetString()"/>
-        public byte[] ReadOctetString(Asn1Tag expectedTag)
-        {
-            AsnValueReader valueReader = OpenValueReader();
-            byte[] ret = valueReader.ReadOctetString(expectedTag);
-            valueReader.MatchSlice(ref _data);
             return ret;
         }
 
         /// <summary>
-        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, returning the contents
-        ///   as a <see cref="ReadOnlyMemory{T}"/> over the original data.
+        ///   Reads the next value as an OCTET STRING with tag UNIVERSAL 4, returning the value
+        ///   in a byte array.
         /// </summary>
-        /// <param name="contents">
-        ///   On success, receives a <see cref="ReadOnlyMemory{T}"/> over the original data
-        ///   corresponding to the contents of the OCTET STRING.
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 4).
         /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if the OCTET STRING value had a primitive encoding,
-        ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
+        ///   A copy of the value in a newly allocated, precisely sized, array.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
-        /// <seealso cref="TryCopyOctetStringBytes(Span{byte},out int)"/>
-        public bool TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents) =>
-            TryReadPrimitiveOctetStringBytes(Asn1Tag.PrimitiveOctetString, out contents);
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <seealso cref="TryReadPrimitiveOctetString"/>
+        /// <seealso cref="TryReadOctetString"/>
+        public byte[] ReadOctetString(Asn1Tag? expectedTag = null)
+        {
+            byte[] ret = AsnDecoder.ReadOctetString(_data.Span, RuleSet, out int consumed, expectedTag);
+            _data = _data.Slice(consumed);
+            return ret;
+        }
 
         /// <summary>
-        ///   Reads the next value as an OCTET STRING with a specified tag, returning the contents
+        ///   Attempts to read the next value as an OCTET STRING with a specified tag, returning the contents
         ///   as a <see cref="ReadOnlyMemory{T}"/> over the original data.
         /// </summary>
         /// <param name="expectedTag">The tag to check for before reading.</param>
@@ -747,43 +640,47 @@ namespace System.Security.Cryptography.Asn1
         ///   corresponding to the value of the OCTET STRING.
         /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if the OCTET STRING value had a primitive encoding,
-        ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
+        ///   <see langword="true"/> and advances the reader if the OCTET STRING value had a primitive encoding,
+        ///   <see langword="false"/> and does not advance the reader if it had a constructed encoding.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <seealso cref="TryCopyOctetStringBytes(Asn1Tag,Span{byte},out int)"/>
-        public bool TryReadPrimitiveOctetStringBytes(Asn1Tag expectedTag, out ReadOnlyMemory<byte> contents)
+        /// <seealso cref="TryReadOctetString"/>
+        public bool TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> contents, Asn1Tag? expectedTag = null)
         {
-            return TryReadPrimitiveOctetStringBytes(expectedTag, UniversalTagNumber.OctetString, out contents);
-        }
+            bool ret = AsnDecoder.TryReadPrimitiveOctetString(
+                _data.Span,
+                RuleSet,
+                out ReadOnlySpan<byte> span,
+                out int consumed,
+                expectedTag);
 
-        private bool TryReadPrimitiveOctetStringBytes(
-            Asn1Tag expectedTag,
-            UniversalTagNumber universalTagNumber,
-            out ReadOnlyMemory<byte> contents)
-        {
-            AsnValueReader valueReader = OpenValueReader();
-            ReadOnlySpan<byte> span;
-
-            if (valueReader.TryReadPrimitiveOctetStringBytes(expectedTag, universalTagNumber, out span))
+            if (ret)
             {
-                contents = AsnValueReader.Slice(_data, span);
-                valueReader.MatchSlice(ref _data);
-                return true;
+                contents = AsnDecoder.Slice(_data, span);
+                _data = _data.Slice(consumed);
+            }
+            else
+            {
+                contents = default;
             }
 
-            contents = default;
-            return false;
+            return ret;
         }
     }
 }

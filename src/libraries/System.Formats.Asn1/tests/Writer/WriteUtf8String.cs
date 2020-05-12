@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Security.Cryptography.Asn1;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Writer
 {
     public class WriteUtf8String : WriteCharacterString
     {
@@ -60,13 +59,13 @@ namespace System.Security.Cryptography.Tests.Asn1
             writer.WriteCharacterString(UniversalTagNumber.UTF8String, s);
 
         internal override void WriteString(AsnWriter writer, Asn1Tag tag, string s) =>
-            writer.WriteCharacterString(tag, UniversalTagNumber.UTF8String, s);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, s, tag);
 
         internal override void WriteSpan(AsnWriter writer, ReadOnlySpan<char> s) =>
             writer.WriteCharacterString(UniversalTagNumber.UTF8String, s);
 
         internal override void WriteSpan(AsnWriter writer, Asn1Tag tag, ReadOnlySpan<char> s) =>
-            writer.WriteCharacterString(tag, UniversalTagNumber.UTF8String, s);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, s, tag);
 
         internal override Asn1Tag StandardTag => new Asn1Tag(UniversalTagNumber.UTF8String);
 
@@ -207,32 +206,32 @@ namespace System.Security.Cryptography.Tests.Asn1
             base.VerifyWrite_DER_Span_CustomTag_ClearsConstructed_Helper(input, expectedPayloadHex);
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public void VerifyWrite_String_Null(PublicEncodingRules ruleSet) =>
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public void VerifyWrite_String_Null(AsnEncodingRules ruleSet) =>
             base.VerifyWrite_String_Null_Helper(ruleSet);
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public void VerifyWrite_String_Null_CustomTag(PublicEncodingRules ruleSet) =>
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public void VerifyWrite_String_Null_CustomTag(AsnEncodingRules ruleSet) =>
             base.VerifyWrite_String_Null_CustomTag_Helper(ruleSet);
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public void VerifyWrite_EndOfContents_String(PublicEncodingRules ruleSet) =>
-            base.VerifyWrite_EndOfContents_String_Helper(ruleSet);
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public void VerifyWrite_Null_String(AsnEncodingRules ruleSet) =>
+            base.VerifyWrite_Null_String_Helper(ruleSet);
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public void VerifyWrite_EndOfContents_Span(PublicEncodingRules ruleSet) =>
-            base.VerifyWrite_EndOfContents_Span_Helper(ruleSet);
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public void VerifyWrite_Null_Span(AsnEncodingRules ruleSet) =>
+            base.VerifyWrite_Null_Span_Helper(ruleSet);
 
         [Theory]
         [MemberData(nameof(CERSegmentedCases))]
@@ -275,17 +274,5 @@ namespace System.Security.Cryptography.Tests.Asn1
             base.VerifyWrite_CERSegmented_Span_CustomPrimitiveTag_Helper(input, contentByteCount);
 
         // UTF8 has no non-encodable values.
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void WriteAfterDispose_Span(bool empty) =>
-            base.WriteAfterDispose_Span_Helper(empty);
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void WriteAfterDispose_String(bool empty) =>
-            base.WriteAfterDispose_String_Helper(empty);
     }
 }

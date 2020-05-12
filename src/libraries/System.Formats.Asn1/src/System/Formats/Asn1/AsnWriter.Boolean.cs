@@ -4,36 +4,26 @@
 
 using System.Diagnostics;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
-        /// <summary>
-        ///   Write a Boolean value with tag UNIVERSAL 1.
-        /// </summary>
-        /// <param name="value">The value to write.</param>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteBoolean(bool value)
-        {
-            WriteBooleanCore(Asn1Tag.Boolean, value);
-        }
-
         /// <summary>
         ///   Write a Boolean value with a specified tag.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
         /// <param name="value">The value to write.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 1).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method
         /// </exception>
-        public void WriteBoolean(Asn1Tag tag, bool value)
+        public void WriteBoolean(bool value, Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.Boolean);
 
-            WriteBooleanCore(tag.AsPrimitive(), value);
+            WriteBooleanCore(tag?.AsPrimitive() ?? Asn1Tag.Boolean, value);
         }
 
         // T-REC-X.690-201508 sec 11.1, 8.2

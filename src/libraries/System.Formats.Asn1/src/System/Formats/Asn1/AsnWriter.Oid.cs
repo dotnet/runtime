@@ -2,169 +2,74 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
+using System.Security.Cryptography;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
         /// <summary>
         ///   Write an Object Identifier with a specified tag.
         /// </summary>
-        /// <param name="oid">The object identifier to write.</param>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="oid"/> is <c>null</c>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="oid"/>.<see cref="Oid.Value"/> is not a valid dotted decimal
-        ///   object identifier
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteObjectIdentifier(Oid oid)
-        {
-            if (oid == null)
-                throw new ArgumentNullException(nameof(oid));
-
-            CheckDisposed();
-
-            if (oid.Value == null)
-                throw new CryptographicException(SR.Argument_InvalidOidValue);
-
-            WriteObjectIdentifier(oid.Value);
-        }
-
-        /// <summary>
-        ///   Write an Object Identifier with a specified tag.
-        /// </summary>
         /// <param name="oidValue">The object identifier to write.</param>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="oidValue"/> is <c>null</c>
-        /// </exception>
-        /// <exception cref="CryptographicException">
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 6).</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        ///
+        ///   -or-
+        ///
         ///   <paramref name="oidValue"/> is not a valid dotted decimal
-        ///   object identifier
+        ///   object identifier.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteObjectIdentifier(string oidValue)
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="oidValue"/> is <see langword="null"/>.
+        /// </exception>
+        public void WriteObjectIdentifier(string oidValue, Asn1Tag? tag = null)
         {
             if (oidValue == null)
                 throw new ArgumentNullException(nameof(oidValue));
 
-            WriteObjectIdentifier(oidValue.AsSpan());
-        }
-
-        /// <summary>
-        ///   Write an Object Identifier with tag UNIVERSAL 6.
-        /// </summary>
-        /// <param name="oidValue">The object identifier to write.</param>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="oidValue"/> is not a valid dotted decimal
-        ///   object identifier
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteObjectIdentifier(ReadOnlySpan<char> oidValue)
-        {
-            WriteObjectIdentifierCore(Asn1Tag.ObjectIdentifier, oidValue);
+            WriteObjectIdentifier(oidValue.AsSpan(), tag);
         }
 
         /// <summary>
         ///   Write an Object Identifier with a specified tag.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="oid">The object identifier to write.</param>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="oid"/> is <c>null</c>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="oid"/>.<see cref="Oid.Value"/> is not a valid dotted decimal
-        ///   object identifier
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteObjectIdentifier(Asn1Tag tag, Oid oid)
-        {
-            if (oid == null)
-                throw new ArgumentNullException(nameof(oid));
-
-            CheckUniversalTag(tag, UniversalTagNumber.ObjectIdentifier);
-            CheckDisposed();
-
-            if (oid.Value == null)
-                throw new CryptographicException(SR.Argument_InvalidOidValue);
-
-            WriteObjectIdentifier(tag, oid.Value);
-        }
-
-        /// <summary>
-        ///   Write an Object Identifier with a specified tag.
-        /// </summary>
-        /// <param name="tag">The tag to write.</param>
         /// <param name="oidValue">The object identifier to write.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 6).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="oidValue"/> is <c>null</c>
-        /// </exception>
-        /// <exception cref="CryptographicException">
+        ///   the method.
+        ///
+        ///   -or-
+        ///
         ///   <paramref name="oidValue"/> is not a valid dotted decimal
-        ///   object identifier
+        ///   object identifier.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteObjectIdentifier(Asn1Tag tag, string oidValue)
-        {
-            if (oidValue == null)
-                throw new ArgumentNullException(nameof(oidValue));
-
-            WriteObjectIdentifier(tag, oidValue.AsSpan());
-        }
-
-        /// <summary>
-        ///   Write an Object Identifier with a specified tag.
-        /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="oidValue">The object identifier to write.</param>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="oidValue"/> is not a valid dotted decimal
-        ///   object identifier
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteObjectIdentifier(Asn1Tag tag, ReadOnlySpan<char> oidValue)
+        public void WriteObjectIdentifier(ReadOnlySpan<char> oidValue, Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.ObjectIdentifier);
 
-            WriteObjectIdentifierCore(tag.AsPrimitive(), oidValue);
+            WriteObjectIdentifierCore(tag?.AsPrimitive() ?? Asn1Tag.ObjectIdentifier, oidValue);
         }
-
 
         // T-REC-X.690-201508 sec 8.19
         private void WriteObjectIdentifierCore(Asn1Tag tag, ReadOnlySpan<char> oidValue)
         {
-            CheckDisposed();
-
             // T-REC-X.690-201508 sec 8.19.4
             // The first character is in { 0, 1, 2 }, the second will be a '.', and a third (digit)
             // will also exist.
             if (oidValue.Length < 3)
-                throw new CryptographicException(SR.Argument_InvalidOidValue);
+                throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
             if (oidValue[1] != '.')
-                throw new CryptographicException(SR.Argument_InvalidOidValue);
+                throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
 
             // The worst case is "1.1.1.1.1", which takes 4 bytes (5 components, with the first two condensed)
             // Longer numbers get smaller: "2.1.127" is only 2 bytes. (81d (0x51) and 127 (0x7F))
@@ -179,7 +84,7 @@ namespace System.Security.Cryptography.Asn1
                     '0' => 0,
                     '1' => 1,
                     '2' => 2,
-                    _ => throw new CryptographicException(SR.Argument_InvalidOidValue),
+                    _ => throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue)),
                 };
 
                 // The first two components are special:
@@ -231,7 +136,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else if (endIndex == 0 || endIndex == oidValue.Length - 1)
             {
-                throw new CryptographicException(SR.Argument_InvalidOidValue);
+                throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
             }
 
             // The following code is equivalent to
@@ -244,7 +149,7 @@ namespace System.Security.Cryptography.Asn1
                 if (position > 0 && value == 0)
                 {
                     // T-REC X.680-201508 sec 12.26
-                    throw new CryptographicException(SR.Argument_InvalidOidValue);
+                    throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
                 }
 
                 value *= 10;
@@ -262,7 +167,7 @@ namespace System.Security.Cryptography.Asn1
                 return c - '0';
             }
 
-            throw new CryptographicException(SR.Argument_InvalidOidValue);
+            throw new ArgumentException(SR.Argument_InvalidOidValue, "oidValue");
         }
 
         // ITU-T-X.690-201508 sec 8.19.5

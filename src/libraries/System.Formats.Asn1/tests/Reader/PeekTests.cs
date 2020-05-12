@@ -4,13 +4,12 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class PeekTests : Asn1ReaderTests
+    public sealed class PeekTests
     {
         [Fact]
         public static void ReaderPeekTag_Valid()
@@ -32,14 +31,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] data = { 0x1F };
             AsnReader reader = new AsnReader(data, AsnEncodingRules.BER);
 
-            try
-            {
-                reader.PeekTag();
-                Assert.True(false, "CryptographicException was thrown");
-            }
-            catch (CryptographicException)
-            {
-            }
+            Assert.Throws<AsnContentException>(() => reader.PeekTag());
         }
 
         [Fact]
@@ -81,7 +73,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             byte[] data = (EncodedValue + "0500").HexToByteArray();
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
                     AsnReader reader = new AsnReader(data, AsnEncodingRules.BER);
@@ -128,7 +120,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             byte[] data = (EncodedValue + "0500").HexToByteArray();
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
                     AsnReader reader = new AsnReader(data, AsnEncodingRules.BER);
@@ -209,6 +201,20 @@ namespace System.Security.Cryptography.Tests.Asn1
             ReadOnlyMemory<byte> contents = reader.PeekEncodedValue();
             Assert.Equal(expectedLength, contents.Length);
             Assert.True(Unsafe.AreSame(ref dataBytes[0], ref MemoryMarshal.GetReference(contents.Span)));
+
+            Assert.True(
+                AsnDecoder.TryReadEncodedValue(
+                    dataBytes,
+                    AsnEncodingRules.BER,
+                    out Asn1Tag tag,
+                    out int contentOffset,
+                    out int contentLength,
+                    out int bytesConsumed));
+
+            Assert.Equal(2, contentOffset);
+            Assert.Equal(expectedLength - 4, contentLength);
+            Assert.Equal(expectedLength, bytesConsumed);
+            Assert.Equal(new Asn1Tag(TagClass.ContextSpecific, 0, true), tag);
         }
 
         [Fact]
@@ -218,21 +224,22 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader reader = new AsnReader(badLength, AsnEncodingRules.BER);
 
-            Assert.Throws<CryptographicException>(() => reader.PeekEncodedValue());
-            Assert.Throws<CryptographicException>(() => reader.ReadEncodedValue());
+            Assert.Throws<AsnContentException>(() => reader.PeekEncodedValue());
+            Assert.Throws<AsnContentException>(() => reader.ReadEncodedValue());
 
-            Assert.Throws<CryptographicException>(
-                () =>
-                {
-                    AsnValueReader valueReader = new AsnValueReader(badLength, AsnEncodingRules.BER);
-                    valueReader.PeekEncodedValue();
-                });
-            Assert.Throws<CryptographicException>(
-                () =>
-                {
-                    AsnValueReader valueReader = new AsnValueReader(badLength, AsnEncodingRules.BER);
-                    valueReader.ReadEncodedValue();
-                });
+            Assert.False(
+                AsnDecoder.TryReadEncodedValue(
+                    badLength,
+                    AsnEncodingRules.BER,
+                    out Asn1Tag tag,
+                    out int contentOffset,
+                    out int contentLength,
+                    out int bytesConsumed));
+
+            Assert.Equal(0, contentOffset);
+            Assert.Equal(0, contentLength);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(default(Asn1Tag), tag);
         }
 
         [Fact]
@@ -242,13 +249,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader reader = new AsnReader(badLength, AsnEncodingRules.BER);
 
-            Assert.Throws<CryptographicException>(() => reader.PeekContentBytes());
-            Assert.Throws<CryptographicException>(
-                () =>
-                {
-                    AsnValueReader valueReader = new AsnValueReader(badLength, AsnEncodingRules.BER);
-                    valueReader.PeekContentBytes();
-                });
+            Assert.Throws<AsnContentException>(() => reader.PeekContentBytes());
         }
     }
 }

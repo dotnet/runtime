@@ -5,167 +5,109 @@
 using System.Diagnostics;
 using System.Numerics;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
         /// <summary>
-        ///   Write an Integer value with tag UNIVERSAL 2.
+        ///   Write an Integer value with a specified tag.
         /// </summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteInteger(long value)
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 2).</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        public void WriteInteger(long value, Asn1Tag? tag = null)
         {
-            WriteIntegerCore(Asn1Tag.Integer, value);
+            CheckUniversalTag(tag, UniversalTagNumber.Integer);
+
+            WriteIntegerCore(tag?.AsPrimitive() ?? Asn1Tag.Integer, value);
         }
 
         /// <summary>
-        ///   Write an Integer value with tag UNIVERSAL 2.
+        ///   Write an Integer value with a specified tag.
         /// </summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteInteger(ulong value)
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 2).</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        [CLSCompliant(false)]
+        public void WriteInteger(ulong value, Asn1Tag? tag = null)
         {
-            WriteNonNegativeIntegerCore(Asn1Tag.Integer, value);
+            CheckUniversalTag(tag, UniversalTagNumber.Integer);
+
+            WriteNonNegativeIntegerCore(tag?.AsPrimitive() ?? Asn1Tag.Integer, value);
         }
 
         /// <summary>
-        ///   Write an Integer value with tag UNIVERSAL 2.
+        ///   Write an Integer value with a specified tag.
         /// </summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteInteger(BigInteger value)
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 2).</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        public void WriteInteger(BigInteger value, Asn1Tag? tag = null)
         {
-            WriteIntegerCore(Asn1Tag.Integer, value);
+            CheckUniversalTag(tag, UniversalTagNumber.Integer);
+
+            WriteIntegerCore(tag?.AsPrimitive() ?? Asn1Tag.Integer, value);
         }
 
         /// <summary>
         ///   Write an Integer value with a specified tag.
         /// </summary>
         /// <param name="value">The integer value to write, in signed big-endian byte order.</param>
-        /// <exception cref="CryptographicException">
-        ///   the 9 most sigificant bits are all set --OR--
-        ///   the 9 most sigificant bits are all unset
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteInteger(ReadOnlySpan<byte> value)
-        {
-            WriteIntegerCore(Asn1Tag.Integer, value);
-        }
-
-        /// <summary>
-        ///   Write an Integer value with a specified tag.
-        /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="value">The value to write.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 2).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteInteger(Asn1Tag tag, long value)
+        /// <exception cref="ArgumentException">
+        ///   the 9 most significant bits are all set.
+        ///
+        ///   -or-
+        ///
+        ///   the 9 most significant bits are all unset.
+        /// </exception>
+        public void WriteInteger(ReadOnlySpan<byte> value, Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.Integer);
 
-            WriteIntegerCore(tag.AsPrimitive(), value);
+            WriteIntegerCore(tag?.AsPrimitive() ?? Asn1Tag.Integer, value);
         }
 
         /// <summary>
         ///   Write an Integer value with a specified tag.
-        /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="value">The value to write.</param>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteInteger(Asn1Tag tag, ulong value)
-        {
-            CheckUniversalTag(tag, UniversalTagNumber.Integer);
-
-            WriteNonNegativeIntegerCore(tag.AsPrimitive(), value);
-        }
-
-        /// <summary>
-        ///   Write an Integer value with a specified tag.
-        /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="value">The value to write.</param>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteInteger(Asn1Tag tag, BigInteger value)
-        {
-            CheckUniversalTag(tag, UniversalTagNumber.Integer);
-
-            WriteIntegerCore(tag.AsPrimitive(), value);
-        }
-
-        /// <summary>
-        ///   Write an Integer value with a specified tag.
-        /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="value">The integer value to write, in signed big-endian byte order.</param>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   the 9 most sigificant bits are all set --OR--
-        ///   the 9 most sigificant bits are all unset
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteInteger(Asn1Tag tag, ReadOnlySpan<byte> value)
-        {
-            CheckUniversalTag(tag, UniversalTagNumber.Integer);
-
-            WriteIntegerCore(tag.AsPrimitive(), value);
-        }
-
-        /// <summary>
-        ///   Write an Integer value with tag UNIVERSAL 2.
         /// </summary>
         /// <param name="value">The integer value to write, in unsigned big-endian byte order.</param>
-        /// <exception cref="CryptographicException">
-        ///   the 9 most sigificant bits are all unset
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteIntegerUnsigned(ReadOnlySpan<byte> value)
-        {
-            WriteIntegerUnsignedCore(Asn1Tag.Integer, value);
-        }
-
-        /// <summary>
-        ///   Write an Integer value with a specified tag.
-        /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="value">The integer value to write, in unsigned big-endian byte order.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 2).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   the 9 most sigificant bits are all unset
+        /// <exception cref="ArgumentException">
+        ///   the 9 most significant bits are all unset.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteIntegerUnsigned(Asn1Tag tag, ReadOnlySpan<byte> value)
+        public void WriteIntegerUnsigned(ReadOnlySpan<byte> value, Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.Integer);
 
-            WriteIntegerUnsignedCore(tag.AsPrimitive(), value);
+            WriteIntegerUnsignedCore(tag?.AsPrimitive() ?? Asn1Tag.Integer, value);
         }
 
         // T-REC-X.690-201508 sec 8.3
@@ -278,13 +220,13 @@ namespace System.Security.Cryptography.Asn1
         {
             if (value.IsEmpty)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new ArgumentException(SR.Argument_IntegerCannotBeEmpty, nameof(value));
             }
 
             // T-REC-X.690-201508 sec 8.3.2
             if (value.Length > 1 && value[0] == 0 && value[1] < 0x80)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new ArgumentException(SR.Argument_IntegerRedundantByte, nameof(value));
             }
 
             Debug.Assert(!tag.IsConstructed);
@@ -307,11 +249,9 @@ namespace System.Security.Cryptography.Asn1
 
         private void WriteIntegerCore(Asn1Tag tag, ReadOnlySpan<byte> value)
         {
-            CheckDisposed();
-
             if (value.IsEmpty)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new ArgumentException(SR.Argument_IntegerCannotBeEmpty, nameof(value));
             }
 
             // T-REC-X.690-201508 sec 8.3.2
@@ -324,7 +264,7 @@ namespace System.Security.Cryptography.Asn1
                 // If the first 9 bits are all 0 or are all 1, the value is invalid.
                 if (masked == 0 || masked == RedundancyMask)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new ArgumentException(SR.Argument_IntegerRedundantByte, nameof(value));
                 }
             }
 

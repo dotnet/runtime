@@ -3,73 +3,72 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadGeneralizedTime : Asn1ReaderTests
+    public sealed class ReadGeneralizedTime
     {
         [Theory]
         // yyyyMMddHH (2017090821)
-        [InlineData(PublicEncodingRules.BER, "180A32303137303930383231", 2017, 9, 8, 21, 0, 0, 0, null, 0)]
+        [InlineData(AsnEncodingRules.BER, "180A32303137303930383231", 2017, 9, 8, 21, 0, 0, 0, null, 0)]
         // yyyyMMddHHZ (2017090821Z)
-        [InlineData(PublicEncodingRules.BER, "180B323031373039303832315A", 2017, 9, 8, 21, 0, 0, 0, 0, 0)]
+        [InlineData(AsnEncodingRules.BER, "180B323031373039303832315A", 2017, 9, 8, 21, 0, 0, 0, 0, 0)]
         // yyyyMMddHH-HH (2017090821-01)
-        [InlineData(PublicEncodingRules.BER, "180D323031373039303832312D3031", 2017, 9, 8, 21, 0, 0, 0, -1, 0)]
+        [InlineData(AsnEncodingRules.BER, "180D323031373039303832312D3031", 2017, 9, 8, 21, 0, 0, 0, -1, 0)]
         // yyyyMMddHH+HHmm (2017090821+0118)
-        [InlineData(PublicEncodingRules.BER, "180F323031373039303832312B30313138", 2017, 9, 8, 21, 0, 0, 0, 1, 18)]
+        [InlineData(AsnEncodingRules.BER, "180F323031373039303832312B30313138", 2017, 9, 8, 21, 0, 0, 0, 1, 18)]
         // yyyyMMddHH,hourFrac (2017090821.1)
-        [InlineData(PublicEncodingRules.BER, "180C323031373039303832312C31", 2017, 9, 8, 21, 6, 0, 0, null, 0)]
+        [InlineData(AsnEncodingRules.BER, "180C323031373039303832312C31", 2017, 9, 8, 21, 6, 0, 0, null, 0)]
         // yyyyMMddHH.hourFracZ (2017090821.2010Z)
-        [InlineData(PublicEncodingRules.BER, "1810323031373039303832312E323031305A", 2017, 9, 8, 21, 12, 3, 600, 0, 0)]
+        [InlineData(AsnEncodingRules.BER, "1810323031373039303832312E323031305A", 2017, 9, 8, 21, 12, 3, 600, 0, 0)]
         // yyyyMMddHH,hourFrac-HH (2017090821,3099-01)
-        [InlineData(PublicEncodingRules.BER, "1812323031373039303832312C333039392D3031", 2017, 9, 8, 21, 18, 35, 640, -1, 0)]
+        [InlineData(AsnEncodingRules.BER, "1812323031373039303832312C333039392D3031", 2017, 9, 8, 21, 18, 35, 640, -1, 0)]
         // yyyyMMddHH.hourFrac+HHmm (2017090821.201+0118)
-        [InlineData(PublicEncodingRules.BER, "1813323031373039303832312E3230312B30313138", 2017, 9, 8, 21, 12, 3, 600, 1, 18)]
+        [InlineData(AsnEncodingRules.BER, "1813323031373039303832312E3230312B30313138", 2017, 9, 8, 21, 12, 3, 600, 1, 18)]
         // yyyyMMddHHmm (201709082358)
-        [InlineData(PublicEncodingRules.BER, "180C323031373039303832333538", 2017, 9, 8, 23, 58, 0, 0, null, 0)]
+        [InlineData(AsnEncodingRules.BER, "180C323031373039303832333538", 2017, 9, 8, 23, 58, 0, 0, null, 0)]
         // yyyyMMddHHmmZ (201709082358Z)
-        [InlineData(PublicEncodingRules.BER, "180D3230313730393038323335385A", 2017, 9, 8, 23, 58, 0, 0, 0, 0)]
+        [InlineData(AsnEncodingRules.BER, "180D3230313730393038323335385A", 2017, 9, 8, 23, 58, 0, 0, 0, 0)]
         // yyyyMMddHHmm-HH (201709082358-01)
-        [InlineData(PublicEncodingRules.BER, "180F3230313730393038323335382D3031", 2017, 9, 8, 23, 58, 0, 0, -1, 0)]
+        [InlineData(AsnEncodingRules.BER, "180F3230313730393038323335382D3031", 2017, 9, 8, 23, 58, 0, 0, -1, 0)]
         // yyyyMMddHHmm+HHmm (201709082358+0118)
-        [InlineData(PublicEncodingRules.BER, "18113230313730393038323335382B30313138", 2017, 9, 8, 23, 58, 0, 0, 1, 18)]
+        [InlineData(AsnEncodingRules.BER, "18113230313730393038323335382B30313138", 2017, 9, 8, 23, 58, 0, 0, 1, 18)]
         // yyyyMMddHHmm.minuteFrac (201709082358.01)
-        [InlineData(PublicEncodingRules.BER, "180F3230313730393038323335382E3031", 2017, 9, 8, 23, 58, 0, 600, null, 0)]
+        [InlineData(AsnEncodingRules.BER, "180F3230313730393038323335382E3031", 2017, 9, 8, 23, 58, 0, 600, null, 0)]
         // yyyyMMddHHmm,minuteFracZ (201709082358,11Z)
-        [InlineData(PublicEncodingRules.BER, "18103230313730393038323335382C31315A", 2017, 9, 8, 23, 58, 6, 600, 0, 0)]
+        [InlineData(AsnEncodingRules.BER, "18103230313730393038323335382C31315A", 2017, 9, 8, 23, 58, 6, 600, 0, 0)]
         // yyyyMMddHHmm.minuteFrac-HH (201709082358.05-01)
-        [InlineData(PublicEncodingRules.BER, "18123230313730393038323335382E30352D3031", 2017, 9, 8, 23, 58, 3, 0, -1, 0)]
+        [InlineData(AsnEncodingRules.BER, "18123230313730393038323335382E30352D3031", 2017, 9, 8, 23, 58, 3, 0, -1, 0)]
         // yyyyMMddHHmm,minuteFrac+HHmm (201709082358,007+0118)
-        [InlineData(PublicEncodingRules.BER, "18153230313730393038323335382C3030372B30313138", 2017, 9, 8, 23, 58, 0, 420, 1, 18)]
+        [InlineData(AsnEncodingRules.BER, "18153230313730393038323335382C3030372B30313138", 2017, 9, 8, 23, 58, 0, 420, 1, 18)]
         // yyyyMMddHHmmss (20161106012345) - Ambiguous time due to DST "fall back" in US & Canada
-        [InlineData(PublicEncodingRules.BER, "180E3230313631313036303132333435", 2016, 11, 6, 1, 23, 45, 0, null, 0)]
+        [InlineData(AsnEncodingRules.BER, "180E3230313631313036303132333435", 2016, 11, 6, 1, 23, 45, 0, null, 0)]
         // yyyyMMddHHmmssZ (20161106012345Z)
-        [InlineData(PublicEncodingRules.BER, "180F32303136313130363031323334355A", 2016, 11, 6, 1, 23, 45, 0, 0, 0)]
+        [InlineData(AsnEncodingRules.BER, "180F32303136313130363031323334355A", 2016, 11, 6, 1, 23, 45, 0, 0, 0)]
         // yyyyMMddHHmmss-HH (20161106012345-01)
-        [InlineData(PublicEncodingRules.BER, "181132303136313130363031323334352D3031", 2016, 11, 6, 1, 23, 45, 0, -1, 0)]
+        [InlineData(AsnEncodingRules.BER, "181132303136313130363031323334352D3031", 2016, 11, 6, 1, 23, 45, 0, -1, 0)]
         // yyyyMMddHHmmss+HHmm (20161106012345+0118)
-        [InlineData(PublicEncodingRules.BER, "181332303136313130363031323334352B30313138", 2016, 11, 6, 1, 23, 45, 0, 1, 18)]
+        [InlineData(AsnEncodingRules.BER, "181332303136313130363031323334352B30313138", 2016, 11, 6, 1, 23, 45, 0, 1, 18)]
         // yyyyMMddHHmmss.secondFrac (20161106012345.6789) - Ambiguous time due to DST "fall back" in US & Canada
-        [InlineData(PublicEncodingRules.BER, "181332303136313130363031323334352E36373839", 2016, 11, 6, 1, 23, 45, 678, null, 0)]
+        [InlineData(AsnEncodingRules.BER, "181332303136313130363031323334352E36373839", 2016, 11, 6, 1, 23, 45, 678, null, 0)]
         // yyyyMMddHHmmss,secondFracZ (20161106012345,7654Z)
-        [InlineData(PublicEncodingRules.BER, "181432303136313130363031323334352C373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
+        [InlineData(AsnEncodingRules.BER, "181432303136313130363031323334352C373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
         // yyyyMMddHHmmss.secondFrac-HH (20161106012345.001-01)
-        [InlineData(PublicEncodingRules.BER, "181532303136313130363031323334352E3030312D3031", 2016, 11, 6, 1, 23, 45, 1, -1, 0)]
+        [InlineData(AsnEncodingRules.BER, "181532303136313130363031323334352E3030312D3031", 2016, 11, 6, 1, 23, 45, 1, -1, 0)]
         // yyyyMMddHHmmss,secondFrac+HHmm (20161106012345,0009+0118)
-        [InlineData(PublicEncodingRules.BER, "181832303136313130363031323334352C303030392B30313138", 2016, 11, 6, 1, 23, 45, 0, 1, 18)]
+        [InlineData(AsnEncodingRules.BER, "181832303136313130363031323334352C303030392B30313138", 2016, 11, 6, 1, 23, 45, 0, 1, 18)]
 
         // yyyyMMddHHmmssZ (20161106012345Z)
-        [InlineData(PublicEncodingRules.CER, "180F32303136313130363031323334355A", 2016, 11, 6, 1, 23, 45, 0, 0, 0)]
-        [InlineData(PublicEncodingRules.DER, "180F32303136313130363031323334355A", 2016, 11, 6, 1, 23, 45, 0, 0, 0)]
+        [InlineData(AsnEncodingRules.CER, "180F32303136313130363031323334355A", 2016, 11, 6, 1, 23, 45, 0, 0, 0)]
+        [InlineData(AsnEncodingRules.DER, "180F32303136313130363031323334355A", 2016, 11, 6, 1, 23, 45, 0, 0, 0)]
 
         // yyyyMMddHHmmss.secondFracZ (20161106012345,7654Z)
-        [InlineData(PublicEncodingRules.CER, "181432303136313130363031323334352E373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
-        [InlineData(PublicEncodingRules.DER, "181432303136313130363031323334352E373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
+        [InlineData(AsnEncodingRules.CER, "181432303136313130363031323334352E373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
+        [InlineData(AsnEncodingRules.DER, "181432303136313130363031323334352E373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
         public static void ParseTime_Valid(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
             int year,
             int month,
@@ -83,7 +82,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputData = inputHex.HexToByteArray();
 
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
             DateTimeOffset value = reader.ReadGeneralizedTime();
             Assert.False(reader.HasData, "reader.HasData");
 
@@ -197,8 +196,8 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader cerReader = new AsnReader(inputData, AsnEncodingRules.CER);
             AsnReader derReader = new AsnReader(inputData, AsnEncodingRules.DER);
 
-            Assert.Throws<CryptographicException>(() => cerReader.ReadGeneralizedTime());
-            Assert.Throws<CryptographicException>(() => derReader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(() => cerReader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(() => derReader.ReadGeneralizedTime());
 
             // Prove it was not just corrupt input
             AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
@@ -209,12 +208,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "2017121900.06861111087Z")]
-        [InlineData(PublicEncodingRules.BER, "201712190004.11666665167Z")]
-        [InlineData(PublicEncodingRules.BER, "20171219000406.9999991Z")]
-        [InlineData(PublicEncodingRules.CER, "20171219000406.9999991Z")]
-        [InlineData(PublicEncodingRules.DER, "20171219000406.9999991Z")]
-        public static void MaximumEffectivePrecision(PublicEncodingRules ruleSet, string dateAscii)
+        [InlineData(AsnEncodingRules.BER, "2017121900.06861111087Z")]
+        [InlineData(AsnEncodingRules.BER, "201712190004.11666665167Z")]
+        [InlineData(AsnEncodingRules.BER, "20171219000406.9999991Z")]
+        [InlineData(AsnEncodingRules.CER, "20171219000406.9999991Z")]
+        [InlineData(AsnEncodingRules.DER, "20171219000406.9999991Z")]
+        public static void MaximumEffectivePrecision(AsnEncodingRules ruleSet, string dateAscii)
         {
             DateTimeOffset expectedTime = new DateTimeOffset(2017, 12, 19, 0, 4, 6, TimeSpan.Zero);
             expectedTime += new TimeSpan(TimeSpan.TicksPerSecond - 9);
@@ -224,7 +223,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             inputData[1] = (byte)dateAscii.Length;
             Text.Encoding.ASCII.GetBytes(dateAscii, 0, dateAscii.Length, inputData, 2);
 
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
             Assert.Equal(expectedTime, reader.ReadGeneralizedTime());
         }
 
@@ -258,9 +257,9 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        public static void MultiSegmentExcessivelyPreciseFraction(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        public static void MultiSegmentExcessivelyPreciseFraction(AsnEncodingRules ruleSet)
         {
             // This builds "20171207173522.0000...0001Z" where the Z required a second CER segment.
             // This is a bit of nonsense, really, because it is encoding 1e-985 seconds, which is
@@ -280,7 +279,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] cdr = { 0x04, 0x01, (byte)'Z', 0x00, 0x00 };
             byte[] inputData = header.Concat(contents0).Concat(cdr).ToArray();
 
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
             DateTimeOffset value = reader.ReadGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 0));
             DateTimeOffset expected = new DateTimeOffset(2017, 12, 7, 17, 35, 22, TimeSpan.Zero);
             Assert.Equal(expected, value);
@@ -300,8 +299,8 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader cerReader = new AsnReader(inputData, AsnEncodingRules.CER);
             AsnReader derReader = new AsnReader(inputData, AsnEncodingRules.DER);
-            Assert.Throws<CryptographicException>(() => cerReader.ReadGeneralizedTime());
-            Assert.Throws<CryptographicException>(() => derReader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(() => cerReader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(() => derReader.ReadGeneralizedTime());
         }
 
         [Fact]
@@ -310,69 +309,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = Text.Encoding.ASCII.GetBytes("\u0018\u002A2017092118.012345678901234567890123Q56789Z");
             AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
 
-            Assert.Throws<CryptographicException>(() => berReader.ReadGeneralizedTime());
-        }
-
-        [Theory]
-        // yyyyMMddHH,hourFrac (2017090821,1)
-        [InlineData("180C323031373039303832312C31")]
-        // yyyyMMddHH.hourFrac (2017090821.1)
-        [InlineData("180C323031373039303832312E31")]
-        // yyyyMMddHH,hourFracZ (2017090821,2010Z)
-        [InlineData("1810323031373039303832312C323031305A")]
-        // yyyyMMddHH.hourFracZ (2017090821.2010Z)
-        [InlineData("1810323031373039303832312E323031305A")]
-        // yyyyMMddHH,hourFrac-HH (2017090821,3099-01)
-        [InlineData("1812323031373039303832312C333039392D3031")]
-        // yyyyMMddHH.hourFrac-HH (2017090821.3099-01)
-        [InlineData("1812323031373039303832312E333039392D3031")]
-        // yyyyMMddHH,hourFrac+HHmm (2017090821,201+0118)
-        [InlineData("1813323031373039303832312C3230312B30313138")]
-        // yyyyMMddHH.hourFrac+HHmm (2017090821.201+0118)
-        [InlineData("1813323031373039303832312E3230312B30313138")]
-        // yyyyMMddHHmm,minuteFrac (201709082358,01)
-        [InlineData("180F3230313730393038323335382C3031")]
-        // yyyyMMddHHmm.minuteFrac (201709082358.01)
-        [InlineData("180F3230313730393038323335382E3031")]
-        // yyyyMMddHHmm,minuteFracZ (201709082358,11Z)
-        [InlineData("18103230313730393038323335382C31315A")]
-        // yyyyMMddHHmm.minuteFracZ (201709082358.11Z)
-        [InlineData("18103230313730393038323335382E31315A")]
-        // yyyyMMddHHmm,minuteFrac-HH (201709082358m05-01)
-        [InlineData("18123230313730393038323335382C30352D3031")]
-        // yyyyMMddHHmm.minuteFrac-HH (201709082358.05-01)
-        [InlineData("18123230313730393038323335382E30352D3031")]
-        // yyyyMMddHHmm,minuteFrac+HHmm (201709082358,007+0118)
-        [InlineData("18153230313730393038323335382C3030372B30313138")]
-        // yyyyMMddHHmm.minuteFrac+HHmm (201709082358.007+0118)
-        [InlineData("18153230313730393038323335382E3030372B30313138")]
-        // yyyyMMddHHmmss,secondFrac (20161106012345,6789)
-        [InlineData("181332303136313130363031323334352C36373839")]
-        // yyyyMMddHHmmss.secondFrac (20161106012345.6789)
-        [InlineData("181332303136313130363031323334352E36373839")]
-        // yyyyMMddHHmmss,secondFracZ (20161106012345,7654Z)
-        [InlineData("181432303136313130363031323334352C373635345A")]
-        // yyyyMMddHHmmss,secondFrac-HH (20161106012345,001-01)
-        [InlineData("181532303136313130363031323334352C3030312D3031")]
-        // yyyyMMddHHmmss.secondFrac-HH (20161106012345.001-01)
-        [InlineData("181532303136313130363031323334352E3030312D3031")]
-        // yyyyMMddHHmmss,secondFrac+HHmm (20161106012345,0009+0118)
-        [InlineData("181832303136313130363031323334352C303030392B30313138")]
-        // yyyyMMddHHmmss.secondFrac+HHmm (20161106012345.0009+0118)
-        [InlineData("181832303136313130363031323334352E303030392B30313138")]
-        // yyyyMMddHHmmss.secondFrac0Z (20161106012345.76540Z)
-        [InlineData("181532303136313130363031323334352E37363534305A")]
-        public static void VerifyDisallowFraction_BER(string inputHex)
-        {
-            byte[] inputData = inputHex.HexToByteArray();
-
-            AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
-
-            Assert.Throws<CryptographicException>(() => berReader.ReadGeneralizedTime(disallowFractions: true));
-
-            // Legit if the fraction is allowed
-            berReader.ReadGeneralizedTime();
-            Assert.False(berReader.HasData, "berReader.HasData");
+            Assert.Throws<AsnContentException>(() => berReader.ReadGeneralizedTime());
         }
 
         [Theory]
@@ -446,17 +383,17 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
 
-            Assert.Throws<CryptographicException>(() => reader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(() => reader.ReadGeneralizedTime());
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "180F32303136313130363031323334355A".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
@@ -464,7 +401,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
@@ -477,13 +414,13 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "850F32303136313130363031323334355A".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
@@ -491,16 +428,16 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.ReadUtcTime());
+            Assert.Throws<AsnContentException>(() => reader.ReadUtcTime());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.Application, 5)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 7)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
@@ -513,28 +450,28 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "180F32303136313130363031323334355A", PublicTagClass.Universal, 24)]
-        [InlineData(PublicEncodingRules.CER, "180F32303136313130363031323334355A", PublicTagClass.Universal, 24)]
-        [InlineData(PublicEncodingRules.DER, "180F32303136313130363031323334355A", PublicTagClass.Universal, 24)]
-        [InlineData(PublicEncodingRules.BER, "800F31393530303130323132333435365A", PublicTagClass.ContextSpecific, 0)]
-        [InlineData(PublicEncodingRules.CER, "4C0F31393530303130323132333435365A", PublicTagClass.Application, 12)]
-        [InlineData(PublicEncodingRules.DER, "DF8A460F31393530303130323132333435365A", PublicTagClass.Private, 1350)]
+        [InlineData(AsnEncodingRules.BER, "180F32303136313130363031323334355A", TagClass.Universal, 24)]
+        [InlineData(AsnEncodingRules.CER, "180F32303136313130363031323334355A", TagClass.Universal, 24)]
+        [InlineData(AsnEncodingRules.DER, "180F32303136313130363031323334355A", TagClass.Universal, 24)]
+        [InlineData(AsnEncodingRules.BER, "800F31393530303130323132333435365A", TagClass.ContextSpecific, 0)]
+        [InlineData(AsnEncodingRules.CER, "4C0F31393530303130323132333435365A", TagClass.Application, 12)]
+        [InlineData(AsnEncodingRules.DER, "DF8A460F31393530303130323132333435365A", TagClass.Private, 1350)]
         public static void ExpectedTag_IgnoresConstructed(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
-            PublicTagClass tagClass,
+            TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            DateTimeOffset val1 = reader.ReadGeneralizedTime(new Asn1Tag((TagClass)tagClass, tagValue, true));
+            DateTimeOffset val1 = reader.ReadGeneralizedTime(new Asn1Tag(tagClass, tagValue, true));
 
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            reader = new AsnReader(inputData, ruleSet);
 
-            DateTimeOffset val2 = reader.ReadGeneralizedTime(new Asn1Tag((TagClass)tagClass, tagValue, false));
+            DateTimeOffset val2 = reader.ReadGeneralizedTime(new Asn1Tag(tagClass, tagValue, false));
 
             Assert.False(reader.HasData);
 

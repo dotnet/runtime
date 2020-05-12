@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
     /// <summary>
     ///   The tag class for a particular ASN.1 tag.
     /// </summary>
     // Uses a masked overlay of the tag class encoding.
     // T-REC-X.690-201508 sec 8.1.2.2
-    internal enum TagClass : byte
+    public enum TagClass
     {
         /// <summary>
         ///   The Universal tag class

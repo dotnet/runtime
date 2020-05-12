@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Security.Cryptography.Asn1;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Writer
 {
     public class WriteGeneralizedTime : Asn1WriterTests
     {
@@ -135,12 +134,10 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool omitFractionalSeconds,
             string expectedHexPayload)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
-            {
-                writer.WriteGeneralizedTime(input, omitFractionalSeconds);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
+            writer.WriteGeneralizedTime(input, omitFractionalSeconds: omitFractionalSeconds);
 
-                Verify(writer, "18" + expectedHexPayload);
-            }
+            Verify(writer, "18" + expectedHexPayload);
         }
 
         [Theory]
@@ -150,13 +147,11 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool omitFractionalSeconds,
             string expectedHexPayload)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
-            {
-                Asn1Tag tag = new Asn1Tag(TagClass.Application, 11);
-                writer.WriteGeneralizedTime(tag, input, omitFractionalSeconds);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
+            Asn1Tag tag = new Asn1Tag(TagClass.Application, 11);
+            writer.WriteGeneralizedTime(input, omitFractionalSeconds, tag);
 
-                Verify(writer, Stringify(tag) + expectedHexPayload);
-            }
+            Verify(writer, Stringify(tag) + expectedHexPayload);
         }
 
         [Theory]
@@ -166,12 +161,10 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool omitFractionalSeconds,
             string expectedHexPayload)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
-            {
-                writer.WriteGeneralizedTime(input, omitFractionalSeconds);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            writer.WriteGeneralizedTime(input, omitFractionalSeconds);
 
-                Verify(writer, "18" + expectedHexPayload);
-            }
+            Verify(writer, "18" + expectedHexPayload);
         }
 
         [Theory]
@@ -181,13 +174,11 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool omitFractionalSeconds,
             string expectedHexPayload)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
-            {
-                Asn1Tag tag = new Asn1Tag(TagClass.Private, 95);
-                writer.WriteGeneralizedTime(tag, input, omitFractionalSeconds);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            Asn1Tag tag = new Asn1Tag(TagClass.Private, 95);
+            writer.WriteGeneralizedTime(input, omitFractionalSeconds, tag);
 
-                Verify(writer, Stringify(tag) + expectedHexPayload);
-            }
+            Verify(writer, Stringify(tag) + expectedHexPayload);
         }
 
         [Theory]
@@ -197,12 +188,10 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool omitFractionalSeconds,
             string expectedHexPayload)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteGeneralizedTime(input, omitFractionalSeconds);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteGeneralizedTime(input, omitFractionalSeconds);
 
-                Verify(writer, "18" + expectedHexPayload);
-            }
+            Verify(writer, "18" + expectedHexPayload);
         }
 
         [Theory]
@@ -212,86 +201,43 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool omitFractionalSeconds,
             string expectedHexPayload)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 3);
-                writer.WriteGeneralizedTime(tag, input, omitFractionalSeconds);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 3);
+            writer.WriteGeneralizedTime(input, omitFractionalSeconds, tag);
 
-                Verify(writer, Stringify(tag) + expectedHexPayload);
-            }
+            Verify(writer, Stringify(tag) + expectedHexPayload);
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, false)]
-        [InlineData(PublicEncodingRules.CER, false)]
-        [InlineData(PublicEncodingRules.DER, false)]
-        [InlineData(PublicEncodingRules.BER, true)]
-        [InlineData(PublicEncodingRules.CER, true)]
-        [InlineData(PublicEncodingRules.DER, true)]
-        public void VerifyWriteGeneralizedTime_EndOfContents(
-            PublicEncodingRules ruleSet,
+        [InlineData(AsnEncodingRules.BER, false)]
+        [InlineData(AsnEncodingRules.CER, false)]
+        [InlineData(AsnEncodingRules.DER, false)]
+        [InlineData(AsnEncodingRules.BER, true)]
+        [InlineData(AsnEncodingRules.CER, true)]
+        [InlineData(AsnEncodingRules.DER, true)]
+        public void VerifyWriteGeneralizedTime_Null(
+            AsnEncodingRules ruleSet,
             bool omitFractionalSeconds)
         {
-            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
-            {
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
-                    () => writer.WriteGeneralizedTime(Asn1Tag.EndOfContents, DateTimeOffset.Now, omitFractionalSeconds));
-            }
+            AsnWriter writer = new AsnWriter(ruleSet);
+
+            AssertExtensions.Throws<ArgumentException>(
+                "tag",
+                () => writer.WriteGeneralizedTime(DateTimeOffset.Now, omitFractionalSeconds, Asn1Tag.Null));
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public void VerifyWriteGeneralizedTime_IgnoresConstructed(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public void VerifyWriteGeneralizedTime_IgnoresConstructed(AsnEncodingRules ruleSet)
         {
-            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
-            {
-                DateTimeOffset value = new DateTimeOffset(2017, 11, 16, 17, 35, 1, TimeSpan.Zero);
+            AsnWriter writer = new AsnWriter(ruleSet);
+            DateTimeOffset value = new DateTimeOffset(2017, 11, 16, 17, 35, 1, TimeSpan.Zero);
 
-                writer.WriteGeneralizedTime(new Asn1Tag(UniversalTagNumber.GeneralizedTime, true), value);
-                writer.WriteGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 3, true), value);
-                Verify(writer, "180F32303137313131363137333530315A" + "830F32303137313131363137333530315A");
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static void WriteAfterDispose(bool empty)
-        {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                if (!empty)
-                {
-                    writer.WriteNull();
-                }
-
-                writer.Dispose();
-
-                Assert.Throws<ObjectDisposedException>(
-                    () => writer.WriteGeneralizedTime(DateTimeOffset.UtcNow));
-
-                Assert.Throws<ObjectDisposedException>(
-                    () => writer.WriteGeneralizedTime(DateTimeOffset.UtcNow, true));
-
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
-                    () => writer.WriteGeneralizedTime(Asn1Tag.Integer, DateTimeOffset.Now));
-
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
-                    () => writer.WriteGeneralizedTime(Asn1Tag.Integer, DateTimeOffset.Now, true));
-
-                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 18);
-
-                Assert.Throws<ObjectDisposedException>(
-                    () => writer.WriteGeneralizedTime(tag, DateTimeOffset.Now));
-
-                Assert.Throws<ObjectDisposedException>(
-                    () => writer.WriteGeneralizedTime(tag, DateTimeOffset.Now, true));
-            }
+            writer.WriteGeneralizedTime(value, tag: new Asn1Tag(UniversalTagNumber.GeneralizedTime, true));
+            writer.WriteGeneralizedTime(value, tag: new Asn1Tag(TagClass.ContextSpecific, 3, true));
+            Verify(writer, "180F32303137313131363137333530315A" + "830F32303137313131363137333530315A");
         }
     }
 }

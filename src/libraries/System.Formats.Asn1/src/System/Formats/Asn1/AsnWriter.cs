@@ -6,26 +6,27 @@
 // abusing the normal EnsureWriteCapacity + ArrayPool behaviors of rounding up.
 //#define CHECK_ACCURATE_ENSURE
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
-#nullable enable
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
     /// <summary>
     ///   A writer for BER-, CER-, and DER-encoded ASN.1 data.
     /// </summary>
-    internal sealed partial class AsnWriter : IDisposable
+    public sealed partial class AsnWriter
     {
         private byte[] _buffer = null!;
         private int _offset;
-        private Stack<(Asn1Tag, int, UniversalTagNumber)>? _nestingStack;
+        private Stack<StackFrame>? _nestingStack;
 
         /// <summary>
-        ///   The <see cref="AsnEncodingRules"/> in use by this writer.
+        ///   Gets the encoding rules in use by this writer.
         /// </summary>
+        /// <value>
+        ///   The encoding rules in use by this writer.
+        /// </value>
         public AsnEncodingRules RuleSet { get; }
 
         /// <summary>
@@ -48,33 +49,10 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Release the resources held by this writer.
-        /// </summary>
-        public void Dispose()
-        {
-            _nestingStack = null;
-
-            if (_buffer != null)
-            {
-                Array.Clear(_buffer, 0, _offset);
-#if !CHECK_ACCURATE_ENSURE
-                // clearSize: 0 because it was already cleared.
-                CryptoPool.Return(_buffer, clearSize: 0);
-#endif
-                _buffer = null!;
-            }
-
-            _offset = -1;
-        }
-
-        /// <summary>
         ///   Reset the writer to have no data, without releasing resources.
         /// </summary>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
         public void Reset()
         {
-            CheckDisposed();
-
             if (_offset > 0)
             {
                 Debug.Assert(_buffer != null);
@@ -89,17 +67,18 @@ namespace System.Security.Cryptography.Asn1
         ///   Gets the number of bytes that would be written by <see cref="TryEncode"/>.
         /// </summary>
         /// <returns>
-        ///   The number of bytes that would be written by <see cref="TryEncode"/>, or -1
-        ///   if a <see cref="PushSequence()"/> or <see cref="PushSetOf()"/> has not been completed.
+        ///   The number of bytes that would be written by <see cref="TryEncode"/>.
         /// </returns>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
+        /// <exception cref="InvalidOperationException">
+        ///   <see cref="PushSequence"/>, <see cref="PushSetOf"/>, or
+        ///   <see cref="PushOctetString"/> was called without the corresponding
+        ///   Pop method.
+        /// </exception>
         public int GetEncodedLength()
         {
-            CheckDisposed();
-
             if ((_nestingStack?.Count ?? 0) != 0)
             {
-                return -1;
+                throw new InvalidOperationException(SR.AsnWriter_EncodeUnbalancedStack);
             }
 
             return _offset;
@@ -113,20 +92,17 @@ namespace System.Security.Cryptography.Asn1
         ///   On success, receives the number of bytes written to <paramref name="destination"/>.
         /// </param>
         /// <returns>
-        ///   <c>true</c> if the encode succeeded,
-        ///   <c>false</c> if <paramref name="destination"/> is too small.
+        ///   <see langword="true"/> if the encode succeeded,
+        ///   <see langword="false"/> if <paramref name="destination"/> is too small.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        ///   A <see cref="PushSequence()"/> or <see cref="PushSetOf()"/> has not been closed via
-        ///   <see cref="PopSequence()"/> or <see cref="PopSetOf()"/>.
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
         public bool TryEncode(Span<byte> destination, out int bytesWritten)
         {
-            CheckDisposed();
-
             if ((_nestingStack?.Count ?? 0) != 0)
-                throw new InvalidOperationException(SR.Cryptography_AsnWriter_EncodeUnbalancedStack);
+                throw new InvalidOperationException(SR.AsnWriter_EncodeUnbalancedStack);
 
             // If the stack is closed out then everything is a definite encoding (BER, DER) or a
             // required indefinite encoding (CER). So we're correctly sized up, and ready to copy.
@@ -150,19 +126,18 @@ namespace System.Security.Cryptography.Asn1
         /// <summary>
         ///   Return a new array containing the encoded value.
         /// </summary>
-        /// <returns>A precisely-sized array containing the encoded value.</returns>
+        /// <returns>
+        ///   A precisely-sized array containing the encoded value.
+        /// </returns>
         /// <exception cref="InvalidOperationException">
-        ///   A <see cref="PushSequence()"/> or <see cref="PushSetOf()"/> has not been closed via
-        ///   <see cref="PopSequence()"/> or <see cref="PopSetOf()"/>.
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
         public byte[] Encode()
         {
-            CheckDisposed();
-
             if ((_nestingStack?.Count ?? 0) != 0)
             {
-                throw new InvalidOperationException(SR.Cryptography_AsnWriter_EncodeUnbalancedStack);
+                throw new InvalidOperationException(SR.AsnWriter_EncodeUnbalancedStack);
             }
 
             if (_offset == 0)
@@ -175,13 +150,11 @@ namespace System.Security.Cryptography.Asn1
             return _buffer.AsSpan(0, _offset).ToArray();
         }
 
-        internal ReadOnlySpan<byte> EncodeAsSpan()
+        private ReadOnlySpan<byte> EncodeAsSpan()
         {
-            CheckDisposed();
-
             if ((_nestingStack?.Count ?? 0) != 0)
             {
-                throw new InvalidOperationException(SR.Cryptography_AsnWriter_EncodeUnbalancedStack);
+                throw new InvalidOperationException(SR.AsnWriter_EncodeUnbalancedStack);
             }
 
             if (_offset == 0)
@@ -203,27 +176,39 @@ namespace System.Security.Cryptography.Asn1
         ///   <see langword="false"/> otherwise.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        ///   A <see cref="PushSequence()"/> or <see cref="PushSetOf()"/> has not been closed via
-        ///   <see cref="PopSequence()"/> or <see cref="PopSetOf()"/>.
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public bool ValueEquals(ReadOnlySpan<byte> other)
+        public bool EncodedValueEquals(ReadOnlySpan<byte> other)
         {
             return EncodeAsSpan().SequenceEqual(other);
         }
 
-        private void CheckDisposed()
+        /// <summary>
+        ///   Determines if <see cref="Encode"/> would produce an output identical to
+        ///   <paramref name="other"/>.
+        /// </summary>
+        /// <returns>
+        ///   <see langword="true"/> if the pending encoded data is identical to <paramref name="other"/>,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="other"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public bool EncodedValueEquals(AsnWriter other)
         {
-            if (_offset < 0)
-            {
-                throw new ObjectDisposedException(nameof(AsnWriter));
-            }
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            return EncodeAsSpan().SequenceEqual(other.EncodeAsSpan());
         }
 
         private void EnsureWriteCapacity(int pendingCount)
         {
-            CheckDisposed();
-
             if (pendingCount < 0)
             {
                 throw new OverflowException();
@@ -232,36 +217,35 @@ namespace System.Security.Cryptography.Asn1
             if (_buffer == null || _buffer.Length - _offset < pendingCount)
             {
 #if CHECK_ACCURATE_ENSURE
-// A debug paradigm to make sure that throughout the execution nothing ever writes
-// past where the buffer was "allocated".  This causes quite a number of reallocs
-// and copies, so it's a #define opt-in.
+                // A debug paradigm to make sure that throughout the execution nothing ever writes
+                // past where the buffer was "allocated".  This causes quite a number of reallocs
+                // and copies, so it's a #define opt-in.
                 byte[] newBytes = new byte[_offset + pendingCount];
 
                 if (_buffer != null)
                 {
-                    Buffer.BlockCopy(_buffer, 0, newBytes, 0, _offset);
+                    Span<byte> bufferSpan = _buffer.AsSpan(0, _offset);
+                    bufferSpan.CopyTo(newBytes);
+                    bufferSpan.Clear();
                 }
+
+                _buffer = newBytes;
 #else
                 const int BlockSize = 1024;
-                // While the ArrayPool may have similar logic, make sure we don't run into a lot of
-                // "grow a little" by asking in 1k steps.
+                // Make sure we don't run into a lot of "grow a little" by asking in 1k steps.
                 int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
                 byte[]? oldBytes = _buffer;
-                _buffer = CryptoPool.Rent(BlockSize * blocks);
+                Array.Resize(ref _buffer, BlockSize * blocks);
 
                 if (oldBytes != null)
                 {
-                    Buffer.BlockCopy(oldBytes, 0, _buffer, 0, _offset);
-                    CryptoPool.Return(oldBytes, _offset);
+                    oldBytes.AsSpan(0, _offset).Clear();
                 }
 #endif
 
 #if DEBUG
-                // Ensure no "implicit 0" is happening
-                for (int i = _offset; i < _buffer.Length; i++)
-                {
-                    _buffer[i] ^= 0xFF;
-                }
+                // Ensure no "implicit 0" is happening, in case we move to pooling.
+                _buffer.AsSpan(_offset).Fill(0xCA);
 #endif
             }
         }
@@ -275,7 +259,7 @@ namespace System.Security.Cryptography.Asn1
                 written != spaceRequired)
             {
                 Debug.Fail($"TryWrite failed or written was wrong value ({written} vs {spaceRequired})");
-                throw new CryptographicException();
+                throw new InvalidOperationException();
             }
 
             _offset += spaceRequired;
@@ -350,51 +334,81 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
+        ///   Copy the value of this writer into another.
+        /// </summary>
+        /// <param name="destination">The writer to receive the value.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="destination"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        ///
+        ///   -or-
+        ///
+        ///   This writer is empty.
+        ///
+        ///   -or-
+        ///
+        ///   This writer represents more than one top-level value.
+        ///
+        ///   -or-
+        ///
+        ///   This writer's value is encoded in a manner that is not compatible with the
+        ///   ruleset for the destination writer.
+        /// </exception>
+        public void CopyTo(AsnWriter destination)
+        {
+            if (destination == null)
+                throw new ArgumentNullException(nameof(destination));
+
+            try
+            {
+                destination.WriteEncodedValue(EncodeAsSpan());
+            }
+            catch (ArgumentException e)
+            {
+                throw new InvalidOperationException(new InvalidOperationException().Message, e);
+            }
+        }
+
+        /// <summary>
         ///   Write a single value which has already been encoded.
         /// </summary>
-        /// <param name="preEncodedValue">The value to write.</param>
+        /// <param name="value">The value to write.</param>
         /// <remarks>
         ///   This method only checks that the tag and length are encoded according to the current ruleset,
         ///   and that the end of the value is the end of the input. The contents are not evaluated for
         ///   semantic meaning.
         /// </remarks>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="preEncodedValue"/> could not be read under the current encoding rules --OR--
-        ///   <paramref name="preEncodedValue"/> has data beyond the end of the first value
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="value"/> could not be read under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="value"/> has data beyond the end of the first value.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public unsafe void WriteEncodedValue(ReadOnlySpan<byte> preEncodedValue)
+        public void WriteEncodedValue(ReadOnlySpan<byte> value)
         {
-            CheckDisposed();
-
-            fixed (byte* ptr = &MemoryMarshal.GetReference(preEncodedValue))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, preEncodedValue.Length))
-                {
-                    WriteEncodedValue(manager.Memory);
-                }
-            }
-        }
-
-        private void WriteEncodedValue(ReadOnlyMemory<byte> preEncodedValue)
-        {
-            AsnReader reader = new AsnReader(preEncodedValue, RuleSet);
-
             // Is it legal under the current rules?
-            ReadOnlyMemory<byte> parsedBack = reader.ReadEncodedValue();
+            bool read = AsnDecoder.TryReadEncodedValue(
+                value,
+                RuleSet,
+                out _,
+                out _,
+                out _,
+                out int consumed);
 
-            if (reader.HasData)
+            if (!read || consumed != value.Length)
             {
                 throw new ArgumentException(
-                    SR.Cryptography_WriteEncodedValue_OneValueAtATime,
-                    nameof(preEncodedValue));
+                    SR.Argument_WriteEncodedValue_OneValueAtATime,
+                    nameof(value));
             }
 
-            Debug.Assert(parsedBack.Length == preEncodedValue.Length);
-
-            EnsureWriteCapacity(preEncodedValue.Length);
-            preEncodedValue.Span.CopyTo(_buffer.AsSpan(_offset));
-            _offset += preEncodedValue.Length;
+            EnsureWriteCapacity(value.Length);
+            value.CopyTo(_buffer.AsSpan(_offset));
+            _offset += value.Length;
         }
 
         // T-REC-X.690-201508 sec 8.1.5
@@ -405,30 +419,27 @@ namespace System.Security.Cryptography.Asn1
             _buffer[_offset++] = 0;
         }
 
-        private void PushTag(Asn1Tag tag, UniversalTagNumber tagType)
+        private Scope PushTag(Asn1Tag tag, UniversalTagNumber tagType)
         {
-            CheckDisposed();
-
             if (_nestingStack == null)
             {
-                _nestingStack = new Stack<(Asn1Tag, int, UniversalTagNumber)>();
+                _nestingStack = new Stack<StackFrame>();
             }
 
             Debug.Assert(tag.IsConstructed);
             WriteTag(tag);
-            _nestingStack.Push((tag, _offset, tagType));
+            _nestingStack.Push(new StackFrame(tag, _offset, tagType));
             // Indicate that the length is indefinite.
             // We'll come back and clean this up (as appropriate) in PopTag.
             WriteLength(-1);
+            return new Scope(this);
         }
 
         private void PopTag(Asn1Tag tag, UniversalTagNumber tagType, bool sortContents = false)
         {
-            CheckDisposed();
-
             if (_nestingStack == null || _nestingStack.Count == 0)
             {
-                throw new InvalidOperationException(SR.Cryptography_AsnWriter_PopWrongTag);
+                throw new InvalidOperationException(SR.AsnWriter_PopWrongTag);
             }
 
             (Asn1Tag stackTag, int lenOffset, UniversalTagNumber stackTagType) = _nestingStack.Peek();
@@ -436,13 +447,14 @@ namespace System.Security.Cryptography.Asn1
             Debug.Assert(tag.IsConstructed);
             if (stackTag != tag || stackTagType != tagType)
             {
-                throw new InvalidOperationException(SR.Cryptography_AsnWriter_PopWrongTag);
+                throw new InvalidOperationException(SR.AsnWriter_PopWrongTag);
             }
 
             _nestingStack.Pop();
 
             if (sortContents)
             {
+                Debug.Assert(tagType == UniversalTagNumber.SetOf);
                 SortContents(_buffer, lenOffset + 1, _offset);
             }
 
@@ -455,7 +467,7 @@ namespace System.Security.Cryptography.Asn1
 
             // T-REC-X.690-201508 sec 9.1 (constructed CER => indefinite length)
             // T-REC-X.690-201508 sec 8.1.3.6
-            if (RuleSet == AsnEncodingRules.CER)
+            if (RuleSet == AsnEncodingRules.CER && tagType != UniversalTagNumber.OctetString)
             {
                 WriteEndOfContents();
                 return;
@@ -463,6 +475,49 @@ namespace System.Security.Cryptography.Asn1
 
             int containedLength = _offset - 1 - lenOffset;
             Debug.Assert(containedLength >= 0);
+
+            int start = lenOffset + 1;
+
+            // T-REC-X.690-201508 sec 9.2
+            // T-REC-X.690-201508 sec 10.2
+            if (tagType == UniversalTagNumber.OctetString)
+            {
+                if (RuleSet != AsnEncodingRules.CER || containedLength <= AsnDecoder.MaxCERSegmentSize)
+                {
+                    // Need to replace the tag with the primitive tag.
+                    // Since the P/C bit doesn't affect the length, overwrite the tag.
+                    int tagLen = tag.CalculateEncodedSize();
+                    tag.AsPrimitive().Encode(_buffer.AsSpan(lenOffset - tagLen, tagLen));
+                    // Continue with the regular flow.
+                }
+                else
+                {
+                    int fullSegments = Math.DivRem(
+                        containedLength,
+                        AsnDecoder.MaxCERSegmentSize,
+                        out int lastSegmentSize);
+
+                    int requiredPadding =
+                        // Each full segment has a header of 048203E8
+                        4 * fullSegments +
+                        // The last one is 04 plus the encoded length.
+                        2 + GetEncodedLengthSubsequentByteCount(lastSegmentSize);
+
+                    // Shift the data forward so we can use right-source-overlapped
+                    // copy in the existing method.
+                    // Also, ensure the space for the end-of-contents marker.
+                    EnsureWriteCapacity(requiredPadding + 2);
+                    ReadOnlySpan<byte> src = _buffer.AsSpan(start, containedLength);
+                    Span<byte> dest = _buffer.AsSpan(start + requiredPadding, containedLength);
+                    src.CopyTo(dest);
+
+                    int expectedEnd = start + containedLength + requiredPadding + 2;
+                    _offset = lenOffset - tag.CalculateEncodedSize();
+                    WriteConstructedCerOctetString(tag, dest);
+                    Debug.Assert(_offset == expectedEnd);
+                    return;
+                }
+            }
 
             int shiftSize = GetEncodedLengthSubsequentByteCount(containedLength);
 
@@ -477,7 +532,6 @@ namespace System.Security.Cryptography.Asn1
             EnsureWriteCapacity(shiftSize);
 
             // Buffer.BlockCopy correctly does forward-overlapped, so use it.
-            int start = lenOffset + 1;
             Buffer.BlockCopy(_buffer, start, _buffer, start + shiftSize, containedLength);
 
             int tmp = _offset;
@@ -555,13 +609,18 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void CheckUniversalTag(Asn1Tag tag, UniversalTagNumber universalTagNumber)
+        private static void CheckUniversalTag(Asn1Tag? tag, UniversalTagNumber universalTagNumber)
         {
-            if (tag.TagClass == TagClass.Universal && tag.TagValue != (int)universalTagNumber)
+            if (tag != null)
             {
-                throw new ArgumentException(
-                    SR.Cryptography_Asn_UniversalValueIsFixed,
-                    nameof(tag));
+                Asn1Tag value = tag.Value;
+
+                if (value.TagClass == TagClass.Universal && value.TagValue != (int)universalTagNumber)
+                {
+                    throw new ArgumentException(
+                        SR.Argument_UniversalValueIsFixed,
+                        nameof(tag));
+                }
             }
         }
 
@@ -591,6 +650,93 @@ namespace System.Security.Cryptography.Asn1
                 }
 
                 return value;
+            }
+        }
+
+        private readonly struct StackFrame : IEquatable<StackFrame>
+        {
+            public Asn1Tag Tag { get; }
+            public int Offset { get; }
+            public UniversalTagNumber ItemType { get; }
+
+            internal StackFrame(Asn1Tag tag, int offset, UniversalTagNumber itemType)
+            {
+                Tag = tag;
+                Offset = offset;
+                ItemType = itemType;
+            }
+
+            public void Deconstruct(out Asn1Tag tag, out int offset, out UniversalTagNumber itemType)
+            {
+                tag = Tag;
+                offset = Offset;
+                itemType = ItemType;
+            }
+
+            public bool Equals(StackFrame other)
+            {
+                return Tag.Equals(other.Tag) && Offset == other.Offset && ItemType == other.ItemType;
+            }
+
+            public override bool Equals(object? obj) => obj is StackFrame other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                return (Tag, Offset, ItemType).GetHashCode();
+            }
+
+            public static bool operator ==(StackFrame left, StackFrame right) => left.Equals(right);
+
+            public static bool operator !=(StackFrame left, StackFrame right) => !left.Equals(right);
+        }
+
+        public readonly struct Scope : IDisposable
+        {
+            private readonly AsnWriter _writer;
+            private readonly StackFrame _frame;
+            private readonly int _depth;
+
+            internal Scope(AsnWriter writer)
+            {
+                Debug.Assert(writer._nestingStack != null);
+
+                _writer = writer;
+                _frame = _writer._nestingStack.Peek();
+                _depth = _writer._nestingStack.Count;
+            }
+
+            public void Dispose()
+            {
+                if (_writer == null || _writer._nestingStack.Count == 0)
+                {
+                    return;
+                }
+
+                if (_writer._nestingStack.Peek() == _frame)
+                {
+                    switch (_frame.ItemType)
+                    {
+                        case UniversalTagNumber.SetOf:
+                            _writer.PopSetOf(_frame.Tag);
+                            break;
+                        case UniversalTagNumber.Sequence:
+                            _writer.PopSequence(_frame.Tag);
+                            break;
+                        case UniversalTagNumber.OctetString:
+                            _writer.PopOctetString(_frame.Tag);
+                            break;
+                        default:
+                            Debug.Fail($"No handler for {_frame.ItemType}");
+                            throw new InvalidOperationException();
+                    }
+                }
+                else if (_writer._nestingStack.Count > _depth &&
+                    _writer._nestingStack.Contains(_frame))
+                {
+                    // Another frame was pushed when we got disposed.
+                    // Report the imbalance.
+                    throw new InvalidOperationException(SR.AsnWriter_PopWrongTag);
+                }
             }
         }
     }

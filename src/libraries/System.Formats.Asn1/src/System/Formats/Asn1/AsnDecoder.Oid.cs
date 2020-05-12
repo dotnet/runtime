@@ -2,93 +2,60 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 
-#nullable enable
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal ref partial struct AsnValueReader
+    public static partial class AsnDecoder
     {
         /// <summary>
-        ///   Reads the next value as an OBJECT IDENTIFIER with tag UNIVERSAL 6, returning
-        ///   the value in a dotted decimal format string.
+        ///   Reads an Object Identifier value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules.
         /// </summary>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 6).
+        /// </param>
+        /// <returns>
+        ///   The decoded object identifier, in dotted-decimal notation.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public string ReadObjectIdentifierAsString() =>
-            ReadObjectIdentifierAsString(Asn1Tag.ObjectIdentifier);
-
-        /// <summary>
-        ///   Reads the next value as an OBJECT IDENTIFIER with a specified tag, returning
-        ///   the value in a dotted decimal format string.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public string ReadObjectIdentifierAsString(Asn1Tag expectedTag)
+        public static string ReadObjectIdentifier(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            string oidValue = ReadObjectIdentifierAsString(expectedTag, out int bytesRead);
-
-            _data = _data.Slice(bytesRead);
-
-            return oidValue;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an OBJECT IDENTIFIER with tag UNIVERSAL 6, returning
-        ///   the value as an <see cref="Oid"/>.
-        /// </summary>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public Oid ReadObjectIdentifier() =>
-            ReadObjectIdentifier(Asn1Tag.ObjectIdentifier);
-
-        /// <summary>
-        ///   Reads the next value as an OBJECT IDENTIFIER with a specified tag, returning
-        ///   the value as an <see cref="Oid"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public Oid ReadObjectIdentifier(Asn1Tag expectedTag)
-        {
-            string oidValue = ReadObjectIdentifierAsString(expectedTag, out int bytesRead);
-            // Specifying null for friendly name makes the lookup deferred until first read
-            // of the Oid.FriendlyName property.
-            Oid oid = new Oid(oidValue, null);
-
-            // Don't slice until the return object has been created.
-            _data = _data.Slice(bytesRead);
-
-            return oid;
+            // TODO: Inline this call when it won't cause a PR/diff problem.
+            return ReadObjectIdentifier(source, ruleSet, expectedTag, out bytesConsumed);
         }
 
         private static void ReadSubIdentifier(
@@ -102,7 +69,7 @@ namespace System.Security.Cryptography.Asn1
             // T-REC-X.690-201508 sec 8.19.2 (last sentence)
             if (source[0] == 0x80)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException();
             }
 
             // First, see how long the segment is
@@ -123,7 +90,7 @@ namespace System.Security.Cryptography.Asn1
 
             if (end < 0)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException();
             }
 
             bytesRead = end + 1;
@@ -206,19 +173,25 @@ namespace System.Security.Cryptography.Asn1
             CryptoPool.Return(tmpBytes, bytesWritten);
         }
 
-        private string ReadObjectIdentifierAsString(Asn1Tag expectedTag, out int totalBytesRead)
+        private static string ReadObjectIdentifier(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            Asn1Tag? expectedTag,
+            out int totalBytesRead)
         {
-            Asn1Tag tag = ReadTagAndLength(out int? length, out int headerLength);
-            CheckExpectedTag(tag, expectedTag, UniversalTagNumber.ObjectIdentifier);
-
             // T-REC-X.690-201508 sec 8.19.1
-            // T-REC-X.690-201508 sec 8.19.2 says the minimum length is 1
-            if (tag.IsConstructed || length < 1)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+            ReadOnlySpan<byte> contents = GetPrimitiveContentSpan(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.ObjectIdentifier,
+                UniversalTagNumber.ObjectIdentifier,
+                out int consumed);
 
-            ReadOnlySpan<byte> contents = Slice(_data, headerLength, length!.Value);
+            // T-REC-X.690-201508 sec 8.19.2 says the minimum length is 1
+            if (contents.Length < 1)
+            {
+                throw new AsnContentException();
+            }
 
             // Each byte can contribute a 3 digit value and a '.' (e.g. "126."), but usually
             // they convey one digit and a separator.
@@ -306,83 +279,44 @@ namespace System.Security.Cryptography.Asn1
                 contents = contents.Slice(bytesRead);
             }
 
-            totalBytesRead = headerLength + length.Value;
+            totalBytesRead = consumed;
             return builder.ToString();
         }
     }
 
-    internal partial class AsnReader
+    public partial class AsnReader
     {
         /// <summary>
-        ///   Reads the next value as an OBJECT IDENTIFIER with tag UNIVERSAL 6, returning
-        ///   the value in a dotted decimal format string.
-        /// </summary>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public string ReadObjectIdentifierAsString() =>
-            ReadObjectIdentifierAsString(Asn1Tag.ObjectIdentifier);
-
-        /// <summary>
         ///   Reads the next value as an OBJECT IDENTIFIER with a specified tag, returning
         ///   the value in a dotted decimal format string.
         /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 6).
+        /// </param>
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public string ReadObjectIdentifierAsString(Asn1Tag expectedTag)
+        public string ReadObjectIdentifier(Asn1Tag? expectedTag = null)
         {
-            AsnValueReader valueReader = OpenValueReader();
-            string oidValue = valueReader.ReadObjectIdentifierAsString(expectedTag);
-            valueReader.MatchSlice(ref _data);
+            string oidValue =
+                AsnDecoder.ReadObjectIdentifier(_data.Span, RuleSet, out int consumed, expectedTag);
+
+            _data = _data.Slice(consumed);
             return oidValue;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an OBJECT IDENTIFIER with tag UNIVERSAL 6, returning
-        ///   the value as an <see cref="Oid"/>.
-        /// </summary>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public Oid ReadObjectIdentifier() =>
-            ReadObjectIdentifier(Asn1Tag.ObjectIdentifier);
-
-        /// <summary>
-        ///   Reads the next value as an OBJECT IDENTIFIER with a specified tag, returning
-        ///   the value as an <see cref="Oid"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public Oid ReadObjectIdentifier(Asn1Tag expectedTag)
-        {
-            AsnValueReader valueReader = OpenValueReader();
-            Oid oid = valueReader.ReadObjectIdentifier(expectedTag);
-            valueReader.MatchSlice(ref _data);
-            return oid;
         }
     }
 }

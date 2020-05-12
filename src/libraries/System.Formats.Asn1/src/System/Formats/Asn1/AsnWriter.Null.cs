@@ -4,35 +4,25 @@
 
 using System.Diagnostics;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
-        /// <summary>
-        ///   Write NULL with tag UNIVERSAL 5.
-        /// </summary>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteNull()
-        {
-            WriteNullCore(Asn1Tag.Null);
-        }
-
         /// <summary>
         ///   Write NULL with a specified tag.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 5).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteNull(Asn1Tag tag)
+        public void WriteNull(Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.Null);
 
-            WriteNullCore(tag.AsPrimitive());
+            WriteNullCore(tag?.AsPrimitive() ?? Asn1Tag.Null);
         }
 
         // T-REC-X.690-201508 sec 8.8

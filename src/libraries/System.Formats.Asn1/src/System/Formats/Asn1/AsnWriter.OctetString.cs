@@ -4,39 +4,79 @@
 
 using System.Diagnostics;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
         /// <summary>
-        ///   Write an Octet String with tag UNIVERSAL 4.
+        ///   Begin writing an Octet String value with a specified tag.
         /// </summary>
-        /// <param name="octetString">The value to write.</param>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteOctetString(Asn1Tag,ReadOnlySpan{byte})"/>
-        public void WriteOctetString(ReadOnlySpan<byte> octetString)
+        /// <returns>
+        ///   A disposable value which will automatically call <see cref="PopOctetString"/>.
+        /// </returns>
+        /// <remarks>
+        ///   This method is just an accelerator for writing an Octet String value where the
+        ///   contents are also ASN.1 data encoded under the same encoding system.
+        ///   When <see cref="PopOctetString"/> is called the entire nested contents are
+        ///   normalized as a single Octet String value, encoded correctly for the current encoding
+        ///   rules.
+        ///   This method does not necessarily create a Constructed encoding, and it is not invalid to
+        ///   write values other than Octet String inside this Push/Pop.
+        /// </remarks>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 4).</param>
+        /// <seealso cref="PopOctetString"/>
+        public Scope PushOctetString(Asn1Tag? tag = null)
         {
-            WriteOctetString(Asn1Tag.PrimitiveOctetString, octetString);
+            CheckUniversalTag(tag, UniversalTagNumber.OctetString);
+
+            return PushTag(
+                tag?.AsConstructed() ?? Asn1Tag.ConstructedOctetString,
+                UniversalTagNumber.OctetString);
+        }
+
+        /// <summary>
+        ///   Indicate that the open Octet String with the tag UNIVERSAL 4 is closed,
+        ///   returning the writer to the parent context.
+        /// </summary>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 4).</param>
+        /// <remarks>
+        ///   In <see cref="AsnEncodingRules.BER"/> and <see cref="AsnEncodingRules.DER"/> modes
+        ///   the encoded contents will remain in a single primitive Octet String.
+        ///   In <see cref="AsnEncodingRules.CER"/> mode the contents will be broken up into
+        ///   multiple segments, when required.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   the writer is not currently positioned within an Octet String with the specified tag.
+        /// </exception>
+        public void PopOctetString(Asn1Tag? tag = default)
+        {
+            CheckUniversalTag(tag, UniversalTagNumber.OctetString);
+            PopTag(tag?.AsConstructed() ?? Asn1Tag.ConstructedOctetString, UniversalTagNumber.OctetString);
         }
 
         /// <summary>
         ///   Write an Octet String value with a specified tag.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="octetString">The value to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 4).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteOctetString(Asn1Tag tag, ReadOnlySpan<byte> octetString)
+        public void WriteOctetString(ReadOnlySpan<byte> value, Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.OctetString);
 
             // Primitive or constructed, doesn't matter.
-            WriteOctetStringCore(tag, octetString);
+            WriteOctetStringCore(tag ?? Asn1Tag.PrimitiveOctetString, value);
         }
 
         // T-REC-X.690-201508 sec 8.7

@@ -2,29 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Asn1
-{
-    internal sealed partial class AsnWriter
-    {
-        /// <summary>
-        ///   Begin writing a Set-Of with a tag UNIVERSAL 17.
-        /// </summary>
-        /// <remarks>
-        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes
-        ///   the writer will sort the Set-Of elements when the tag is closed.
-        /// </remarks>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="PushSetOf(Asn1Tag)"/>
-        /// <seealso cref="PopSetOf()"/>
-        public void PushSetOf()
-        {
-            PushSetOf(Asn1Tag.SetOf);
-        }
+using System.Diagnostics;
 
+namespace System.Formats.Asn1
+{
+    public sealed partial class AsnWriter
+    {
         /// <summary>
         ///   Begin writing a Set-Of with a specified tag.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 17).</param>
+        /// <returns>
+        ///   A disposable value which will automatically call <see cref="PopSetOf"/>.
+        /// </returns>
         /// <remarks>
         ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes
         ///   the writer will sort the Set-Of elements when the tag is closed.
@@ -33,42 +23,22 @@ namespace System.Security.Cryptography.Asn1
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="PopSetOf(Asn1Tag)"/>
-        public void PushSetOf(Asn1Tag tag)
+        /// <seealso cref="PopSetOf"/>
+        public Scope PushSetOf(Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.SetOf);
 
             // Assert the constructed flag, in case it wasn't.
-            PushSetOfCore(tag.AsConstructed());
-        }
-
-        /// <summary>
-        ///   Indicate that the open Set-Of with the tag UNIVERSAL 17 is closed,
-        ///   returning the writer to the parent context.
-        /// </summary>
-        /// <remarks>
-        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes
-        ///   the writer will sort the Set-Of elements when the tag is closed.
-        /// </remarks>
-        /// <exception cref="InvalidOperationException">
-        ///   the writer is not currently positioned within a Sequence with tag UNIVERSAL 17
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="PopSetOf(Asn1Tag)"/>
-        /// <seealso cref="PushSetOf()"/>
-        public void PopSetOf()
-        {
-            PopSetOfCore(Asn1Tag.SetOf);
+            return PushSetOfCore(tag?.AsConstructed() ?? Asn1Tag.SetOf);
         }
 
         /// <summary>
         ///   Indicate that the open Set-Of with the specified tag is closed,
         ///   returning the writer to the parent context.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 17).</param>
         /// <remarks>
         ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes
         ///   the writer will sort the Set-Of elements when the tag is closed.
@@ -77,32 +47,34 @@ namespace System.Security.Cryptography.Asn1
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   the writer is not currently positioned within a Set-Of with the specified tag
+        ///   the writer is not currently positioned within a Set-Of with the specified tag.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="PushSetOf(Asn1Tag)"/>
-        public void PopSetOf(Asn1Tag tag)
+        /// <seealso cref="PushSetOf"/>
+        public void PopSetOf(Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.SetOf);
 
             // Assert the constructed flag, in case it wasn't.
-            PopSetOfCore(tag.AsConstructed());
+            PopSetOfCore(tag?.AsConstructed() ?? Asn1Tag.SetOf);
         }
 
         // T-REC-X.690-201508 sec 8.12
         // The writer claims SetOf, and not Set, so as to avoid the field
         // ordering clause of T-REC-X.690-201508 sec 9.3
-        private void PushSetOfCore(Asn1Tag tag)
+        private Scope PushSetOfCore(Asn1Tag tag)
         {
-            PushTag(tag, UniversalTagNumber.SetOf);
+            Debug.Assert(tag.IsConstructed);
+            return PushTag(tag, UniversalTagNumber.SetOf);
         }
 
         // T-REC-X.690-201508 sec 8.12
         private void PopSetOfCore(Asn1Tag tag)
         {
+            Debug.Assert(tag.IsConstructed);
+
             // T-REC-X.690-201508 sec 11.6
             bool sortContents = RuleSet == AsnEncodingRules.CER || RuleSet == AsnEncodingRules.DER;
 

@@ -5,15 +5,13 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs">
-      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
       <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
     </Compile>
     <Compile Include="System\Formats\Asn1\Asn1Tag.cs" />
     <Compile Include="System\Formats\Asn1\Asn1Tag.Accelerators.cs" />
     <Compile Include="System\Formats\Asn1\AsnCharacterStringEncodings.cs" />
+    <Compile Include="System\Formats\Asn1\AsnContentException.cs" />
     <Compile Include="System\Formats\Asn1\AsnEncodingRules.cs" />
     <Compile Include="System\Formats\Asn1\AsnDecoder.cs" />
     <Compile Include="System\Formats\Asn1\AsnDecoder.BitString.cs" />
@@ -29,6 +27,7 @@
     <Compile Include="System\Formats\Asn1\AsnDecoder.SetOf.cs" />
     <Compile Include="System\Formats\Asn1\AsnDecoder.Text.cs" />
     <Compile Include="System\Formats\Asn1\AsnDecoder.UtcTime.cs" />
+    <Compile Include="System\Formats\Asn1\AsnReaderOptions.cs" />
     <Compile Include="System\Formats\Asn1\AsnWriter.cs" />
     <Compile Include="System\Formats\Asn1\AsnWriter.BitString.cs" />
     <Compile Include="System\Formats\Asn1\AsnWriter.Boolean.cs" />

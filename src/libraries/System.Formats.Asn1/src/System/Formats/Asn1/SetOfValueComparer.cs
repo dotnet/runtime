@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
     internal class SetOfValueComparer : IComparer<ReadOnlyMemory<byte>>
     {
@@ -42,12 +42,7 @@ namespace System.Security.Cryptography.Asn1
             // which will make diff != 0.
             diff = x.Length - y.Length;
 
-            if (diff != 0)
-            {
-                return diff;
-            }
-
-            return 0;
+            return diff;
         }
     }
 }

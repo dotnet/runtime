@@ -4,31 +4,30 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadBitString : Asn1ReaderTests
+    public static class ReadBitString
     {
         [Theory]
-        [InlineData("Uncleared unused bit", PublicEncodingRules.BER, "030201FF")]
-        [InlineData("Constructed Payload", PublicEncodingRules.BER, "2302030100")]
-        [InlineData("Constructed Payload-Indefinite", PublicEncodingRules.BER, "238003010000")]
+        [InlineData("Uncleared unused bit", AsnEncodingRules.BER, "030201FF")]
+        [InlineData("Constructed Payload", AsnEncodingRules.BER, "2302030100")]
+        [InlineData("Constructed Payload-Indefinite", AsnEncodingRules.BER, "238003010000")]
         // This value is actually invalid CER, but it returns false since it's not primitive and
         // it isn't worth preempting the descent to find out it was invalid.
-        [InlineData("Constructed Payload-Indefinite", PublicEncodingRules.CER, "238003010000")]
-        public static void TryGetBitStringBytes_Fails(
+        [InlineData("Constructed Payload-Indefinite", AsnEncodingRules.CER, "238003010000")]
+        public static void TryReadPrimitiveBitStringValue_Fails(
             string description,
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            bool didRead = reader.TryReadPrimitiveBitStringValue(
+            bool didRead = reader.TryReadPrimitiveBitString(
                 out int unusedBitCount,
                 out ReadOnlyMemory<byte> contents);
 
@@ -38,21 +37,21 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, 0, 0, "030100")]
-        [InlineData(PublicEncodingRules.BER, 1, 1, "030201FE")]
-        [InlineData(PublicEncodingRules.CER, 2, 4, "030502FEEFF00C")]
-        [InlineData(PublicEncodingRules.DER, 7, 1, "03020780")]
-        [InlineData(PublicEncodingRules.DER, 0, 4, "030500FEEFF00D" + "0500")]
-        public static void TryGetBitStringBytes_Success(
-            PublicEncodingRules ruleSet,
+        [InlineData(AsnEncodingRules.BER, 0, 0, "030100")]
+        [InlineData(AsnEncodingRules.BER, 1, 1, "030201FE")]
+        [InlineData(AsnEncodingRules.CER, 2, 4, "030502FEEFF00C")]
+        [InlineData(AsnEncodingRules.DER, 7, 1, "03020780")]
+        [InlineData(AsnEncodingRules.DER, 0, 4, "030500FEEFF00D" + "0500")]
+        public static void TryReadPrimitiveBitStringValue_Success(
+            AsnEncodingRules ruleSet,
             int expectedUnusedBitCount,
             int expectedLength,
             string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            bool didRead = reader.TryReadPrimitiveBitStringValue(
+            bool didRead = reader.TryReadPrimitiveBitString(
                 out int unusedBitCount,
                 out ReadOnlyMemory<byte> contents);
 
@@ -62,36 +61,48 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData("Wrong Tag", PublicEncodingRules.BER, "0500")]
-        [InlineData("Wrong Tag", PublicEncodingRules.CER, "0500")]
-        [InlineData("Wrong Tag", PublicEncodingRules.DER, "0500")]
-        [InlineData("Zero Length", PublicEncodingRules.BER, "0300")]
-        [InlineData("Zero Length", PublicEncodingRules.CER, "0300")]
-        [InlineData("Zero Length", PublicEncodingRules.DER, "0300")]
-        [InlineData("Bad Length", PublicEncodingRules.BER, "030200")]
-        [InlineData("Bad Length", PublicEncodingRules.CER, "030200")]
-        [InlineData("Bad Length", PublicEncodingRules.DER, "030200")]
-        [InlineData("Constructed Form", PublicEncodingRules.DER, "2303030100")]
-        public static void TryGetBitStringBytes_Throws(
+        [InlineData("Wrong Tag", AsnEncodingRules.BER, "0500")]
+        [InlineData("Wrong Tag", AsnEncodingRules.CER, "0500")]
+        [InlineData("Wrong Tag", AsnEncodingRules.DER, "0500")]
+        [InlineData("Zero Length", AsnEncodingRules.BER, "0300")]
+        [InlineData("Zero Length", AsnEncodingRules.CER, "0300")]
+        [InlineData("Zero Length", AsnEncodingRules.DER, "0300")]
+        [InlineData("Bad Length", AsnEncodingRules.BER, "030200")]
+        [InlineData("Bad Length", AsnEncodingRules.CER, "030200")]
+        [InlineData("Bad Length", AsnEncodingRules.DER, "030200")]
+        [InlineData("Constructed Form", AsnEncodingRules.DER, "2303030100")]
+        public static void TryReadPrimitiveBitStringValue_Throws(
             string description,
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
-                    reader.TryReadPrimitiveBitStringValue(
+                    reader.TryReadPrimitiveBitString(
                         out int unusedBitCount,
                         out ReadOnlyMemory<byte> contents);
                 });
+
+            Assert.Throws<AsnContentException>(
+                () =>
+                {
+                    reader.TryReadBitString(
+                        new byte[inputData.Length],
+                        out int unusedBitCount,
+                        out int written);
+                });
+
+            Assert.Throws<AsnContentException>(
+                () => reader.ReadBitString(out int unusedBitCount));
         }
 
         [Fact]
-        public static void TryGetBitStringBytes_Throws_CER_TooLong()
+        public static void TryReadPrimitiveBitStringValue_Throws_CER_TooLong()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte).
@@ -107,17 +118,29 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
-                    reader.TryReadPrimitiveBitStringValue(
+                    reader.TryReadPrimitiveBitString(
                         out int unusedBitCount,
                         out ReadOnlyMemory<byte> contents);
                 });
+
+            Assert.Throws<AsnContentException>(
+                () =>
+                {
+                    reader.TryReadBitString(
+                        new byte[input.Length],
+                        out int unusedBitCount,
+                        out int written);
+                });
+
+            Assert.Throws<AsnContentException>(
+                () => reader.ReadBitString(out int unusedBitCount));
         }
 
         [Fact]
-        public static void TryGetBitStringBytes_Success_CER_MaxLength()
+        public static void TryReadPrimitiveBitStringValue_Success_CER_MaxLength()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte).
@@ -141,7 +164,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
 
-            bool success = reader.TryReadPrimitiveBitStringValue(
+            bool success = reader.TryReadPrimitiveBitString(
                 out int unusedBitCount,
                 out ReadOnlyMemory<byte> contents);
 
@@ -157,43 +180,43 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "03020780")]
-        [InlineData(PublicEncodingRules.BER, "030207FF")]
-        [InlineData(PublicEncodingRules.CER, "03020780")]
-        [InlineData(PublicEncodingRules.DER, "03020780")]
+        [InlineData(AsnEncodingRules.BER, "03020780")]
+        [InlineData(AsnEncodingRules.BER, "030207FF")]
+        [InlineData(AsnEncodingRules.CER, "03020780")]
+        [InlineData(AsnEncodingRules.DER, "03020780")]
         [InlineData(
-            PublicEncodingRules.BER,
+            AsnEncodingRules.BER,
             "2380" +
               "2380" +
                 "0000" +
               "03020000" +
               "0000")]
-        public static void TryCopyBitStringBytes_Fails(PublicEncodingRules ruleSet, string inputHex)
+        public static void TryCopyBitStringBytes_Fails(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            bool didRead = reader.TryCopyBitStringBytes(
+            bool didRead = reader.TryReadBitString(
                 Span<byte>.Empty,
                 out int unusedBitCount,
                 out int bytesWritten);
 
-            Assert.False(didRead, "reader.TryCopyBitStringBytes");
+            Assert.False(didRead, "reader.TryReadBitString");
             Assert.Equal(0, unusedBitCount);
             Assert.Equal(0, bytesWritten);
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "03020780", "80", 7)]
-        [InlineData(PublicEncodingRules.BER, "030207FF", "80", 7)]
-        [InlineData(PublicEncodingRules.CER, "03020780", "80", 7)]
-        [InlineData(PublicEncodingRules.DER, "03020680", "80", 6)]
-        [InlineData(PublicEncodingRules.BER, "23800000", "", 0)]
-        [InlineData(PublicEncodingRules.BER, "2300", "", 0)]
-        [InlineData(PublicEncodingRules.BER, "2300" + "0500", "", 0)]
-        [InlineData(PublicEncodingRules.BER, "0303010203" + "0500", "0202", 1)]
+        [InlineData(AsnEncodingRules.BER, "03020780", "80", 7)]
+        [InlineData(AsnEncodingRules.BER, "030207FF", "80", 7)]
+        [InlineData(AsnEncodingRules.CER, "03020780", "80", 7)]
+        [InlineData(AsnEncodingRules.DER, "03020680", "80", 6)]
+        [InlineData(AsnEncodingRules.BER, "23800000", "", 0)]
+        [InlineData(AsnEncodingRules.BER, "2300", "", 0)]
+        [InlineData(AsnEncodingRules.BER, "2300" + "0500", "", 0)]
+        [InlineData(AsnEncodingRules.BER, "0303010203" + "0500", "0202", 1)]
         [InlineData(
-            PublicEncodingRules.BER,
+            AsnEncodingRules.BER,
             "2380" +
               "2380" +
                 "0000" +
@@ -202,7 +225,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             "00",
             0)]
         [InlineData(
-            PublicEncodingRules.BER,
+            AsnEncodingRules.BER,
             "230C" +
               "2380" +
                 "2380" +
@@ -212,7 +235,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             "00",
             0)]
         [InlineData(
-            PublicEncodingRules.BER,
+            AsnEncodingRules.BER,
             "2380" +
               "2308" +
                 "030200FA" +
@@ -233,104 +256,113 @@ namespace System.Security.Cryptography.Tests.Asn1
             "FACEF00D010203F8",
             3)]
         public static void TryCopyBitStringBytes_Success(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
             string expectedHex,
             int expectedUnusedBitCount)
         {
             byte[] inputData = inputHex.HexToByteArray();
             byte[] output = new byte[expectedHex.Length / 2];
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            bool didRead = reader.TryCopyBitStringBytes(
+            bool didRead = reader.TryReadBitString(
                 output,
                 out int unusedBitCount,
                 out int bytesWritten);
 
-            Assert.True(didRead, "reader.TryCopyBitStringBytes");
+            Assert.True(didRead, "reader.TryReadBitString");
             Assert.Equal(expectedUnusedBitCount, unusedBitCount);
             Assert.Equal(expectedHex, output.AsSpan(0, bytesWritten).ByteArrayToHex());
         }
 
-        private static void TryCopyBitStringBytes_Throws_Helper(
-            PublicEncodingRules ruleSet,
+        private static void TryReadBitString_Throws_Helper(
+            AsnEncodingRules ruleSet,
             byte[] input)
         {
-            AsnReader reader = new AsnReader(input, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(input, ruleSet);
 
-            Assert.Throws<CryptographicException>(
+            Assert.Throws<AsnContentException>(
                 () =>
                 {
-                    reader.TryCopyBitStringBytes(
+                    reader.TryReadBitString(
                         Span<byte>.Empty,
                         out int unusedBitCount,
                         out int bytesWritten);
                 });
         }
 
+        private static void ReadBitString_Throws(
+            AsnEncodingRules ruleSet,
+            byte[] input)
+        {
+            AsnReader reader = new AsnReader(input, ruleSet);
+            Assert.Throws<AsnContentException>(() => reader.ReadBitString(out int unusedBitCount));
+        }
+
         [Theory]
-        [InlineData("Wrong Tag", PublicEncodingRules.BER, "0500")]
-        [InlineData("Wrong Tag", PublicEncodingRules.CER, "0500")]
-        [InlineData("Wrong Tag", PublicEncodingRules.DER, "0500")]
-        [InlineData("Zero Length", PublicEncodingRules.BER, "0300")]
-        [InlineData("Zero Length", PublicEncodingRules.CER, "0300")]
-        [InlineData("Zero Length", PublicEncodingRules.DER, "0300")]
-        [InlineData("Bad Length", PublicEncodingRules.BER, "030200")]
-        [InlineData("Bad Length", PublicEncodingRules.CER, "030200")]
-        [InlineData("Bad Length", PublicEncodingRules.DER, "030200")]
-        [InlineData("Constructed Form", PublicEncodingRules.DER, "2303030100")]
-        [InlineData("Bad unused bits", PublicEncodingRules.BER, "03020800")]
-        [InlineData("Bad unused bits", PublicEncodingRules.CER, "03020800")]
-        [InlineData("Bad unused bits", PublicEncodingRules.DER, "03020800")]
-        [InlineData("Bad unused bits-nodata", PublicEncodingRules.BER, "030101")]
-        [InlineData("Bad unused bits-nodata", PublicEncodingRules.CER, "030101")]
-        [InlineData("Bad unused bits-nodata", PublicEncodingRules.DER, "030101")]
-        [InlineData("Bad nested unused bits", PublicEncodingRules.BER, "230403020800")]
-        [InlineData("Bad nested unused bits-indef", PublicEncodingRules.BER, "2380030208000000")]
-        [InlineData("Bad nested unused bits-indef", PublicEncodingRules.CER, "2380030208000000")]
-        [InlineData("Bad nested unused bits-nodata", PublicEncodingRules.BER, "2303030101")]
-        [InlineData("Bad nested unused bits-nodata-indef", PublicEncodingRules.BER, "23800301010000")]
-        [InlineData("Bad nested unused bits-nodata-indef", PublicEncodingRules.CER, "23800301010000")]
-        [InlineData("Bad mask", PublicEncodingRules.CER, "030201FF")]
-        [InlineData("Bad mask", PublicEncodingRules.DER, "030201FF")]
-        [InlineData("Bad nested mask", PublicEncodingRules.CER, "2380030201FF0000")]
-        [InlineData("Nested context-specific", PublicEncodingRules.BER, "2304800300FACE")]
-        [InlineData("Nested context-specific (indef)", PublicEncodingRules.BER, "2380800300FACE0000")]
-        [InlineData("Nested context-specific (indef)", PublicEncodingRules.CER, "2380800300FACE0000")]
-        [InlineData("Nested boolean", PublicEncodingRules.BER, "2303010100")]
-        [InlineData("Nested boolean (indef)", PublicEncodingRules.BER, "23800101000000")]
-        [InlineData("Nested boolean (indef)", PublicEncodingRules.CER, "23800101000000")]
-        [InlineData("Nested constructed form", PublicEncodingRules.CER, "2380" + "2380" + "03010" + "000000000")]
-        [InlineData("No terminator", PublicEncodingRules.BER, "2380" + "03020000" + "")]
-        [InlineData("No terminator", PublicEncodingRules.CER, "2380" + "03020000" + "")]
-        [InlineData("No content", PublicEncodingRules.BER, "2380")]
-        [InlineData("No content", PublicEncodingRules.CER, "2380")]
-        [InlineData("No nested content", PublicEncodingRules.CER, "23800000")]
-        [InlineData("Nested value too long", PublicEncodingRules.BER, "2380030A00")]
-        [InlineData("Nested value too long - constructed", PublicEncodingRules.BER, "2380230A00")]
-        [InlineData("Nested value too long - simple", PublicEncodingRules.BER, "2303" + "03050000000000")]
+        [InlineData("Wrong Tag", AsnEncodingRules.BER, "0500")]
+        [InlineData("Wrong Tag", AsnEncodingRules.CER, "0500")]
+        [InlineData("Wrong Tag", AsnEncodingRules.DER, "0500")]
+        [InlineData("Zero Length", AsnEncodingRules.BER, "0300")]
+        [InlineData("Zero Length", AsnEncodingRules.CER, "0300")]
+        [InlineData("Zero Length", AsnEncodingRules.DER, "0300")]
+        [InlineData("Bad Length", AsnEncodingRules.BER, "030200")]
+        [InlineData("Bad Length", AsnEncodingRules.CER, "030200")]
+        [InlineData("Bad Length", AsnEncodingRules.DER, "030200")]
+        [InlineData("Constructed Form", AsnEncodingRules.DER, "2303030100")]
+        [InlineData("Bad unused bits", AsnEncodingRules.BER, "03020800")]
+        [InlineData("Bad unused bits", AsnEncodingRules.CER, "03020800")]
+        [InlineData("Bad unused bits", AsnEncodingRules.DER, "03020800")]
+        [InlineData("Bad unused bits-nodata", AsnEncodingRules.BER, "030101")]
+        [InlineData("Bad unused bits-nodata", AsnEncodingRules.CER, "030101")]
+        [InlineData("Bad unused bits-nodata", AsnEncodingRules.DER, "030101")]
+        [InlineData("Bad nested unused bits", AsnEncodingRules.BER, "230403020800")]
+        [InlineData("Bad nested unused bits-indef", AsnEncodingRules.BER, "2380030208000000")]
+        [InlineData("Bad nested unused bits-indef", AsnEncodingRules.CER, "2380030208000000")]
+        [InlineData("Bad nested unused bits-nodata", AsnEncodingRules.BER, "2303030101")]
+        [InlineData("Bad nested unused bits-nodata-indef", AsnEncodingRules.BER, "23800301010000")]
+        [InlineData("Bad nested unused bits-nodata-indef", AsnEncodingRules.CER, "23800301010000")]
+        [InlineData("Bad mask", AsnEncodingRules.CER, "030201FF")]
+        [InlineData("Bad mask", AsnEncodingRules.DER, "030201FF")]
+        [InlineData("Bad nested mask", AsnEncodingRules.CER, "2380030201FF0000")]
+        [InlineData("Nested context-specific", AsnEncodingRules.BER, "2304800300FACE")]
+        [InlineData("Nested context-specific (indef)", AsnEncodingRules.BER, "2380800300FACE0000")]
+        [InlineData("Nested context-specific (indef)", AsnEncodingRules.CER, "2380800300FACE0000")]
+        [InlineData("Nested boolean", AsnEncodingRules.BER, "2303010100")]
+        [InlineData("Nested boolean (indef)", AsnEncodingRules.BER, "23800101000000")]
+        [InlineData("Nested boolean (indef)", AsnEncodingRules.CER, "23800101000000")]
+        [InlineData("Nested constructed form", AsnEncodingRules.CER, "2380" + "2380" + "03010" + "000000000")]
+        [InlineData("No terminator", AsnEncodingRules.BER, "2380" + "03020000" + "")]
+        [InlineData("No terminator", AsnEncodingRules.CER, "2380" + "03020000" + "")]
+        [InlineData("No content", AsnEncodingRules.BER, "2380")]
+        [InlineData("No content", AsnEncodingRules.CER, "2380")]
+        [InlineData("No nested content", AsnEncodingRules.CER, "23800000")]
+        [InlineData("Nested value too long", AsnEncodingRules.BER, "2380030A00")]
+        [InlineData("Nested value too long - constructed", AsnEncodingRules.BER, "2380230A00")]
+        [InlineData("Nested value too long - simple", AsnEncodingRules.BER, "2303" + "03050000000000")]
         [InlineData(
             "Unused bits in intermediate segment",
-            PublicEncodingRules.BER,
+            AsnEncodingRules.BER,
             "2380" +
               "0303000102" +
               "0303020304" +
               "0303010506" +
               "0000")]
-        [InlineData("Constructed EndOfContents", PublicEncodingRules.BER, "238020000000")]
-        [InlineData("Constructed EndOfContents", PublicEncodingRules.CER, "238020000000")]
-        [InlineData("NonEmpty EndOfContents", PublicEncodingRules.BER, "2380000100")]
-        [InlineData("NonEmpty EndOfContents", PublicEncodingRules.CER, "2380000100")]
-        [InlineData("LongLength EndOfContents", PublicEncodingRules.BER, "2380008100")]
-        [InlineData("Constructed Payload-TooShort", PublicEncodingRules.CER, "23800301000000")]
+        [InlineData("Constructed Null", AsnEncodingRules.BER, "238020000000")]
+        [InlineData("Constructed Null", AsnEncodingRules.CER, "238020000000")]
+        [InlineData("NonEmpty Null", AsnEncodingRules.BER, "2380000100")]
+        [InlineData("NonEmpty Null", AsnEncodingRules.CER, "2380000100")]
+        [InlineData("LongLength Null", AsnEncodingRules.BER, "2380008100")]
+        [InlineData("Constructed Payload-TooShort", AsnEncodingRules.CER, "23800301000000")]
         public static void TryCopyBitStringBytes_Throws(
             string description,
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            TryCopyBitStringBytes_Throws_Helper(ruleSet, inputData);
+            TryReadBitString_Throws_Helper(ruleSet, inputData);
+            ReadBitString_Throws(ruleSet, inputData);
         }
 
         [Fact]
@@ -348,7 +380,8 @@ namespace System.Security.Cryptography.Tests.Asn1
             input[2] = 0x03;
             input[3] = 0xE9;
 
-            TryCopyBitStringBytes_Throws_Helper(PublicEncodingRules.CER, input);
+            TryReadBitString_Throws_Helper(AsnEncodingRules.CER, input);
+            ReadBitString_Throws(AsnEncodingRules.CER, input);
         }
 
         [Fact]
@@ -377,7 +410,8 @@ namespace System.Security.Cryptography.Tests.Asn1
             input[5] = 0xE9;
             // EOC implicit since the byte[] initializes to zeros
 
-            TryCopyBitStringBytes_Throws_Helper(PublicEncodingRules.CER, input);
+            TryReadBitString_Throws_Helper(AsnEncodingRules.CER, input);
+            ReadBitString_Throws(AsnEncodingRules.CER, input);
         }
 
         [Fact]
@@ -416,7 +450,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             input[1011] = 0x02;
             // EOC implicit since the byte[] initializes to zeros
 
-            TryCopyBitStringBytes_Throws_Helper(PublicEncodingRules.CER, input);
+            TryReadBitString_Throws_Helper(AsnEncodingRules.CER, input);
         }
 
         [Fact]
@@ -446,18 +480,23 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
 
-            bool success = reader.TryCopyBitStringBytes(
+            bool success = reader.TryReadBitString(
                 output,
                 out int unusedBitCount,
                 out int bytesWritten);
 
-            Assert.True(success, "reader.TryCopyBitStringBytes");
+            Assert.True(success, "reader.TryReadBitString");
             Assert.Equal(input[4], unusedBitCount);
             Assert.Equal(999, bytesWritten);
 
             Assert.Equal(
                 input.AsSpan(5).ByteArrayToHex(),
                 output.ByteArrayToHex());
+
+            reader = new AsnReader(input, AsnEncodingRules.CER);
+            byte[] output2 = reader.ReadBitString(out int ubc2);
+            Assert.Equal(unusedBitCount, ubc2);
+            Assert.Equal(output, output2);
         }
 
         [Fact]
@@ -521,122 +560,191 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
 
-            bool success = reader.TryCopyBitStringBytes(
+            bool success = reader.TryReadBitString(
                 output,
                 out int unusedBitCount,
                 out int bytesWritten);
 
-            Assert.True(success, "reader.TryCopyBitStringBytes");
+            Assert.True(success, "reader.TryReadBitString");
             Assert.Equal(input[1006], unusedBitCount);
             Assert.Equal(1000, bytesWritten);
 
             Assert.Equal(
                 expected.ByteArrayToHex(),
                 output.ByteArrayToHex());
+
+            reader = new AsnReader(input, AsnEncodingRules.CER);
+            byte[] output2 = reader.ReadBitString(out int ubc2);
+            Assert.Equal(unusedBitCount, ubc2);
+            Assert.Equal(output, output2);
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 3, 2, 1, 0x7E };
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.TryReadPrimitiveBitStringValue(Asn1Tag.Null, out _, out _));
+                () => reader.TryReadPrimitiveBitString(out _, out _, Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(
-                () => reader.TryReadPrimitiveBitStringValue(new Asn1Tag(TagClass.ContextSpecific, 0), out _, out _));
+            Assert.Throws<AsnContentException>(
+                () => reader.TryReadPrimitiveBitString(out _, out _, new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
-            Assert.True(reader.TryReadPrimitiveBitStringValue(out int unusedBitCount, out ReadOnlyMemory<byte> contents));
+            Assert.True(reader.TryReadPrimitiveBitString(out int unusedBitCount, out ReadOnlyMemory<byte> contents));
             Assert.Equal("7E", contents.ByteArrayToHex());
             Assert.Equal(1, unusedBitCount);
             Assert.False(reader.HasData, "HasData after read");
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x87, 2, 0, 0x80 };
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            byte[] output = new byte[inputData.Length];
+            AsnReader reader = new AsnReader(inputData, ruleSet);
+
+            Asn1Tag wrongTag1 = new Asn1Tag(TagClass.Application, 0);
+            Asn1Tag wrongTag2 = new Asn1Tag(TagClass.ContextSpecific, 1);
+            Asn1Tag correctTag = new Asn1Tag(TagClass.ContextSpecific, 7);
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.TryReadPrimitiveBitStringValue(Asn1Tag.Null, out _, out _));
+                () => reader.TryReadPrimitiveBitString(out _, out _, Asn1Tag.Null));
+            AssertExtensions.Throws<ArgumentException>(
+                "expectedTag",
+                () => reader.TryReadBitString(output, out _, out _, Asn1Tag.Null));
+            AssertExtensions.Throws<ArgumentException>(
+                "expectedTag",
+                () => reader.ReadBitString(out _, Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.TryReadPrimitiveBitStringValue(out _, out _));
-
+            Assert.Throws<AsnContentException>(() => reader.TryReadPrimitiveBitString(out _, out _));
+            Assert.Throws<AsnContentException>(() => reader.TryReadBitString(output, out _, out _));
+            Assert.Throws<AsnContentException>(() => reader.ReadBitString(out _));
             Assert.True(reader.HasData, "HasData after default tag");
 
-            Assert.Throws<CryptographicException>(
-                () => reader.TryReadPrimitiveBitStringValue(new Asn1Tag(TagClass.Application, 0), out _, out _));
-
+            Assert.Throws<AsnContentException>(() => reader.TryReadPrimitiveBitString(out _, out _, wrongTag1));
+            Assert.Throws<AsnContentException>(() => reader.TryReadBitString(output, out _, out _, wrongTag1));
+            Assert.Throws<AsnContentException>(() => reader.ReadBitString(out _, wrongTag1));
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
-            Assert.Throws<CryptographicException>(
-                () => reader.TryReadPrimitiveBitStringValue(new Asn1Tag(TagClass.ContextSpecific, 1), out _, out _));
-
+            Assert.Throws<AsnContentException>(() => reader.TryReadPrimitiveBitString(out _, out _, wrongTag2));
+            Assert.Throws<AsnContentException>(() => reader.TryReadBitString(output, out _, out _, wrongTag2));
+            Assert.Throws<AsnContentException>(() => reader.ReadBitString(out _, wrongTag2));
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.True(
-                reader.TryReadPrimitiveBitStringValue(
-                    new Asn1Tag(TagClass.ContextSpecific, 7),
+                reader.TryReadPrimitiveBitString(
                     out int unusedBitCount,
-                    out ReadOnlyMemory<byte> contents));
+                    out ReadOnlyMemory<byte> contents,
+                    correctTag));
 
             Assert.Equal("80", contents.ByteArrayToHex());
+            Assert.Equal(0, unusedBitCount);
+            Assert.False(reader.HasData, "HasData after reading value");
+
+            reader = new AsnReader(inputData, ruleSet);
+
+            Assert.True(
+                reader.TryReadBitString(
+                    output.AsSpan(1),
+                    out unusedBitCount,
+                    out int written,
+                    correctTag));
+
+            Assert.Equal("80", output.AsSpan(1, written).ByteArrayToHex());
+            Assert.Equal(0, unusedBitCount);
+            Assert.False(reader.HasData, "HasData after reading value");
+
+            reader = new AsnReader(inputData, ruleSet);
+            byte[] output2 = reader.ReadBitString(out unusedBitCount, correctTag);
+
+            Assert.Equal("80", output2.ByteArrayToHex());
             Assert.Equal(0, unusedBitCount);
             Assert.False(reader.HasData, "HasData after reading value");
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "030400010203", PublicTagClass.Universal, 3)]
-        [InlineData(PublicEncodingRules.CER, "030400010203", PublicTagClass.Universal, 3)]
-        [InlineData(PublicEncodingRules.DER, "030400010203", PublicTagClass.Universal, 3)]
-        [InlineData(PublicEncodingRules.BER, "800200FF", PublicTagClass.ContextSpecific, 0)]
-        [InlineData(PublicEncodingRules.CER, "4C0200FF", PublicTagClass.Application, 12)]
-        [InlineData(PublicEncodingRules.DER, "DF8A460200FF", PublicTagClass.Private, 1350)]
+        [InlineData(AsnEncodingRules.BER, "030400010203", TagClass.Universal, 3)]
+        [InlineData(AsnEncodingRules.CER, "030400010203", TagClass.Universal, 3)]
+        [InlineData(AsnEncodingRules.DER, "030400010203", TagClass.Universal, 3)]
+        [InlineData(AsnEncodingRules.BER, "800200FF", TagClass.ContextSpecific, 0)]
+        [InlineData(AsnEncodingRules.CER, "4C0200FF", TagClass.Application, 12)]
+        [InlineData(AsnEncodingRules.DER, "DF8A460200FF", TagClass.Private, 1350)]
         public static void ExpectedTag_IgnoresConstructed(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
-            PublicTagClass tagClass,
+            TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
+            Asn1Tag correctConstructed = new Asn1Tag(tagClass, tagValue, true);
+            Asn1Tag correctPrimitive = new Asn1Tag(tagClass, tagValue, false);
 
             Assert.True(
-                reader.TryReadPrimitiveBitStringValue(
-                    new Asn1Tag((TagClass)tagClass, tagValue, true),
+                reader.TryReadPrimitiveBitString(
                     out int ubc1,
-                    out ReadOnlyMemory<byte> val1));
+                    out ReadOnlyMemory<byte> val1,
+                    correctConstructed));
 
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            reader = new AsnReader(inputData, ruleSet);
 
             Assert.True(
-                reader.TryReadPrimitiveBitStringValue(
-                    new Asn1Tag((TagClass)tagClass, tagValue, false),
+                reader.TryReadPrimitiveBitString(
                     out int ubc2,
-                    out ReadOnlyMemory<byte> val2));
+                    out ReadOnlyMemory<byte> val2,
+                    correctPrimitive));
 
             Assert.False(reader.HasData);
 
-            Assert.Equal(val1.ByteArrayToHex(), val2.ByteArrayToHex());
+            string val1Hex = val1.ByteArrayToHex();
+            Assert.Equal(val1Hex, val2.ByteArrayToHex());
             Assert.Equal(ubc1, ubc2);
+
+            reader = new AsnReader(inputData, ruleSet);
+            byte[] output1 = new byte[inputData.Length];
+
+            Assert.True(reader.TryReadBitString(output1.AsSpan(1), out ubc1, out int written, correctConstructed));
+            Assert.Equal(ubc2, ubc1);
+            Assert.Equal(val1Hex, output1.AsSpan(1, written).ByteArrayToHex());
+            Assert.False(reader.HasData);
+
+            reader = new AsnReader(inputData, ruleSet);
+
+            Assert.True(reader.TryReadBitString(output1.AsSpan(2), out ubc1, out written, correctPrimitive));
+            Assert.Equal(ubc2, ubc1);
+            Assert.Equal(val1Hex, output1.AsSpan(2, written).ByteArrayToHex());
+            Assert.False(reader.HasData);
+
+            reader = new AsnReader(inputData, ruleSet);
+            byte[] output2 = reader.ReadBitString(out ubc1, correctConstructed);
+
+            Assert.Equal(ubc2, ubc1);
+            Assert.Equal(val1Hex, output2.ByteArrayToHex());
+            Assert.False(reader.HasData);
+
+            reader = new AsnReader(inputData, ruleSet);
+            byte[] output3 = reader.ReadBitString(out ubc1, correctPrimitive);
+
+            Assert.Equal(ubc2, ubc1);
+            Assert.Equal(val1Hex, output3.ByteArrayToHex());
+            Assert.False(reader.HasData);
         }
 
         [Fact]
@@ -666,10 +774,17 @@ namespace System.Security.Cryptography.Tests.Asn1
             int unusedBitCount;
 
             Assert.True(
-                reader.TryCopyBitStringBytes(Span<byte>.Empty, out unusedBitCount, out bytesWritten));
+                reader.TryReadBitString(Span<byte>.Empty, out unusedBitCount, out bytesWritten));
 
             Assert.Equal(0, bytesWritten);
             Assert.Equal(0, unusedBitCount);
+
+            reader = new AsnReader(dataBytes, AsnEncodingRules.BER);
+            byte[] output = reader.ReadBitString(out unusedBitCount);
+            Assert.Equal(0, unusedBitCount);
+
+            // It's Same (ReferenceEqual) on .NET Core, but just Equal on .NET Framework
+            Assert.Equal(Array.Empty<byte>(), output);
         }
     }
 }

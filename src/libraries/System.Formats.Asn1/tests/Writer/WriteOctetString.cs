@@ -2,53 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.Asn1;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Writer
 {
     public class WriteOctetString : Asn1WriterTests
     {
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public void WriteEmpty(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public void WriteEmpty(AsnEncodingRules ruleSet)
         {
-            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
-            {
-                writer.WriteOctetString(ReadOnlySpan<byte>.Empty);
+            AsnWriter writer = new AsnWriter(ruleSet);
+            writer.WriteOctetString(ReadOnlySpan<byte>.Empty);
 
-                Verify(writer, "0400");
-            }
+            Verify(writer, "0400");
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, 1, "0401")]
-        [InlineData(PublicEncodingRules.CER, 2, "0402")]
-        [InlineData(PublicEncodingRules.DER, 3, "0403")]
-        [InlineData(PublicEncodingRules.BER, 126, "047E")]
-        [InlineData(PublicEncodingRules.CER, 127, "047F")]
-        [InlineData(PublicEncodingRules.DER, 128, "048180")]
-        [InlineData(PublicEncodingRules.BER, 1000, "048203E8")]
-        [InlineData(PublicEncodingRules.CER, 1000, "048203E8")]
-        [InlineData(PublicEncodingRules.DER, 1000, "048203E8")]
-        [InlineData(PublicEncodingRules.BER, 1001, "048203E9")]
-        [InlineData(PublicEncodingRules.DER, 1001, "048203E9")]
-        [InlineData(PublicEncodingRules.BER, 2001, "048207D1")]
-        [InlineData(PublicEncodingRules.DER, 2001, "048207D1")]
-        public void WritePrimitive(PublicEncodingRules ruleSet, int length, string hexStart)
+        [InlineData(AsnEncodingRules.BER, 1, "0401")]
+        [InlineData(AsnEncodingRules.CER, 2, "0402")]
+        [InlineData(AsnEncodingRules.DER, 3, "0403")]
+        [InlineData(AsnEncodingRules.BER, 126, "047E")]
+        [InlineData(AsnEncodingRules.CER, 127, "047F")]
+        [InlineData(AsnEncodingRules.DER, 128, "048180")]
+        [InlineData(AsnEncodingRules.BER, 1000, "048203E8")]
+        [InlineData(AsnEncodingRules.CER, 1000, "048203E8")]
+        [InlineData(AsnEncodingRules.DER, 1000, "048203E8")]
+        [InlineData(AsnEncodingRules.BER, 1001, "048203E9")]
+        [InlineData(AsnEncodingRules.DER, 1001, "048203E9")]
+        [InlineData(AsnEncodingRules.BER, 2001, "048207D1")]
+        [InlineData(AsnEncodingRules.DER, 2001, "048207D1")]
+        public void WritePrimitive(AsnEncodingRules ruleSet, int length, string hexStart)
         {
             string payloadHex = new string('0', 2 * length);
             string expectedHex = hexStart + payloadHex;
             byte[] data = new byte[length];
 
-            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
-            {
-                writer.WriteOctetString(data);
+            AsnWriter writer = new AsnWriter(ruleSet);
+            writer.WriteOctetString(data);
 
-                Verify(writer, expectedHex);
-            }
+            Verify(writer, expectedHex);
         }
 
         [Theory]
@@ -67,44 +62,42 @@ namespace System.Security.Cryptography.Tests.Asn1
                 data[i] = 0x88;
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
-            {
-                writer.WriteOctetString(data);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            writer.WriteOctetString(data);
 
-                Verify(writer, expectedHex);
-            }
+            Verify(writer, expectedHex);
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, 0, false)]
-        [InlineData(PublicEncodingRules.CER, 0, false)]
-        [InlineData(PublicEncodingRules.DER, 0, false)]
-        [InlineData(PublicEncodingRules.BER, 999, false)]
-        [InlineData(PublicEncodingRules.CER, 999, false)]
-        [InlineData(PublicEncodingRules.DER, 999, false)]
-        [InlineData(PublicEncodingRules.BER, 1000, false)]
-        [InlineData(PublicEncodingRules.CER, 1000, false)]
-        [InlineData(PublicEncodingRules.DER, 1000, false)]
-        [InlineData(PublicEncodingRules.BER, 1001, false)]
-        [InlineData(PublicEncodingRules.CER, 1001, true)]
-        [InlineData(PublicEncodingRules.DER, 1001, false)]
-        [InlineData(PublicEncodingRules.BER, 1998, false)]
-        [InlineData(PublicEncodingRules.CER, 1998, true)]
-        [InlineData(PublicEncodingRules.DER, 1998, false)]
-        [InlineData(PublicEncodingRules.BER, 1999, false)]
-        [InlineData(PublicEncodingRules.CER, 1999, true)]
-        [InlineData(PublicEncodingRules.DER, 1999, false)]
-        [InlineData(PublicEncodingRules.BER, 2000, false)]
-        [InlineData(PublicEncodingRules.CER, 2000, true)]
-        [InlineData(PublicEncodingRules.DER, 2000, false)]
-        [InlineData(PublicEncodingRules.BER, 2001, false)]
-        [InlineData(PublicEncodingRules.CER, 2001, true)]
-        [InlineData(PublicEncodingRules.DER, 2001, false)]
-        [InlineData(PublicEncodingRules.BER, 4096, false)]
-        [InlineData(PublicEncodingRules.CER, 4096, true)]
-        [InlineData(PublicEncodingRules.DER, 4096, false)]
+        [InlineData(AsnEncodingRules.BER, 0, false)]
+        [InlineData(AsnEncodingRules.CER, 0, false)]
+        [InlineData(AsnEncodingRules.DER, 0, false)]
+        [InlineData(AsnEncodingRules.BER, 999, false)]
+        [InlineData(AsnEncodingRules.CER, 999, false)]
+        [InlineData(AsnEncodingRules.DER, 999, false)]
+        [InlineData(AsnEncodingRules.BER, 1000, false)]
+        [InlineData(AsnEncodingRules.CER, 1000, false)]
+        [InlineData(AsnEncodingRules.DER, 1000, false)]
+        [InlineData(AsnEncodingRules.BER, 1001, false)]
+        [InlineData(AsnEncodingRules.CER, 1001, true)]
+        [InlineData(AsnEncodingRules.DER, 1001, false)]
+        [InlineData(AsnEncodingRules.BER, 1998, false)]
+        [InlineData(AsnEncodingRules.CER, 1998, true)]
+        [InlineData(AsnEncodingRules.DER, 1998, false)]
+        [InlineData(AsnEncodingRules.BER, 1999, false)]
+        [InlineData(AsnEncodingRules.CER, 1999, true)]
+        [InlineData(AsnEncodingRules.DER, 1999, false)]
+        [InlineData(AsnEncodingRules.BER, 2000, false)]
+        [InlineData(AsnEncodingRules.CER, 2000, true)]
+        [InlineData(AsnEncodingRules.DER, 2000, false)]
+        [InlineData(AsnEncodingRules.BER, 2001, false)]
+        [InlineData(AsnEncodingRules.CER, 2001, true)]
+        [InlineData(AsnEncodingRules.DER, 2001, false)]
+        [InlineData(AsnEncodingRules.BER, 4096, false)]
+        [InlineData(AsnEncodingRules.CER, 4096, true)]
+        [InlineData(AsnEncodingRules.DER, 4096, false)]
         public void VerifyWriteOctetString_PrimitiveOrConstructed(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             int payloadLength,
             bool expectConstructed)
         {
@@ -122,12 +115,10 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             foreach (Asn1Tag toTry in tagsToTry)
             {
-                using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
-                {
-                    writer.WriteOctetString(toTry, data);
+                AsnWriter writer = new AsnWriter(ruleSet);
+                writer.WriteOctetString(data, toTry);
 
-                    Assert.True(writer.TryEncode(answerBuf, out _));
-                }
+                Assert.True(writer.TryEncode(answerBuf, out _));
                 Assert.True(Asn1Tag.TryDecode(answerBuf, out Asn1Tag writtenTag, out _));
 
                 if (expectConstructed)
@@ -145,49 +136,20 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public void VerifyWriteOctetString_EndOfContents(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public void VerifyWriteOctetString_Null(AsnEncodingRules ruleSet)
         {
-            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
-            {
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
-                    () => writer.WriteOctetString(Asn1Tag.EndOfContents, ReadOnlySpan<byte>.Empty));
+            AsnWriter writer = new AsnWriter(ruleSet);
 
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
-                    () => writer.WriteOctetString(Asn1Tag.EndOfContents, new byte[1]));
-            }
-        }
+            AssertExtensions.Throws<ArgumentException>(
+                "tag",
+                () => writer.WriteOctetString(ReadOnlySpan<byte>.Empty, Asn1Tag.Null));
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static void WriteAfterDispose(bool empty)
-        {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                if (!empty)
-                {
-                    writer.WriteNull();
-                }
-
-                writer.Dispose();
-
-                Assert.Throws<ObjectDisposedException>(
-                    () => writer.WriteOctetString(ReadOnlySpan<byte>.Empty));
-
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
-                    () => writer.WriteOctetString(Asn1Tag.Integer, ReadOnlySpan<byte>.Empty));
-
-                Assert.Throws<ObjectDisposedException>(
-                    () => writer.WriteOctetString(
-                        new Asn1Tag(TagClass.Private, 3),
-                        ReadOnlySpan<byte>.Empty));
-            }
+            AssertExtensions.Throws<ArgumentException>(
+                "tag",
+                () => writer.WriteOctetString(new byte[1], Asn1Tag.Null));
         }
     }
 }

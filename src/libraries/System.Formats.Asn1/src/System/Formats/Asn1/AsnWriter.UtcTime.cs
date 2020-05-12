@@ -6,94 +6,56 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
         /// <summary>
-        ///   Write the provided <see cref="DateTimeOffset"/> as a UTCTime with tag
-        ///   UNIVERSAL 23, and accepting the two-digit year as valid in context.
-        /// </summary>
-        /// <param name="value">The value to write.</param>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteUtcTime(Asn1Tag,DateTimeOffset)"/>
-        /// <seealso cref="WriteUtcTime(DateTimeOffset,int)"/>
-        public void WriteUtcTime(DateTimeOffset value)
-        {
-            WriteUtcTimeCore(Asn1Tag.UtcTime, value);
-        }
-
-        /// <summary>
-        ///   Write the provided <see cref="DateTimeOffset"/> as a UTCTime with a specified tag,
+        ///   Write the provided value as a UTCTime with a specified tag,
         ///   accepting the two-digit year as valid in context.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
         /// <param name="value">The value to write.</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 23).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteUtcTime(Asn1Tag,DateTimeOffset,int)"/>
+        /// <seealso cref="WriteUtcTime(DateTimeOffset,int,Nullable{Asn1Tag})"/>
         /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
-        public void WriteUtcTime(Asn1Tag tag, DateTimeOffset value)
+        public void WriteUtcTime(DateTimeOffset value, Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.UtcTime);
 
             // Clear the constructed flag, if present.
-            WriteUtcTimeCore(tag.AsPrimitive(), value);
+            WriteUtcTimeCore(tag?.AsPrimitive() ?? Asn1Tag.UtcTime, value);
         }
 
         /// <summary>
-        ///   Write the provided <see cref="DateTimeOffset"/> as a UTCTime with tag
-        ///   UNIVERSAL 23, provided the year is in the allowed range.
-        /// </summary>
-        /// <param name="value">The value to write.</param>
-        /// <param name="twoDigitYearMax">
-        ///   The maximum valid year for <paramref name="value"/>, after conversion to UTC.
-        ///   For the X.509 Time.utcTime range of 1950-2049, pass <c>2049</c>.
-        /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="value"/>.<see cref="DateTimeOffset.Year"/> (after conversion to UTC)
-        ///   is not in the range
-        ///   (<paramref name="twoDigitYearMax"/> - 100, <paramref name="twoDigitYearMax"/>]
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteUtcTime(Asn1Tag,DateTimeOffset,int)"/>
-        /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
-        public void WriteUtcTime(DateTimeOffset value, int twoDigitYearMax)
-        {
-            // Defer to the longer override for twoDigitYearMax validity.
-            WriteUtcTime(Asn1Tag.UtcTime, value, twoDigitYearMax);
-        }
-
-        /// <summary>
-        ///   Write the provided <see cref="DateTimeOffset"/> as a UTCTime with a specified tag,
+        ///   Write the provided value as a UTCTime with a specified tag,
         ///   provided the year is in the allowed range.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
         /// <param name="value">The value to write.</param>
         /// <param name="twoDigitYearMax">
         ///   The maximum valid year for <paramref name="value"/>, after conversion to UTC.
         ///   For the X.509 Time.utcTime range of 1950-2049, pass <c>2049</c>.
         /// </param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 23).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="value"/>.<see cref="DateTimeOffset.Year"/> (after conversion to UTC)
         ///   is not in the range
-        ///   (<paramref name="twoDigitYearMax"/> - 100, <paramref name="twoDigitYearMax"/>]
+        ///   (<paramref name="twoDigitYearMax"/> - 100, <paramref name="twoDigitYearMax"/>].
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteUtcTime(System.Security.Cryptography.Asn1.Asn1Tag,System.DateTimeOffset,int)"/>
+        /// <seealso cref="WriteUtcTime(DateTimeOffset,Nullable{Asn1Tag})"/>
         /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
-        public void WriteUtcTime(Asn1Tag tag, DateTimeOffset value, int twoDigitYearMax)
+        public void WriteUtcTime(DateTimeOffset value, int twoDigitYearMax, Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.UtcTime);
 
@@ -104,7 +66,7 @@ namespace System.Security.Cryptography.Asn1
                 throw new ArgumentOutOfRangeException(nameof(value));
             }
 
-            WriteUtcTimeCore(tag.AsPrimitive(), value);
+            WriteUtcTimeCore(tag?.AsPrimitive() ?? Asn1Tag.UtcTime, value);
         }
 
         // T-REC-X.680-201508 sec 47
@@ -145,7 +107,7 @@ namespace System.Security.Cryptography.Asn1
                 !Utf8Formatter.TryFormat(second, baseSpan.Slice(10, 2), out _, format))
             {
                 Debug.Fail($"Utf8Formatter.TryFormat failed to build components of {normalized:O}");
-                throw new CryptographicException();
+                throw new InvalidOperationException();
             }
 
             _buffer[_offset + 12] = (byte)'Z';

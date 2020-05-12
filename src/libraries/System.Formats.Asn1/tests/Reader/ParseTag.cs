@@ -2,49 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ParseTag : Asn1ReaderTests
+    public sealed class ParseTag
     {
         [Theory]
-        [InlineData(PublicTagClass.Universal, false, 0, "00")]
-        [InlineData(PublicTagClass.Universal, false, 1, "01")]
-        [InlineData(PublicTagClass.Application, true, 1, "61")]
-        [InlineData(PublicTagClass.ContextSpecific, false, 1, "81")]
-        [InlineData(PublicTagClass.ContextSpecific, true, 1, "A1")]
-        [InlineData(PublicTagClass.Private, false, 1, "C1")]
-        [InlineData(PublicTagClass.Universal, false, 30, "1E")]
-        [InlineData(PublicTagClass.Application, false, 30, "5E")]
-        [InlineData(PublicTagClass.ContextSpecific, false, 30, "9E")]
-        [InlineData(PublicTagClass.Private, false, 30, "DE")]
-        [InlineData(PublicTagClass.Universal, false, 31, "1F1F")]
-        [InlineData(PublicTagClass.Application, false, 31, "5F1F")]
-        [InlineData(PublicTagClass.ContextSpecific, false, 31, "9F1F")]
-        [InlineData(PublicTagClass.Private, false, 31, "DF1F")]
-        [InlineData(PublicTagClass.Private, false, 127, "DF7F")]
-        [InlineData(PublicTagClass.Private, false, 128, "DF8100")]
-        [InlineData(PublicTagClass.Private, false, 253, "DF817D")]
-        [InlineData(PublicTagClass.Private, false, 255, "DF817F")]
-        [InlineData(PublicTagClass.Private, false, 256, "DF8200")]
-        [InlineData(PublicTagClass.Private, false, 1 << 9, "DF8400")]
-        [InlineData(PublicTagClass.Private, false, 1 << 10, "DF8800")]
-        [InlineData(PublicTagClass.Private, false, 0b0011_1101_1110_0111, "DFFB67")]
-        [InlineData(PublicTagClass.Private, false, 1 << 14, "DF818000")]
-        [InlineData(PublicTagClass.Private, false, 1 << 18, "DF908000")]
-        [InlineData(PublicTagClass.Private, false, 1 << 18 | 1 << 9, "DF908400")]
-        [InlineData(PublicTagClass.Private, false, 1 << 20, "DFC08000")]
-        [InlineData(PublicTagClass.Private, false, 0b0001_1110_1010_0111_0000_0001, "DFFACE01")]
-        [InlineData(PublicTagClass.Private, false, 1 << 21, "DF81808000")]
-        [InlineData(PublicTagClass.Private, false, 1 << 27, "DFC0808000")]
-        [InlineData(PublicTagClass.Private, false, 1 << 28, "DF8180808000")]
-        [InlineData(PublicTagClass.Private, true, int.MaxValue, "FF87FFFFFF7F")]
-        [InlineData(PublicTagClass.Universal, false, 119, "1F77")]
+        [InlineData(TagClass.Universal, false, 0, "00")]
+        [InlineData(TagClass.Universal, false, 1, "01")]
+        [InlineData(TagClass.Application, true, 1, "61")]
+        [InlineData(TagClass.ContextSpecific, false, 1, "81")]
+        [InlineData(TagClass.ContextSpecific, true, 1, "A1")]
+        [InlineData(TagClass.Private, false, 1, "C1")]
+        [InlineData(TagClass.Universal, false, 30, "1E")]
+        [InlineData(TagClass.Application, false, 30, "5E")]
+        [InlineData(TagClass.ContextSpecific, false, 30, "9E")]
+        [InlineData(TagClass.Private, false, 30, "DE")]
+        [InlineData(TagClass.Universal, false, 31, "1F1F")]
+        [InlineData(TagClass.Application, false, 31, "5F1F")]
+        [InlineData(TagClass.ContextSpecific, false, 31, "9F1F")]
+        [InlineData(TagClass.Private, false, 31, "DF1F")]
+        [InlineData(TagClass.Private, false, 127, "DF7F")]
+        [InlineData(TagClass.Private, false, 128, "DF8100")]
+        [InlineData(TagClass.Private, false, 253, "DF817D")]
+        [InlineData(TagClass.Private, false, 255, "DF817F")]
+        [InlineData(TagClass.Private, false, 256, "DF8200")]
+        [InlineData(TagClass.Private, false, 1 << 9, "DF8400")]
+        [InlineData(TagClass.Private, false, 1 << 10, "DF8800")]
+        [InlineData(TagClass.Private, false, 0b0011_1101_1110_0111, "DFFB67")]
+        [InlineData(TagClass.Private, false, 1 << 14, "DF818000")]
+        [InlineData(TagClass.Private, false, 1 << 18, "DF908000")]
+        [InlineData(TagClass.Private, false, 1 << 18 | 1 << 9, "DF908400")]
+        [InlineData(TagClass.Private, false, 1 << 20, "DFC08000")]
+        [InlineData(TagClass.Private, false, 0b0001_1110_1010_0111_0000_0001, "DFFACE01")]
+        [InlineData(TagClass.Private, false, 1 << 21, "DF81808000")]
+        [InlineData(TagClass.Private, false, 1 << 27, "DFC0808000")]
+        [InlineData(TagClass.Private, false, 1 << 28, "DF8180808000")]
+        [InlineData(TagClass.Private, true, int.MaxValue, "FF87FFFFFF7F")]
+        [InlineData(TagClass.Universal, false, 119, "1F77")]
         public static void ParseValidTag(
-            PublicTagClass tagClass,
+            TagClass tagClass,
             bool isConstructed,
             int tagValue,
             string inputHex)
@@ -55,7 +54,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(parsed, "Asn1Tag.TryDecode");
             Assert.Equal(inputBytes.Length, bytesRead);
-            Assert.Equal((TagClass)tagClass, tag.TagClass);
+            Assert.Equal(tagClass, tag.TagClass);
             Assert.Equal(tagValue, tag.TagValue);
 
             if (isConstructed)
@@ -95,6 +94,20 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.Equal(default(Asn1Tag), tag);
             Assert.Equal(0, bytesRead);
+
+            Assert.False(
+                AsnDecoder.TryReadEncodedValue(
+                    inputBytes,
+                    AsnEncodingRules.BER,
+                    out tag,
+                    out int contentOffset,
+                    out int contentLength,
+                    out int bytesConsumed));
+
+            Assert.Equal(0, contentOffset);
+            Assert.Equal(0, contentLength);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(default(Asn1Tag), tag);
         }
 
         [Fact]
@@ -126,14 +139,14 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicTagClass.Universal, false, 0, "00")]
-        [InlineData(PublicTagClass.ContextSpecific, true, 1, "A1")]
-        [InlineData(PublicTagClass.Application, false, 31, "5F1F")]
-        [InlineData(PublicTagClass.Private, false, 128, "DF8100")]
-        [InlineData(PublicTagClass.Private, false, 0b0001_1110_1010_0111_0000_0001, "DFFACE01")]
-        [InlineData(PublicTagClass.Private, true, int.MaxValue, "FF87FFFFFF7F")]
+        [InlineData(TagClass.Universal, false, 0, "00")]
+        [InlineData(TagClass.ContextSpecific, true, 1, "A1")]
+        [InlineData(TagClass.Application, false, 31, "5F1F")]
+        [InlineData(TagClass.Private, false, 128, "DF8100")]
+        [InlineData(TagClass.Private, false, 0b0001_1110_1010_0111_0000_0001, "DFFACE01")]
+        [InlineData(TagClass.Private, true, int.MaxValue, "FF87FFFFFF7F")]
         public static void ParseTagWithMoreData(
-            PublicTagClass tagClass,
+            TagClass tagClass,
             bool isConstructed,
             int tagValue,
             string inputHex)
@@ -145,7 +158,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(parsed, "Asn1Tag.TryDecode");
             Assert.Equal(inputHex.Length / 2, bytesRead);
-            Assert.Equal((TagClass)tagClass, tag.TagClass);
+            Assert.Equal(tagClass, tag.TagClass);
             Assert.Equal(tagValue, tag.TagValue);
 
             if (isConstructed)

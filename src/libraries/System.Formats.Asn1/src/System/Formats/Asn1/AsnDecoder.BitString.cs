@@ -2,185 +2,194 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
-#nullable enable
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal ref partial struct AsnValueReader
+    public static partial class AsnDecoder
     {
         /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, returning the contents
-        ///   as a <see cref="ReadOnlySpan{T}"/> over the original data.
+        ///   Attempts to get a Bit String value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules, if the value is contained in a single (primitive) encoding.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="unusedBitCount">
         ///   On success, receives the number of bits in the last byte which were reported as
         ///   "unused" by the writer.
+        ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="value">
-        ///   On success, receives a <see cref="ReadOnlySpan{T}"/> over the original data
-        ///   corresponding to the value of the BIT STRING.
+        ///   On success, receives a slice of the input buffer that corresponds to
+        ///   the value of the Bit String.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if the BIT STRING value had a primitive encoding,
-        ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
+        ///   <see langword="true"/> if the Bit String value has a primitive encoding and all of the bits
+        ///   reported as unused are set to 0;
+        ///   otherwise, <see langword="false"/>.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        /// <seealso cref="TryCopyBitStringBytes(Span{byte},out int,out int)"/>
-        public bool TryReadPrimitiveBitStringValue(out int unusedBitCount, out ReadOnlySpan<byte> value)
-            => TryReadPrimitiveBitStringValue(Asn1Tag.PrimitiveBitString, out unusedBitCount, out value);
-
-        /// <summary>
-        ///   Reads the next value as a BIT STRING with a specified tag, returning the contents
-        ///   as a <see cref="ReadOnlySpan{T}"/> over the original data.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="unusedBitCount">
-        ///   On success, receives the number of bits in the last byte which were reported as
-        ///   "unused" by the writer.
-        /// </param>
-        /// <param name="value">
-        ///   On success, receives a <see cref="ReadOnlySpan{T}"/> over the original data
-        ///   corresponding to the value of the BIT STRING.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if the BIT STRING value had a primitive encoding,
-        ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <seealso cref="TryCopyBitStringBytes(Asn1Tag,Span{byte},out int,out int)"/>
-        public bool TryReadPrimitiveBitStringValue(
-            Asn1Tag expectedTag,
+        /// <seealso cref="TryReadBitString"/>
+        public static bool TryReadPrimitiveBitString(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             out int unusedBitCount,
-            out ReadOnlySpan<byte> value)
+            out ReadOnlySpan<byte> value,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            bool isPrimitive = TryReadPrimitiveBitStringValue(
-                expectedTag,
-                out Asn1Tag actualTag,
-                out int? contentsLength,
-                out int headerLength,
-                out unusedBitCount,
-                out value,
-                out byte normalizedLastByte);
-
-            if (isPrimitive)
+            if (TryReadPrimitiveBitStringCore(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.PrimitiveBitString,
+                contentsLength: out _,
+                headerLength: out _,
+                out int localUbc,
+                out ReadOnlySpan<byte> localValue,
+                out int consumed,
+                out byte normalizedLastByte))
             {
-                // A BER reader which encountered a situation where an "unused" bit was not
-                // set to 0.
-                if (value.Length != 0 && normalizedLastByte != value[value.Length - 1])
+                // Check that this isn't a BER reader which encountered a situation where
+                // an "unused" bit was not set to 0.
+                if (localValue.Length == 0 || normalizedLastByte == localValue[localValue.Length - 1])
                 {
-                    unusedBitCount = 0;
-                    value = default;
-                    return false;
+                    unusedBitCount = localUbc;
+                    value = localValue;
+                    bytesConsumed = consumed;
+                    return true;
                 }
-
-                // Skip the tag+length (header) and the unused bit count byte (1) and the contents.
-                _data = _data.Slice(headerLength + value.Length + 1);
             }
 
-            return isPrimitive;
+            unusedBitCount = 0;
+            value = default;
+            bytesConsumed = 0;
+            return false;
         }
 
         /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, copying the value
-        ///   into a provided destination buffer.
+        ///   Attempts to copy a Bit String value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules into <paramref name="destination"/>.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="unusedBitCount">
         ///   On success, receives the number of bits in the last byte which were reported as
         ///   "unused" by the writer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
+        ///   When this method returns, the total number of bytes written to <paramref name="destination"/>.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
+        ///   <see langword="true"/> if <paramref name="destination"/> is large enough to receive the
+        ///   value of the Bit String;
+        ///   otherwise, <see langword="false"/>.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <remarks>
+        ///   The least significant bits in the last byte which are reported as "unused" by the
+        ///   <paramref name="unusedBitCount"/> value will be copied into <paramref name="destination"/>
+        ///   as unset bits, irrespective of their value in the encoded representation.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(out int,out ReadOnlySpan{byte})"/>
-        /// <seealso cref="ReadBitString(out int)"/>
-        public bool TryCopyBitStringBytes(
-            Span<byte> destination,
-            out int unusedBitCount,
-            out int bytesWritten)
-        {
-            return TryCopyBitStringBytes(
-                Asn1Tag.PrimitiveBitString,
-                destination,
-                out unusedBitCount,
-                out bytesWritten);
-        }
-
-        /// <summary>
-        ///   Reads the next value as a BIT STRING with a specified tag, copying the value
-        ///   into a provided destination buffer.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="unusedBitCount">
-        ///   On success, receives the number of bits in the last byte which were reported as
-        ///   "unused" by the writer.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="destination"/> overlaps <paramref name="source"/>.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(Asn1Tag,out int,out ReadOnlySpan{byte})"/>
-        /// <seealso cref="ReadBitString(Asn1Tag,out int)"/>
-        public bool TryCopyBitStringBytes(
-            Asn1Tag expectedTag,
+        /// <seealso cref="TryReadPrimitiveBitString"/>
+        /// <seealso cref="ReadBitString"/>
+        public static bool TryReadBitString(
+            ReadOnlySpan<byte> source,
             Span<byte> destination,
+            AsnEncodingRules ruleSet,
             out int unusedBitCount,
-            out int bytesWritten)
+            out int bytesConsumed,
+            out int bytesWritten,
+            Asn1Tag? expectedTag = null)
         {
-            if (TryReadPrimitiveBitStringValue(
-                expectedTag,
-                out Asn1Tag actualTag,
-                out int? contentsLength,
-                out int headerLength,
-                out unusedBitCount,
+            if (source.Overlaps(destination))
+            {
+                throw new ArgumentException(
+                    SR.Argument_SourceOverlapsDestination,
+                    nameof(destination));
+            }
+
+            int localUbc;
+            byte normalizedLastByte;
+            int consumed;
+            int? contentsLength;
+            int headerLength;
+
+            if (TryReadPrimitiveBitStringCore(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.PrimitiveBitString,
+                out contentsLength,
+                out headerLength,
+                out localUbc,
                 out ReadOnlySpan<byte> value,
-                out byte normalizedLastByte))
+                out consumed,
+                out normalizedLastByte))
             {
                 if (value.Length > destination.Length)
                 {
+                    bytesConsumed = 0;
                     bytesWritten = 0;
                     unusedBitCount = 0;
                     return false;
@@ -189,126 +198,155 @@ namespace System.Security.Cryptography.Asn1
                 CopyBitStringValue(value, normalizedLastByte, destination);
 
                 bytesWritten = value.Length;
-                // contents doesn't include the unusedBitCount value, so add one byte for that.
-                _data = _data.Slice(headerLength + value.Length + 1);
+                bytesConsumed = consumed;
+                unusedBitCount = localUbc;
                 return true;
             }
 
-            Debug.Assert(actualTag.IsConstructed);
+            // If we get here, the tag was appropriate, but the encoding was constructed.
 
-            bool read = TryCopyConstructedBitStringValue(
-                Slice(_data, headerLength, contentsLength),
+            if (TryCopyConstructedBitStringValue(
+                Slice(source, headerLength, contentsLength),
+                ruleSet,
                 destination,
                 contentsLength == null,
-                out unusedBitCount,
+                out localUbc,
                 out int bytesRead,
-                out bytesWritten);
-
-            if (read)
+                out int written))
             {
-                _data = _data.Slice(headerLength + bytesRead);
+                unusedBitCount = localUbc;
+                bytesConsumed = headerLength + bytesRead;
+                bytesWritten = written;
+                return true;
             }
 
-            return read;
+            bytesWritten = bytesConsumed = unusedBitCount = 0;
+            return false;
         }
 
         /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, returning the value
-        ///   in a byte array.
+        ///   Reads a Bit String value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules, returning the contents in a new array.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="unusedBitCount">
         ///   On success, receives the number of bits in the last byte which were reported as
         ///   "unused" by the writer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
-        ///   a copy of the value in a newly allocated, precisely sized, array.
+        ///   An array containing the contents of the Bit String value.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <remarks>
+        ///   The least significant bits in the last byte which are reported as "unused" by the
+        ///   <paramref name="unusedBitCount"/> value will be copied into the return value
+        ///   as unset bits, irrespective of their value in the encoded representation.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(out int,out ReadOnlySpan{byte})"/>
-        /// <seealso cref="TryCopyBitStringBytes(Span{byte},out int,out int)"/>
-        public byte[] ReadBitString(out int unusedBitCount)
-        {
-            return ReadBitString(Asn1Tag.PrimitiveBitString, out unusedBitCount);
-        }
-
-        /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, returning the value
-        ///   in a byte array.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="unusedBitCount">
-        ///   On success, receives the number of bits in the last byte which were reported as
-        ///   "unused" by the writer.
-        /// </param>
-        /// <returns>
-        ///   a copy of the value in a newly allocated, precisely sized, array.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(Asn1Tag,out int,out ReadOnlySpan{byte})"/>
-        /// <seealso cref="TryCopyBitStringBytes(Asn1Tag,Span{byte},out int,out int)"/>
-        public byte[] ReadBitString(Asn1Tag expectedTag, out int unusedBitCount)
+        /// <seealso cref="TryReadPrimitiveBitString"/>
+        /// <seealso cref="TryReadBitString"/>
+        public static byte[] ReadBitString(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int unusedBitCount,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            ReadOnlySpan<byte> span;
-
-            if (TryReadPrimitiveBitStringValue(expectedTag, out unusedBitCount, out span))
+            if (TryReadPrimitiveBitStringCore(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.PrimitiveBitString,
+                out int? contentsLength,
+                out int headerLength,
+                out int localUbc,
+                out ReadOnlySpan<byte> localValue,
+                out int consumed,
+                out byte normalizedLastByte))
             {
-                return span.ToArray();
-            }
+                byte[] ret = localValue.ToArray();
 
-            span = PeekEncodedValue();
-
-            // Guaranteed long enough
-            byte[] rented = CryptoPool.Rent(span.Length);
-            int dataLength = 0;
-
-            try
-            {
-                if (!TryCopyBitStringBytes(expectedTag, rented, out unusedBitCount, out dataLength))
+                // Update the last byte in case it's a non-canonical byte in a BER encoding.
+                if (localValue.Length > 0)
                 {
-                    Debug.Fail("TryCopyBitStringBytes failed with a pre-allocated buffer");
-                    throw new CryptographicException();
+                    ret[ret.Length - 1] = normalizedLastByte;
                 }
 
-                byte[] alloc = new byte[dataLength];
-                rented.AsSpan(0, dataLength).CopyTo(alloc);
-                return alloc;
+                unusedBitCount = localUbc;
+                bytesConsumed = consumed;
+                return ret;
             }
-            finally
+
+            // If we get here, the tag was appropriate, but the encoding was constructed.
+
+            // Guaranteed long enough
+            int tooBig = contentsLength ?? SeekEndOfContents(source.Slice(headerLength), ruleSet);
+
+            byte[] rented = CryptoPool.Rent(tooBig);
+
+            if (TryCopyConstructedBitStringValue(
+                Slice(source, headerLength, contentsLength),
+                ruleSet,
+                rented,
+                contentsLength == null,
+                out localUbc,
+                out int bytesRead,
+                out int written))
             {
-                CryptoPool.Return(rented, dataLength);
+                byte[] ret = rented.AsSpan(0, written).ToArray();
+                CryptoPool.Return(rented, written);
+                unusedBitCount = localUbc;
+                bytesConsumed = headerLength + bytesRead;
+                return ret;
             }
+
+            Debug.Fail("TryCopyConstructedBitStringValue failed with a pre-allocated buffer");
+            throw new AsnContentException();
         }
 
-        private void ParsePrimitiveBitStringContents(
+        private static void ParsePrimitiveBitStringContents(
             ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             out int unusedBitCount,
             out ReadOnlySpan<byte> value,
             out byte normalizedLastByte)
         {
             // T-REC-X.690-201508 sec 9.2
-            if (RuleSet == AsnEncodingRules.CER && source.Length > MaxCERSegmentSize)
+            if (ruleSet == AsnEncodingRules.CER && source.Length > MaxCERSegmentSize)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException(SR.ContentException_InvalidUnderCer_TryBerOrDer);
             }
 
             // T-REC-X.690-201508 sec 8.6.2.3
             if (source.Length == 0)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException();
             }
 
             unusedBitCount = source[0];
@@ -316,7 +354,7 @@ namespace System.Security.Cryptography.Asn1
             // T-REC-X.690-201508 sec 8.6.2.2
             if (unusedBitCount > 7)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException();
             }
 
             if (source.Length == 1)
@@ -324,7 +362,7 @@ namespace System.Security.Cryptography.Asn1
                 // T-REC-X.690-201508 sec 8.6.2.4
                 if (unusedBitCount > 0)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException();
                 }
 
                 Debug.Assert(unusedBitCount == 0);
@@ -344,9 +382,9 @@ namespace System.Security.Cryptography.Asn1
             if (maskedByte != lastByte)
             {
                 // T-REC-X.690-201508 sec 11.2.1
-                if (RuleSet == AsnEncodingRules.DER || RuleSet == AsnEncodingRules.CER)
+                if (ruleSet == AsnEncodingRules.DER || ruleSet == AsnEncodingRules.CER)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                 }
             }
 
@@ -374,12 +412,16 @@ namespace System.Security.Cryptography.Asn1
             destination[value.Length - 1] = normalizedLastByte;
         }
 
-        private int CountConstructedBitString(ReadOnlySpan<byte> source, bool isIndefinite)
+        private static int CountConstructedBitString(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            bool isIndefinite)
         {
             Span<byte> destination = Span<byte>.Empty;
 
             return ProcessConstructedBitString(
                 source,
+                ruleSet,
                 destination,
                 null,
                 isIndefinite,
@@ -387,8 +429,9 @@ namespace System.Security.Cryptography.Asn1
                 out _);
         }
 
-        private void CopyConstructedBitString(
+        private static void CopyConstructedBitString(
             ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Span<byte> destination,
             bool isIndefinite,
             out int unusedBitCount,
@@ -399,6 +442,7 @@ namespace System.Security.Cryptography.Asn1
 
             bytesWritten = ProcessConstructedBitString(
                 source,
+                ruleSet,
                 tmpDest,
                 (value, lastByte, dest) => CopyBitStringValue(value, lastByte, dest),
                 isIndefinite,
@@ -406,8 +450,9 @@ namespace System.Security.Cryptography.Asn1
                 out bytesRead);
         }
 
-        private int ProcessConstructedBitString(
+        private static int ProcessConstructedBitString(
             ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Span<byte> destination,
             BitStringCopyAction? copyAction,
             bool isIndefinite,
@@ -418,8 +463,7 @@ namespace System.Security.Cryptography.Asn1
             bytesRead = 0;
             int lastSegmentLength = MaxCERSegmentSize;
 
-            ReadOnlySpan<byte> originalSpan = _data;
-            AsnValueReader tmpReader = OpenUnchecked(source, RuleSet);
+            ReadOnlySpan<byte> cur = source;
             Stack<(int Offset, int Length, bool Indefinite, int BytesRead)>? readerStack = null;
             int totalLength = 0;
             Asn1Tag tag = Asn1Tag.ConstructedBitString;
@@ -427,9 +471,9 @@ namespace System.Security.Cryptography.Asn1
 
             while (true)
             {
-                while (tmpReader.HasData)
+                while (!cur.IsEmpty)
                 {
-                    tag = tmpReader.ReadTagAndLength(out int? length, out int headerLength);
+                    tag = ReadTagAndLength(cur, ruleSet, out int? length, out int headerLength);
 
                     if (tag == Asn1Tag.PrimitiveBitString)
                     {
@@ -437,26 +481,27 @@ namespace System.Security.Cryptography.Asn1
                         {
                             // T-REC-X.690-201508 sec 8.6.4, only the last segment may have
                             // a number of bits not a multiple of 8.
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            throw new AsnContentException();
                         }
 
-                        if (RuleSet == AsnEncodingRules.CER && lastSegmentLength != MaxCERSegmentSize)
+                        if (ruleSet == AsnEncodingRules.CER && lastSegmentLength != MaxCERSegmentSize)
                         {
                             // T-REC-X.690-201508 sec 9.2
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            throw new AsnContentException(SR.ContentException_InvalidUnderCer_TryBerOrDer);
                         }
 
                         Debug.Assert(length != null);
-                        ReadOnlySpan<byte> encodedValue = Slice(tmpReader._data, headerLength, length.Value);
+                        ReadOnlySpan<byte> encodedValue = Slice(cur, headerLength, length.Value);
 
                         ParsePrimitiveBitStringContents(
                             encodedValue,
+                            ruleSet,
                             out lastUnusedBitCount,
                             out ReadOnlySpan<byte> contents,
                             out byte normalizedLastByte);
 
                         int localLen = headerLength + encodedValue.Length;
-                        tmpReader._data = tmpReader._data.Slice(localLen);
+                        cur = cur.Slice(localLen);
 
                         bytesRead += localLen;
                         totalLength += contents.Length;
@@ -477,8 +522,8 @@ namespace System.Security.Cryptography.Asn1
                         if (readerStack?.Count > 0)
                         {
                             (int topOffset, int topLength, bool wasIndefinite, int pushedBytesRead) = readerStack.Pop();
-                            ReadOnlySpan<byte> topSpan = originalSpan.Slice(topOffset, topLength);
-                            tmpReader._data = topSpan.Slice(bytesRead);
+                            ReadOnlySpan<byte> topSpan = source.Slice(topOffset, topLength);
+                            cur = topSpan.Slice(bytesRead);
 
                             bytesRead += pushedBytesRead;
                             isIndefinite = wasIndefinite;
@@ -491,10 +536,10 @@ namespace System.Security.Cryptography.Asn1
                     }
                     else if (tag == Asn1Tag.ConstructedBitString)
                     {
-                        if (RuleSet == AsnEncodingRules.CER)
+                        if (ruleSet == AsnEncodingRules.CER)
                         {
                             // T-REC-X.690-201508 sec 9.2
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
                         if (readerStack == null)
@@ -502,36 +547,36 @@ namespace System.Security.Cryptography.Asn1
                             readerStack = new Stack<(int, int, bool, int)>();
                         }
 
-                        if (!originalSpan.Overlaps(tmpReader._data, out int curOffset))
+                        if (!source.Overlaps(cur, out int curOffset))
                         {
                             Debug.Fail("Non-overlapping data encountered...");
-                            throw new CryptographicException();
+                            throw new AsnContentException();
                         }
 
-                        readerStack.Push((curOffset, tmpReader._data.Length, isIndefinite, bytesRead));
+                        readerStack.Push((curOffset, cur.Length, isIndefinite, bytesRead));
 
-                        tmpReader._data = Slice(tmpReader._data, headerLength, length);
+                        cur = Slice(cur, headerLength, length);
                         bytesRead = headerLength;
                         isIndefinite = (length == null);
                     }
                     else
                     {
                         // T-REC-X.690-201508 sec 8.6.4.1 (in particular, Note 2)
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        throw new AsnContentException();
                     }
                 }
 
                 if (isIndefinite && tag != Asn1Tag.EndOfContents)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException();
                 }
 
                 if (readerStack?.Count > 0)
                 {
                     (int topOffset, int topLength, bool wasIndefinite, int pushedBytesRead) = readerStack.Pop();
 
-                    ReadOnlySpan<byte> tmpSpan = originalSpan.Slice(topOffset, topLength);
-                    tmpReader._data = tmpSpan.Slice(bytesRead);
+                    ReadOnlySpan<byte> tmpSpan = source.Slice(topOffset, topLength);
+                    cur = tmpSpan.Slice(bytesRead);
 
                     isIndefinite = wasIndefinite;
                     bytesRead += pushedBytesRead;
@@ -543,8 +588,9 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private bool TryCopyConstructedBitStringValue(
+        private static bool TryCopyConstructedBitStringValue(
             ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Span<byte> dest,
             bool isIndefinite,
             out int unusedBitCount,
@@ -553,15 +599,15 @@ namespace System.Security.Cryptography.Asn1
         {
             // Call CountConstructedBitString to get the required byte and to verify that the
             // data is well-formed before copying into dest.
-            int contentLength = CountConstructedBitString(source, isIndefinite);
+            int contentLength = CountConstructedBitString(source, ruleSet, isIndefinite);
 
             // Since the unused bits byte from the segments don't count, only one segment
             // returns 999 (or less), the second segment bumps the count to 1000, and is legal.
             //
             // T-REC-X.690-201508 sec 9.2
-            if (RuleSet == AsnEncodingRules.CER && contentLength < MaxCERSegmentSize)
+            if (ruleSet == AsnEncodingRules.CER && contentLength < MaxCERSegmentSize)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
             }
 
             if (dest.Length < contentLength)
@@ -574,6 +620,7 @@ namespace System.Security.Cryptography.Asn1
 
             CopyConstructedBitString(
                 source,
+                ruleSet,
                 dest,
                 isIndefinite,
                 out unusedBitCount,
@@ -584,76 +631,59 @@ namespace System.Security.Cryptography.Asn1
             return true;
         }
 
-        private bool TryReadPrimitiveBitStringValue(
+        private static bool TryReadPrimitiveBitStringCore(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Asn1Tag expectedTag,
-            out Asn1Tag actualTag,
             out int? contentsLength,
             out int headerLength,
             out int unusedBitCount,
             out ReadOnlySpan<byte> value,
+            out int bytesConsumed,
             out byte normalizedLastByte)
         {
-            actualTag = ReadTagAndLength(out contentsLength, out headerLength);
+            Asn1Tag actualTag =
+                ReadTagAndLength(source, ruleSet, out contentsLength, out headerLength);
+
             CheckExpectedTag(actualTag, expectedTag, UniversalTagNumber.BitString);
+
+            // Ensure the length made sense.
+            ReadOnlySpan<byte> encodedValue = Slice(source, headerLength, contentsLength);
 
             if (actualTag.IsConstructed)
             {
-                if (RuleSet == AsnEncodingRules.DER)
+                if (ruleSet == AsnEncodingRules.DER)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException(SR.ContentException_InvalidUnderDer_TryBerOrCer);
                 }
 
                 unusedBitCount = 0;
                 value = default;
                 normalizedLastByte = 0;
+                bytesConsumed = 0;
                 return false;
             }
 
             Debug.Assert(contentsLength.HasValue);
-            ReadOnlySpan<byte> encodedValue = Slice(_data, headerLength, contentsLength.Value);
 
             ParsePrimitiveBitStringContents(
                 encodedValue,
+                ruleSet,
                 out unusedBitCount,
                 out value,
                 out normalizedLastByte);
 
+            bytesConsumed = headerLength + encodedValue.Length;
             return true;
         }
     }
 
-    internal partial class AsnReader
+    public partial class AsnReader
     {
-        /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, returning the contents
-        ///   as a <see cref="ReadOnlyMemory{T}"/> over the original data.
-        /// </summary>
-        /// <param name="unusedBitCount">
-        ///   On success, receives the number of bits in the last byte which were reported as
-        ///   "unused" by the writer.
-        /// </param>
-        /// <param name="value">
-        ///   On success, receives a <see cref="ReadOnlyMemory{T}"/> over the original data
-        ///   corresponding to the value of the BIT STRING.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if the BIT STRING value had a primitive encoding,
-        ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <seealso cref="TryCopyBitStringBytes(Span{byte},out int,out int)"/>
-        public bool TryReadPrimitiveBitStringValue(out int unusedBitCount, out ReadOnlyMemory<byte> value)
-            => TryReadPrimitiveBitStringValue(Asn1Tag.PrimitiveBitString, out unusedBitCount, out value);
-
         /// <summary>
         ///   Reads the next value as a BIT STRING with a specified tag, returning the contents
         ///   as a <see cref="ReadOnlyMemory{T}"/> over the original data.
         /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
         /// <param name="unusedBitCount">
         ///   On success, receives the number of bits in the last byte which were reported as
         ///   "unused" by the writer.
@@ -662,42 +692,59 @@ namespace System.Security.Cryptography.Asn1
         ///   On success, receives a <see cref="ReadOnlyMemory{T}"/> over the original data
         ///   corresponding to the value of the BIT STRING.
         /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if the BIT STRING value had a primitive encoding,
-        ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
+        ///   <see langword="true"/> and advances the reader if the BIT STRING value had a primitive encoding,
+        ///   <see langword="false"/> and does not advance the reader if it had a constructed encoding.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <seealso cref="TryCopyBitStringBytes(Asn1Tag,Span{byte},out int,out int)"/>
-        public bool TryReadPrimitiveBitStringValue(
-            Asn1Tag expectedTag,
+        /// <seealso cref="TryReadBitString"/>
+        public bool TryReadPrimitiveBitString(
             out int unusedBitCount,
-            out ReadOnlyMemory<byte> value)
+            out ReadOnlyMemory<byte> value,
+            Asn1Tag? expectedTag = null)
         {
-            AsnValueReader reader = OpenValueReader();
+            bool ret = AsnDecoder.TryReadPrimitiveBitString(
+                _data.Span,
+                RuleSet,
+                out unusedBitCount,
+                out ReadOnlySpan<byte> span,
+                out int consumed,
+                expectedTag);
 
-            if (reader.TryReadPrimitiveBitStringValue(expectedTag, out unusedBitCount, out ReadOnlySpan<byte> span))
+            if (ret)
             {
-                value = AsnValueReader.Slice(_data, span);
-                reader.MatchSlice(ref _data);
-                return true;
+                value = AsnDecoder.Slice(_data, span);
+                _data = _data.Slice(consumed);
+            }
+            else
+            {
+                value = default;
             }
 
-            value = default;
-            return false;
+            return ret;
         }
 
         /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, copying the value
+        ///   Reads the next value as a BIT STRING with a specified tag, copying the value
         ///   into a provided destination buffer.
         /// </summary>
         /// <param name="destination">The buffer in which to write.</param>
@@ -708,211 +755,99 @@ namespace System.Security.Cryptography.Asn1
         /// <param name="bytesWritten">
         ///   On success, receives the number of bytes written to <paramref name="destination"/>.
         /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        /// </param>
         /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   <see langword="true"/> and advances the reader if <paramref name="destination"/> had sufficient
         ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
+        ///   <see langword="false"/> and the reader does not advance.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(out int,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="ReadBitString(out int)"/>
-        public bool TryCopyBitStringBytes(
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <seealso cref="TryReadPrimitiveBitString"/>
+        /// <seealso cref="ReadBitString"/>
+        public bool TryReadBitString(
             Span<byte> destination,
             out int unusedBitCount,
-            out int bytesWritten)
+            out int bytesWritten,
+            Asn1Tag? expectedTag = null)
         {
-            return TryCopyBitStringBytes(
-                Asn1Tag.PrimitiveBitString,
+            bool ret = AsnDecoder.TryReadBitString(
+                _data.Span,
                 destination,
+                RuleSet,
                 out unusedBitCount,
-                out bytesWritten);
-        }
+                out int consumed,
+                out bytesWritten,
+                expectedTag);
 
-        /// <summary>
-        ///   Reads the next value as a BIT STRING with a specified tag, copying the value
-        ///   into a provided destination buffer.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="unusedBitCount">
-        ///   On success, receives the number of bits in the last byte which were reported as
-        ///   "unused" by the writer.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(Asn1Tag,out int,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="ReadBitString(Asn1Tag,out int)"/>
-        public bool TryCopyBitStringBytes(
-            Asn1Tag expectedTag,
-            Span<byte> destination,
-            out int unusedBitCount,
-            out int bytesWritten)
-        {
-            AsnValueReader reader = OpenValueReader();
-
-            if (reader.TryCopyBitStringBytes(expectedTag, destination, out unusedBitCount, out bytesWritten))
+            if (ret)
             {
-                reader.MatchSlice(ref _data);
-                return true;
+                _data = _data.Slice(consumed);
             }
 
-            return false;
+            return ret;
         }
 
         /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, copying the value
-        ///   into a provided destination buffer.
-        /// </summary>
-        /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="unusedBitCount">
-        ///   On success, receives the number of bits in the last byte which were reported as
-        ///   "unused" by the writer.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(out int,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="ReadBitString(out int)"/>
-        public bool TryCopyBitStringBytes(
-            ArraySegment<byte> destination,
-            out int unusedBitCount,
-            out int bytesWritten)
-        {
-            return TryCopyBitStringBytes(
-                Asn1Tag.PrimitiveBitString,
-                destination.AsSpan(),
-                out unusedBitCount,
-                out bytesWritten);
-        }
-
-        /// <summary>
-        ///   Reads the next value as a BIT STRING with a specified tag, copying the value
-        ///   into a provided destination buffer.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="unusedBitCount">
-        ///   On success, receives the number of bits in the last byte which were reported as
-        ///   "unused" by the writer.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-        /// </param>
-        /// <returns>
-        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
-        ///   length to receive the value, otherwise
-        ///   <c>false</c> and the reader does not advance.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(Asn1Tag,out int,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="ReadBitString(Asn1Tag,out int)"/>
-        public bool TryCopyBitStringBytes(
-            Asn1Tag expectedTag,
-            ArraySegment<byte> destination,
-            out int unusedBitCount,
-            out int bytesWritten)
-        {
-            return TryCopyBitStringBytes(
-                expectedTag,
-                destination.AsSpan(),
-                out unusedBitCount,
-                out bytesWritten);
-        }
-
-        /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, returning the value
+        ///   Reads the next value as a BIT STRING with a specified tag, returning the value
         ///   in a byte array.
         /// </summary>
         /// <param name="unusedBitCount">
         ///   On success, receives the number of bits in the last byte which were reported as
         ///   "unused" by the writer.
         /// </param>
-        /// <returns>
-        ///   a copy of the value in a newly allocated, precisely sized, array.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(out int,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="TryCopyBitStringBytes(Span{byte},out int,out int)"/>
-        public byte[] ReadBitString(out int unusedBitCount)
-        {
-            return ReadBitString(Asn1Tag.PrimitiveBitString, out unusedBitCount);
-        }
-
-        /// <summary>
-        ///   Reads the next value as a BIT STRING with tag UNIVERSAL 3, returning the value
-        ///   in a byte array.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="unusedBitCount">
-        ///   On success, receives the number of bits in the last byte which were reported as
-        ///   "unused" by the writer.
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
         /// </param>
         /// <returns>
-        ///   a copy of the value in a newly allocated, precisely sized, array.
+        ///   A copy of the value in a newly allocated, precisely sized, array.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <seealso cref="TryReadPrimitiveBitStringValue(Asn1Tag,out int,out ReadOnlyMemory{byte})"/>
-        /// <seealso cref="TryCopyBitStringBytes(Asn1Tag,Span{byte},out int,out int)"/>
-        public byte[] ReadBitString(Asn1Tag expectedTag, out int unusedBitCount)
+        /// <seealso cref="TryReadPrimitiveBitString"/>
+        /// <seealso cref="TryReadBitString"/>
+        public byte[] ReadBitString(out int unusedBitCount, Asn1Tag? expectedTag = null)
         {
-            AsnValueReader valueReader = OpenValueReader();
-            byte[] ret = valueReader.ReadBitString(expectedTag, out unusedBitCount);
-            valueReader.MatchSlice(ref _data);
+            byte[] ret = AsnDecoder.ReadBitString(
+                _data.Span,
+                RuleSet,
+                out unusedBitCount,
+                out int consumed,
+                expectedTag);
+
+            _data = _data.Slice(consumed);
             return ret;
         }
     }

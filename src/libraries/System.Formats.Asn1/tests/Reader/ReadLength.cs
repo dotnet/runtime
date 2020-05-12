@@ -3,26 +3,23 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
-    internal static class AsnReaderExtensions
+    public sealed class ReadLength
     {
-        private delegate Asn1Tag ReadTagAndLengthDelegate(out int? parsedLength, out int bytesRead);
+        private delegate Asn1Tag ReadTagAndLengthDelegate(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int? parsedLength,
+            out int bytesRead);
 
-        public static Asn1Tag ReadTagAndLength(this AsnReader reader, out int? parsedLength, out int bytesRead)
-        {
-            return ((ReadTagAndLengthDelegate)
-                typeof(AsnReader).GetMethod("ReadTagAndLength", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .CreateDelegate(typeof(ReadTagAndLengthDelegate), reader)).Invoke(out parsedLength, out bytesRead);
-        }
-    }
+        private static ReadTagAndLengthDelegate ReadTagAndLength = (ReadTagAndLengthDelegate)
+            typeof(AsnDecoder).GetMethod("ReadTagAndLength", BindingFlags.Static | BindingFlags.NonPublic)
+                .CreateDelegate(typeof(ReadTagAndLengthDelegate));
 
-    public sealed class ReadLength : Asn1ReaderTests
-    {
         [Theory]
         [InlineData(4, 0, "0400")]
         [InlineData(1, 1, "0101")]
@@ -35,19 +32,14 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputBytes = inputHex.HexToByteArray();
 
-            foreach (PublicEncodingRules rules in Enum.GetValues(typeof(PublicEncodingRules)))
+            foreach (AsnEncodingRules rules in Enum.GetValues(typeof(AsnEncodingRules)))
             {
-                AsnReader reader = new AsnReader(inputBytes, (AsnEncodingRules)rules);
-
-                Asn1Tag tag = reader.ReadTagAndLength(out int ? parsedLength, out int bytesRead);
+                Asn1Tag tag = ReadTagAndLength(inputBytes, rules, out int? parsedLength, out int bytesRead);
 
                 Assert.Equal(inputBytes.Length, bytesRead);
                 Assert.False(tag.IsConstructed, "tag.IsConstructed");
                 Assert.Equal(tagValue, tag.TagValue);
                 Assert.Equal(length, parsedLength.Value);
-
-                // ReadTagAndLength doesn't move the _data span forward.
-                Assert.True(reader.HasData, "reader.HasData");
             }
         }
 
@@ -72,62 +64,67 @@ namespace System.Security.Cryptography.Tests.Asn1
         public static void ReadWithInsufficientData(string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, AsnEncodingRules.DER);
 
-            Assert.Throws<CryptographicException>(() => reader.ReadTagAndLength(out _, out _));
+            Assert.Throws<AsnContentException>(
+                () => ReadTagAndLength(inputData, AsnEncodingRules.DER, out _, out _));
         }
 
         [Theory]
-        [InlineData("DER indefinite constructed", PublicEncodingRules.DER, "3080" + "0500" + "0000")]
-        [InlineData("0xFF-BER", PublicEncodingRules.BER, "04FF")]
-        [InlineData("0xFF-CER", PublicEncodingRules.CER, "04FF")]
-        [InlineData("0xFF-DER", PublicEncodingRules.DER, "04FF")]
-        [InlineData("CER definite constructed", PublicEncodingRules.CER, "30820500")]
-        [InlineData("BER indefinite primitive", PublicEncodingRules.BER, "0480" + "0000")]
-        [InlineData("CER indefinite primitive", PublicEncodingRules.CER, "0480" + "0000")]
-        [InlineData("DER indefinite primitive", PublicEncodingRules.DER, "0480" + "0000")]
-        [InlineData("DER non-minimal 0", PublicEncodingRules.DER, "048100")]
-        [InlineData("DER non-minimal 7F", PublicEncodingRules.DER, "04817F")]
-        [InlineData("DER non-minimal 80", PublicEncodingRules.DER, "04820080")]
-        [InlineData("CER non-minimal 0", PublicEncodingRules.CER, "048100")]
-        [InlineData("CER non-minimal 7F", PublicEncodingRules.CER, "04817F")]
-        [InlineData("CER non-minimal 80", PublicEncodingRules.CER, "04820080")]
-        [InlineData("BER too large", PublicEncodingRules.BER, "048480000000")]
-        [InlineData("CER too large", PublicEncodingRules.CER, "048480000000")]
-        [InlineData("DER too large", PublicEncodingRules.DER, "048480000000")]
-        [InlineData("BER padded too large", PublicEncodingRules.BER, "0486000080000000")]
-        [InlineData("BER uint.MaxValue", PublicEncodingRules.BER, "0484FFFFFFFF")]
-        [InlineData("CER uint.MaxValue", PublicEncodingRules.CER, "0484FFFFFFFF")]
-        [InlineData("DER uint.MaxValue", PublicEncodingRules.DER, "0484FFFFFFFF")]
-        [InlineData("BER padded uint.MaxValue", PublicEncodingRules.BER, "048800000000FFFFFFFF")]
-        [InlineData("BER 5 byte spread", PublicEncodingRules.BER, "04850100000000")]
-        [InlineData("CER 5 byte spread", PublicEncodingRules.CER, "04850100000000")]
-        [InlineData("DER 5 byte spread", PublicEncodingRules.DER, "04850100000000")]
-        [InlineData("BER padded 5 byte spread", PublicEncodingRules.BER, "0486000100000000")]
+        [InlineData("DER indefinite constructed", AsnEncodingRules.DER, "3080" + "0500" + "0000")]
+        [InlineData("0xFF-BER", AsnEncodingRules.BER, "04FF")]
+        [InlineData("0xFF-CER", AsnEncodingRules.CER, "04FF")]
+        [InlineData("0xFF-DER", AsnEncodingRules.DER, "04FF")]
+        [InlineData("CER definite constructed", AsnEncodingRules.CER, "30820500")]
+        [InlineData("BER indefinite primitive", AsnEncodingRules.BER, "0480" + "0000")]
+        [InlineData("CER indefinite primitive", AsnEncodingRules.CER, "0480" + "0000")]
+        [InlineData("DER indefinite primitive", AsnEncodingRules.DER, "0480" + "0000")]
+        [InlineData("DER non-minimal 0", AsnEncodingRules.DER, "048100")]
+        [InlineData("DER non-minimal 7F", AsnEncodingRules.DER, "04817F")]
+        [InlineData("DER non-minimal 80", AsnEncodingRules.DER, "04820080")]
+        [InlineData("CER non-minimal 0", AsnEncodingRules.CER, "048100")]
+        [InlineData("CER non-minimal 7F", AsnEncodingRules.CER, "04817F")]
+        [InlineData("CER non-minimal 80", AsnEncodingRules.CER, "04820080")]
+        [InlineData("BER too large", AsnEncodingRules.BER, "048480000000")]
+        [InlineData("CER too large", AsnEncodingRules.CER, "048480000000")]
+        [InlineData("DER too large", AsnEncodingRules.DER, "048480000000")]
+        [InlineData("BER padded too large", AsnEncodingRules.BER, "0486000080000000")]
+        [InlineData("BER uint.MaxValue", AsnEncodingRules.BER, "0484FFFFFFFF")]
+        [InlineData("CER uint.MaxValue", AsnEncodingRules.CER, "0484FFFFFFFF")]
+        [InlineData("DER uint.MaxValue", AsnEncodingRules.DER, "0484FFFFFFFF")]
+        [InlineData("BER padded uint.MaxValue", AsnEncodingRules.BER, "048800000000FFFFFFFF")]
+        [InlineData("BER 5 byte spread", AsnEncodingRules.BER, "04850100000000")]
+        [InlineData("CER 5 byte spread", AsnEncodingRules.CER, "04850100000000")]
+        [InlineData("DER 5 byte spread", AsnEncodingRules.DER, "04850100000000")]
+        [InlineData("BER padded 5 byte spread", AsnEncodingRules.BER, "0486000100000000")]
         public static void InvalidLengths(
             string description,
-            PublicEncodingRules rules,
+            AsnEncodingRules rules,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)rules);
+            AsnReader reader = new AsnReader(inputData, rules);
 
-            Assert.Throws<CryptographicException>(() => reader.ReadTagAndLength(out _, out _));
+            Assert.Throws<AsnContentException>(
+                () => ReadTagAndLength(inputData, rules, out _, out _));
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        public static void IndefiniteLength(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        public static void IndefiniteLength(AsnEncodingRules ruleSet)
         {
             // SEQUENCE (indefinite)
             //   NULL
             //   End-of-Contents
             byte[] data = { 0x30, 0x80, 0x05, 0x00, 0x00, 0x00 };
-            AsnReader reader = new AsnReader(data, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(data, ruleSet);
 
-            Asn1Tag tag = reader.ReadTagAndLength(out int? length, out int bytesRead);
+            Asn1Tag tag = ReadTagAndLength(
+                data,
+                ruleSet,
+                out int? length,
+                out int bytesRead);
 
             Assert.Equal(2, bytesRead);
             Assert.False(length.HasValue, "length.HasValue");
@@ -144,7 +141,11 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
 
-            Asn1Tag tag = reader.ReadTagAndLength(out int? length, out int bytesRead);
+            Asn1Tag tag = ReadTagAndLength(
+                inputData,
+                AsnEncodingRules.BER,
+                out int? length,
+                out int bytesRead);
 
             Assert.Equal(inputData.Length, bytesRead);
             Assert.Equal(expectedLength, length.Value);
@@ -153,20 +154,23 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, 4, 0, 5, "0483000000" + "0500")]
-        [InlineData(PublicEncodingRules.DER, 1, 1, 2, "0101" + "FF")]
-        [InlineData(PublicEncodingRules.CER, 0x10, null, 2, "3080" + "0500" + "0000")]
+        [InlineData(AsnEncodingRules.BER, 4, 0, 5, "0483000000" + "0500")]
+        [InlineData(AsnEncodingRules.DER, 1, 1, 2, "0101" + "FF")]
+        [InlineData(AsnEncodingRules.CER, 0x10, null, 2, "3080" + "0500" + "0000")]
         public static void ReadWithDataRemaining(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             int tagValue,
             int? expectedLength,
             int expectedBytesRead,
             string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            Asn1Tag tag = reader.ReadTagAndLength(out int? length, out int bytesRead);
+            Asn1Tag tag = ReadTagAndLength(
+                inputData,
+                ruleSet,
+                out int? length,
+                out int bytesRead);
 
             Assert.Equal(expectedBytesRead, bytesRead);
             Assert.Equal(tagValue, tag.TagValue);

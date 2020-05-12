@@ -3,9 +3,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup><!--
-    <Compile Include="Reader\Asn1ReaderTests.cs" />
+  <ItemGroup>
+    <Compile Include="Asn1TagTests.cs" />
     <Compile Include="Reader\ComprehensiveReadTests.cs" />
+    <Compile Include="Reader\OverlappedReads.cs" />
     <Compile Include="Reader\ParseTag.cs" />
     <Compile Include="Reader\PeekTests.cs" />
     <Compile Include="Reader\ReadBitString.cs" />
@@ -28,12 +29,15 @@
     <Compile Include="Reader\ReaderStateTests.cs" />
     <Compile Include="Writer\Asn1WriterTests.cs" />
     <Compile Include="Writer\ComprehensiveWriteTest.cs" />
+    <Compile Include="Writer\PushPopOctetString.cs" />
+    <Compile Include="Writer\SimpleWriterTests.cs" />
     <Compile Include="Writer\PushPopSequence.cs" />
     <Compile Include="Writer\PushPopSetOf.cs" />
     <Compile Include="Writer\WriteBitString.cs" />
     <Compile Include="Writer\WriteBMPString.cs" />
     <Compile Include="Writer\WriteBoolean.cs" />
     <Compile Include="Writer\WriteCharacterString.cs" />
+    <Compile Include="Writer\WriteEncodedValue.cs" />
     <Compile Include="Writer\WriteEnumerated.cs" />
     <Compile Include="Writer\WriteGeneralizedTime.cs" />
     <Compile Include="Writer\WriteIA5String.cs" />
@@ -43,7 +47,7 @@
     <Compile Include="Writer\WriteOctetString.cs" />
     <Compile Include="Writer\WriteObjectIdentifier.cs" />
     <Compile Include="Writer\WriteUtcTime.cs" />
-    <Compile Include="Writer\WriteUtf8String.cs" />-->
+    <Compile Include="Writer\WriteUtf8String.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>

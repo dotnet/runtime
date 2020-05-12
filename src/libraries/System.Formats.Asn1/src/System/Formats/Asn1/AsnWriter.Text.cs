@@ -4,196 +4,126 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
         /// <summary>
-        ///   Write the provided string using the specified encoding type using the UNIVERSAL
+        ///   Write the provided string using the specified encoding type using the specified
         ///   tag corresponding to the encoding type.
         /// </summary>
         /// <param name="encodingType">
-        ///   The <see cref="UniversalTagNumber"/> corresponding to the encoding to use.
+        ///   One of the enumeration values representing the encoding to use.
         /// </param>
-        /// <param name="str">The string to write.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="str"/> is <c>null</c></exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="encodingType"/> is not a restricted character string encoding type --OR--
-        ///   <paramref name="encodingType"/> is a restricted character string encoding type that is not
-        ///   currently supported by this method
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteCharacterString(Asn1Tag,UniversalTagNumber,string)"/>
-        public void WriteCharacterString(UniversalTagNumber encodingType, string str)
-        {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
-
-            WriteCharacterString(encodingType, str.AsSpan());
-        }
-
-        /// <summary>
-        ///   Write the provided string using the specified encoding type using the UNIVERSAL
-        ///   tag corresponding to the encoding type.
-        /// </summary>
-        /// <param name="encodingType">
-        ///   The <see cref="UniversalTagNumber"/> corresponding to the encoding to use.
+        /// <param name="value">The string to write.</param>
+        /// <param name="tag">
+        ///   The tag to write, or <see langword="null"/> for the universal tag that is appropriate to
+        ///   the requested encoding type.
         /// </param>
-        /// <param name="str">The string to write.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="encodingType"/> is not a restricted character string encoding type --OR--
+        ///   <paramref name="encodingType"/> is not a restricted character string encoding type.
+        ///
+        ///   -or-
+        ///
         ///   <paramref name="encodingType"/> is a restricted character string encoding type that is not
-        ///   currently supported by this method
+        ///   currently supported by this method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteCharacterString(Asn1Tag,UniversalTagNumber,ReadOnlySpan{char})"/>
-        public void WriteCharacterString(UniversalTagNumber encodingType, ReadOnlySpan<char> str)
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        public void WriteCharacterString(UniversalTagNumber encodingType, string value, Asn1Tag? tag = null)
         {
-            Text.Encoding encoding = AsnCharacterStringEncodings.GetEncoding(encodingType);
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
-            WriteCharacterStringCore(new Asn1Tag(encodingType), encoding, str);
+            WriteCharacterString(encodingType, value.AsSpan(), tag);
         }
 
         /// <summary>
         ///   Write the provided string using the specified encoding type using the specified
         ///   tag corresponding to the encoding type.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
         /// <param name="encodingType">
-        ///   The <see cref="UniversalTagNumber"/> corresponding to the encoding to use.
+        ///   One of the enumeration values representing the encoding to use.
         /// </param>
         /// <param name="str">The string to write.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="str"/> is <c>null</c></exception>
+        /// <param name="tag">
+        ///   The tag to write, or <see langword="null"/> for the universal tag that is appropriate to
+        ///   the requested encoding type.
+        /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="encodingType"/> is not a restricted character string encoding type --OR--
+        ///   <paramref name="encodingType"/> is not a restricted character string encoding type.
+        ///
+        ///   -or-
+        ///
         ///   <paramref name="encodingType"/> is a restricted character string encoding type that is not
-        ///   currently supported by this method
+        ///   currently supported by this method.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteCharacterString(Asn1Tag tag, UniversalTagNumber encodingType, string str)
-        {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
-
-            WriteCharacterString(tag, encodingType, str.AsSpan());
-        }
-
-        /// <summary>
-        ///   Write the provided string using the specified encoding type using the specified
-        ///   tag corresponding to the encoding type.
-        /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="encodingType">
-        ///   The <see cref="UniversalTagNumber"/> corresponding to the encoding to use.
-        /// </param>
-        /// <param name="str">The string to write.</param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="encodingType"/> is not a restricted character string encoding type --OR--
-        ///   <paramref name="encodingType"/> is a restricted character string encoding type that is not
-        ///   currently supported by this method
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteCharacterString(Asn1Tag tag, UniversalTagNumber encodingType, ReadOnlySpan<char> str)
+        public void WriteCharacterString(UniversalTagNumber encodingType, ReadOnlySpan<char> str, Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, encodingType);
 
             Text.Encoding encoding = AsnCharacterStringEncodings.GetEncoding(encodingType);
-            WriteCharacterStringCore(tag, encoding, str);
+            WriteCharacterStringCore(tag ?? new Asn1Tag(encodingType), encoding, str);
         }
 
         // T-REC-X.690-201508 sec 8.23
         private void WriteCharacterStringCore(Asn1Tag tag, Text.Encoding encoding, ReadOnlySpan<char> str)
         {
-            int size = -1;
+            int size = encoding.GetByteCount(str);
 
             // T-REC-X.690-201508 sec 9.2
             if (RuleSet == AsnEncodingRules.CER)
             {
-                // TODO: Split this for netstandard vs netcoreapp for span?.
-                unsafe
+                // If it exceeds the primitive segment size, use the constructed encoding.
+                if (size > AsnReader.MaxCERSegmentSize)
                 {
-                    fixed (char* strPtr = &MemoryMarshal.GetReference(str))
-                    {
-                        size = encoding.GetByteCount(strPtr, str.Length);
-
-                        // If it exceeds the primitive segment size, use the constructed encoding.
-                        if (size > AsnReader.MaxCERSegmentSize)
-                        {
-                            WriteConstructedCerCharacterString(tag, encoding, str, size);
-                            return;
-                        }
-                    }
+                    WriteConstructedCerCharacterString(tag, encoding, str, size);
+                    return;
                 }
             }
 
-            // TODO: Split this for netstandard vs netcoreapp for span?.
-            unsafe
+            // Clear the constructed tag, if present.
+            WriteTag(tag.AsPrimitive());
+            WriteLength(size);
+            Span<byte> dest = _buffer.AsSpan(_offset, size);
+
+            int written = encoding.GetBytes(str, dest);
+
+            if (written != size)
             {
-                fixed (char* strPtr = &MemoryMarshal.GetReference(str))
-                {
-                    if (size < 0)
-                    {
-                        size = encoding.GetByteCount(strPtr, str.Length);
-                    }
-
-                    // Clear the constructed tag, if present.
-                    WriteTag(tag.AsPrimitive());
-                    WriteLength(size);
-                    Span<byte> dest = _buffer.AsSpan(_offset, size);
-
-                    fixed (byte* destPtr = &MemoryMarshal.GetReference(dest))
-                    {
-                        int written = encoding.GetBytes(strPtr, str.Length, destPtr, dest.Length);
-
-                        if (written != size)
-                        {
-                            Debug.Fail($"Encoding produced different answer for GetByteCount ({size}) and GetBytes ({written})");
-                            throw new InvalidOperationException();
-                        }
-                    }
-
-                    _offset += size;
-                }
+                Debug.Fail(
+                    $"Encoding produced different answer for GetByteCount ({size}) and GetBytes ({written})");
+                throw new InvalidOperationException();
             }
+
+            _offset += size;
         }
 
         private void WriteConstructedCerCharacterString(Asn1Tag tag, Text.Encoding encoding, ReadOnlySpan<char> str, int size)
         {
             Debug.Assert(size > AsnReader.MaxCERSegmentSize);
 
-            byte[] tmp;
+            byte[] tmp = CryptoPool.Rent(size);
+            int written = encoding.GetBytes(str, tmp);
 
-            unsafe
+            if (written != size)
             {
-                fixed (char* strPtr = &MemoryMarshal.GetReference(str))
-                {
-                    tmp = CryptoPool.Rent(size);
-
-                    fixed (byte* destPtr = tmp)
-                    {
-                        int written = encoding.GetBytes(strPtr, str.Length, destPtr, tmp.Length);
-
-                        if (written != size)
-                        {
-                            Debug.Fail(
-                                $"Encoding produced different answer for GetByteCount ({size}) and GetBytes ({written})");
-                            throw new InvalidOperationException();
-                        }
-                    }
-                }
+                Debug.Fail(
+                    $"Encoding produced different answer for GetByteCount ({size}) and GetBytes ({written})");
+                throw new InvalidOperationException();
             }
 
             WriteConstructedCerOctetString(tag, tmp.AsSpan(0, size));

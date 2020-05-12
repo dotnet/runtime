@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
     /// <summary>
     ///   Tag assignments for the UNIVERSAL class in ITU-T X.680.
     /// </summary>
     // ITU-T-REC.X.680-201508 sec 8.6
-    internal enum UniversalTagNumber
+    public enum UniversalTagNumber
     {
         /// <summary>
         ///   The reserved identifier for the End-of-Contents marker in an indefinite

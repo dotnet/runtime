@@ -2,107 +2,112 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Asn1
+using System.Collections;
+using System.Diagnostics;
+using System.Security.Cryptography;
+
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
         /// <summary>
         ///   Write a [<see cref="FlagsAttribute"/>] enum value as a NamedBitList with
-        ///   tag UNIVERSAL 3.
+        ///   a specified tag.
         /// </summary>
-        /// <param name="enumValue">The boxed enumeration value to write</param>
+        /// <param name="value">The boxed enumeration value to write</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 3).</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="value"/> is not a boxed enum value.
+        ///
+        ///   -or-
+        ///
+        ///   the unboxed type of <paramref name="value"/> is not declared [<see cref="FlagsAttribute"/>].
+        /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="enumValue"/> is <c>null</c>
+        ///   <paramref name="value"/> is <see langword="null"/>.
         /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="enumValue"/> is not a boxed enum value --OR--
-        ///   the unboxed type of <paramref name="enumValue"/> is not declared [<see cref="FlagsAttribute"/>]
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteNamedBitList(Asn1Tag,object)"/>
-        /// <seealso cref="WriteNamedBitList{T}(T)"/>
-        public void WriteNamedBitList(object enumValue)
+        public void WriteNamedBitList(Enum value, Asn1Tag? tag = null)
         {
-            if (enumValue == null)
-                throw new ArgumentNullException(nameof(enumValue));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
-            WriteNamedBitList(Asn1Tag.PrimitiveBitString, enumValue);
-        }
+            CheckUniversalTag(tag, UniversalTagNumber.BitString);
 
-        /// <summary>
-        ///   Write a [<see cref="FlagsAttribute"/>] enum value as a NamedBitList with
-        ///   tag UNIVERSAL 3.
-        /// </summary>
-        /// <param name="enumValue">The enumeration value to write</param>
-        /// <exception cref="ArgumentException">
-        ///   <typeparamref name="TEnum"/> is not an enum value --OR--
-        ///   <typeparamref name="TEnum"/> is not declared [<see cref="FlagsAttribute"/>]
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteNamedBitList{T}(Asn1Tag,T)"/>
-        public void WriteNamedBitList<TEnum>(TEnum enumValue) where TEnum : struct
-        {
-            WriteNamedBitList(Asn1Tag.PrimitiveBitString, enumValue);
+            WriteNamedBitList(tag, value.GetType(), value);
         }
 
         /// <summary>
         ///   Write a [<see cref="FlagsAttribute"/>] enum value as a NamedBitList with
         ///   a specified tag.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="enumValue">The boxed enumeration value to write</param>
+        /// <param name="value">The enumeration value to write</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 3).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method --OR--
-        ///   <paramref name="enumValue"/> is not a boxed enum value --OR--
-        ///   the unboxed type of <paramref name="enumValue"/> is not declared [<see cref="FlagsAttribute"/>]
+        ///   the method.
+        ///
+        ///   -or-
+        ///
+        ///   <typeparamref name="TEnum"/> is not an enum value.
+        ///
+        ///   -or-
+        ///
+        ///   <typeparamref name="TEnum"/> is not declared [<see cref="FlagsAttribute"/>].
         /// </exception>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="enumValue"/> is <c>null</c>
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteNamedBitList(Asn1Tag tag, object enumValue)
+        public void WriteNamedBitList<TEnum>(TEnum value, Asn1Tag? tag = null) where TEnum : Enum
         {
-            if (enumValue == null)
-                throw new ArgumentNullException(nameof(enumValue));
-
             CheckUniversalTag(tag, UniversalTagNumber.BitString);
 
-            WriteNamedBitList(tag, enumValue.GetType(), enumValue);
+            WriteNamedBitList(tag, typeof(TEnum), value);
         }
 
         /// <summary>
-        ///   Write a [<see cref="FlagsAttribute"/>] enum value as a NamedBitList with
-        ///   a specified tag.
+        ///   Write a bit array value as a NamedBitList with a specified tag.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
-        /// <param name="enumValue">The enumeration value to write</param>
+        /// <param name="value">The bits to write</param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 3).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method --OR--
-        ///   <typeparamref name="TEnum"/> is not an enum value --OR--
-        ///   <typeparamref name="TEnum"/> is not declared [<see cref="FlagsAttribute"/>]
+        ///   the method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        public void WriteNamedBitList<TEnum>(Asn1Tag tag, TEnum enumValue) where TEnum : struct
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="value"/> is <see langword="null"/>.
+        /// </exception>
+        /// <remarks>
+        ///   The index of the bit array corresponds to the bit number in the encoded format, which is
+        ///   different than the value produced by <see cref="BitArray.CopyTo"/> with a byte array.
+        ///   For example, the bit array <c>{ false, true, true }</c> encodes as <c>0b0110_0000</c> with 5
+        ///   unused bits.
+        /// </remarks>
+        public void WriteNamedBitList(BitArray value, Asn1Tag? tag = null)
         {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
             CheckUniversalTag(tag, UniversalTagNumber.BitString);
 
-            WriteNamedBitList(tag, typeof(TEnum), enumValue);
+            WriteBitArray(value, tag);
         }
 
-        private void WriteNamedBitList(Asn1Tag tag, Type tEnum, object enumValue)
+        private void WriteNamedBitList(Asn1Tag? tag, Type tEnum, Enum value)
         {
             Type backingType = tEnum.GetEnumUnderlyingType();
 
             if (!tEnum.IsDefined(typeof(FlagsAttribute), false))
             {
                 throw new ArgumentException(
-                    SR.Cryptography_Asn_NamedBitListRequiresFlagsEnum,
+                    SR.Argument_NamedBitListRequiresFlagsEnum,
                     nameof(tEnum));
             }
 
@@ -110,12 +115,12 @@ namespace System.Security.Cryptography.Asn1
 
             if (backingType == typeof(ulong))
             {
-                integralValue = Convert.ToUInt64(enumValue);
+                integralValue = Convert.ToUInt64(value);
             }
             else
             {
                 // All other types fit in a (signed) long.
-                long numericValue = Convert.ToInt64(enumValue);
+                long numericValue = Convert.ToInt64(value);
                 integralValue = unchecked((ulong)numericValue);
             }
 
@@ -124,7 +129,7 @@ namespace System.Security.Cryptography.Asn1
 
         // T-REC-X.680-201508 sec 22
         // T-REC-X.690-201508 sec 8.6, 11.2.2
-        private void WriteNamedBitList(Asn1Tag tag, ulong integralValue)
+        private void WriteNamedBitList(Asn1Tag? tag, ulong integralValue)
         {
             Span<byte> temp = stackalloc byte[sizeof(ulong)];
             // Reset to all zeros, since we're just going to or-in bits we need.
@@ -145,7 +150,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 // No bits were set; this is an empty bit string.
                 // T-REC-X.690-201508 sec 11.2.2-note2
-                WriteBitString(tag, ReadOnlySpan<byte>.Empty);
+                WriteBitString(ReadOnlySpan<byte>.Empty, tag: tag);
             }
             else
             {
@@ -159,10 +164,36 @@ namespace System.Security.Cryptography.Asn1
                 int unusedBitCount = 7 - (indexOfHighestSetBit % 8);
 
                 WriteBitString(
-                    tag,
                     temp.Slice(0, byteLen),
-                    unusedBitCount);
+                    unusedBitCount,
+                    tag);
             }
+        }
+
+        private void WriteBitArray(BitArray value, Asn1Tag? tag)
+        {
+            if (value.Count == 0)
+            {
+                // No bits were set; this is an empty bit string.
+                // T-REC-X.690-201508 sec 11.2.2-note2
+                WriteBitString(ReadOnlySpan<byte>.Empty, tag: tag);
+                return;
+            }
+
+            int requiredBytes = checked((value.Count + 7) / 8);
+            int unusedBits = requiredBytes * 8 - value.Count;
+            byte[] rented = CryptoPool.Rent(requiredBytes);
+
+            // Export the BitArray to a byte array.
+            // While bits 0-7 are in the first byte, they are numbered 76543210,
+            // but our wire form is 01234567, so we'll need to reverse the bits on each byte.
+            value.CopyTo(rented, 0);
+
+            Span<byte> valueSpan = rented.AsSpan(0, requiredBytes);
+            AsnDecoder.ReverseBitsPerByte(valueSpan);
+
+            WriteBitString(valueSpan, unusedBits, tag);
+            CryptoPool.Return(rented, requiredBytes);
         }
     }
 }

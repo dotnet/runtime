@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal partial struct Asn1Tag
+    public partial struct Asn1Tag
     {
         /// <summary>
         ///   Represents the End-of-Contents meta-tag.
         /// </summary>
-        public static readonly Asn1Tag EndOfContents = new Asn1Tag(0, (int)UniversalTagNumber.EndOfContents);
+        internal static readonly Asn1Tag EndOfContents = new Asn1Tag(0, (int)UniversalTagNumber.EndOfContents);
 
         /// <summary>
         ///   Represents the universal class tag for a Boolean value.

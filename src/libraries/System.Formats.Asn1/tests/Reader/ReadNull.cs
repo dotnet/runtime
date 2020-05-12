@@ -2,63 +2,62 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadNull : Asn1ReaderTests
+    public sealed class ReadNull
     {
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "0500")]
-        [InlineData(PublicEncodingRules.CER, "0500")]
-        [InlineData(PublicEncodingRules.DER, "0500")]
-        [InlineData(PublicEncodingRules.BER, "0583000000")]
-        public static void ReadNull_Success(PublicEncodingRules ruleSet, string inputHex)
+        [InlineData(AsnEncodingRules.BER, "0500")]
+        [InlineData(AsnEncodingRules.CER, "0500")]
+        [InlineData(AsnEncodingRules.DER, "0500")]
+        [InlineData(AsnEncodingRules.BER, "0583000000")]
+        public static void ReadNull_Success(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             reader.ReadNull();
             Assert.False(reader.HasData, "reader.HasData");
         }
 
         [Theory]
-        [InlineData("Long length", PublicEncodingRules.CER, "0583000000")]
-        [InlineData("Long length", PublicEncodingRules.DER, "0583000000")]
-        [InlineData("Constructed definite length", PublicEncodingRules.BER, "2500")]
-        [InlineData("Constructed definite length", PublicEncodingRules.DER, "2500")]
-        [InlineData("Constructed indefinite length", PublicEncodingRules.BER, "25800000")]
-        [InlineData("Constructed indefinite length", PublicEncodingRules.CER, "25800000")]
-        [InlineData("No length", PublicEncodingRules.BER, "05")]
-        [InlineData("No length", PublicEncodingRules.CER, "05")]
-        [InlineData("No length", PublicEncodingRules.DER, "05")]
-        [InlineData("No data", PublicEncodingRules.BER, "")]
-        [InlineData("No data", PublicEncodingRules.CER, "")]
-        [InlineData("No data", PublicEncodingRules.DER, "")]
-        [InlineData("NonEmpty", PublicEncodingRules.BER, "050100")]
-        [InlineData("NonEmpty", PublicEncodingRules.CER, "050100")]
-        [InlineData("NonEmpty", PublicEncodingRules.DER, "050100")]
-        [InlineData("Incomplete length", PublicEncodingRules.BER, "0581")]
-        public static void ReadNull_Throws(string description, PublicEncodingRules ruleSet, string inputHex)
+        [InlineData("Long length", AsnEncodingRules.CER, "0583000000")]
+        [InlineData("Long length", AsnEncodingRules.DER, "0583000000")]
+        [InlineData("Constructed definite length", AsnEncodingRules.BER, "2500")]
+        [InlineData("Constructed definite length", AsnEncodingRules.DER, "2500")]
+        [InlineData("Constructed indefinite length", AsnEncodingRules.BER, "25800000")]
+        [InlineData("Constructed indefinite length", AsnEncodingRules.CER, "25800000")]
+        [InlineData("No length", AsnEncodingRules.BER, "05")]
+        [InlineData("No length", AsnEncodingRules.CER, "05")]
+        [InlineData("No length", AsnEncodingRules.DER, "05")]
+        [InlineData("No data", AsnEncodingRules.BER, "")]
+        [InlineData("No data", AsnEncodingRules.CER, "")]
+        [InlineData("No data", AsnEncodingRules.DER, "")]
+        [InlineData("NonEmpty", AsnEncodingRules.BER, "050100")]
+        [InlineData("NonEmpty", AsnEncodingRules.CER, "050100")]
+        [InlineData("NonEmpty", AsnEncodingRules.DER, "050100")]
+        [InlineData("Incomplete length", AsnEncodingRules.BER, "0581")]
+        public static void ReadNull_Throws(string description, AsnEncodingRules ruleSet, string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-            Assert.Throws<CryptographicException>(() => reader.ReadNull());
+            Assert.Throws<AsnContentException>(() => reader.ReadNull());
         }
 
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 5, 0 };
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
@@ -66,7 +65,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.ReadNull(new Asn1Tag(TagClass.ContextSpecific, 0)));
+            Assert.Throws<AsnContentException>(() => reader.ReadNull(new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
@@ -75,13 +74,13 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER)]
-        [InlineData(PublicEncodingRules.CER)]
-        [InlineData(PublicEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(PublicEncodingRules ruleSet)
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x87, 0 };
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
@@ -89,15 +88,15 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.ReadNull());
+            Assert.Throws<AsnContentException>(() => reader.ReadNull());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
-            Assert.Throws<CryptographicException>(() => reader.ReadNull(new Asn1Tag(TagClass.Application, 0)));
+            Assert.Throws<AsnContentException>(() => reader.ReadNull(new Asn1Tag(TagClass.Application, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
-            Assert.Throws<CryptographicException>(() => reader.ReadNull(new Asn1Tag(TagClass.ContextSpecific, 1)));
+            Assert.Throws<AsnContentException>(() => reader.ReadNull(new Asn1Tag(TagClass.ContextSpecific, 1)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
@@ -106,25 +105,25 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, "0500", PublicTagClass.Universal, 5)]
-        [InlineData(PublicEncodingRules.CER, "0500", PublicTagClass.Universal, 5)]
-        [InlineData(PublicEncodingRules.DER, "0500", PublicTagClass.Universal, 5)]
-        [InlineData(PublicEncodingRules.BER, "8000", PublicTagClass.ContextSpecific, 0)]
-        [InlineData(PublicEncodingRules.CER, "4C00", PublicTagClass.Application, 12)]
-        [InlineData(PublicEncodingRules.DER, "DF8A4600", PublicTagClass.Private, 1350)]
+        [InlineData(AsnEncodingRules.BER, "0500", TagClass.Universal, 5)]
+        [InlineData(AsnEncodingRules.CER, "0500", TagClass.Universal, 5)]
+        [InlineData(AsnEncodingRules.DER, "0500", TagClass.Universal, 5)]
+        [InlineData(AsnEncodingRules.BER, "8000", TagClass.ContextSpecific, 0)]
+        [InlineData(AsnEncodingRules.CER, "4C00", TagClass.Application, 12)]
+        [InlineData(AsnEncodingRules.DER, "DF8A4600", TagClass.Private, 1350)]
         public static void ExpectedTag_IgnoresConstructed(
-            PublicEncodingRules ruleSet,
+            AsnEncodingRules ruleSet,
             string inputHex,
-            PublicTagClass tagClass,
+            TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            reader.ReadNull(new Asn1Tag((TagClass)tagClass, tagValue, true));
+            AsnReader reader = new AsnReader(inputData, ruleSet);
+            reader.ReadNull(new Asn1Tag(tagClass, tagValue, true));
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            reader.ReadNull(new Asn1Tag((TagClass)tagClass, tagValue, false));
+            reader = new AsnReader(inputData, ruleSet);
+            reader.ReadNull(new Asn1Tag(tagClass, tagValue, false));
             Assert.False(reader.HasData);
         }
     }

@@ -2,94 +2,108 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
+using System.Security.Cryptography;
 
-#nullable enable
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal ref partial struct AsnValueReader
+    public static partial class AsnDecoder
     {
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, returning the contents
-        ///   as a <see cref="ReadOnlySpan{T}"/> over the original data.
+        ///   Reads an Integer value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules, returning the contents as a slice of the buffer.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
+        /// </param>
         /// <returns>
-        ///   The bytes of the Integer value, in signed big-endian form.
+        ///   The slice of the buffer containing the bytes of the Integer value, in signed big-endian form.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public ReadOnlySpan<byte> ReadIntegerBytes() =>
-            ReadIntegerBytes(Asn1Tag.Integer);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, returning the contents
-        ///   as a <see cref="ReadOnlySpan{T}"/> over the original data.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <returns>
-        ///   The bytes of the Integer value, in signed big-endian form.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public ReadOnlySpan<byte> ReadIntegerBytes(Asn1Tag expectedTag)
+        public static ReadOnlySpan<byte> ReadIntegerBytes(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            ReadOnlySpan<byte> contents =
-                GetIntegerContents(expectedTag, UniversalTagNumber.Integer, out int headerLength);
-
-            _data = _data.Slice(headerLength + contents.Length);
-            return contents;
+            return GetIntegerContents(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.Integer,
+                UniversalTagNumber.Integer,
+                out bytesConsumed);
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, returning the contents
-        ///   as a <see cref="BigInteger"/>.
+        ///   Reads an Integer value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
+        /// </param>
         /// <returns>
-        ///   The bytes of the Integer value, in signed big-endian form.
+        ///   The decoded numeric value.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public BigInteger ReadInteger() => ReadInteger(Asn1Tag.Integer);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, returning the contents
-        ///   as a <see cref="BigInteger"/> over the original data.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <returns>
-        ///   The bytes of the Integer value, in signed big-endian form.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public BigInteger ReadInteger(Asn1Tag expectedTag)
+        public static BigInteger ReadInteger(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            ReadOnlySpan<byte> contents =
-                GetIntegerContents(expectedTag, UniversalTagNumber.Integer, out int headerLength);
+            ReadOnlySpan<byte> contents = ReadIntegerBytes(source, ruleSet, out int consumed, expectedTag);
 
             // TODO: Split this for netcoreapp/netstandard to use the Big-Endian BigInteger parsing
             byte[] tmp = CryptoPool.Rent(contents.Length);
@@ -112,57 +126,67 @@ namespace System.Security.Cryptography.Asn1
                 CryptoPool.Return(tmp);
             }
 
-            _data = _data.Slice(headerLength + contents.Length);
+            bytesConsumed = consumed;
             return value;
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as an <see cref="int"/>.
+        ///   Attempts to read an Integer value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules as a signed 32-bit value.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="value">
-        ///   On success, receives the <see cref="int"/> value represented
+        ///   On success, receives the interpreted numeric value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
         /// </param>
         /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
+        ///   <see langword="true"/> if the Integer represents value is between
+        ///   <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, inclusive; otherwise,
+        ///   <see langword="false"/>.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public bool TryReadInt32(out int value) =>
-            TryReadInt32(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as an <see cref="int"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="int"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public bool TryReadInt32(Asn1Tag expectedTag, out int value)
+        public static bool TryReadInt32(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int value,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            if (TryReadSignedInteger(sizeof(int), expectedTag, UniversalTagNumber.Integer, out long longValue))
+            if (TryReadSignedInteger(
+                source,
+                ruleSet,
+                sizeof(int),
+                expectedTag ?? Asn1Tag.Integer,
+                UniversalTagNumber.Integer,
+                out long longValue,
+                out bytesConsumed))
             {
                 value = (int)longValue;
                 return true;
@@ -173,52 +197,63 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="uint"/>.
+        ///   Attempts to read an Integer value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules as an unsigned 32-bit value.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="value">
-        ///   On success, receives the <see cref="uint"/> value represented
+        ///   On success, receives the interpreted numeric value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
         /// </param>
         /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="uint.MinValue"/> and <see cref="uint.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
+        ///   <see langword="true"/> if the Integer represents value is between
+        ///   <see cref="uint.MinValue"/> and <see cref="uint.MaxValue"/>, inclusive; otherwise,
+        ///   <see langword="false"/>.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public bool TryReadUInt32(out uint value) =>
-            TryReadUInt32(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as a <see cref="uint"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="uint"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="uint.MinValue"/> and <see cref="uint.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public bool TryReadUInt32(Asn1Tag expectedTag, out uint value)
+        [CLSCompliant(false)]
+        public static bool TryReadUInt32(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out uint value,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            if (TryReadUnsignedInteger(sizeof(uint), expectedTag, UniversalTagNumber.Integer, out ulong ulongValue))
+            if (TryReadUnsignedInteger(
+                source,
+                ruleSet,
+                sizeof(uint),
+                expectedTag ?? Asn1Tag.Integer,
+                UniversalTagNumber.Integer,
+                out ulong ulongValue,
+                out bytesConsumed))
             {
                 value = (uint)ulongValue;
                 return true;
@@ -229,374 +264,184 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="long"/>.
+        ///   Attempts to read an Integer value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules as a signed 64-bit value.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="value">
-        ///   On success, receives the <see cref="long"/> value represented
+        ///   On success, receives the interpreted numeric value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
         /// </param>
         /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="long.MinValue"/> and <see cref="long.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
+        ///   <see langword="true"/> if the Integer represents value is between
+        ///   <see cref="long.MinValue"/> and <see cref="long.MaxValue"/>, inclusive; otherwise,
+        ///   <see langword="false"/>.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public bool TryReadInt64(out long value) =>
-            TryReadInt64(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as an <see cref="long"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="long"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="long.MinValue"/> and <see cref="long.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public bool TryReadInt64(Asn1Tag expectedTag, out long value)
+        public static bool TryReadInt64(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out long value,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            return TryReadSignedInteger(sizeof(long), expectedTag, UniversalTagNumber.Integer, out value);
+            return TryReadSignedInteger(
+                source,
+                ruleSet,
+                sizeof(long),
+                expectedTag ?? Asn1Tag.Integer,
+                UniversalTagNumber.Integer,
+                out value,
+                out bytesConsumed);
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="ulong"/>.
+        ///   Attempts to read an Integer value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules as an unsigned 64-bit value.
         /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="value">
-        ///   On success, receives the <see cref="ulong"/> value represented
+        ///   On success, receives the interpreted numeric value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
         /// </param>
         /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="ulong.MinValue"/> and <see cref="ulong.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
+        ///   <see langword="true"/> if the Integer represents value is between
+        ///   <see cref="ulong.MinValue"/> and <see cref="ulong.MaxValue"/>, inclusive; otherwise,
+        ///   <see langword="false"/>.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public bool TryReadUInt64(out ulong value) =>
-            TryReadUInt64(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as a <see cref="ulong"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="ulong"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="ulong.MinValue"/> and <see cref="ulong.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public bool TryReadUInt64(Asn1Tag expectedTag, out ulong value)
+        [CLSCompliant(false)]
+        public static bool TryReadUInt64(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out ulong value,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            return TryReadUnsignedInteger(sizeof(ulong), expectedTag, UniversalTagNumber.Integer, out value);
+            return TryReadUnsignedInteger(
+                source,
+                ruleSet,
+                sizeof(ulong),
+                expectedTag ?? Asn1Tag.Integer,
+                UniversalTagNumber.Integer,
+                out value,
+                out bytesConsumed);
         }
 
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="short"/>.
-        /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="short"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="short.MinValue"/> and <see cref="short.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadInt16(out short value) =>
-            TryReadInt16(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as an <see cref="short"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="short"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="short.MinValue"/> and <see cref="short.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public bool TryReadInt16(Asn1Tag expectedTag, out short value)
-        {
-            if (TryReadSignedInteger(sizeof(short), expectedTag, UniversalTagNumber.Integer, out long longValue))
-            {
-                value = (short)longValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="ushort"/>.
-        /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="ushort"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="ushort.MinValue"/> and <see cref="ushort.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadUInt16(out ushort value) =>
-            TryReadUInt16(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as a <see cref="ushort"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="ushort"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="ushort.MinValue"/> and <see cref="ushort.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public bool TryReadUInt16(Asn1Tag expectedTag, out ushort value)
-        {
-            if (TryReadUnsignedInteger(sizeof(ushort), expectedTag, UniversalTagNumber.Integer, out ulong ulongValue))
-            {
-                value = (ushort)ulongValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as an <see cref="sbyte"/>.
-        /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="sbyte"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="sbyte.MinValue"/> and <see cref="sbyte.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadInt8(out sbyte value) =>
-            TryReadInt8(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as an <see cref="sbyte"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="sbyte"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="sbyte.MinValue"/> and <see cref="sbyte.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the Integer value is not valid
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public bool TryReadInt8(Asn1Tag expectedTag, out sbyte value)
-        {
-            if (TryReadSignedInteger(sizeof(sbyte), expectedTag, UniversalTagNumber.Integer, out long longValue))
-            {
-                value = (sbyte)longValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="byte"/>.
-        /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="byte"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="byte.MinValue"/> and <see cref="byte.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadUInt8(out byte value) =>
-            TryReadUInt8(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as a <see cref="byte"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="byte"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="byte.MinValue"/> and <see cref="byte.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public bool TryReadUInt8(Asn1Tag expectedTag, out byte value)
-        {
-            if (TryReadUnsignedInteger(sizeof(byte), expectedTag, UniversalTagNumber.Integer, out ulong ulongValue))
-            {
-                value = (byte)ulongValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        private ReadOnlySpan<byte> GetIntegerContents(
+        private static ReadOnlySpan<byte> GetIntegerContents(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             Asn1Tag expectedTag,
             UniversalTagNumber tagNumber,
-            out int headerLength)
+            out int bytesConsumed)
         {
-            Asn1Tag tag = ReadTagAndLength(out int? length, out headerLength);
-            CheckExpectedTag(tag, expectedTag, tagNumber);
+            // T-REC-X.690-201508 sec 8.3.1
+            ReadOnlySpan<byte> contents = GetPrimitiveContentSpan(
+                source,
+                ruleSet,
+                expectedTag,
+                tagNumber,
+                out int consumed);
 
             // T-REC-X.690-201508 sec 8.3.1
-            if (tag.IsConstructed || length < 1)
+            if (contents.IsEmpty)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException();
             }
 
-            // Slice first so that an out of bounds value triggers a CryptographicException.
-            ReadOnlySpan<byte> contents = Slice(_data, headerLength, length!.Value);
-
             // T-REC-X.690-201508 sec 8.3.2
-            if (contents.Length > 1)
+            if (BinaryPrimitives.TryReadUInt16BigEndian(contents, out ushort bigEndianValue))
             {
-                ushort bigEndianValue = (ushort)(contents[0] << 8 | contents[1]);
                 const ushort RedundancyMask = 0b1111_1111_1000_0000;
                 ushort masked = (ushort)(bigEndianValue & RedundancyMask);
 
                 // If the first 9 bits are all 0 or are all 1, the value is invalid.
                 if (masked == 0 || masked == RedundancyMask)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new AsnContentException();
                 }
             }
 
+            bytesConsumed = consumed;
             return contents;
         }
 
-        internal bool TryReadSignedInteger(
+        private static bool TryReadSignedInteger(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             int sizeLimit,
             Asn1Tag expectedTag,
             UniversalTagNumber tagNumber,
-            out long value)
+            out long value,
+            out int bytesConsumed)
         {
             Debug.Assert(sizeLimit <= sizeof(long));
 
-            ReadOnlySpan<byte> contents = GetIntegerContents(expectedTag, tagNumber, out int headerLength);
+            ReadOnlySpan<byte> contents = GetIntegerContents(
+                source,
+                ruleSet,
+                expectedTag,
+                tagNumber,
+                out int consumed);
 
             if (contents.Length > sizeLimit)
             {
                 value = 0;
+                bytesConsumed = 0;
                 return false;
             }
 
@@ -609,26 +454,34 @@ namespace System.Security.Cryptography.Asn1
                 accum |= contents[i];
             }
 
-            _data = _data.Slice(headerLength + contents.Length);
+            bytesConsumed = consumed;
             value = accum;
             return true;
         }
 
-        internal bool TryReadUnsignedInteger(
+        private static bool TryReadUnsignedInteger(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
             int sizeLimit,
             Asn1Tag expectedTag,
             UniversalTagNumber tagNumber,
-            out ulong value)
+            out ulong value,
+            out int bytesConsumed)
         {
             Debug.Assert(sizeLimit <= sizeof(ulong));
 
-            ReadOnlySpan<byte> contents = GetIntegerContents(expectedTag, tagNumber, out int headerLength);
-            int contentLength = contents.Length;
+            ReadOnlySpan<byte> contents = GetIntegerContents(
+                source,
+                ruleSet,
+                expectedTag,
+                tagNumber,
+                out int consumed);
 
             bool isNegative = (contents[0] & 0x80) != 0;
 
             if (isNegative)
             {
+                bytesConsumed = 0;
                 value = 0;
                 return false;
             }
@@ -641,6 +494,7 @@ namespace System.Security.Cryptography.Asn1
 
             if (contents.Length > sizeLimit)
             {
+                bytesConsumed = 0;
                 value = 0;
                 return false;
             }
@@ -653,565 +507,241 @@ namespace System.Security.Cryptography.Asn1
                 accum |= contents[i];
             }
 
-            _data = _data.Slice(headerLength + contentLength);
+            bytesConsumed = consumed;
             value = accum;
             return true;
         }
     }
 
-    internal partial class AsnReader
+    public partial class AsnReader
     {
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, returning the contents
-        ///   as a <see cref="ReadOnlyMemory{T}"/> over the original data.
-        /// </summary>
-        /// <returns>
-        ///   The bytes of the Integer value, in signed big-endian form.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public ReadOnlyMemory<byte> ReadIntegerBytes() =>
-            ReadIntegerBytes(Asn1Tag.Integer);
-
-        /// <summary>
         ///   Reads the next value as a Integer with a specified tag, returning the contents
         ///   as a <see cref="ReadOnlyMemory{T}"/> over the original data.
         /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
+        /// </param>
         /// <returns>
         ///   The bytes of the Integer value, in signed big-endian form.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public ReadOnlyMemory<byte> ReadIntegerBytes(Asn1Tag expectedTag)
+        public ReadOnlyMemory<byte> ReadIntegerBytes(Asn1Tag? expectedTag = null)
         {
-            AsnValueReader valueReader = OpenValueReader();
-            ReadOnlySpan<byte> bytes = valueReader.ReadIntegerBytes(expectedTag);
-            ReadOnlyMemory<byte> memory = AsnValueReader.Slice(_data, bytes);
+            ReadOnlySpan<byte> bytes =
+                AsnDecoder.ReadIntegerBytes(_data.Span, RuleSet, out int consumed, expectedTag);
 
-            valueReader.MatchSlice(ref _data);
-            return memory;
-        }
+            ReadOnlyMemory<byte> ret = AsnDecoder.Slice(_data, bytes);
 
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, returning the contents
-        ///   as a <see cref="BigInteger"/>.
-        /// </summary>
-        /// <returns>
-        ///   The bytes of the Integer value, in signed big-endian form.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public BigInteger ReadInteger() => ReadInteger(Asn1Tag.Integer);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, returning the contents
-        ///   as a <see cref="BigInteger"/> over the original data.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <returns>
-        ///   The bytes of the Integer value, in signed big-endian form.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public BigInteger ReadInteger(Asn1Tag expectedTag)
-        {
-            AsnValueReader valueReader = OpenValueReader();
-            BigInteger ret = valueReader.ReadInteger(expectedTag);
-            valueReader.MatchSlice(ref _data);
+            _data = _data.Slice(consumed);
             return ret;
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as an <see cref="int"/>.
+        ///   Reads the next value as an Integer with a specified tag.
         /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="int"/> value represented
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
         /// </param>
         /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
+        ///   The decoded value.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        public BigInteger ReadInteger(Asn1Tag? expectedTag = null)
+        {
+            BigInteger ret = AsnDecoder.ReadInteger(_data.Span, RuleSet, out int consumed, expectedTag);
+            _data = _data.Slice(consumed);
+            return ret;
+        }
+
+        /// <summary>
+        ///   Attempts to read the next value as an Integer with a specified tag,
+        ///   as a signed 32-bit value.
+        /// </summary>
+        /// <param name="value">
+        ///   On success, receives the decoded value.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
+        /// </param>
+        /// <returns>
+        ///   <see langword="false"/> and does not advance the reader if the value is not between
         ///   <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
+        ///   <see langword="true"/> is returned and the reader advances.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadInt32(out int value) =>
-            TryReadInt32(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as an <see cref="int"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="int"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public bool TryReadInt32(Asn1Tag expectedTag, out int value)
+        public bool TryReadInt32(out int value, Asn1Tag? expectedTag = null)
         {
-            if (TryReadSignedInteger(sizeof(int), expectedTag, UniversalTagNumber.Integer, out long longValue))
-            {
-                value = (int)longValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
+            bool ret = AsnDecoder.TryReadInt32(_data.Span, RuleSet, out value, out int read, expectedTag);
+            _data = _data.Slice(read);
+            return ret;
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="uint"/>.
+        ///   Attempts to read the next value as an Integer with a specified tag,
+        ///   as an unsigned 32-bit value.
         /// </summary>
         /// <param name="value">
-        ///   On success, receives the <see cref="uint"/> value represented
+        ///   On success, receives the decoded value.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
         /// </param>
         /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
+        ///   <see langword="false"/> and does not advance the reader if the value is not between
         ///   <see cref="uint.MinValue"/> and <see cref="uint.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
+        ///   <see langword="true"/> is returned and the reader advances.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadUInt32(out uint value) =>
-            TryReadUInt32(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as a <see cref="uint"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="uint"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="uint.MinValue"/> and <see cref="uint.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public bool TryReadUInt32(Asn1Tag expectedTag, out uint value)
+        [CLSCompliant(false)]
+        public bool TryReadUInt32(out uint value, Asn1Tag? expectedTag = null)
         {
-            if (TryReadUnsignedInteger(sizeof(uint), expectedTag, UniversalTagNumber.Integer, out ulong ulongValue))
-            {
-                value = (uint)ulongValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
+            bool ret = AsnDecoder.TryReadUInt32(_data.Span, RuleSet, out value, out int read, expectedTag);
+            _data = _data.Slice(read);
+            return ret;
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="long"/>.
+        ///   Attempts to read the next value as an Integer with a specified tag,
+        ///   as a signed 64-bit value.
         /// </summary>
         /// <param name="value">
-        ///   On success, receives the <see cref="long"/> value represented
+        ///   On success, receives the decoded value.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
         /// </param>
         /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
+        ///   <see langword="false"/> and does not advance the reader if the value is not between
         ///   <see cref="long.MinValue"/> and <see cref="long.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
+        ///   <see langword="true"/> is returned and the reader advances.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadInt64(out long value) =>
-            TryReadInt64(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as an <see cref="long"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="long"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="long.MinValue"/> and <see cref="long.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public bool TryReadInt64(Asn1Tag expectedTag, out long value)
+        public bool TryReadInt64(out long value, Asn1Tag? expectedTag = null)
         {
-            return TryReadSignedInteger(sizeof(long), expectedTag, UniversalTagNumber.Integer, out value);
+            bool ret = AsnDecoder.TryReadInt64(_data.Span, RuleSet, out value, out int read, expectedTag);
+            _data = _data.Slice(read);
+            return ret;
         }
 
         /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="ulong"/>.
+        ///   Attempts to read the next value as an Integer with a specified tag,
+        ///   as an unsigned 64-bit value.
         /// </summary>
         /// <param name="value">
-        ///   On success, receives the <see cref="ulong"/> value represented
+        ///   On success, receives the decoded value.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 2).
         /// </param>
         /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
+        ///   <see langword="false"/> and does not advance the reader if the value is not between
         ///   <see cref="ulong.MinValue"/> and <see cref="ulong.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
+        ///   <see langword="true"/> is returned and the reader advances.
         /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadUInt64(out ulong value) =>
-            TryReadUInt64(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as a <see cref="ulong"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="ulong"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="ulong.MinValue"/> and <see cref="ulong.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public bool TryReadUInt64(Asn1Tag expectedTag, out ulong value)
+        [CLSCompliant(false)]
+        public bool TryReadUInt64(out ulong value, Asn1Tag? expectedTag = null)
         {
-            return TryReadUnsignedInteger(sizeof(ulong), expectedTag, UniversalTagNumber.Integer, out value);
-        }
-
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="short"/>.
-        /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="short"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="short.MinValue"/> and <see cref="short.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadInt16(out short value) =>
-            TryReadInt16(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as an <see cref="short"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="short"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="short.MinValue"/> and <see cref="short.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public bool TryReadInt16(Asn1Tag expectedTag, out short value)
-        {
-            if (TryReadSignedInteger(sizeof(short), expectedTag, UniversalTagNumber.Integer, out long longValue))
-            {
-                value = (short)longValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="ushort"/>.
-        /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="ushort"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="ushort.MinValue"/> and <see cref="ushort.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadUInt16(out ushort value) =>
-            TryReadUInt16(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as a <see cref="ushort"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="ushort"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="ushort.MinValue"/> and <see cref="ushort.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public bool TryReadUInt16(Asn1Tag expectedTag, out ushort value)
-        {
-            if (TryReadUnsignedInteger(sizeof(ushort), expectedTag, UniversalTagNumber.Integer, out ulong ulongValue))
-            {
-                value = (ushort)ulongValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as an <see cref="sbyte"/>.
-        /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="sbyte"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="sbyte.MinValue"/> and <see cref="sbyte.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadInt8(out sbyte value) =>
-            TryReadInt8(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as an <see cref="sbyte"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="sbyte"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="sbyte.MinValue"/> and <see cref="sbyte.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the Integer value is not valid
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public bool TryReadInt8(Asn1Tag expectedTag, out sbyte value)
-        {
-            if (TryReadSignedInteger(sizeof(sbyte), expectedTag, UniversalTagNumber.Integer, out long longValue))
-            {
-                value = (sbyte)longValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        /// <summary>
-        ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
-        ///   as a <see cref="byte"/>.
-        /// </summary>
-        /// <param name="value">
-        ///   On success, receives the <see cref="byte"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="byte.MinValue"/> and <see cref="byte.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public bool TryReadUInt8(out byte value) =>
-            TryReadUInt8(Asn1Tag.Integer, out value);
-
-        /// <summary>
-        ///   Reads the next value as a Integer with a specified tag, interpreting the contents
-        ///   as a <see cref="byte"/>.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <param name="value">
-        ///   On success, receives the <see cref="byte"/> value represented
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> and does not advance the reader if the value is not between
-        ///   <see cref="byte.MinValue"/> and <see cref="byte.MaxValue"/>, inclusive; otherwise
-        ///   <c>true</c> is returned and the reader advances.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
-        ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
-        /// </exception>
-        public bool TryReadUInt8(Asn1Tag expectedTag, out byte value)
-        {
-            if (TryReadUnsignedInteger(sizeof(byte), expectedTag, UniversalTagNumber.Integer, out ulong ulongValue))
-            {
-                value = (byte)ulongValue;
-                return true;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        private bool TryReadSignedInteger(
-            int sizeLimit,
-            Asn1Tag expectedTag,
-            UniversalTagNumber tagNumber,
-            out long value)
-        {
-            AsnValueReader valueReader = OpenValueReader();
-
-            if (valueReader.TryReadSignedInteger(sizeLimit, expectedTag, tagNumber, out value))
-            {
-                valueReader.MatchSlice(ref _data);
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool TryReadUnsignedInteger(
-            int sizeLimit,
-            Asn1Tag expectedTag,
-            UniversalTagNumber tagNumber,
-            out ulong value)
-        {
-            AsnValueReader valueReader = OpenValueReader();
-
-            if (valueReader.TryReadUnsignedInteger(sizeLimit, expectedTag, tagNumber, out value))
-            {
-                valueReader.MatchSlice(ref _data);
-                return true;
-            }
-
-            return false;
+            bool ret = AsnDecoder.TryReadUInt64(_data.Span, RuleSet, out value, out int read, expectedTag);
+            _data = _data.Slice(read);
+            return ret;
         }
     }
 }

@@ -4,21 +4,24 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
     internal static class AsnCharacterStringEncodings
     {
-        private static readonly Text.Encoding s_utf8Encoding = new UTF8Encoding(false, throwOnInvalidBytes: true);
-        private static readonly Text.Encoding s_bmpEncoding = new BMPEncoding();
-        private static readonly Text.Encoding s_ia5Encoding = new IA5Encoding();
-        private static readonly Text.Encoding s_visibleStringEncoding = new VisibleStringEncoding();
-        private static readonly Text.Encoding s_numericStringEncoding = new NumericStringEncoding();
-        private static readonly Text.Encoding s_printableStringEncoding = new PrintableStringEncoding();
-        private static readonly Text.Encoding s_t61Encoding = new T61Encoding();
+        private static readonly Encoding s_utf8Encoding =
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        internal static Text.Encoding GetEncoding(UniversalTagNumber encodingType) =>
+        private static readonly Encoding s_bmpEncoding = new BMPEncoding();
+        private static readonly Encoding s_ia5Encoding = new IA5Encoding();
+        private static readonly Encoding s_visibleStringEncoding = new VisibleStringEncoding();
+        private static readonly Encoding s_numericStringEncoding = new NumericStringEncoding();
+        private static readonly Encoding s_printableStringEncoding = new PrintableStringEncoding();
+        private static readonly Encoding s_t61Encoding = new T61Encoding();
+
+        internal static Encoding GetEncoding(UniversalTagNumber encodingType) =>
             encodingType switch
             {
                 UniversalTagNumber.UTF8String => s_utf8Encoding,
@@ -30,9 +33,50 @@ namespace System.Security.Cryptography.Asn1
                 UniversalTagNumber.T61String => s_t61Encoding,
                 _ => throw new ArgumentOutOfRangeException(nameof(encodingType), encodingType, null),
             };
+
+        internal static int GetByteCount(this Encoding encoding, ReadOnlySpan<char> str)
+        {
+            if (str.IsEmpty)
+            {
+                // Ensure a non-null pointer is obtained, even though the expected answer is 0.
+                str = string.Empty.AsSpan();
+            }
+
+            unsafe
+            {
+                fixed (char* strPtr = &MemoryMarshal.GetReference(str))
+                {
+                    return encoding.GetByteCount(strPtr, str.Length);
+                }
+            }
+        }
+
+        internal static int GetBytes(this Encoding encoding, ReadOnlySpan<char> chars, Span<byte> bytes)
+        {
+            if (chars.IsEmpty)
+            {
+                // Ensure a non-null pointer is obtained.
+                chars = string.Empty.AsSpan();
+            }
+
+            if (bytes.IsEmpty)
+            {
+                // Ensure a non-null pointer is obtained.
+                bytes = Array.Empty<byte>();
+            }
+
+            unsafe
+            {
+                fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+                fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+                {
+                    return encoding.GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length);
+                }
+            }
+        }
     }
 
-    internal abstract class SpanBasedEncoding : Text.Encoding
+    internal abstract class SpanBasedEncoding : Encoding
     {
         protected SpanBasedEncoding()
             : base(0, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback)
@@ -118,7 +162,7 @@ namespace System.Security.Cryptography.Asn1
         }
     }
 
-    internal class IA5Encoding : RestrictedAsciiStringEncoding
+    internal sealed class IA5Encoding : RestrictedAsciiStringEncoding
     {
         // T-REC-X.680-201508 sec 41, Table 8.
         // ISO International Register of Coded Character Sets to be used with Escape Sequences 001
@@ -134,7 +178,7 @@ namespace System.Security.Cryptography.Asn1
         }
     }
 
-    internal class VisibleStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed  class VisibleStringEncoding : RestrictedAsciiStringEncoding
     {
         // T-REC-X.680-201508 sec 41, Table 8.
         // ISO International Register of Coded Character Sets to be used with Escape Sequences 006
@@ -146,7 +190,7 @@ namespace System.Security.Cryptography.Asn1
         }
     }
 
-    internal class NumericStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed class NumericStringEncoding : RestrictedAsciiStringEncoding
     {
         // T-REC-X.680-201508 sec 41.2 (Table 9)
         // 0, 1, ... 9 + space
@@ -156,7 +200,7 @@ namespace System.Security.Cryptography.Asn1
         }
     }
 
-    internal class PrintableStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed class PrintableStringEncoding : RestrictedAsciiStringEncoding
     {
         // T-REC-X.680-201508 sec 41.4
         internal PrintableStringEncoding()
@@ -228,7 +272,7 @@ namespace System.Security.Cryptography.Asn1
                     EncoderFallback.CreateFallbackBuffer().Fallback(c, i);
 
                     Debug.Fail("Fallback should have thrown");
-                    throw new CryptographicException();
+                    throw new InvalidOperationException();
                 }
 
                 if (write)
@@ -258,7 +302,7 @@ namespace System.Security.Cryptography.Asn1
                         i);
 
                     Debug.Fail("Fallback should have thrown");
-                    throw new CryptographicException();
+                    throw new InvalidOperationException();
                 }
 
                 if (write)
@@ -277,7 +321,7 @@ namespace System.Security.Cryptography.Asn1
     // T-REC-X.690-201508 sec 8.23.8 says to see ISO/IEC 10646:2003 section 13.1.
     // ISO/IEC 10646:2003 sec 13.1 says each character is represented by "two octets".
     // ISO/IEC 10646:2003 sec 6.3 says that when serialized as octets to use big endian.
-    internal class BMPEncoding : SpanBasedEncoding
+    internal sealed class BMPEncoding : SpanBasedEncoding
     {
         protected override int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
         {
@@ -297,7 +341,7 @@ namespace System.Security.Cryptography.Asn1
                     EncoderFallback.CreateFallbackBuffer().Fallback(c, i);
 
                     Debug.Fail("Fallback should have thrown");
-                    throw new CryptographicException();
+                    throw new InvalidOperationException();
                 }
 
                 ushort val16 = c;
@@ -328,7 +372,7 @@ namespace System.Security.Cryptography.Asn1
                     bytes.Length - 1);
 
                 Debug.Fail("Fallback should have thrown");
-                throw new CryptographicException();
+                throw new InvalidOperationException();
             }
 
             int writeIdx = 0;
@@ -345,7 +389,7 @@ namespace System.Security.Cryptography.Asn1
                         i);
 
                     Debug.Fail("Fallback should have thrown");
-                    throw new CryptographicException();
+                    throw new InvalidOperationException();
                 }
 
                 if (write)
@@ -377,10 +421,10 @@ namespace System.Security.Cryptography.Asn1
     /// Compatibility encoding for T61Strings. Interprets the characters as UTF-8 or
     /// ISO-8859-1 as a fallback.
     /// </summary>
-    internal class T61Encoding : Text.Encoding
+    internal sealed class T61Encoding : Encoding
     {
-        private static readonly Text.Encoding s_utf8Encoding = new UTF8Encoding(false, throwOnInvalidBytes: true);
-        private static readonly Text.Encoding s_latin1Encoding = System.Text.Encoding.GetEncoding("iso-8859-1");
+        private static readonly Encoding s_utf8Encoding = new UTF8Encoding(false, throwOnInvalidBytes: true);
+        private static readonly Encoding s_latin1Encoding = GetEncoding("iso-8859-1");
 
         public override int GetByteCount(char[] chars, int index, int count)
         {

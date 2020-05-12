@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.Asn1;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
     public static class ReaderStateTests
     {
@@ -14,7 +13,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             AsnReader reader = new AsnReader(new byte[] { 0x01, 0x01, 0x00 }, AsnEncodingRules.BER);
             Assert.True(reader.HasData);
-            Assert.Throws<CryptographicException>(() => reader.ThrowIfNotEmpty());
+            Assert.Throws<AsnContentException>(() => reader.ThrowIfNotEmpty());
 
             // Consume the current value and move on.
             reader.ReadEncodedValue();

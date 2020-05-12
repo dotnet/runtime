@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Writer
 {
-    public abstract partial class Asn1WriterTests : Asn1ReaderTests
+    public abstract partial class Asn1WriterTests
     {
         internal static void Verify(AsnWriter writer, string expectedHex)
         {
@@ -43,6 +42,14 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(encoded.Length, bytesWritten);
             Assert.True(dest.Slice(0, bytesWritten).SequenceEqual(encoded), "dest.SequenceEqual(encoded2) (overly big)");
             Assert.Equal(254, encoded2[encoded.Length]);
+
+            Assert.True(writer.EncodedValueEquals(encoded));
+            Assert.False(writer.EncodedValueEquals(encoded2));
+            Assert.True(writer.EncodedValueEquals(encoded2.AsSpan(0, encoded.Length)));
+            Assert.False(writer.EncodedValueEquals(encoded2.AsSpan(1, encoded.Length)));
+
+            encoded2[encoded.Length - 1] ^= 0xFF;
+            Assert.False(writer.EncodedValueEquals(encoded2.AsSpan(0, encoded.Length)));
         }
 
         internal static unsafe string Stringify(Asn1Tag tag)

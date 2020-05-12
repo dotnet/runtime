@@ -4,14 +4,13 @@
 
 using System.Diagnostics;
 
-#nullable enable
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
     /// <summary>
     ///   This type represents an ASN.1 tag, as described in ITU-T Recommendation X.680.
     /// </summary>
     // T-REC-X.690-201508 sec 8.1.2
-    internal partial struct Asn1Tag : IEquatable<Asn1Tag>
+    public readonly partial struct Asn1Tag : IEquatable<Asn1Tag>
     {
         private const byte ClassMask = 0b1100_0000;
         private const byte ConstructedMask = 0b0010_0000;
@@ -26,8 +25,8 @@ namespace System.Security.Cryptography.Asn1
         public TagClass TagClass => (TagClass)(_controlFlags & ClassMask);
 
         /// <summary>
-        ///   Indicates if the tag represents a constructed encoding (<c>true</c>), or
-        ///   a primitive encoding (<c>false</c>).
+        ///   Indicates if the tag represents a constructed encoding (<see langword="true"/>), or
+        ///   a primitive encoding (<see langword="false"/>).
         /// </summary>
         public bool IsConstructed => (_controlFlags & ConstructedMask) != 0;
 
@@ -38,7 +37,7 @@ namespace System.Security.Cryptography.Asn1
         ///   If <see cref="TagClass"/> is <see cref="Asn1.TagClass.Universal"/>, this value can
         ///   be interpreted as a <see cref="UniversalTagNumber"/>.
         /// </remarks>
-        public int TagValue { get; private set; }
+        public int TagValue { get; }
 
         private Asn1Tag(byte controlFlags, int tagValue)
         {
@@ -50,10 +49,10 @@ namespace System.Security.Cryptography.Asn1
         ///   Create an <see cref="Asn1Tag"/> for a tag from the UNIVERSAL class.
         /// </summary>
         /// <param name="universalTagNumber">
-        ///   The <see cref="UniversalTagNumber"/> value to represent as a tag.
+        ///   One of the enumeration values that specifies the semantic type for this tag.
         /// </param>
         /// <param name="isConstructed">
-        ///   <c>true</c> for a constructed tag, <c>false</c> for a primitive tag.
+        ///   <see langword="true"/> for a constructed tag, <see langword="false"/> for a primitive tag.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="universalTagNumber"/> is not a known value.
@@ -76,16 +75,19 @@ namespace System.Security.Cryptography.Asn1
         ///   Create an <see cref="Asn1Tag"/> for a specified value within a specified tag class.
         /// </summary>
         /// <param name="tagClass">
-        ///   The <see cref="TagClass"/> for this tag.
+        ///   The tag class for this tag.
         /// </param>
         /// <param name="tagValue">
         ///   The numeric value for this tag.
         /// </param>
         /// <param name="isConstructed">
-        ///   <c>true</c> for a constructed tag, <c>false</c> for a primitive tag.
+        ///   <see langword="true"/> for a constructed tag, <see langword="false"/> for a primitive tag.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="tagClass"/> is not a known value --OR--
+        ///   <paramref name="tagClass"/> is not a known value.
+        ///
+        ///   -or-
+        ///
         ///   <paramref name="tagValue" /> is negative.
         /// </exception>
         /// <remarks>
@@ -94,9 +96,15 @@ namespace System.Security.Cryptography.Asn1
         public Asn1Tag(TagClass tagClass, int tagValue, bool isConstructed = false)
             : this((byte)((byte)tagClass | (isConstructed ? ConstructedMask : 0)), tagValue)
         {
-            if (tagClass < TagClass.Universal || tagClass > TagClass.Private)
+            switch (tagClass)
             {
-                throw new ArgumentOutOfRangeException(nameof(tagClass));
+                case TagClass.Universal:
+                case TagClass.ContextSpecific:
+                case TagClass.Application:
+                case TagClass.Private:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(tagClass));
             }
 
             if (tagValue < 0)
@@ -106,12 +114,12 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Produce an <see cref="Asn1Tag"/> with the same <seealso cref="TagClass"/> and
-        ///   <seealso cref="TagValue"/> values, but whose <seealso cref="IsConstructed"/> is <c>true</c>.
+        ///   Produces a tag with the same <see cref="TagClass"/> and
+        ///   <see cref="TagValue"/> values, but whose <see cref="IsConstructed"/> is <see langword="true"/>.
         /// </summary>
         /// <returns>
-        ///   An <see cref="Asn1Tag"/> with the same <seealso cref="TagClass"/> and <seealso cref="TagValue"/>
-        ///   values, but whose <seealso cref="IsConstructed"/> is <c>true</c>.
+        ///   A tag with the same <see cref="TagClass"/> and <see cref="TagValue"/>
+        ///   values, but whose <see cref="IsConstructed"/> is <see langword="true"/>.
         /// </returns>
         public Asn1Tag AsConstructed()
         {
@@ -119,12 +127,12 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Produce an <see cref="Asn1Tag"/> with the same <seealso cref="TagClass"/> and
-        ///   <seealso cref="TagValue"/> values, but whose <seealso cref="IsConstructed"/> is <c>false</c>.
+        ///   Produces a tag with the same <see cref="TagClass"/> and
+        ///   <see cref="TagValue"/> values, but whose <see cref="IsConstructed"/> is <see langword="false"/>.
         /// </summary>
         /// <returns>
-        ///   An <see cref="Asn1Tag"/> with the same <seealso cref="TagClass"/> and <seealso cref="TagValue"/>
-        ///   values, but whose <seealso cref="IsConstructed"/> is <c>false</c>.
+        ///   A tag with the same <see cref="TagClass"/> and <see cref="TagValue"/>
+        ///   values, but whose <see cref="IsConstructed"/> is <see langword="false"/>.
         /// </returns>
         public Asn1Tag AsPrimitive()
         {
@@ -132,35 +140,20 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Read a BER-encoded tag which starts at <paramref name="source"/>.
-        /// </summary>
-        /// <param name="source">
-        ///   The read only byte sequence from which to read.
-        /// </param>
-        /// <param name="tag">
-        ///   The decoded <see cref="Asn1Tag"/>.
-        /// </param>
-        /// <param name="bytesConsumed"></param>
-        /// <returns>
-        ///   <c>true</c> if a tag was correctly decoded, <c>false</c> otherwise.
-        /// </returns>
-        public static bool TryDecode(ArraySegment<byte> source, out Asn1Tag tag, out int bytesConsumed)
-        {
-            return TryDecode(source.AsSpan(), out tag, out bytesConsumed);
-        }
-
-        /// <summary>
-        ///   Read a BER-encoded tag which starts at <paramref name="source"/>.
+        ///   Attempts to read a BER-encoded tag which starts at <paramref name="source"/>.
         /// </summary>
         /// <param name="source">
         ///   The read only byte sequence whose beginning is a BER-encoded tag.
         /// </param>
         /// <param name="tag">
-        ///   The decoded <see cref="Asn1Tag"/>.
+        ///   The decoded tag.
         /// </param>
-        /// <param name="bytesConsumed"></param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, contains the number of bytes that contributed
+        ///   to the encoded tag, 0 on failure. This parameter is treated as uninitialized.
+        /// </param>
         /// <returns>
-        ///   <c>true</c> if a tag was correctly decoded, <c>false</c> otherwise.
+        ///   <see langword="true" /> if a tag was correctly decoded; otherwise, <see langword="false" />.
         /// </returns>
         public static bool TryDecode(ReadOnlySpan<byte> source, out Asn1Tag tag, out int bytesConsumed)
         {
@@ -242,7 +235,33 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Report the number of bytes required for the BER-encoding of this tag.
+        ///   Reads a BER-encoded tag which starts at <paramref name="source"/>.
+        /// </summary>
+        /// <param name="source">
+        ///   The read only byte sequence whose beginning is a BER-encoded tag.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, contains the number of bytes that contributed
+        ///   to the encoded tag. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   The decoded tag.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The provided data does not decode to a tag.
+        /// </exception>
+        public static Asn1Tag Decode(ReadOnlySpan<byte> source, out int bytesConsumed)
+        {
+            if (TryDecode(source, out Asn1Tag tag, out bytesConsumed))
+            {
+                return tag;
+            }
+
+            throw new AsnContentException(SR.ContentException_InvalidTag);
+        }
+
+        /// <summary>
+        ///   Reports the number of bytes required for the BER-encoding of this tag.
         /// </summary>
         /// <returns>
         ///   The number of bytes required for the BER-encoding of this tag.
@@ -270,7 +289,7 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Write the BER-encoded form of this tag to <paramref name="destination"/>.
+        ///   Attempts to write the BER-encoded form of this tag to <paramref name="destination"/>.
         /// </summary>
         /// <param name="destination">
         ///   The start of where the encoded tag should be written.
@@ -279,8 +298,8 @@ namespace System.Security.Cryptography.Asn1
         ///   Receives the value from <see cref="CalculateEncodedSize"/> on success, 0 on failure.
         /// </param>
         /// <returns>
-        ///   <c>false</c> if <paramref name="destination"/>.<see cref="Span{T}.Length"/> &lt;
-        ///   <see cref="CalculateEncodedSize"/>(), <c>true</c> otherwise.
+        ///   <see langword="false"/> if <paramref name="destination"/>.<see cref="Span{T}.Length"/> &lt;
+        ///   <see cref="CalculateEncodedSize"/>(), <see langword="true"/> otherwise.
         /// </returns>
         public bool TryEncode(Span<byte> destination, out int bytesWritten)
         {
@@ -328,25 +347,7 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Write the BER-encoded form of this tag to <paramref name="destination"/>.
-        /// </summary>
-        /// <param name="destination">
-        ///   The start of where the encoded tag should be written.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   Receives the value from <see cref="CalculateEncodedSize"/> on success, 0 on failure.
-        /// </param>
-        /// <returns>
-        ///   <c>false</c> if <paramref name="destination"/>.<see cref="ArraySegment{T}.Count"/> &lt;
-        ///   <see cref="CalculateEncodedSize"/>(), <c>true</c> otherwise.
-        /// </returns>
-        public bool TryEncode(ArraySegment<byte> destination, out int bytesWritten)
-        {
-            return TryEncode(destination.AsSpan(), out bytesWritten);
-        }
-
-        /// <summary>
-        ///   Write the BER-encoded form of this tag to <paramref name="destination"/>.
+        ///   Writes the BER-encoded form of this tag to <paramref name="destination"/>.
         /// </summary>
         /// <param name="destination">
         ///   The start of where the encoded tag should be written.
@@ -355,7 +356,7 @@ namespace System.Security.Cryptography.Asn1
         ///   The number of bytes written to <paramref name="destination"/>.
         /// </returns>
         /// <seealso cref="CalculateEncodedSize"/>
-        /// <exception cref="CryptographicException">
+        /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/>.<see cref="Span{T}.Length"/> &lt; <see cref="CalculateEncodedSize"/>.
         /// </exception>
         public int Encode(Span<byte> destination)
@@ -365,25 +366,7 @@ namespace System.Security.Cryptography.Asn1
                 return bytesWritten;
             }
 
-            throw new CryptographicException(SR.Argument_EncodeDestinationTooSmall);
-        }
-
-        /// <summary>
-        ///   Write the BER-encoded form of this tag to <paramref name="destination"/>.
-        /// </summary>
-        /// <param name="destination">
-        ///   The start of where the encoded tag should be written.
-        /// </param>
-        /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
-        /// </returns>
-        /// <seealso cref="CalculateEncodedSize"/>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="destination"/>.<see cref="ArraySegment{T}.Count"/> &lt; <see cref="CalculateEncodedSize"/>.
-        /// </exception>
-        public int Encode(ArraySegment<byte> destination)
-        {
-            return Encode(destination.AsSpan());
+            throw new ArgumentException(SR.Argument_EncodeDestinationTooSmall, nameof(destination));
         }
 
         /// <summary>
@@ -393,9 +376,9 @@ namespace System.Security.Cryptography.Asn1
         ///   Tag to test for equality.
         /// </param>
         /// <returns>
-        ///   <c>true</c> if <paramref name="other"/> has the same values for
+        ///   <see langword="true"/> if <paramref name="other"/> has the same values for
         ///   <see cref="TagClass"/>, <see cref="TagValue"/>, and <see cref="IsConstructed"/>;
-        ///   <c>false</c> otherwise.
+        ///   <see langword="false"/> otherwise.
         /// </returns>
         public bool Equals(Asn1Tag other)
         {
@@ -408,12 +391,11 @@ namespace System.Security.Cryptography.Asn1
         /// </summary>
         /// <param name="obj">Object to test for value equality</param>
         /// <returns>
-        ///   <c>false</c> if <paramref name="obj"/> is not an <see cref="Asn1Tag"/>,
-        ///   <see cref="Equals(System.Security.Cryptography.Asn1.Asn1Tag)"/> otherwise.
+        ///   <see langword="false"/> if <paramref name="obj"/> is not an <see cref="Asn1Tag"/>,
+        ///   <see cref="Equals(Asn1Tag)"/> otherwise.
         /// </returns>
         public override bool Equals(object? obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
             return obj is Asn1Tag tag && Equals(tag);
         }
 
@@ -437,8 +419,8 @@ namespace System.Security.Cryptography.Asn1
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
         /// <returns>
-        ///   <c>true</c> if <paramref name="left"/> and <paramref name="right"/> have the same
-        ///   BER encoding, <c>false</c> otherwise.
+        ///   <see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> have the same
+        ///   BER encoding, <see langword="false"/> otherwise.
         /// </returns>
         public static bool operator ==(Asn1Tag left, Asn1Tag right)
         {
@@ -451,8 +433,8 @@ namespace System.Security.Cryptography.Asn1
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
         /// <returns>
-        ///   <c>true</c> if <paramref name="left"/> and <paramref name="right"/> have a different
-        ///   BER encoding, <c>false</c> otherwise.
+        ///   <see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> have a different
+        ///   BER encoding, <see langword="false"/> otherwise.
         /// </returns>
         public static bool operator !=(Asn1Tag left, Asn1Tag right)
         {
@@ -465,8 +447,8 @@ namespace System.Security.Cryptography.Asn1
         /// </summary>
         /// <param name="other">Tag to test for concept equality.</param>
         /// <returns>
-        ///   <c>true</c> if <paramref name="other"/> has the same <see cref="TagClass"/> and <see cref="TagValue"/>
-        ///   as this tag, <c>false</c> otherwise.
+        ///   <see langword="true"/> if <paramref name="other"/> has the same <see cref="TagClass"/> and <see cref="TagValue"/>
+        ///   as this tag, <see langword="false"/> otherwise.
         /// </returns>
         public bool HasSameClassAndValue(Asn1Tag other)
         {

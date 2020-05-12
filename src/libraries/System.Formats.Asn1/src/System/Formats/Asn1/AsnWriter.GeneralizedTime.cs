@@ -6,55 +6,46 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal sealed partial class AsnWriter
+    public sealed partial class AsnWriter
     {
-        /// <summary>
-        ///   Write the provided <see cref="DateTimeOffset"/> as a GeneralizedTime with tag
-        ///   UNIVERSAL 24, optionally excluding the fractional seconds.
-        /// </summary>
-        /// <param name="value">The value to write.</param>
-        /// <param name="omitFractionalSeconds">
-        ///   <c>true</c> to treat the fractional seconds in <paramref name="value"/> as 0 even if
-        ///   a non-zero value is present.
-        /// </param>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteGeneralizedTime(Asn1Tag,DateTimeOffset,bool)"/>
-        public void WriteGeneralizedTime(DateTimeOffset value, bool omitFractionalSeconds = false)
-        {
-            WriteGeneralizedTimeCore(Asn1Tag.GeneralizedTime, value, omitFractionalSeconds);
-        }
-
         /// <summary>
         ///   Write the provided <see cref="DateTimeOffset"/> as a GeneralizedTime with a specified
         ///   UNIVERSAL 24, optionally excluding the fractional seconds.
         /// </summary>
-        /// <param name="tag">The tagto write.</param>
         /// <param name="value">The value to write.</param>
         /// <param name="omitFractionalSeconds">
-        ///   <c>true</c> to treat the fractional seconds in <paramref name="value"/> as 0 even if
+        ///   <see langword="true"/> to treat the fractional seconds in <paramref name="value"/> as 0 even if
         ///   a non-zero value is present.
         /// </param>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 24).</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-        /// <seealso cref="WriteGeneralizedTime(System.Security.Cryptography.Asn1.Asn1Tag,System.DateTimeOffset,bool)"/>
-        public void WriteGeneralizedTime(Asn1Tag tag, DateTimeOffset value, bool omitFractionalSeconds = false)
+        public void WriteGeneralizedTime(
+            DateTimeOffset value,
+            bool omitFractionalSeconds = false,
+            Asn1Tag? tag = null)
         {
             CheckUniversalTag(tag, UniversalTagNumber.GeneralizedTime);
 
             // Clear the constructed flag, if present.
-            WriteGeneralizedTimeCore(tag.AsPrimitive(), value, omitFractionalSeconds);
+            WriteGeneralizedTimeCore(
+                tag?.AsPrimitive() ?? Asn1Tag.GeneralizedTime,
+                value,
+                omitFractionalSeconds);
         }
 
         // T-REC-X.680-201508 sec 46
         // T-REC-X.690-201508 sec 11.7
-        private void WriteGeneralizedTimeCore(Asn1Tag tag, DateTimeOffset value, bool omitFractionalSeconds)
+        private void WriteGeneralizedTimeCore(
+            Asn1Tag tag,
+            DateTimeOffset value,
+            bool omitFractionalSeconds)
         {
             // GeneralizedTime under BER allows many different options:
             // * (HHmmss), (HHmm), (HH)
@@ -101,7 +92,7 @@ namespace System.Security.Cryptography.Asn1
                     if (!Utf8Formatter.TryFormat(decimalTicks, fraction, out int bytesWritten, new StandardFormat('G')))
                     {
                         Debug.Fail($"Utf8Formatter.TryFormat could not format {floatingTicks} / TicksPerSecond");
-                        throw new CryptographicException();
+                        throw new InvalidOperationException();
                     }
 
                     Debug.Assert(bytesWritten > 2, $"{bytesWritten} should be > 2");
@@ -145,7 +136,7 @@ namespace System.Security.Cryptography.Asn1
                 !Utf8Formatter.TryFormat(second, baseSpan.Slice(12, 2), out _, d2))
             {
                 Debug.Fail($"Utf8Formatter.TryFormat failed to build components of {normalized:O}");
-                throw new CryptographicException();
+                throw new InvalidOperationException();
             }
 
             _offset += IntegerPortionLength;

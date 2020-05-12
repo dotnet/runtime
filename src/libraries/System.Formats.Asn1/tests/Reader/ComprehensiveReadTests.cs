@@ -4,13 +4,11 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
+using X509KeyUsageCSharpStyle=System.Formats.Asn1.Tests.Reader.ReadNamedBitList.X509KeyUsageCSharpStyle;
 
-using X509KeyUsageCSharpStyle=System.Security.Cryptography.Tests.Asn1.ReadNamedBitList.X509KeyUsageCSharpStyle;
-
-namespace System.Security.Cryptography.Tests.Asn1
+namespace System.Formats.Asn1.Tests.Reader
 {
     public static class ComprehensiveReadTests
     {
@@ -27,7 +25,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader sigAlgReader = certReader.ReadSequence();
 
             Assert.True(
-                certReader.TryReadPrimitiveBitStringValue(
+                certReader.TryReadPrimitiveBitString(
                     out int unusedBitCount,
                     out ReadOnlyMemory<byte> signature),
                 "certReader.TryReadPrimitiveBitStringValue");
@@ -46,7 +44,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AssertRefSame(serialBytes, ref bytes[15], "Serial number starts at bytes[15]");
 
             AsnReader tbsSigAlgReader = tbsCertReader.ReadSequence();
-            Assert.Equal("1.2.840.113549.1.1.11", tbsSigAlgReader.ReadObjectIdentifierAsString());
+            Assert.Equal("1.2.840.113549.1.1.11", tbsSigAlgReader.ReadObjectIdentifier());
             Assert.True(tbsSigAlgReader.HasData, "tbsSigAlgReader.HasData before ReadNull");
             tbsSigAlgReader.ReadNull();
             Assert.False(tbsSigAlgReader.HasData, "tbsSigAlgReader.HasData after ReadNull");
@@ -82,12 +80,12 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader subjectPublicKeyInfo = tbsCertReader.ReadSequence();
             AsnReader spkiAlgorithm = subjectPublicKeyInfo.ReadSequence();
-            Assert.Equal("1.2.840.113549.1.1.1", spkiAlgorithm.ReadObjectIdentifierAsString());
+            Assert.Equal("1.2.840.113549.1.1.1", spkiAlgorithm.ReadObjectIdentifier());
             spkiAlgorithm.ReadNull();
             Assert.False(spkiAlgorithm.HasData, "spkiAlgorithm.HasData");
 
             Assert.True(
-                subjectPublicKeyInfo.TryReadPrimitiveBitStringValue(
+                subjectPublicKeyInfo.TryReadPrimitiveBitString(
                     out unusedBitCount,
                     out ReadOnlyMemory<byte> encodedPublicKey),
                 "subjectPublicKeyInfo.TryReadBitStringBytes");
@@ -110,21 +108,21 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.False(extensionsContainer.HasData, "extensionsContainer.HasData");
 
             AsnReader sanExtension = extensions.ReadSequence();
-            Assert.Equal("2.5.29.17", sanExtension.ReadObjectIdentifierAsString());
-            Assert.True(sanExtension.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> sanExtensionBytes));
+            Assert.Equal("2.5.29.17", sanExtension.ReadObjectIdentifier());
+            Assert.True(sanExtension.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> sanExtensionBytes));
             Assert.False(sanExtension.HasData, "sanExtension.HasData");
 
             AsnReader sanExtensionPayload = new AsnReader(sanExtensionBytes, AsnEncodingRules.DER);
             AsnReader sanExtensionValue = sanExtensionPayload.ReadSequence();
             Assert.False(sanExtensionPayload.HasData, "sanExtensionPayload.HasData");
             Asn1Tag dnsName = new Asn1Tag(TagClass.ContextSpecific, 2);
-            Assert.Equal("www.microsoft.com", sanExtensionValue.ReadCharacterString(dnsName, UniversalTagNumber.IA5String));
-            Assert.Equal("wwwqa.microsoft.com", sanExtensionValue.ReadCharacterString(dnsName, UniversalTagNumber.IA5String));
+            Assert.Equal("www.microsoft.com", sanExtensionValue.ReadCharacterString(UniversalTagNumber.IA5String, dnsName));
+            Assert.Equal("wwwqa.microsoft.com", sanExtensionValue.ReadCharacterString(UniversalTagNumber.IA5String, dnsName));
             Assert.False(sanExtensionValue.HasData, "sanExtensionValue.HasData");
 
             AsnReader basicConstraints = extensions.ReadSequence();
-            Assert.Equal("2.5.29.19", basicConstraints.ReadObjectIdentifierAsString());
-            Assert.True(basicConstraints.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> basicConstraintsBytes));
+            Assert.Equal("2.5.29.19", basicConstraints.ReadObjectIdentifier());
+            Assert.True(basicConstraints.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> basicConstraintsBytes));
 
             AsnReader basicConstraintsPayload = new AsnReader(basicConstraintsBytes, AsnEncodingRules.DER);
             AsnReader basicConstraintsValue = basicConstraintsPayload.ReadSequence();
@@ -132,9 +130,9 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.False(basicConstraintsPayload.HasData, "basicConstraintsPayload.HasData");
 
             AsnReader keyUsageExtension = extensions.ReadSequence();
-            Assert.Equal("2.5.29.15", keyUsageExtension.ReadObjectIdentifierAsString());
+            Assert.Equal("2.5.29.15", keyUsageExtension.ReadObjectIdentifier());
             Assert.True(keyUsageExtension.ReadBoolean(), "keyUsageExtension.ReadBoolean() (IsCritical)");
-            Assert.True(keyUsageExtension.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> keyUsageBytes));
+            Assert.True(keyUsageExtension.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> keyUsageBytes));
 
             AsnReader keyUsagePayload = new AsnReader(keyUsageBytes, AsnEncodingRules.DER);
 
@@ -151,7 +149,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AssertExtension(extensions, "1.3.6.1.5.5.7.1.1", false, 1081, bytes);
             Assert.False(extensions.HasData, "extensions.HasData");
 
-            Assert.Equal("1.2.840.113549.1.1.11", sigAlgReader.ReadObjectIdentifierAsString());
+            Assert.Equal("1.2.840.113549.1.1.11", sigAlgReader.ReadObjectIdentifier());
             sigAlgReader.ReadNull();
             Assert.False(sigAlgReader.HasData);
         }
@@ -159,14 +157,14 @@ namespace System.Security.Cryptography.Tests.Asn1
         private static void AssertExtension(AsnReader extensions, string oid, bool critical, int index, byte[] bytes)
         {
             AsnReader extension = extensions.ReadSequence();
-            Assert.Equal(oid, extension.ReadObjectIdentifierAsString());
+            Assert.Equal(oid, extension.ReadObjectIdentifier());
 
             if (critical)
             {
                 Assert.True(extension.ReadBoolean(), $"{oid} is critical");
             }
 
-            Assert.True(extension.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> extensionBytes));
+            Assert.True(extension.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> extensionBytes));
             AssertRefSame(extensionBytes, ref bytes[index], $"{oid} extension value is at byte {index}");
         }
 
@@ -181,7 +179,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             AsnReader rdn = reader.ReadSetOf();
             AsnReader attributeTypeAndValue = rdn.ReadSequence();
-            Assert.Equal(atvOid, attributeTypeAndValue.ReadObjectIdentifierAsString());
+            Assert.Equal(atvOid, attributeTypeAndValue.ReadObjectIdentifier());
 
             ReadOnlyMemory<byte> value = attributeTypeAndValue.ReadEncodedValue();
             ReadOnlySpan<byte> valueSpan = value.Span;

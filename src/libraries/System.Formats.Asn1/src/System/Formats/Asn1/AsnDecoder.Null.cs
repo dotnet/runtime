@@ -2,83 +2,96 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Asn1
+namespace System.Formats.Asn1
 {
-    internal ref partial struct AsnValueReader
+    public static partial class AsnDecoder
     {
         /// <summary>
-        ///   Reads the next value as a NULL with tag UNIVERSAL 5.
+        ///   Reads a Null value from <paramref name="source"/> with a specified tag under
+        ///   the specified encoding rules.
         /// </summary>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 5).
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public void ReadNull() => ReadNull(Asn1Tag.Null);
-
-        /// <summary>
-        ///   Reads the next value as a NULL with a specified tag.
-        /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public void ReadNull(Asn1Tag expectedTag)
+        public static void ReadNull(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int bytesConsumed,
+            Asn1Tag? expectedTag = null)
         {
-            Asn1Tag tag = ReadTagAndLength(out int? length, out int headerLength);
-            CheckExpectedTag(tag, expectedTag, UniversalTagNumber.Null);
-
             // T-REC-X.690-201508 sec 8.8.1
+            ReadOnlySpan<byte> contents = GetPrimitiveContentSpan(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.Null,
+                UniversalTagNumber.Null,
+                out int consumed);
+
             // T-REC-X.690-201508 sec 8.8.2
-            if (tag.IsConstructed || length != 0)
+            if (contents.Length != 0)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new AsnContentException();
             }
 
-            _data = _data.Slice(headerLength);
+            bytesConsumed = consumed;
         }
     }
 
-    internal partial class AsnReader
+    public partial class AsnReader
     {
-        /// <summary>
-        ///   Reads the next value as a NULL with tag UNIVERSAL 5.
-        /// </summary>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
-        /// </exception>
-        public void ReadNull() => ReadNull(Asn1Tag.Null);
-
         /// <summary>
         ///   Reads the next value as a NULL with a specified tag.
         /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <exception cref="CryptographicException">
-        ///   the next value does not have the correct tag --OR--
-        ///   the length encoding is not valid under the current encoding rules --OR--
-        ///   the contents are not valid under the current encoding rules
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 5).
+        /// </param>
+        /// <exception cref="AsnContentException">
+        ///   the next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   the length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   the contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
-        public void ReadNull(Asn1Tag expectedTag)
+        public void ReadNull(Asn1Tag? expectedTag = null)
         {
-            AsnValueReader valueReader = OpenValueReader();
-            valueReader.ReadNull(expectedTag);
-            valueReader.MatchSlice(ref _data);
+            AsnDecoder.ReadNull(_data.Span, RuleSet, out int consumed, expectedTag);
+            _data = _data.Slice(consumed);
         }
     }
 }
