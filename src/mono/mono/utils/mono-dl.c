@@ -21,7 +21,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
+#if defined(TARGET_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
 #include <dlfcn.h>
+#endif
 
 // Contains LIBC_SO definition
 #ifdef HAVE_GNU_LIB_NAMES_H
