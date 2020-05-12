@@ -10,11 +10,7 @@ add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 add_definitions(-DEXPORT_SHARED_API=1)
 
-if (BUILD_OBJECT_LIBRARY)
-    add_library(lib${DOTNET_PROJECT_NAME} OBJECT ${SOURCES} ${RESOURCES})
-else ()
-    add_library(lib${DOTNET_PROJECT_NAME} STATIC ${SOURCES} ${RESOURCES})
-endif ()
+add_library(lib${DOTNET_PROJECT_NAME} STATIC ${SOURCES} ${RESOURCES})
 
 set_target_properties(lib${DOTNET_PROJECT_NAME} PROPERTIES MACOSX_RPATH TRUE)
 set_target_properties(lib${DOTNET_PROJECT_NAME} PROPERTIES PREFIX "")

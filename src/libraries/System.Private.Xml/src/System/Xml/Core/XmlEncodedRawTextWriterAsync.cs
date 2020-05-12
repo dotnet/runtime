@@ -645,7 +645,7 @@ namespace System.Xml
                         if (bufPos - 1 > 0)
                         {
                             // Write text to TextWriter
-                            await writer.WriteAsync(bufChars, 1, bufPos - 1).ConfigureAwait(false);
+                            await writer.WriteAsync(bufChars.AsMemory(1, bufPos - 1)).ConfigureAwait(false);
                         }
                     }
                 }
@@ -688,13 +688,13 @@ namespace System.Xml
                 bufBytesUsed += bEnc;
                 if (bufBytesUsed >= (bufBytes.Length - 16))
                 {
-                    await stream.WriteAsync(bufBytes, 0, bufBytesUsed).ConfigureAwait(false);
+                    await stream.WriteAsync(bufBytes.AsMemory(0, bufBytesUsed)).ConfigureAwait(false);
                     bufBytesUsed = 0;
                 }
             }
             if (writeAllToStream && bufBytesUsed > 0)
             {
-                await stream.WriteAsync(bufBytes, 0, bufBytesUsed).ConfigureAwait(false);
+                await stream.WriteAsync(bufBytes.AsMemory(0, bufBytesUsed)).ConfigureAwait(false);
                 bufBytesUsed = 0;
             }
         }

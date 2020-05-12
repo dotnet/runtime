@@ -6,12 +6,12 @@
     <Nullable>annotations</Nullable>
     <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0;net461-Windows_NT;netstandard2.0-FreeBSD;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0' AND '$(TargetsFreeBSD)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsAnyOS)' == 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0' AND '$(TargetsFreeBSD)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\IO\Ports\Handshake.cs" />

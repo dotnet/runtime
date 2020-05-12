@@ -7,6 +7,7 @@ parameters:
   framework: net5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
   liveLibrariesBuildConfig: ''
   variables: {}
+  runtimeType: 'coreclr'
   pool: ''
 
 ### Perf job
@@ -18,24 +19,33 @@ jobs:
 - template: run-performance-job.yml
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    runtimeType: ${{ parameters.runtimeType }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+    - ${{ if eq(parameters.runtimeType, 'mono') }}:
+      - ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
+      ${{ if eq(parameters.runtimeType, 'mono') }}:
+        extraSetupParameters: -Architecture ${{ parameters.archType }} -MonoDotnet $(Build.SourcesDirectory)\.dotnet-mono -Kind micro_mono
+      ${{ if ne(parameters.runtimeType, 'mono') }}:
+        extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
     ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
+      ${{ if eq(parameters.runtimeType, 'mono') }}:
+        extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono --kind micro_mono
+      ${{ if ne(parameters.runtimeType, 'mono') }}:
+        extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
     
     variables: ${{ parameters.variables }}
 
@@ -43,7 +53,6 @@ jobs:
       - ${{ parameters.framework }}
     steps:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
-
 
     # Optionally download live-built libraries
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
@@ -64,7 +73,24 @@ jobs:
         artifactName: '$(buildProductArtifactName)'
         displayName: 'product build'
 
+    - ${{ if eq(parameters.runtimeType, 'mono') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)
+          cleanUnpackFolder: false
+          artifactFileName: 'MonoProduct_$(osGroup)_$(archType)_$(buildConfig)$(archiveExtension)'
+          artifactName: 'MonoProduct_$(osGroup)_$(archType)_$(buildConfig)'
+          displayName: 'Mono runtime'
 
     # Create Core_Root
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
+      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
+
+    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\5.0.0\\corerun.exe"
+      displayName: "Create mono dotnet (Windows)"
+      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'Windows_NT'))
+
+    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/5.0.0/corerun"
+      displayName: "Create mono dotnet (Linux)"
+      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'Windows_NT'))

@@ -552,7 +552,7 @@ namespace System.Xml
                     if (bufPos - 1 > 0)
                     {
                         Debug.Assert(stream != null);
-                        await stream.WriteAsync(bufBytes, 1, bufPos - 1).ConfigureAwait(false);
+                        await stream.WriteAsync(bufBytes.AsMemory(1, bufPos - 1)).ConfigureAwait(false);
                     }
                 }
             }

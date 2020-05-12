@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -29,8 +30,8 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { "[]", new object[] { "a" }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 49, 132, 0, 0, 0, 0 } : new byte[] { 49, 0 } };
             yield return new object[] { "n", new object[] { "a" }, new byte[] { 5, 0 } };
 
-            yield return new object[] { "tetie", new object[] { -1, 0, 1, 2, 3 }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 255, 1, 0, 1, 1, 2, 10, 1, 3 } : new byte[] { 10, 1, 0, 1, 1, 2, 10, 1, 3 } };
-            yield return new object[] { "{tetie}", new object[] { -1, 0, 1, 2, 3 }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 9, 255, 1, 0, 1, 1, 2, 10, 1, 3 } : new byte[] { 48, 9, 10, 1, 0, 1, 1, 2, 10, 1, 3 } };
+            yield return new object[] { "tetie", new object[] { 128, 0, 133, 2, 3 }, new byte[] { 128, 1, 0, 133, 1, 2, 10, 1, 3 } };
+            yield return new object[] { "{tetie}", new object[] { 128, 0, 133, 2, 3 }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 9, 128, 1, 0, 133, 1, 2, 10, 1, 3 } : new byte[] { 48, 9, 128, 1, 0, 133, 1, 2, 10, 1, 3 } };
 
             yield return new object[] { "bb", new object[] { true, false }, new byte[] { 1, 1, 255, 1, 1, 0 } };
             yield return new object[] { "{bb}", new object[] { true, false }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } : new byte[] { 48, 6, 1, 1, 255, 1, 1, 0 } };

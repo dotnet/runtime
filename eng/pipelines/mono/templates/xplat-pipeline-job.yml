@@ -47,12 +47,11 @@ jobs:
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
 
     variables:
-
     - name: coreClrProductArtifactName
       value: 'CoreCLRProduct_$(osGroup)$(osSubgroup)_$(archType)_${{ parameters.liveRuntimeBuildConfig }}'
 
     - name: coreClrProductRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).${{ parameters.liveRuntimeBuildConfig }}'
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(liveRuntimeBuildConfigUpper)'
 
     - name: buildProductArtifactName
       ${{ if ne(parameters.llvm, true) }}:
@@ -87,8 +86,13 @@ jobs:
     - name: nativeTestArtifactRootFolderPath
       value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
 
-
-
+    - name: liveRuntimeBuildConfigUpper
+      ${{ if eq(parameters.liveRuntimeBuildConfig, 'release') }}:
+        value: 'Release'
+      ${{ if eq(parameters.liveRuntimeBuildConfig, 'checked') }}:
+        value: 'Checked'
+      ${{ if eq(parameters.liveRuntimeBuildConfig, 'debug') }}:
+        value: 'Debug'
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''

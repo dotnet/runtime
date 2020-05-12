@@ -101,6 +101,15 @@
     <Compile Include="Divide.Vector64.Single.cs" />
     <Compile Include="Divide.Vector128.Double.cs" />
     <Compile Include="Divide.Vector128.Single.cs" />
+    <Compile Include="DuplicateSelectedScalarToVector128.V128.Double.1.cs" />
+    <Compile Include="DuplicateSelectedScalarToVector128.V128.Int64.1.cs" />
+    <Compile Include="DuplicateSelectedScalarToVector128.V128.UInt64.1.cs" />
+    <Compile Include="DuplicateToVector128.Double.cs" />
+    <Compile Include="DuplicateToVector128.Double.31.cs" />
+    <Compile Include="DuplicateToVector128.Int64.cs" />
+    <Compile Include="DuplicateToVector128.Int64.31.cs" />
+    <Compile Include="DuplicateToVector128.UInt64.cs" />
+    <Compile Include="DuplicateToVector128.UInt64.31.cs" />
     <Compile Include="FusedMultiplyAdd.Vector128.Double.cs" />
     <Compile Include="FusedMultiplySubtract.Vector128.Double.cs" />
     <Compile Include="Max.Vector128.Double.cs" />

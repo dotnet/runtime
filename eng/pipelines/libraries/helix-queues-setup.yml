@@ -98,7 +98,7 @@ jobs:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
           # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
           # - Windows.7.Amd64.Open
-          # - Windows.81.Amd64.Open
+          - Windows.81.Amd64.Open
           - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
             - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
@@ -125,8 +125,8 @@ jobs:
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
             - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
+            - Windows.7.Amd64.Open
             # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
-            # - Windows.7.Amd64.Open
             # - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.Open
 

@@ -100,6 +100,18 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ExtensionPropertyInvalidJsonFail()
+        {
+            const string BadJson = @"{""Good"":""OK"",""Bad"":!}";
+
+            JsonException jsonException = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(BadJson));
+            Assert.Contains("Path: $.Bad | LineNumber: 0 | BytePositionInLine: 19.", jsonException.ToString());
+            Assert.NotNull(jsonException.InnerException);
+            Assert.IsAssignableFrom<JsonException>(jsonException.InnerException);
+            Assert.Contains("!", jsonException.InnerException.ToString());
+        }
+
+        [Fact]
         public static void ExtensionPropertyAlreadyInstantiated()
         {
             Assert.NotNull(new ClassWithExtensionPropertyAlreadyInstantiated().MyOverflow);

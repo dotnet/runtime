@@ -2482,6 +2482,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 		} else if (calli) {
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
+#ifdef TARGET_X86
+			/* Windows not tested/supported yet */
+			if (td->last_ins->opcode == MINT_CALLI_NAT)
+				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
+#endif
+
 			if (op != -1) {
 				td->last_ins->data[1] = op;
 				if (td->last_ins->opcode == MINT_CALLI_NAT_FAST)
