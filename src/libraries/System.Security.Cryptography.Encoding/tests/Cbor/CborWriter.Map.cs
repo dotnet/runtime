@@ -131,7 +131,7 @@ namespace System.Formats.Cbor
 
                 // now copy back to the original buffer segment & clean up
                 tmpSpan.CopyTo(source.Slice(_frameOffset, totalMapPayloadEncodingLength));
-                s_bufferPool.Return(tempBuffer, clearArray: true);
+                s_bufferPool.Return(tempBuffer);
             }
 
             ReturnKeyEncodingRangeAllocation();

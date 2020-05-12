@@ -10,9 +10,8 @@ using System.Threading;
 
 namespace System.Formats.Cbor
 {
-    public partial class CborWriter : IDisposable
+    public partial class CborWriter
     {
-        // TODO : determine if CryptoPool is more appropriate
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
 
         private byte[] _buffer = null!;
@@ -119,8 +118,6 @@ namespace System.Formats.Cbor
 
         private ReadOnlySpan<byte> GetSpanEncoding()
         {
-            CheckDisposed();
-
             if (!IsWriteCompleted)
             {
                 throw new InvalidOperationException("Buffer contains incomplete CBOR document.");
@@ -131,27 +128,16 @@ namespace System.Formats.Cbor
 
         private void EnsureWriteCapacity(int pendingCount)
         {
-            CheckDisposed();
-
             if (pendingCount < 0)
             {
                 throw new OverflowException();
             }
 
-            if (_buffer == null || _buffer.Length - _offset < pendingCount)
+            if (_buffer is null || _buffer.Length - _offset < pendingCount)
             {
                 const int BlockSize = 1024;
-                // While the ArrayPool may have similar logic, make sure we don't run into a lot of
-                // "grow a little" by asking in 1k steps.
                 int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
-                byte[]? oldBytes = _buffer;
-                _buffer = s_bufferPool.Rent(BlockSize * blocks);
-
-                if (oldBytes != null)
-                {
-                    Buffer.BlockCopy(oldBytes, 0, _buffer, 0, _offset);
-                    s_bufferPool.Return(oldBytes, clearArray: true);
-                }
+                Array.Resize(ref _buffer, BlockSize * blocks);
             }
         }
 
@@ -274,25 +260,6 @@ namespace System.Formats.Cbor
             }
 
             _buffer[_offset++] = initialByte.InitialByte;
-        }
-
-        private void CheckDisposed()
-        {
-            if (_offset < 0)
-            {
-                throw new ObjectDisposedException(nameof(CborWriter));
-            }
-        }
-
-        public void Dispose()
-        {
-            byte[]? buffer = Interlocked.Exchange(ref _buffer, null!);
-
-            if (buffer != null)
-            {
-                s_bufferPool.Return(buffer, clearArray: true);
-                _offset = -1;
-            }
         }
 
         private void CompleteIndefiniteLengthWrite(CborMajorType type)

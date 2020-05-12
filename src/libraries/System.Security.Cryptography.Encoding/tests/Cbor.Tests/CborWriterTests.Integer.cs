@@ -46,7 +46,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteInt64_SingleValue_HappyPath(long input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteInt64(input);
             AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
@@ -78,7 +78,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteInt32_SingleValue_HappyPath(int input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteInt32(input);
             AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
@@ -105,7 +105,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteUInt64_SingleValue_HappyPath(ulong input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteUInt64(input);
             AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
@@ -129,7 +129,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteUInt32_SingleValue_HappyPath(uint input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteUInt32(input);
             AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
@@ -147,7 +147,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteCborNegativeIntegerEncoding_SingleValue_HappyPath(ulong input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteCborNegativeIntegerEncoding(input);
             AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
