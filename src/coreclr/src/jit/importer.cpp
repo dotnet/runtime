@@ -4279,7 +4279,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             impPopStack();
         }
 
-        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, JITtype2varType(sig->retType), sig->retTypeClass);
+        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, JITtype2varType(sig->retType),
+                                       sig->retTypeClass);
     }
 
     // Optionally report if this intrinsic is special
