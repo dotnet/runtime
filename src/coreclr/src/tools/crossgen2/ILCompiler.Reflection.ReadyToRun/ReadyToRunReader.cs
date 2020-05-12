@@ -31,6 +31,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         FreeBSD = 0xADC4,
         Linux = 0x7B79,
         NetBSD = 0x1993,
+        SunOS = 0x1992,
         Windows = 0,
         Unknown = -1
     }
