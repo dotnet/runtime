@@ -34,13 +34,10 @@ namespace System
         // OSX family
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
-        public static Version OSXVersion => IsOSX ?
-            Environment.OSVersion.Version :
-            throw new PlatformNotSupportedException();
-        public static bool IsMacOsHighSierraOrHigher => IsOSX && OSXVersion >= new Version(10, 13);
+        public static bool IsMacOsHighSierraOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 13);
         public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
-        public static bool IsMacOsMojaveOrHigher => IsOSX && OSXVersion >= new Version(10, 14);
-        public static bool IsMacOsCatalinaOrHigher => IsOSX && OSXVersion >= new Version(10, 15);
+        public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
+        public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
@@ -157,17 +154,31 @@ namespace System
         {
             DistroInfo result = new DistroInfo();
 
-            foreach (string line in File.ReadAllLines("/etc/os-release"))
+            if (IsFreeBSD)
             {
-                if (line.StartsWith("ID=", StringComparison.Ordinal))
+                result.Id = "FreeBSD";
+                // example:
+                // FreeBSD 11.0-RELEASE-p1 FreeBSD 11.0-RELEASE-p1 #0 r306420: Thu Sep 29 01:43:23 UTC 2016     root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC
+                // What we want is major release as minor releases should be compatible.
+                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split()[1].Split('.')[0]);
+            }
+            else if (File.Exists("/etc/os-release"))
+            {
+                foreach (string line in File.ReadAllLines("/etc/os-release"))
                 {
-                    result.Id = line.Substring(3).Trim('"', '\'');
-                }
-                else if (line.StartsWith("VERSION_ID=", StringComparison.Ordinal))
-                {
-                    result.VersionId = ToVersion(line.Substring(11).Trim('"', '\''));
+                    if (line.StartsWith("ID=", StringComparison.Ordinal))
+                    {
+                        result.Id = line.Substring(3).Trim('"', '\'');
+                    }
+                    else if (line.StartsWith("VERSION_ID=", StringComparison.Ordinal))
+                    {
+                        result.VersionId = ToVersion(line.Substring(11).Trim('"', '\''));
+                    }
                 }
             }
+
+            result.Id ??= "Linux";
+            result.VersionId ??= ToVersion(string.Empty);
 
             return result;
         }
