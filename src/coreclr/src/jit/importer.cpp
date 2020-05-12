@@ -4272,7 +4272,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     if (mustExpand && (retNode == nullptr))
     {
-        NO_WAY("JIT must expand the intrinsic!");
+        assert(!"Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
+        return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 
     // Optionally report if this intrinsic is special
@@ -4509,12 +4510,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
             result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
         }
-        else if (strcmp(methodName, "get_IsSupported") == 0)
+
+        if (result == NI_Illegal)
         {
-            return NI_IsSupported_False;
-        }
-        else
-        {
+            if (strcmp(methodName, "get_IsSupported") == 0)
+            {
+                return NI_IsSupported_False;
+            }
             return gtIsRecursiveCall(method) ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
         }
     }
