@@ -43,7 +43,7 @@ Make sure an emulator is booted or a device is plugged and unlocked.
 - The following shows how to run tests for a specific library
 ```
 cd src/libraries/System.Numerics.Vectors/tests
-../../../.././dotnet.sh build /t:Test /p:TargetOS=Android /p:TargetArchitecture=x64
+~runtime/dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
 ```
 
 ### Obtaining the logs
