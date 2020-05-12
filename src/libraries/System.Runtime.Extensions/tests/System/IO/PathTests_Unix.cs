@@ -19,17 +19,7 @@ namespace System.IO.Tests
             // UNCs and device paths have no special meaning in Unix
             _ = expected;
             Assert.Empty(Path.GetPathRoot(value));
-        }
-
-        [Fact]
-        public static void GetPathRoot_VerifySameOutput_SpanVsString()
-        {
-            string original = "/home/../folder/../..";
-            string expected = "/";
-            string actualString = Path.GetPathRoot(original);
-            ReadOnlySpan<char> actualSpan = Path.GetPathRoot(original.AsSpan());
-            Assert.Equal(expected, actualString);
-            Assert.Equal(expected, actualSpan.ToString());
+            Assert.True(Path.GetPathRoot(value.AsSpan()).IsEmpty);
         }
 
         [Theory,
@@ -126,13 +116,44 @@ namespace System.IO.Tests
             { @"../../../tmp/bar/..", @"/home/git", @"/tmp" },
             { @"../../././tmp/..", @"/home/git", @"/" },
             { @"././../../../", @"/home/git", @"/" },
+            { @"../tmp/../..", @"/home", @"/" }
         };
 
         [Theory,
            MemberData(nameof(GetFullPath_BasePath_BasicExpansions_TestData_Unix))]
         public static void GetFullPath_BasicExpansions_Unix(string path, string basePath, string expected)
         {
-            Assert.Equal(expected, Path.GetFullPath(path, basePath));
+            string fullPath = Path.GetFullPath(path, basePath);
+            Assert.Equal(expected, fullPath);
+        }
+
+        [Theory]
+        [InlineData(@"/../../.././tmp/..")]
+        [InlineData(@"/../../../")]
+        [InlineData(@"/../../../tmp/bar/..")]
+        [InlineData(@"/../.././././bar/../../../")]
+        [InlineData(@"/../../././tmp/..")]
+        [InlineData(@"/../../tmp/../../")]
+        [InlineData(@"/../../tmp/bar/..")]
+        [InlineData(@"/../tmp/../..")]
+        [InlineData(@"/././../../../../")]
+        [InlineData(@"/././../../../")]
+        [InlineData(@"/./././bar/../../../")]
+        [InlineData(@"/")]
+        [InlineData(@"/bar")]
+        [InlineData(@"/bar/././././../../..")]
+        [InlineData(@"/bar/tmp")]
+        [InlineData(@"/tmp/..")]
+        [InlineData(@"/tmp/../../../../../bar")]
+        [InlineData(@"/tmp/../../../bar")]
+        [InlineData(@"/tmp/../bar/../..")]
+        [InlineData(@"/tmp/bar")]
+        [InlineData(@"/tmp/bar/..")]
+        public static void GePathRoot_Unix(string path)
+        {
+            string expected = @"/";
+            Assert.Equal(expected, Path.GetPathRoot(path));
+            PathAssert.Equal(expected.AsSpan(), Path.GetPathRoot(path.AsSpan()));
         }
 
         [Fact]
