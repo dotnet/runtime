@@ -292,7 +292,7 @@ namespace System.Net.Sockets
 
                 Interop.Sys.AioContext aioContext = default;
                 int aioEventBufferCount = EventBufferCount * s_batchSegmentSize;
-                if (Interop.Sys.IsAioSupported() && Interop.Sys.IoSetup(aioEventBufferCount, &aioContext) == 0)
+                if (Interop.Sys.IsAioSupported() && Interop.Sys.IoSetup((uint)aioEventBufferCount, &aioContext) == 0)
                 {
                     _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * aioEventBufferCount);
                     _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * aioEventBufferCount);
@@ -431,7 +431,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                ExecutNoAio();
+                ExecuteNoAio();
             }
         }
 
@@ -500,8 +500,9 @@ namespace System.Net.Sockets
             ConcurrentBag<int> unusedBatchSegments = _unusedBatchSegments;
             ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
 
-            while (!unusedBatchSegments.TryTake(out int batchSegmentId))
+            if (!unusedBatchSegments.TryTake(out int batchSegmentId))
             {
+                return;
                 // TODO: what if it takes too long? should we add some timeout? just exit?
             }
 
@@ -556,7 +557,7 @@ namespace System.Net.Sockets
                 ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(aioEventsSegment, currentBatchSize);
                 for (int i = 0; i < events.Length; i++)
                 {
-                    batchedOperations[events[i].Data].HandleBatchEvent(in events[i]);
+                    batchedOperations[(int)events[i].Data].HandleBatchEvent(in events[i]);
                 }
 
                 ioControlBlocksSegment.Clear();

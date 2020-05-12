@@ -1426,14 +1426,14 @@ namespace System.Net.Sockets
                         _state = QueueState.Ready;
                         _sequenceNumber++;
                     }
-                    else if (_tail.Next == op)
+                    else if (_tail?.Next == op)
                     {
                         // Pop current operation and advance to next
                         _tail.Next = op.Next;
                     }
                     else
                     {
-                        throw new Exception($"Something went wrong, {_batchedOperationsCount}");
+                        throw new Exception($"Something went wrong");
                     }
                 }
 
