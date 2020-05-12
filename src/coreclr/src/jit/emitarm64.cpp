@@ -649,12 +649,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2D: // DV_2D   .Q.........iiiii ......nnnnnddddd      Vd Vn[]  (dup - vector)
+            ins      = id->idIns();
             datasize = id->idOpSize();
             assert(isValidVectorDatasize(datasize));
             assert(isValidArrangement(datasize, id->idInsOpt()));
             elemsize = optGetElemsize(id->idInsOpt());
             index    = emitGetInsSC(id);
-            assert(isValidVectorIndex(datasize, elemsize, index));
+            assert((ins == INS_dup) || isValidVectorIndex(datasize, elemsize, index));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -2864,12 +2865,11 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
  *         'size' specifies the size of the result (16 or 32 bits)
  */
 
-/*static*/ INT32 emitter::emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size)
+/*static*/ UINT32 emitter::emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size)
 {
     bool     onesShift = (bsImm.immOnes == 1);
-    unsigned bySh      = bsImm.immBY;         // Num Bytes to shift 0,1,2,3
-    INT32    val       = (INT32)bsImm.immVal; // 8-bit immediate
-    INT32    result    = val;
+    unsigned bySh      = bsImm.immBY;          // Num Bytes to shift 0,1,2,3
+    UINT32   result    = (UINT32)bsImm.immVal; // 8-bit immediate
 
     if (bySh > 0)
     {
@@ -5032,12 +5032,17 @@ void emitter::emitIns_R_R_I(
             {
                 if (insOptsAnyArrangement(opt))
                 {
+                    // The size and opt were modified to be based on the
+                    // return type but the immediate is based on the operand
+                    // which can be of a larger size. As such, we don't
+                    // assert the index is valid here and instead do it in
+                    // codegen.
+
                     // Vector operation
                     assert(isValidVectorDatasize(size));
                     assert(isValidArrangement(size, opt));
                     elemsize = optGetElemsize(opt);
                     assert(isValidVectorElemsize(elemsize));
-                    assert(isValidVectorIndex(size, elemsize, imm));
                     assert(opt != INS_OPTS_1D); // Reserved encoding
                     fmt = IF_DV_2D;
                     break;

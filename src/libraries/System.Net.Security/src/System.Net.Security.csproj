@@ -34,6 +34,7 @@
     <Compile Include="System\Net\Security\StreamSizes.cs" />
     <Compile Include="System\Net\Security\TlsAlertType.cs" />
     <Compile Include="System\Net\Security\TlsAlertMessage.cs" />
+    <Compile Include="System\Net\Security\TlsFrameHelper.cs" />
     <Compile Include="System\Security\Authentication\AuthenticationException.cs" />
     <!-- NegotiateStream -->
     <Compile Include="System\Net\BufferAsyncResult.cs" />

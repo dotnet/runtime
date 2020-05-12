@@ -521,6 +521,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 {
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
+    GenTree* op2     = nullptr;
 
     if (!featureSIMD)
     {
@@ -744,6 +745,70 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, baseType), TYP_INT);
             countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
             retNode = countNode;
+            break;
+        }
+
+        case NI_Vector128_Create:
+        case NI_Vector256_Create:
+        {
+#if defined(TARGET_X86)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                // instruction, which takes a 64-bit memory address and
+                // works on 32-bit x86 systems.
+                break;
+            }
+#endif // TARGET_X86
+
+            // We shouldn't handle this as an intrinsic if the
+            // respective ISAs have been disabled by the user.
+
+            if (intrinsic == NI_Vector256_Create)
+            {
+                if (!compExactlyDependsOn(InstructionSet_AVX))
+                {
+                    break;
+                }
+            }
+            else if (baseType == TYP_FLOAT)
+            {
+                if (!compExactlyDependsOn(InstructionSet_SSE))
+                {
+                    break;
+                }
+            }
+            else if (!compExactlyDependsOn(InstructionSet_SSE2))
+            {
+                break;
+            }
+
+            if (sig->numArgs == 1)
+            {
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            else if (sig->numArgs == 2)
+            {
+                op2     = impPopStack().val;
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
+            }
+            else
+            {
+                assert(sig->numArgs >= 3);
+
+                GenTreeArgList* tmp = nullptr;
+
+                for (unsigned i = 0; i < sig->numArgs; i++)
+                {
+                    tmp        = gtNewArgList(impPopStack().val);
+                    tmp->gtOp2 = op1;
+                    op1        = tmp;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
             break;
         }
 

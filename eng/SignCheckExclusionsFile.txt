@@ -10,3 +10,4 @@
 *comhost.dll;;Template, https://github.com/dotnet/core-setup/pull/7549
 *apphosttemplateapphostexe.exe;;Template, https://github.com/dotnet/core-setup/pull/7549
 *comhosttemplatecomhostdll.dll;;Template, https://github.com/dotnet/core-setup/pull/7549
+*staticapphosttemplateapphostexe.exe;;Template, https://github.com/dotnet/core-setup/pull/7549

@@ -59,6 +59,19 @@ check_prereqs()
         echo "Please install CMake 3.14.2 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
     fi
 
+    if [[ "$__HostOS" == "OSX" ]]; then
+        # Check presence of pkg-config on the path
+        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+
+        if ! pkg-config openssl ; then
+            # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
+            # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
+            export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig
+            # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
+            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+        fi
+    fi
+
     if [[ "$__UseNinja" == 1 ]]; then
         command -v ninja 2>/dev/null || command -v ninja-build 2>/dev/null || { echo "Unable to locate ninja!"; exit 1; }
     fi
@@ -396,7 +409,7 @@ done
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
-platform=$(uname)
+platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
   __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then

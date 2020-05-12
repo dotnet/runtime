@@ -27,8 +27,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunHelper helper, 
             Signature instanceSignature, 
             bool useVirtualCall = false, 
-            string callSite = null)
-            : base(importSectionNode, instanceSignature, callSite)
+            MethodDesc callingMethod = null)
+            : base(importSectionNode, instanceSignature, callingMethod)
         {
             _helper = helper;
             _useVirtualCall = useVirtualCall;
@@ -45,10 +45,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(_helper.ToString());
             sb.Append(") -> ");
             ImportSignature.AppendMangledName(nameMangler, sb);
-            if (CallSite != null)
+            if (CallingMethod != null)
             {
                 sb.Append(" @ ");
-                sb.Append(CallSite);
+                sb.Append(nameMangler.GetMangledMethodName(CallingMethod));
             }
         }
 

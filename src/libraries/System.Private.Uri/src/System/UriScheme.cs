@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Threading;
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     //
@@ -61,6 +65,25 @@ namespace System
         //
         protected virtual void InitializeAndValidate(Uri uri, out UriFormatException? parsingError)
         {
+            if (uri._syntax is null)
+            {
+                throw new InvalidOperationException(SR.net_uri_NotAbsolute);
+            }
+
+            if (!ReferenceEquals(uri._syntax, this))
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_uri_UserDrivenParsing, uri._syntax.GetType()));
+            }
+
+            Debug.Assert(sizeof(Uri.Flags) == sizeof(ulong));
+
+            // If ParseMinimal is called multiple times this Uri instance may be corrupted, throw an exception instead
+            ulong previous = Interlocked.Or(ref Unsafe.As<Uri.Flags, ulong>(ref uri._flags), (ulong)Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
+            if (((Uri.Flags)previous & Uri.Flags.CustomParser_ParseMinimalAlreadyCalled) != 0)
+            {
+                throw new InvalidOperationException(SR.net_uri_InitializeCalledAlreadyOrTooLate);
+            }
+
             parsingError = uri.ParseMinimal();
         }
 

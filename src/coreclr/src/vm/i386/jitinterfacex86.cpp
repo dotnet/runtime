@@ -135,8 +135,10 @@ HCIMPL1(Object*, AllocObjectWrapper, MethodTable *pMT)
 HCIMPLEND
 
 /*********************************************************************/
+#ifndef UNIX_X86_ABI
 extern "C" void* g_TailCallFrameVptr;
 void* g_TailCallFrameVptr;
+#endif // !UNI_X86_ABI
 
 #ifdef FEATURE_HIJACK
 extern "C" void STDCALL JIT_TailCallHelper(Thread * pThread);
@@ -1085,8 +1087,10 @@ void InitJITHelpers1()
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
 
+#ifndef UNIX_X86_ABI
     // Initialize g_TailCallFrameVptr for JIT_TailCall helper
     g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();
+#endif // !UNIX_X86_ABI
 }
 #pragma warning (default : 4731)
 

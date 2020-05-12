@@ -18,6 +18,11 @@
     <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
   </PropertyGroup>
 
+  <!-- Set env variable to use the local netfx assemblies instead of the ones in the GAC. -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
+  </ItemGroup>
+
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
@@ -96,119 +101,7 @@
     <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
   </Target>
 
- <!-- Generate a self-contained app bundle for Android with tests.
-       This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
-  <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AndroidAppBuilder\$(TargetArchitecture)\$(Configuration)\AndroidAppBuilder.dll" />
-  <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp" AfterTargets="CopyFilesToOutputDirectory">
-    <PropertyGroup>
-      <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
-      <BundleDir>$(OutDir)\Bundle</BundleDir>
-      <AndroidTestRunner>$(RepoRoot)\src\mono\msbuild\AndroidTestRunner\bin</AndroidTestRunner>
-      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
-      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(TargetArchitecture)</AndroidAbi>
-    </PropertyGroup>
-    <!-- TEMP: We need to copy additional stuff into $(OutDir)\Bundle
-         1) The whole BCL
-         2) Test Runner (with xharness client-side lib)
-      -->
-    <ItemGroup>
-      <TestBinaries Include="$(OutDir)\*.*"/>
-      <AndroidTestRunnerBinaries Include="$(AndroidTestRunner)\*.*" />
-      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" 
-                   Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\libmono.dylib" />
-      
-      <!-- remove PDBs and DBGs to save some space until we integrate ILLink -->
-      <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
-      <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.dbg" />
-    </ItemGroup>
-
-    <Error Condition="!Exists('$(AndroidTestRunner)')" Text="AndroidTestRunner=$(AndroidTestRunner) doesn't exist" />
-    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
-    <RemoveDir Directories="$(BundleDir)" />
-    <Copy SourceFiles="@(TestBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
-    <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-
-    <WriteLinesToFile File="$(BundleDir)\xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
-
-    <AndroidAppBuilderTask 
-        Abi="$(AndroidAbi)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
-        MainLibraryFileName="AndroidTestRunner.dll"
-        OutputDir="$(BundleDir)"
-        SourceDir="$(BundleDir)">
-        <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
-        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
-    </AndroidAppBuilderTask>
-    <Message Importance="High" Text="PackageId:       $(ApkPackageId)"/>
-    <Message Importance="High" Text="Instrumentation: net.dot.MonoRunner"/>
-    <Message Importance="High" Text="Apk:             $(ApkBundlePath)"/>
-  </Target>
-
-  <!-- Generate a self-contained app bundle for iOS with tests.
-       This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
-  <UsingTask TaskName="AppleAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
-  <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp" AfterTargets="CopyFilesToOutputDirectory">
-    <PropertyGroup>
-      <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
-      <BundleDir>$(OutDir)\Bundle</BundleDir>
-      <AppleTestRunner>$(RepoRoot)\src\mono\msbuild\AppleTestRunner\bin</AppleTestRunner>
-    </PropertyGroup>
-    <!-- We need to copy additional stuff into $(OutDir)\Bundle
-         1) The whole BCL
-         2) Test Runner (with xharness client-side lib)
-      -->
-    <ItemGroup>
-      <TestBinaries Include="$(OutDir)\*.*"/>
-      <AppleTestRunnerBinaries Include="$(AppleTestRunner)\*.*" />
-      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\libmono.dylib" /> <!-- we use static libmono.a -->
-      
-      <!-- remove PDBs to save some space until we integrate ILLink -->
-      <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
-    </ItemGroup>
-    <Error Condition="!Exists('$(AppleTestRunner)')" Text="AppleTestRunner=$(AppleTestRunner) doesn't exist" />
-    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
-    <RemoveDir Directories="$(BundleDir)" />
-    <Copy SourceFiles="@(TestBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
-    <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-
-    <WriteLinesToFile File="$(BundleDir)\xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
-    <!-- Run App bundler, it should AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
-         and produce an app bundle (with xcode project) -->
-    <AppleAppBuilderTask 
-        Arch="$(TargetArchitecture)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
-        CrossCompiler="$(RuntimePackDir)\native\cross\mono-aot-cross"
-        MainLibraryFileName="AppleTestRunner.dll"
-        UseConsoleUITemplate="True"
-        GenerateXcodeProject="True"
-        BuildAppBundle="True"
-        Optimized="True"
-        UseLlvm="$(MonoEnableLLVM)"
-        LlvmPath="$(RuntimePackDir)\native\cross"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(BundleDir)"
-        AppDir="$(BundleDir)">
-        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
-        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
-    </AppleAppBuilderTask>
-    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
-    <Message Importance="High" Text="App: $(AppBundlePath)"/>
-    <Error Condition="$(TargetArchitecture.StartsWith('arm')) and '$(DevTeamProvisioning)' == ''" 
-           Text="'DevTeamProvisioning' shouldn't be empty for arm64" />
-    <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
-  </Target>
-
-  <Import Project="$(MSBuildThisFileDirectory)runsettings.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)tests.mobile.targets" Condition="'$(TargetsMobile)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
 
   <!-- Main test targets -->

@@ -406,6 +406,12 @@
         "rhel"
       ]
     },
+    "centos-arm64": {
+      "#import": [
+        "centos",
+        "rhel-arm64"
+      ]
+    },
     "centos-x64": {
       "#import": [
         "centos",
@@ -431,11 +437,38 @@
         "rhel.8"
       ]
     },
+    "centos.8-arm64": {
+      "#import": [
+        "centos.8",
+        "centos-arm64",
+        "rhel.8-arm64"
+      ]
+    },
     "centos.8-x64": {
       "#import": [
         "centos.8",
         "centos-x64",
         "rhel.8-x64"
+      ]
+    },
+    "centos.9": {
+      "#import": [
+        "centos",
+        "rhel.9"
+      ]
+    },
+    "centos.9-arm64": {
+      "#import": [
+        "centos.9",
+        "centos-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "centos.9-x64": {
+      "#import": [
+        "centos.9",
+        "centos-x64",
+        "rhel.9-x64"
       ]
     },
     "debian": {
@@ -779,6 +812,23 @@
     "fedora.33-x64": {
       "#import": [
         "fedora.33",
+        "fedora-x64"
+      ]
+    },
+    "fedora.34": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.34-arm64": {
+      "#import": [
+        "fedora.34",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.34-x64": {
+      "#import": [
+        "fedora.34",
         "fedora-x64"
       ]
     },
@@ -1631,6 +1681,23 @@
       "#import": [
         "rhel.8.1",
         "rhel.8.0-x64"
+      ]
+    },
+    "rhel.9": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rhel.9-arm64": {
+      "#import": [
+        "rhel.9",
+        "rhel-arm64"
+      ]
+    },
+    "rhel.9-x64": {
+      "#import": [
+        "rhel.9",
+        "rhel-x64"
       ]
     },
     "sles": {

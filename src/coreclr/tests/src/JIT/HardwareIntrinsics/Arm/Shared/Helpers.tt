@@ -355,13 +355,13 @@ namespace JIT.HardwareIntrinsics.Arm
             return (<#= type.name #>)(((<#= type.wideUnsigned #>)op1 + roundConst) >> (8 * sizeof(<#= type.name #>)));
         }
 
-        public static <#= type.name #> AddReturningHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 + op2), round: false);
+        public static <#= type.name #> AddHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 + op2), round: false);
 
-        public static <#= type.name #> AddReturningHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static <#= type.name #> AddHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static <#= type.name #> AddReturningRoundedHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 + op2), round: true);
+        public static <#= type.name #> AddRoundedHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 + op2), round: true);
 
-        public static <#= type.wide #> AddReturningRoundedHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static <#= type.wide #> AddRoundedHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static <#= type.wide #> AddWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2);
 
@@ -389,13 +389,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= type.wide #> MultiplyWideningUpperAndSubtract(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static <#= type.name #> SubtractReturningHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 - op2), round: false);
+        public static <#= type.name #> SubtractHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 - op2), round: false);
 
-        public static <#= type.wide #> SubtractReturningHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static <#= type.wide #> SubtractHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static <#= type.name #> SubtractReturningRoundedHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 - op2), round: true);
+        public static <#= type.name #> SubtractRoundedHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 - op2), round: true);
 
-        public static <#= type.wide #> SubtractReturningRoundedHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static <#= type.wide #> SubtractRoundedHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static <#= type.wide #> SubtractWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 - (<#= type.wide #>)op2);
 

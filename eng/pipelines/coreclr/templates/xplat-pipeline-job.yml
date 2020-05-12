@@ -86,9 +86,6 @@ jobs:
     - name: corelibProductArtifactName
       value: 'CoreLib_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
-    - name: managedGenericTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
-
     - name: managedTestArtifactName
       value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 

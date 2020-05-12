@@ -18,7 +18,7 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, or SunOS"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD or SunOS"
   echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
@@ -42,7 +42,7 @@ usage()
   echo ""
 
   echo "Libraries settings:"
-  echo "  --framework                Build framework: netcoreapp5.0 or net472 (short: -f)"
+  echo "  --framework                Build framework: net5.0 or net472 (short: -f)"
   echo "  --coverage                 Collect code coverage when testing"
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
   echo "  --testnobuild              Skip building tests when invoking -test"
@@ -109,17 +109,17 @@ while [[ $# > 0 ]]; do
       ;;
 
      -subset|-s)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         arguments="$arguments /p:Subset=help"
         shift 1
-      else 
+      else
         arguments="$arguments /p:Subset=$2"
         shift 2
       fi
       ;;
 
      -arch)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
         exit 1
       fi
@@ -158,7 +158,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -framework|-f)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No framework supplied. See help (--help) for supported frameworks." 1>&2
         exit 1
       fi
@@ -168,7 +168,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -os)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No target operating system supplied. See help (--help) for supported target operating systems." 1>&2
         exit 1
       fi
@@ -208,7 +208,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -testscope)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No test scope supplied. See help (--help) for supported test scope values." 1>&2
         exit 1
       fi
@@ -227,7 +227,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -runtimeconfiguration|-rc)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No runtime configuration supplied. See help (--help) for supported runtime configurations." 1>&2
         exit 1
       fi
@@ -247,7 +247,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -librariesconfiguration|-lc)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
         exit 1
       fi
@@ -278,7 +278,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -cmakeargs)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No cmake args supplied." 1>&2
         exit 1
       fi

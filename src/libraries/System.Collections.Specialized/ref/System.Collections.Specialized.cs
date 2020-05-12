@@ -189,7 +189,7 @@ namespace System.Collections.Specialized
         public void Remove(object key) { }
         public void RemoveAt(int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
     }
     public partial class StringCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {

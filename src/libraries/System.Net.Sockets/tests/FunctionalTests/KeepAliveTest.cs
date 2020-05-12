@@ -54,6 +54,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(KeepAliveTest), nameof(IsWindowsBelow1703))] // RetryCount not supported by earlier versions of Windows
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_KeepAlive_RetryCount_Failure()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

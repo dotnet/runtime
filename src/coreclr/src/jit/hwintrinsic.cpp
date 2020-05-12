@@ -200,6 +200,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
         {
             case TYP_FLOAT:
                 return m_simdHandleCache->Vector64FloatHandle;
+            case TYP_DOUBLE:
+                return m_simdHandleCache->Vector64DoubleHandle;
             case TYP_INT:
                 return m_simdHandleCache->Vector64IntHandle;
             case TYP_USHORT:
@@ -212,6 +214,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 return m_simdHandleCache->Vector64ByteHandle;
             case TYP_UINT:
                 return m_simdHandleCache->Vector64UIntHandle;
+            case TYP_LONG:
+                return m_simdHandleCache->Vector64LongHandle;
+            case TYP_ULONG:
+                return m_simdHandleCache->Vector64ULongHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -286,16 +292,19 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
 // Arguments:
+//    comp       -- The compiler
+//    sig        -- The signature of the intrinsic
 //    className  -- The name of the class associated with the HWIntrinsic to lookup
 //    methodName -- The name of the method associated with the HWIntrinsic to lookup
 //    enclosingClassName -- The name of the enclosing class of X64 classes
 //
 // Return Value:
 //    The NamedIntrinsic associated with methodName and isa
-NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
-                                         const char* className,
-                                         const char* methodName,
-                                         const char* enclosingClassName)
+NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
+                                         CORINFO_SIG_INFO* sig,
+                                         const char*       className,
+                                         const char*       methodName,
+                                         const char*       enclosingClassName)
 {
     // TODO-Throughput: replace sequential search by binary search
     CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
@@ -318,14 +327,23 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
 
     for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
     {
+        const HWIntrinsicInfo& intrinsicInfo = hwIntrinsicInfoArray[i];
+
         if (isa != hwIntrinsicInfoArray[i].isa)
         {
             continue;
         }
 
-        if (strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
+        int numArgs = static_cast<unsigned>(intrinsicInfo.numArgs);
+
+        if ((numArgs != -1) && (sig->numArgs != static_cast<unsigned>(intrinsicInfo.numArgs)))
         {
-            return hwIntrinsicInfoArray[i].id;
+            continue;
+        }
+
+        if (strcmp(methodName, intrinsicInfo.name) == 0)
+        {
+            return intrinsicInfo.id;
         }
     }
 
