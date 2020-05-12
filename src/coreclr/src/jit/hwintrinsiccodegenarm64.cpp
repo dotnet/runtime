@@ -626,11 +626,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
-                if (!(varTypeIsFloating(intrin.baseType) && targetReg == op1Reg && indexValue == 0))
+                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))
                 {
-                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
-                                                INS_OPTS_NONE);
+                    break;
                 }
+
+                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
+                                            INS_OPTS_NONE);
             }
             break;
 
