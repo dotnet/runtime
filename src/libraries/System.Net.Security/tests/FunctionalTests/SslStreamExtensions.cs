@@ -10,14 +10,14 @@ namespace System.Net.Security.Tests
         {
             return async
                 ? stream.AuthenticateAsClientAsync(clientOptions, cancellationToken)
-                : Task.Run(() => stream.AuthenticateAsClient(clientOptions), cancellationToken);
+                : Task.Run(() => stream.AuthenticateAsClient(clientOptions));
         }
         public static Task AuthenticateAsServerAsync(this SslStream stream, SslServerAuthenticationOptions serverOptions,
             bool async, CancellationToken cancellationToken = default)
         {
             return async
                 ? stream.AuthenticateAsServerAsync(serverOptions, cancellationToken)
-                : Task.Run(() => stream.AuthenticateAsServer(serverOptions), cancellationToken);
+                : Task.Run(() => stream.AuthenticateAsServer(serverOptions));
         }
     }
 }

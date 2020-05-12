@@ -792,7 +792,7 @@ namespace System.Net.Security
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
             AsyncSslIOAdapter writeAdapter = new AsyncSslIOAdapter(this, cancellationToken);
