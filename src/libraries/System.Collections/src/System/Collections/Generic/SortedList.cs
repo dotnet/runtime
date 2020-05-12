@@ -90,8 +90,17 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            keys = new TKey[capacity];
-            values = new TValue[capacity];
+
+            if (capacity == 0)
+            {
+                keys = Array.Empty<TKey>();
+                keys = Array.Empty<TValue>();
+            }
+            else
+            {
+                keys = new TKey[capacity];
+                values = new TValue[capacity];
+            }
             comparer = Comparer<TKey>.Default;
         }
 
