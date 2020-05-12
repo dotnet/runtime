@@ -94,7 +94,7 @@ namespace System.Collections.Generic
             if (capacity == 0)
             {
                 keys = Array.Empty<TKey>();
-                keys = Array.Empty<TValue>();
+                values = Array.Empty<TValue>();
             }
             else
             {
