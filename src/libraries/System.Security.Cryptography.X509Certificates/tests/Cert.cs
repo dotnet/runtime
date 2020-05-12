@@ -86,10 +86,5 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         private X509Certificate2[] _certs;
-
-        public static implicit operator ImportedCollection(X509Certificate2Collection collection)
-        {
-            return new ImportedCollection(collection);
-        }
     }
 }

@@ -175,11 +175,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 string commonName = nameof(ExportDoesNotCorruptPrivateKeyMethods);
                 string subject = $"CN={commonName},OU=.NET";
 
-                using (ImportedCollection toClean = cuMy.Certificates)
+                using (ImportedCollection toClean = new ImportedCollection(cuMy.Certificates))
                 {
                     X509Certificate2Collection coll = toClean.Collection;
 
-                    using (ImportedCollection matches = coll.Find(X509FindType.FindBySubjectName, commonName, false))
+                    using (ImportedCollection matches =
+                        new ImportedCollection(coll.Find(X509FindType.FindBySubjectName, commonName, false)))
                     {
                         foreach (X509Certificate2 cert in matches.Collection)
                         {
@@ -218,7 +219,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 cuMy.Add(createdCert);
 
-                using (ImportedCollection toClean = cuMy.Certificates)
+                using (ImportedCollection toClean = new ImportedCollection(cuMy.Certificates))
                 {
                     X509Certificate2Collection matches = toClean.Collection.Find(
                         X509FindType.FindBySubjectName,
@@ -233,7 +234,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 foundCert.Export(X509ContentType.Pfx, "");
                 Assert.False(HasEphemeralKey(foundCert));
 
-                using (ImportedCollection toClean = cuMy.Certificates)
+                using (ImportedCollection toClean = new ImportedCollection(cuMy.Certificates))
                 {
                     X509Certificate2Collection matches = toClean.Collection.Find(
                         X509FindType.FindBySubjectName,
