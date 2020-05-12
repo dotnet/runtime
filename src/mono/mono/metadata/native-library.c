@@ -758,7 +758,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 	// We allow a special name to dlopen from the running process namespace, which is not present in CoreCLR
 	if (strcmp (scope, "__Internal") == 0) {
 		if (!internal_module)
-			internal_module = mono_dl_open (NULL, MONO_DL_LAZY, &error_msg);
+			internal_module = mono_dl_open_self (&error_msg);
 		module = internal_module;
 
 		if (!module) {

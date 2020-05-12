@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
+#include <dlfcn.h>
 
 // Contains LIBC_SO definition
 #ifdef HAVE_GNU_LIB_NAMES_H
@@ -167,6 +168,29 @@ fix_libc_name (const char *name)
 	return name;
 }
 #endif
+
+MonoDl*
+mono_dl_open_self (char **error_msg)
+{
+#if defined(TARGET_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
+	MonoDl *module;
+	if (error_msg)
+		*error_msg = NULL;
+	module = (MonoDl *) g_malloc (sizeof (MonoDl));
+	if (!module) {
+		if (error_msg)
+			*error_msg = g_strdup ("Out of memory");
+		return NULL;
+	}
+	mono_refcount_init (module, NULL);
+	module->handle = RTLD_DEFAULT;
+	module->dl_fallback = NULL;
+	module->full_name = NULL;
+	return module;
+#else 
+	return mono_dl_open (NULL, MONO_DL_LAZY, error_msg);
+#endif	
+}
 
 /**
  * mono_dl_open:
