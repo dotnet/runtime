@@ -16,7 +16,7 @@ Unlike XHarness-Android, XHarness for iOS is able to boot simulators by its own.
 - The following shows how to run tests for a specific library on a simulator
 ```
 cd src/libraries/System.Numerics.Vectors/tests
-../../../.././dotnet.sh build /t:Test /p:TargetOS=iOS /p:TargetArchitecture=x64
+~runtime/dotnet.sh build /t:Test /p:TargetOS=iOS /p:TargetArchitecture=x64
 ```
 for devices you need to specify `DevTeamProvisioning`:
 ```
