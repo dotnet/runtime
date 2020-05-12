@@ -48,7 +48,11 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            _array = new T[capacity];
+            
+            if (capacity == 0)
+                _array = Array.Empty<T>();
+            else
+                _array = new T[capacity];
         }
 
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
