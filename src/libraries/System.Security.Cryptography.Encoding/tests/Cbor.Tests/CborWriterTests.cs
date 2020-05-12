@@ -274,7 +274,7 @@ namespace System.Formats.Cbor.Tests
             var hashAlgName = new HashAlgorithmName(hashAlgorithmName);
             var ecParameters = new ECParameters()
             {
-                Curve = ECCurve.CreateFromFriendlyName(curveFriendlyName),
+                Curve = CborReaderTests.CreateCurveFromFriendlyNameXPlat(curveFriendlyName),
                 Q = new ECPoint() { X = hexQx.HexToByteArray(), Y = hexQy.HexToByteArray() },
             };
 

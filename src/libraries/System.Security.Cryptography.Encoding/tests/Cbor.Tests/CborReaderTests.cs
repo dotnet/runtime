@@ -204,11 +204,26 @@ namespace System.Formats.Cbor.Tests
 
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
 
+            string? expectedCurveFriendlyName = CreateCurveFromFriendlyNameXPlat(curveFriendlyName).Oid.FriendlyName;
+
             Assert.True(ecParams.Curve.IsNamed);
-            Assert.Equal(curveFriendlyName, ecParams.Curve.Oid.FriendlyName);
+            Assert.Equal(expectedCurveFriendlyName, ecParams.Curve.Oid.FriendlyName);
             Assert.Equal(q.X, ecParams.Q.X);
             Assert.Equal(q.Y, ecParams.Q.Y);
             Assert.Equal(expectedHashAlgorithmName, name.Name);
+        }
+
+        public static ECCurve CreateCurveFromFriendlyNameXPlat(string friendlyName)
+        {
+            // Different platforms use different friendly names,
+            // so we hardcode a mapping using test input identifiers.
+            return friendlyName switch
+            {
+                "nistP256" => ECCurve.NamedCurves.nistP256,
+                "nistP384" => ECCurve.NamedCurves.nistP384,
+                "nistP521" => ECCurve.NamedCurves.nistP521,
+                _ => throw new ArgumentException(),
+            };
         }
     }
 }
