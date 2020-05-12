@@ -34,7 +34,7 @@ Now we're ready to build everything for Android:
 ```
 and even run tests one by one for each test suite:
 ```
-./build.sh -os Android -arch x64 -subset Libs.Tests -test
+./build.sh libs.tests -os Android -arch x64 -test
 ```
 Make sure an emulator is booted or a device is plugged and unlocked.
 **NOTE**: Xharness doesn't run any UI on Android and runs tests using headless testing API so the device/emulator won't show anything (but still must stay active).
