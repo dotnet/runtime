@@ -23,17 +23,17 @@
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
 
     <RemoveDir Directories="$(BundleDir)" />
-    <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
     <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
     <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
           SourceFiles="$(AndroidOpenSslCryptoLib)"
-          DestinationFolder="$(OutDir)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
     <Copy Condition="'$(AndroidOpenSslLib)' != ''"
           SourceFiles="$(AndroidOpenSslLib)"
-          DestinationFolder="$(OutDir)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
 
-    <WriteLinesToFile File="$(OutDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
 
     <AndroidAppBuilderTask 
         Abi="$(AndroidAbi)"
@@ -41,7 +41,7 @@
         MonoRuntimeHeaders="$(RuntimePackNativeDir)\include\mono-2.0"
         MainLibraryFileName="AndroidTestRunner.dll"
         OutputDir="$(BundleDir)"
-        SourceDir="$(OutDir)">
+        SourceDir="$(PublishDir)">
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
     </AndroidAppBuilderTask>
@@ -62,9 +62,9 @@
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
 
     <RemoveDir Directories="$(BundleDir)" />
-    <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
-    <WriteLinesToFile File="$(OutDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
     <!-- Run App bundler, it should AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
     <AppleAppBuilderTask 
@@ -81,7 +81,7 @@
         LlvmPath="$(RuntimePackNativeDir)\cross"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
-        AppDir="$(OutDir)">
+        AppDir="$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
@@ -99,8 +99,6 @@
   </Target>
 
   <Target Name="UpdateRuntimePack"
-          Condition="'$(IsCrossTargetingBuild)' != 'true'"
-          AfterTargets="BeforeBuild"
           DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
     <ItemGroup>
       <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
@@ -109,6 +107,6 @@
 
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
-          AfterTargets="PrepareForRun"
-          DependsOnTargets="BundleTestAppleApp;BundleTestAndroidApp" />
+          AfterTargets="Build"
+          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp" />
 </Project>
