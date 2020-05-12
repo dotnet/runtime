@@ -663,7 +663,7 @@ namespace System.Net.Sockets
         private struct OperationQueue<TOperation>
             where TOperation : AsyncOperation
         {
-            private int _processing; // Tracks whether operations in the queue are being dispatched.
+            private int _processRequests; // Tracks whether operations in the queue are being processed.
             private bool _isNextOperationSynchronous;
             private int _sequenceNumber;    // This sequence number is updated when we receive an epoll notification.
                                             // It allows us to detect when a new epoll notification has arrived
@@ -727,7 +727,7 @@ namespace System.Net.Sockets
             public bool IsReady(SocketAsyncContext context, out int observedSequenceNumber)
             {
                 bool isReady = QueueGetFirst() is null;
-                observedSequenceNumber = _sequenceNumber;
+                observedSequenceNumber = isReady ? Volatile.Read(ref _sequenceNumber) : _sequenceNumber;
 
                 Trace(context, $"{isReady}");
 
@@ -896,7 +896,7 @@ namespace System.Net.Sockets
                 while (true)
                 {
                     AsyncOperation? op;
-                    if (Interlocked.CompareExchange(ref _processing, 1, 0) == 0)
+                    if (Interlocked.Increment(ref _processRequests) == 1)
                     {
                         op = QueueGetFirst();
                         if (op != null)
@@ -915,7 +915,7 @@ namespace System.Net.Sockets
                                 // We got called on epoll thread, but processing will be started on ThreadPool.
                                 if (skipAsyncEvents)
                                 {
-                                    Volatile.Write(ref _processing, 0);
+                                    Volatile.Write(ref _processRequests, 0);
                                     Trace(context, "Exit (process defer)");
                                 }
                                 else
@@ -925,12 +925,7 @@ namespace System.Net.Sockets
                                 return op;
                             }
                         }
-                        Volatile.Write(ref _processing, 0);
-
-                        // If an operation was added in the meanwhile, it may
-                        // rely on us processing it.
-                        op = QueueGetFirst();
-                        if (op == null)
+                        if (Interlocked.Exchange(ref _processRequests, 0) == 1)
                         {
                             Trace(context, "Exit (empty)");
                             return null;
@@ -952,7 +947,7 @@ namespace System.Net.Sockets
                 while (true)
                 {
                     AsyncOperation? op;
-                    if (Interlocked.CompareExchange(ref _processing, 1, 0) == 0)
+                    if (Interlocked.Increment(ref _processRequests) == 1)
                     {
                         op = QueueGetFirst();
                         if (op != null)
@@ -963,12 +958,8 @@ namespace System.Net.Sockets
                             op.Dispatch();
                             return;
                         }
-                        Volatile.Write(ref _processing, 0);
 
-                        // If an operation was added in the meanwhile, it may
-                        // rely on us processing it.
-                        op = QueueGetFirst();
-                        if (op == null)
+                        if (Interlocked.Exchange(ref _processRequests, 0) == 1)
                         {
                             Trace(context, "Exit (empty)");
                             return;
@@ -1010,19 +1001,6 @@ namespace System.Net.Sockets
                 Cancelled = 2
             }
 
-            private void StopProcessing(SocketAsyncContext context)
-            {
-                Debug.Assert(Volatile.Read(ref _processing) == 1);
-
-                Volatile.Write(ref _processing, 0);
-
-                AsyncOperation? op = QueueGetFirst();
-                if (op != null)
-                {
-                    EnsureProcessingIfNeeded(context);
-                }
-            }
-
             private AsyncOperation? DequeueFirstAndGetNext(AsyncOperation first)
             {
                 AsyncOperation? queue = Interlocked.CompareExchange(ref _queue, null, first);
@@ -1058,13 +1036,12 @@ namespace System.Net.Sockets
 
             public OperationResult ProcessQueuedOperation(TOperation op)
             {
-                Debug.Assert(Volatile.Read(ref _processing) == 1);
-
                 SocketAsyncContext context = op.AssociatedContext;
                 Trace(context, $"Enter");
 
                 bool wasCompleted = false;
-                int observedSequenceNumber = Volatile.Read(ref _sequenceNumber);
+                int observedProcessRequests = Volatile.Read(ref _processRequests);
+                Debug.Assert(observedProcessRequests > 0);
                 while (true)
                 {
                     // Try to change the op state to Running.
@@ -1087,49 +1064,46 @@ namespace System.Net.Sockets
                     op.SetWaiting();
 
                     // Try to stop processing until a new event arrives.
-                    Volatile.Write(ref _processing, 0);
-                    int sequenceNumber = Volatile.Read(ref _sequenceNumber);
-                    if (sequenceNumber == observedSequenceNumber)
+                    int processRequests = Interlocked.CompareExchange(ref _processRequests, 0, observedProcessRequests);
+                    if (processRequests == observedProcessRequests)
                     {
                         Trace(context, $"Leave (pending)");
                         return OperationResult.Pending;
                     }
-                    else
-                    {
-                        // A new event arrived, resume processing.
-                        observedSequenceNumber = sequenceNumber;
-                        bool resumeProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 0;
-                        if (!resumeProcessing)
-                        {
-                            Trace(context, $"Leave (pending)");
-                            return OperationResult.Pending;
-                        }
-                    }
+                    observedProcessRequests = processRequests;
                 }
 
                 // Remove the op from the queue and see if there's more to process.
                 AsyncOperation? nextOp = DequeueFirstAndGetNext(op);
-                if (nextOp != null)
+                while (true)
                 {
-                    Trace(context, $"Leave (dispatch)");
-                    nextOp.Dispatch();
-                }
-                else
-                {
-                    Trace(context, $"Leave (stop)");
-                    StopProcessing(context);
+                    if (nextOp != null)
+                    {
+                        Trace(context, $"Leave (dispatch)");
+                        nextOp.Dispatch();
+                        break;
+                    }
+                    // Try to stop when there are no more operations.
+                    int processRequests = Interlocked.CompareExchange(ref _processRequests, 0, observedProcessRequests);
+                    if (processRequests == observedProcessRequests)
+                    {
+                        Trace(context, $"Leave (stop)");
+                        break;
+                    }
+                    observedProcessRequests = processRequests;
+                    nextOp = QueueGetFirst();
                 }
 
                 return (wasCompleted ? OperationResult.Completed : OperationResult.Cancelled);
             }
 
-            private (bool isFirst, AsyncOperation? next) RemoveQueued(AsyncOperation operation)
+            private void RemoveQueued(AsyncOperation operation)
             {
                 _isNextOperationSynchronous = false; // assume we're the only
                 AsyncOperation? queue = Interlocked.CompareExchange(ref _queue, null, operation);
                 if (object.ReferenceEquals(queue, operation))
                 {
-                    return (isFirst: true, next: null);
+                    return;
                 }
                 if (queue is object && IsGate(queue))
                 {
@@ -1140,7 +1114,6 @@ namespace System.Net.Sockets
                             if (operation.Next == operation) // We're the only
                             {
                                 queue.Next = null; // empty
-                                return (isFirst: true, next: null);
                             }
                             else
                             {
@@ -1158,56 +1131,72 @@ namespace System.Net.Sockets
                                 operation.Next = operation;    // point to self
                                 AsyncOperation first = newLast.Next!;
                                 _isNextOperationSynchronous = first.Event != null;
-                                return (isFirst: false, next: first);
                             }
                         }
-                        AsyncOperation? last = queue.Next;
-                        if (last != null)
+                        else
                         {
-                            AsyncOperation it = last;
-                            do
+                            AsyncOperation? last = queue.Next;
+                            if (last != null)
                             {
-                                AsyncOperation next = it.Next!;
-                                if (next == operation)
+                                AsyncOperation it = last;
+                                do
                                 {
-                                    it.Next = operation.Next;   // skip operation
-                                    operation.Next = operation; // point to self
-                                    AsyncOperation first = last.Next!;
-                                    _isNextOperationSynchronous = first.Event != null;
-                                    return (isFirst: it == last, next: first);
-                                }
-                                it = next;
-                            } while (it != last);
+                                    AsyncOperation next = it.Next!;
+                                    if (next == operation)
+                                    {
+                                        it.Next = operation.Next;   // skip operation
+                                        operation.Next = operation; // point to self
+                                        AsyncOperation first = last.Next!;
+                                        _isNextOperationSynchronous = first.Event != null;
+                                        return;
+                                    }
+                                    it = next;
+                                } while (it != last);
+                            }
                         }
-                        return (isFirst: false, next: null);
                     }
                 }
-                return (isFirst: false, next: null);
             }
 
-            public void CancelAndContinueProcessing(TOperation op)
+            public void CancelAndContinueProcessing(TOperation op, ManualResetEventSlim e)
             {
                 // Note, only sync operations use this method.
                 Debug.Assert(op.Event != null);
 
-                // Remove the operation.
-                (bool isFirst, AsyncOperation? nextOp) = RemoveQueued(op);
-
-                // Check if we're responsible for processing.
-                if (isFirst)
+                // Become responsible for processing.
+                SpinWait spinWait = default;
+                while (true)
                 {
-                    bool isProcessing = Volatile.Read(ref _processing) != 0;
-                    if (isProcessing)
+                    if (Interlocked.CompareExchange(ref _processRequests, 1, 0) == 0)
                     {
-                        if (nextOp != null)
-                        {
-                            nextOp.Dispatch();
-                        }
-                        else
-                        {
-                            StopProcessing(op.AssociatedContext);
-                        }
+                        break;
                     }
+                    if (e.IsSet)
+                    {
+                        break;
+                    }
+                    spinWait.SpinOnce();
+                }
+
+                // Remove the operation.
+                RemoveQueued(op);
+
+                // Try to stop when there are no more operations.
+                int observedProcessRequests = 1;
+                while (true)
+                {
+                    int processRequests = Interlocked.CompareExchange(ref _processRequests, 0, observedProcessRequests);
+                    if (processRequests == observedProcessRequests)
+                    {
+                        return;
+                    }
+                    AsyncOperation? first = QueueGetFirst();
+                    if (first != null)
+                    {
+                        first.Dispatch();
+                        return;
+                    }
+                    observedProcessRequests = processRequests;
                 }
             }
 
@@ -1263,7 +1252,7 @@ namespace System.Net.Sockets
                     typeof(TOperation) == typeof(WriteOperation) ? "send" :
                     "???";
 
-                OutputTrace($"{IdOf(context)}-{queueType}.{memberName}: {message}, {(_processing == 1 ? "processing" : "not processing")}-{_sequenceNumber}, {((QueueGetFirst() == null) ? "empty" : "not empty")}");
+                OutputTrace($"{IdOf(context)}-{queueType}.{memberName}: {message}, {(_processRequests > 0 ? "processing" : "not processing")}-{_sequenceNumber}, {((QueueGetFirst() == null) ? "empty" : "not empty")}");
             }
         }
 
@@ -1412,7 +1401,7 @@ namespace System.Net.Sockets
 
                 if (timeoutExpired)
                 {
-                    queue.CancelAndContinueProcessing(operation);
+                    queue.CancelAndContinueProcessing(operation, e);
                     operation.ErrorCode = SocketError.TimedOut;
                 }
             }
