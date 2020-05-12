@@ -28,12 +28,12 @@ Please note that this builds the Priority 0 tests. To build priority 1:
 
 During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr`. It is possible to use `~/runtime/dotnet.sh msbuild` as you would normally use MSBuild with a few caveats.
 
-**!! Note !! -- Passing /p:__BuildOS=[OSX|Linux] is required.**
+**!! Note !! -- Passing /p:TargetOS=[OSX|Linux] is required.**
 
 ## Building an Individual Test
 
-```
-/path/to/runtime/dotnet.sh msbuild src/coreclr/tests/src/path-to-proj-file /p:__BuildOS=<BuildOS> /p:__BuildType=<BuildType>
+```sh
+./dotnet.sh msbuild src/coreclr/tests/src/path-to-proj-file /p:TargetOS=<TargetOS> /p:Configuration=<BuildType>
 ```
 
 ## Running Tests
@@ -43,14 +43,14 @@ The following instructions assume that on the Unix machine:
 
 `src/coreclr/build-test.sh` will have set up the `Core_Root` directory correctly after the test build.
 
-```bash
-~/runtime$ ./src/coreclr/tests/runtest.sh x64 checked
+```sh
+./src/coreclr/tests/runtest.sh x64 checked
 ```
 
 Please use the following command for help.
 
-```
-~/runtime$ ./src/coreclr/tests/runtest.sh -h
+```sh
+./src/coreclr/tests/runtest.sh -h
 ```
 
 ### Unsupported and temporarily disabled tests
@@ -58,14 +58,14 @@ Please use the following command for help.
 Unsupported tests outside of Windows have two annotations in their csproj to
 ignore them when run.
 
-```
+```xml
 <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
 ```
 
 This will write in the bash target to skip the test by returning a passing value if run outside Windows.
 
 In addition:
-```
+```xml
 <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
 ```
 
@@ -74,16 +74,17 @@ Is used to disable the build, that way if building on Unix cycles are saved buil
 PAL tests
 ---------
 
-Build CoreCLR on the Unix machine.
+Build CoreCLR with PAL tests on the Unix machine:
+
+```sh
+./src/coreclr/build-runtime.sh -skipgenerateversion -nopgooptimize \
+    -cmakeargs -DCLR_CMAKE_BUILD_TESTS=1
+```
 
 Run tests:
 
-```
-~/runtime$ src/coreclr/src/pal/tests/palsuite/runpaltests.sh ~/runtime/artifacts/obj/coreclr/Linux.x64.Debug
+```sh
+./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/obj/coreclr/$(uname).x64.Debug
 ```
 
-Test results will go into:
-
-```
-/tmp/PalTestOutput/default/pal_tests.xml
-```
+Test results will go into: `/tmp/PalTestOutput/default/pal_tests.xml`

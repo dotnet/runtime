@@ -741,9 +741,21 @@ namespace System.Data.Common
         [Guid("0C733A5F-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]
         internal interface ITransactionLocal
         {
-            [Obsolete("not used", true)] void Commit(/*deleted parameter signature*/);
+            [PreserveSig]
+            int Commit
+                (
+                [In] bool fRetaining,
+                [In] uint grfTC,
+                [In] uint grfRM
+                );
 
-            [Obsolete("not used", true)] void Abort(/*deleted parameter signature*/);
+            [PreserveSig]
+            int Abort
+                (
+                [In] IntPtr pboidReason,
+                [In] bool fRetaining,
+                [In] bool fAsync
+                );
 
             [Obsolete("not used", true)] void GetTransactionInfo(/*deleted parameter signature*/);
 

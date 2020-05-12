@@ -13,21 +13,16 @@
     <Compile Include="System\Composition\Convention\ParameterImportConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\PartConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\PartConventionBuilderOfT.cs" />
-    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTrace.cs">
-      <Link>Common\System\Composition\Diagnostics\CompositionTrace.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceId.cs">
-      <Link>Common\System\Composition\Diagnostics\CompositionTraceId.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceSource.cs">
-      <Link>Common\System\Composition\Diagnostics\CompositionTraceSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Composition\Diagnostics\DebuggerTraceWriter.cs">
-      <Link>Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs">
-      <Link>Common\System\Composition\Diagnostics\TraceWriter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTrace.cs"
+             Link="Common\System\Composition\Diagnostics\CompositionTrace.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceId.cs"
+             Link="Common\System\Composition\Diagnostics\CompositionTraceId.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceSource.cs"
+             Link="Common\System\Composition\Diagnostics\CompositionTraceSource.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\DebuggerTraceWriter.cs"
+             Link="Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs"
+             Link="Common\System\Composition\Diagnostics\TraceWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />

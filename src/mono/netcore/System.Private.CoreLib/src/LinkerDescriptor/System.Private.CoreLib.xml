@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <linker>
 	<assembly fullname="System.Private.CoreLib">
-	
 		<!-- domain.c: mono_defaults.appdomain_class -->
 		<type fullname="Mono.MonoDomain">
 			<field name="_mono_app_domain"/>
@@ -15,7 +14,8 @@
 		</type>
 
 		<!-- assembly-load-context.c: -->
-		<type fullname="System.Runtime.Loader.AssemblyLoadContext">
+		<!-- object-internals.h: MonoManagedAssemblyLoadContext -->
+		<type fullname="System.Runtime.Loader.AssemblyLoadContext" preserve="fields">
 		  <!-- assembly-load-context.c: mono_alc_invoke_resolve_using_load -->
 		  <method name="MonoResolveUsingLoad" />
 		  <!-- assembly-load-context.c: mono_alc_invoke_resolve_using_resolving_event -->
@@ -255,6 +255,8 @@
 		<type fullname="System.InvalidProgramException">
 			<!-- mono_exception_from_name_msg -->
 			<method signature="System.Void .ctor(System.String)" />
+			<!-- mono_runtime_object_init_handle -->
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- reflection.c mono_get_reflection_missing_object -->
@@ -300,6 +302,8 @@
 		<type fullname="System.NotSupportedException">
 			<!-- mono_get_exception_not_implemented -->
 			<method signature="System.Void .ctor(System.String)" />
+			<!-- mono_exception_from_token -->
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- mono-error.c (mono_error_set_ambiguous_implementation) -->
@@ -658,6 +662,8 @@
 			<!-- marshal.c (init_safe_handle) -->
 			<method name="DangerousAddRef" />
 			<method name="DangerousRelease" />
+			<!-- marshal-ilgen.c (emit_marshal_safehandle_ilgen) -->
+			<method signature="System.Void .ctor()" />
 		</type>
 		
 		<!-- marshal.c: mono_mb_emit_exception_marshal_directive -->
@@ -807,6 +813,14 @@
 		<!-- Used by binary formatter tests -->
 		<type fullname="System.Threading.ThreadStartException">
 			<method name=".ctor" />
+		</type>
+		<!-- Internal API used by System.Globalization tests -->
+		<type fullname="Interop/Globalization">
+			<method name="GetICUVersion" />
+		</type>
+		<type fullname="System.Runtime.InteropServices.Marshal">
+			<!-- marshal-ilgen.c: emit_marshal_custom_get_instance -->
+			<method name="GetCustomMarshalerInstance" />
 		</type>
 	</assembly>
 </linker>

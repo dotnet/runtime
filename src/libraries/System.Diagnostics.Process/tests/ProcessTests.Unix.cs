@@ -145,7 +145,7 @@ namespace System.Diagnostics.Tests
                 using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
                 {
                     Assert.NotNull(px);
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/corefx/issues/23972
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/runtime/issues/23525
                     {
                         Assert.Equal(programToOpen, px.ProcessName);
                     }
@@ -355,7 +355,7 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram)}");
             using (var px = Process.Start(programToOpenWith, fileToOpen))
             {
-                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/corefx/issues/23972
+                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/runtime/issues/23525
                 Console.WriteLine($"in OSX, {nameof(programToOpenWith)} is {programToOpenWith}, while {nameof(px.ProcessName)} is {px.ProcessName}.");
                 px.Kill();
                 px.WaitForExit();
@@ -402,7 +402,7 @@ namespace System.Diagnostics.Tests
             MemberData(nameof(StartOSXProcessWithArgumentList))]
         [PlatformSpecific(TestPlatforms.OSX)]
         [OuterLoop("Opens browser")]
-        public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgument(string[] argumentList)
+        public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgumentArray(string[] argumentList)
         {
             var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = "https://github.com/dotnet/corefx"};
 
@@ -456,7 +456,7 @@ namespace System.Diagnostics.Tests
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
 
-            // https://github.com/dotnet/corefx/issues/25861 -- returns "-19" and not "19"
+            // https://github.com/dotnet/runtime/issues/24426 -- returns "-19" and not "19"
             if (!PlatformDetection.IsWindowsSubsystemForLinux)
             {
                 SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
@@ -465,7 +465,7 @@ namespace System.Diagnostics.Tests
             try
             {
                 SetAndCheckBasePriority(ProcessPriorityClass.Normal, 0);
-                // https://github.com/dotnet/corefx/issues/25861 -- returns "11" and not "-11"
+                // https://github.com/dotnet/runtime/issues/24426 -- returns "11" and not "-11"
                 if (!PlatformDetection.IsWindowsSubsystemForLinux)
                 {
                     SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
@@ -549,7 +549,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/35933", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28922", TestPlatforms.AnyUnix)]
         public unsafe void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();
@@ -578,7 +578,7 @@ namespace System.Diagnostics.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/38833", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30003", TestPlatforms.AnyUnix)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
         {
             Func<string, string, int> runsAsRoot = (string username, string useRootGroupsArg) =>
@@ -817,7 +817,7 @@ namespace System.Diagnostics.Tests
         {
             // In this test, we kill a process in a way the Process instance
             // is not aware the process has terminated when we invoke Process.Kill.
-
+            DateTime start = DateTime.UtcNow;
             using (Process nonChildProcess = CreateNonChildProcess())
             {
                 // Kill the process.
@@ -832,6 +832,15 @@ namespace System.Diagnostics.Tests
                     {
                         // process still exists, wait some time.
                         await Task.Delay(100);
+                    }
+
+                    DateTime now = DateTime.UtcNow;
+                    if (start.Ticks + (Helpers.PassingTestTimeoutMilliseconds * 10_000) <= now.Ticks)
+                    {
+                        Console.WriteLine("{0} Failed to kill process {1} started at {2}", now, nonChildProcess.Id, start);
+                        Helpers.DumpAllProcesses();
+
+                        Assert.True(false, "test timed out");
                     }
                 }
 

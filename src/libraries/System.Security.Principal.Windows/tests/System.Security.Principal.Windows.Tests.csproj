@@ -7,13 +7,12 @@
     <Compile Include="NTAccount.cs" />
     <Compile Include="SecurityIdentifierTests.cs" />
     <Compile Include="WindowsIdentityTests.cs" />
-    <Compile Include="WindowsIdentityImpersonatedTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="WindowsIdentityImpersonatedTests.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))" />
     <Compile Include="WindowsPrincipalTests.cs" />
     <Compile Include="WellKnownSidTypeTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
-      <Link>Common\System\Threading\ThreadTestHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="Common\System\Threading\ThreadTestHelpers.cs" />
   </ItemGroup>
 </Project>

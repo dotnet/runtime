@@ -7,7 +7,6 @@
 #define _ICorJitInfo
 
 #include "runtimedetails.h"
-#include "ieememorymanager.h"
 #include "methodcallsummarizer.h"
 
 class interceptor_ICJI : public ICorJitInfo

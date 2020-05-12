@@ -61,7 +61,7 @@ namespace System.Drawing
                 throw new ArgumentException(SR.Format(SR.ColorNotSystemColor, c.ToString()));
             }
 
-            Brush[] systemBrushes = (Brush[])Gdip.ThreadData[s_systemBrushesKey];
+            Brush[]? systemBrushes = (Brush[]?)Gdip.ThreadData[s_systemBrushesKey];
             if (systemBrushes == null)
             {
                 systemBrushes = new Brush[(int)KnownColor.WindowText + (int)KnownColor.MenuHighlight - (int)KnownColor.YellowGreen];

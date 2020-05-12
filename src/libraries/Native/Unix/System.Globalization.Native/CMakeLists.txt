@@ -1,44 +1,50 @@
 project(System.Globalization.Native C)
 
-add_compile_options(-Wno-switch-enum)
-add_compile_options(-Wno-covered-switch-default)
+if(CLR_CMAKE_TARGET_UNIX)
+    add_compile_options(-Wno-switch-enum)
+    add_compile_options(-Wno-covered-switch-default)
 
-# Workaround for warnings produced by ICU headers
-add_compile_options(-Wno-reserved-id-macro)
-add_compile_options(-Wno-documentation)
-add_compile_options(-Wno-documentation-unknown-command)
+    # Workaround for warnings produced by ICU headers
+    add_compile_options(-Wno-reserved-id-macro)
+    add_compile_options(-Wno-documentation)
+    add_compile_options(-Wno-documentation-unknown-command)
 
-# Workaround for https://unicode-org.atlassian.net/browse/ICU-20601
-add_compile_options(-Wno-extra-semi-stmt)
-add_compile_options(-Wno-unknown-warning-option)
+    # Workaround for https://unicode-org.atlassian.net/browse/ICU-20601
+    add_compile_options(-Wno-extra-semi-stmt)
+    add_compile_options(-Wno-unknown-warning-option)
 
-set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
+    if (NOT CLR_CMAKE_TARGET_ANDROID)
+        set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
 
-find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
-if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
-    message(FATAL_ERROR "Cannot find utypes.h, try installing libicu-dev (or the appropriate package for your platform)")
-    return()
-endif()
+        find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
+        if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
+            message(FATAL_ERROR "Cannot find utypes.h, try installing libicu-dev (or the appropriate package for your platform)")
+            return()
+        endif()
 
-if(CLR_CMAKE_TARGET_DARWIN)
-    find_library(ICUCORE icucore)
-    if(ICUCORE STREQUAL ICUCORE-NOTFOUND)
-        message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
-        return()
-    endif()
-    add_definitions(-DOSX_ICU_LIBRARY_PATH=\"${ICUCORE}\")
-    add_definitions(-DU_DISABLE_RENAMING)
-else()
-    find_library(ICUUC icuuc)
-    if(ICUUC STREQUAL ICUUC-NOTFOUND)
-        message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
-        return()
-    endif()
+        if(CLR_CMAKE_TARGET_OSX)
+            find_library(ICUCORE icucore)
+            if(ICUCORE STREQUAL ICUCORE-NOTFOUND)
+                message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
+                return()
+            endif()
+            add_definitions(-DOSX_ICU_LIBRARY_PATH=\"${ICUCORE}\")
+            add_definitions(-DU_DISABLE_RENAMING)
+        else()
+            find_library(ICUUC icuuc)
+            if(ICUUC STREQUAL ICUUC-NOTFOUND)
+                message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
+                return()
+            endif()
 
-    find_library(ICUI18N icui18n)
-    if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
-        message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
-        return()
+            find_library(ICUI18N icui18n)
+            if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
+                message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
+                return()
+            endif()
+        endif()
+
+        include_directories(${UTYPES_H})
     endif()
 endif()
 
@@ -57,7 +63,6 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_icushim.c
 )
 
-include_directories(${UTYPES_H})
 include_directories("../Common")
 
 if (GEN_SHARED_LIB)
@@ -71,7 +76,7 @@ if (GEN_SHARED_LIB)
         dl
     )
 
-    install_library_and_symbols (System.Globalization.Native)
+    install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
 
 add_library(System.Globalization.Native-Static
@@ -79,13 +84,11 @@ add_library(System.Globalization.Native-Static
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Globalization.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
-if(NOT CLR_CMAKE_TARGET_DARWIN)
+if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"

@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using Xunit;
-using Xunit.Sdk;
 using System.Threading.Tasks;
 using System.IO;
+using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -161,10 +159,11 @@ namespace System.Text.Json.Serialization.Tests
         public static void NullReadTestChar()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("null"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>(""));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("1234"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>(""));   // Empty JSON is invalid
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("1234")); // Can't convert a JSON number to JSON string/char
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"stringTooLong\""));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\u0059\"B"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\u0059B\""));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\uD800\uDC00\""));
             Assert.Equal('a', JsonSerializer.Deserialize<char>("\"a\""));
             Assert.Equal('Y', JsonSerializer.Deserialize<char>("\"\u0059\""));
@@ -190,6 +189,44 @@ namespace System.Text.Json.Serialization.Tests
             { 
                 await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleStruct>(stream));
             }
+        }
+
+        [Fact]
+        public static void DeserializeDictionaryWithNullValues()
+        {
+            {
+                Dictionary<string, string> dict = JsonSerializer.Deserialize<Dictionary<string, string>>(@"{""key"":null}");
+                Assert.Null(dict["key"]);
+            }
+
+            {
+                Dictionary<string, object> dict = JsonSerializer.Deserialize<Dictionary<string, object>>(@"{""key"":null}");
+                Assert.Null(dict["key"]);
+            }
+
+            {
+                Dictionary<string, Dictionary<string, string>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(@"{""key"":null}");
+                Assert.Null(dict["key"]);
+            }
+
+            {
+                Dictionary<string, Dictionary<string, object>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(@"{""key"":null}");
+                Assert.Null(dict["key"]);
+            }
+        }
+
+        [Fact]
+        public static void InvalidRootOnRead()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>("null"));
+
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true
+            };
+
+            // We still throw when we have an unsupported root.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>("null", options));
         }
     }
 }

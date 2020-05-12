@@ -124,16 +124,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float Length()
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                float ls = Vector3.Dot(this, this);
-                return MathF.Sqrt(ls);
-            }
-            else
-            {
-                float ls = X * X + Y * Y + Z * Z;
-                return MathF.Sqrt(ls);
-            }
+            float ls = Vector3.Dot(this, this);
+            return MathF.Sqrt(ls);
         }
 
         /// <summary>
@@ -143,14 +135,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float LengthSquared()
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                return Vector3.Dot(this, this);
-            }
-            else
-            {
-                return X * X + Y * Y + Z * Z;
-            }
+            return Vector3.Dot(this, this);
         }
         #endregion Public Instance Methods
 
@@ -164,22 +149,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Distance(Vector3 value1, Vector3 value2)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                Vector3 difference = value1 - value2;
-                float ls = Vector3.Dot(difference, difference);
-                return MathF.Sqrt(ls);
-            }
-            else
-            {
-                float dx = value1.X - value2.X;
-                float dy = value1.Y - value2.Y;
-                float dz = value1.Z - value2.Z;
-
-                float ls = dx * dx + dy * dy + dz * dz;
-
-                return MathF.Sqrt(ls);
-            }
+            Vector3 difference = value1 - value2;
+            float ls = Vector3.Dot(difference, difference);
+            return MathF.Sqrt(ls);
         }
 
         /// <summary>
@@ -191,19 +163,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DistanceSquared(Vector3 value1, Vector3 value2)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                Vector3 difference = value1 - value2;
-                return Vector3.Dot(difference, difference);
-            }
-            else
-            {
-                float dx = value1.X - value2.X;
-                float dy = value1.Y - value2.Y;
-                float dz = value1.Z - value2.Z;
-
-                return dx * dx + dy * dy + dz * dz;
-            }
+            Vector3 difference = value1 - value2;
+            return Vector3.Dot(difference, difference);
         }
 
         /// <summary>
@@ -214,17 +175,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Normalize(Vector3 value)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                float length = value.Length();
-                return value / length;
-            }
-            else
-            {
-                float ls = value.X * value.X + value.Y * value.Y + value.Z * value.Z;
-                float length = MathF.Sqrt(ls);
-                return new Vector3(value.X / length, value.Y / length, value.Z / length);
-            }
+            float length = value.Length();
+            return value / length;
         }
 
         /// <summary>
@@ -251,20 +203,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Reflect(Vector3 vector, Vector3 normal)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                float dot = Vector3.Dot(vector, normal);
-                Vector3 temp = normal * dot * 2f;
-                return vector - temp;
-            }
-            else
-            {
-                float dot = vector.X * normal.X + vector.Y * normal.Y + vector.Z * normal.Z;
-                float tempX = normal.X * dot * 2f;
-                float tempY = normal.Y * dot * 2f;
-                float tempZ = normal.Z * dot * 2f;
-                return new Vector3(vector.X - tempX, vector.Y - tempY, vector.Z - tempZ);
-            }
+            float dot = Vector3.Dot(vector, normal);
+            Vector3 temp = normal * dot * 2f;
+            return vector - temp;
         }
 
         /// <summary>
@@ -277,21 +218,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Clamp(Vector3 value1, Vector3 min, Vector3 max)
         {
-            // This compare order is very important!!!
             // We must follow HLSL behavior in the case user specified min value is bigger than max value.
-            float x = value1.X;
-            x = (min.X > x) ? min.X : x;  // max(x, minx)
-            x = (max.X < x) ? max.X : x;  // min(x, maxx)
-
-            float y = value1.Y;
-            y = (min.Y > y) ? min.Y : y;  // max(y, miny)
-            y = (max.Y < y) ? max.Y : y;  // min(y, maxy)
-
-            float z = value1.Z;
-            z = (min.Z > z) ? min.Z : z;  // max(z, minz)
-            z = (max.Z < z) ? max.Z : z;  // min(z, maxz)
-
-            return new Vector3(x, y, z);
+            return Vector3.Min(Vector3.Max(value1, min), max);
         }
 
         /// <summary>
@@ -304,19 +232,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                Vector3 firstInfluence = value1 * (1f - amount);
-                Vector3 secondInfluence = value2 * amount;
-                return firstInfluence + secondInfluence;
-            }
-            else
-            {
-                return new Vector3(
-                    value1.X + (value2.X - value1.X) * amount,
-                    value1.Y + (value2.Y - value1.Y) * amount,
-                    value1.Z + (value2.Z - value1.Z) * amount);
-            }
+            Vector3 firstInfluence = value1 * (1f - amount);
+            Vector3 secondInfluence = value2 * amount;
+            return firstInfluence + secondInfluence;
         }
 
         /// <summary>

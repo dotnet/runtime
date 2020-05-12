@@ -398,7 +398,7 @@ namespace System.Linq.Expressions.Tests
         {
             var rocb = new ReadOnlyCollectionBuilder<int>(new[] { 1, 2, 3, 4 });
 
-            // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/corefx/issues/14059
+            // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/runtime/issues/19499
             Assert.Throws<IndexOutOfRangeException>(() => rocb[-1]);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb[4]);
 
@@ -413,7 +413,7 @@ namespace System.Linq.Expressions.Tests
         {
             IList rocb = new ReadOnlyCollectionBuilder<int>(new[] { 1, 2, 3, 4 });
 
-            // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/corefx/issues/14059
+            // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/runtime/issues/19499
             Assert.Throws<IndexOutOfRangeException>(() => rocb[-1]);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb[4]);
 
@@ -428,7 +428,7 @@ namespace System.Linq.Expressions.Tests
         {
             var rocb = new ReadOnlyCollectionBuilder<int>(new[] { 1, 2, 3, 4 });
 
-            // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/corefx/issues/14059
+            // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/runtime/issues/19499
             Assert.Throws<IndexOutOfRangeException>(() => rocb[-1] = -1);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb[4] = -1);
 
@@ -450,7 +450,7 @@ namespace System.Linq.Expressions.Tests
         {
             IList rocb = new ReadOnlyCollectionBuilder<int>(new[] { 1, 2, 3, 4 });
 
-            // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/corefx/issues/14059
+            // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/runtime/issues/19499
             Assert.Throws<IndexOutOfRangeException>(() => rocb[-1] = -1);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb[4] = -1);
 
@@ -603,7 +603,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.Reverse(-1, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => rocb.Reverse(1, -1));
 
-            // CONSIDER: Throw ArgumentException just like List<T> does, see https://github.com/dotnet/corefx/issues/14059
+            // CONSIDER: Throw ArgumentException just like List<T> does, see https://github.com/dotnet/runtime/issues/19499
             // AssertExtensions.Throws<ArgumentException>(null, () => rocb.Reverse(3, 1));
             // AssertExtensions.Throws<ArgumentException>(null, () => rocb.Reverse(1, 3));
             // AssertExtensions.Throws<ArgumentException>(null, () => rocb.Reverse(2, 2));
@@ -834,7 +834,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("destinationArray", () => rocb.CopyTo(new int[3], 3)); // NB: Consistent with List<T> behavior
             AssertExtensions.Throws<ArgumentException>(null, () => rocb.CopyTo(new int[3, 3], 0));
 
-            // CONSIDER: Throw ArgumentException instead to be consistent with List<T>, see https://github.com/dotnet/corefx/issues/14059
+            // CONSIDER: Throw ArgumentException instead to be consistent with List<T>, see https://github.com/dotnet/runtime/issues/19499
             Assert.Throws<ArrayTypeMismatchException>(() => rocb.CopyTo(new string[3], 0));
         }
 

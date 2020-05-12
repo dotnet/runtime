@@ -1123,7 +1123,9 @@ namespace System.Globalization
 
             if (predefinedOnly)
             {
-                return GetPredefinedCultureInfo(name);
+                return GlobalizationMode.UseNls ?
+                    NlsGetPredefinedCultureInfo(name) :
+                    IcuGetPredefinedCultureInfo(name);
             }
 
             return GetCultureInfo(name);

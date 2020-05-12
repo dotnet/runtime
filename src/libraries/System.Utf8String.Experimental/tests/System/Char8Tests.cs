@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Tests
 {
+    [SkipOnMono("The features from System.Utf8String.Experimental namespace are experimental.")]
     public unsafe partial class Char8Tests
     {
         [Theory]

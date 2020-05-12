@@ -14,14 +14,14 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct Rfc3161TimeStampReq
     {
-        private static readonly byte[] s_defaultCertReq = { 0x01, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultCertReq => new byte[] { 0x01, 0x01, 0x00 };
 
         internal int Version;
         internal System.Security.Cryptography.Pkcs.Asn1.MessageImprint MessageImprint;
-        internal Oid ReqPolicy;
+        internal Oid? ReqPolicy;
         internal ReadOnlyMemory<byte>? Nonce;
         internal bool CertReq;
-        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[] Extensions;
+        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[]? Extensions;
 
 #if DEBUG
         static Rfc3161TimeStampReq()
@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             Rfc3161TimeStampReq decoded = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultCertReq, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultCertReq, AsnEncodingRules.DER);
             decoded.CertReq = reader.ReadBoolean();
             reader.ThrowIfNotEmpty();
         }
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                     tmp.WriteBoolean(CertReq);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultCertReq))
+                    if (!encoded.SequenceEqual(DefaultCertReq))
                     {
                         writer.WriteEncodedValue(encoded);
                     }
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultCertReq, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultCertReq, AsnEncodingRules.DER);
                 decoded.CertReq = defaultReader.ReadBoolean();
             }
 

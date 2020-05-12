@@ -146,7 +146,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.ObjectMethodReturningString), typeof(MI_SubClass), nameof(MI_SubClass.VoidMethodReturningInt), false)]
         [InlineData(typeof(MI_SubClass), nameof(MI_GenericClass<int>.GenericMethod1), typeof(MI_GenericClass<>), nameof(MI_GenericClass<int>.GenericMethod1), false)]
         [InlineData(typeof(MI_SubClass), nameof(MI_GenericClass<int>.GenericMethod2), typeof(MI_GenericClass<string>), nameof(MI_GenericClass<int>.GenericMethod2), false)]
-        public void Equals(Type type1, string name1, Type type2, string name2, bool expected)
+        public void EqualsTest(Type type1, string name1, Type type2, string name2, bool expected)
         {
             MethodInfo methodInfo1 = GetMethod(type1, name1);
             MethodInfo methodInfo2 = GetMethod(type2, name2);
@@ -328,6 +328,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15025", TestRuntimes.Mono)]
         public static void Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => GetMethod(typeof(MethodInfoDefaultParameters), "OptionalStringParameter").Invoke(new MethodInfoDefaultParameters(), new object[] { Type.Missing }));
@@ -542,7 +543,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(MI_GenericClass<>), nameof(MI_GenericClass<string>.GenericMethod2), "T GenericMethod2[S](S, T, System.String)")]
         [InlineData(typeof(MI_GenericClass<string>), nameof(MI_GenericClass<string>.GenericMethod1), "System.String GenericMethod1(System.String)")]
         [InlineData(typeof(MI_GenericClass<string>), nameof(MI_GenericClass<string>.GenericMethod2), "System.String GenericMethod2[S](S, System.String, System.String)")]
-        public void ToString(Type type, string name, string expected)
+        public void ToStringTest(Type type, string name, string expected)
         {
             MethodInfo methodInfo = GetMethod(type, name);
             Assert.Equal(expected, methodInfo.ToString());
@@ -556,7 +557,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public void ToString(MethodInfo methodInfo, string expected)
+        public void ToStringTest_ByMethodInfo(MethodInfo methodInfo, string expected)
         {
             Assert.Equal(expected, methodInfo.ToString());
         }

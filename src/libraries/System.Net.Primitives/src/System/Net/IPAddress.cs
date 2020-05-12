@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -40,12 +42,12 @@ namespace System.Net
         /// <summary>
         /// This field is only used for IPv6 addresses. A null value indicates that this instance is an IPv4 address.
         /// </summary>
-        private readonly ushort[] _numbers;
+        private readonly ushort[]? _numbers;
 
         /// <summary>
         /// A lazily initialized cache of the result of calling <see cref="ToString"/>.
         /// </summary>
-        private string _toString;
+        private string? _toString;
 
         /// <summary>
         /// A lazily initialized cache of the <see cref="GetHashCode"/> value.
@@ -213,7 +215,7 @@ namespace System.Net
         ///     Converts an IP address string to an <see cref='System.Net.IPAddress'/> instance.
         ///   </para>
         /// </devdoc>
-        public static bool TryParse(string ipString, out IPAddress address)
+        public static bool TryParse([NotNullWhen(true)] string? ipString, [NotNullWhen(true)] out IPAddress? address)
         {
             if (ipString == null)
             {
@@ -225,7 +227,7 @@ namespace System.Net
             return (address != null);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> ipSpan, out IPAddress address)
+        public static bool TryParse(ReadOnlySpan<char> ipSpan, [NotNullWhen(true)] out IPAddress? address)
         {
             address = IPAddressParser.Parse(ipSpan, tryParse: true);
             return (address != null);
@@ -238,12 +240,12 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(ipString));
             }
 
-            return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false);
+            return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false)!;
         }
 
         public static IPAddress Parse(ReadOnlySpan<char> ipSpan)
         {
-            return IPAddressParser.Parse(ipSpan, tryParse: false);
+            return IPAddressParser.Parse(ipSpan, tryParse: false)!;
         }
 
         public bool TryWriteBytes(Span<byte> destination, out int bytesWritten)
@@ -374,7 +376,7 @@ namespace System.Net
             {
                 _toString = IsIPv4 ?
                     IPAddressParser.IPv4AddressToString(PrivateAddress) :
-                    IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId);
+                    IPAddressParser.IPv6AddressToString(_numbers!, PrivateScopeId);
             }
 
             return _toString;
@@ -384,7 +386,7 @@ namespace System.Net
         {
             return IsIPv4 ?
                 IPAddressParser.IPv4AddressToString(PrivateAddress, destination, out charsWritten) :
-                IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId, destination, out charsWritten);
+                IPAddressParser.IPv6AddressToString(_numbers!, PrivateScopeId, destination, out charsWritten);
         }
 
         public static long HostToNetworkOrder(long host)
@@ -444,7 +446,7 @@ namespace System.Net
         {
             get
             {
-                return IsIPv6 && ((_numbers[0] & 0xFF00) == 0xFF00);
+                return IsIPv6 && ((_numbers![0] & 0xFF00) == 0xFF00);
             }
         }
 
@@ -457,7 +459,7 @@ namespace System.Net
         {
             get
             {
-                return IsIPv6 && ((_numbers[0] & 0xFFC0) == 0xFE80);
+                return IsIPv6 && ((_numbers![0] & 0xFFC0) == 0xFE80);
             }
         }
 
@@ -470,7 +472,7 @@ namespace System.Net
         {
             get
             {
-                return IsIPv6 && ((_numbers[0] & 0xFFC0) == 0xFEC0);
+                return IsIPv6 && ((_numbers![0] & 0xFFC0) == 0xFEC0);
             }
         }
 
@@ -479,8 +481,8 @@ namespace System.Net
             get
             {
                 return IsIPv6 &&
-                       (_numbers[0] == 0x2001) &&
-                       (_numbers[1] == 0);
+                       (_numbers![0] == 0x2001) &&
+                       (_numbers![1] == 0);
             }
         }
 
@@ -495,12 +497,12 @@ namespace System.Net
                 }
                 for (int i = 0; i < 5; i++)
                 {
-                    if (_numbers[i] != 0)
+                    if (_numbers![i] != 0)
                     {
                         return false;
                     }
                 }
-                return (_numbers[5] == 0xFFFF);
+                return (_numbers![5] == 0xFFFF);
             }
         }
 
@@ -545,7 +547,7 @@ namespace System.Net
         }
 
         /// <summary>Compares two IP addresses.</summary>
-        public override bool Equals(object comparand)
+        public override bool Equals(object? comparand)
         {
             return comparand is IPAddress address && Equals(address);
         }
@@ -642,12 +644,13 @@ namespace System.Net
             // Cast the ushort values to a uint and mask with unsigned literal before bit shifting.
             // Otherwise, we can end up getting a negative value for any IPv4 address that ends with
             // a byte higher than 127 due to sign extension of the most significant 1 bit.
-            long address = ((((uint)_numbers[6] & 0x0000FF00u) >> 8) | (((uint)_numbers[6] & 0x000000FFu) << 8)) |
+            long address = ((((uint)_numbers![6] & 0x0000FF00u) >> 8) | (((uint)_numbers[6] & 0x000000FFu) << 8)) |
                     (((((uint)_numbers[7] & 0x0000FF00u) >> 8) | (((uint)_numbers[7] & 0x000000FFu) << 8)) << 16);
 
             return new IPAddress(address);
         }
 
+        [DoesNotReturn]
         private static byte[] ThrowAddressNullException() => throw new ArgumentNullException("address");
 
         private sealed class ReadOnlyIPAddress : IPAddress

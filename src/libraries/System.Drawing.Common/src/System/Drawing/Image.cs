@@ -36,14 +36,14 @@ namespace System.Drawing
 
         internal IntPtr nativeImage;
 
-        private object _userData;
+        private object? _userData;
 
         // used to work around lack of animated gif encoder... rarely set...
-        private byte[] _rawData;
+        private byte[]? _rawData;
 
         [Localizable(false)]
         [DefaultValue(null)]
-        public object Tag
+        public object? Tag
         {
             get => _userData;
             set => _userData = value;
@@ -55,7 +55,7 @@ namespace System.Drawing
         private protected Image(SerializationInfo info, StreamingContext context)
 #pragma warning restore CA2229
         {
-            byte[] dat = (byte[])info.GetValue("Data", typeof(byte[])); // Do not rename (binary serialization)
+            byte[] dat = (byte[])info.GetValue("Data", typeof(byte[]))!; // Do not rename (binary serialization)
 
             try
             {
@@ -152,6 +152,15 @@ namespace System.Drawing
         /// Saves this <see cref='Image'/> to the specified file.
         /// </summary>
         public void Save(string filename) => Save(filename, RawFormat);
+
+        private static void ThrowIfDirectoryDoesntExist(string filename)
+        {
+            var directoryPart = System.IO.Path.GetDirectoryName(filename);
+            if (!string.IsNullOrEmpty(directoryPart) && !System.IO.Directory.Exists(directoryPart))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.TargetDirectoryDoesNotExist, directoryPart, filename));
+            }
+        }
 
         /// <summary>
         /// Gets the width and height of this <see cref='Image'/>.
@@ -328,7 +337,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns information about the codecs used for this <see cref='Image'/>.
         /// </summary>
-        public EncoderParameters GetEncoderParameterList(Guid encoder)
+        public EncoderParameters? GetEncoderParameterList(Guid encoder)
         {
             EncoderParameters p;
 
@@ -460,7 +469,7 @@ namespace System.Drawing
             }
         }
 
-        internal static unsafe void EnsureSave(Image image, string filename, Stream dataStream)
+        internal static unsafe void EnsureSave(Image image, string? filename, Stream? dataStream)
         {
             if (image.RawFormat.Equals(ImageFormat.Gif))
             {
@@ -495,7 +504,7 @@ namespace System.Drawing
                 {
                     try
                     {
-                        Stream created = null;
+                        Stream? created = null;
                         long lastPos = 0;
                         if (dataStream != null)
                         {
@@ -507,7 +516,7 @@ namespace System.Drawing
                         {
                             if (dataStream == null)
                             {
-                                created = dataStream = File.OpenRead(filename);
+                                created = dataStream = File.OpenRead(filename!);
                             }
 
                             image._rawData = new byte[(int)dataStream.Length];
@@ -521,7 +530,7 @@ namespace System.Drawing
                             }
                             else
                             {
-                                dataStream.Position = lastPos;
+                                dataStream!.Position = lastPos;
                             }
                         }
                     }

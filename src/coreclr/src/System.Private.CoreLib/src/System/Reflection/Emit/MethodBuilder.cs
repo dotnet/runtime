@@ -651,8 +651,7 @@ namespace System.Reflection.Emit
         {
             Debug.Assert(m_tkMethod.Token == 0, "m_tkMethod should not have been initialized");
 
-            int sigLength;
-            byte[] sigBytes = GetMethodSignature().InternalGetSignature(out sigLength);
+            byte[] sigBytes = GetMethodSignature().InternalGetSignature(out int sigLength);
             ModuleBuilder module = m_module;
 
             int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataTokenInternal, m_strName, sigBytes, sigLength, Attributes);

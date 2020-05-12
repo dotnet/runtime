@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,9 +19,9 @@ namespace System.Xml
         internal static readonly Type TypeOfObject = typeof(object);
         internal static readonly Type TypeOfString = typeof(string);
 
-        private static volatile Type[] s_tokenTypeMap = null;
+        private static volatile Type?[] s_tokenTypeMap = null!;
 
-        private static readonly byte[] s_xsdKatmaiTimeScaleToValueLengthMap = new byte[8] {
+        private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => new byte[8] { // rely on C# compiler optimization to eliminate allocation
         // length scale
             3, // 0
             3, // 1
@@ -82,6 +83,7 @@ namespace System.Xml
             {
                 return lname == this.localname && nsUri == this.namespaceUri;
             }
+
             public bool MatchPrefix(string prefix, string lname)
             {
                 return lname == this.localname && prefix == this.prefix;
@@ -104,11 +106,10 @@ namespace System.Xml
             }
 
 
-            public override bool Equals(object other)
+            public override bool Equals(object? other)
             {
-                if (other is QName)
+                if (other is QName that)
                 {
-                    QName that = (QName)other;
                     return this == that;
                 }
                 return false;
@@ -138,10 +139,10 @@ namespace System.Xml
         private struct ElemInfo
         {
             public QName name;
-            public string xmlLang;
+            public string? xmlLang;
             public XmlSpace xmlSpace;
             public bool xmlspacePreserve;
-            public NamespaceDecl nsdecls;
+            public NamespaceDecl? nsdecls;
 
             public void Set(QName name, bool xmlspacePreserve)
             {
@@ -150,9 +151,9 @@ namespace System.Xml
                 this.xmlSpace = XmlSpace.None;
                 this.xmlspacePreserve = xmlspacePreserve;
             }
-            public NamespaceDecl Clear()
+            public NamespaceDecl? Clear()
             {
-                NamespaceDecl nsdecls = this.nsdecls;
+                NamespaceDecl? nsdecls = this.nsdecls;
                 this.nsdecls = null;
                 return nsdecls;
             }
@@ -161,7 +162,7 @@ namespace System.Xml
         private struct AttrInfo
         {
             public QName name;
-            public string val;
+            public string? val;
             public int contentPos;
             public int hashCode;
             public int prevHash;
@@ -174,6 +175,7 @@ namespace System.Xml
                 this.hashCode = 0;
                 this.prevHash = 0;
             }
+
             public void Set(QName n, int pos)
             {
                 this.name = n;
@@ -217,13 +219,13 @@ namespace System.Xml
         {
             public string prefix;
             public string uri;
-            public NamespaceDecl scopeLink;
-            public NamespaceDecl prevLink;
+            public NamespaceDecl? scopeLink;
+            public NamespaceDecl? prevLink;
             public int scope;
             public bool implied;
 
             public NamespaceDecl(string prefix, string nsuri,
-                                NamespaceDecl nextInScope, NamespaceDecl prevDecl,
+                                NamespaceDecl? nextInScope, NamespaceDecl? prevDecl,
                                 int scope, bool implied)
             {
                 this.prefix = prefix;
@@ -251,12 +253,13 @@ namespace System.Xml
                 this.qnameCount = 1;
             }
         }
+
         private class NestedBinXml
         {
             public SymbolTables symbolTables;
             public int docState;
-            public NestedBinXml next;
-            public NestedBinXml(SymbolTables symbolTables, int docState, NestedBinXml next)
+            public NestedBinXml? next;
+            public NestedBinXml(SymbolTables symbolTables, int docState, NestedBinXml? next)
             {
                 this.symbolTables = symbolTables;
                 this.docState = docState;
@@ -315,14 +318,14 @@ namespace System.Xml
         private bool _hasTypedValue;
         private System.Type _valueType;
         // if it is a simple string value, we cache it
-        private string _stringValue;
+        private string? _stringValue;
         // hashtable of current namespaces
         private readonly Dictionary<string, NamespaceDecl> _namespaces;
         //Hashtable namespaces;
         // linked list of pushed nametables (to support nested binary-xml documents)
-        private NestedBinXml _prevNameInfo;
+        private NestedBinXml? _prevNameInfo;
         // XmlTextReader to handle embeded text blocks
-        private XmlReader _textXmlReader;
+        private XmlReader? _textXmlReader;
         // close input flag
         private readonly bool _closeInput;
 
@@ -338,12 +341,12 @@ namespace System.Xml
         // current version of the protocol
         private byte _version;
 
-        public XmlSqlBinaryReader(System.IO.Stream stream, byte[] data, int len, string baseUri, bool closeInput, XmlReaderSettings settings)
+        public XmlSqlBinaryReader(Stream stream, byte[] data, int len, string baseUri, bool closeInput, XmlReaderSettings settings)
         {
             _unicode = System.Text.Encoding.Unicode;
             _xmlCharType = XmlCharType.Instance;
 
-            _xnt = settings.NameTable;
+            _xnt = settings.NameTable!;
             if (_xnt == null)
             {
                 _xnt = new NameTable();
@@ -353,6 +356,7 @@ namespace System.Xml
             {
                 _xntFromSettings = true;
             }
+
             _xml = _xnt.Add("xml");
             _xmlns = _xnt.Add("xmlns");
             _nsxmlns = _xnt.Add(XmlReservedNs.NsXmlNs);
@@ -408,8 +412,7 @@ namespace System.Xml
             _ignorePIs = settings.IgnoreProcessingInstructions;
             _ignoreComments = settings.IgnoreComments;
 
-            if (s_tokenTypeMap == null)
-                GenerateTokenTypeMap();
+            s_tokenTypeMap = s_tokenTypeMap ?? GenerateTokenTypeMap();
         }
 
         public override XmlReaderSettings Settings
@@ -477,7 +480,10 @@ namespace System.Xml
             get
             {
                 if (ScanState.XmlText == _state)
+                {
+                    Debug.Assert(_textXmlReader != null);
                     return _textXmlReader.HasValue;
+                }
                 else
                     return XmlReader.HasValueInternal(_nodetype);
             }
@@ -513,7 +519,10 @@ namespace System.Xml
                         break;
 
                     case ScanState.XmlText:
-                        return _textXmlReader.Value;
+                        {
+                            Debug.Assert(_textXmlReader != null);
+                            return _textXmlReader.Value;
+                        }
 
                     case ScanState.Attr:
                     case ScanState.AttrValPseudoValue:
@@ -540,6 +549,7 @@ namespace System.Xml
                         break;
 
                     case ScanState.XmlText:
+                        Debug.Assert(_textXmlReader != null);
                         adj = _textXmlReader.Depth;
                         break;
 
@@ -599,6 +609,7 @@ namespace System.Xml
                 }
                 else
                 {
+                    Debug.Assert(_textXmlReader != null);
                     return _textXmlReader.XmlSpace;
                 }
             }
@@ -612,7 +623,7 @@ namespace System.Xml
                 {
                     for (int i = _elemDepth; i >= 0; i--)
                     {
-                        string xl = _elementStack[i].xmlLang;
+                        string? xl = _elementStack[i].xmlLang;
                         if (null != xl)
                             return xl;
                     }
@@ -620,6 +631,7 @@ namespace System.Xml
                 }
                 else
                 {
+                    Debug.Assert(_textXmlReader != null);
                     return _textXmlReader.XmlLang;
                 }
             }
@@ -649,17 +661,21 @@ namespace System.Xml
                     case ScanState.AttrValPseudoValue:
                         return _attrCount;
                     case ScanState.XmlText:
-                        return _textXmlReader.AttributeCount;
+                        {
+                            Debug.Assert(_textXmlReader != null);
+                            return _textXmlReader.AttributeCount;
+                        }
                     default:
                         return 0;
                 }
             }
         }
 
-        public override string GetAttribute(string name, string ns)
+        public override string? GetAttribute(string name, string ns)
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 return _textXmlReader.GetAttribute(name, ns);
             }
             else
@@ -675,10 +691,11 @@ namespace System.Xml
             }
         }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 return _textXmlReader.GetAttribute(name);
             }
             else
@@ -694,6 +711,7 @@ namespace System.Xml
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 return _textXmlReader.GetAttribute(i);
             }
             else
@@ -708,6 +726,7 @@ namespace System.Xml
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 return UpdateFromTextReader(_textXmlReader.MoveToAttribute(name, ns));
             }
             else
@@ -730,6 +749,7 @@ namespace System.Xml
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 return UpdateFromTextReader(_textXmlReader.MoveToAttribute(name));
             }
             else
@@ -748,6 +768,7 @@ namespace System.Xml
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 _textXmlReader.MoveToAttribute(i);
                 UpdateFromTextReader(true);
             }
@@ -765,6 +786,7 @@ namespace System.Xml
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 return UpdateFromTextReader(_textXmlReader.MoveToFirstAttribute());
             }
             else
@@ -791,6 +813,7 @@ namespace System.Xml
                     return true;
 
                 case ScanState.XmlText:
+                    Debug.Assert(_textXmlReader != null);
                     return UpdateFromTextReader(_textXmlReader.MoveToNextAttribute());
 
                 default:
@@ -822,6 +845,7 @@ namespace System.Xml
                     return true;
 
                 case ScanState.XmlText:
+                    Debug.Assert(_textXmlReader != null);
                     return UpdateFromTextReader(_textXmlReader.MoveToElement());
 
                 default:
@@ -870,6 +894,7 @@ namespace System.Xml
                     return false;
 
                 case ScanState.XmlText:
+                    Debug.Assert(_textXmlReader != null);
                     return UpdateFromTextReader(_textXmlReader.ReadAttributeValue());
 
                 default:
@@ -888,9 +913,10 @@ namespace System.Xml
                 _textXmlReader.Close();
                 _textXmlReader = null;
             }
+
             if (null != _inStrm && _closeInput)
                 _inStrm.Dispose();
-            _inStrm = null;
+            _inStrm = null!;
             _pos = _end = 0;
         }
 
@@ -902,11 +928,15 @@ namespace System.Xml
             }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             if (ScanState.XmlText == _state)
+            {
+                Debug.Assert(_textXmlReader != null);
                 return _textXmlReader.LookupNamespace(prefix);
-            NamespaceDecl decl;
+            }
+
+            NamespaceDecl? decl;
             if (prefix != null && _namespaces.TryGetValue(prefix, out decl))
             {
                 Debug.Assert(decl != null);
@@ -941,10 +971,13 @@ namespace System.Xml
                         return ReadDoc();
 
                     case ScanState.XmlText:
+                        Debug.Assert(_textXmlReader != null);
+
                         if (_textXmlReader.Read())
                         {
                             return UpdateFromTextReader(true);
                         }
+
                         _state = ScanState.Doc;
                         _nodetype = XmlNodeType.None;
                         _isEmpty = false;
@@ -1805,6 +1838,7 @@ namespace System.Xml
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 IXmlNamespaceResolver resolver = (IXmlNamespaceResolver)_textXmlReader;
                 return resolver.GetNamespacesInScope(scope);
             }
@@ -1816,7 +1850,7 @@ namespace System.Xml
                     // are we even inside an element? (depth==0 is where we have xml, and xmlns declared...)
                     if (_elemDepth > 0)
                     {
-                        NamespaceDecl nsdecl = _elementStack[_elemDepth].nsdecls;
+                        NamespaceDecl? nsdecl = _elementStack[_elemDepth].nsdecls;
                         while (null != nsdecl)
                         {
                             nstable.Add(nsdecl.prefix, nsdecl.uri);
@@ -1841,10 +1875,11 @@ namespace System.Xml
             }
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             if (ScanState.XmlText == _state)
             {
+                Debug.Assert(_textXmlReader != null);
                 IXmlNamespaceResolver resolver = (IXmlNamespaceResolver)_textXmlReader;
                 return resolver.LookupPrefix(namespaceName);
             }
@@ -1853,16 +1888,16 @@ namespace System.Xml
                 if (null == namespaceName)
                     return null;
 
-                namespaceName = _xnt.Get(namespaceName);
-                if (null == namespaceName)
+                string? atomizedNamespaceName = _xnt.Get(namespaceName);
+                if (null == atomizedNamespaceName)
                     return null;
 
                 for (int i = _elemDepth; i >= 0; i--)
                 {
-                    NamespaceDecl nsdecl = _elementStack[i].nsdecls;
+                    NamespaceDecl? nsdecl = _elementStack[i].nsdecls;
                     while (null != nsdecl)
                     {
-                        if ((object)nsdecl.uri == (object)namespaceName)
+                        if ((object)nsdecl.uri == (object?)atomizedNamespaceName)
                             return nsdecl.prefix;
                         nsdecl = nsdecl.scopeLink;
                     }
@@ -1951,7 +1986,7 @@ namespace System.Xml
             qnametable[qnameNum].Set(prefixStr, lnameStr, nsUriStr);
             return;
         BadDecl:
-            throw new XmlException(SR.Xml_BadNamespaceDecl, (string[])null);
+            throw new XmlException(SR.Xml_BadNamespaceDecl, (string[]?)null);
         }
 
         private void NameFlush()
@@ -2319,7 +2354,7 @@ namespace System.Xml
         {
             Debug.Assert(pos >= 0 && cch >= 0);
             if (checked(pos + (cch * 2)) > _end)
-                throw new XmlException(SR.Xml_UnexpectedEOF1, (string[])null);
+                throw new XmlException(SR.Xml_UnexpectedEOF1, (string[]?)null);
             if (cch == 0)
                 return string.Empty;
             // GetStringUnaligned is _significantly_ faster than unicode.GetString()
@@ -2344,7 +2379,7 @@ namespace System.Xml
 
         private string GetAttributeText(int i)
         {
-            string val = _attributes[i].val;
+            string? val = _attributes[i].val;
 
             if (null != val)
                 return val;
@@ -2440,7 +2475,7 @@ namespace System.Xml
             if (prefix == "xml")
                 return;
             int elemDepth = _elemDepth;
-            NamespaceDecl curDecl;
+            NamespaceDecl? curDecl;
             _namespaces.TryGetValue(prefix, out curDecl);
             if (null != curDecl)
             {
@@ -2474,16 +2509,16 @@ namespace System.Xml
             _namespaces[prefix] = decl;
         }
 
-        private void PopNamespaces(NamespaceDecl firstInScopeChain)
+        private void PopNamespaces(NamespaceDecl? firstInScopeChain)
         {
-            NamespaceDecl decl = firstInScopeChain;
+            NamespaceDecl? decl = firstInScopeChain;
             while (null != decl)
             {
                 if (null == decl.prevLink)
                     _namespaces.Remove(decl.prefix);
                 else
                     _namespaces[decl.prefix] = decl.prevLink;
-                NamespaceDecl next = decl.scopeLink;
+                NamespaceDecl? next = decl.scopeLink;
                 // unlink chains for better gc behaviour
                 decl.prevLink = null;
                 decl.scopeLink = null;
@@ -2494,7 +2529,7 @@ namespace System.Xml
         private void GenerateImpliedXmlnsAttrs()
         {
             QName name;
-            NamespaceDecl decl = _elementStack[_elemDepth].nsdecls;
+            NamespaceDecl? decl = _elementStack[_elemDepth].nsdecls;
             while (null != decl)
             {
                 if (decl.implied)
@@ -2514,7 +2549,7 @@ namespace System.Xml
 
         private bool ReadInit(bool skipXmlDecl)
         {
-            string err = null;
+            string? err = null;
             if (!_sniffed)
             {
                 // check magic header
@@ -2582,7 +2617,7 @@ namespace System.Xml
 
         Error:
             _state = ScanState.Error;
-            throw new XmlException(err, (string[])null);
+            throw new XmlException(err, (string[]?)null);
         }
 
         private void ScanAttributes()
@@ -2592,7 +2627,7 @@ namespace System.Xml
             int xmllang = -1;
 
             _mark = _pos;
-            string curDeclPrefix = null;
+            string? curDeclPrefix = null;
             bool lastWasValue = false;
 
             while (BinXmlToken.EndAttrs != (token = NextToken()))
@@ -2655,12 +2690,14 @@ namespace System.Xml
                     // if char checking is on, we need to scan text values to
                     // validate that they don't use invalid CharData, so we
                     // might as well store the saved string for quick attr value access
-                    string val = _stringValue;
+                    string? val = _stringValue;
+
                     if (null != val)
                     {
                         _attributes[_attrCount - 1].val = val;
                         _stringValue = null;
                     }
+
                     // namespace decls can only have text values, and should only
                     // have a single value, so we just grab it here...
                     if (null != curDeclPrefix)
@@ -2669,6 +2706,7 @@ namespace System.Xml
                         PushNamespace(curDeclPrefix, nsuri, false);
                         curDeclPrefix = null;
                     }
+
                     lastWasValue = true;
                 }
             }
@@ -2734,6 +2772,7 @@ namespace System.Xml
                     next = _attributes[next].prevHash;
                 }
             }
+
             Array.Clear(_attrHashTbl, 0, tblSize);
         }
 
@@ -2757,7 +2796,7 @@ namespace System.Xml
             Debug.Assert(_stringValue == null, "this.stringValue == null");
             Debug.Assert(_token == BinXmlToken.CData, "this.token == BinXmlToken.CData");
             string value = GetString(_tokDataPos, _tokLen);
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             while (PeekToken() == BinXmlToken.CData)
             {
                 _pos++; // skip over token byte
@@ -2799,7 +2838,7 @@ namespace System.Xml
 
         private void FinishEndElement()
         {
-            NamespaceDecl nsdecls = _elementStack[_elemDepth].Clear();
+            NamespaceDecl? nsdecls = _elementStack[_elemDepth].Clear();
             this.PopNamespaces(nsdecls);
             _elemDepth--;
         }
@@ -2841,7 +2880,7 @@ namespace System.Xml
             {
                 case BinXmlToken.EOF:
                     if (_elemDepth > 0)
-                        throw new XmlException(SR.Xml_UnexpectedEOF1, (string[])null);
+                        throw new XmlException(SR.Xml_UnexpectedEOF1, (string[]?)null);
                     _state = ScanState.EOF;
                     return false;
 
@@ -3185,6 +3224,7 @@ namespace System.Xml
 
         private void ImplReadEndNest()
         {
+            Debug.Assert(_prevNameInfo != null);
             NestedBinXml nested = _prevNameInfo;
             _symbolTables = nested.symbolTables;
             _docState = nested.docState;
@@ -3201,9 +3241,9 @@ namespace System.Xml
                 if (decl.scope > 0)
                 {
 #if DEBUG
-                    if ((object)decl.prefix != (object)this._xnt.Get(decl.prefix))
+                    if ((object)decl.prefix != (object?)this._xnt.Get(decl.prefix))
                         throw new Exception("Prefix not interned: \'" + decl.prefix + "\'");
-                    if ((object)decl.uri != (object)this._xnt.Get(decl.uri))
+                    if ((object)decl.uri != (object?)this._xnt.Get(decl.uri))
                         throw new Exception("Uri not interned: \'" + decl.uri + "\'");
 #endif
                     xnm.AddNamespace(decl.prefix, decl.uri);
@@ -3236,6 +3276,7 @@ namespace System.Xml
 
         private void UpdateFromTextReader()
         {
+            Debug.Assert(_textXmlReader != null);
             XmlReader r = _textXmlReader;
             _nodetype = r.NodeType;
             _qnameOther.prefix = r.Prefix;
@@ -3267,9 +3308,9 @@ namespace System.Xml
             }
         }
 
-        private void GenerateTokenTypeMap()
+        private Type?[] GenerateTokenTypeMap()
         {
-            Type[] map = new Type[256];
+            Type?[] map = new Type[256];
             map[(int)BinXmlToken.XSD_BOOLEAN] = typeof(bool);
             map[(int)BinXmlToken.SQL_TINYINT] = typeof(byte);
             map[(int)BinXmlToken.XSD_BYTE] = typeof(sbyte);
@@ -3317,15 +3358,16 @@ namespace System.Xml
             map[(int)BinXmlToken.SQL_NVARCHAR] = TypeOfString;
             map[(int)BinXmlToken.SQL_NTEXT] = TypeOfString;
             map[(int)BinXmlToken.SQL_UUID] = TypeOfString;
-            if (s_tokenTypeMap == null)
-                s_tokenTypeMap = map;
+            return map;
         }
 
         private System.Type GetValueType(BinXmlToken token)
         {
-            Type t = s_tokenTypeMap[(int)token];
+            Type? t = s_tokenTypeMap[(int)token];
+
             if (t == null)
                 throw ThrowUnexpectedToken(token);
+
             return t;
         }
 
@@ -3611,9 +3653,9 @@ namespace System.Xml
         {
             if (scale > 7)
             {
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string?)null);
             }
-            return s_xsdKatmaiTimeScaleToValueLengthMap[scale];
+            return XsdKatmaiTimeScaleToValueLengthMap[scale];
         }
 
         private long ValueAsLong()
@@ -4463,7 +4505,7 @@ namespace System.Xml
         private Exception ThrowXmlException(string res)
         {
             _state = ScanState.Error;
-            return new XmlException(res, (string[])null);
+            return new XmlException(res, (string[]?)null);
         }
 
         private Exception ThrowXmlException(string res, string arg1, string arg2)

@@ -11,19 +11,39 @@ if [ "$1" = "Linux" ]; then
     fi
 elif [ "$1" = "OSX" ]; then
     brew update
+    brew upgrade
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-    brew install icu4c openssl autoconf automake libtool pkg-config python3
+    brew install autoconf automake icu4c libtool openssl@1.1 pkg-config python3
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-    brew link --force icu4c
+    if [ "$?" != "0" ]; then
+        exit 1;
+    fi
+elif [ "$1" = "tvOS" ]; then
+    brew update
+    brew upgrade
+    if [ "$?" != "0" ]; then
+        exit 1;
+    fi
+    brew install autoconf automake libtool openssl@1.1 pkg-config python3
+    if [ "$?" != "0" ]; then
+        exit 1;
+    fi
+elif [ "$1" = "iOS" ]; then
+    brew update
+    brew upgrade
+    if [ "$?" != "0" ]; then
+        exit 1;
+    fi
+    brew install autoconf automake libtool openssl@1.1 pkg-config python3
     if [ "$?" != "0" ]; then
         exit 1;
     fi
 else
-    echo "Must pass \"Linux\" or \"OSX\" as first argument."
+    echo "Must pass \"Linux\", \"tvOS\", \"iOS\" or \"OSX\" as first argument."
     exit 1
 fi
 

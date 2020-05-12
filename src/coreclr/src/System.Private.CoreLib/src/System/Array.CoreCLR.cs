@@ -9,13 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System
 {
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both
@@ -478,8 +471,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern CorElementType GetCorElementTypeOfElementType();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool IsValueOfElementType(object value);
+        private unsafe bool IsValueOfElementType(object value)
+        {
+            MethodTable* thisMT = RuntimeHelpers.GetMethodTable(this);
+            return (IntPtr)thisMT->ElementType == (IntPtr)RuntimeHelpers.GetMethodTable(value);
+        }
 
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.

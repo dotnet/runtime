@@ -47,13 +47,6 @@ typedef enum {
 } MonoWrapperType;
 
 typedef enum {
-	MONO_TYPE_NAME_FORMAT_IL,
-	MONO_TYPE_NAME_FORMAT_REFLECTION,
-	MONO_TYPE_NAME_FORMAT_FULL_NAME,
-	MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED
-} MonoTypeNameFormat;
-
-typedef enum {
 	MONO_REMOTING_TARGET_UNKNOWN,
 	MONO_REMOTING_TARGET_APPDOMAIN,
 	MONO_REMOTING_TARGET_COMINTEROP
@@ -802,7 +795,7 @@ mono_class_is_open_constructed_type (MonoType *t);
 void
 mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides, MonoGenericContext *generic_context, MonoError *error);
 
-MONO_LLVM_INTERNAL MonoMethod*
+MonoMethod*
 mono_class_get_cctor (MonoClass *klass);
 
 MonoMethod*
@@ -1082,10 +1075,10 @@ mono_loader_init           (void);
 void
 mono_loader_cleanup        (void);
 
-MONO_LLVM_INTERNAL void
+void
 mono_loader_lock           (void);
 
-MONO_LLVM_INTERNAL void
+void
 mono_loader_unlock         (void);
 
 void
@@ -1149,9 +1142,6 @@ mono_class_get_exception_for_failure (MonoClass *klass);
 
 char*
 mono_identifier_escape_type_name_chars (const char* identifier);
-
-char*
-mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format);
 
 char*
 mono_type_get_full_name (MonoClass *klass);
@@ -1331,7 +1321,7 @@ mono_get_image_for_generic_param (MonoGenericParam *param);
 char *
 mono_make_generic_name_string (MonoImage *image, int num);
 
-MONO_LLVM_INTERNAL MonoClass *
+MonoClass *
 mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
 MonoClass*
@@ -1344,7 +1334,7 @@ gboolean
 mono_class_has_failure (const MonoClass *klass);
 
 /* Kind specific accessors */
-MONO_LLVM_INTERNAL MonoGenericClass*
+MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass);
 
 MonoGenericClass*
@@ -1392,11 +1382,11 @@ mono_class_get_marshal_info (MonoClass *klass);
 void
 mono_class_set_marshal_info (MonoClass *klass, MonoMarshalType *marshal_info);
 
-guint32
+MonoGCHandle
 mono_class_get_ref_info_handle (MonoClass *klass);
 
-guint32
-mono_class_set_ref_info_handle (MonoClass *klass, guint32 value);
+MonoGCHandle
+mono_class_set_ref_info_handle (MonoClass *klass, gpointer value);
 
 MonoErrorBoxed*
 mono_class_get_exception_data (MonoClass *klass);
@@ -1509,7 +1499,7 @@ mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out);
 gboolean
 mono_class_init_checked (MonoClass *klass, MonoError *error);
 
-MONO_LLVM_INTERNAL MonoType*
+MonoType*
 mono_class_enum_basetype_internal (MonoClass *klass);
 
 gboolean

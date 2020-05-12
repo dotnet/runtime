@@ -207,7 +207,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             DataRelationCollection drcol = _dataset.Relations;
             drcol.Add("CustOrder"

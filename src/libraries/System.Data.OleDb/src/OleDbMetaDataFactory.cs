@@ -218,7 +218,7 @@ namespace System.Data.OleDb
                 compositeSeparatorPattern.Append(patternEscaped.ToString());
                 if ((schemaSeparatorPattern != null) && (schemaSeparatorPattern != catalogSeparatorPattern))
                 {
-                    compositeSeparatorPattern.Append("|");
+                    compositeSeparatorPattern.Append('|');
                     patternEscaped.Length = 0;
                     ADP.EscapeSpecialCharacters(schemaSeparatorPattern, patternEscaped);
                     compositeSeparatorPattern.Append(patternEscaped.ToString());

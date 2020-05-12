@@ -275,6 +275,8 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 {
 #ifndef DISABLE_DLLMAP
 	mono_dllmap_insert_internal (assembly, dll, func, tdll, tfunc);
+#else
+	g_assert_not_reached ();
 #endif
 }
 
@@ -451,6 +453,7 @@ void
 mono_set_pinvoke_search_directories (int dir_count, char **dirs)
 {
 	pinvoke_search_directories_count = dir_count;
+	g_strfreev (pinvoke_search_directories);
 	pinvoke_search_directories = dirs;
 }
 
@@ -505,7 +508,7 @@ netcore_probe_for_module_variations (const char *mdirname, const char *file_name
 		char *error_msg;
 		module = mono_dl_open (full_name, MONO_DL_LAZY, &error_msg);
 		if (!module) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
 			g_free (error_msg);
 		}
 		g_free (full_name);
@@ -593,7 +596,7 @@ netcore_resolve_with_dll_import_resolver_nofail (MonoAssemblyLoadContext *alc, M
 
 	result = netcore_resolve_with_dll_import_resolver (alc, assembly, scope, flags, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC DllImportResolver(\"%s\") delegate: '%s'", scope, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Error while invoking ALC DllImportResolver(\"%s\") delegate: '%s'", scope, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -649,7 +652,7 @@ netcore_resolve_with_load_nofail (MonoAssemblyLoadContext *alc, const char *scop
 
 	result = netcore_resolve_with_load (alc, scope, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC LoadUnmanagedDll(\"%s\") method: '%s'", scope, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Error while invoking ALC LoadUnmanagedDll(\"%s\") method: '%s'", scope, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -709,7 +712,7 @@ netcore_resolve_with_resolving_event_nofail (MonoAssemblyLoadContext *alc, MonoA
 
 	result = netcore_resolve_with_resolving_event (alc, assembly, scope, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC ResolvingUnmangedDll(\"%s\") event: '%s'", scope, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Error while invoking ALC ResolvingUnmangedDll(\"%s\") event: '%s'", scope, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -750,7 +753,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport attempting to load: '%s'.", scope);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport attempting to load: '%s'.", scope);
 
 	// We allow a special name to dlopen from the running process namespace, which is not present in CoreCLR
 	if (strcmp (scope, "__Internal") == 0) {
@@ -960,7 +963,7 @@ legacy_probe_for_module_in_directory (const char *mdirname, const char *file_nam
 		char *error_msg;
 		module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
 		if (!module) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
 			g_free (error_msg);
 		}
 		g_free (full_name);
@@ -1060,7 +1063,7 @@ legacy_probe_for_module (MonoImage *image, const char *new_scope)
 	int i;
 	MonoDl *module = NULL;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport attempting to load: '%s'.", new_scope);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport attempting to load: '%s'.", new_scope);
 
 	/* we allow a special name to dlopen from the running process namespace */
 	if (strcmp (new_scope, "__Internal") == 0) {
@@ -1090,7 +1093,7 @@ legacy_probe_for_module (MonoImage *image, const char *new_scope)
 		if (!module && is_absolute) {
 			module = cached_module_load (file_name, MONO_DL_LAZY, &error_msg);
 			if (!module) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 						"DllImport error loading library '%s': '%s'.",
 							file_name, error_msg);
 				g_free (error_msg);
@@ -1107,7 +1110,7 @@ legacy_probe_for_module (MonoImage *image, const char *new_scope)
 			while ((full_name = mono_dl_build_path (dir_name, file_or_base, &iter))) {
 				module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
 				if (!module) {
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 							"DllImport error loading library '%s': '%s'.",
 								full_name, error_msg);
 					g_free (error_msg);
@@ -1121,7 +1124,7 @@ legacy_probe_for_module (MonoImage *image, const char *new_scope)
 		if (!module) {
 			module = cached_module_load (file_name, MONO_DL_LAZY, &error_msg);
 			if (!module) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 						"DllImport error loading library '%s': '%s'.",
 							file_name, error_msg);
 				g_free (error_msg);
@@ -1159,7 +1162,7 @@ legacy_lookup_native_library (MonoImage *image, const char *scope)
 		module = legacy_probe_for_module (image, scope);
 
 	if (module && !cached) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 					"DllImport loaded library '%s'.", module->full_name);
 		mono_image_lock (image);
 		if (!g_hash_table_lookup (image->pinvoke_scopes, scope)) {
@@ -1253,7 +1256,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		goto exit;
 	}
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 				"DllImport searching in: '%s' ('%s').", new_scope, module->full_name);
 
 	addr = pinvoke_probe_for_symbol (module, piinfo, new_import, &error_msg);
@@ -1290,9 +1293,10 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 			import++;
 	}
 #endif
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 				"Searching for '%s'.", import);
 
+#if !defined(ENABLE_NETCORE) || defined(HOST_WIN32) // For netcore, name mangling is Windows-exclusive
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE)
 		error_msg = mono_dl_symbol (module, import, &addr);
 	else {
@@ -1356,16 +1360,16 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 						mangled_name = mangled_stdcall_name;
 					}
 #endif
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 								"Probing '%s'.", mangled_name);
 
 					error_msg = mono_dl_symbol (module, mangled_name, &addr);
 
 					if (addr)
-						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 									"Found as '%s'.", mangled_name);
 					else
-						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 									"Could not find '%s' due to '%s'.", mangled_name, error_msg);
 
 					g_free (error_msg);
@@ -1377,6 +1381,9 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 			}
 		}
 	}
+#else
+	error_msg = mono_dl_symbol (module, import, &addr);
+#endif
 
 	*error_msg_out = error_msg;
 	return addr;
@@ -1444,6 +1451,7 @@ leave:
 
 leave_nolock:
 	ERROR_LOCAL_END (local_error);
+	g_free (symbol_name);
 
 	return symbol;
 }
@@ -1494,6 +1502,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName (MonoStringHan
 
 leave:
 	ERROR_LOCAL_END (local_error);
+	g_free (lib_name);
 
 	return handle;
 }
@@ -1513,7 +1522,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadFromPath (MonoStringH
 
 	module = mono_dl_open (lib_path, MONO_DL_LAZY, &error_msg);
 	if (!module) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", lib_path, error_msg);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", lib_path, error_msg);
 		mono_error_set_generic_error (error, "System", "DllNotFoundException", "'%s': '%s'", lib_path, error_msg);
 		g_free (error_msg);
 	}
@@ -1527,6 +1536,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadFromPath (MonoStringH
 
 leave:
 	ERROR_LOCAL_END (local_error);
+	g_free (lib_path);
 
 	return handle;
 }

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class Pipes : FileSystemTest
     {
         [Theory]
@@ -42,7 +43,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/39230")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30155")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public async Task FifoReadWriteViaFileStream()
         {

@@ -501,8 +501,7 @@ namespace System.Resources
             lock (localResourceSets)
             {
                 // If another thread added this culture, return that.
-                ResourceSet? lostRace;
-                if (localResourceSets.TryGetValue(cultureName, out lostRace))
+                if (localResourceSets.TryGetValue(cultureName, out ResourceSet? lostRace))
                 {
                     if (!object.ReferenceEquals(lostRace, rs))
                     {

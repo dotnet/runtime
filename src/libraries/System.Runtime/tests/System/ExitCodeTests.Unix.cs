@@ -17,6 +17,7 @@ namespace System.Tests
         private static extern int kill(int pid, int sig);
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31656", TestRuntimes.Mono)]
         [InlineData(null)]
         [InlineData(0)]
         [InlineData(42)]

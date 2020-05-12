@@ -604,7 +604,7 @@ namespace System.Text.Json
             }
 
             // This needs to allow leap seconds when appropriate.
-            // See https://github.com/dotnet/corefx/issues/39185.
+            // See https://github.com/dotnet/runtime/issues/30135.
             if (((uint)parseData.Second) > 59)
             {
                 value = default;

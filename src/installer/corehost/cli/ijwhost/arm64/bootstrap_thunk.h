@@ -5,7 +5,7 @@
 #ifndef IJW_BOOTSTRAP_THUNK_H
 #define IJW_BOOTSTRAP_THUNK_H
 
-#if !defined(_TARGET_ARM64_)
+#if !defined(TARGET_ARM64)
 #error "This file should only be included on arm64 builds."
 #endif
 

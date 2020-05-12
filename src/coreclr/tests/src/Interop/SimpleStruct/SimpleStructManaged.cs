@@ -8,7 +8,7 @@ using TestLibrary;
 namespace PInvokeTests
 {
     #region structure def
-    
+
     [SecuritySafeCritical]
     [StructLayout(LayoutKind.Sequential)]
     public struct Sstr
@@ -25,8 +25,8 @@ namespace PInvokeTests
         }
     }
 
-    //Using this structure for pass by value scenario 
-    //because we don't support returning a structure 
+    //Using this structure for pass by value scenario
+    //because we don't support returning a structure
     //containing a non-blittable type like string.
 
     [SecuritySafeCritical]
@@ -73,7 +73,7 @@ namespace PInvokeTests
             type = t;
             b = false;
             i = 0;
-            c = dnum;            
+            c = dnum;
         }
         public ExplStruct(DialogResult t, bool bnum)
         {
@@ -83,6 +83,13 @@ namespace PInvokeTests
             b = bnum;
         }
      }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct AutoStruct
+    {
+        public int i;
+        public double d;
+    }
 
     public enum DialogResult
     {
@@ -128,7 +135,12 @@ namespace PInvokeTests
 
         [DllImport("SimpleStructNative", CallingConvention = CallingConvention.Cdecl)]
         private static extern bool CdeclSimpleExplStructByRef(ref ExplStruct p);
-        
+
+        [DllImport("SimpleStructNative")]
+        private static extern void Invalid(AutoStruct s);
+        [DllImport("SimpleStructNative")]
+        private static extern AutoStruct InvalidReturn();
+
         #endregion
 
         #endregion
@@ -202,7 +214,7 @@ namespace PInvokeTests
         {
             string s = "before";
             string changedValue = "after";
-            bool retval = true;            
+            bool retval = true;
             Sstr p = new Sstr(0, false, s);
 
             TestFramework.BeginScenario("Test #1 (Roundtrip of a simple structre by reference. Verify that values updated on unmanaged side reflect on managed side)");
@@ -268,14 +280,14 @@ namespace PInvokeTests
 
             TestFramework.BeginScenario("\n\nTest #2 (Roundtrip of a simple structre by value. Verify that values updated on unmanaged side reflect on managed side)");
             //direct pinvoke
-            
+
            // //cdecl calling convention
             try
             {
                 TestFramework.LogInformation(" Case 2: Direct p/invoke cdecl calling convention");
                 Sstr_simple simple = new Sstr_simple(100, false, d);
                 simple = DoCdeclSimpleStruct(simple, ref retval);
-              
+
                 if (retval == false)
                 {
                     TestFramework.LogError("01", "PInvokeTests->PosTest2 : values of passed in structure not matched with expected once on unmanaged side.");
@@ -284,7 +296,7 @@ namespace PInvokeTests
                 if ((simple.a != 101) || (!simple.b) || (simple.c != 10.11))
                 {
                     Console.WriteLine("\nExpected values:\n SimpleStruct->a=101\nSimpleStruct->b=TRUE\nSimpleStruct->c=10.11\n");
-                    Console.WriteLine("\nActual values:\n SimpleStruct->a=" + simple.a + "\nSimpleStruct->b=" + simple.b + "\nSimpleStruct->c=" + simple.c + "\n");          
+                    Console.WriteLine("\nActual values:\n SimpleStruct->a=" + simple.a + "\nSimpleStruct->b=" + simple.b + "\nSimpleStruct->c=" + simple.c + "\n");
                     TestFramework.LogError("02", "PInvokeTests->PosTest2 : Returned values are different from expected values");
                     retval = false;
                 }
@@ -307,8 +319,8 @@ namespace PInvokeTests
 
                 IntPtr st = std(simple, ref retval);
                 simple = Marshal.PtrToStructure<Sstr_simple>(st);
-                               
-              
+
+
                 if (retval == false)
                 {
                     TestFramework.LogError("01", "PInvokeTests->PosTest2 : values of passed in structure not matched with expected once on unmanaged side.");
@@ -372,8 +384,8 @@ namespace PInvokeTests
                 p = new ExplStruct(DialogResult.None, 10);
                 TestFramework.LogInformation(" Case 4: Delegate p/invoke cdecl calling convention");
                 CdeclSimpleExplStructByRefDelegate std = GetFptrCdeclSimpleExplStructByRef(18);
-                                                         
-                retval = std(ref p); 
+
+                retval = std(ref p);
 
                 if (retval == false)
                 {
@@ -402,7 +414,7 @@ namespace PInvokeTests
         [System.Security.SecuritySafeCritical]
         public static bool PosTest4()
         {
-            ExplStruct p;            
+            ExplStruct p;
             bool retval = false;
 
             TestFramework.BeginScenario("\n\nTest #4 (Roundtrip of a simple structre (Explicit layout) by value. Verify that values updated on unmanaged side reflect on managed side)");
@@ -467,6 +479,34 @@ namespace PInvokeTests
             return retval;
         }
 
+        public static bool AutoStructNegativeTest()
+        {
+            bool pass = false;
+            try
+            {
+                Invalid(new AutoStruct());
+            }
+            catch (MarshalDirectiveException)
+            {
+                pass = true;
+            }
+            catch (Exception)
+            {
+            }
+            try
+            {
+                _ = InvalidReturn();
+            }
+            catch (MarshalDirectiveException)
+            {
+                pass &= true;
+            }
+            catch (Exception)
+            {
+            }
+            return pass;
+        }
+
         #endregion
 
         public static int Main(string[] argv)
@@ -476,7 +516,8 @@ namespace PInvokeTests
             retVal = retVal && PosTest1();
             retVal = retVal && PosTest2();
             retVal = retVal && PosTest3();
-            
+            retVal = retVal && AutoStructNegativeTest();
+
             // https://github.com/dotnet/coreclr/issues/4193
             // retVal = retVal && PosTest4();
 
@@ -487,6 +528,6 @@ namespace PInvokeTests
             return (retVal ? 100 : 101);
         }
 
-        
+
     }
 }

@@ -245,6 +245,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34492", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void GetAssemblyName_LockedFile()
         {
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
@@ -391,6 +392,14 @@ namespace System.Reflection.Tests
             Assert.Equal("MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b03f5f7f11d50a3a", assemblyName.FullName);
         }
 
+        [Fact]
+        public static void Name_WithNullPublicKey()
+        {
+            AssemblyName assemblyName = new AssemblyName("noname,PublicKeyToken=null");
+            Assert.Equal(0, assemblyName.GetPublicKeyToken().Length);
+            Assert.Equal("noname, PublicKeyToken=null", assemblyName.FullName);
+        }
+
         public static IEnumerable<object[]> Version_TestData()
         {
             yield return new object[] { new Version(255, 1), "255.1" };
@@ -535,7 +544,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/33249")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/27817")]
         public static void Constructor_String_LoadVersionTest()
         {
             string assemblyNamePrefix = "System.Reflection.Tests.Assembly_";
@@ -576,7 +585,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("Foo")]
         [InlineData("Hi There")]
-        public void ToString(string name)
+        public void ToStringTest(string name)
         {
             var assemblyName = new AssemblyName(name);
             Assert.StartsWith(name, assemblyName.ToString());

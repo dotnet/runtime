@@ -21,7 +21,7 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
 {
     WRAPPER_NO_CONTRACT;
     static_assert_no_msg(SlotType_Count <= sizeof(INT32));
-    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(slot != NULL);
     _ASSERTE(!(slot & SlotType_Mask));
     _ASSERTE(slotType >= SlotType_Normal);
@@ -66,13 +66,14 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
 // MethodDescBackpatchInfoTracker
 
 CrstStatic MethodDescBackpatchInfoTracker::s_lock;
+bool MethodDescBackpatchInfoTracker::s_isLocked = false;
 
 #ifndef DACCESS_COMPILE
 
 void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsLockedByCurrentThread());
+    _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(pMethodDesc != nullptr);
 
     GCX_COOP();
@@ -95,7 +96,7 @@ void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, P
 void MethodDescBackpatchInfoTracker::AddSlotAndPatch_Locked(MethodDesc *pMethodDesc, LoaderAllocator *pLoaderAllocatorOfSlot, TADDR slot, EntryPointSlots::SlotType slotType, PCODE currentEntryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsLockedByCurrentThread());
+    _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->MayHaveEntryPointSlotsToBackpatch());
 
@@ -108,17 +109,10 @@ void MethodDescBackpatchInfoTracker::AddSlotAndPatch_Locked(MethodDesc *pMethodD
     EntryPointSlots::Backpatch_Locked(slot, slotType, currentEntryPoint);
 }
 
-void MethodDescBackpatchInfoTracker::StaticInitialize()
-{
-    WRAPPER_NO_CONTRACT;
-    s_lock.Init(CrstMethodDescBackpatchInfoTracker);
-}
-
 #endif // DACCESS_COMPILE
 
 #ifdef _DEBUG
-
-bool MethodDescBackpatchInfoTracker::IsLockedByCurrentThread()
+bool MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -128,16 +122,32 @@ bool MethodDescBackpatchInfoTracker::IsLockedByCurrentThread()
     return true;
 #endif
 }
-
-bool MethodDescBackpatchInfoTracker::MayHaveEntryPointSlotsToBackpatch(PTR_MethodDesc methodDesc)
-{
-    // The only purpose of this method is to allow asserts in inline functions defined in the .h file, by which time MethodDesc
-    // is not fully defined
-
-    WRAPPER_NO_CONTRACT;
-    return methodDesc->MayHaveEntryPointSlotsToBackpatch();
-}
-
 #endif // _DEBUG
+
+#ifndef DACCESS_COMPILE
+void MethodDescBackpatchInfoTracker::PollForDebuggerSuspension()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(!IsLockOwnedByCurrentThread());
+
+    // If suspension is pending for the debugger, pulse the GC mode to suspend the thread here. Following this call, typically
+    // the lock is acquired and the GC mode is changed, and suspending there would cause FuncEvals to fail (see
+    // Debugger::FuncEvalSetup() at the reference to IsLockOwnedByAnyThread()). Since this thread is in preemptive mode, the
+    // debugger may think it's already suspended and it would be unfortunate to suspend the thread with the lock held.
+    Thread *thread = GetThread();
+    _ASSERTE(thread != nullptr);
+    if (thread->HasThreadState(Thread::TS_DebugSuspendPending))
+    {
+        GCX_COOP();
+    }
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

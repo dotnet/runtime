@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Internal.TypeSystem;
+
 using Internal.ReadyToRunConstants;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -16,11 +18,15 @@ namespace ILCompiler
         private bool _profileGuidedCompileRestrictionSet;
 
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
-            TypeSystemContext context, 
-            IEnumerable<ModuleDesc> compilationModuleSet,
+            TypeSystemContext context,
+            bool isCompositeBuildMode,
+            bool isInputBubble,
+            IEnumerable<EcmaModule> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
             bool compileGenericDependenciesFromVersionBubbleModuleSet) :
                 base(context,
+                     isCompositeBuildMode,
+                     isInputBubble,
                      compilationModuleSet,
                      versionBubbleModuleSet,
                      compileGenericDependenciesFromVersionBubbleModuleSet)

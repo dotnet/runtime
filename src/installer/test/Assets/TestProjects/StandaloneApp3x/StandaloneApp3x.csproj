@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>StandaloneApp</AssemblyName>
+    <TargetFrameworks>netcoreapp3.0;netcoreapp3.1</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
+  </PropertyGroup>
+</Project>

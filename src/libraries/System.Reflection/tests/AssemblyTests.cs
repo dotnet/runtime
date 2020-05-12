@@ -122,7 +122,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(Assembly assembly1, Assembly assembly2, bool expected)
+        public void EqualsTest(Assembly assembly1, Assembly assembly2, bool expected)
         {
             Assert.Equal(expected, assembly1.Equals(assembly2));
         }
@@ -179,7 +179,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCode_TestData))]
-        public void GetHashCode(Assembly assembly)
+        public void GetHashCodeTest(Assembly assembly)
         {
             int hashCode = assembly.GetHashCode();
             Assert.NotEqual(-1, hashCode);
@@ -193,7 +193,7 @@ namespace System.Reflection.Tests
         [InlineData("System.Reflection.Tests.PublicStruct", true)]
         [InlineData("AssemblyPublicClass", false)]
         [InlineData("NoSuchType", false)]
-        public void GetType(string name, bool exists)
+        public void GetTypeTest(string name, bool exists)
         {
             Type type = Helpers.ExecutingAssembly.GetType(name);
             if (exists)
@@ -352,7 +352,7 @@ namespace System.Reflection.Tests
         [InlineData(50)]
         [InlineData(100)]
         // Higher numbers hit some codepaths that currently don't include the path in the exception message
-        public void LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath(int seek)
+        public void LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath_ByInitialSeek(int seek)
         {
             ReadOnlySpan<byte> garbage = Encoding.UTF8.GetBytes(new string('X', 500));
             string path = GetTestFilePath();

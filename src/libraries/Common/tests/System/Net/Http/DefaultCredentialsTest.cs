@@ -134,7 +134,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/10041")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/17845")]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
@@ -156,7 +156,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/10041")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/17845")]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithNoCredentials_ProxyAuthenticationRequired()
         {
@@ -171,7 +171,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/10041")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/17845")]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithDefaultCredentials_OK()
         {
@@ -335,7 +335,8 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send a response in the JSON format that the client expects
                     string username = context.User.Identity.Name;
-                    await context.Response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes($"{{\"authenticated\": \"true\", \"user\": \"{username}\" }}"));
+                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"{{\"authenticated\": \"true\", \"user\": \"{username}\" }}");
+                    await context.Response.OutputStream.WriteAsync(bytes);
 
                     context.Response.Close();
                 }

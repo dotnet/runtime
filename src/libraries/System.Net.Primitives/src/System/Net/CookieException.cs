@@ -14,11 +14,11 @@ namespace System.Net
         {
         }
 
-        internal CookieException(string message) : base(message)
+        internal CookieException(string? message) : base(message)
         {
         }
 
-        internal CookieException(string message, Exception inner) : base(message, inner)
+        internal CookieException(string? message, Exception? inner) : base(message, inner)
         {
         }
 

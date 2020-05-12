@@ -208,9 +208,9 @@ namespace System.Drawing.Drawing2D
 
         public bool IsVisible(PointF point) => IsVisible(point, null);
 
-        public bool IsVisible(float x, float y, Graphics graphics) => IsVisible(new PointF(x, y), graphics);
+        public bool IsVisible(float x, float y, Graphics? graphics) => IsVisible(new PointF(x, y), graphics);
 
-        public bool IsVisible(PointF pt, Graphics graphics)
+        public bool IsVisible(PointF pt, Graphics? graphics)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisiblePathPoint(
                 new HandleRef(this, _nativePath),
@@ -225,9 +225,9 @@ namespace System.Drawing.Drawing2D
 
         public bool IsVisible(Point point) => IsVisible(point, null);
 
-        public bool IsVisible(int x, int y, Graphics graphics) => IsVisible(new Point(x, y), graphics);
+        public bool IsVisible(int x, int y, Graphics? graphics) => IsVisible(new Point(x, y), graphics);
 
-        public bool IsVisible(Point pt, Graphics graphics)
+        public bool IsVisible(Point pt, Graphics? graphics)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisiblePathPointI(
                 new HandleRef(this, _nativePath),
@@ -242,12 +242,12 @@ namespace System.Drawing.Drawing2D
 
         public bool IsOutlineVisible(PointF point, Pen pen) => IsOutlineVisible(point, pen, null);
 
-        public bool IsOutlineVisible(float x, float y, Pen pen, Graphics graphics)
+        public bool IsOutlineVisible(float x, float y, Pen pen, Graphics? graphics)
         {
             return IsOutlineVisible(new PointF(x, y), pen, graphics);
         }
 
-        public bool IsOutlineVisible(PointF pt, Pen pen, Graphics graphics)
+        public bool IsOutlineVisible(PointF pt, Pen pen, Graphics? graphics)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
@@ -266,9 +266,9 @@ namespace System.Drawing.Drawing2D
 
         public bool IsOutlineVisible(Point point, Pen pen) => IsOutlineVisible(point, pen, null);
 
-        public bool IsOutlineVisible(int x, int y, Pen pen, Graphics graphics) => IsOutlineVisible(new Point(x, y), pen, graphics);
+        public bool IsOutlineVisible(int x, int y, Pen pen, Graphics? graphics) => IsOutlineVisible(new Point(x, y), pen, graphics);
 
-        public bool IsOutlineVisible(Point pt, Pen pen, Graphics graphics)
+        public bool IsOutlineVisible(Point pt, Pen pen, Graphics? graphics)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
@@ -627,17 +627,17 @@ namespace System.Drawing.Drawing2D
                 new HandleRef(this, _nativePath), new HandleRef(addingPath, addingPath._nativePath), connect));
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat? format)
         {
             AddString(s, family, style, emSize, new RectangleF(origin.X, origin.Y, 0, 0), format);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat? format)
         {
             AddString(s, family, style, emSize, new Rectangle(origin.X, origin.Y, 0, 0), format);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat? format)
         {
             Gdip.CheckStatus(Gdip.GdipAddPathString(
                 new HandleRef(this, _nativePath),
@@ -650,7 +650,7 @@ namespace System.Drawing.Drawing2D
                 new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero)));
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat? format)
         {
             Gdip.CheckStatus(Gdip.GdipAddPathStringI(
                 new HandleRef(this, _nativePath),
@@ -677,9 +677,9 @@ namespace System.Drawing.Drawing2D
 
         public RectangleF GetBounds() => GetBounds(null);
 
-        public RectangleF GetBounds(Matrix matrix) => GetBounds(matrix, null);
+        public RectangleF GetBounds(Matrix? matrix) => GetBounds(matrix, null);
 
-        public RectangleF GetBounds(Matrix matrix, Pen pen)
+        public RectangleF GetBounds(Matrix? matrix, Pen? pen)
         {
             Gdip.CheckStatus(Gdip.GdipGetPathWorldBounds(
                 new HandleRef(this, _nativePath),
@@ -692,9 +692,9 @@ namespace System.Drawing.Drawing2D
 
         public void Flatten() => Flatten(null);
 
-        public void Flatten(Matrix matrix) => Flatten(matrix, 0.25f);
+        public void Flatten(Matrix? matrix) => Flatten(matrix, 0.25f);
 
-        public void Flatten(Matrix matrix, float flatness)
+        public void Flatten(Matrix? matrix, float flatness)
         {
             Gdip.CheckStatus(Gdip.GdipFlattenPath(
                 new HandleRef(this, _nativePath),
@@ -704,9 +704,9 @@ namespace System.Drawing.Drawing2D
 
         public void Widen(Pen pen) => Widen(pen, null, Flatness);
 
-        public void Widen(Pen pen, Matrix matrix) => Widen(pen, matrix, Flatness);
+        public void Widen(Pen pen, Matrix? matrix) => Widen(pen, matrix, Flatness);
 
-        public void Widen(Pen pen, Matrix matrix, float flatness)
+        public void Widen(Pen pen, Matrix? matrix, float flatness)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
@@ -725,14 +725,14 @@ namespace System.Drawing.Drawing2D
 
         public void Warp(PointF[] destPoints, RectangleF srcRect) => Warp(destPoints, srcRect, null);
 
-        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix) => Warp(destPoints, srcRect, matrix, WarpMode.Perspective);
+        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix? matrix) => Warp(destPoints, srcRect, matrix, WarpMode.Perspective);
 
-        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix, WarpMode warpMode)
+        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix? matrix, WarpMode warpMode)
         {
             Warp(destPoints, srcRect, matrix, warpMode, 0.25f);
         }
 
-        public unsafe void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix, WarpMode warpMode, float flatness)
+        public unsafe void Warp(PointF[] destPoints, RectangleF srcRect, Matrix? matrix, WarpMode warpMode, float flatness)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));

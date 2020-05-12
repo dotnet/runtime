@@ -2,8 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include <windows.h>
+#include <clrdata.h>
+#include <cor.h>
+#include <cordebug.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "elfreader.h"
-#include <arrayholder.h>
 
 #define Elf_Ehdr   ElfW(Ehdr)
 #define Elf_Phdr   ElfW(Phdr)
@@ -11,6 +16,20 @@
 #define Elf_Nhdr   ElfW(Nhdr)
 #define Elf_Dyn    ElfW(Dyn)
 #define Elf_Sym    ElfW(Sym)
+
+#if TARGET_64BIT
+#define PRIx PRIx64
+#define PRIu PRIu64
+#define PRId PRId64
+#define PRIA "016"
+#define PRIxA PRIA PRIx
+#else
+#define PRIx PRIx32
+#define PRIu PRIu32
+#define PRId PRId32
+#define PRIA "08"
+#define PRIxA PRIA PRIx
+#endif
 
 #ifdef HOST_UNIX
 #define TRACE(args...) Trace(args)
@@ -54,7 +73,7 @@ bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
     ElfReaderExport elfreader(dataTarget);
-    if (elfreader.PopulateELFInfo(baseAddress))
+    if (elfreader.PopulateForSymbolLookup(baseAddress))
     {
         uint64_t symbolOffset;
         if (elfreader.TryLookupSymbol(symbolName, &symbolOffset))
@@ -72,7 +91,6 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
 //
 
 ElfReader::ElfReader() :
-    m_rdebugAddr(nullptr),
     m_gnuHashTableAddr(nullptr),
     m_stringTableAddr(nullptr),
     m_stringTableSize(0),
@@ -86,56 +104,45 @@ ElfReader::ElfReader() :
 ElfReader::~ElfReader()
 {
     if (m_buckets != nullptr) {
-        delete m_buckets;
+        free(m_buckets);
     }
 }
 
 //
-// Initialize the ELF reader from a module the base address
+// Initialize the ELF reader from a module the base address. This function
+// caches the info neccessary in the ElfReader class look up symbols.
 //
 bool
-ElfReader::PopulateELFInfo(uint64_t baseAddress)
+ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
 {
-    TRACE("PopulateELFInfo: base %" PRIA PRIx64 "\n", baseAddress);
+    TRACE("PopulateForSymbolLookup: base %" PRIA PRIx64 "\n", baseAddress);
     Elf_Dyn* dynamicAddr = nullptr;
+    uint64_t loadbias = 0;
 
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
-    if (!EnumerateProgramHeaders(baseAddress, &dynamicAddr)) {
+    if (!EnumerateProgramHeaders(
+        baseAddress,
+#ifdef TARGET_ALPINE_LINUX
+        // On Alpine, the below dynamic entries for hash, string table, etc. are
+        // RVAs instead of absolute address like on all other Linux distros. Get
+        // the "loadbias" (basically the base address of the module) and add to
+        // these RVAs.
+        &loadbias,
+#else
+        nullptr,
+#endif
+        &dynamicAddr))
+    {
         return false;
     }
-    return EnumerateDynamicEntries(dynamicAddr);
-}
 
-//
-// Initialize the ELF reader from the root program header
-//
-bool
-ElfReader::PopulateELFInfo(Elf_Phdr* phdrAddr, int phnum)
-{
-    TRACE("PopulateELFInfo: phdr %p phnum %d\n", phdrAddr, phnum);
-
-    if (phdrAddr == nullptr || phnum <= 0) {
-        return false;
-    }
-    uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Elf_Ehdr);
-    Elf_Dyn* dynamicAddr = nullptr;
-
-    // Enumerate program headers searching for the PT_DYNAMIC header, etc.
-    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, &dynamicAddr)) {
-        return false;
-    }
-    return EnumerateDynamicEntries(dynamicAddr);
-}
-
-bool
-ElfReader::EnumerateDynamicEntries(Elf_Dyn* dynamicAddr)
-{
     if (dynamicAddr == nullptr) {
         return false;
     }
 
     // Search for dynamic entries
-    for (;;) {
+    for (;;)
+    {
         Elf_Dyn dyn;
         if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
             TRACE("ERROR: ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
@@ -145,20 +152,17 @@ ElfReader::EnumerateDynamicEntries(Elf_Dyn* dynamicAddr)
         if (dyn.d_tag == DT_NULL) {
             break;
         }
-        else if (dyn.d_tag == DT_DEBUG) {
-            m_rdebugAddr = (void*)dyn.d_un.d_ptr;
-        }
         else if (dyn.d_tag == DT_GNU_HASH) {
-            m_gnuHashTableAddr = (void*)dyn.d_un.d_ptr;
+            m_gnuHashTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
         else if (dyn.d_tag == DT_STRTAB) {
-            m_stringTableAddr = (void*)dyn.d_un.d_ptr;
+            m_stringTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
         else if (dyn.d_tag == DT_STRSZ) {
             m_stringTableSize = (int)dyn.d_un.d_ptr;
         }
         else if (dyn.d_tag == DT_SYMTAB) {
-            m_symbolTableAddr = (void*)dyn.d_un.d_ptr;
+            m_symbolTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
         dynamicAddr++;
     }
@@ -233,7 +237,7 @@ ElfReader::InitializeGnuHashTable()
         TRACE("ERROR: InitializeGnuHashTable invalid BucketCount or SymbolOffset\n");
         return false;
     }
-    m_buckets = new (std::nothrow) int32_t[m_hashTable.BucketCount];
+    m_buckets = (int32_t*)malloc(m_hashTable.BucketCount * sizeof(int32_t));
     if (m_buckets == nullptr) {
         return false;
     }
@@ -275,7 +279,7 @@ uint32_t
 ElfReader::Hash(const std::string& symbolName)
 {
     uint32_t h = 5381;
-    for (int i = 0; i < symbolName.length(); i++)
+    for (unsigned int i = 0; i < symbolName.length(); i++)
     {
         h = (h << 5) + h + symbolName[i];
     }
@@ -319,13 +323,60 @@ ElfReader::GetStringAtIndex(int index, std::string& result)
 #ifdef HOST_UNIX
 
 //
+// Enumerate all the ELF info starting from the root program header. This
+// function doesn't cache any state in the ElfReader class.
+//
+bool
+ElfReader::EnumerateElfInfo(Elf_Phdr* phdrAddr, int phnum)
+{
+    TRACE("EnumerateElfInfo: phdr %p phnum %d\n", phdrAddr, phnum);
+
+    if (phdrAddr == nullptr || phnum <= 0) {
+        return false;
+    }
+    uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Elf_Ehdr);
+    Elf_Dyn* dynamicAddr = nullptr;
+
+    // Enumerate program headers searching for the PT_DYNAMIC header, etc.
+    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, nullptr, &dynamicAddr)) {
+        return false;
+    }
+    return EnumerateLinkMapEntries(dynamicAddr);
+}
+
+//
 // Enumerate through the dynamic debug link map entries
 //
 bool
-ElfReader::EnumerateLinkMapEntries()
+ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
 {
-    struct r_debug* rdebugAddr = reinterpret_cast<struct r_debug*>(m_rdebugAddr);
+    if (dynamicAddr == nullptr) {
+        return false;
+    }
+
+    // Search dynamic entries for DT_DEBUG (r_debug entry)
+    struct r_debug* rdebugAddr = nullptr;
+    for (;;)
+    {
+        Elf_Dyn dyn;
+        if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
+            TRACE("ERROR: ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
+            return false;
+        }
+        TRACE("DSO: dyn %p tag %" PRId " (%" PRIx ") d_ptr %" PRIxA "\n", dynamicAddr, dyn.d_tag, dyn.d_tag, dyn.d_un.d_ptr);
+        if (dyn.d_tag == DT_NULL) {
+            break;
+        }
+        else if (dyn.d_tag == DT_DEBUG) {
+            rdebugAddr = reinterpret_cast<struct r_debug*>(dyn.d_un.d_ptr);
+        }
+        dynamicAddr++;
+    }
+
     TRACE("DSO: rdebugAddr %p\n", rdebugAddr);
+    if (rdebugAddr == nullptr) {
+        return false;
+    }
 
     struct r_debug debugEntry;
     if (!ReadMemory(rdebugAddr, &debugEntry, sizeof(debugEntry))) {
@@ -334,7 +385,8 @@ ElfReader::EnumerateLinkMapEntries()
     }
 
     // Add the DSO link_map entries
-    for (struct link_map* linkMapAddr = debugEntry.r_map; linkMapAddr != nullptr;) {
+    for (struct link_map* linkMapAddr = debugEntry.r_map; linkMapAddr != nullptr;)
+    {
         struct link_map map;
         if (!ReadMemory(linkMapAddr, &map, sizeof(map))) {
             TRACE("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", linkMapAddr, sizeof(map));
@@ -343,7 +395,8 @@ ElfReader::EnumerateLinkMapEntries()
         // Read the module's name and make sure the memory is added to the core dump
         std::string moduleName;
         int i = 0;
-        if (map.l_name != nullptr) {
+        if (map.l_name != nullptr)
+        {
             for (; i < PATH_MAX; i++)
             {
                 char ch;
@@ -371,7 +424,7 @@ ElfReader::EnumerateLinkMapEntries()
 #endif // HOST_UNIX
 
 bool
-ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
+ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)
 {
     Elf_Ehdr ehdr;
     if (!ReadMemory((void*)baseAddress, &ehdr, sizeof(ehdr))) {
@@ -382,15 +435,6 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
         TRACE("ERROR: EnumerateProgramHeaders Invalid elf header signature\n");
         return false;
     }
-    int phnum = ehdr.e_phnum;
-    if (ehdr.e_phoff == 0 || phnum <= 0) {
-        return false;
-    }
-    TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
-        ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
-#ifdef PN_XNUM
-     _ASSERTE(phnum != PN_XNUM);
-#endif
     _ASSERTE(ehdr.e_phentsize == sizeof(Elf_Phdr));
 #ifdef TARGET_64BIT
     _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
@@ -398,19 +442,29 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
     _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS32);
 #endif
     _ASSERTE(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
+    int phnum = ehdr.e_phnum;
+#ifdef PN_XNUM
+     _ASSERTE(phnum != PN_XNUM);
+#endif
+    if (ehdr.e_phoff == 0 || phnum <= 0) {
+        return false;
+    }
+    TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
+        ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
 
     Elf_Phdr* phdrAddr = reinterpret_cast<Elf_Phdr*>(baseAddress + ehdr.e_phoff);
-    return EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, pdynamicAddr);
+    return EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, ploadbias, pdynamicAddr);
 }
 
 //
 // Enumerate and find the dynamic program header entry
 //
 bool
-ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
+ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)
 {
     uint64_t loadbias = baseAddress;
 
+    // Calculate the load bias from the PT_LOAD program headers
     for (int i = 0; i < phnum; i++)
     {
         Elf_Phdr ph;
@@ -425,6 +479,11 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
         }
     }
 
+    if (ploadbias != nullptr) {
+        *ploadbias = loadbias;
+    }
+
+    // Enumerate all the program headers
     for (int i = 0; i < phnum; i++)
     {
         Elf_Phdr ph;

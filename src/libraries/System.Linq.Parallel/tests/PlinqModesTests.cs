@@ -159,6 +159,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/14956", TestRuntimes.Mono)]
         [MemberData(nameof(AllExecutionModes_Multiple))]
         public static void WithExecutionMode_Multiple(ParallelExecutionMode first, ParallelExecutionMode second)
         {

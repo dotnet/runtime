@@ -49,14 +49,15 @@ typedef enum
 
 enum MarshalFlags
 {
-    MARSHAL_FLAG_CLR_TO_NATIVE  = 0x01,
-    MARSHAL_FLAG_IN             = 0x02,
-    MARSHAL_FLAG_OUT            = 0x04,
-    MARSHAL_FLAG_BYREF          = 0x08,
-    MARSHAL_FLAG_HRESULT_SWAP   = 0x10,
-    MARSHAL_FLAG_RETVAL         = 0x20,
-    MARSHAL_FLAG_HIDDENLENPARAM = 0x40,
-    MARSHAL_FLAG_FIELD          = 0x80
+    MARSHAL_FLAG_CLR_TO_NATIVE      = 0x001,
+    MARSHAL_FLAG_IN                 = 0x002,
+    MARSHAL_FLAG_OUT                = 0x004,
+    MARSHAL_FLAG_BYREF              = 0x008,
+    MARSHAL_FLAG_HRESULT_SWAP       = 0x010,
+    MARSHAL_FLAG_RETVAL             = 0x020,
+    MARSHAL_FLAG_HIDDENLENPARAM     = 0x040,
+    MARSHAL_FLAG_FIELD              = 0x080,
+    MARSHAL_FLAG_IN_MEMBER_FUNCTION = 0x100
 };
 
 #include <pshpack1.h>
@@ -468,8 +469,7 @@ public:
                 BOOL fEmitsIL,
                 BOOL onInstanceMethod,
                 MethodDesc* pMD = NULL,
-                BOOL fUseCustomMarshal = TRUE,
-                BOOL fCalculatingFieldMetadata = FALSE // Calculating metadata for fields on type load.
+                BOOL fUseCustomMarshal = TRUE
 #ifdef _DEBUG
                 ,
                 LPCUTF8 pDebugName = NULL,
@@ -715,6 +715,7 @@ private:
     VARTYPE         m_arrayElementType;
     int             m_iArrayRank;
     BOOL            m_nolowerbounds;  // if managed type is SZARRAY, don't allow lower bounds
+    BOOL            m_onInstanceMethod;
 
     // for NT_ARRAY only
     UINT32          m_multiplier;     // multipler for "sizeis"

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace System.Net.Test.Common
 {
 
-    public sealed class Http3LoopbackStream : IDisposable
+    internal sealed class Http3LoopbackStream : IDisposable
     {
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;
@@ -59,12 +59,15 @@ namespace System.Net.Test.Common
             await SendFrameAsync(SettingsFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
-        public async Task SendHeadersFrameAsync(ICollection<HttpHeaderData> headers)
+        public async Task SendHeadersFrameAsync(IEnumerable<HttpHeaderData> headers)
         {
             int bufferLength = QPackTestEncoder.MaxPrefixLength;
 
             foreach (HttpHeaderData header in headers)
             {
+                Debug.Assert(header.Name != null);
+                Debug.Assert(header.Value != null);
+
                 // Two varints for length, and double the name/value lengths to account for expanding Huffman coding.
                 bufferLength += QPackTestEncoder.MaxVarIntLength * 2 + header.Name.Length * 2 + header.Value.Length * 2;
             }

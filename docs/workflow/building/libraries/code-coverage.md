@@ -28,36 +28,30 @@ An issue need not be addressed in its entirety. We happily accept contributions 
 
 You can perform code coverage runs for the entire repository locally by adding the `coverage` switch (assuming that  source and test assemblies are already built):
 
-    build -test -coverage
+    build libs.tests -test -coverage
 
 This runs the tests and generates the full code coverage report. The resulting index.htm file providing the results of the run should be available at:
 
     artifacts\coverage\index.htm
 
-You can also build and test with code coverage for a particular test project rather than for the whole repo with the ```/p:Coverage=true``` argument:
+You can also build and test with code coverage for a particular test project rather than for the whole repo with the `/p:Coverage=true` property:
 
-    dotnet msbuild /t:BuildAndTest /p:Coverage=true
+    dotnet build /t:Test /p:Coverage=true
 
-The results for this one library will then show up in the aforementioned index.htm file. For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
+The results for this one library will then be available in this index.htm file, where $(OutDir) is the directory where the binaries were generated.
 
-    cd src\System.Diagnostics.Debug\tests\
-    dotnet msbuild /t:BuildAndTest /p:Coverage=true
+    $(OutDir)\report\index.htm
+
+For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
+
+    dotnet build src\System.Diagnostics.Debug\tests /t:Test /p:Coverage=true
 
 And then once the run completes:
 
     $(OutDir)\report\index.htm
 
-**Note:** If you only want to measure the coverage of your local changes (that haven't been pushed to git), run:
-
-    dotnet msbuild /t:BuildAndTest /p:Coverage=true /p:CoverageSourceLink=false
-
-
 ## Code coverage with System.Private.CoreLib code
 
-Some of the libraries for which contracts and tests live in the corefx repo are actually fully or partially implemented in the core runtime library in another repo, e.g. the implementation that backs the System.Runtime contract is in System.Private.CoreLib.dll in either the coreclr or corert repo. Test projects for code that lives, fully or partially, in System.Private.CoreLib, should have the property `TestRuntime` set to `true` in order to obtain proper code coverage reports.
+Some of the libraries for which contracts and tests live in libraries are actually fully or partially implemented in the core runtime library, e.g. the implementation that backs the System.Runtime contract is in System.Private.CoreLib.dll. Test projects for code that lives, fully or partially, in System.Private.CoreLib, should have the property `TestRuntime` set to `true` in order to obtain proper code coverage reports.
 
 If the test project does not set the property `TestRuntime` to `true` and you want to collect code coverage that includes types in System.Private.CoreLib.dll add `/p:TestRuntime=true` to the coverage build command listed above.
-
-If you want to get coverage report against a private build of System.Private.CoreLib (// TODO //).
-
-The build and test projects take care of copying assemblies and PDBs as needed for coverage runs. The resulting code coverage report should now also include details for System.Private.CoreLib.

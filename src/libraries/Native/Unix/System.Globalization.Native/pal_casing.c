@@ -6,12 +6,14 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include "pal_icushim_internal.h"
 #include "pal_casing.h"
-#include "pal_icushim.h"
 
+#ifdef __clang__
 // Workaround for warnings produced by U16_NEXT and U16_APPEND macro expansions
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
 
 /*
 Function:
@@ -34,6 +36,7 @@ void GlobalizationNative_ChangeCase(
     // improvement on longer strings.)
 
     UBool isError = FALSE;
+    (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
 
@@ -73,6 +76,7 @@ void GlobalizationNative_ChangeCaseInvariant(
     // See algorithmic comment in ChangeCase.
 
     UBool isError = FALSE;
+    (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
 
@@ -117,6 +121,7 @@ void GlobalizationNative_ChangeCaseTurkish(
     // See algorithmic comment in ChangeCase.
 
     UBool isError = FALSE;
+    (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
 
@@ -146,4 +151,6 @@ void GlobalizationNative_ChangeCaseTurkish(
     }
 }
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif

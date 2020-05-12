@@ -559,10 +559,6 @@ public:                                                 \
     // Implemented by : code:IBCLogger.LogDispatchTableAccessHelper
     LOGACCESS_PTR(DispatchTableSlot,DispatchSlot)
 
-    // Log an update to the field marshalers
-    // Implemented by : code:IBCLogger.LogFieldMarshalersReadAccessHelper
-    LOGACCESS_PTR(FieldMarshalersRead,MethodTable)
-
     // Log a lookup  in the cctor info table
     // Implemented by : code:IBCLogger.LogCCtorInfoReadAccessHelper
     LOGACCESS_PTR(CCtorInfoRead,MethodTable)

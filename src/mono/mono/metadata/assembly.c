@@ -45,6 +45,7 @@
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
+#include <mono/metadata/mono-private-unstable.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -356,10 +357,20 @@ static MonoAssembly *corlib;
 
 static char* unquote (const char *str);
 
-/* This protects loaded_assemblies and image->references */
-#define mono_assemblies_lock() mono_os_mutex_lock (&assemblies_mutex)
-#define mono_assemblies_unlock() mono_os_mutex_unlock (&assemblies_mutex)
+// This protects loaded_assemblies
 static mono_mutex_t assemblies_mutex;
+
+static inline void
+mono_assemblies_lock ()
+{
+	mono_os_mutex_lock (&assemblies_mutex);
+}
+
+static inline void
+mono_assemblies_unlock ()
+{
+	mono_os_mutex_unlock (&assemblies_mutex);
+}
 
 /* If defined, points to the bundled assembly information */
 static const MonoBundledAssembly **bundles;
@@ -474,6 +485,13 @@ mono_set_assemblies_path (const char* path)
 
 		splitted++;
 	}
+}
+
+void
+mono_set_assemblies_path_direct (char **path)
+{
+	g_strfreev (assemblies_path);
+	assemblies_path = path;
 }
 
 static void
@@ -1358,7 +1376,7 @@ remap_keys (MonoAssemblyName *aname)
 
 		memcpy (aname->public_key_token, entry->to, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		     
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 			    "Remapped public key token of retargetable assembly %s from %s to %s",
 			    aname->name, entry->from, entry->to);
 		return;
@@ -1393,7 +1411,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		
 		remap_keys (dest_aname);
 
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 					"The request to load the retargetable assembly %s v%d.%d.%d.%d was remapped to %s v%d.%d.%d.%d",
 					aname->name,
 					aname->major, aname->minor, aname->build, aname->revision,
@@ -1650,8 +1668,8 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	 * 3. If the ALC is not the default and this is not a satellite request,
 	 *    check if it's already loaded by the default ALC.
 	 *
-	 * 4. If the ALC is not the default or this is not a satellite request,
-	 *    check the TPA paths and ApplicationBase.
+	 * 4. If the ALC is the default or this is not a satellite request,
+	 *    check the TPA list, APP_PATHS, and ApplicationBase.
 	 *
 	 * 5. If this is a satellite request, call the ALC ResolveSatelliteAssembly method.
 	 *
@@ -1776,7 +1794,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	 * image->references is shared between threads, so we need to access
 	 * it inside a critical section.
 	 */
-	mono_assemblies_lock ();
+	mono_image_lock (image);
 	if (!image->references) {
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 	
@@ -1784,11 +1802,11 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		image->nreferences = t->rows;
 	}
 	reference = image->references [index];
-	mono_assemblies_unlock ();
+	mono_image_unlock (image);
 	if (reference)
 		return;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Requesting loading reference %d (of %d) of %s", index, image->nreferences, image->name);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Requesting loading reference %d (of %d) of %s", index, image->nreferences, image->name);
 
 	ERROR_DECL (local_error);
 	mono_assembly_get_assemblyref_checked (image, index, &aname, local_error);
@@ -1801,7 +1819,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (image->assembly) {
 		if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
 			char *aname_str = mono_stringify_assembly_name (&aname);
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s asmctx %s, looking for %s",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s asmctx %s, looking for %s",
 				    index, image->name, mono_asmctx_get_name (&image->assembly->context),
 				    aname_str);
 			g_free (aname_str);
@@ -1867,7 +1885,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	}
 
 commit_reference:
-	mono_assemblies_lock ();
+	mono_image_lock (image);
 	if (reference == NULL) {
 		/* Flag as not found */
 		reference = (MonoAssembly *)REFERENCE_MISSING;
@@ -1877,7 +1895,7 @@ commit_reference:
 		if (reference != REFERENCE_MISSING){
 			mono_assembly_addref (reference);
 			if (image->assembly)
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s[%p] -> %s[%p]: %d",
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s[%p] -> %s[%p]: %d",
 				    image->assembly->aname.name, image->assembly, reference->aname.name, reference, reference->ref_count);
 		} else {
 			if (image->assembly)
@@ -1887,7 +1905,7 @@ commit_reference:
 		
 		image->references [index] = reference;
 	}
-	mono_assemblies_unlock ();
+	mono_image_unlock (image);
 
 	if (image->references [index] != reference) {
 		/* Somebody loaded it before us */
@@ -1966,7 +1984,7 @@ mono_install_assembly_load_hook_v1 (MonoAssemblyLoadFunc func, gpointer user_dat
 }
 
 void
-mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_data)
+mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_data, gboolean append)
 {
 	g_return_if_fail (func != NULL);
 
@@ -1974,8 +1992,16 @@ mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_d
 	hook->version = 2;
 	hook->func.v2 = func;
 	hook->user_data = user_data;
-	hook->next = assembly_load_hook;
-	assembly_load_hook = hook;
+
+	if (append && assembly_load_hook != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblyLoadHook *old = assembly_load_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_load_hook;
+		assembly_load_hook = hook;
+	}
 }
 
 /**
@@ -2064,7 +2090,7 @@ mono_install_assembly_search_hook_internal_v1 (MonoAssemblySearchFunc func, gpoi
 }
 
 void
-mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload)
+mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload, gboolean append)
 {
 	if (func == NULL)
 		return;
@@ -2075,14 +2101,22 @@ mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer us
 	hook->user_data = user_data;
 	hook->refonly = refonly;
 	hook->postload = postload;
-	hook->next = assembly_search_hook;
-	assembly_search_hook = hook;
+
+	if (append && assembly_search_hook != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblySearchHook *old = assembly_search_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_search_hook;
+		assembly_search_hook = hook;
+	}
 }
 
 /**
  * mono_install_assembly_search_hook:
  */
-void          
+void
 mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE, FALSE);
@@ -2111,7 +2145,7 @@ mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer
 /**
  * mono_install_assembly_postload_search_hook:
  */
-void          
+void
 mono_install_assembly_postload_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE, TRUE);
@@ -2128,8 +2162,9 @@ typedef struct AssemblyPreLoadHook AssemblyPreLoadHook;
 struct AssemblyPreLoadHook {
 	AssemblyPreLoadHook *next;
 	union {
-		MonoAssemblyPreLoadFunc v1;
-		MonoAssemblyPreLoadFuncV2 v2;
+		MonoAssemblyPreLoadFunc v1; // legacy internal use
+		MonoAssemblyPreLoadFuncV2 v2; // current internal use
+		MonoAssemblyPreLoadFuncV3 v3; // netcore external use
 	} func;
 	gpointer user_data;
 	gint32 version;
@@ -2149,8 +2184,18 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 			assembly = hook->func.v1 (aname, apath, hook->user_data);
 		else {
 			ERROR_DECL (error);
-			g_assert (hook->version == 2);
-			assembly = hook->func.v2 (alc, aname, apath, FALSE, hook->user_data, error);
+			g_assert (hook->version == 2 || hook->version == 3);
+			if (hook->version == 2)
+				assembly = hook->func.v2 (alc, aname, apath, FALSE, hook->user_data, error);
+			else { // v3
+#ifdef ENABLE_NETCORE
+				MonoGCHandle strong_gchandle = mono_gchandle_from_handle (mono_gchandle_get_target_handle (alc->gchandle), TRUE);
+				assembly = hook->func.v3 (strong_gchandle, aname, apath, hook->user_data, error);
+				mono_gchandle_free_internal (strong_gchandle);
+#else
+				assembly = hook->func.v3 (NULL, aname, apath, hook->user_data, error);
+#endif
+			}
 			/* TODO: propagage error out to callers */
 			mono_error_assert_ok (error);
 		}
@@ -2221,7 +2266,7 @@ mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func, gpoint
 }
 
 void
-mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly)
+mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly, gboolean append)
 {
 	AssemblyPreLoadHook *hook;
 
@@ -2233,9 +2278,39 @@ mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer 
 	hook->version = 2;
 	hook->func.v2 = func;
 	hook->user_data = user_data;
-	hook->next = *hooks;
 
-	*hooks = hook;
+	if (append && *hooks != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblyPreLoadHook *old = *hooks;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = *hooks;
+		*hooks = hook;
+	}
+}
+
+void
+mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data, gboolean append)
+{
+	AssemblyPreLoadHook *hook;
+
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblyPreLoadHook, 1);
+	hook->version = 3;
+	hook->func.v3 = func;
+	hook->user_data = user_data;
+
+	if (append && assembly_preload_hook != NULL) {
+		AssemblyPreLoadHook *old = assembly_preload_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_preload_hook;
+		assembly_preload_hook = hook;
+	}
 }
 
 static void
@@ -2423,7 +2498,7 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	}
 	if (image) {
 		mono_image_addref (image);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", is_satellite ? filename : name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", is_satellite ? filename : name);
 		g_free (name);
 		return image;
 	}
@@ -2532,7 +2607,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 		fname = g_strdup (filename);
 	}
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 			"Assembly Loader probing location: '%s'.", fname);
 
 	new_fname = NULL;
@@ -2566,7 +2641,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 	if (new_fname && new_fname != fname) {
 		g_free (fname);
 		fname = new_fname;
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 			    "Assembly Loader shadow-copied assembly to: '%s'.", fname);
 	}
 	
@@ -2638,7 +2713,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 
 	if (ass) {
 		if (!loaded_from_bundle)
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 				"Assembly Loader loaded assembly from location: '%s'.", filename);
 		if (!refonly)
 			mono_config_for_assembly_internal (ass->image);
@@ -2867,10 +2942,10 @@ mono_assembly_binding_applies_to_image (MonoAssemblyLoadContext *alc, MonoImage*
 	MonoAssemblyName *result_name = &probed_aname;
 	result_name = mono_assembly_apply_binding (result_name, &dest_name);
 	if (result_name != &probed_aname && !mono_assembly_names_equal (result_name, &probed_aname)) {
-		if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
+		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY)) {
 			char *probed_fullname = mono_stringify_assembly_name (&probed_aname);
 			char *result_fullname = mono_stringify_assembly_name (result_name);
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Request to load from %s in (%s) remapped to %s", probed_fullname, image->name, result_fullname);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Request to load from %s in (%s) remapped to %s", probed_fullname, image->name, result_fullname);
 			g_free (probed_fullname);
 			g_free (result_fullname);
 		}
@@ -2927,9 +3002,9 @@ mono_problematic_image_reprobe (MonoAssemblyLoadContext *alc, MonoImage *image, 
 		*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
 	}
-	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
+	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY)) {
 		char *probed_fullname = mono_stringify_assembly_name (&probed_aname);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Requested to load from problematic image %s, probing instead for assembly with name %s", image->name, probed_fullname);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Requested to load from problematic image %s, probing instead for assembly with name %s", image->name, probed_fullname);
 		g_free (probed_fullname);
 	}
 	const char *new_basedir = NULL;
@@ -3088,7 +3163,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	/* Add a non-temporary reference because of ass->image */
 	mono_image_addref (image);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image addref %s[%p] (asmctx %s) -> %s[%p]: %d", ass->aname.name, ass, mono_asmctx_get_name (&ass->context), image->name, image, image->ref_count);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Image addref %s[%p] (asmctx %s) -> %s[%p]: %d", ass->aname.name, ass, mono_asmctx_get_name (&ass->context), image->name, image, image->ref_count);
 
 	/* 
 	 * The load hooks might take locks so we can't call them while holding the
@@ -3117,7 +3192,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	if (asmctx != MONO_ASMCTX_REFONLY) {
 		ERROR_DECL (refasm_error);
 		if (mono_assembly_has_reference_assembly_attribute (ass, refasm_error)) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
 			g_free (ass);
 			g_free (base_dir);
 			mono_image_close (image);
@@ -3128,7 +3203,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	}
 
 	if (predicate && !predicate (ass, user_data)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate returned FALSE, skipping '%s' (%s)\n", ass->aname.name, image->name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate returned FALSE, skipping '%s' (%s)\n", ass->aname.name, image->name);
 		g_free (ass);
 		g_free (base_dir);
 		mono_image_close (image);
@@ -3156,7 +3231,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 		return ass2;
 	}
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Prepared to set up assembly '%s' (%s)", ass->aname.name, image->name);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Prepared to set up assembly '%s' (%s)", ass->aname.name, image->name);
 
 	/* If asmctx is INDIVIDUAL, image->assembly might not be NULL, so don't
 	 * overwrite it. */
@@ -4165,7 +4240,7 @@ assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
 		return;
 
 	if (info->has_new_version && mono_assembly_is_problematic_version (info->name, info->new_version.major, info->new_version.minor, info->new_version.build, info->new_version.revision)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Discarding assembly binding to problematic version %s v%d.%d.%d.%d",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Discarding assembly binding to problematic version %s v%d.%d.%d.%d",
 			info->name, info->new_version.major, info->new_version.minor, info->new_version.build, info->new_version.revision);
 		return;
 	}
@@ -4547,10 +4622,10 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
 		char * s = mono_stringify_assembly_name (wanted_name);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: wanted = %s", s);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: wanted = %s", s);
 		g_free (s);
 		s = mono_stringify_assembly_name (candidate_name);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate = %s", s);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate = %s", s);
 		g_free (s);
 	}
 
@@ -4559,13 +4634,13 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 #else
 	/* Wanted name has no token, not strongly named: always matches. */
 	if (0 == wanted_name->public_key_token [0]) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: wanted has no token, returning TRUE");
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: wanted has no token, returning TRUE");
 		return TRUE;
 	}
 
 	/* Candidate name has no token, not strongly named: never matches */
 	if (0 == candidate_name->public_key_token [0]) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate has no token, returning FALSE");
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate has no token, returning FALSE");
 		return FALSE;
 	}
 
@@ -4585,7 +4660,7 @@ mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName 
 	gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_NONE);
 #endif
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s",
 		    result ? "match, returning TRUE" : "don't match, returning FALSE");
 	return result;
 
@@ -4602,18 +4677,18 @@ framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *ca
 		if (!vmap->framework_facade_assembly) {
 			/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
 			gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_PUBKEY);
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
 			return result;
 		} else {
 			/* For facades, the name and public key token should
 			 * match, but the version doesn't matter as long as the
 			 * candidate is not older. */
 			gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_VERSION);
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match" : "don't match, returning FALSE");
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match" : "don't match, returning FALSE");
 			if (result) {
 				// compare major of candidate and wanted
 				int c = assembly_names_compare_versions (candidate_name, wanted_name, 1);
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate major version is %s wanted major version, returning %s\n", c == 0 ? "the same as" : (c < 0 ? "lower than" : "greater than"),
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate major version is %s wanted major version, returning %s\n", c == 0 ? "the same as" : (c < 0 ? "lower than" : "greater than"),
 					    (c >= 0) ? "TRUE" : "FALSE");
 				return (c >= 0);  // don't accept a candidate that's older than wanted.
 			} else {
@@ -4766,9 +4841,8 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 		result = prevent_reference_assembly_from_running (result, refonly);
 	}
 #else
-	result = netcore_load_reference (aname, req->request.alc, req->requesting_assembly, !req->no_postload_search);
-
-	if (!result && bundles != NULL) {
+	result = NULL;
+	if (bundles != NULL) {
 		MonoImageOpenStatus status;
 		MonoImage *image;
 		image = mono_assembly_open_from_bundle (req->request.alc, aname->name, &status, FALSE);
@@ -4779,8 +4853,29 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 		if (image)
 			result = mono_assembly_request_load_from (image, aname->name, &req->request, &status);
 	}
+	if (!result)
+		result = netcore_load_reference (aname, req->request.alc, req->requesting_assembly, !req->no_postload_search);
 #endif
 	return result;
+}
+
+MonoAssembly *
+mono_assembly_load_full_alc (MonoGCHandle alc_gchandle, MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
+{
+	MonoAssembly *res;
+	MONO_ENTER_GC_UNSAFE;
+	MonoAssemblyByNameRequest req;
+#ifdef ENABLE_NETCORE
+	MonoAssemblyLoadContext *alc = mono_alc_from_gchandle (alc_gchandle);
+#else
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+#endif
+	mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+	req.requesting_assembly = NULL;
+	req.basedir = basedir;
+	res = mono_assembly_request_byname (aname, &req, status);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**
@@ -4920,7 +5015,7 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 
 	MONO_PROFILER_RAISE (assembly_unloading, (assembly));
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading assembly %s [%p].", assembly->aname.name, assembly);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading assembly %s [%p].", assembly->aname.name, assembly);
 
 	mono_debug_close_image (assembly->image);
 

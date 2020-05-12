@@ -707,9 +707,7 @@ private:
 #include "target.h"
 
 #if FEATURE_TAILCALL_OPT
-
-#ifdef FEATURE_CORECLR
-// CoreCLR - enable tail call opt for the following IL pattern
+// Enable tail call opt for the following IL pattern
 //
 //     call someFunc
 //     jmp/jcc RetBlock
@@ -717,14 +715,6 @@ private:
 //  RetBlock:
 //     ret
 #define FEATURE_TAILCALL_OPT_SHARED_RETURN 1
-#else
-// Desktop: Keep this to zero as one of app-compat apps that is using GetCallingAssembly()
-// has an issue turning this ON.
-//
-// Refer to TF: Bug: 824625 and its associated regression TF Bug: 1113265
-#define FEATURE_TAILCALL_OPT_SHARED_RETURN 0
-#endif // FEATURE_CORECLR
-
 #else // !FEATURE_TAILCALL_OPT
 #define FEATURE_TAILCALL_OPT_SHARED_RETURN 0
 #endif // !FEATURE_TAILCALL_OPT
@@ -771,12 +761,6 @@ extern int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                          ULONG*                methodCodeSize,
                          JitFlags*             compileFlags,
                          void*                 inlineInfoPtr);
-
-#ifdef HOST_64BIT
-const size_t INVALID_POINTER_VALUE = 0xFEEDFACEABADF00D;
-#else
-const size_t INVALID_POINTER_VALUE = 0xFEEDFACE;
-#endif
 
 // Constants for making sure size_t fit into smaller types.
 const size_t MAX_USHORT_SIZE_T   = static_cast<size_t>(static_cast<unsigned short>(-1));

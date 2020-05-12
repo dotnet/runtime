@@ -20,10 +20,10 @@ namespace System.Net.Http.Headers
         {
         }
 
-        protected override int GetParsedValueLength(string value, int startIndex, object storeValue,
-            out object parsedValue)
+        protected override int GetParsedValueLength(string value, int startIndex, object? storeValue,
+            out object? parsedValue)
         {
-            CacheControlHeaderValue temp = storeValue as CacheControlHeaderValue;
+            CacheControlHeaderValue? temp = storeValue as CacheControlHeaderValue;
             Debug.Assert(storeValue == null || temp != null, "'storeValue' is not of type CacheControlHeaderValue");
 
             int resultLength = CacheControlHeaderValue.GetCacheControlLength(value, startIndex, temp, out temp);

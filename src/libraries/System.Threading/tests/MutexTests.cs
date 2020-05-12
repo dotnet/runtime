@@ -38,6 +38,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15159", TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
         {
@@ -122,6 +123,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15158", TestRuntimes.Mono)]
         public void OpenExisting_InvalidNames()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null));
@@ -399,7 +401,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/34666")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28449")]
         [Theory]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)

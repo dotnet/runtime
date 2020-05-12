@@ -210,7 +210,7 @@ namespace System.Drawing
         public void Dispose() { }
         ~BufferedGraphics() { }
         public void Render() { }
-        public void Render(System.Drawing.Graphics target) { }
+        public void Render(System.Drawing.Graphics? target) { }
         public void Render(System.IntPtr targetDC) { }
     }
     public sealed partial class BufferedGraphicsContext : System.IDisposable
@@ -233,7 +233,7 @@ namespace System.Drawing
         public CharacterRange(int First, int Length) { throw null; }
         public int First { get { throw null; } set { } }
         public int Length { get { throw null; } set { } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Drawing.CharacterRange cr1, System.Drawing.CharacterRange cr2) { throw null; }
         public static bool operator !=(System.Drawing.CharacterRange cr1, System.Drawing.CharacterRange cr2) { throw null; }
@@ -320,7 +320,7 @@ namespace System.Drawing
         public System.Drawing.GraphicsUnit Unit { get { throw null; } }
         public object Clone() { throw null; }
         public void Dispose() { }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         ~Font() { }
         public static System.Drawing.Font FromHdc(System.IntPtr hdc) { throw null; }
         public static System.Drawing.Font FromHfont(System.IntPtr hfont) { throw null; }
@@ -340,14 +340,14 @@ namespace System.Drawing
     {
         public FontFamily(System.Drawing.Text.GenericFontFamilies genericFamily) { }
         public FontFamily(string name) { }
-        public FontFamily(string name, System.Drawing.Text.FontCollection fontCollection) { }
+        public FontFamily(string name, System.Drawing.Text.FontCollection? fontCollection) { }
         public static System.Drawing.FontFamily[] Families { get { throw null; } }
         public static System.Drawing.FontFamily GenericMonospace { get { throw null; } }
         public static System.Drawing.FontFamily GenericSansSerif { get { throw null; } }
         public static System.Drawing.FontFamily GenericSerif { get { throw null; } }
         public string Name { get { throw null; } }
         public void Dispose() { }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         ~FontFamily() { }
         public int GetCellAscent(System.Drawing.FontStyle style) { throw null; }
         public int GetCellDescent(System.Drawing.FontStyle style) { throw null; }
@@ -431,24 +431,24 @@ namespace System.Drawing
         public void DrawImage(System.Drawing.Image image, System.Drawing.PointF point) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.PointF[] destPoints) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttr) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttr, System.Drawing.Graphics.DrawImageAbort callback) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttr, System.Drawing.Graphics.DrawImageAbort callback, int callbackData) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttr, System.Drawing.Graphics.DrawImageAbort? callback) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttr, System.Drawing.Graphics.DrawImageAbort? callback, int callbackData) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.Point[] destPoints) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttr) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttr, System.Drawing.Graphics.DrawImageAbort callback) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttr, System.Drawing.Graphics.DrawImageAbort callback, int callbackData) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttr, System.Drawing.Graphics.DrawImageAbort? callback) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttr, System.Drawing.Graphics.DrawImageAbort? callback, int callbackData) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle rect) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, System.Drawing.GraphicsUnit srcUnit) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttr) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttr, System.Drawing.Graphics.DrawImageAbort callback) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttrs, System.Drawing.Graphics.DrawImageAbort callback, System.IntPtr callbackData) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttr, System.Drawing.Graphics.DrawImageAbort? callback) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttrs, System.Drawing.Graphics.DrawImageAbort? callback, System.IntPtr callbackData) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, System.Drawing.GraphicsUnit srcUnit) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttrs) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttrs, System.Drawing.Graphics.DrawImageAbort callback) { }
-        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes imageAttrs, System.Drawing.Graphics.DrawImageAbort callback, System.IntPtr callbackData) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttrs) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttrs, System.Drawing.Graphics.DrawImageAbort? callback) { }
+        public void DrawImage(System.Drawing.Image image, System.Drawing.Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Imaging.ImageAttributes? imageAttrs, System.Drawing.Graphics.DrawImageAbort? callback, System.IntPtr callbackData) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.RectangleF rect) { }
         public void DrawImage(System.Drawing.Image image, System.Drawing.RectangleF destRect, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit) { }
         public void DrawImage(System.Drawing.Image image, int x, int y) { }
@@ -480,49 +480,49 @@ namespace System.Drawing
         public void DrawRectangle(System.Drawing.Pen pen, float x, float y, float width, float height) { }
         public void DrawRectangles(System.Drawing.Pen pen, System.Drawing.RectangleF[] rects) { }
         public void DrawRectangles(System.Drawing.Pen pen, System.Drawing.Rectangle[] rects) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.PointF point) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.PointF point, System.Drawing.StringFormat format) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.RectangleF layoutRectangle) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.RectangleF layoutRectangle, System.Drawing.StringFormat format) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, float x, float y) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, float x, float y, System.Drawing.StringFormat format) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.PointF point) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.PointF point, System.Drawing.StringFormat? format) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.RectangleF layoutRectangle) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.RectangleF layoutRectangle, System.Drawing.StringFormat? format) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, float x, float y) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, float x, float y, System.Drawing.StringFormat? format) { }
         public void EndContainer(System.Drawing.Drawing2D.GraphicsContainer container) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF destPoint, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF destPoint, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF destPoint, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF destPoint, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF[] destPoints, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF[] destPoints, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF[] destPoints, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF[] destPoints, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point[] destPoints, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point[] destPoints, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point[] destPoints, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point[] destPoints, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point[] destPoints, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Rectangle destRect, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Rectangle destRect, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Rectangle destRect, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Rectangle destRect, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Rectangle destRect, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Rectangle destRect, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Rectangle destRect, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Rectangle destRect, System.Drawing.Rectangle srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.RectangleF destRect, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.RectangleF destRect, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.RectangleF destRect, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.RectangleF destRect, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.RectangleF destRect, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.RectangleF destRect, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit srcUnit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
-        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.RectangleF destRect, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.RectangleF destRect, System.Drawing.RectangleF srcRect, System.Drawing.GraphicsUnit unit, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public void ExcludeClip(System.Drawing.Rectangle rect) { }
         public void ExcludeClip(System.Drawing.Region region) { }
         public void FillClosedCurve(System.Drawing.Brush brush, System.Drawing.PointF[] points) { }
@@ -580,14 +580,14 @@ namespace System.Drawing
         public bool IsVisible(int x, int y, int width, int height) { throw null; }
         public bool IsVisible(float x, float y) { throw null; }
         public bool IsVisible(float x, float y, float width, float height) { throw null; }
-        public System.Drawing.Region[] MeasureCharacterRanges(string text, System.Drawing.Font font, System.Drawing.RectangleF layoutRect, System.Drawing.StringFormat stringFormat) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.PointF origin, System.Drawing.StringFormat stringFormat) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat stringFormat) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat stringFormat, out int charactersFitted, out int linesFilled) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, int width) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, int width, System.Drawing.StringFormat format) { throw null; }
+        public System.Drawing.Region[] MeasureCharacterRanges(string? text, System.Drawing.Font font, System.Drawing.RectangleF layoutRect, System.Drawing.StringFormat? stringFormat) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, System.Drawing.PointF origin, System.Drawing.StringFormat? stringFormat) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, System.Drawing.SizeF layoutArea) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat? stringFormat) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat? stringFormat, out int charactersFitted, out int linesFilled) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, int width) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, int width, System.Drawing.StringFormat? format) { throw null; }
         public void MultiplyTransform(System.Drawing.Drawing2D.Matrix matrix) { }
         public void MultiplyTransform(System.Drawing.Drawing2D.Matrix matrix, System.Drawing.Drawing2D.MatrixOrder order) { }
         public void ReleaseHdc() { }
@@ -654,7 +654,7 @@ namespace System.Drawing
         public int Width { get { throw null; } }
         public object Clone() { throw null; }
         public void Dispose() { }
-        public static System.Drawing.Icon ExtractAssociatedIcon(string filePath) { throw null; }
+        public static System.Drawing.Icon? ExtractAssociatedIcon(string filePath) { throw null; }
         ~Icon() { }
         public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
         public void Save(System.IO.Stream outputStream) { }
@@ -695,7 +695,7 @@ namespace System.Drawing
         public System.Drawing.Size Size { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.ComponentModel.LocalizableAttribute(false)]
-        public object Tag { get { throw null; } set { } }
+        public object? Tag { get { throw null; } set { } }
         public float VerticalResolution { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(false)]
@@ -713,23 +713,23 @@ namespace System.Drawing
         public static System.Drawing.Image FromStream(System.IO.Stream stream, bool useEmbeddedColorManagement) { throw null; }
         public static System.Drawing.Image FromStream(System.IO.Stream stream, bool useEmbeddedColorManagement, bool validateImageData) { throw null; }
         public System.Drawing.RectangleF GetBounds(ref System.Drawing.GraphicsUnit pageUnit) { throw null; }
-        public System.Drawing.Imaging.EncoderParameters GetEncoderParameterList(System.Guid encoder) { throw null; }
+        public System.Drawing.Imaging.EncoderParameters? GetEncoderParameterList(System.Guid encoder) { throw null; }
         public int GetFrameCount(System.Drawing.Imaging.FrameDimension dimension) { throw null; }
         public static int GetPixelFormatSize(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
-        public System.Drawing.Imaging.PropertyItem GetPropertyItem(int propid) { throw null; }
-        public System.Drawing.Image GetThumbnailImage(int thumbWidth, int thumbHeight, System.Drawing.Image.GetThumbnailImageAbort callback, System.IntPtr callbackData) { throw null; }
+        public System.Drawing.Imaging.PropertyItem? GetPropertyItem(int propid) { throw null; }
+        public System.Drawing.Image GetThumbnailImage(int thumbWidth, int thumbHeight, System.Drawing.Image.GetThumbnailImageAbort? callback, System.IntPtr callbackData) { throw null; }
         public static bool IsAlphaPixelFormat(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
         public static bool IsCanonicalPixelFormat(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
         public static bool IsExtendedPixelFormat(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
         public void RemovePropertyItem(int propid) { }
         public void RotateFlip(System.Drawing.RotateFlipType rotateFlipType) { }
-        public void Save(System.IO.Stream stream, System.Drawing.Imaging.ImageCodecInfo encoder, System.Drawing.Imaging.EncoderParameters encoderParams) { }
+        public void Save(System.IO.Stream stream, System.Drawing.Imaging.ImageCodecInfo encoder, System.Drawing.Imaging.EncoderParameters? encoderParams) { }
         public void Save(System.IO.Stream stream, System.Drawing.Imaging.ImageFormat format) { }
         public void Save(string filename) { }
-        public void Save(string filename, System.Drawing.Imaging.ImageCodecInfo encoder, System.Drawing.Imaging.EncoderParameters encoderParams) { }
+        public void Save(string filename, System.Drawing.Imaging.ImageCodecInfo encoder, System.Drawing.Imaging.EncoderParameters? encoderParams) { }
         public void Save(string filename, System.Drawing.Imaging.ImageFormat format) { }
-        public void SaveAdd(System.Drawing.Image image, System.Drawing.Imaging.EncoderParameters encoderParams) { }
-        public void SaveAdd(System.Drawing.Imaging.EncoderParameters encoderParams) { }
+        public void SaveAdd(System.Drawing.Image image, System.Drawing.Imaging.EncoderParameters? encoderParams) { }
+        public void SaveAdd(System.Drawing.Imaging.EncoderParameters? encoderParams) { }
         public int SelectActiveFrame(System.Drawing.Imaging.FrameDimension dimension, int frameIndex) { throw null; }
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -739,7 +739,7 @@ namespace System.Drawing
     {
         internal ImageAnimator() { }
         public static void Animate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
-        public static bool CanAnimate(System.Drawing.Image image) { throw null; }
+        public static bool CanAnimate(System.Drawing.Image? image) { throw null; }
         public static void StopAnimate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
         public static void UpdateFrames() { }
         public static void UpdateFrames(System.Drawing.Image image) { }
@@ -947,7 +947,7 @@ namespace System.Drawing
         public static System.Drawing.Region FromHrgn(System.IntPtr hrgn) { throw null; }
         public System.Drawing.RectangleF GetBounds(System.Drawing.Graphics g) { throw null; }
         public System.IntPtr GetHrgn(System.Drawing.Graphics g) { throw null; }
-        public System.Drawing.Drawing2D.RegionData GetRegionData() { throw null; }
+        public System.Drawing.Drawing2D.RegionData? GetRegionData() { throw null; }
         public System.Drawing.RectangleF[] GetRegionScans(System.Drawing.Drawing2D.Matrix matrix) { throw null; }
         public void Intersect(System.Drawing.Drawing2D.GraphicsPath path) { }
         public void Intersect(System.Drawing.Rectangle rect) { }
@@ -956,20 +956,20 @@ namespace System.Drawing
         public bool IsEmpty(System.Drawing.Graphics g) { throw null; }
         public bool IsInfinite(System.Drawing.Graphics g) { throw null; }
         public bool IsVisible(System.Drawing.Point point) { throw null; }
-        public bool IsVisible(System.Drawing.Point point, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(System.Drawing.Point point, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(System.Drawing.PointF point) { throw null; }
-        public bool IsVisible(System.Drawing.PointF point, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(System.Drawing.PointF point, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(System.Drawing.Rectangle rect) { throw null; }
-        public bool IsVisible(System.Drawing.Rectangle rect, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(System.Drawing.Rectangle rect, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(System.Drawing.RectangleF rect) { throw null; }
-        public bool IsVisible(System.Drawing.RectangleF rect, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(System.Drawing.RectangleF rect, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(int x, int y, System.Drawing.Graphics g) { throw null; }
         public bool IsVisible(int x, int y, int width, int height) { throw null; }
-        public bool IsVisible(int x, int y, int width, int height, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(int x, int y, int width, int height, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(float x, float y) { throw null; }
-        public bool IsVisible(float x, float y, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(float x, float y, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(float x, float y, float width, float height) { throw null; }
-        public bool IsVisible(float x, float y, float width, float height, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(float x, float y, float width, float height, System.Drawing.Graphics? g) { throw null; }
         public void MakeEmpty() { }
         public void MakeInfinite() { }
         public void ReleaseHrgn(System.IntPtr regionHandle) { }
@@ -1120,15 +1120,15 @@ namespace System.Drawing
     }
     public static partial class SystemFonts
     {
-        public static System.Drawing.Font CaptionFont { get { throw null; } }
+        public static System.Drawing.Font? CaptionFont { get { throw null; } }
         public static System.Drawing.Font DefaultFont { get { throw null; } }
         public static System.Drawing.Font DialogFont { get { throw null; } }
-        public static System.Drawing.Font IconTitleFont { get { throw null; } }
-        public static System.Drawing.Font MenuFont { get { throw null; } }
-        public static System.Drawing.Font MessageBoxFont { get { throw null; } }
-        public static System.Drawing.Font SmallCaptionFont { get { throw null; } }
-        public static System.Drawing.Font StatusFont { get { throw null; } }
-        public static System.Drawing.Font GetFontByName(string systemFontName) { throw null; }
+        public static System.Drawing.Font? IconTitleFont { get { throw null; } }
+        public static System.Drawing.Font? MenuFont { get { throw null; } }
+        public static System.Drawing.Font? MessageBoxFont { get { throw null; } }
+        public static System.Drawing.Font? SmallCaptionFont { get { throw null; } }
+        public static System.Drawing.Font? StatusFont { get { throw null; } }
+        public static System.Drawing.Font? GetFontByName(string systemFontName) { throw null; }
     }
     public static partial class SystemIcons
     {
@@ -1187,9 +1187,9 @@ namespace System.Drawing
         public TextureBrush(System.Drawing.Image image, System.Drawing.Drawing2D.WrapMode wrapMode, System.Drawing.Rectangle dstRect) { }
         public TextureBrush(System.Drawing.Image image, System.Drawing.Drawing2D.WrapMode wrapMode, System.Drawing.RectangleF dstRect) { }
         public TextureBrush(System.Drawing.Image image, System.Drawing.Rectangle dstRect) { }
-        public TextureBrush(System.Drawing.Image image, System.Drawing.Rectangle dstRect, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public TextureBrush(System.Drawing.Image image, System.Drawing.Rectangle dstRect, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public TextureBrush(System.Drawing.Image image, System.Drawing.RectangleF dstRect) { }
-        public TextureBrush(System.Drawing.Image image, System.Drawing.RectangleF dstRect, System.Drawing.Imaging.ImageAttributes imageAttr) { }
+        public TextureBrush(System.Drawing.Image image, System.Drawing.RectangleF dstRect, System.Drawing.Imaging.ImageAttributes? imageAttr) { }
         public System.Drawing.Image Image { get { throw null; } }
         public System.Drawing.Drawing2D.Matrix Transform { get { throw null; } set { } }
         public System.Drawing.Drawing2D.WrapMode WrapMode { get { throw null; } set { } }
@@ -1211,14 +1211,14 @@ namespace System.Drawing
         public ToolboxBitmapAttribute(string imageFile) { }
         public ToolboxBitmapAttribute(System.Type t) { }
         public ToolboxBitmapAttribute(System.Type t, string name) { }
-        public override bool Equals(object value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
         public override int GetHashCode() { throw null; }
-        public System.Drawing.Image GetImage(object component) { throw null; }
-        public System.Drawing.Image GetImage(object component, bool large) { throw null; }
-        public System.Drawing.Image GetImage(System.Type type) { throw null; }
-        public System.Drawing.Image GetImage(System.Type type, bool large) { throw null; }
-        public System.Drawing.Image GetImage(System.Type type, string imgName, bool large) { throw null; }
-        public static System.Drawing.Image GetImageFromResource(System.Type t, string imageName, bool large) { throw null; }
+        public System.Drawing.Image? GetImage(object? component) { throw null; }
+        public System.Drawing.Image? GetImage(object? component, bool large) { throw null; }
+        public System.Drawing.Image? GetImage(System.Type type) { throw null; }
+        public System.Drawing.Image? GetImage(System.Type type, bool large) { throw null; }
+        public System.Drawing.Image? GetImage(System.Type type, string? imgName, bool large) { throw null; }
+        public static System.Drawing.Image? GetImageFromResource(System.Type t, string? imageName, bool large) { throw null; }
     }
 }
 namespace System.Drawing.Design
@@ -1289,9 +1289,9 @@ namespace System.Drawing.Drawing2D
     }
     public partial class CustomLineCap : System.MarshalByRefObject, System.ICloneable, System.IDisposable
     {
-        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath fillPath, System.Drawing.Drawing2D.GraphicsPath strokePath) { }
-        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath fillPath, System.Drawing.Drawing2D.GraphicsPath strokePath, System.Drawing.Drawing2D.LineCap baseCap) { }
-        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath fillPath, System.Drawing.Drawing2D.GraphicsPath strokePath, System.Drawing.Drawing2D.LineCap baseCap, float baseInset) { }
+        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath? fillPath, System.Drawing.Drawing2D.GraphicsPath? strokePath) { }
+        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath? fillPath, System.Drawing.Drawing2D.GraphicsPath? strokePath, System.Drawing.Drawing2D.LineCap baseCap) { }
+        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath? fillPath, System.Drawing.Drawing2D.GraphicsPath? strokePath, System.Drawing.Drawing2D.LineCap baseCap, float baseInset) { }
         public System.Drawing.Drawing2D.LineCap BaseCap { get { throw null; } set { } }
         public float BaseInset { get { throw null; } set { } }
         public System.Drawing.Drawing2D.LineJoin StrokeJoin { get { throw null; } set { } }
@@ -1385,10 +1385,10 @@ namespace System.Drawing.Drawing2D
         public void AddRectangle(System.Drawing.RectangleF rect) { }
         public void AddRectangles(System.Drawing.RectangleF[] rects) { }
         public void AddRectangles(System.Drawing.Rectangle[] rects) { }
-        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.Point origin, System.Drawing.StringFormat format) { }
-        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.PointF origin, System.Drawing.StringFormat format) { }
-        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.Rectangle layoutRect, System.Drawing.StringFormat format) { }
-        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.RectangleF layoutRect, System.Drawing.StringFormat format) { }
+        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.Point origin, System.Drawing.StringFormat? format) { }
+        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.PointF origin, System.Drawing.StringFormat? format) { }
+        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.Rectangle layoutRect, System.Drawing.StringFormat? format) { }
+        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.RectangleF layoutRect, System.Drawing.StringFormat? format) { }
         public void ClearMarkers() { }
         public object Clone() { throw null; }
         public void CloseAllFigures() { }
@@ -1396,44 +1396,44 @@ namespace System.Drawing.Drawing2D
         public void Dispose() { }
         ~GraphicsPath() { }
         public void Flatten() { }
-        public void Flatten(System.Drawing.Drawing2D.Matrix matrix) { }
-        public void Flatten(System.Drawing.Drawing2D.Matrix matrix, float flatness) { }
+        public void Flatten(System.Drawing.Drawing2D.Matrix? matrix) { }
+        public void Flatten(System.Drawing.Drawing2D.Matrix? matrix, float flatness) { }
         public System.Drawing.RectangleF GetBounds() { throw null; }
-        public System.Drawing.RectangleF GetBounds(System.Drawing.Drawing2D.Matrix matrix) { throw null; }
-        public System.Drawing.RectangleF GetBounds(System.Drawing.Drawing2D.Matrix matrix, System.Drawing.Pen pen) { throw null; }
+        public System.Drawing.RectangleF GetBounds(System.Drawing.Drawing2D.Matrix? matrix) { throw null; }
+        public System.Drawing.RectangleF GetBounds(System.Drawing.Drawing2D.Matrix? matrix, System.Drawing.Pen? pen) { throw null; }
         public System.Drawing.PointF GetLastPoint() { throw null; }
         public bool IsOutlineVisible(System.Drawing.Point point, System.Drawing.Pen pen) { throw null; }
-        public bool IsOutlineVisible(System.Drawing.Point pt, System.Drawing.Pen pen, System.Drawing.Graphics graphics) { throw null; }
+        public bool IsOutlineVisible(System.Drawing.Point pt, System.Drawing.Pen pen, System.Drawing.Graphics? graphics) { throw null; }
         public bool IsOutlineVisible(System.Drawing.PointF point, System.Drawing.Pen pen) { throw null; }
-        public bool IsOutlineVisible(System.Drawing.PointF pt, System.Drawing.Pen pen, System.Drawing.Graphics graphics) { throw null; }
+        public bool IsOutlineVisible(System.Drawing.PointF pt, System.Drawing.Pen pen, System.Drawing.Graphics? graphics) { throw null; }
         public bool IsOutlineVisible(int x, int y, System.Drawing.Pen pen) { throw null; }
-        public bool IsOutlineVisible(int x, int y, System.Drawing.Pen pen, System.Drawing.Graphics graphics) { throw null; }
+        public bool IsOutlineVisible(int x, int y, System.Drawing.Pen pen, System.Drawing.Graphics? graphics) { throw null; }
         public bool IsOutlineVisible(float x, float y, System.Drawing.Pen pen) { throw null; }
-        public bool IsOutlineVisible(float x, float y, System.Drawing.Pen pen, System.Drawing.Graphics graphics) { throw null; }
+        public bool IsOutlineVisible(float x, float y, System.Drawing.Pen pen, System.Drawing.Graphics? graphics) { throw null; }
         public bool IsVisible(System.Drawing.Point point) { throw null; }
-        public bool IsVisible(System.Drawing.Point pt, System.Drawing.Graphics graphics) { throw null; }
+        public bool IsVisible(System.Drawing.Point pt, System.Drawing.Graphics? graphics) { throw null; }
         public bool IsVisible(System.Drawing.PointF point) { throw null; }
-        public bool IsVisible(System.Drawing.PointF pt, System.Drawing.Graphics graphics) { throw null; }
+        public bool IsVisible(System.Drawing.PointF pt, System.Drawing.Graphics? graphics) { throw null; }
         public bool IsVisible(int x, int y) { throw null; }
-        public bool IsVisible(int x, int y, System.Drawing.Graphics graphics) { throw null; }
+        public bool IsVisible(int x, int y, System.Drawing.Graphics? graphics) { throw null; }
         public bool IsVisible(float x, float y) { throw null; }
-        public bool IsVisible(float x, float y, System.Drawing.Graphics graphics) { throw null; }
+        public bool IsVisible(float x, float y, System.Drawing.Graphics? graphics) { throw null; }
         public void Reset() { }
         public void Reverse() { }
         public void SetMarkers() { }
         public void StartFigure() { }
         public void Transform(System.Drawing.Drawing2D.Matrix matrix) { }
         public void Warp(System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect) { }
-        public void Warp(System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.Drawing2D.Matrix matrix) { }
-        public void Warp(System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.Drawing2D.Matrix matrix, System.Drawing.Drawing2D.WarpMode warpMode) { }
-        public void Warp(System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.Drawing2D.Matrix matrix, System.Drawing.Drawing2D.WarpMode warpMode, float flatness) { }
+        public void Warp(System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.Drawing2D.Matrix? matrix) { }
+        public void Warp(System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.Drawing2D.Matrix? matrix, System.Drawing.Drawing2D.WarpMode warpMode) { }
+        public void Warp(System.Drawing.PointF[] destPoints, System.Drawing.RectangleF srcRect, System.Drawing.Drawing2D.Matrix? matrix, System.Drawing.Drawing2D.WarpMode warpMode, float flatness) { }
         public void Widen(System.Drawing.Pen pen) { }
-        public void Widen(System.Drawing.Pen pen, System.Drawing.Drawing2D.Matrix matrix) { }
-        public void Widen(System.Drawing.Pen pen, System.Drawing.Drawing2D.Matrix matrix, float flatness) { }
+        public void Widen(System.Drawing.Pen pen, System.Drawing.Drawing2D.Matrix? matrix) { }
+        public void Widen(System.Drawing.Pen pen, System.Drawing.Drawing2D.Matrix? matrix, float flatness) { }
     }
     public sealed partial class GraphicsPathIterator : System.MarshalByRefObject, System.IDisposable
     {
-        public GraphicsPathIterator(System.Drawing.Drawing2D.GraphicsPath path) { }
+        public GraphicsPathIterator(System.Drawing.Drawing2D.GraphicsPath? path) { }
         public int Count { get { throw null; } }
         public int SubpathCount { get { throw null; } }
         public int CopyData(ref System.Drawing.PointF[] points, ref byte[] types, int startIndex, int endIndex) { throw null; }
@@ -1542,7 +1542,7 @@ namespace System.Drawing.Drawing2D
         public LinearGradientBrush(System.Drawing.RectangleF rect, System.Drawing.Color color1, System.Drawing.Color color2, System.Drawing.Drawing2D.LinearGradientMode linearGradientMode) { }
         public LinearGradientBrush(System.Drawing.RectangleF rect, System.Drawing.Color color1, System.Drawing.Color color2, float angle) { }
         public LinearGradientBrush(System.Drawing.RectangleF rect, System.Drawing.Color color1, System.Drawing.Color color2, float angle, bool isAngleScaleable) { }
-        public System.Drawing.Drawing2D.Blend Blend { get { throw null; } set { } }
+        public System.Drawing.Drawing2D.Blend? Blend { get { throw null; } set { } }
         public bool GammaCorrection { get { throw null; } set { } }
         public System.Drawing.Drawing2D.ColorBlend InterpolationColors { get { throw null; } set { } }
         public System.Drawing.Color[] LinearColors { get { throw null; } set { } }
@@ -1605,7 +1605,7 @@ namespace System.Drawing.Drawing2D
         public float OffsetY { get { throw null; } }
         public System.Drawing.Drawing2D.Matrix Clone() { throw null; }
         public void Dispose() { }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         ~Matrix() { }
         public override int GetHashCode() { throw null; }
         public void Invert() { }
@@ -1636,8 +1636,8 @@ namespace System.Drawing.Drawing2D
     public sealed partial class PathData
     {
         public PathData() { }
-        public System.Drawing.PointF[] Points { get { throw null; } set { } }
-        public byte[] Types { get { throw null; } set { } }
+        public System.Drawing.PointF[]? Points { get { throw null; } set { } }
+        public byte[]? Types { get { throw null; } set { } }
     }
     public sealed partial class PathGradientBrush : System.Drawing.Brush
     {
@@ -2105,6 +2105,9 @@ namespace System.Drawing.Imaging
         public static readonly System.Drawing.Imaging.Encoder ScanMethod;
         public static readonly System.Drawing.Imaging.Encoder Transformation;
         public static readonly System.Drawing.Imaging.Encoder Version;
+        public static readonly System.Drawing.Imaging.Encoder ColorSpace;
+        public static readonly System.Drawing.Imaging.Encoder ImageItems;
+        public static readonly System.Drawing.Imaging.Encoder SaveAsCmyk;
         public Encoder(System.Guid guid) { }
         public System.Guid Guid { get { throw null; } }
     }
@@ -2151,7 +2154,8 @@ namespace System.Drawing.Imaging
         ValueTypeRational = 5,
         ValueTypeLongRange = 6,
         ValueTypeUndefined = 7,
-        ValueTypeRationalRange = 8
+        ValueTypeRationalRange = 8,
+        ValueTypePointer = 9,
     }
     public enum EncoderValue
     {
@@ -2187,7 +2191,7 @@ namespace System.Drawing.Imaging
         public static System.Drawing.Imaging.FrameDimension Page { get { throw null; } }
         public static System.Drawing.Imaging.FrameDimension Resolution { get { throw null; } }
         public static System.Drawing.Imaging.FrameDimension Time { get { throw null; } }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -2218,9 +2222,9 @@ namespace System.Drawing.Imaging
         public void SetBrushRemapTable(System.Drawing.Imaging.ColorMap[] map) { }
         public void SetColorKey(System.Drawing.Color colorLow, System.Drawing.Color colorHigh) { }
         public void SetColorKey(System.Drawing.Color colorLow, System.Drawing.Color colorHigh, System.Drawing.Imaging.ColorAdjustType type) { }
-        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix grayMatrix) { }
-        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix grayMatrix, System.Drawing.Imaging.ColorMatrixFlag flags) { }
-        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix grayMatrix, System.Drawing.Imaging.ColorMatrixFlag mode, System.Drawing.Imaging.ColorAdjustType type) { }
+        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix? grayMatrix) { }
+        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix? grayMatrix, System.Drawing.Imaging.ColorMatrixFlag flags) { }
+        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix? grayMatrix, System.Drawing.Imaging.ColorMatrixFlag mode, System.Drawing.Imaging.ColorAdjustType type) { }
         public void SetColorMatrix(System.Drawing.Imaging.ColorMatrix newColorMatrix) { }
         public void SetColorMatrix(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrixFlag flags) { }
         public void SetColorMatrix(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrixFlag mode, System.Drawing.Imaging.ColorAdjustType type) { }
@@ -2257,17 +2261,17 @@ namespace System.Drawing.Imaging
     {
         internal ImageCodecInfo() { }
         public System.Guid Clsid { get { throw null; } set { } }
-        public string CodecName { get { throw null; } set { } }
-        public string DllName { get { throw null; } set { } }
-        public string FilenameExtension { get { throw null; } set { } }
+        public string? CodecName { get { throw null; } set { } }
+        public string? DllName { get { throw null; } set { } }
+        public string? FilenameExtension { get { throw null; } set { } }
         public System.Drawing.Imaging.ImageCodecFlags Flags { get { throw null; } set { } }
-        public string FormatDescription { get { throw null; } set { } }
+        public string? FormatDescription { get { throw null; } set { } }
         public System.Guid FormatID { get { throw null; } set { } }
-        public string MimeType { get { throw null; } set { } }
+        public string? MimeType { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        public byte[][] SignatureMasks { get { throw null; } set { } }
+        public byte[][]? SignatureMasks { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        public byte[][] SignaturePatterns { get { throw null; } set { } }
+        public byte[][]? SignaturePatterns { get { throw null; } set { } }
         public int Version { get { throw null; } set { } }
         public static System.Drawing.Imaging.ImageCodecInfo[] GetImageDecoders() { throw null; }
         public static System.Drawing.Imaging.ImageCodecInfo[] GetImageEncoders() { throw null; }
@@ -2307,7 +2311,7 @@ namespace System.Drawing.Imaging
         public static System.Drawing.Imaging.ImageFormat Png { get { throw null; } }
         public static System.Drawing.Imaging.ImageFormat Tiff { get { throw null; } }
         public static System.Drawing.Imaging.ImageFormat Wmf { get { throw null; } }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -2322,43 +2326,43 @@ namespace System.Drawing.Imaging
     {
         public Metafile(System.IntPtr henhmetafile, bool deleteEmf) { }
         public Metafile(System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType emfType) { }
-        public Metafile(System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType emfType, string description) { }
+        public Metafile(System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType emfType, string? description) { }
         public Metafile(System.IntPtr hmetafile, System.Drawing.Imaging.WmfPlaceableFileHeader wmfHeader) { }
         public Metafile(System.IntPtr hmetafile, System.Drawing.Imaging.WmfPlaceableFileHeader wmfHeader, bool deleteWmf) { }
         public Metafile(System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect) { }
         public Metafile(System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit) { }
         public Metafile(System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type) { }
-        public Metafile(System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string desc) { }
+        public Metafile(System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string? desc) { }
         public Metafile(System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect) { }
         public Metafile(System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit) { }
         public Metafile(System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type) { }
-        public Metafile(System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string description) { }
+        public Metafile(System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string? description) { }
         public Metafile(System.IO.Stream stream) { }
         public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc) { }
         public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType type) { }
-        public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType type, string description) { }
+        public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType type, string? description) { }
         public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect) { }
         public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit) { }
         public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type) { }
-        public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string description) { }
+        public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string? description) { }
         public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect) { }
         public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit) { }
         public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type) { }
-        public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string description) { }
+        public Metafile(System.IO.Stream stream, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string? description) { }
         public Metafile(string filename) { }
         public Metafile(string fileName, System.IntPtr referenceHdc) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType type) { }
-        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType type, string description) { }
+        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Imaging.EmfType type, string? description) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type) { }
-        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string description) { }
-        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, string description) { }
+        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string? description) { }
+        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, string? description) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type) { }
-        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string description) { }
-        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, string desc) { }
+        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string? description) { }
+        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, string? desc) { }
         public System.IntPtr GetHenhmetafile() { throw null; }
         public System.Drawing.Imaging.MetafileHeader GetMetafileHeader() { throw null; }
         public static System.Drawing.Imaging.MetafileHeader GetMetafileHeader(System.IntPtr henhmetafile) { throw null; }
@@ -2458,7 +2462,7 @@ namespace System.Drawing.Imaging
         public int Id { get { throw null; } set { } }
         public int Len { get { throw null; } set { } }
         public short Type { get { throw null; } set { } }
-        public byte[] Value { get { throw null; } set { } }
+        public byte[]? Value { get { throw null; } set { } }
     }
     public sealed partial class WmfPlaceableFileHeader
     {
@@ -2501,7 +2505,7 @@ namespace System.Drawing.Printing
         public int Right { get { throw null; } set { } }
         public int Top { get { throw null; } set { } }
         public object Clone() { throw null; }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Drawing.Printing.Margins m1, System.Drawing.Printing.Margins m2) { throw null; }
         public static bool operator !=(System.Drawing.Printing.Margins m1, System.Drawing.Printing.Margins m2) { throw null; }
@@ -2712,7 +2716,7 @@ namespace System.Drawing.Printing
         public virtual bool IsPreview { get { throw null; } }
         public virtual void OnEndPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { }
         public virtual void OnEndPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
-        public virtual System.Drawing.Graphics OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
+        public virtual System.Drawing.Graphics? OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
         public virtual void OnStartPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
     }
     public partial class PrintDocument : System.ComponentModel.Component
@@ -2735,10 +2739,10 @@ namespace System.Drawing.Printing
         public event System.Drawing.Printing.PrintEventHandler EndPrint { add { } remove { } }
         public event System.Drawing.Printing.PrintPageEventHandler PrintPage { add { } remove { } }
         public event System.Drawing.Printing.QueryPageSettingsEventHandler QueryPageSettings { add { } remove { } }
-        protected virtual void OnBeginPrint(System.Drawing.Printing.PrintEventArgs e) { }
-        protected virtual void OnEndPrint(System.Drawing.Printing.PrintEventArgs e) { }
-        protected virtual void OnPrintPage(System.Drawing.Printing.PrintPageEventArgs e) { }
-        protected virtual void OnQueryPageSettings(System.Drawing.Printing.QueryPageSettingsEventArgs e) { }
+        protected internal virtual void OnBeginPrint(System.Drawing.Printing.PrintEventArgs e) { }
+        protected internal virtual void OnEndPrint(System.Drawing.Printing.PrintEventArgs e) { }
+        protected internal virtual void OnPrintPage(System.Drawing.Printing.PrintPageEventArgs e) { }
+        protected internal virtual void OnQueryPageSettings(System.Drawing.Printing.QueryPageSettingsEventArgs e) { }
         public void Print() { }
         public override string ToString() { throw null; }
     }
@@ -2883,9 +2887,9 @@ namespace System.Drawing.Printing
     public delegate void PrintEventHandler(object sender, System.Drawing.Printing.PrintEventArgs e);
     public partial class PrintPageEventArgs : System.EventArgs
     {
-        public PrintPageEventArgs(System.Drawing.Graphics graphics, System.Drawing.Rectangle marginBounds, System.Drawing.Rectangle pageBounds, System.Drawing.Printing.PageSettings pageSettings) { }
+        public PrintPageEventArgs(System.Drawing.Graphics? graphics, System.Drawing.Rectangle marginBounds, System.Drawing.Rectangle pageBounds, System.Drawing.Printing.PageSettings pageSettings) { }
         public bool Cancel { get { throw null; } set { } }
-        public System.Drawing.Graphics Graphics { get { throw null; } }
+        public System.Drawing.Graphics? Graphics { get { throw null; } }
         public bool HasMorePages { get { throw null; } set { } }
         public System.Drawing.Rectangle MarginBounds { get { throw null; } }
         public System.Drawing.Rectangle PageBounds { get { throw null; } }

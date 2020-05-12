@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
             _strings = code.Strings;
             _leadingCharClasses = code.LeadingCharClasses;
             _boyerMoorePrefix = code.BoyerMoorePrefix;
-            _anchors = code.Anchors;
+            _leadingAnchor = code.LeadingAnchor;
             _trackcount = code.TrackCount;
             _options = options;
             _hasTimeout = hasTimeout;
@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions
             if (s_includePatternInName)
             {
                 const int DescriptionLimit = 100; // arbitrary limit to avoid very long method names
-                description = "_" + (pattern.Length > DescriptionLimit ? pattern.Substring(0, DescriptionLimit) : pattern);
+                description = string.Concat("_", pattern.Length > DescriptionLimit ? pattern.AsSpan(0, DescriptionLimit) : pattern);
             }
 
             DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", null, typeof(CompiledRegexRunner));

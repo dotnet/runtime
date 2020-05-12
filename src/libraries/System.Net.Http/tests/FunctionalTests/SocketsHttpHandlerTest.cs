@@ -26,6 +26,24 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
 
+        [Fact]
+        public async Task ExecutionContext_Suppressed_Success()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                uri => Task.Run(() =>
+                {
+                    using (ExecutionContext.SuppressFlow())
+                    using (HttpClient client = CreateHttpClient())
+                    {
+                        client.GetStringAsync(uri).GetAwaiter().GetResult();
+                    }
+                }),
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                });
+        }
+
         [OuterLoop("Relies on finalization")]
         [Fact]
         public async Task ExecutionContext_HttpConnectionLifetimeDoesntKeepContextAlive()
@@ -1158,7 +1176,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // These test cases successfully authenticate on SocketsHttpHandler but fail on the other handlers.
             // These are legal as per the RFC, so authenticating is the expected behavior.
-            // See https://github.com/dotnet/corefx/issues/28521 for details.
+            // See https://github.com/dotnet/runtime/issues/25643 for details.
             yield return new object[] { "Basic realm=\"testrealm1\" basic realm=\"testrealm1\"", true };
             yield return new object[] { "Basic something digest something", true };
             yield return new object[] { "Digest realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
@@ -1167,12 +1185,12 @@ namespace System.Net.Http.Functional.Tests
                     "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
 
             // These cases fail on WinHttpHandler because of a behavior in WinHttp that causes requests to be duplicated
-            // when the digest header has certain parameters. See https://github.com/dotnet/corefx/issues/28522 for details.
+            // when the digest header has certain parameters. See https://github.com/dotnet/runtime/issues/25644 for details.
             yield return new object[] { "Digest ", false };
             yield return new object[] { "Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=\"myown\"", false };
 
             // These cases fail to authenticate on SocketsHttpHandler, but succeed on the other handlers.
-            // they are all invalid as per the RFC, so failing is the expected behavior. See https://github.com/dotnet/corefx/issues/28523 for details.
+            // they are all invalid as per the RFC, so failing is the expected behavior. See https://github.com/dotnet/runtime/issues/25645 for details.
             yield return new object[] { "Digest realm=withoutquotes, nonce=withoutquotes", false };
             yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
             yield return new object[] { "Digest realm=\"testrealm1\", nonce=\"testnonce1\" Digest realm=\"testrealm2\", nonce=\"testnonce2\"", false };

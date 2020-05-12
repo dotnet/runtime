@@ -505,7 +505,7 @@ namespace System.Xml.Schema
             sb.Append(_ks[0].ToString());
             for (int i = 1; i < _ks.Length; i++)
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(_ks[i].ToString());
             }
             return sb.ToString();

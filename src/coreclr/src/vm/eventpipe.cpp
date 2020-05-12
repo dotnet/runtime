@@ -21,6 +21,7 @@
 #include "sampleprofiler.h"
 #include "win32threadpool.h"
 #include "ceemain.h"
+#include "configuration.h"
 
 #ifdef TARGET_UNIX
 #include "pal.h"
@@ -38,6 +39,7 @@ Volatile<uint64_t> EventPipe::s_allowWrite = 0;
 unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
 Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
+bool EventPipe::s_enableSampleProfilerAtStartup = false;
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
 #ifdef TARGET_UNIX
@@ -94,11 +96,124 @@ void EventPipe::Initialize()
 #endif
     }
 
-
     {
         CrstHolder _crst(GetLock());
         if (tracingInitialized)
             s_state = EventPipeState::Initialized;
+    }
+    EnableViaEnvironmentVariables();
+}
+
+// Finish setting up the rest of EventPipe.
+void EventPipe::FinishInitialize()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (s_enableSampleProfilerAtStartup)
+    {
+        SampleProfiler::Enable();
+    }
+}
+
+//
+// If EventPipe environment variables are specified, parse them and start a session
+// 
+void EventPipe::EnableViaEnvironmentVariables()
+{
+    STANDARD_VM_CONTRACT;
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableEventPipe) != 0)
+    {
+        CLRConfigStringHolder eventpipeConfig(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeConfig));
+        CLRConfigStringHolder configOutputPath(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeOutputPath));
+        uint32_t eventpipeCircularBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
+        LPCWSTR outputPath = nullptr;
+
+        if (configOutputPath == NULL)
+        {
+            outputPath = W("trace.nettrace");
+        }
+        else
+        {
+            outputPath = configOutputPath;
+        }
+        auto configuration = XplatEventLoggerConfiguration();
+        LPWSTR configToParse = eventpipeConfig;
+        int providerCnt = 0;
+
+        // Create EventPipeProviderConfiguration and start tracing.
+        NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
+
+        // If COMPlus_EnableEventPipe is set to 1 but no configuration was specified, enable EventPipe session
+        // with the default provider configurations.
+        if (configToParse == nullptr || *configToParse == L'\0')
+        {
+            providerCnt = 3;
+            pProviders = new EventPipeProviderConfiguration[providerCnt];
+            pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), 0x4c14fccbd, 5, nullptr);
+            pProviders[1] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntimePrivate"), 0x4002000b, 5, nullptr);
+            pProviders[2] = EventPipeProviderConfiguration(W("Microsoft-DotNETCore-SampleProfiler"), 0x0, 5, nullptr);
+            s_enableSampleProfilerAtStartup = true;
+        }
+        else
+        {
+            // Count how many providers there are to parse
+            static WCHAR comma = W(',');
+            while (*configToParse != '\0')
+            {
+                providerCnt += 1;
+                auto end = wcschr(configToParse, comma);
+                if (end == nullptr)
+                {
+                    break;
+                }
+                configToParse = end + 1;
+            }
+            configToParse = eventpipeConfig;
+            pProviders = new EventPipeProviderConfiguration[providerCnt];
+            int i = 0;
+            while (*configToParse != '\0')
+            {
+                auto end = wcschr(configToParse, comma);
+                configuration.Parse(configToParse);
+
+                // if we find any invalid configuration, do not trace.
+                if (!configuration.IsValid())
+                {
+                    return;
+                }
+
+                if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
+                {
+                    s_enableSampleProfilerAtStartup = true;
+                }
+
+                pProviders[i++] = EventPipeProviderConfiguration(
+                    configuration.GetProviderName(),
+                    configuration.GetEnabledKeywordsMask(),
+                    configuration.GetLevel(),
+                    configuration.GetArgument()
+                );
+
+                if (end == nullptr)
+                {
+                    break;
+                }
+                configToParse = end + 1;
+            }
+        }
+
+        uint64_t sessionID = EventPipe::Enable(
+            outputPath,
+            eventpipeCircularBufferMB,
+            pProviders,
+            providerCnt,
+            EventPipeSessionType::File,
+            EventPipeSerializationFormat::NetTraceV4,
+            true,
+            nullptr,
+            false
+        );
+        EventPipe::StartStreaming(sessionID);
     }
 }
 
@@ -167,7 +282,8 @@ EventPipeSessionID EventPipe::Enable(
     EventPipeSessionType sessionType,
     EventPipeSerializationFormat format,
     const bool rundownRequested,
-    IpcStream *const pStream)
+    IpcStream *const pStream,
+    const bool enableSampleProfiler)
 {
     CONTRACTL
     {
@@ -206,7 +322,7 @@ EventPipeSessionID EventPipe::Enable(
             pProviders,
             numProviders);
 
-        const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue);
+        const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue, enableSampleProfiler);
         if (fSuccess)
             sessionId = reinterpret_cast<EventPipeSessionID>(pSession);
         else
@@ -218,7 +334,8 @@ EventPipeSessionID EventPipe::Enable(
 
 bool EventPipe::EnableInternal(
     EventPipeSession *const pSession,
-    EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
+    EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue,
+    const bool enableSampleProfiler)
 {
     CONTRACTL
     {
@@ -267,7 +384,10 @@ bool EventPipe::EnableInternal(
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
     // Enable the sample profiler
-    SampleProfiler::Enable(pEventPipeProviderCallbackDataQueue);
+    if (enableSampleProfiler)
+    {
+        SampleProfiler::Enable();
+    }
 
     return true;
 }

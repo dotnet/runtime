@@ -54,7 +54,7 @@ typedef uint32_t PAL_SymmetricOptions;
 /*
 Free a CCCryptor created by AppleCryptoNative_CryptorCreate.
 */
-DLLEXPORT void AppleCryptoNative_CryptorFree(CCCryptorRef cryptor);
+PALEXPORT void AppleCryptoNative_CryptorFree(CCCryptorRef cryptor);
 
 /*
 Create a CCCryptor for the described symmetric algorithm with a chosen operation, chainingMode,
@@ -66,7 +66,7 @@ algorithm and assumed valid. pbIv is only allowed to be NULL for PAL_ChainingMod
 
 Returns 1 on success, 0 on system error, -1 on input error.
 */
-DLLEXPORT int32_t AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
+PALEXPORT int32_t AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
                                                   PAL_SymmetricAlgorithm algorithm,
                                                   PAL_ChainingMode chainingMode,
                                                   PAL_PaddingMode paddingMode,
@@ -82,7 +82,7 @@ Shims CCCryptorUpdate, updating *pkCCStatus as its output.
 
 Returns 1 on success, 0 on system error, -1 on input error.
 */
-DLLEXPORT int32_t AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
+PALEXPORT int32_t AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
                                                   const uint8_t* pbData,
                                                   int32_t cbData,
                                                   uint32_t* pbOutput,
@@ -95,7 +95,7 @@ Shims CCCryptorFinal, updating *pkCCStatus as its output.
 
 Returns 1 on success, 0 on system error, -1 on input error.
 */
-DLLEXPORT int32_t AppleCryptoNative_CryptorFinal(
+PALEXPORT int32_t AppleCryptoNative_CryptorFinal(
     CCCryptorRef cryptor, uint8_t* pbOutput, int32_t cbOutput, int32_t* pcbWritten, int32_t* pkCCStatus);
 
 /*
@@ -103,4 +103,4 @@ Shims CCCryptorReset, updating *pkCCStatus as its output.
 
 Returns 1 on success, 0 on system error, -1 on input error.
 */
-DLLEXPORT int32_t AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv, int32_t* pkCCStatus);
+PALEXPORT int32_t AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv, int32_t* pkCCStatus);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Resources;
 using System.Text;
@@ -27,8 +28,8 @@ namespace System.Net.Http.Headers
         {
         }
 
-        protected override int GetParsedValueLength(string value, int startIndex, object storeValue,
-            out object parsedValue)
+        protected override int GetParsedValueLength(string value, int startIndex, object? storeValue,
+            out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
             Debug.Assert(startIndex < value.Length);
@@ -41,7 +42,7 @@ namespace System.Net.Http.Headers
 
             int idx = startIndex;
 
-            if (!TryReadPercentEncodedAlpnProtocolName(value, idx, out string alpnProtocolName, out int alpnProtocolNameLength))
+            if (!TryReadPercentEncodedAlpnProtocolName(value, idx, out string? alpnProtocolName, out int alpnProtocolNameLength))
             {
                 parsedValue = null;
                 return 0;
@@ -68,7 +69,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            if (!TryReadQuotedAltAuthority(value, idx, out string altAuthorityHost, out int altAuthorityPort, out int altAuthorityLength))
+            if (!TryReadQuotedAltAuthority(value, idx, out string? altAuthorityHost, out int altAuthorityPort, out int altAuthorityLength))
             {
                 parsedValue = null;
                 return 0;
@@ -189,7 +190,7 @@ namespace System.Net.Http.Headers
             return ch == ' ' || ch == '\t';
         }
 
-        private static bool TryReadPercentEncodedAlpnProtocolName(string value, int startIndex, out string result, out int readLength)
+        private static bool TryReadPercentEncodedAlpnProtocolName(string value, int startIndex, [NotNullWhen(true)] out string? result, out int readLength)
         {
             int tokenLength = HttpRuleParser.GetTokenLength(value, startIndex);
 
@@ -260,7 +261,7 @@ namespace System.Net.Http.Headers
             return TryReadUnknownPercentEncodedAlpnProtocolName(span, out result);
         }
 
-        private static bool TryReadUnknownPercentEncodedAlpnProtocolName(ReadOnlySpan<char> value, out string result)
+        private static bool TryReadUnknownPercentEncodedAlpnProtocolName(ReadOnlySpan<char> value, [NotNullWhen(true)] out string? result)
         {
             int idx = value.IndexOf('%');
 
@@ -322,7 +323,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        private static bool TryReadQuotedAltAuthority(string value, int startIndex, out string host, out int port, out int readLength)
+        private static bool TryReadQuotedAltAuthority(string value, int startIndex, out string? host, out int port, out int readLength)
         {
             if (HttpRuleParser.GetQuotedStringLength(value, startIndex, out int quotedLength) != HttpParseResult.Parsed)
             {
@@ -364,7 +365,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        private static bool TryReadQuotedValue(ReadOnlySpan<char> value, out string result)
+        private static bool TryReadQuotedValue(ReadOnlySpan<char> value, out string? result)
         {
             int idx = value.IndexOf('\\');
 

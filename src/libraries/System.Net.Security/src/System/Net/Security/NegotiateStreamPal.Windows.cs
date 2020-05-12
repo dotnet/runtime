@@ -20,17 +20,17 @@ namespace System.Net.Security
     {
         internal static IIdentity GetIdentity(NTAuthentication context)
         {
-            IIdentity result = null;
-            string name = context.IsServer ? context.AssociatedName : context.Spn;
+            IIdentity? result = null;
+            string name = context.IsServer ? context.AssociatedName! : context.Spn!;
             string protocol = context.ProtocolName;
 
             if (context.IsServer)
             {
-                SecurityContextTokenHandle token = null;
+                SecurityContextTokenHandle? token = null;
                 try
                 {
                     SecurityStatusPal status;
-                    SafeDeleteContext securityContext = context.GetContext(out status);
+                    SafeDeleteContext? securityContext = context.GetContext(out status);
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         throw new Win32Exception((int)SecurityStatusAdapterPal.GetInteropFromSecurityStatusPal(status));
@@ -40,7 +40,7 @@ namespace System.Net.Security
                     // This token can be used for impersonation. We use it to create a WindowsIdentity and hand it out to the server app.
                     Interop.SECURITY_STATUS winStatus = (Interop.SECURITY_STATUS)SSPIWrapper.QuerySecurityContextToken(
                         GlobalSSPI.SSPIAuth,
-                        securityContext,
+                        securityContext!,
                         out token);
                     if (winStatus != Interop.SECURITY_STATUS.OK)
                     {
@@ -68,7 +68,7 @@ namespace System.Net.Security
             return result;
         }
 
-        internal static string QueryContextAssociatedName(SafeDeleteContext securityContext)
+        internal static string? QueryContextAssociatedName(SafeDeleteContext securityContext)
         {
             return SSPIWrapper.QueryStringContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES);
         }
@@ -90,7 +90,7 @@ namespace System.Net.Security
             int count,
             bool isConfidential,
             bool isNtlm,
-            ref byte[] output,
+            ref byte[]? output,
             uint sequenceNumber)
         {
             SecPkgContext_Sizes sizes = default;
@@ -179,7 +179,7 @@ namespace System.Net.Security
 
         internal static int Decrypt(
             SafeDeleteContext securityContext,
-            byte[] buffer,
+            byte[]? buffer,
             int offset,
             int count,
             bool isConfidential,
@@ -240,7 +240,7 @@ namespace System.Net.Security
 
         private static int DecryptNtlm(
             SafeDeleteContext securityContext,
-            byte[] buffer,
+            byte[]? buffer,
             int offset,
             int count,
             bool isConfidential,

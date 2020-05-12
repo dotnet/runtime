@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
     {
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/20246", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/11191", RuntimeConfiguration.Checked)]
         [InlineData(2 * 6_584_983 - 2)] // previous limit
         [InlineData(2 * 7_199_369 - 2)] // last pre-computed prime number
         public void SerializeHugeObjectGraphs(int limit)
@@ -47,6 +47,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34753", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(BasicObjectsRoundtrip_MemberData))]
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
@@ -62,6 +64,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15115", TestRuntimes.Mono)]
         [MemberData(nameof(SerializableObjects_MemberData))]
         public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, false);
@@ -182,6 +185,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34753", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void RoundtripManyObjectsInOneStream()
         {
             object[][] objects = SerializableObjects_MemberData().ToArray();
@@ -426,7 +431,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [OuterLoop]
-        [Theory(Skip = "Can cause improbable memory allocations leading to interminable paging")]
+        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [MemberData(nameof(FuzzInputs_MemberData))]
         public void Deserialize_FuzzInput(object obj, Random rand)
         {

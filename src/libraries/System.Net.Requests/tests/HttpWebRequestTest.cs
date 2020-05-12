@@ -9,11 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Net.Cache;
 using System.Net.Http;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
@@ -1200,6 +1198,46 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public async Task GetResponseAsync_AllowAutoRedirectTrueWithTooManyRedirects_ThrowsWebException()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.AllowAutoRedirect = true;
+                request.MaximumAutomaticRedirections = 1;
+                WebException ex = await Assert.ThrowsAsync<WebException>(async () => await request.GetResponseAsync());
+                Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+            }, server => server.HandleRequestAsync(HttpStatusCode.Redirect));
+        }
+
+        [Fact]
+        public async Task GetResponseAsync_AllowAutoRedirectFalseWithRedirect_ReturnsRedirectResponse()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.AllowAutoRedirect = false;
+                using (WebResponse response = await request.GetResponseAsync())
+                {
+                    HttpWebResponse httpResponse = Assert.IsType<HttpWebResponse>(response);
+                    Assert.Equal(HttpStatusCode.Redirect, httpResponse.StatusCode);
+                }
+            }, server => server.HandleRequestAsync(HttpStatusCode.Redirect));
+        }
+
+        [Fact]
+        public async Task GetResponseAsync_AllowAutoRedirectFalseWithBadRequest_ThrowsWebException()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.AllowAutoRedirect = false;
+                WebException ex = await Assert.ThrowsAsync<WebException>(async () => await request.GetResponseAsync());
+                Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+            }, server => server.HandleRequestAsync(HttpStatusCode.BadRequest));
+        }
+
+        [Fact]
         public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -1448,7 +1486,7 @@ namespace System.Net.Tests
             Assert.NotNull(request.Proxy);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/42323")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31380")]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Fact]
@@ -1713,7 +1751,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19083")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21418")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
         {
@@ -1753,7 +1791,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18800")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21291")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException()
         {

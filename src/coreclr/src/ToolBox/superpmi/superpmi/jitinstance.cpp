@@ -6,7 +6,6 @@
 #include "standardpch.h"
 #include "superpmi.h"
 #include "jitinstance.h"
-#include "coreclrcallbacks.h"
 #include "icorjitinfo.h"
 #include "jithost.h"
 #include "errorhandling.h"
@@ -62,15 +61,6 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
     char lpTempPathBuffer[MAX_PATH];
     char szTempFileName[MAX_PATH];
 
-    // Get an allocator instance
-    // Note: we do this to keep cleanup somewhat simple...
-    ourHeap = ::HeapCreate(0, 0, 0);
-    if (ourHeap == nullptr)
-    {
-        LogError("Failed to get a new heap (0x%08x)", ::GetLastError());
-        return E_FAIL;
-    }
-
     // find the full jit path
     dwRetVal = ::GetFullPathNameA(PathToJit, MAX_PATH, pFullPathName, nullptr);
     if (dwRetVal == 0)
@@ -80,7 +70,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
     }
 
     // Store the full path to the jit
-    PathToOriginalJit = (char*)::HeapAlloc(ourHeap, 0, MAX_PATH);
+    PathToOriginalJit = (char*)malloc(MAX_PATH);
     if (PathToOriginalJit == nullptr)
     {
         LogError("1st HeapAlloc failed (0x%08x)", ::GetLastError());
@@ -112,7 +102,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         dwRetVal = (DWORD)::strlen(szTempFileName);
 
         // Store the full path to the temp jit
-        PathToTempJit = (char*)::HeapAlloc(ourHeap, 0, MAX_PATH);
+        PathToTempJit = (char*)malloc(MAX_PATH);
         if (PathToTempJit == nullptr)
         {
             LogError("2nd HeapAlloc failed 0x%08x)", ::GetLastError());
@@ -173,15 +163,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         LogError("GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
         return -1;
     }
-    pnsxsJitStartup = (PsxsJitStartup)::GetProcAddress(hLib, "sxsJitStartup");
     pnjitStartup    = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
-
-    if (pnsxsJitStartup != nullptr)
-    {
-        // Setup CoreClrCallbacks and call sxsJitStartup
-        CoreClrCallbacks* cccallbacks = InitCoreClrCallbacks();
-        pnsxsJitStartup(*cccallbacks);
-    }
 
     // Setup ICorJitHost and call jitStartup if necessary
     if (pnjitStartup != nullptr)
@@ -241,15 +223,7 @@ bool JitInstance::reLoad(MethodContext* firstContext)
         LogError("GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
         return false;
     }
-    pnsxsJitStartup = (PsxsJitStartup)::GetProcAddress(hLib, "sxsJitStartup");
     pnjitStartup    = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
-
-    if (pnsxsJitStartup != nullptr)
-    {
-        // Setup CoreClrCallbacks and call sxsJitStartup
-        CoreClrCallbacks* cccallbacks = InitCoreClrCallbacks();
-        pnsxsJitStartup(*cccallbacks);
-    }
 
     // Setup ICorJitHost and call jitStartup if necessary
     if (pnjitStartup != nullptr)
@@ -450,17 +424,17 @@ const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWOR
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
 // which will be handed to the EE by setVars() and setBoundaries()
-void* JitInstance::allocateArray(ULONG cBytes)
+void* JitInstance::allocateArray(size_t cBytes)
 {
     mc->cr->AddCall("allocateArray");
-    return HeapAlloc(mc->cr->getCodeHeap(), 0, cBytes);
+    return mc->cr->allocateMemory(cBytes);
 }
 
 // Used to allocate memory that needs to live as long as the jit
 // instance does.
-void* JitInstance::allocateLongLivedArray(ULONG cBytes)
+void* JitInstance::allocateLongLivedArray(size_t cBytes)
 {
-    return HeapAlloc(ourHeap, 0, cBytes);
+    return new BYTE[cBytes];
 }
 
 // JitCompiler will free arrays passed by the EE using this
@@ -470,13 +444,13 @@ void* JitInstance::allocateLongLivedArray(ULONG cBytes)
 void JitInstance::freeArray(void* array)
 {
     mc->cr->AddCall("freeArray");
-    HeapFree(mc->cr->getCodeHeap(), 0, array);
+    // We don't bother freeing this until the mc->cr itself gets freed.
 }
 
 // Used to free memory allocated by JitInstance::allocateLongLivedArray.
 void JitInstance::freeLongLivedArray(void* array)
 {
-    HeapFree(ourHeap, 0, array);
+    delete [] (BYTE*)array;
 }
 
 // Helper for calling pnjitStartup. Needed to allow SEH here.

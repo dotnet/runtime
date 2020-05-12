@@ -11,9 +11,9 @@
     <_CortypeFilePath Condition=" '$(_CortypeFilePath)' == '' ">$(MSBuildThisFileDirectory)..\inc\cortypeinfo.h</_CortypeFilePath>
     <_RexcepFilePath Condition=" '$(_RexcepFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\rexcep.h</_RexcepFilePath>
     <_ILLinkTrimXmlFilePath Condition=" '$(_ILLinkTrimXmlFilePath)' == '' ">$(MSBuildThisFileDirectory)ILLinkTrim.xml</_ILLinkTrimXmlFilePath>
-    <_ILLinkTasksToolsDir>$(PkgILLink_Tasks)/tools</_ILLinkTasksToolsDir>
+    <_ILLinkTasksToolsDir>$(PkgMicrosoft_NET_ILLink_Tasks)/tools</_ILLinkTasksToolsDir>
     <_ILLinkTasksDir>$(_ILLinkTasksToolsDir)/$(NetFrameworkCurrent)/</_ILLinkTasksDir>
-    <_ILLinkTasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_ILLinkTasksToolsDir)/netcoreapp2.0/</_ILLinkTasksDir>
+    <_ILLinkTasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_ILLinkTasksToolsDir)/netcoreapp3.0/</_ILLinkTasksDir>
   </PropertyGroup>
 
   <!--

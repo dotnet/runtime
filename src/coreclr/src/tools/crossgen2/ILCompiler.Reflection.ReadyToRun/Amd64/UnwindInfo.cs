@@ -237,7 +237,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                         code.NextFrameOffset = (int)offset * 16;
                         if ((UnwindCodeArray[i].FrameOffset & 0xF0000000) != 0)
                         {
-                            Console.WriteLine("Warning: Illegal unwindInfo unscaled offset: too large");
+                            throw new BadImageFormatException("Warning: Illegal unwindInfo unscaled offset: too large");
                         }
                     }
                     break;

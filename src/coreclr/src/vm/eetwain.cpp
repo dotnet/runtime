@@ -5236,104 +5236,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 #endif // USE_GC_INFO_DECODER
 #endif // !CROSSGEN_COMPILE
 
-#ifdef TARGET_X86
-/*****************************************************************************
- *
- *  Return the address of the local security object reference
- *  using data that was previously cached before in UnwindStackFrame
- *  using StackwalkCacheUnwindInfo
- */
-
-OBJECTREF* EECodeManager::GetAddrOfSecurityObjectFromCachedInfo(PREGDISPLAY pRD, StackwalkCacheUnwindInfo * stackwalkCacheUnwindInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-    size_t securityObjectOffset = stackwalkCacheUnwindInfo->securityObjectOffset;
-
-    _ASSERTE(securityObjectOffset != 0);
-    // We pretend that filters are ESP-based methods in UnwindEbpDoubleAlignFrame().
-    // Hence we cannot enforce this assert.
-    // _ASSERTE(stackwalkCacheUnwindInfo->fUseEbpAsFrameReg);
-    return (OBJECTREF *) (size_t) (GetRegdisplayFP(pRD) - (securityObjectOffset * sizeof(void*)));
-}
-#endif // TARGET_X86
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    REGDISPLAY*   pRD         = pCF->GetRegisterSet();
-    IJitManager*   pJitMan    = pCF->GetJitManager();
-    METHODTOKEN   methodToken = pCF->GetMethodToken();
-    unsigned      relOffset   = pCF->GetRelOffset();
-    CodeManState* pState      = pCF->GetCodeManState();
-
-    GCInfoToken gcInfoToken = pJitMan->GetGCInfoToken(methodToken);
-
-    _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
-
-#ifndef USE_GC_INFO_DECODER
-    CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
-
-    /* Extract the necessary information from the info block header */
-    stateBuf->hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, // <TODO>truncation</TODO>
-                                                   relOffset,
-                                                   &stateBuf->hdrInfoBody);
-
-    pState->dwIsSet = 1;
-    if  (stateBuf->hdrInfoBody.securityCheck)
-    {
-        _ASSERTE(stateBuf->hdrInfoBody.ebpFrame);
-        if(stateBuf->hdrInfoBody.prologOffs == hdrInfo::NOT_IN_PROLOG &&
-                stateBuf->hdrInfoBody.epilogOffs == hdrInfo::NOT_IN_EPILOG)
-        {
-            return (OBJECTREF *)(size_t)(GetRegdisplayFP(pRD) - GetSecurityObjectOffset(&stateBuf->hdrInfoBody));
-        }
-    }
-#else // !USE_GC_INFO_DECODER
-
-    GcInfoDecoder gcInfoDecoder(
-            gcInfoToken,
-            DECODE_SECURITY_OBJECT
-            );
-
-    INT32 spOffset = gcInfoDecoder.GetSecurityObjectStackSlot();
-    if( spOffset != NO_SECURITY_OBJECT )
-    {
-        UINT_PTR uCallerSP = GetCallerSp(pRD);
-
-        if (pCF->IsFunclet())
-        {
-            if (!pCF->IsFilterFunclet())
-            {
-                // Cannot retrieve the security object for a non-filter funclet.
-                return NULL;
-            }
-
-            DWORD    dwParentOffset  = 0;
-            UINT_PTR uParentCallerSP = 0;
-
-            // If this is a filter funclet, retrieve the information of the parent method
-            // and use that to find the security object.
-            ExceptionTracker::FindParentStackFrameEx(pCF, &dwParentOffset, &uParentCallerSP);
-
-            relOffset = dwParentOffset;
-            uCallerSP = uParentCallerSP;
-        }
-
-        // Security object is always live anyplace we can throw or take a GC
-        OBJECTREF* pSlot = (OBJECTREF*) (spOffset + uCallerSP);
-        return pSlot;
-    }
-#endif // USE_GC_INFO_DECODER
-
-    return NULL;
-}
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
-
 #ifndef CROSSGEN_COMPILE
 /*****************************************************************************
  *
@@ -5829,9 +5731,12 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 
 /*****************************************************************************
 *
-*  Returns the size of a given function.
+*  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
+*  If it can be hijacked, it sets the returnKind output parameter to the kind of the return value and
+*  returns true.
+*  If hijacking is not possible for some reason, it return false.
 */
-ReturnKind EECodeManager::GetReturnKind(GCInfoToken gcInfoToken)
+bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind)
 {
     CONTRACTL{
         NOTHROW;
@@ -5839,22 +5744,25 @@ ReturnKind EECodeManager::GetReturnKind(GCInfoToken gcInfoToken)
     SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    if (!gcInfoToken.IsReturnKindAvailable())
-    {
-        return RT_Illegal;
-    }
-
 #ifndef USE_GC_INFO_DECODER
     hdrInfo info;
 
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
-    return info.returnKind;
+    *returnKind = info.returnKind;
+    return true;
 #else // !USE_GC_INFO_DECODER
 
-    GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_RETURN_KIND);
-    return gcInfoDecoder.GetReturnKind();
+    GcInfoDecoder gcInfoDecoder(gcInfoToken, GcInfoDecoderFlags(DECODE_RETURN_KIND | DECODE_REVERSE_PINVOKE_VAR));
 
+    if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
+    {
+        // Hijacking of UnmanagedCallersOnly method is not allowed
+        return false;
+    }
+
+    *returnKind = gcInfoDecoder.GetReturnKind();
+    return true;
 #endif // USE_GC_INFO_DECODER
 }
 

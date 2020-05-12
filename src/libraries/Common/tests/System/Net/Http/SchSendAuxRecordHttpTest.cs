@@ -10,15 +10,48 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
-{    
+{
 #if WINHTTPHANDLER_TEST
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/26539")]    // Flaky test
     public abstract class SchSendAuxRecordHttpTest : HttpClientHandlerTestBase
     {
         public SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
+
+        private class CircularBuffer
+        {
+            public CircularBuffer(int size) => _buffer = new char[size];
+
+            private char[] _buffer;
+            private int _lastBytesWriteIndex = 0;
+            private int _size = 0;
+
+            public void Add(string value)
+            {
+                foreach (char ch in value)
+                {
+                    _buffer[_lastBytesWriteIndex] = ch;
+
+                    _lastBytesWriteIndex = ++_lastBytesWriteIndex % _buffer.Length;
+                    _size = Math.Min(_buffer.Length, ++_size);
+                }
+            }
+
+            public bool Equals(string value)
+            {
+                if (value.Length != _size)
+                    return false;
+
+                for (int i = 0; i < _size; i++)
+                {
+                    if (_buffer[(_lastBytesWriteIndex + i) % _buffer.Length] != value[i])
+                        return false;
+                }
+
+                return true;
+            }
+        }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -41,8 +74,13 @@ namespace System.Net.Http.Functional.Tests
                 int serverTotalBytesReceived = 0;
                 int serverChunks = 0;
 
+                CircularBuffer buffer = new CircularBuffer(4);
+
                 tasks[0] = server.AcceptHttpsClientAsync((requestString) =>
                 {
+
+                    buffer.Add(requestString);
+
                     serverTotalBytesReceived += requestString.Length;
 
                     if (serverTotalBytesReceived == 1 && serverChunks == 0)
@@ -60,13 +98,14 @@ namespace System.Net.Http.Functional.Tests
                         serverAuxRecordDetectedInconclusive = true;
                     }
 
-                    if (serverTotalBytesReceived < 5)
+                    // Detect end of HTML request
+                    if (buffer.Equals("\r\n\r\n"))
                     {
-                        return Task.FromResult<string>(null);
+                        return Task.FromResult(HttpsTestServer.Options.DefaultResponseString);
                     }
                     else
                     {
-                        return Task.FromResult(HttpsTestServer.Options.DefaultResponseString);
+                        return Task.FromResult<string>(null);
                     }
                 });
 

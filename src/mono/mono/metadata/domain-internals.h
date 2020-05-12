@@ -288,7 +288,7 @@ struct _MonoJitInfo {
 
 typedef struct {
 	gpointer *static_data; /* Used to free the static data without going through the MonoAppContext object itself. */
-	uint32_t gc_handle;
+	MonoGCHandle gc_handle;
 } ContextStaticData;
 
 struct _MonoAppContext {
@@ -423,7 +423,7 @@ struct _MonoDomain {
 	/* Protects the three hashes above */
 	mono_mutex_t   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
-	mono_mutex_t    assemblies_lock;
+	MonoCoopMutex  assemblies_lock;
 
 	GHashTable	   *generic_virtual_cases;
 
@@ -478,20 +478,30 @@ typedef struct  {
 
 /* MonoRuntimeInfo: Contains information about versions supported by this runtime */
 typedef struct  {
-	const char runtime_version [12];
-	const char framework_version [4];
-	const AssemblyVersionSet version_sets [5];
+	char runtime_version [12];
+	char framework_version [4];
+	AssemblyVersionSet version_sets [5];
 } MonoRuntimeInfo;
 
-#define mono_domain_assemblies_lock(domain) mono_locks_os_acquire(&(domain)->assemblies_lock, DomainAssembliesLock)
-#define mono_domain_assemblies_unlock(domain) mono_locks_os_release(&(domain)->assemblies_lock, DomainAssembliesLock)
+static inline void
+mono_domain_assemblies_lock (MonoDomain *domain)
+{
+	mono_locks_coop_acquire (&domain->assemblies_lock, DomainAssembliesLock);
+}
+
+static inline void
+mono_domain_assemblies_unlock (MonoDomain *domain)
+{
+	mono_locks_coop_release (&domain->assemblies_lock, DomainAssembliesLock);
+}
+
 #define mono_domain_jit_code_hash_lock(domain) mono_locks_os_acquire(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 #define mono_domain_jit_code_hash_unlock(domain) mono_locks_os_release(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
 
-MONO_LLVM_INTERNAL void mono_domain_lock (MonoDomain *domain);
-MONO_LLVM_INTERNAL void mono_domain_unlock (MonoDomain *domain);
+void mono_domain_lock (MonoDomain *domain);
+void mono_domain_unlock (MonoDomain *domain);
 
 void
 mono_install_runtime_load  (MonoLoadFunc func);
@@ -570,7 +580,7 @@ mono_domain_alloc0_lock_free (MonoDomain *domain, guint size);
 
 #define mono_domain_alloc0_lock_free(domain, size) (g_cast (mono_domain_alloc0_lock_free ((domain), (size))))
 
-MONO_LLVM_INTERNAL void*
+void*
 mono_domain_code_reserve (MonoDomain *domain, int size);
 
 #define mono_domain_code_reserve(domain, size) (g_cast (mono_domain_code_reserve ((domain), (size))))
@@ -690,7 +700,7 @@ mono_domain_default_alc (MonoDomain *domain);
 
 #ifdef ENABLE_NETCORE
 MonoAssemblyLoadContext *
-mono_domain_create_individual_alc (MonoDomain *domain, uint32_t this_gchandle, gboolean collectible, MonoError *error);
+mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
 #endif
 
 static inline

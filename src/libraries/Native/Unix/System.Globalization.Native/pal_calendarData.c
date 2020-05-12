@@ -5,9 +5,21 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "pal_locale_internal.h"
+#include "pal_errors_internal.h"
+#include "pal_calendarData.h"
+
+#if defined(TARGET_UNIX)
 #include <strings.h>
 
-#include "pal_calendarData.h"
+#define STRING_COPY(destination, numberOfElements, source) \
+    strncpy(destination, source, numberOfElements); \
+    destination[numberOfElements - 1] = 0;
+
+#elif defined(TARGET_WINDOWS)
+#define strcasecmp _stricmp
+#define STRING_COPY(destination, numberOfElements, source) strncpy_s(destination, numberOfElements, source, _TRUNCATE);
+#endif
 
 #define GREGORIAN_NAME "gregorian"
 #define JAPANESE_NAME "japanese"
@@ -224,7 +236,7 @@ static int InvokeCallbackForDatePattern(const char* locale,
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udat_toPattern(pFormat, FALSE, NULL, 0, &ignore) + 1;
 
-    UChar* pattern = calloc((size_t)patternLen, sizeof(UChar));
+    UChar* pattern = (UChar*)calloc((size_t)patternLen, sizeof(UChar));
     if (pattern == NULL)
     {
         udat_close(pFormat);
@@ -264,7 +276,7 @@ static int InvokeCallbackForDateTimePattern(const char* locale,
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, NULL, 0, &ignore) + 1;
 
-    UChar* bestPattern = calloc((size_t)patternLen, sizeof(UChar));
+    UChar* bestPattern = (UChar*)calloc((size_t)patternLen, sizeof(UChar));
     if (bestPattern == NULL)
     {
         udatpg_close(pGenerator);
@@ -304,8 +316,7 @@ static int32_t EnumSymbols(const char* locale,
         return FALSE;
 
     char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
-    strncpy(localeWithCalendarName, locale, ULOC_FULLNAME_CAPACITY);
-    localeWithCalendarName[ULOC_FULLNAME_CAPACITY - 1] = 0;
+    STRING_COPY(localeWithCalendarName, sizeof(localeWithCalendarName), locale);
 
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
 
@@ -334,7 +345,7 @@ static int32_t EnumSymbols(const char* locale,
         }
         else
         {
-            symbolBuf = calloc((size_t)symbolLen, sizeof(UChar));
+            symbolBuf = (UChar*)calloc((size_t)symbolLen, sizeof(UChar));
             if (symbolBuf == NULL)
             {
                 err = U_MEMORY_ALLOCATION_ERROR;
@@ -412,9 +423,7 @@ static int32_t EnumAbbrevEraNames(const char* locale,
 
     char* localeNamePtr = localeNameBuf;
     char* parentNamePtr = parentNameBuf;
-
-    strncpy(localeNamePtr, locale, ULOC_FULLNAME_CAPACITY);
-    localeNamePtr[ULOC_FULLNAME_CAPACITY - 1] = 0;
+    STRING_COPY(localeNamePtr, sizeof(localeNameBuf), locale);
 
     while (TRUE)
     {

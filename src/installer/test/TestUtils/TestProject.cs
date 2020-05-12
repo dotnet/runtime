@@ -22,6 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string AppExe { get => BuiltApp?.AppExe; }
         public string HostPolicyDll { get => BuiltApp?.HostPolicyDll; }
         public string HostFxrDll { get => BuiltApp?.HostFxrDll; }
+        public string CoreClrDll { get => BuiltApp?.CoreClrDll; }
 
         public TestApp BuiltApp { get; private set; }
 

@@ -204,14 +204,12 @@ ves_icall_System_Math_Ceiling (gdouble v)
 gint32
 ves_icall_System_Math_ILogB (gdouble x)
 {
-	int ret;
-	if (FP_ILOGB0 != -2147483648 && x == 0.0)
-		ret = -2147483648;
-	else if (FP_ILOGBNAN != 2147483647 && isnan(x))
-		ret = 2147483647;
-	else
-		ret = ilogb(x);
-	return ret;
+	if (FP_ILOGB0 != INT_MIN && x == 0.0)
+		return INT_MIN;
+	if (FP_ILOGBNAN != INT_MAX && isnan(x))
+		return INT_MAX;
+	
+	return ilogb(x);
 }
 
 gdouble
@@ -375,14 +373,12 @@ ves_icall_System_MathF_ModF (float x, float *d)
 gint32
 ves_icall_System_MathF_ILogB (float x)
 {
-	int ret;
-	if (FP_ILOGB0 != -2147483648 && x == 0.0)
-		ret = -2147483648;
-	else if (FP_ILOGBNAN != 2147483647 && isnan(x))
-		ret = 2147483647;
-	else
-		ret = ilogbf(x);
-	return ret;
+	if (FP_ILOGB0 != INT_MIN && x == 0.0)
+		return INT_MIN;
+	if (FP_ILOGBNAN != INT_MAX && isnan(x))
+		return INT_MAX;
+	
+	return ilogbf(x);
 }
 
 float

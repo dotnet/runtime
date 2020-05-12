@@ -15,6 +15,22 @@
   </PropertyGroup>
 
   <!--
+    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to 
+    opt out.
+  -->
+  <Target Name="MonoSkipBuildProps" 
+          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
+          BeforeTargets="GetSkipBuildProps">
+    <PropertyGroup>
+      <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+
+  <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the
     version generation target. For any with a VersionFromProject, query the ProductVersion from that
     project file and use it as the dependency's version.

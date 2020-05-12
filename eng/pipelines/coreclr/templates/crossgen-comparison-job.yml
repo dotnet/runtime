@@ -56,6 +56,8 @@ jobs:
         value: $(artifactsDirectory)/bin
       - name: productDirectory
         value: $(binDirectory)/coreclr
+      - name: workItemDirectory
+        value: $(artifactsDirectory)/tests/coreclr/$(targetFlavor)/Tests/Core_Root
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: artifactsDirectory
         value: $(Build.SourcesDirectory)\artifacts
@@ -63,6 +65,8 @@ jobs:
         value: $(artifactsDirectory)\bin
       - name: productDirectory
         value: $(binDirectory)\coreclr
+      - name: workItemDirectory
+        value: $(artifactsDirectory)\tests\coreclr\$(targetFlavor)\Tests\Core_Root
 
     - ${{ parameters.variables }}
 
@@ -75,7 +79,7 @@ jobs:
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
     container: ${{ parameters.container }}
-    timeoutInMinutes: 90 # 1.5 hrs
+    timeoutInMinutes: 180 # 3 hrs
 
     steps:
 
@@ -97,23 +101,20 @@ jobs:
           artifactName: '$(librariesBuildArtifactName)'
           displayName: 'live-built libraries'
 
-
-    # Create directories and ensure crossgen is executable
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: |
-          chmod +x $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
-          mkdir -p $(artifactsDirectory)/log/$(crossFlavor)
-        displayName: Create directories and ensure crossgen is executable
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: |
-          mkdir $(artifactsDirectory)\log\$(crossFlavor)
-        displayName: Create directories
-
-
     # Populate Core_Root
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
       displayName: Populate Core_Root
 
+    # Create directories and ensure crossgen is executable
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: |
+          chmod +x $(workItemDirectory)/crossgen
+          mkdir -p $(workItemDirectory)/log/$(crossFlavor)
+        displayName: Create directories and ensure crossgen is executable
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: |
+          mkdir $(workItemDirectory)\log\$(crossFlavor)
+        displayName: Create directories
 
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0
@@ -121,21 +122,32 @@ jobs:
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(coreClrRepoRoot)/tests/scripts/crossgen_comparison.py
+        pythonInterpreter: /usr/bin/python3
         ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           arguments:
             crossgen_framework
             --crossgen   $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
             --il_corelib $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll
-            --core_root  $(artifactsDirectory)/tests/coreclr/$(targetFlavor)/Tests/Core_Root
-            --result_dir $(artifactsDirectory)/log/$(crossFlavor)
+            --core_root  $(workItemDirectory)
+            --result_dir $(workItemDirectory)/log/$(crossFlavor)
         ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
           arguments:
             crossgen_framework
             --crossgen   $(productDirectory)\$(targetFlavor)\$(hostArchType)\crossgen
             --il_corelib $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll
-            --core_root  $(artifactsDirectory)\tests\coreclr\$(targetFlavor)\Tests\Core_Root
-            --result_dir $(artifactsDirectory)\log\$(crossFlavor)
+            --core_root  $(workItemDirectory)
+            --result_dir $(workItemDirectory)\log\$(crossFlavor)
 
+    # Dump contents and payload information
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: |
+          ls $(workItemDirectory)
+          du -sh $(workItemDirectory)
+        displayName: Dump contents and payload information
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: |
+          dir $(workItemDirectory)
+        displayName: Dump contents and payload information
 
     # Send payload to Helix where the native output is generated and compared to the baseline
     - template: /eng/common/templates/steps/send-to-helix.yml
@@ -148,30 +160,30 @@ jobs:
         HelixTargetQueues: ${{ join(' ', parameters.helixQueues) }}
         ${{ if ne(variables['System.TeamProject'], 'internal') }}:
           Creator: $(Creator)
-        WorkItemTimeout: 1:30 # 1:30 hours
-        WorkItemDirectory: '$(artifactsDirectory)'
+        WorkItemTimeout: 3:00 # 3 hours
+        WorkItemDirectory: '$(workItemDirectory)'
         CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
-            chmod +x     $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/crossgen;
+            chmod +x     $HELIX_WORKITEM_PAYLOAD/crossgen;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
-            python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
-            --crossgen   $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/crossgen
-            --il_corelib $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/IL/System.Private.CoreLib.dll
-            --core_root  $HELIX_WORKITEM_PAYLOAD/tests/coreclr/$(targetFlavor)/Tests/Core_Root
+            python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
+            --crossgen   $HELIX_WORKITEM_PAYLOAD/crossgen
+            --il_corelib $HELIX_WORKITEM_PAYLOAD/IL/System.Private.CoreLib.dll
+            --core_root  $HELIX_WORKITEM_PAYLOAD
             --result_dir $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
-            python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
+            python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
             --base_dir   $HELIX_WORKITEM_PAYLOAD/log/$(crossFlavor)
             --diff_dir   $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor)
         ${{ if eq(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
             mkdir        %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
-            python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
-            --crossgen   %HELIX_WORKITEM_PAYLOAD%\bin\coreclr\$(targetFlavor)\crossgen
-            --il_corelib %HELIX_WORKITEM_PAYLOAD%\bin\coreclr\$(targetFlavor)\IL\System.Private.CoreLib.dll
-            --core_root  %HELIX_WORKITEM_PAYLOAD%\tests\coreclr\$(targetFlavor)\Tests\Core_Root
+            python3 -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
+            --crossgen   %HELIX_WORKITEM_PAYLOAD%\crossgen
+            --il_corelib %HELIX_WORKITEM_PAYLOAD%\IL\System.Private.CoreLib.dll
+            --core_root  %HELIX_WORKITEM_PAYLOAD%
             --result_dir %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
-            python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
+            python3 -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
             --base_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(crossFlavor)
             --diff_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor)
 
@@ -179,7 +191,7 @@ jobs:
     - task: PublishPipelineArtifact@1
       displayName: Publish log
       inputs:
-        pathtoPublish: $(artifactsDirectory)/log
+        pathtoPublish: $(workItemDirectory)/log
         artifactName: ${{ format('Testlog_crossgen_comparison_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       continueOnError: true
       condition: always()

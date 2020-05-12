@@ -574,7 +574,7 @@ namespace System.Reflection.Metadata
             // Size of reference tags in each table.
             this.TableRowCounts = rowCounts;
 
-            // TODO (https://github.com/dotnet/corefx/issues/2061):
+            // TODO (https://github.com/dotnet/runtime/issues/14721):
             // Shouldn't XxxPtr table be always the same size or smaller than the corresponding Xxx table?
 
             // Compute ref sizes for tables that can have pointer tables

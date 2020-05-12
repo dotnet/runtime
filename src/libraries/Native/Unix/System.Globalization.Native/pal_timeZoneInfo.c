@@ -4,8 +4,9 @@
 //
 
 #include <stdint.h>
-#include <unistd.h>
 
+#include "pal_errors_internal.h"
+#include "pal_locale_internal.h"
 #include "pal_timeZoneInfo.h"
 
 /*
@@ -24,7 +25,7 @@ ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
     int32_t timeZoneIdLength = -1; // timeZoneId is NULL-terminated
     UCalendar* calendar = ucal_open(timeZoneId, timeZoneIdLength, locale, UCAL_DEFAULT, &err);
 
-    // TODO (https://github.com/dotnet/corefx/issues/5741): need to support Generic names, but ICU "C" api
+    // TODO (https://github.com/dotnet/runtime/issues/16232): need to support Generic names, but ICU "C" api
     // has no public option for this. For now, just use the ICU standard name for both Standard and Generic
     // (which is the same behavior on Windows with the mincore TIME_ZONE_INFORMATION APIs).
     ucal_getTimeZoneDisplayName(

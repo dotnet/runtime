@@ -1029,7 +1029,7 @@ mono_image_insert_string (MonoReflectionModuleBuilderHandle ref_module, MonoStri
 		mono_metadata_encode_value (1 | (length * 2), b, &b);
 		idx = mono_image_add_stream_data (&assembly->us, buf, b-buf);
 		/* pinned */
-		uint32_t gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, str), TRUE);
+		MonoGCHandle gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, str), TRUE);
 		const char *p = (const char*)mono_string_chars_internal (MONO_HANDLE_RAW (str));
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	{
@@ -2176,7 +2176,9 @@ handle_enum:
 		char *str;
 		guint32 slen;
 		if (!arg) {
+MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xFF;
+MONO_RESTORE_WARNING
 			break;
 		}
 		str = mono_string_to_utf8_checked_internal ((MonoString*)arg, error);
@@ -2201,7 +2203,9 @@ handle_enum:
 		guint32 slen;
 		MonoType *arg_type;
 		if (!arg) {
+MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xFF;
+MONO_RESTORE_WARNING
 			break;
 		}
 handle_type:
@@ -2229,7 +2233,9 @@ handle_type:
 		MonoClass *eclass, *arg_eclass;
 
 		if (!arg) {
+MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xff; *p++ = 0xff; *p++ = 0xff; *p++ = 0xff;
+MONO_RESTORE_WARNING
 			break;
 		}
 		len = mono_array_length_internal ((MonoArray*)arg);
@@ -2283,7 +2289,9 @@ handle_type:
 
 		if (arg == NULL) {
 			*p++ = MONO_TYPE_STRING;	// It's same hack as MS uses
+MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xFF;
+MONO_RESTORE_WARNING
 			break;
 		}
 		
@@ -3657,6 +3665,8 @@ typebuilder_setup_one_field (MonoDynamicImage *dynamic_image, MonoClass *klass, 
 			field->type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
 			goto_if_nok (error, leave);
 		}
+		if (klass->enumtype && strcmp (field->name, "value__") == 0) // used by enum classes to store the instance value
+			field->type->attrs |= FIELD_ATTRIBUTE_RT_SPECIAL_NAME;
 
 		if (!klass->enumtype && !mono_type_get_underlying_type (field->type)) {
 			mono_class_set_type_load_failure (klass, "Field '%s' is an enum type with a bad underlying type", field->name);
@@ -4079,10 +4089,10 @@ free_dynamic_method (void *dynamic_method)
 	DynamicMethodReleaseData *data = (DynamicMethodReleaseData *)dynamic_method;
 	MonoDomain *domain = data->domain;
 	MonoMethod *method = data->handle;
-	guint32 dis_link;
+	MonoGCHandle dis_link;
 
 	mono_domain_lock (domain);
-	dis_link = (guint32)(size_t)g_hash_table_lookup (domain->method_to_dyn_method, method);
+	dis_link = g_hash_table_lookup (domain->method_to_dyn_method, method);
 	g_hash_table_remove (domain->method_to_dyn_method, method);
 	mono_domain_unlock (domain);
 	g_assert (dis_link);
@@ -4220,7 +4230,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	mono_domain_lock (domain);
 	if (!domain->method_to_dyn_method)
 		domain->method_to_dyn_method = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (domain->method_to_dyn_method, handle, (gpointer)(size_t)mono_gchandle_new_weakref_internal ((MonoObject *)mb, TRUE));
+	g_hash_table_insert (domain->method_to_dyn_method, handle, mono_gchandle_new_weakref_internal ((MonoObject *)mb, TRUE));
 	mono_domain_unlock (domain);
 
 	return TRUE;
@@ -4666,7 +4676,7 @@ ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssemblyHandle assembly,
 void
 ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilderHandle assemblyb, MonoError *error)
 {
-	uint32_t gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, assemblyb), TRUE);
+	MonoGCHandle gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, assemblyb), TRUE);
 	mono_reflection_dynimage_basic_init (MONO_HANDLE_RAW (assemblyb), error);
 	mono_gchandle_free_internal (gchandle);
 }

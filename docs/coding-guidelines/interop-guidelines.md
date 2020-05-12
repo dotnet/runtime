@@ -120,21 +120,10 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 ```
 
 ### Build System
-When building dotnet/runtime, we use the "OSGroup" property to control what target platform we are building for. The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
-
-The build system sets a few MSBuild properties, depending on the OSGroup setting:
-
-* TargetsWindows
-* TargetsLinux
-* TargetsOSX
-* TargetsUnix
-
-TargetsUnix is true for both OSX and Linux builds and can be used to include code that can be used on both Linux and OSX (e.g. it is written against a POSIX API that is present on both platforms).
-
-You should not test the value of the OSGroup property directly, instead use one of the values above.
+When building dotnet/runtime, we use the "TargetOS" property to control what target platform we are building for. The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
 
 #### Project Files
-Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux. A property can be passed to dotnet msbuild to control which flavor is built, e.g. `dotnet msbuild /p:OSGroup=OSX System.Console.csproj`.
+Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux. A property can be passed to dotnet build to control which flavor is built, e.g. `dotnet build /p:TargetOS=OSX System.Console.csproj`.
 
 ### Constants
 - Wherever possible, constants should be defined as "const". Only if the data type doesn't support this (e.g. IntPtr) should they instead be static readonly fields.
@@ -167,28 +156,9 @@ internal static partial class Interop
 
 Using enums instead of partial, static classes can lead to needing lots of casts at call sites and can cause problems if such a type needs to be split across multiple files (enums can't currently be partial). However, enums can be valuable in making it clear in a DllImport signature what values are permissible. Enums may be used in limited circumstances where these aren't concerns: the full set of values can be represented in the enum, and the interop signature can be defined to use the enum type rather than the underlying integral type.
 
-### Naming
+## P/Invoke Definitions
 
- Interop signatures / structs / constants should be defined using the same name / capitalization / etc. that's used in the corresponding native code.
-  - We should not rename any of these based on managed coding guidelines. The only exception to this is for the constant grouping type, which should be named with the most discoverable name possible; if that name is a concept (e.g. Errors), it can be named using managed naming guidelines.
-
-### Definition
-
-When defining the P/Invoke signatures and structs, the following guidelines should be followed. More details on P/Invoke behavior and these guidelines can be found here: [P/Invokes](interop-pinvokes.md)
-
-- Interop signatures / structs / constants should be defined using the same name / capitalization / etc. that's used in the corresponding native code.
-- Avoid using `StringBuilder`, particularly as an output buffer to avoid over allocating.
-- Use blittable types in structs where possible (not `string` and `bool`).
-- Use `sizeof()` for blittable structs, not `Marshal.SizeOf<MyStruct>()`
-- Use C# type keywords that map as closely to the underlying type as possible (e.g. use `uint` when the native type is unsigned, not `int` or `System.UInt`).
-- Use `ArrayPool` for buffer pooling.
-- Be careful of return string termination when allocating buffers (add room for null where needed).
-- Only use `bool` for 32 bit types (matches `BOOL` not `BOOLEAN`).
-- Use `[In]` and `[Out]` only when they differ from the implicit behavior.
-- Explicitly specify the `CharSet` as `Ansi` or `Unicode` when the signature has a string.
-- Use `ExactSpelling` to avoid probing for A/W signature variants.
-- Do not set `PreserveSig` to false.
-
+When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://docs.microsoft.com/en-us/dotnet/standard/native-interop/best-practices).
 
 ## UNIX shims
 
@@ -208,7 +178,7 @@ Guidelines for shim C++ API:
   - If an export point has a 1:1 correspondence to the platform API, then name it after the platform API in PascalCase (e.g. stat -> Stat, fstat -> FStat).
   - If an export is not 1:1, then spell things out as we typically would in dotnet/runtime code (i.e. don't use abbreviations unless they come from the underlying API.
   - At first, it seemed that we'd want to use 1:1 names throughout, but it turns out there are many cases where being strictly 1:1 isn't practical.
-  - In order to reduce the chance of collisions when linking with CoreRT, all exports should have a prefix that corresponds to the Libraries' name, e.g. "SystemNative_" or "CryptoNative_" to make the method name more unique. See https://github.com/dotnet/corefx/issues/4818.
+  - In order to reduce the chance of collisions when linking with CoreRT, all exports should have a prefix that corresponds to the Libraries' name, e.g. "SystemNative_" or "CryptoNative_" to make the method name more unique. See https://github.com/dotnet/runtime/issues/15854.
 - Stick to data types which are guaranteed not to vary in size across flavors.
   - Use int32_t, int64_t, etc. from stdint.h and not int, long, etc.
   - Use char* for ASCII or UTF-8 strings and uint8_t* for byte buffers.

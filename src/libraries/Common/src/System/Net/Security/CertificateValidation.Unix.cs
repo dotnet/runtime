@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Globalization;
@@ -13,7 +14,7 @@ namespace System.Net.Security
     {
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
-        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, string hostName)
+        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, string? hostName)
         {
             SslPolicyErrors errors = chain.Build(remoteCertificate) ?
                 SslPolicyErrors.None :
@@ -32,7 +33,7 @@ namespace System.Net.Security
             int hostNameMatch;
             using (SafeX509Handle certHandle = Interop.Crypto.X509UpRef(remoteCertificate.Handle))
             {
-                IPAddress hostnameAsIp;
+                IPAddress? hostnameAsIp;
                 if (IPAddress.TryParse(hostName, out hostnameAsIp))
                 {
                     byte[] addressBytes = hostnameAsIp.GetAddressBytes();

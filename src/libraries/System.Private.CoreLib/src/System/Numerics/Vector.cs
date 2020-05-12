@@ -10,13 +10,6 @@ using System.Text;
 
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nint = System.Int64;
-#else
-using nint = System.Int32;
-#endif
-
 namespace System.Numerics
 {
     /* Note: The following patterns are used throughout the code here and are described here
@@ -3448,6 +3441,108 @@ namespace System.Numerics
                 {
                     value.register.double_0 = (double)Math.Sqrt(value.register.double_0);
                     value.register.double_1 = (double)Math.Sqrt(value.register.double_1);
+                    return value;
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector<T> Ceiling(Vector<T> value)
+        {
+            if (Vector.IsHardwareAccelerated)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    float* dataPtr = stackalloc float[Count];
+                    for (int g = 0; g < Count; g++)
+                    {
+                        dataPtr[g] = MathF.Ceiling((float)(object)value[g]);
+                    }
+                    return new Vector<T>(dataPtr);
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    double* dataPtr = stackalloc double[Count];
+                    for (int g = 0; g < Count; g++)
+                    {
+                        dataPtr[g] = Math.Ceiling((double)(object)value[g]);
+                    }
+                    return new Vector<T>(dataPtr);
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+            else
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    value.register.single_0 = MathF.Ceiling(value.register.single_0);
+                    value.register.single_1 = MathF.Ceiling(value.register.single_1);
+                    value.register.single_2 = MathF.Ceiling(value.register.single_2);
+                    value.register.single_3 = MathF.Ceiling(value.register.single_3);
+                    return value;
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    value.register.double_0 = Math.Ceiling(value.register.double_0);
+                    value.register.double_1 = Math.Ceiling(value.register.double_1);
+                    return value;
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector<T> Floor(Vector<T> value)
+        {
+            if (Vector.IsHardwareAccelerated)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    float* dataPtr = stackalloc float[Count];
+                    for (int g = 0; g < Count; g++)
+                    {
+                        dataPtr[g] = MathF.Floor((float)(object)value[g]);
+                    }
+                    return new Vector<T>(dataPtr);
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    double* dataPtr = stackalloc double[Count];
+                    for (int g = 0; g < Count; g++)
+                    {
+                        dataPtr[g] = Math.Floor((double)(object)value[g]);
+                    }
+                    return new Vector<T>(dataPtr);
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+            else
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    value.register.single_0 = MathF.Floor(value.register.single_0);
+                    value.register.single_1 = MathF.Floor(value.register.single_1);
+                    value.register.single_2 = MathF.Floor(value.register.single_2);
+                    value.register.single_3 = MathF.Floor(value.register.single_3);
+                    return value;
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    value.register.double_0 = Math.Floor(value.register.double_0);
+                    value.register.double_1 = Math.Floor(value.register.double_1);
                     return value;
                 }
                 else

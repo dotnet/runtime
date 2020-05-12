@@ -258,7 +258,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_True()
         {
             using (TcpClient client = new TcpClient())
@@ -268,7 +268,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_False()
         {
             using (TcpClient client = new TcpClient())
@@ -429,12 +429,12 @@ namespace System.Net.Sockets.Tests
 
                 // There is a race condition here.  If the connection succeeds before the
                 // disposal, then the task will complete successfully.  Otherwise, it should
-                // fail with an ObjectDisposedException.
+                // fail with an exception.
                 try
                 {
                     await connectTask;
                 }
-                catch (ObjectDisposedException) { }
+                catch (SocketException e) when (e.SocketErrorCode == SocketError.OperationAborted) { }
                 sw.Stop();
 
                 Assert.Null(client.Client); // should be nulled out after Dispose

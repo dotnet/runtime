@@ -45,6 +45,7 @@
 
 #include "utilcode.h"
 #include "sbuffer.h"
+#include "debugmacros.h"
 
 // ==========================================================================================
 // Documentational typedefs: use these to indicate specific representations of 8 bit strings:

@@ -1246,9 +1246,9 @@ namespace System.Configuration
                         {
                             if (sb.Length != 0)
                                 sb.Append(", ");
-                            sb.Append("'");
+                            sb.Append('\'');
                             sb.Append(validProp.Name);
-                            sb.Append("'");
+                            sb.Append('\'');
                         }
                     }
                     else
@@ -1257,9 +1257,9 @@ namespace System.Configuration
                         {
                             if (sb.Length != 0)
                                 sb.Append(", ");
-                            sb.Append("'");
+                            sb.Append('\'');
                             sb.Append(validProp.Name);
-                            sb.Append("'");
+                            sb.Append('\'');
                         }
                     }
                 }

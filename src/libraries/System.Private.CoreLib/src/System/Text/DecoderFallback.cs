@@ -242,9 +242,8 @@ namespace System.Text
             // as a surrogate pair. If that still fails, throw an exception since the fallback
             // mechanism is giving us a bad replacement character.
 
-            Rune rune;
             char ch = GetNextChar();
-            if (!Rune.TryCreate(ch, out rune) && !Rune.TryCreate(ch, GetNextChar(), out rune))
+            if (!Rune.TryCreate(ch, out Rune rune) && !Rune.TryCreate(ch, GetNextChar(), out rune))
             {
                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
             }

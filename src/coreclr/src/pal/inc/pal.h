@@ -72,7 +72,6 @@ extern "C" {
 
 // Native system libray handle.
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
-// To get a HMODULE on Unix, call PAL_RegisterLibraryDirect() on a NATIVE_LIBRARY_HANDLE.
 typedef PVOID NATIVE_LIBRARY_HANDLE;
 
 /******************* Processor-specific glue  *****************************/
@@ -135,7 +134,7 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 
 /******************* Compiler-specific glue *******************************/
 #ifndef THROW_DECL
-#if defined(_MSC_VER) || defined(__llvm__) || !defined(__cplusplus)
+#if defined(_MSC_VER) || !defined(__cplusplus)
 #define THROW_DECL
 #else
 #define THROW_DECL throw()
@@ -2366,6 +2365,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #define PAL_CS_NATIVE_DATA_SIZE 56
 #elif defined(__NetBSD__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(__sun) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 48
 #else
 #warning
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
@@ -2733,61 +2734,6 @@ VirtualQuery(
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-PALIMPORT
-HANDLE
-PALAPI
-GetProcessHeap();
-
-#define HEAP_ZERO_MEMORY 0x00000008
-
-PALIMPORT
-HANDLE
-PALAPI
-HeapCreate(
-         IN DWORD flOptions,
-         IN SIZE_T dwInitialSize,
-         IN SIZE_T dwMaximumSize);
-
-PALIMPORT
-LPVOID
-PALAPI
-HeapAlloc(
-      IN HANDLE hHeap,
-      IN DWORD dwFlags,
-      IN SIZE_T dwBytes);
-
-PALIMPORT
-LPVOID
-PALAPI
-HeapReAlloc(
-    IN HANDLE hHeap,
-    IN DWORD dwFlags,
-    IN LPVOID lpMem,
-    IN SIZE_T dwBytes
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-HeapFree(
-     IN HANDLE hHeap,
-     IN DWORD dwFlags,
-     IN LPVOID lpMem);
-
-typedef enum _HEAP_INFORMATION_CLASS {
-    HeapCompatibilityInformation,
-    HeapEnableTerminationOnCorruption
-} HEAP_INFORMATION_CLASS;
-
-PALIMPORT
-BOOL
-PALAPI
-HeapSetInformation(
-        IN OPTIONAL HANDLE HeapHandle,
-        IN HEAP_INFORMATION_CLASS HeapInformationClass,
-        IN PVOID HeapInformation,
-        IN SIZE_T HeapInformationLength);
 
 #define LMEM_FIXED          0x0000
 #define LMEM_MOVEABLE       0x0002
@@ -3991,7 +3937,11 @@ PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
 PALIMPORT void * __cdecl memchr(const void *, int, size_t);
-PALIMPORT long long int __cdecl atoll(const char *) THROW_DECL;
+PALIMPORT long long int __cdecl atoll(const char *)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
@@ -4084,14 +4034,14 @@ PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
 #ifdef __cplusplus
 extern "C++" {
-inline WCHAR *PAL_wcschr(WCHAR *_S, WCHAR _C)
-        {return ((WCHAR *)PAL_wcschr((const WCHAR *)_S, _C)); }
-inline WCHAR *PAL_wcsrchr(WCHAR *_S, WCHAR _C)
-        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)_S, _C)); }
-inline WCHAR *PAL_wcspbrk(WCHAR *_S, const WCHAR *_P)
-        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)_S, _P)); }
-inline WCHAR *PAL_wcsstr(WCHAR *_S, const WCHAR *_P)
-        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)_S, _P)); }
+inline WCHAR *PAL_wcschr(WCHAR* S, WCHAR C)
+        {return ((WCHAR *)PAL_wcschr((const WCHAR *)S, C)); }
+inline WCHAR *PAL_wcsrchr(WCHAR* S, WCHAR C)
+        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)S, C)); }
+inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
+        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)S, P)); }
+inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
+        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
 }
 #endif
 
@@ -4163,9 +4113,17 @@ PALIMPORT double __cdecl acosh(double);
 PALIMPORT double __cdecl asin(double);
 PALIMPORT double __cdecl asinh(double);
 PALIMPORT double __cdecl atan(double) THROW_DECL;
-PALIMPORT double __cdecl atanh(double) THROW_DECL;
+PALIMPORT double __cdecl atanh(double)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT double __cdecl atan2(double, double);
-PALIMPORT double __cdecl cbrt(double) THROW_DECL;
+PALIMPORT double __cdecl cbrt(double)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT double __cdecl ceil(double);
 PALIMPORT double __cdecl cos(double);
 PALIMPORT double __cdecl cosh(double);
@@ -4194,10 +4152,22 @@ PALIMPORT float __cdecl acosf(float);
 PALIMPORT float __cdecl acoshf(float);
 PALIMPORT float __cdecl asinf(float);
 PALIMPORT float __cdecl asinhf(float);
-PALIMPORT float __cdecl atanf(float) THROW_DECL;
-PALIMPORT float __cdecl atanhf(float) THROW_DECL;
+PALIMPORT float __cdecl atanf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
+PALIMPORT float __cdecl atanhf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT float __cdecl atan2f(float, float);
-PALIMPORT float __cdecl cbrtf(float) THROW_DECL;
+PALIMPORT float __cdecl cbrtf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT float __cdecl ceilf(float);
 PALIMPORT float __cdecl cosf(float);
 PALIMPORT float __cdecl coshf(float);

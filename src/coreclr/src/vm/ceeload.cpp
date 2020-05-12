@@ -41,6 +41,7 @@
 #include "metadataexports.h"
 #include "inlinetracking.h"
 #include "threads.h"
+#include "nativeimage.h"
 
 #ifdef FEATURE_PREJIT
 #include "exceptionhandling.h"
@@ -67,7 +68,6 @@
 #endif // _MSC_VER
 
 
-#include "perflog.h"
 #include "ecall.h"
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
@@ -498,6 +498,19 @@ BOOL Module::IsPersistedObject(void *address)
 }
 #endif // FEATURE_PREJIT
 
+uint32_t Module::GetNativeMetadataAssemblyCount()
+{
+    NativeImage *compositeImage = GetCompositeNativeImage();
+    if (compositeImage != NULL)
+    {
+        return compositeImage->GetComponentAssemblyCount();
+    }
+    else
+    {
+        return GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef);
+    }
+}
+
 void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly)
 {
     CONTRACTL
@@ -510,8 +523,7 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
 
     if (m_NativeMetadataAssemblyRefMap == NULL)
     {
-        IMDInternalImport* pImport = GetNativeAssemblyImport();
-        DWORD dwMaxRid = pImport->GetCountWithTokenKind(mdtAssemblyRef);
+        uint32_t dwMaxRid = GetNativeMetadataAssemblyCount();
         _ASSERTE(dwMaxRid > 0);
 
         S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(dwMaxRid);
@@ -526,7 +538,7 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
     }
     _ASSERTE(m_NativeMetadataAssemblyRefMap != NULL);
 
-    _ASSERTE(rid <= GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef));
+    _ASSERTE(rid <= GetNativeMetadataAssemblyCount());
     m_NativeMetadataAssemblyRefMap[rid - 1] = pAssembly;
 }
 
@@ -556,6 +568,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_FixupCrst.Init(CrstModuleFixup, (CrstFlags)(CRST_HOST_BREAKABLE|CRST_REENTRANCY));
     m_InstMethodHashTableCrst.Init(CrstInstMethodHashTable, CRST_REENTRANCY);
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
+    m_DictionaryCrst.Init(CrstDomainLocalBlock);
 
     if (!m_file->HasNativeImage())
     {
@@ -688,7 +701,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%ws\".\n", GetDebugName()));
-
 }
 
 #endif // DACCESS_COMPILE
@@ -2883,58 +2895,6 @@ void Module::AllocateStatics(AllocMemTracker *pamTracker)
     BuildStaticsOffsets(pamTracker);
 }
 
-// This method will report GC static refs of the module. It doesn't have to be complete (ie, it's
-// currently used to opportunistically get more concurrency in the marking of statics), so it currently
-// ignores any statics that are not preallocated (ie: won't report statics from IsDynamicStatics() MT)
-// The reason this function is in Module and not in DomainFile (together with DomainLocalModule is because
-// for shared modules we need a very fast way of getting to the DomainLocalModule. For that we use
-// a table in DomainLocalBlock that's indexed with a module ID
-//
-// This method is a secondary way for the GC to find statics, and it is only used when we are on
-// a multiproc machine and we are using the ServerHeap. The primary way used by the GC to find
-// statics is through the handle table. Module::AllocateRegularStaticHandles() allocates a GC handle
-// from the handle table, and the GC will trace this handle and find the statics.
-
-void Module::EnumRegularStaticGCRefs(promote_func* fn, ScanContext* sc)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
-         GCHeapUtilities::IsServerHeap() &&
-         IsGCSpecialThread());
-
-
-    DomainLocalModule *pModuleData = GetDomainLocalModule();
-    DWORD dwHandles                = m_dwMaxGCRegularStaticHandles;
-
-    if (IsResource())
-    {
-        RETURN;
-    }
-
-    LOG((LF_GC, LL_INFO100, "Scanning statics for module %s\n", GetSimpleName()));
-
-    OBJECTREF* ppObjectRefs       = pModuleData->GetPrecomputedGCStaticsBasePointer();
-    for (DWORD i = 0 ; i < dwHandles ; i++)
-    {
-        // Handles are allocated in SetDomainFile (except for bootstrapped mscorlib). In any
-        // case, we shouldnt get called if the module hasn't had it's handles allocated (as we
-        // only get here if IsActive() is true, which only happens after SetDomainFile(), which
-        // is were we allocate handles.
-        _ASSERTE(ppObjectRefs);
-        fn((Object **)(ppObjectRefs+i), sc, 0);
-    }
-
-    LOG((LF_GC, LL_INFO100, "Done scanning statics for module %s\n", GetSimpleName()));
-
-    RETURN;
-}
-
 void Module::SetDomainFile(DomainFile *pDomainFile)
 {
     CONTRACTL
@@ -3414,15 +3374,29 @@ BOOL Module::IsInSameVersionBubble(Module *target)
         return FALSE;
     }
 
-    // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
-    COUNT_T cMeta=0;
-    const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
-    if (pMeta == NULL)
-    {
-        return FALSE;
-    }
+    NativeImage *nativeImage = this->GetCompositeNativeImage();
+    IMDInternalImport* pMdImport = NULL;
 
-    IMDInternalImport* pMdImport = GetNativeAssemblyImport();
+    if (nativeImage != NULL)
+    {
+        if (nativeImage == target->GetCompositeNativeImage())
+        {
+            // Fast path for modules contained within the same native image
+            return TRUE;
+        }
+        pMdImport = nativeImage->GetManifestMetadata();
+    }
+    else
+    {
+        // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
+        COUNT_T cMeta=0;
+        const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
+        if (pMeta == NULL)
+        {
+            return FALSE;
+        }
+        pMdImport = GetNativeAssemblyImport();
+    }
 
     LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
 
@@ -9033,14 +9007,6 @@ void Module::PlaceType(DataImage *image, TypeHandle th, DWORD profilingFlags)
                 }
             }
         }
-
-        if (profilingFlags & (1 << ReadFieldMarshalers))
-        {
-            if (pClass->HasLayout() && pClass->GetLayoutInfo()->GetNumCTMFields() > 0)
-            {
-                image->PlaceStructureForAddress((void *)pClass->GetLayoutInfo()->GetNativeFieldDescriptors(), CORCOMPILE_SECTION_HOT);
-            }
-        }
     }
     if (th.IsTypeDesc())
     {
@@ -10512,6 +10478,34 @@ void Module::RunEagerFixups()
     // TODO: Verify that eager fixup dependency graphs can contain no cycles
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
+    NativeImage *compositeNativeImage = GetCompositeNativeImage();
+    if (compositeNativeImage != NULL)
+    {
+        // For composite images, multiple modules may request initializing eager fixups
+        // from multiple threads so we need to lock their resolution.
+        if (compositeNativeImage->EagerFixupsHaveRun())
+        {
+            return;
+        }
+        CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
+        if (compositeNativeImage->EagerFixupsHaveRun())
+        {
+            return;
+        }
+        RunEagerFixupsUnlocked();
+        compositeNativeImage->SetEagerFixupsHaveRun();
+    }
+    else
+    {
+        // Per-module eager fixups don't need locking
+        RunEagerFixupsUnlocked();
+    }
+}
+
+void Module::RunEagerFixupsUnlocked()
+{
+    COUNT_T nSections;
+    PTR_CORCOMPILE_IMPORT_SECTION pSections = GetImportSections(&nSections);
     PEImageLayout *pNativeImage = GetNativeOrReadyToRunImage();
 
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
@@ -10533,10 +10527,20 @@ void Module::RunEagerFixups()
                 SIZE_T fixupIndex = fixupCell - (SIZE_T *)tableBase;
                 if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
                 {
-                    _ASSERTE(!"LoadDynamicInfoEntry failed");
-                    ThrowHR(COR_E_BADIMAGEFORMAT);
+                    if (IsReadyToRun())
+                    {
+                        GetReadyToRunInfo()->DisableAllR2RCode();
+                    }
+                    else
+                    {
+                        _ASSERTE(!"LoadDynamicInfoEntry failed");
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                    }
                 }
-                _ASSERTE(*fixupCell != NULL);
+                else
+                {
+                    _ASSERTE(*fixupCell != NULL);
+                }
             }
         }
         else
@@ -10552,8 +10556,15 @@ void Module::RunEagerFixups()
                 {
                     if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
                     {
-                        _ASSERTE(!"LoadDynamicInfoEntry failed");
-                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                        if (IsReadyToRun())
+                        {
+                            GetReadyToRunInfo()->DisableAllR2RCode();
+                        }
+                        else
+                        {
+                            _ASSERTE(!"LoadDynamicInfoEntry failed");
+                            ThrowHR(COR_E_BADIMAGEFORMAT);
+                        }
                     }
                     _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
                 }

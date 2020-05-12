@@ -12,10 +12,10 @@ namespace System.Security.Cryptography.X509Certificates
         private X509RevocationFlag _revocationFlag;
         private X509VerificationFlags _verificationFlags;
         private X509ChainTrustMode _trustMode;
-        internal OidCollection _applicationPolicy;
-        internal OidCollection _certificatePolicy;
-        internal X509Certificate2Collection _extraStore;
-        internal X509Certificate2Collection _customTrustStore;
+        internal OidCollection? _applicationPolicy;
+        internal OidCollection? _certificatePolicy;
+        internal X509Certificate2Collection? _extraStore;
+        internal X509Certificate2Collection? _customTrustStore;
 
         public X509ChainPolicy()
         {

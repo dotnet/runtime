@@ -691,6 +691,8 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_INDIRECT_PINVOKE_TARGET,                 /* For calling a pinvoke method ptr indirectly */
     ENCODE_PINVOKE_TARGET,                          /* For calling a pinvoke method ptr */
 
+    ENCODE_CHECK_INSTRUCTION_SET_SUPPORT,           /* Define the set of instruction sets that must be supported/unsupported to use the fixup */
+
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
     ENCODE_MODULE_ID_FOR_STATICS,                   /* For accessing static fields */
@@ -702,7 +704,6 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_VARARGS_METHODREF,
     ENCODE_VARARGS_SIG,
     ENCODE_ACTIVE_DEPENDENCY,                       /* Conditional active dependency */
-    ENCODE_METHOD_NATIVE_ENTRY,                     /* NativeCallable method token */
 };
 
 enum EncodeMethodSigFlags
@@ -1727,8 +1728,8 @@ class ICorCompileInfo
     // to 1 on the clone. The buffer has to be large enough to hold the stub object and the code
     virtual HRESULT GetStubClone(void *pStub, BYTE *pBuffer, DWORD dwBufferSize) = 0;
 
-    // true if the method has [NativeCallableAttribute]
-    virtual BOOL IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle) = 0;
+    // true if the method has [UnmanagedCallersOnlyAttribute]
+    virtual BOOL IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle) = 0;
 
     virtual BOOL GetIsGeneratingNgenPDB() = 0;
     virtual void SetIsGeneratingNgenPDB(BOOL fGeneratingNgenPDB) = 0;
@@ -1756,23 +1757,6 @@ class ICorCompileInfo
 
     virtual BOOL HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName) = 0;
 };
-
-/*****************************************************************************/
-// This function determines the compile flags to use for a generic intatiation
-// since only the open instantiation can be verified.
-// See the comment associated with CORJIT_FLAG_SKIP_VERIFICATION for details.
-//
-// On return:
-// if *raiseVerificationException=TRUE, the caller should raise a VerificationException.
-// if *unverifiableGenericCode=TRUE, the method is a generic instantiation with
-// unverifiable code
-
-CORJIT_FLAGS GetCompileFlagsIfGenericInstantiation(
-        CORINFO_METHOD_HANDLE method,
-        CORJIT_FLAGS compileFlags,
-        ICorJitInfo * pCorJitInfo,
-        BOOL * raiseVerificationException,
-        BOOL * unverifiableGenericCode);
 
 // Returns the global instance of JIT->EE interface for NGen
 

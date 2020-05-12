@@ -29,7 +29,9 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/virtual.h"
 
+#if HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
+#endif
 #include <errno.h>
 #include <unistd.h>
 
@@ -203,7 +205,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
         ucontext_t registers;
 #if HAVE_PT_REGS
         struct pt_regs ptrace_registers;
-        if (ptrace((__ptrace_request)PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         struct reg ptrace_registers;
         if (PAL_PTRACE(PT_GETREGS, processId, &ptrace_registers, 0) == -1)
@@ -352,7 +354,7 @@ CONTEXT_SetThreadContext(
         (CONTEXT_CONTROL | CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
     {
 #if HAVE_PT_REGS
-        if (ptrace((__ptrace_request)PT_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         if (PAL_PTRACE(PT_GETREGS, dwProcessId, &ptrace_registers, 0) == -1)
 #endif
@@ -383,7 +385,7 @@ CONTEXT_SetThreadContext(
 #undef ASSIGN_REG
 
 #if HAVE_PT_REGS
-        if (ptrace((__ptrace_request)PT_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         if (PAL_PTRACE(PT_SETREGS, dwProcessId, &ptrace_registers, 0) == -1)
 #endif
@@ -428,26 +430,33 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #undef ASSIGN_REG
 
+#if !HAVE_FPREGS_WITH_CW
 #if HAVE_GREGSET_T || HAVE_GREGSET_T
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
     if (native->uc_mcontext.__fpregs == nullptr)
-#endif
+#endif // HAVE_GREGSET_T
     {
         // If the pointer to the floating point state in the native context
         // is not valid, we can't copy floating point registers regardless of
         // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
         return;
     }
-#endif
+#endif // HAVE_GREGSET_T || HAVE_GREGSET_T
+#endif // !HAVE_FPREGS_WITH_CW
 
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef HOST_AMD64
         FPREG_ControlWord(native) = lpContext->FltSave.ControlWord;
         FPREG_StatusWord(native) = lpContext->FltSave.StatusWord;
+#if HAVE_FPREGS_WITH_CW
+        FPREG_TagWord1(native) = lpContext->FltSave.TagWord >> 8;
+        FPREG_TagWord2(native) = lpContext->FltSave.TagWord & 0xff;
+#else
         FPREG_TagWord(native) = lpContext->FltSave.TagWord;
+#endif
         FPREG_ErrorOffset(native) = lpContext->FltSave.ErrorOffset;
         FPREG_ErrorSelector(native) = lpContext->FltSave.ErrorSelector;
         FPREG_DataOffset(native) = lpContext->FltSave.DataOffset;
@@ -537,12 +546,13 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     }
 #undef ASSIGN_REG
 
+#if !HAVE_FPREGS_WITH_CW
 #if HAVE_GREGSET_T || HAVE___GREGSET_T
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
     if (native->uc_mcontext.__fpregs == nullptr)
-#endif
+#endif // HAVE_GREGSET_T
     {
         // Reset the CONTEXT_FLOATING_POINT bit(s) and the CONTEXT_XSTATE bit(s) so it's
         // clear that the floating point and extended state data in the CONTEXT is not
@@ -559,14 +569,19 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT or CONTEXT_XSTATE
         return;
     }
-#endif
+#endif // HAVE_GREGSET_T || HAVE___GREGSET_T
+#endif // !HAVE_FPREGS_WITH_CW
 
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef HOST_AMD64
         lpContext->FltSave.ControlWord = FPREG_ControlWord(native);
         lpContext->FltSave.StatusWord = FPREG_StatusWord(native);
+#if HAVE_FPREGS_WITH_CW
+        lpContext->FltSave.TagWord = ((DWORD)FPREG_TagWord1(native) << 8) | FPREG_TagWord2(native);
+#else
         lpContext->FltSave.TagWord = FPREG_TagWord(native);
+#endif
         lpContext->FltSave.ErrorOffset = FPREG_ErrorOffset(native);
         lpContext->FltSave.ErrorSelector = FPREG_ErrorSelector(native);
         lpContext->FltSave.DataOffset = FPREG_DataOffset(native);

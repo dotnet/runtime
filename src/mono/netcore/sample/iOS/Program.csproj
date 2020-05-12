@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <DebugType>Portable</DebugType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-iOS-$(Configuration)-$(TargetArchitecture)\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
+    <MonoRuntimeDir>$(ArtifactsDir)bin\mono\iOS.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
+    <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+    <AppleAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder'))</AppleAppBuilder>
+  </PropertyGroup>
+
+  <Target Name="RebuildAppleAppBuilder">
+    <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
+  </Target>
+
+  <UsingTask TaskName="AppleAppBuilderTask" 
+             AssemblyFile="$(AppleAppBuilder)\$(NetCoreAppCurrent)-$(Configuration)\AppleAppBuilder.dll" />
+
+  <Target Name="BuildAppBundle" DependsOnTargets="RebuildAppleAppBuilder">
+    <PropertyGroup>
+      <TargetArch Condition="$(RuntimeIdentifier.EndsWith('arm64'))">arm64</TargetArch>
+      <TargetArch Condition="'$(TargetArch)' == ''">x64</TargetArch>
+    </PropertyGroup>
+    <ItemGroup>
+      <AppBinaries Include="bin\*.*"/>
+      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
+      <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
+      <MonoRuntimeBinaries Include="$(MonoRuntimeDir)\*.*" />
+    </ItemGroup>
+    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
+    <RemoveDir Directories="$(BundleDir)" />
+    <Copy SourceFiles="@(AppBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <!-- runtime pack contains all needed binaries but lets overwrite them from artifacts/bin/mono to sync runtime changes -->
+    <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <AppleAppBuilderTask 
+        Arch="$(TargetArchitecture)"
+        ProjectName="HelloiOS"
+        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
+        CrossCompiler="$(RuntimePackDir)\native\cross\mono-aot-cross"
+        MainLibraryFileName="Program.dll"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(BundleDir)"
+        UseLlvm="$(UseLlvm)"
+        LlvmPath="$(RuntimePackDir)\native\cross"
+        Optimized="False"
+        AppDir="$(BundleDir)">
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+  </Target>
+
+  <Target Name="IosDeployToSimulator">
+    <PropertyGroup>
+      <IosSimulator Condition="'$(IosSimulator)' == ''">iPhone 11</IosSimulator>
+    </PropertyGroup>
+    <Message Importance="High" Text="\nDeploying to '$(IosSimulator)' simulator..." />
+    <Exec Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
+    <Exec Command="xcrun simctl boot &quot;$(IosSimulator)&quot;" />
+    <Exec Command="open -a Simulator" />
+    <Exec Command="xcrun simctl install &quot;$(IosSimulator)&quot; $(BundleDir)/HelloiOS/Debug-iphonesimulator/HelloiOS.app" />
+    <Exec Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
+  </Target>
+</Project>

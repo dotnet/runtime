@@ -64,7 +64,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_MustBeIdentityReferenceType,
-nameof(identity));
+                    nameof(identity));
             }
 
             _identity = identity;

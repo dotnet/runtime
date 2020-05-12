@@ -341,6 +341,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15069", TestRuntimes.Mono)]
         public static void HasSameMetadataDefinitionAs_GenericTypeParameters()
         {
             Type theT = typeof(GenericTestClass<>).GetTypeInfo().GenericTypeParameters[0];
@@ -415,6 +416,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(NegativeTypeData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34328", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void HasSameMetadataDefinitionAs_Negative_NonRuntimeType(Type type)
         {
             Type mockType = new MockType();
@@ -428,6 +430,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34328", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(NegativeTypeData))]
         public static void HasSameMetadataDefinitionAs_Negative_Null(Type type)
         {
@@ -462,6 +465,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31648", TestRuntimes.Mono)]
         public static void HasSameMetadataDefinitionAs__CornerCase_HasElementTypes()
         {
             // HasSameMetadataDefinitionAs on an array/byref/pointer type is uninteresting (they'll never be an actual member of a type)
@@ -535,6 +539,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34328", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void HasSameMetadataDefinitionAs_CornerCase_CLSIDConstructor()
         {

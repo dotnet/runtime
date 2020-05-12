@@ -89,7 +89,7 @@ namespace System.Tests
                 yield return new object[] { "Value1", false, Enum.ToObject(s_boolEnumType, true) };
                 yield return new object[] { "vaLue2", true, Enum.ToObject(s_boolEnumType, false) };
 
-                if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/corefx/issues/36887")]
+                if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/29266")]
                 {
                     // Single - parses successfully, but doesn't properly represent the underlying value
                     yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(0) };
@@ -944,7 +944,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(Enum e, object obj, bool expected)
+        public static void EqualsTest(Enum e, object obj, bool expected)
         {
             Assert.Equal(expected, e.Equals(obj));
             Assert.Equal(e.GetHashCode(), e.GetHashCode());

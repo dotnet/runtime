@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
@@ -20,7 +22,7 @@ namespace System.Net.Security
     {
         internal static int QueryMaxTokenSize(string package)
         {
-            return SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPIAuth, package, true).MaxToken;
+            return SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPIAuth, package, true)!.MaxToken;
         }
 
         internal static SafeFreeCredentials AcquireDefaultCredential(string package, bool isServer)
@@ -33,7 +35,7 @@ namespace System.Net.Security
 
         internal static unsafe SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, NetworkCredential credential)
         {
-            SafeSspiAuthDataHandle authData = null;
+            SafeSspiAuthDataHandle? authData = null;
             try
             {
                 Interop.SECURITY_STATUS result = Interop.SspiCli.SspiEncodeStringsAsAuthIdentity(
@@ -55,29 +57,29 @@ namespace System.Net.Security
             }
         }
 
-        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
+        internal static string? QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
         {
             return SSPIWrapper.QueryStringContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_SPECIFIED_TARGET);
         }
 
-        internal static string QueryContextAuthenticationPackage(SafeDeleteContext securityContext)
+        internal static string? QueryContextAuthenticationPackage(SafeDeleteContext securityContext)
         {
             SecPkgContext_NegotiationInfoW ctx = default;
-            bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NEGOTIATION_INFO, typeof(SafeFreeContextBuffer), out SafeHandle sspiHandle, ref ctx);
+            bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NEGOTIATION_INFO, typeof(SafeFreeContextBuffer), out SafeHandle? sspiHandle, ref ctx);
             using (sspiHandle)
             {
-                return success ? NegotiationInfoClass.GetAuthenticationPackageName(sspiHandle, (int)ctx.NegotiationState) : null;
+                return success ? NegotiationInfoClass.GetAuthenticationPackageName(sspiHandle!, (int)ctx.NegotiationState) : null;
             }
         }
 
         internal static SecurityStatusPal InitializeSecurityContext(
-            ref SafeFreeCredentials credentialsHandle,
-            ref SafeDeleteContext securityContext,
-            string spn,
+            ref SafeFreeCredentials? credentialsHandle,
+            ref SafeDeleteContext? securityContext,
+            string? spn,
             ContextFlagsPal requestedContextFlags,
-            byte[] incomingBlob,
-            ChannelBinding channelBinding,
-            ref byte[] resultBlob,
+            byte[]? incomingBlob,
+            ChannelBinding? channelBinding,
+            ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
         {
 
@@ -96,7 +98,7 @@ namespace System.Net.Security
 
             Interop.SspiCli.ContextFlags outContextFlags = Interop.SspiCli.ContextFlags.Zero;
             // There is only one SafeDeleteContext type on Windows which is SafeDeleteSslContext so this cast is safe.
-            SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+            SafeDeleteSslContext? sslContext = (SafeDeleteSslContext?)securityContext;
             Interop.SECURITY_STATUS winStatus = (Interop.SECURITY_STATUS)SSPIWrapper.InitializeSecurityContext(
                 GlobalSSPI.SSPIAuth,
                 ref credentialsHandle,
@@ -114,11 +116,11 @@ namespace System.Net.Security
         }
 
         internal static SecurityStatusPal CompleteAuthToken(
-            ref SafeDeleteContext securityContext,
-            byte[] incomingBlob)
+            ref SafeDeleteContext? securityContext,
+            byte[]? incomingBlob)
         {
             // There is only one SafeDeleteContext type on Windows which is SafeDeleteSslContext so this cast is safe.
-            SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+            SafeDeleteSslContext? sslContext = (SafeDeleteSslContext?)securityContext;
             var inSecurityBuffer = new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN);
             Interop.SECURITY_STATUS winStatus = (Interop.SECURITY_STATUS)SSPIWrapper.CompleteAuthToken(
                 GlobalSSPI.SSPIAuth,
@@ -129,12 +131,12 @@ namespace System.Net.Security
         }
 
         internal static SecurityStatusPal AcceptSecurityContext(
-            SafeFreeCredentials credentialsHandle,
-            ref SafeDeleteContext securityContext,
+            SafeFreeCredentials? credentialsHandle,
+            ref SafeDeleteContext? securityContext,
             ContextFlagsPal requestedContextFlags,
-            byte[] incomingBlob,
-            ChannelBinding channelBinding,
-            ref byte[] resultBlob,
+            byte[]? incomingBlob,
+            ChannelBinding? channelBinding,
+            ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
         {
             InputSecurityBuffers inputBuffers = default;
@@ -152,7 +154,7 @@ namespace System.Net.Security
 
             Interop.SspiCli.ContextFlags outContextFlags = Interop.SspiCli.ContextFlags.Zero;
             // There is only one SafeDeleteContext type on Windows which is SafeDeleteSslContext so this cast is safe.
-            SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+            SafeDeleteSslContext? sslContext = (SafeDeleteSslContext?)securityContext;
             Interop.SECURITY_STATUS winStatus = (Interop.SECURITY_STATUS)SSPIWrapper.AcceptSecurityContext(
                 GlobalSSPI.SSPIAuth,
                 credentialsHandle,
@@ -224,7 +226,7 @@ namespace System.Net.Security
             return securityBuffer[1].size;
         }
 
-        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, ref byte[] output)
+        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
         {
             SecPkgContext_Sizes sizes = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);

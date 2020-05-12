@@ -416,9 +416,9 @@ namespace System.Data.OleDb
 
                         StringBuilder builder = new StringBuilder();
                         builder.Append(KEY.Ole_DB_Services);
-                        builder.Append("=");
+                        builder.Append('=');
                         builder.Append(_oledbServices.ToString(CultureInfo.InvariantCulture));
-                        builder.Append(";");
+                        builder.Append(';');
                         builder.Append(connectionString);
                         connectionString = builder.ToString();
                     }

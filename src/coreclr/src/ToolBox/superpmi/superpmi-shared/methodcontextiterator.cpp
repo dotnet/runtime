@@ -92,11 +92,11 @@ bool MethodContextIterator::MoveNext()
 
         if (m_progressReport)
         {
-            if (m_methodContextNumber % 500 == 0)
+            if ((m_methodContextNumber % m_progressRate) == 0)
             {
                 m_timer->Stop();
                 LogVerbose("Loaded %d at %d per second", m_methodContextNumber,
-                           (int)((double)500 / m_timer->GetSeconds()));
+                           (int)((double)m_progressRate / m_timer->GetSeconds()));
                 m_timer->Start();
             }
         }

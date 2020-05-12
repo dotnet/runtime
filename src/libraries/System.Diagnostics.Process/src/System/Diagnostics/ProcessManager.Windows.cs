@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 using static Interop.Advapi32;
@@ -144,7 +143,7 @@ namespace System.Diagnostics
             // So we will try to get the privilege here.
             // We could fail if the user account doesn't have right to do this, but that's fair.
 
-            Interop.Advapi32.LUID luid = default;
+            Interop.Advapi32.LUID luid;
             if (!Interop.Advapi32.LookupPrivilegeValue(null, Interop.Advapi32.SeDebugPrivilege, out luid))
             {
                 return;
@@ -189,7 +188,7 @@ namespace System.Diagnostics
 
             if (processId == 0)
             {
-                throw new Win32Exception(5);
+                throw new Win32Exception(Interop.Errors.ERROR_ACCESS_DENIED);
             }
 
             // If the handle is invalid because the process has exited, only throw an exception if throwIfExited is true.
@@ -279,19 +278,23 @@ namespace System.Diagnostics
         public static int[] GetProcessIds()
         {
             int[] processIds = new int[256];
-            int size;
+            int needed;
             while (true)
             {
-                if (!Interop.Kernel32.EnumProcesses(processIds, processIds.Length * 4, out size))
+                int size = processIds.Length * sizeof(int);
+                if (!Interop.Kernel32.EnumProcesses(processIds, size, out needed))
                     throw new Win32Exception();
-                if (size == processIds.Length * 4)
+
+                if (needed == size)
                 {
                     processIds = new int[processIds.Length * 2];
                     continue;
                 }
+
                 break;
             }
-            int[] ids = new int[size / 4];
+
+            int[] ids = new int[needed / sizeof(int)];
             Array.Copy(processIds, ids, ids.Length);
             return ids;
         }
@@ -307,22 +310,6 @@ namespace System.Diagnostics
             return modules.Count == 0 ? null : modules[0];
         }
 
-        private static void HandleError()
-        {
-            int lastError = Marshal.GetLastWin32Error();
-            switch (lastError)
-            {
-                case Interop.Errors.ERROR_INVALID_HANDLE:
-                case Interop.Errors.ERROR_PARTIAL_COPY:
-                    // It's possible that another thread caused this module to become
-                    // unloaded (e.g FreeLibrary was called on the module).  Ignore it and
-                    // move on.
-                    break;
-                default:
-                    throw new Win32Exception(lastError);
-            }
-        }
-
         public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
         {
             return Interop.Kernel32.GetProcessId(processHandle);
@@ -330,10 +317,11 @@ namespace System.Diagnostics
 
         public static ProcessInfo[] GetProcessInfos(string machineName, bool isRemoteMachine)
         {
-            PerformanceCounterLib? library = null;
             try
             {
-                library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
+                // We don't want to call library.Close() here because that would cause us to unload all of the perflibs.
+                // On the next call to GetProcessInfos, we'd have to load them all up again, which is SLOW!
+                PerformanceCounterLib library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
                 return GetProcessInfos(library);
             }
             catch (Exception e)
@@ -347,8 +335,6 @@ namespace System.Diagnostics
                     throw;
                 }
             }
-            // We don't want to call library.Close() here because that would cause us to unload all of the perflibs.
-            // On the next call to GetProcessInfos, we'd have to load them all up again, which is SLOW!
         }
 
         private static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library)
@@ -360,7 +346,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    byte[] dataPtr = library.GetPerformanceData(PerfCounterQueryString);
+                    byte[]? dataPtr = library.GetPerformanceData(PerfCounterQueryString);
                     processInfos = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr);
                 }
                 catch (Exception e)
@@ -421,7 +407,7 @@ namespace System.Diagnostics
                     }
                     else if (type.ObjectNameTitleIndex == processIndex)
                     {
-                        ProcessInfo processInfo = GetProcessInfo(in type, data.Slice(instancePos + instance.ByteLength), counters);
+                        ProcessInfo processInfo = GetProcessInfo(data.Slice(instancePos + instance.ByteLength), counters);
                         if (processInfo.ProcessId == 0 && !instanceName.Equals("Idle", StringComparison.OrdinalIgnoreCase))
                         {
                             // Sometimes we'll get a process structure that is not completely filled in.
@@ -443,9 +429,18 @@ namespace System.Diagnostics
                                 // at the end.  If instanceName ends in ".", ".e", or ".ex" we remove it.
                                 if (instanceName.Length == 15)
                                 {
-                                    if (instanceName.EndsWith(".", StringComparison.Ordinal)) instanceName = instanceName.Slice(0, 14);
-                                    else if (instanceName.EndsWith(".e", StringComparison.Ordinal)) instanceName = instanceName.Slice(0, 13);
-                                    else if (instanceName.EndsWith(".ex", StringComparison.Ordinal)) instanceName = instanceName.Slice(0, 12);
+                                    if (instanceName.EndsWith(".", StringComparison.Ordinal))
+                                    {
+                                        instanceName = instanceName.Slice(0, 14);
+                                    }
+                                    else if (instanceName.EndsWith(".e", StringComparison.Ordinal))
+                                    {
+                                        instanceName = instanceName.Slice(0, 13);
+                                    }
+                                    else if (instanceName.EndsWith(".ex", StringComparison.Ordinal))
+                                    {
+                                        instanceName = instanceName.Slice(0, 12);
+                                    }
                                 }
                                 processInfo.ProcessName = instanceName.ToString();
                                 processInfos.Add(processInfo.ProcessId, processInfo);
@@ -454,8 +449,11 @@ namespace System.Diagnostics
                     }
                     else if (type.ObjectNameTitleIndex == threadIndex)
                     {
-                        ThreadInfo threadInfo = GetThreadInfo(in type, data.Slice(instancePos + instance.ByteLength), counters);
-                        if (threadInfo._threadId != 0) threadInfos.Add(threadInfo);
+                        ThreadInfo threadInfo = GetThreadInfo(data.Slice(instancePos + instance.ByteLength), counters);
+                        if (threadInfo._threadId != 0)
+                        {
+                            threadInfos.Add(threadInfo);
+                        }
                     }
 
                     instancePos += instance.ByteLength;
@@ -480,7 +478,7 @@ namespace System.Diagnostics
             return temp;
         }
 
-        private static ThreadInfo GetThreadInfo(in PERF_OBJECT_TYPE type, ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
+        private static ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
         {
             ThreadInfo threadInfo = new ThreadInfo();
             for (int i = 0; i < counters.Length; i++)
@@ -534,7 +532,7 @@ namespace System.Diagnostics
                 case 12: return ThreadWaitReason.Suspended;
                 case 6:
                 case 13: return ThreadWaitReason.UserRequest;
-                case 14: return ThreadWaitReason.EventPairHigh; ;
+                case 14: return ThreadWaitReason.EventPairHigh;
                 case 15: return ThreadWaitReason.EventPairLow;
                 case 16: return ThreadWaitReason.LpcReceive;
                 case 17: return ThreadWaitReason.LpcReply;
@@ -544,7 +542,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static ProcessInfo GetProcessInfo(in PERF_OBJECT_TYPE type, ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
+        private static ProcessInfo GetProcessInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
         {
             ProcessInfo processInfo = new ProcessInfo();
             for (int i = 0; i < counters.Length; i++)
@@ -611,7 +609,7 @@ namespace System.Diagnostics
             if ((counterType & PerfCounterOptions.NtPerfCounterSizeLarge) != 0)
                 return MemoryMarshal.Read<long>(data);
             else
-                return (long)MemoryMarshal.Read<int>(data);
+                return MemoryMarshal.Read<int>(data);
         }
 
         private enum ValueId

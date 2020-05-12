@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
@@ -1861,7 +1862,7 @@ namespace System.Tests
         /// <summary>
         /// Ensure Africa/Johannesburg transitions from +3 to +2 at
         /// 1943-02-20T23:00:00Z, and not a tick before that.
-        /// See https://github.com/dotnet/coreclr/issues/2185
+        /// See https://github.com/dotnet/runtime/issues/4728
         /// </summary>
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Linux and Windows rules differ in this case
@@ -1890,7 +1891,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(TimeZoneInfo timeZoneInfo, object obj, bool expected)
+        public static void EqualsTest(TimeZoneInfo timeZoneInfo, object obj, bool expected)
         {
             Assert.Equal(expected, timeZoneInfo.Equals(obj));
             if (obj is TimeZoneInfo)
@@ -2154,7 +2155,7 @@ namespace System.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/14797", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/19794", TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void ToSerializedString_FromSerializedString_RoundTrips(TimeZoneInfo timeZone)
@@ -2267,6 +2268,29 @@ namespace System.Tests
             Assert.True(ReferenceEquals(utcObject, TimeZoneInfo.Utc));
             Assert.True(ReferenceEquals(TimeZoneInfo.FindSystemTimeZoneById("UTC"), TimeZoneInfo.Utc));
         }
+
+        // We test the existance of a specific English time zone name to avoid failures on non-English platforms.
+        [ConditionalFact(nameof(IsEnglishUILanguage))]
+        public static void TestNameWithInvariantCulture()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                // We call ICU to get the names. When passing invariant culture name to ICU, it fail and we'll use the abbreviated names at that time.
+                // We fixed this issue by avoid sending the invariant culture name to ICU and this test is confirming we work fine at that time.
+                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+                TimeZoneInfo.ClearCachedData();
+
+                TimeZoneInfo pacific = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
+
+                Assert.True(pacific.StandardName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.StandardName}' is not the expected standard name for Pacific time zone");
+                Assert.True(pacific.DaylightName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DaylightName}' is not the expected daylight name for Pacific time zone");
+                Assert.True(pacific.DisplayName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DisplayName}' is not the expected display name for Pacific time zone");
+
+            }).Dispose();
+
+        }
+
+        private static bool IsEnglishUILanguage() => CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal);
 
         private static void VerifyConvertException<TException>(DateTimeOffset inputTime, string destinationTimeZoneId) where TException : Exception
         {

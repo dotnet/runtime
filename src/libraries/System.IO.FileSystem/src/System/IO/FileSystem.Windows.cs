@@ -223,7 +223,7 @@ namespace System.IO
             // into them. Surrogates should just be detached.
             //
             // See
-            // https://github.com/dotnet/corefx/issues/24250
+            // https://github.com/dotnet/runtime/issues/23646
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365511.aspx
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365197.aspx
 
@@ -325,7 +325,7 @@ namespace System.IO
 
             // As we successfully removed all of the files we shouldn't care about the directory itself
             // not being empty. As file deletion is just a marker to remove the file when all handles
-            // are closed we could still have contents hanging around.
+            // are closed we could still have undeleted contents.
             RemoveDirectoryInternal(fullPath, topLevel: topLevel, allowDirectoryNotEmpty: true);
         }
 

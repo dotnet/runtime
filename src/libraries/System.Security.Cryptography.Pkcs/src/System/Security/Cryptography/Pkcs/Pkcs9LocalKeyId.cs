@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
@@ -9,7 +10,7 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class Pkcs9LocalKeyId : Pkcs9AttributeObject
     {
-        private byte[] _lazyKeyId;
+        private byte[]? _lazyKeyId;
 
         public Pkcs9LocalKeyId() :
             base(new Oid(Oids.LocalKeyId))
@@ -41,7 +42,8 @@ namespace System.Security.Cryptography.Pkcs
             _lazyKeyId = null;
         }
 
-        private static byte[] Decode(byte[] rawData)
+        [return: NotNullIfNotNull("rawData")]
+        private static byte[]? Decode(byte[]? rawData)
         {
             if (rawData == null)
             {

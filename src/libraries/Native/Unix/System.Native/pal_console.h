@@ -47,7 +47,7 @@ typedef struct
  *
  * Returns 0 on success; otherwise, returns errorNo.
  */
-DLLEXPORT int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
+PALEXPORT int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
 
 /**
  * Gets whether the specified file descriptor is for a terminal.
@@ -55,14 +55,14 @@ DLLEXPORT int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
  * Returns 1 if the file descriptor is referring to a terminal;
  * otherwise returns 0 and sets errno.
  */
-DLLEXPORT int32_t SystemNative_IsATty(intptr_t fd);
+PALEXPORT int32_t SystemNative_IsATty(intptr_t fd);
 
 /**
  * Initializes signal handling and terminal for use by System.Console and System.Diagnostics.Process.
  *
  * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-DLLEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
+PALEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
 
 /**
  * Stores the string that can be written to stdout to transition
@@ -70,7 +70,7 @@ DLLEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
  *
  * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-DLLEXPORT void SystemNative_SetKeypadXmit(const char* terminfoString);
+PALEXPORT void SystemNative_SetKeypadXmit(const char* terminfoString);
 
 /**
  * Gets the special control character codes for the requested control characters.
@@ -80,40 +80,40 @@ DLLEXPORT void SystemNative_SetKeypadXmit(const char* terminfoString);
  * or 0 if a particular name is unsupported or disabled. posixDisableValue is the special sentinel used in the output
  * controlCharacterValues array to indicate no value is available.
  */
-DLLEXPORT void SystemNative_GetControlCharacters(
+PALEXPORT void SystemNative_GetControlCharacters(
     int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
     uint8_t* posixDisableValue);
 
 /**
  * Returns 1 if any input is waiting on stdin; otherwise, 0.
  */
-DLLEXPORT int32_t SystemNative_StdinReady(void);
+PALEXPORT int32_t SystemNative_StdinReady(void);
 
 /**
  * Configures the terminal for System.Console Read.
  */
-DLLEXPORT void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
+PALEXPORT void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
 
 /**
  * Configures the terminal after System.Console Read.
  */
-DLLEXPORT void SystemNative_UninitializeConsoleAfterRead(void);
+PALEXPORT void SystemNative_UninitializeConsoleAfterRead(void);
 
 /**
  * Configures the terminal for child processes.
  */
-DLLEXPORT void SystemNative_ConfigureTerminalForChildProcess(int32_t enable);
+PALEXPORT void SystemNative_ConfigureTerminalForChildProcess(int32_t enable);
 
 /**
  * Reads the number of bytes specified into the provided buffer from stdin.
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
  */
-DLLEXPORT int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize);
+PALEXPORT int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize);
 
 /**
  * Gets the terminal's break mode.
  */
-DLLEXPORT int32_t SystemNative_GetSignalForBreak(void);
+PALEXPORT int32_t SystemNative_GetSignalForBreak(void);
 
 /**
  * Configures the terminal's break mode.
@@ -122,7 +122,7 @@ DLLEXPORT int32_t SystemNative_GetSignalForBreak(void);
  *
  * Returns 1 on success, 0 on failure, in which case errno is set.
  */
-DLLEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
+PALEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
 
 typedef enum
 {

@@ -18,7 +18,7 @@ namespace System.Numerics.Tests
         private static readonly Random s_random = new Random(100);
 
         // Invariant culture is commonly used for (de-)serialization and similar to en-US
-        // Ukrainian (Ukraine) added to catch regressions (https://github.com/dotnet/corefx/issues/1642)
+        // Ukrainian (Ukraine) added to catch regressions (https://github.com/dotnet/runtime/issues/14545)
         // Current cultue to get additional value out of glob/loc test runs
         public static IEnumerable<object[]> Cultures
         {

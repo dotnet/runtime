@@ -96,7 +96,7 @@ namespace System.Globalization.Tests
 
             yield return new object[] { "abc" + (char)0x7F + "def", 0, 7, typeof(ArgumentException) };
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // expected platform differences, see https://github.com/dotnet/corefx/issues/8242
+            if (PlatformDetection.IsNlsGlobalization) // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
             {
                 yield return new object[] { "xn--\u1234", 0, 5, typeof(ArgumentException) };
                 yield return new object[] { "xn--\u1234pck", 0, 8, typeof(ArgumentException) };
@@ -107,21 +107,21 @@ namespace System.Globalization.Tests
         [MemberData(nameof(GetUnicode_Invalid_TestData))]
         public void GetUnicode_Invalid(string ascii, int index, int count, Type exceptionType)
         {
-            GetUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, ascii, index, count, exceptionType);
-            GetUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, ascii, index, count, exceptionType);
-        }
-
-        private static void GetUnicode_Invalid(IdnMapping idnMapping, string ascii, int index, int count, Type exceptionType)
-        {
-            if (ascii == null || index + count == ascii.Length)
+            static void getUnicode_Invalid(IdnMapping idnMapping, string ascii, int index, int count, Type exceptionType)
             {
-                if (ascii == null || index == 0)
+                if (ascii == null || index + count == ascii.Length)
                 {
-                    Assert.Throws(exceptionType, () => idnMapping.GetUnicode(ascii));
+                    if (ascii == null || index == 0)
+                    {
+                        Assert.Throws(exceptionType, () => idnMapping.GetUnicode(ascii));
+                    }
+                    Assert.Throws(exceptionType, () => idnMapping.GetUnicode(ascii, index));
                 }
-                Assert.Throws(exceptionType, () => idnMapping.GetUnicode(ascii, index));
+                Assert.Throws(exceptionType, () => idnMapping.GetUnicode(ascii, index, count));
             }
-            Assert.Throws(exceptionType, () => idnMapping.GetUnicode(ascii, index, count));
+
+            getUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, ascii, index, count, exceptionType);
+            getUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, ascii, index, count, exceptionType);
         }
     }
 }

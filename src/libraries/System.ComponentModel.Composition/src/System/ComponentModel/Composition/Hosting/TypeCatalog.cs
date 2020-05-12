@@ -378,7 +378,7 @@ namespace System.ComponentModel.Composition.Hosting
                 if (builder.Length > 0)
                 {
                     builder.Append(CultureInfo.CurrentCulture.TextInfo.ListSeparator);
-                    builder.Append(" ");
+                    builder.Append(' ');
                 }
 
                 builder.Append(definition.GetPartType().GetDisplayName());

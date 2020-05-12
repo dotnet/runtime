@@ -652,7 +652,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 ed.CipherData = new CipherData();
                 ed.CipherData.CipherReference = new CipherReference("invaliduri");
 
-                // https://github.com/dotnet/corefx/issues/19272
+                // https://github.com/dotnet/runtime/issues/21484
                 Action decrypt = () => exml.DecryptData(ed, aes);
                 if (PlatformDetection.IsNetFramework)
                     Assert.Throws<ArgumentNullException>(decrypt);

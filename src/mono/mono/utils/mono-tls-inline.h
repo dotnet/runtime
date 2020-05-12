@@ -31,7 +31,7 @@ mono_tls_get_tls_offset (MonoTlsKey key)
 // Casts on getters are for the !MONO_KEYWORD_THREAD case.
 
 /* Getters for each tls key */
-MONO_INLINE
+static inline
 MonoInternalThread *mono_tls_get_thread (void)
 {
 	return (MonoInternalThread*)MONO_TLS_GET_VALUE (mono_tls_thread, mono_tls_key_thread);
@@ -39,19 +39,19 @@ MonoInternalThread *mono_tls_get_thread (void)
 
 #define mono_get_jit_tls mono_tls_get_jit_tls
 
-MONO_INLINE
+static inline
 MonoJitTlsData *mono_tls_get_jit_tls (void)
 {
 	return (MonoJitTlsData*)MONO_TLS_GET_VALUE (mono_tls_jit_tls, mono_tls_key_jit_tls);
 }
 
-MONO_INLINE
+static inline
 MonoDomain *mono_tls_get_domain (void)
 {
 	return (MonoDomain*)MONO_TLS_GET_VALUE (mono_tls_domain, mono_tls_key_domain);
 }
 
-MONO_INLINE
+static inline
 SgenThreadInfo *mono_tls_get_sgen_thread_info (void)
 {
 	return (SgenThreadInfo*)MONO_TLS_GET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info);
@@ -59,38 +59,38 @@ SgenThreadInfo *mono_tls_get_sgen_thread_info (void)
 
 #define mono_get_lmf_addr mono_tls_get_lmf_addr
 
-MONO_INLINE
+static inline
 MonoLMF **mono_tls_get_lmf_addr (void)
 {
 	return (MonoLMF**)MONO_TLS_GET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr);
 }
 
 /* Setters for each tls key */
-MONO_INLINE
+static inline
 void mono_tls_set_thread (MonoInternalThread *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_thread, mono_tls_key_thread, value);
 }
 
-MONO_INLINE
+static inline
 void mono_tls_set_jit_tls (MonoJitTlsData *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_jit_tls, mono_tls_key_jit_tls, value);
 }
 
-MONO_INLINE
+static inline
 void mono_tls_set_domain (MonoDomain *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_domain, mono_tls_key_domain, value);
 }
 
-MONO_INLINE
+static inline
 void mono_tls_set_sgen_thread_info (SgenThreadInfo *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info, value);
 }
 
-MONO_INLINE
+static inline
 void mono_tls_set_lmf_addr (MonoLMF **value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr, value);

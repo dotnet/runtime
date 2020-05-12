@@ -7,7 +7,7 @@ Tested on plain FreeBSD 11.3 Azure image
 ## Prerequisites
 This needs to be done once on fresh system.
 
-```sudo pkg install cmake git icu libunwind bash python2 krb5 lttng-ust llvm60 libgit2```
+```sudo pkg install cmake git icu libunwind bash python2 krb5 lttng-ust llvm90 libgit2 libinotify openssl```
 
 some scripts may still assume /bin/bash exists. To workaround it for now do of needed:
 ```
@@ -79,7 +79,7 @@ index 81b8c7b..bb26868 100644
 @@ -5,6 +5,7 @@
      <BuildArguments>$(Platform) $(Configuration) skiptests</BuildArguments>
      <BuildArguments Condition="'$(SkipDisablePgo)' != 'true'">$(BuildArguments) -nopgooptimize</BuildArguments>
-     <BuildArguments Condition="'$(OS)' != 'Windows_NT'">$(BuildArguments) msbuildonunsupportedplatform</BuildArguments>
+     <BuildArguments Condition="'$(TargetOS)' != 'Windows_NT'">$(BuildArguments) msbuildonunsupportedplatform</BuildArguments>
 +    <BuildArguments Condition="'$(TargetOS)' == 'FreeBSD'">$(BuildArguments) -clang6.0</BuildArguments>
      <BuildArguments Condition="'$(UseSystemLibraries)' == 'true'">$(BuildArguments) cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</BuildArguments>
      <BuildArguments Condition="$(Platform.Contains('arm'))">$(BuildArguments) skipnuget cross -skiprestore cmakeargs -DFEATURE_GDBJIT=TRUE</BuildArguments>
@@ -235,7 +235,7 @@ This has two parts. We need to build managed bits on supported OS. For example o
 git clone https://github.com/dotnet/corefx
 cd corefx
 git checkout d47cae744ddfb625db8e391cecb261e4c3d7bb1c
-./build.sh -c Release /p:osgroup=FreeBSD
+./build.sh -c Release -os FreeBSD
 ```
 
 on FreeBSD we need to build native bits:
@@ -275,4 +275,3 @@ if missing add following section to `Microsoft.NETCore.App.deps.json`
             "fileVersion": "4.0.0.0"
           },
 ```
-

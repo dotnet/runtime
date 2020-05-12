@@ -116,16 +116,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float Length()
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                float ls = Vector2.Dot(this, this);
-                return MathF.Sqrt(ls);
-            }
-            else
-            {
-                float ls = X * X + Y * Y;
-                return MathF.Sqrt(ls);
-            }
+            float ls = Vector2.Dot(this, this);
+            return MathF.Sqrt(ls);
         }
 
         /// <summary>
@@ -135,14 +127,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float LengthSquared()
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                return Vector2.Dot(this, this);
-            }
-            else
-            {
-                return X * X + Y * Y;
-            }
+            return Vector2.Dot(this, this);
         }
         #endregion Public Instance Methods
 
@@ -156,21 +141,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Distance(Vector2 value1, Vector2 value2)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                Vector2 difference = value1 - value2;
-                float ls = Vector2.Dot(difference, difference);
-                return MathF.Sqrt(ls);
-            }
-            else
-            {
-                float dx = value1.X - value2.X;
-                float dy = value1.Y - value2.Y;
-
-                float ls = dx * dx + dy * dy;
-
-                return MathF.Sqrt(ls);
-            }
+            Vector2 difference = value1 - value2;
+            float ls = Vector2.Dot(difference, difference);
+            return MathF.Sqrt(ls);
         }
 
         /// <summary>
@@ -182,18 +155,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DistanceSquared(Vector2 value1, Vector2 value2)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                Vector2 difference = value1 - value2;
-                return Vector2.Dot(difference, difference);
-            }
-            else
-            {
-                float dx = value1.X - value2.X;
-                float dy = value1.Y - value2.Y;
-
-                return dx * dx + dy * dy;
-            }
+            Vector2 difference = value1 - value2;
+            return Vector2.Dot(difference, difference);
         }
 
         /// <summary>
@@ -204,20 +167,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Normalize(Vector2 value)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                float length = value.Length();
-                return value / length;
-            }
-            else
-            {
-                float ls = value.X * value.X + value.Y * value.Y;
-                float invNorm = 1.0f / MathF.Sqrt(ls);
-
-                return new Vector2(
-                    value.X * invNorm,
-                    value.Y * invNorm);
-            }
+            float length = value.Length();
+            return value / length;
         }
 
         /// <summary>
@@ -229,19 +180,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Reflect(Vector2 vector, Vector2 normal)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                float dot = Vector2.Dot(vector, normal);
-                return vector - (2 * dot * normal);
-            }
-            else
-            {
-                float dot = vector.X * normal.X + vector.Y * normal.Y;
-
-                return new Vector2(
-                    vector.X - 2.0f * dot * normal.X,
-                    vector.Y - 2.0f * dot * normal.Y);
-            }
+            float dot = Vector2.Dot(vector, normal);
+            return vector - (2 * dot * normal);
         }
 
         /// <summary>
@@ -253,17 +193,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Clamp(Vector2 value1, Vector2 min, Vector2 max)
         {
-            // This compare order is very important!!!
             // We must follow HLSL behavior in the case user specified min value is bigger than max value.
-            float x = value1.X;
-            x = (min.X > x) ? min.X : x;  // max(x, minx)
-            x = (max.X < x) ? max.X : x;  // min(x, maxx)
-
-            float y = value1.Y;
-            y = (min.Y > y) ? min.Y : y;  // max(y, miny)
-            y = (max.Y < y) ? max.Y : y;  // min(y, maxy)
-
-            return new Vector2(x, y);
+            return Vector2.Min(Vector2.Max(value1, min), max);
         }
 
         /// <summary>
@@ -276,9 +207,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount)
         {
-            return new Vector2(
-                value1.X + (value2.X - value1.X) * amount,
-                value1.Y + (value2.Y - value1.Y) * amount);
+            return value1 + (value2 - value1) * amount;
         }
 
         /// <summary>

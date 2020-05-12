@@ -396,7 +396,7 @@ mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_
 	return MONO_HANDLE_NEW (MonoArray, mono_array_new_full_checked (domain, array_class, lengths, lower_bounds, error));
 }
 
-uint32_t
+MonoGCHandle
 mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 {
 	// FIXME This used to check for out of scope handles.
@@ -409,13 +409,13 @@ mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 }
 
 MonoObjectHandle
-mono_gchandle_get_target_handle (uint32_t gchandle)
+mono_gchandle_get_target_handle (MonoGCHandle gchandle)
 {
 	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target_internal (gchandle));
 }
 
 gpointer
-mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx, uint32_t *gchandle)
+mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx, MonoGCHandle *gchandle)
 {
 	g_assert (gchandle != NULL);
 	*gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST(MonoObject,handle), TRUE);
@@ -424,7 +424,7 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx
 }
 
 gunichar2*
-mono_string_handle_pin_chars (MonoStringHandle handle, uint32_t *gchandle)
+mono_string_handle_pin_chars (MonoStringHandle handle, MonoGCHandle *gchandle)
 {
 	g_assert (gchandle != NULL);
 	*gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, handle), TRUE);
@@ -433,7 +433,7 @@ mono_string_handle_pin_chars (MonoStringHandle handle, uint32_t *gchandle)
 }
 
 gpointer
-mono_object_handle_pin_unbox (MonoObjectHandle obj, uint32_t *gchandle)
+mono_object_handle_pin_unbox (MonoObjectHandle obj, MonoGCHandle *gchandle)
 {
 	g_assert (!MONO_HANDLE_IS_NULL (obj));
 	MonoClass *klass = mono_handle_class (obj);
@@ -457,7 +457,7 @@ mono_handle_stack_is_empty (HandleStack *stack)
 
 //FIXME inline
 gboolean
-mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal)
+mono_gchandle_target_equal (MonoGCHandle gchandle, MonoObjectHandle equal)
 {
 	// This function serves to reduce coop handle creation.
 	MONO_HANDLE_SUPPRESS_SCOPE (1);
@@ -466,7 +466,7 @@ mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal)
 
 //FIXME inline
 void
-mono_gchandle_target_is_null_or_equal (uint32_t gchandle, MonoObjectHandle equal, gboolean *is_null,
+mono_gchandle_target_is_null_or_equal (MonoGCHandle gchandle, MonoObjectHandle equal, gboolean *is_null,
 	gboolean *is_equal)
 {
 	// This function serves to reduce coop handle creation.
@@ -478,13 +478,13 @@ mono_gchandle_target_is_null_or_equal (uint32_t gchandle, MonoObjectHandle equal
 
 //FIXME inline
 void
-mono_gchandle_set_target_handle (guint32 gchandle, MonoObjectHandle obj)
+mono_gchandle_set_target_handle (MonoGCHandle gchandle, MonoObjectHandle obj)
 {
 	mono_gchandle_set_target (gchandle, MONO_HANDLE_RAW (obj));
 }
 
 //FIXME inline
-guint32
+MonoGCHandle
 mono_gchandle_new_weakref_from_handle (MonoObjectHandle handle)
 {
 	return mono_gchandle_new_weakref_internal (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), FALSE);
@@ -498,7 +498,7 @@ mono_handle_hash (MonoObjectHandle object)
 }
 
 //FIXME inline
-guint32
+MonoGCHandle
 mono_gchandle_new_weakref_from_handle_track_resurrection (MonoObjectHandle handle)
 {
 	return mono_gchandle_new_weakref_internal (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), TRUE);

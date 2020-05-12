@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/29779")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26213")]
         [ConditionalFact]
         [OuterLoop("May require using the network, to download CRLs and intermediates")]
         public void TestVerify()
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             // High Sierra fails to build a chain for a self-signed certificate with revocation enabled.
-            // https://github.com/dotnet/corefx/issues/21875
+            // https://github.com/dotnet/runtime/issues/22625
             if (!PlatformDetection.IsMacOsHighSierraOrHigher)
             {
                 using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
@@ -369,6 +369,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal("test-server.local", cert.GetNameInfo(X509NameType.SimpleName, false));
                 Assert.Equal("mabaul@microsoft.com", cert.GetNameInfo(X509NameType.EmailName, false));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void SerializedCertDisposeDoesNotRemoveKeyFile()
+        {
+            using (X509Certificate2 fromPfx = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                Assert.True(fromPfx.HasPrivateKey, "fromPfx.HasPrivateKey - before");
+
+                byte[] serializedCert = fromPfx.Export(X509ContentType.SerializedCert);
+
+                using (X509Certificate2 fromSerialized = new X509Certificate2(serializedCert))
+                {
+                    Assert.True(fromSerialized.HasPrivateKey, "fromSerialized.HasPrivateKey");
+                }
+
+                using (RSA key = fromPfx.GetRSAPrivateKey())
+                {
+                    key.SignData(serializedCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                }
             }
         }
 

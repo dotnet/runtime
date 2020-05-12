@@ -24,11 +24,11 @@ namespace Internal.Cryptography.Pal
         private partial class AppleX509Pal : ManagedX509ExtensionProcessor, IX509Pal
         {
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
-                ICertificatePal certificatePal)
+                ICertificatePal? certificatePal)
             {
                 const int errSecInvalidKeyRef = -67712;
                 const int errSecUnsupportedKeySize = -67735;
-                AppleCertificatePal applePal = certificatePal as AppleCertificatePal;
+                AppleCertificatePal? applePal = certificatePal as AppleCertificatePal;
 
                 if (applePal != null)
                 {

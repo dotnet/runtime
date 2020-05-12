@@ -73,6 +73,18 @@ typedef gsize (*MonoThreadStart)(gpointer);
 
 #endif /* #ifdef HOST_WIN32 */
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32) && defined(_DEBUG)
+// Need more memory on Windows debug build (due to less optimization) to handle stack overflows.
+#define MONO_STACK_OVERFLOW_GUARD_SIZE (64 * 1024)
+#elif G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
+#define MONO_STACK_OVERFLOW_GUARD_SIZE (32 * 1024)
+#elif defined(HOST_WIN32)
+// Not supported.
+#define MONO_STACK_OVERFLOW_GUARD_SIZE (0)
+#else
+#define MONO_STACK_OVERFLOW_GUARD_SIZE (32 * 1024)
+#endif
+
 #define MONO_NATIVE_THREAD_HANDLE_TO_GPOINTER(handle) ((gpointer)(gsize)(handle))
 #define MONO_GPOINTER_TO_NATIVE_THREAD_HANDLE(handle) ((MonoNativeThreadHandle)(gsize)(handle))
 
@@ -267,7 +279,7 @@ typedef struct _MonoThreadInfo {
 	gpointer stack_mark;
 
 	/* GCHandle to MonoInternalThread */
-	guint32 internal_thread_gchandle;
+	MonoGCHandle internal_thread_gchandle;
 
 	/*
 	 * Used by the sampling code in mini-posix.c to ensure that a thread has
@@ -430,10 +442,10 @@ MONO_API void
 mono_thread_info_detach (void);
 
 gboolean
-mono_thread_info_try_get_internal_thread_gchandle (THREAD_INFO_TYPE *info, guint32 *gchandle);
+mono_thread_info_try_get_internal_thread_gchandle (THREAD_INFO_TYPE *info, MonoGCHandle *gchandle);
 
 void
-mono_thread_info_set_internal_thread_gchandle (THREAD_INFO_TYPE *info, guint32 gchandle);
+mono_thread_info_set_internal_thread_gchandle (THREAD_INFO_TYPE *info, MonoGCHandle gchandle);
 
 void
 mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info);

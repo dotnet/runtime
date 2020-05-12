@@ -4007,7 +4007,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 				if (is_variant && mono_class_is_variant_compatible_slow (target, candidate_interfaces [i]))
 					return TRUE;
 
-				 if (mono_class_implement_interface_slow (target, candidate_interfaces [i]))
+				if (mono_class_implement_interface_slow (target, candidate_interfaces [i]))
 					return TRUE;
 			}
 		}
@@ -4036,7 +4036,7 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 	if (MONO_CLASS_IS_INTERFACE_INTERNAL (target))
 		return mono_class_implement_interface_slow (target, candidate);
 
- 	if (m_class_is_delegate (target) && mono_class_has_variant_generic_params (target))
+	if (m_class_is_delegate (target) && mono_class_has_variant_generic_params (target))
 		return mono_class_is_variant_compatible (target, candidate, FALSE);
 
 	if (m_class_get_rank (target)) {

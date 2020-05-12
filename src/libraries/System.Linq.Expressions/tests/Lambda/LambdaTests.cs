@@ -12,6 +12,7 @@ using Xunit;
 namespace System.Linq.Expressions.Tests
 {
     [TestCaseOrderer("System.Linq.Expressions.Tests.TestOrderer", "System.Linq.Expressions.Tests")]
+    [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
     public class LambdaTests
     {
         private delegate int IcosanaryInt32Func(

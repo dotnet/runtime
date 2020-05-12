@@ -72,6 +72,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     case LastCall.Decode:
                     case LastCall.Decrypt:
+                        Debug.Assert(_decryptorPal != null);
                         return _decryptorPal.RecipientInfos;
 
                     default:
@@ -188,7 +189,7 @@ namespace System.Security.Cryptography.Pkcs
             DecryptContent(RecipientInfos, extraStore);
         }
 
-        public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm privateKey)
+        public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm? privateKey)
         {
             if (recipientInfo == null)
                 throw new ArgumentNullException(nameof(recipientInfo));
@@ -196,21 +197,21 @@ namespace System.Security.Cryptography.Pkcs
             CheckStateForDecryption();
 
             X509Certificate2Collection extraStore = new X509Certificate2Collection();
-            ContentInfo contentInfo = _decryptorPal.TryDecrypt(
+            ContentInfo? contentInfo = _decryptorPal!.TryDecrypt(
                 recipientInfo,
                 null,
                 privateKey,
                 Certificates,
                 extraStore,
-                out Exception exception);
+                out Exception? exception);
 
             if (exception != null)
                 throw exception;
 
-            SetContentInfo(contentInfo);
+            SetContentInfo(contentInfo!);
         }
 
-        private void DecryptContent(RecipientInfoCollection recipientInfos, X509Certificate2Collection extraStore)
+        private void DecryptContent(RecipientInfoCollection recipientInfos, X509Certificate2Collection? extraStore)
         {
             CheckStateForDecryption();
             extraStore = extraStore ?? new X509Certificate2Collection();
@@ -221,18 +222,18 @@ namespace System.Security.Cryptography.Pkcs
 
             X509Certificate2Collection originatorCerts = Certificates;
 
-            ContentInfo newContentInfo = null;
-            Exception exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
+            ContentInfo? newContentInfo = null;
+            Exception? exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
             foreach (RecipientInfo recipientInfo in recipientInfos)
             {
-                X509Certificate2 cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier);
+                X509Certificate2? cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier);
                 if (cert == null)
                 {
                     exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
                     continue;
                 }
 
-                newContentInfo = _decryptorPal.TryDecrypt(
+                newContentInfo = _decryptorPal!.TryDecrypt(
                     recipientInfo,
                     cert,
                     null,
@@ -249,7 +250,7 @@ namespace System.Security.Cryptography.Pkcs
             if (exception != null)
                 throw exception;
 
-            SetContentInfo(newContentInfo);
+            SetContentInfo(newContentInfo!);
         }
 
         private void CheckStateForDecryption()
@@ -288,8 +289,8 @@ namespace System.Security.Cryptography.Pkcs
         // Instance fields
         //
 
-        private DecryptorPal _decryptorPal;
-        private byte[] _encodedMessage;
+        private DecryptorPal? _decryptorPal;
+        private byte[]? _encodedMessage;
         private LastCall _lastCall;
 
         private enum LastCall

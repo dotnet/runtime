@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public SubjectIdentifierType Type { get; }
-        public object Value { get; }
+        public object? Value { get; }
 
         public bool MatchesCertificate(X509Certificate2 certificate)
         {
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 case SubjectIdentifierType.IssuerAndSerialNumber:
                     {
-                        X509IssuerSerial issuerSerial = (X509IssuerSerial)Value;
+                        X509IssuerSerial issuerSerial = (X509IssuerSerial)Value!;
                         byte[] serialNumber = issuerSerial.SerialNumber.ToSerialBytes();
                         string issuer = issuerSerial.IssuerName;
                         byte[] certSerialNumber = certificate.GetSerialNumber();
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 case SubjectIdentifierType.SubjectKeyIdentifier:
                     {
-                        string skiString = (string)Value;
+                        string skiString = (string)Value!;
                         byte[] ski = skiString.ToSkiBytes();
                         byte[] candidateSki = PkcsPal.Instance.GetSubjectKeyIdentifier(certificate);
 
@@ -141,20 +141,20 @@ namespace System.Security.Cryptography.Pkcs
 
             if (Type == SubjectIdentifierType.IssuerAndSerialNumber)
             {
-                issuerSerial = (X509IssuerSerial)Value;
+                issuerSerial = (X509IssuerSerial)Value!;
             }
 
             switch (Type)
             {
                 case SubjectIdentifierType.IssuerAndSerialNumber:
                     {
-                        X509IssuerSerial currentIssuerSerial = (X509IssuerSerial)currentId.Value;
+                        X509IssuerSerial currentIssuerSerial = (X509IssuerSerial)currentId.Value!;
 
                         return currentIssuerSerial.IssuerName == issuerSerial.IssuerName &&
                             currentIssuerSerial.SerialNumber == issuerSerial.SerialNumber;
                     }
                 case SubjectIdentifierType.SubjectKeyIdentifier:
-                    return (string)Value == (string)currentId.Value;
+                    return (string)Value! == (string)currentId.Value!;
                 case SubjectIdentifierType.NoSignature:
                     return true;
                 default:

@@ -77,7 +77,7 @@ namespace System.Net.Tests
             await AssertExtensions.ThrowsAsync<ArgumentException>("messageType", () => context.WebSocket.SendAsync(new ArraySegment<byte>(), messageType, false, new CancellationToken()));
         }
 
-        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20395", TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22014", TestPlatforms.AnyUnix)]
         public async Task SendAsync_Disposed_ThrowsObjectDisposedException()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
@@ -154,7 +154,7 @@ namespace System.Net.Tests
             await AssertExtensions.ThrowsAsync<ArgumentNullException>("buffer.Array", () => context.WebSocket.ReceiveAsync(new ArraySegment<byte>(), new CancellationToken()));
         }
 
-        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20395", TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22014", TestPlatforms.AnyUnix)]
         public async Task ReceiveAsync_Disposed_ThrowsObjectDisposedException()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
@@ -170,11 +170,11 @@ namespace System.Net.Tests
             yield return new object[] { WebSocketCloseStatus.MandatoryExtension, "StatusDescription", WebSocketCloseStatus.MandatoryExtension };
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20396", TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22015", TestPlatforms.AnyUnix)]
         [MemberData(nameof(CloseStatus_Valid_TestData))]
         public async Task CloseOutputAsync_HandshakeStartedFromClient_Success(WebSocketCloseStatus status, string statusDescription, WebSocketCloseStatus expectedCloseStatus)
         {
-            // [ActiveIssue("https://github.com/dotnet/corefx/issues/20392", TargetFrameworkMonikers.Netcoreapp)]
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/22011", TargetFrameworkMonikers.Netcoreapp)]
             string expectedStatusDescription = statusDescription;
             if (statusDescription == null)
             {
@@ -233,11 +233,11 @@ namespace System.Net.Tests
             await context.WebSocket.CloseOutputAsync(WebSocketCloseStatus.Empty, null, new CancellationToken());
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20396", TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22015", TestPlatforms.AnyUnix)]
         [MemberData(nameof(CloseStatus_Valid_TestData))]
         public async Task CloseAsync_HandshakeStartedFromClient_Success(WebSocketCloseStatus status, string statusDescription, WebSocketCloseStatus expectedCloseStatus)
         {
-            // [ActiveIssue("https://github.com/dotnet/corefx/issues/20392", TargetFrameworkMonikers.Netcoreapp)]
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/22011", TargetFrameworkMonikers.Netcoreapp)]
             string expectedStatusDescription = statusDescription;
             if (statusDescription == null)
             {
@@ -316,7 +316,7 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<ArgumentException>(paramName, () => context.WebSocket.CloseOutputAsync(status, statusDescription, new CancellationToken()));
         }
 
-        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20394", TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22013", TestPlatforms.AnyUnix)]
         public async Task CloseAsync_AfterDisposed_Nop()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
@@ -326,7 +326,7 @@ namespace System.Net.Tests
             await context.WebSocket.CloseAsync(WebSocketCloseStatus.Empty, null, new CancellationToken());
         }
 
-        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20394", TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22013", TestPlatforms.AnyUnix)]
         public async Task CloseAsync_AfterAborted_Nop()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
@@ -336,7 +336,7 @@ namespace System.Net.Tests
             await context.WebSocket.CloseAsync(WebSocketCloseStatus.Empty, null, new CancellationToken());
         }
 
-        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20397", TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22016", TestPlatforms.AnyUnix)]
         public async Task Dispose_CallAfterDisposed_Nop()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();

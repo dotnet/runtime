@@ -138,7 +138,7 @@ namespace System.Xml.Schema
                         }
                         else
                         {
-                            sb.Append(" ");
+                            sb.Append(' ');
                         }
                         if (s == _targetNamespace)
                         {

@@ -17,9 +17,9 @@ steps:
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /t:test
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-            /p:ArchGroup=${{ parameters.archGroup }}
+            /p:TargetArchitecture=${{ parameters.archGroup }}
             /p:Configuration=${{ parameters.configuration }}
-            /p:OSGroup=${{ parameters.targetOS }}
+            /p:TargetOS=${{ parameters.targetOS }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)

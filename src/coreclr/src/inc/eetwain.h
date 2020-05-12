@@ -245,14 +245,6 @@ virtual bool EnumGcRefs(PREGDISPLAY     pContext,
                         DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET) = 0;
 #endif // !CROSSGEN_COMPILE
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-/*
-    Return the address of the local security object reference
-    (if available).
-*/
-virtual OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) = 0;
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
-
 #ifndef CROSSGEN_COMPILE
 /*
     For a non-static method, "this" pointer is passed in as argument 0.
@@ -316,10 +308,12 @@ virtual bool IsInSynchronizedRegion(
 virtual size_t GetFunctionSize(GCInfoToken gcInfoToken) = 0;
 
 /*
-Returns the ReturnKind of a given function as reported in the GC info.
+*  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
+*  If it can be hijacked, it sets the returnKind output parameter to the kind of the return value and
+*  returns true.
+*  If hijacking is not possible for some reason, it return false.
 */
-
-virtual ReturnKind GetReturnKind(GCInfoToken gcInfotoken) = 0;
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind) = 0;
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -518,22 +512,6 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
                             LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
 
-#ifdef TARGET_X86
-/*
-   Return the address of the local security object reference
-   using data that was previously cached before in UnwindStackFrame
-   using StackwalkCacheUnwindInfo
-*/
-static OBJECTREF* GetAddrOfSecurityObjectFromCachedInfo(
-        PREGDISPLAY pRD,
-        StackwalkCacheUnwindInfo * stackwalkCacheUnwindInfo);
-#endif // TARGET_X86
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-virtual
-OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) DAC_UNEXPECTED();
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
-
 #ifndef CROSSGEN_COMPILE
 virtual
 OBJECTREF GetInstance(
@@ -609,9 +587,12 @@ virtual
 size_t GetFunctionSize(GCInfoToken gcInfoToken);
 
 /*
-Returns the ReturnKind of a given function.
+*  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
+*  If it can be hijacked, it sets the returnKind output parameter to the kind of the return value and
+*  returns true.
+*  If hijacking is not possible for some reason, it return false.
 */
-virtual ReturnKind GetReturnKind(GCInfoToken gcInfotoken);
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind);
 
 #ifndef USE_GC_INFO_DECODER
 /*

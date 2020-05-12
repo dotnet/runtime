@@ -124,7 +124,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/7996")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/17088")]
         public void FromMetadataStream_NonZeroStart()
         {
             var stream = new MemoryStream();

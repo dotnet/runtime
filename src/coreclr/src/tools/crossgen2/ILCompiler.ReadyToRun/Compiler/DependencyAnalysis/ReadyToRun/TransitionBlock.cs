@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public abstract int OffsetOfArgumentRegisters { get; }
 
         /// <summary>
-        /// Only overridden on ARM64 to return offset of the X8 register.
+        /// The offset of the first slot in a GC ref map. Overridden on ARM64 to return the offset of the X8 register.
         /// </summary>
         public virtual int OffsetOfFirstGCRefMapSlot => OffsetOfArgumentRegisters;
 
@@ -105,11 +105,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Recalculate pos in GC ref map to actual offset. This is the default implementation for all architectures
         /// except for X86 where it's overridden to supply a more complex algorithm.
         /// </summary>
-        /// <param name="pos"></param>
-        /// <returns></returns>
         public virtual int OffsetFromGCRefMapPos(int pos)
         {
-            return OffsetOfArgumentRegisters + pos * PointerSize;
+            return OffsetOfFirstGCRefMapSlot + pos * PointerSize;
         }
 
         /// <summary>
@@ -277,12 +275,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 {
                                     if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
                                     {
+                                        // Structs occupying just one eightbyte are treated as int / double
                                         fpReturnSize = sizeof(double);
                                     }
                                 }
                                 else
                                 {
+                                    // Size of the struct is 16 bytes
                                     fpReturnSize = 16;
+                                    // The lowest two bits of the size encode the order of the int and SSE fields
                                     if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
                                     {
                                         fpReturnSize += 1;
@@ -299,28 +300,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
-                            if (thRetType.IsHFA() && !isVarArgMethod)
+                            if (thRetType.IsHomogeneousAggregate() && !isVarArgMethod)
                             {
-                                CorElementType hfaType = thRetType.GetHFAType();
-
-                                switch (Architecture)
-                                {
-                                    case TargetArchitecture.ARM:
-                                        fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
-                                            (4 * (uint)sizeof(float)) :
-                                            (4 * (uint)sizeof(double));
-                                        break;
-
-                                    case TargetArchitecture.ARM64:
-                                        // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
-                                        // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
-                                        // treat floats like doubles during copying.
-                                        fpReturnSize = 4 * (uint)sizeof(double);
-                                        break;
-
-                                    default:
-                                        throw new NotImplementedException();
-                                }
+                                int haElementSize = thRetType.GetHomogeneousAggregateElementSize();
+                                fpReturnSize = 4 * (uint)haElementSize;
                                 break;
                             }
 
@@ -471,14 +454,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
             public override int EnregisteredParamTypeMaxSize => 0;
             public override int EnregisteredReturnTypeIntegerMaxSize => 4;
+
+            public override bool IsArgPassedByRef(TypeHandle th) => false;
+
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? PointerSize : 0);
         }
 
         private sealed class Arm64TransitionBlock : TransitionBlock
         {
             public static TransitionBlock Instance = new Arm64TransitionBlock();
-
-            private int OffsetOfX8Register => OffsetOfArgumentRegisters - PointerSize;
 
             public override TargetArchitecture Architecture => TargetArchitecture.ARM64;
             public override int PointerSize => 8;
@@ -489,6 +473,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Callee-saves, padding, m_x8RetBuffReg, argument registers
             public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + 2 * PointerSize + SizeOfArgumentRegisters;
             public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters + 2 * PointerSize;
+            private int OffsetOfX8Register => OffsetOfArgumentRegisters - PointerSize;
             public override int OffsetOfFirstGCRefMapSlot => OffsetOfX8Register;
 
             // D0..D7
@@ -502,12 +487,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 Debug.Assert(th.IsValueType());
 
                 // Composites greater than 16 bytes are passed by reference
-                return (th.GetSize() > EnregisteredParamTypeMaxSize) && !th.IsHFA();
+                return (th.GetSize() > EnregisteredParamTypeMaxSize) && !th.IsHomogeneousAggregate();
             }
 
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfX8Register;
 
-            public override bool IsRetBuffPassedAsFirstArg => true;
+            public override bool IsRetBuffPassedAsFirstArg => false;
         }
-    };
+    }
 }

@@ -167,11 +167,13 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(TestMessage, receivedMessage);
         }
 
-        [OuterLoop] // long-running
         [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void DuplicateSocket_IsNotInheritable()
         {
+            // 300 ms should be long enough to connect if the socket is actually present & listening.
+            const int ConnectionTimeoutMs = 300;
+
             // The test is based on CreateSocket.CtorAndAccept_SocketNotKeptAliveViaInheritance,
             // but contains simpler validation logic, sufficient to test the behavior on Windows
             static void RunTest()
@@ -202,10 +204,9 @@ namespace System.Net.Sockets.Tests
                     listenerDuplicate.Dispose();
 
                     // Validate that we after closing the listening socket, we're not able to connect:
-                    SocketException ex = Assert.ThrowsAny<SocketException>(() => client.Connect(ep));
-                    Debug.Print(ex.Message);
-
+                    bool connected = client.TryConnect(ep, ConnectionTimeoutMs);
                     serverPipe.WriteByte(42);
+                    Assert.False(connected);
                 }
             }
 

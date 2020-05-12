@@ -80,7 +80,7 @@ namespace System.Globalization.Tests
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETASCII DOES NOT FAIL ON WINDOWS 8.1"
         /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </remarks>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/21332
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/22409
         public void GetAscii_Invalid()
         {
             Assert.All(Factory.GetDataset().Where(entry => !entry.ASCIIResult.Success), entry =>
@@ -129,7 +129,7 @@ namespace System.Globalization.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public static void Equals(bool allowUnassigned, bool useStd3AsciiRules)
+        public static void EqualsTest(bool allowUnassigned, bool useStd3AsciiRules)
         {
             // first check for equals
             IdnMapping original = new IdnMapping() { AllowUnassigned = allowUnassigned, UseStd3AsciiRules = useStd3AsciiRules };

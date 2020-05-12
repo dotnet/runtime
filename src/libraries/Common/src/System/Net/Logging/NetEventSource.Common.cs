@@ -11,6 +11,7 @@
 #nullable enable
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -112,7 +113,7 @@ namespace System.Net
         /// <param name="arg0">The object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object? thisOrContextObject, object arg0, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object? arg0, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -125,7 +126,7 @@ namespace System.Net
         /// <param name="arg1">The second object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object? thisOrContextObject, object arg0, object arg1, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object? arg0, object? arg1, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -140,7 +141,7 @@ namespace System.Net
         /// <param name="arg2">The third object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object? thisOrContextObject, object arg0, object arg1, object arg2, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object? arg0, object? arg1, object? arg2, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -172,7 +173,7 @@ namespace System.Net
         /// <param name="arg0">A return value from the member.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Exit(object? thisOrContextObject, object arg0, [CallerMemberName] string? memberName = null)
+        public static void Exit(object? thisOrContextObject, object? arg0, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -185,7 +186,7 @@ namespace System.Net
         /// <param name="arg1">A second return value from the member.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Exit(object? thisOrContextObject, object arg0, object arg1, [CallerMemberName] string? memberName = null)
+        public static void Exit(object? thisOrContextObject, object? arg0, object? arg1, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -264,6 +265,9 @@ namespace System.Net
         /// <param name="formattableString">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
+#if NETCOREAPP
+        [DoesNotReturn]
+#endif
         public static void Fail(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
         {
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations
@@ -278,6 +282,9 @@ namespace System.Net
         /// <param name="message">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
+#if NETCOREAPP
+        [DoesNotReturn]
+#endif
         public static void Fail(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
         {
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations
@@ -417,7 +424,7 @@ namespace System.Net
         public static string IdOf(object? value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
 
         [NonEvent]
-        public static int GetHashCode(object value) => value?.GetHashCode() ?? 0;
+        public static int GetHashCode(object? value) => value?.GetHashCode() ?? 0;
 
         [NonEvent]
         public static object Format(object? value)

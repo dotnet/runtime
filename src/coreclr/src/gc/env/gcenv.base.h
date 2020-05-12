@@ -12,6 +12,9 @@
 #endif // _MSC_VER
 
 #if !defined(_MSC_VER)
+#ifdef __sun
+#include <alloca.h>
+#endif
 #define _alloca alloca
 #endif //_MSC_VER
 
@@ -514,8 +517,6 @@ inline bool dbgOnly_IsSpecialEEThread()
 {
     return false;
 }
-
-#define ClrFlsSetThreadType(type)
 
 //
 // Performance logging

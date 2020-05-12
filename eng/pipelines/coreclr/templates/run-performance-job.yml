@@ -16,6 +16,7 @@ parameters:
   timeoutInMinutes: 320           # optional -- timeout for the job
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
+  runtimeType: 'coreclr'
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -83,7 +84,15 @@ jobs:
       continueOnError: ${{ parameters.continueOnError }}
     - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
       displayName: Run ci setup script
-    # Run perf testing in helix
+    - script: xcopy $(PerformanceDirectory)\scripts $(WorkItemDirectory)\ScenarioCorrelation\scripts\/e && xcopy $(PerformanceDirectory)\src\scenarios\shared $(WorkItemDirectory)\ScenarioCorrelation\shared\/e && xcopy $(PerformanceDirectory)\src\scenarios\staticdeps $(WorkItemDirectory)\ScenarioCorrelation\staticdeps\/e
+      displayName: Copy scenario support files
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+    - script: $(PerformanceDirectory)\tools\dotnet\$(Architecture)\dotnet publish -c Release -o $(WorkItemDirectory)\ScenarioCorrelation\Startup -f netcoreapp3.1 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj
+      displayName: Build scenario tools
+      env:
+        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+      # Run perf testing in helix
     - template: /eng/common/templates/steps/perf-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
@@ -95,3 +104,10 @@ jobs:
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}'
+      continueOnError: true
+      condition: always()

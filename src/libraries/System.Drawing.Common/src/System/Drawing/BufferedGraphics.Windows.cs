@@ -16,7 +16,7 @@ namespace System.Drawing
         /// <summary>
         /// Internal constructor, this class is created by BufferedGraphicsContext.
         /// </summary>
-        internal BufferedGraphics(Graphics bufferedGraphicsSurface, BufferedGraphicsContext context, Graphics targetGraphics,
+        internal BufferedGraphics(Graphics bufferedGraphicsSurface, BufferedGraphicsContext context, Graphics? targetGraphics,
                                   IntPtr targetDC, Point targetLoc, Size virtualSize)
         {
             _context = context;
@@ -36,14 +36,14 @@ namespace System.Drawing
                 if (DisposeContext)
                 {
                     _context.Dispose();
-                    _context = null;
+                    _context = null!;
                 }
             }
 
             if (_bufferedGraphicsSurface != null)
             {
                 _bufferedGraphicsSurface.Dispose();
-                _bufferedGraphicsSurface = null;
+                _bufferedGraphicsSurface = null!;
             }
         }
 
@@ -55,7 +55,7 @@ namespace System.Drawing
         /// <summary>
         /// Renders the buffer to the specified target graphics.
         /// </summary>
-        public void Render(Graphics target)
+        public void Render(Graphics? target)
         {
             if (target != null)
             {

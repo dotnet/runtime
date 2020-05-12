@@ -732,16 +732,10 @@ set (interp_sources
 endif()
 
 if (ENABLE_LLVM)
-if (LOADED_LLVM)
-set (llvm_sources
-	mini-llvm-loaded.c)
-else ()
 set (llvm_sources
 	mini-llvm.c
-	mini-llvm-loaded.c
 	mini-llvm-cpp.cpp
 	llvm-jit.cpp)
-endif()
 endif()
 
 if (ENABLE_LLVM)

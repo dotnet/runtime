@@ -198,8 +198,11 @@ PathCharString* gSharedFilesPath = nullptr;
 #define CLR_SEM_MAX_NAMELEN 15
 #elif defined(__APPLE__)
 #define CLR_SEM_MAX_NAMELEN PSEMNAMLEN
-#else
+#elif defined(NAME_MAX)
 #define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
+#else
+// On Solaris, MAXNAMLEN is 512, which is higher than MAX_PATH defined by pal.h
+#define CLR_SEM_MAX_NAMELEN MAX_PATH
 #endif
 
 static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);

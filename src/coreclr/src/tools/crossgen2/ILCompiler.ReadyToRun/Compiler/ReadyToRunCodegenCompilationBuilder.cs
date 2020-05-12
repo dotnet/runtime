@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
@@ -19,12 +20,13 @@ namespace ILCompiler
 {
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
-        private readonly string _inputFilePath;
-        private readonly EcmaModule _inputModule;
+        private readonly IEnumerable<string> _inputFiles;
         private bool _ibcTuning;
         private bool _resilient;
         private bool _generateMapFile;
         private int _parallelism;
+        private InstructionSetSupport _instructionSetSupport;
+
         private string _jitPath;
 
         // These need to provide reasonable defaults so that the user can optionally skip
@@ -32,11 +34,10 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, ReadyToRunCompilationModuleGroupBase group, IEnumerable<string> inputFiles)
             : base(context, group, new CoreRTNameMangler())
         {
-            _inputFilePath = inputFilePath;
-            _inputModule = context.GetModuleFromPath(_inputFilePath);
+            _inputFiles = inputFiles;
 
             // R2R field layout needs compilation group information
             ((ReadyToRunCompilerContext)context).SetCompilationGroup(group);
@@ -108,26 +109,23 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseInstructionSetSupport(InstructionSetSupport instructionSetSupport)
+        {
+            _instructionSetSupport = instructionSetSupport;
+            return this;
+        }
 
         public override ICompilation ToCompilation()
         {
-            ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup, _context);
-            SignatureContext signatureContext = new SignatureContext(_inputModule, moduleTokenResolver);
-            CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(_inputModule);
-            AttributePresenceFilterNode attributePresenceFilterNode = null;
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(_inputModule);
-
-            // Core library attributes are checked FAR more often than other dlls
-            // attributes, so produce a highly efficient table for determining if they are
-            // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
-            // as useful at this time.
-            if (_inputModule == _inputModule.Context.SystemModule)
-            {
-                 attributePresenceFilterNode = new AttributePresenceFilterNode(_inputModule);
-            }
+            // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
+            IEnumerable<EcmaModule> inputModules = _compilationGroup.CompilationModuleSet;
+            CopiedCorHeaderNode corHeaderNode = (_compilationGroup.IsCompositeBuildMode ? null : new CopiedCorHeaderNode(inputModules.First()));
+            // TODO: proper support for multiple input files
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(inputModules.First());
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
-            ResourceData win32Resources = new ResourceData(_inputModule, (object type, object name, ushort language) =>
+            // TODO: proper support for multiple input files
+            ResourceData win32Resources = new ResourceData(inputModules.First(), (object type, object name, ushort language) =>
             {
                 if (!(type is string) || !(name is string))
                     return true;
@@ -144,23 +142,20 @@ namespace ILCompiler
             });
 
             ReadyToRunFlags flags = ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
-            if (_inputModule.IsPlatformNeutral)
+            if (inputModules.All(module => module.IsPlatformNeutral))
+            {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
-
-            var header = new HeaderNode(_context.Target, flags);
 
             NodeFactory factory = new NodeFactory(
                 _context,
                 _compilationGroup,
                 _nameMangler,
-                moduleTokenResolver,
-                signatureContext,
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
-                attributePresenceFilterNode,
-                header);
+                flags);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
@@ -189,7 +184,6 @@ namespace ILCompiler
             if (_ibcTuning)
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
-            corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
             JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _jitPath);
 
             return new ReadyToRunCodegenCompilation(
@@ -199,8 +193,8 @@ namespace ILCompiler
                 _ilProvider,
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
-                _inputFilePath,
-                new ModuleDesc[] { _inputModule },
+                _inputFiles,
+                _instructionSetSupport,
                 _resilient,
                 _generateMapFile,
                 _parallelism);

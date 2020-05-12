@@ -162,7 +162,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref element, ref keyUnused))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
                     _elementAction(element);
                 }
 

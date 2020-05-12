@@ -123,7 +123,6 @@ CONFIG_INTEGER(JitStressFP, W("JitStressFP"), 0)                       // Intern
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
-CONFIG_INTEGER(JitStrictCheckForNonVirtualCallToVirtualMethod, W("JitStrictCheckForNonVirtualCallToVirtualMethod"), 1)
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0) // If non-zero, assert if # of VNF_MapSelect applications
                                                            // considered reaches this
 CONFIG_INTEGER(NgenHashDump, W("NgenHashDump"), -1)        // same as JitHashDump, but for ngen
@@ -136,6 +135,7 @@ CONFIG_INTEGER(ShouldInjectFault, W("InjectFault"), 0)
 CONFIG_INTEGER(StressCOMCall, W("StressCOMCall"), 0)
 CONFIG_INTEGER(TailcallStress, W("TailcallStress"), 0)
 CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, display each tree before/after morphing
+
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
@@ -244,6 +244,9 @@ CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
 #endif                                                       // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 
+CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 0) // Enable the register allocator to support EH-write thru:
+                                                             // partial enregistration of vars exposed on EH boundaries
+
 // clang-format off
 
 #if defined(TARGET_ARM64)
@@ -273,6 +276,14 @@ CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
 
 // clang-format on
 
+#ifdef FEATURE_SIMD
+CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNumbering of SIMD nodes and HW Intrinsic
+                                                           // nodes enabled
+                                                           // If 1, then disable ValueNumbering of SIMD nodes
+                                                           // If 2, then disable ValueNumbering of HW Intrinsic nodes
+                                                           // If 3, disable both SIMD and HW Intrinsic nodes
+#endif                                                     // FEATURE_SIMD
+
 ///
 /// JIT
 ///
@@ -282,10 +293,7 @@ CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)
 CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 1)
 #endif // !defined(DEBUG) && !defined(_DEBUG)
 
-// It was originally intended that JitMinOptsTrackGCrefs only be enabled for amd64 on CoreCLR. A mistake was
-// made, and it was enabled for x86 as well. Whether it should continue to be enabled for x86 should be investigated.
-// This is tracked by issue https://github.com/dotnet/coreclr/issues/12415.
-#if (defined(TARGET_AMD64) && defined(FEATURE_CORECLR)) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 #define JitMinOptsTrackGCrefs_Default 0 // Not tracking GC refs in MinOpts is new behavior
 #else
 #define JitMinOptsTrackGCrefs_Default 1
@@ -344,12 +352,19 @@ CONFIG_STRING(JitFuncInfoFile, W("JitFuncInfoLogFile")) // If set, gather JIT fu
 CONFIG_STRING(JitTimeLogCsv, W("JitTimeLogCsv")) // If set, gather JIT throughput data and write to a CSV file. This
                                                  // mode must be used in internal retail builds.
 CONFIG_STRING(TailCallOpt, W("TailCallOpt"))
+CONFIG_INTEGER(FastTailCalls, W("FastTailCalls"), 1) // If set, allow fast tail calls; otherwise allow only helper-based
+                                                     // calls
+                                                     // for explicit tail calls.
 
 CONFIG_INTEGER(JitMeasureNowayAssert, W("JitMeasureNowayAssert"), 0) // Set to 1 to measure noway_assert usage. Only
                                                                      // valid if MEASURE_NOWAY is defined.
 CONFIG_STRING(JitMeasureNowayAssertFile,
               W("JitMeasureNowayAssertFile")) // Set to file to write noway_assert usage to a file (if not
                                               // set: stdout). Only valid if MEASURE_NOWAY is defined.
+#if defined(DEBUG)
+CONFIG_INTEGER(EnableExtraSuperPmiQueries, W("EnableExtraSuperPmiQueries"), 0) // Make extra queries to somewhat
+                                                                               // future-proof SuperPmi method contexts.
+#endif                                                                         // DEBUG
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
@@ -373,13 +388,8 @@ CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 0)
 CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 
 #if defined(DEBUG)
-#if defined(FEATURE_CORECLR)
 CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
-#else
-CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 0)
-CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 0)
-#endif // defined(FEATURE_CORECLR)
 #endif // DEBUG
 
 // Overall master enable for Guarded Devirtualization. Currently not enabled by default.
@@ -390,6 +400,11 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
 #endif // DEBUG
+
+// Enable insertion of patchpoints into Tier0 methods with loops.
+CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
+// Initial patchpoint counter value used by jitted code
+CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
@@ -421,6 +436,14 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
+
+#if !FEATURE_MULTIREG_RET
+CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
+                                                                       // when possible.
+#else                                                                  // FEATURE_MULTIREG_RET
+CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
+                                                                       // when possible.
+#endif                                                                 // FEATURE_MULTIREG_RET
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

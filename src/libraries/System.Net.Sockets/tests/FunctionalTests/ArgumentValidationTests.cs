@@ -1025,7 +1025,7 @@ namespace System.Net.Sockets.Tests
         public void BeginConnect_EndPoint_AddressFamily_Throws_NotSupported()
         {
             // Unlike other tests that reuse a static Socket instance, this test avoids doing so
-            // to work around a behavior of .NET 4.7.2. See https://github.com/dotnet/corefx/issues/29481
+            // to work around a behavior of .NET 4.7.2. See https://github.com/dotnet/runtime/issues/26062
             // for more details.
 
             using (var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -1114,7 +1114,14 @@ namespace System.Net.Sockets.Tests
         public void BeginConnect_IPAddresses_InvalidPort_Throws_ArgumentOutOfRange(int port)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginConnect(new[] { IPAddress.Loopback }, port, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => { GetSocket().ConnectAsync(new[] { IPAddress.Loopback }, port); });
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(65536)]
+        public async Task ConnectAsync_IPAddresses_InvalidPort_Throws_ArgumentOutOfRange(int port)
+        {
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => GetSocket().ConnectAsync(new[] { IPAddress.Loopback }, port));
         }
 
         [Fact]
@@ -1126,12 +1133,16 @@ namespace System.Net.Sockets.Tests
                 socket.Listen(1);
                 Assert.Throws<InvalidOperationException>(() => socket.BeginConnect(new[] { IPAddress.Loopback }, 1, TheAsyncCallback, null));
             }
+        }
 
+        [Fact]
+        public async Task ConnectAsync_IPAddresses_ListeningSocket_Throws_InvalidOperation()
+        {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                 socket.Listen(1);
-                Assert.Throws<InvalidOperationException>(() => { socket.ConnectAsync(new[] { IPAddress.Loopback }, 1); });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => socket.ConnectAsync(new[] { IPAddress.Loopback }, 1));
             }
         }
 

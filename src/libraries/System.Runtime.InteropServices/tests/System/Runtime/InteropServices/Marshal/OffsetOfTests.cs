@@ -209,6 +209,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15087", TestRuntimes.Mono)]
         [MemberData(nameof(OffsetOf_NotMarshallable_TestData))]
         public void OffsetOf_NotMarshallable_ThrowsArgumentException(Type t, string fieldName)
         {

@@ -22,31 +22,29 @@ jobs:
     workspace:
       clean: all
 
-    variables:
-    - ${{ each variable in parameters.variables }}:
-      - ${{insert}}: ${{ variable }}
-    - name: noWarnAsErrorArg
-      value: ''
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - name: noWarnAsErrorArg
-        value: -warnAsError:0
+    variables: ${{ parameters.variables }}
 
     steps:
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: |
-          $(setScriptToEchoAndFailOnNonZero) 
-          brew install pkgconfig icu4c openssl autoconf automake libtool pkg-config python3
-          brew link --force icu4c
-          ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
-          ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
-          ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
-        displayName: Install Build Dependencies
-
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+      - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+        displayName: Install Build Dependencies
+
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage before Build
+
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(noWarnAsErrorArg) ${{ parameters.buildArgs }}
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }}
       displayName: Build product
+
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
 
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs

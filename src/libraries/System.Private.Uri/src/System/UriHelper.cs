@@ -5,6 +5,7 @@
 using System.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -33,10 +34,10 @@ namespace System
         // ASSUMES that strings like http://host/Path/Path/MoreDir/../../  have been canonicalized before going to this method.
         // ASSUMES that back slashes already have been converted if applicable.
         //
-        internal static unsafe bool TestForSubPath(char* selfPtr, ushort selfLength, char* otherPtr, ushort otherLength,
+        internal static unsafe bool TestForSubPath(char* selfPtr, int selfLength, char* otherPtr, int otherLength,
             bool ignoreCase)
         {
-            ushort i = 0;
+            int i = 0;
             char chSelf;
             char chOther;
 
@@ -575,12 +576,12 @@ namespace System
                     if (iriParsing)
                     {
                         if (!isHighSurr)
+                        {
                             inIriRange = IriHelper.CheckIriUnicodeRange(unescapedChars[j], isQuery);
+                        }
                         else
                         {
-                            bool surrPair = false;
-                            inIriRange = IriHelper.CheckIriUnicodeRange(unescapedChars[j], unescapedChars[j + 1],
-                                                                   ref surrPair, isQuery);
+                            inIriRange = IriHelper.CheckIriUnicodeRange(unescapedChars[j], unescapedChars[j + 1], out _, isQuery);
                         }
                     }
 
@@ -792,21 +793,45 @@ namespace System
         //
         // Strip Bidirectional control characters from this string
         //
-        internal static unsafe string StripBidiControlCharacter(char* strToClean, int start, int length)
+        internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
-            if (length <= 0) return "";
+            Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 
-            char[] cleanStr = new char[length];
-            int count = 0;
-            for (int i = 0; i < length; ++i)
+            int charsToRemove = 0;
+            foreach (char c in strToClean)
             {
-                char c = strToClean[start + i];
-                if (c < '\u200E' || c > '\u202E' || !IsBidiControlCharacter(c))
+                if ((uint)(c - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(c))
                 {
-                    cleanStr[count++] = c;
+                    charsToRemove++;
                 }
             }
-            return new string(cleanStr, 0, count);
+
+            if (charsToRemove == 0)
+            {
+                return backingString ?? new string(strToClean);
+            }
+
+            if (charsToRemove == strToClean.Length)
+            {
+                return string.Empty;
+            }
+
+            fixed (char* pStrToClean = &MemoryMarshal.GetReference(strToClean))
+            {
+                return string.Create(strToClean.Length - charsToRemove, (StrToClean: (IntPtr)pStrToClean, strToClean.Length), (buffer, state) =>
+                {
+                    var strToClean = new ReadOnlySpan<char>((char*)state.StrToClean, state.Length);
+                    int destIndex = 0;
+                    foreach (char c in strToClean)
+                    {
+                        if ((uint)(c - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(c))
+                        {
+                            buffer[destIndex++] = c;
+                        }
+                    }
+                    Debug.Assert(buffer.Length == destIndex);
+                });
+            }
         }
     }
 }

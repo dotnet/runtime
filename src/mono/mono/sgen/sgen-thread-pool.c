@@ -307,7 +307,7 @@ sgen_thread_pool_shutdown (void)
 	mono_os_cond_destroy (&done_cond);
 
 	for (int i = 0; i < threads_num; i++) {
-		mono_threads_add_joinable_thread ((gpointer)threads [i]);
+		mono_threads_add_joinable_thread ((gpointer)(gsize)threads [i]);
 	}
 }
 

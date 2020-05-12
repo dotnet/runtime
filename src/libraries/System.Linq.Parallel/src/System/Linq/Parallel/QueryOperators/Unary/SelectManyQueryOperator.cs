@@ -282,7 +282,7 @@ namespace System.Linq.Parallel
                         // Check cancellation every few lhs-enumerations in case none of them are producing
                         // any outputs.  Otherwise, we rely on the consumer of this operator to be performing the checks.
                         if ((_mutables._lhsCount++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         // We don't have a "current" right enumerator to use. We have to fetch the next
                         // one. If the left has run out of elements, however, we're done and just return
@@ -414,7 +414,7 @@ namespace System.Linq.Parallel
                         // Check cancellation every few lhs-enumerations in case none of them are producing
                         // any outputs.  Otherwise, we rely on the consumer of this operator to be performing the checks.
                         if ((_mutables._lhsCount++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         // We don't have a "current" right enumerator to use. We have to fetch the next
                         // one. If the left has run out of elements, however, we're done and just return

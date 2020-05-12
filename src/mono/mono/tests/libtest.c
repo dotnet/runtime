@@ -838,6 +838,8 @@ mono_test_marshal_byref_class (simplestruct2 **ssp)
 	return 0;
 }
 
+MONO_DISABLE_WARNING (4172) // returning address of local
+
 static void *
 get_sp (void)
 {
@@ -848,6 +850,8 @@ get_sp (void)
 	p = &i;
 	return p;
 }
+
+MONO_RESTORE_WARNING
 
 LIBTEST_API int STDCALL 
 reliable_delegate (int a)

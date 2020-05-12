@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <DebugType>Portable</DebugType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
+    <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+    <AndroidAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder'))</AndroidAppBuilder>
+  </PropertyGroup>
+
+  <Target Name="RebuildAndroidAppBuilder">
+    <MSBuild Projects="$(AndroidAppBuilderProjDirectory)\AndroidAppBuilder.csproj"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
+  </Target>
+
+  <UsingTask TaskName="AndroidAppBuilderTask" 
+             AssemblyFile="$(AndroidAppBuilder)\$(NetCoreAppCurrent)-$(Configuration)\AndroidAppBuilder.dll" />
+
+  <Target Name="BuildAppBundle" DependsOnTargets="RebuildAndroidAppBuilder">
+    <PropertyGroup>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(TargetArchitecture)</AndroidAbi>
+    </PropertyGroup>
+    <ItemGroup>
+      <AppBinaries Include="bin\*.*"/>
+      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" 
+                   Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
+      <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
+    </ItemGroup>
+    <Error Condition="'$(AndroidAbi)'==''" Text="Unknown $(TargetArchitecture)" />
+    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
+    <RemoveDir Directories="$(BundleDir)" />
+    <Copy SourceFiles="@(AppBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
+    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
+          SourceFiles="$(AndroidOpenSslCryptoLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
+          SourceFiles="$(AndroidOpenSslLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+
+    <AndroidAppBuilderTask 
+        Abi="$(AndroidAbi)"
+        ProjectName="HelloAndroid"
+        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
+        MainLibraryFileName="Program.dll"
+        SourceDir="$(BundleDir)"
+        OutputDir="$(BundleDir)\apk">
+        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
+    </AndroidAppBuilderTask>
+    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
+    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+  </Target>
+
+  <!-- Deploy and launch on an active emulator or device -->
+  <Target Name="ReinstallAndLaunch">
+    <PropertyGroup>
+      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
+    </PropertyGroup>
+    <Message Importance="High" Text="Uninstalling app if it exists (throws an error if it doesn't but it can be ignored):"/>
+    <Exec Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
+    <Exec Command="$(AdbTool) install bin/bundle/apk/bin/HelloAndroid.apk" />
+    <Exec Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <!--Exec Command="$(AdbTool) logcat" /-->
+  </Target>
+</Project>

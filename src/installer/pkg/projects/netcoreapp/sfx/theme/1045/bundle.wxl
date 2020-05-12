@@ -58,16 +58,16 @@ Wszystko gotowe? Zaczynamy!</String>
   <String Id="FilesInUseDontCloseRadioButton">&amp;Nie zamykaj aplikacji. Będzie konieczne ponowne uruchomienie.</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Anuluj</String>
-  <String Id="WelcomeHeaderMessage">Środowisko uruchomieniowe platformy .NET Core</String>
-  <String Id="WelcomeDescription">Platforma .NET Core to platforma programistyczna, za pomocą której można kompilować aplikacje poziomu wiersza polecenia, mikrousługi i nowoczesne witryny internetowe. Jest to rozwiązanie typu open source, międzyplatformowe i obsługiwane przez firmę Microsoft. Mamy nadzieję, że Ci się spodoba!</String>
-  <String Id="LearnMoreTitle">Dowiedz się więcej o platformie .NET Core</String>
+  <String Id="WelcomeHeaderMessage">Środowisko uruchomieniowe platformy .NET</String>
+  <String Id="WelcomeDescription">Platforma .NET to platforma programistyczna, za pomocą której można kompilować aplikacje poziomu wiersza polecenia, mikrousługi i nowoczesne witryny internetowe. Jest to rozwiązanie typu open source, międzyplatformowe i obsługiwane przez firmę Microsoft. Mamy nadzieję, że Ci się spodoba!</String>
+  <String Id="LearnMoreTitle">Dowiedz się więcej o platformie .NET</String>
   <String Id="SuccessInstallLocation">Następujące elementy zainstalowano w [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
   <String Id="ResourcesHeader">Zasoby</String>
   <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;Dokumentacja&lt;/A&gt;</String>
   <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;Informacje o wersji&lt;/A&gt;</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Samouczki&lt;/A&gt;</String>
-  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetria programu .NET Core&lt;/A&gt;</String>
+  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetria programu .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Zasady zachowania poufności informacji&lt;/A&gt;</String>
   <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;Umowa licencyjna użytkownika oprogramowania biblioteki .NET&lt;/A&gt;</String>
   

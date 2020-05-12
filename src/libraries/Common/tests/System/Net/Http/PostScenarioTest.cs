@@ -28,6 +28,7 @@ namespace System.Net.Http.Functional.Tests
 
         public PostScenarioTest(ITestOutputHelper output) : base(output) { }
 
+#if !NETFRAMEWORK
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Configuration.Http.RemoteServer remoteServer)
@@ -50,6 +51,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
+#endif
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
@@ -221,7 +223,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (useContentLengthUpload)
                     {
-                        // Ensure that Content-Length is populated (see https://github.com/dotnet/corefx/issues/27245)
+                        // Ensure that Content-Length is populated (see https://github.com/dotnet/runtime/issues/25086)
                         requestContent.Headers.ContentLength = requestContent.Headers.ContentLength;
                     }
                     else

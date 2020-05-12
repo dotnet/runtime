@@ -223,7 +223,7 @@ namespace System
             /// <returns>Returns remainder. Quotient overwrites dividend.</returns>
             private static uint Div96By32(ref Buf12 bufNum, uint den)
             {
-                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 ulong tmp, div;
                 if (bufNum.U2 != 0)
                 {
@@ -361,7 +361,7 @@ namespace System
                         // Result is zero.  Entire dividend is remainder.
                         return 0;
 
-                    // TODO: https://github.com/dotnet/coreclr/issues/3439
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     quo = (uint)(num / den);
                     num -= quo * den; // remainder
                     bufNum.Low64 = num;
@@ -399,7 +399,7 @@ namespace System
                     //
                     return 0;
 
-                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 quo = (uint)(num64 / denHigh32);
                 num = bufNum.U0 | ((num64 - quo * denHigh32) << 32); // remainder
 
@@ -445,7 +445,7 @@ namespace System
                     //
                     return 0;
 
-                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 uint quo = (uint)(dividend / den);
                 uint remainder = (uint)dividend - quo * den;
 
@@ -1363,7 +1363,7 @@ ThrowOverflow:
                             scale -= DEC_SCALE_MAX + 1;
                             ulong power = s_ulongPowers10[scale];
 
-                            // TODO: https://github.com/dotnet/coreclr/issues/3439
+                            // TODO: https://github.com/dotnet/runtime/issues/5213
                             tmp = low64 / power;
                             ulong remainder = low64 - tmp * power;
                             low64 = tmp;
@@ -1995,7 +1995,7 @@ ReturnZero:
                             goto ThrowOverflow;
 
                         ulong num = UInt32x32To64(remainder, power);
-                        // TODO: https://github.com/dotnet/coreclr/issues/3439
+                        // TODO: https://github.com/dotnet/runtime/issues/5213
                         uint div = (uint)(num / den);
                         remainder = (uint)num - div * den;
 
@@ -2432,7 +2432,7 @@ ThrowOverflow:
 
                 {
                     power = s_powers10[scale];
-                    // TODO: https://github.com/dotnet/coreclr/issues/3439
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     uint n = d.uhi;
                     if (n == 0)
                     {

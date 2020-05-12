@@ -11,6 +11,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using Internal.Runtime;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
@@ -93,12 +94,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The index of the runtime function
         /// </summary>
-        public int Id { get; set; }
+        public int Id { get; }
 
         /// <summary>
         /// The relative virtual address to the start of the code block
         /// </summary>
-        public int StartAddress { get; set; }
+        public int StartAddress { get; }
 
         /// <summary>
         /// The size of the code block in bytes
@@ -107,17 +108,17 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// The EndAddress field in the runtime functions section is conditional on machine type
         /// Size is -1 for images without the EndAddress field
         /// </remarks>
-        public int Size { get; set; }
+        public int Size { get; }
 
         /// <summary>
         /// The relative virtual address to the unwind info
         /// </summary>
-        public int UnwindRVA { get; set; }
+        public int UnwindRVA { get; }
 
         /// <summary>
         /// The start offset of the runtime function with is non-zero for methods with multiple runtime functions
         /// </summary>
-        public int CodeOffset { get; set; }
+        public int CodeOffset { get; }
 
         /// <summary>
         /// The method that this runtime function belongs to
@@ -241,7 +242,23 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// All the runtime functions of this method
         /// </summary>
-        public IList<RuntimeFunction> RuntimeFunctions { get; }
+        public IReadOnlyList<RuntimeFunction> RuntimeFunctions
+        {
+            get
+            {
+                EnsureRuntimeFunctions();
+                return _runtimeFunctions;
+            }
+        }
+
+        private void EnsureRuntimeFunctions()
+        {
+            if (this._runtimeFunctions == null)
+            {
+                this._runtimeFunctions = new List<RuntimeFunction>();
+                this.ParseRuntimeFunctions();
+            }
+        }
 
         /// <summary>
         /// The id of the entrypoint runtime function
@@ -253,6 +270,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private ReadyToRunReader _readyToRunReader;
         private List<FixupCell> _fixupCells;
         private int? _fixupOffset;
+        private List<RuntimeFunction> _runtimeFunctions;
 
         public IReadOnlyList<FixupCell> Fixups
         {
@@ -262,6 +280,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return _fixupCells;
             }
         }
+
+        internal int RuntimeFunctionCount { get; set; }
 
         /// <summary>
         /// Extracts the method signature from the metadata by rid
@@ -284,7 +304,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             EntryPointRuntimeFunctionId = entryPointId;
 
             MetadataReader = metadataReader;
-            RuntimeFunctions = new List<RuntimeFunction>();
 
             EntityHandle owningTypeHandle;
             GenericParameterHandleCollection genericParams = default(GenericParameterHandleCollection);
@@ -414,6 +433,80 @@ namespace ILCompiler.Reflection.ReadyToRun
                 curTableIndex = curTableIndex + tableIndex;
 
             } // Done with all entries in this table
+        }
+
+        /// <summary>
+        /// Get the RVAs of the runtime functions for each method
+        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapcode.cpp">ZapUnwindInfo::Save</a>
+        /// </summary>
+        private void ParseRuntimeFunctions()
+        {
+            int runtimeFunctionId = EntryPointRuntimeFunctionId;
+            int runtimeFunctionSize = _readyToRunReader.CalculateRuntimeFunctionSize();
+            int runtimeFunctionOffset = _readyToRunReader.PEReader.GetOffset(_readyToRunReader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].RelativeVirtualAddress);
+            int curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
+            BaseGcInfo gcInfo = null;
+            int codeOffset = 0;
+            for (int i = 0; i < RuntimeFunctionCount; i++)
+            {
+                int startRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                int endRva = -1;
+                if (_readyToRunReader.Machine == Machine.Amd64)
+                {
+                    endRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                }
+                int unwindRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                int unwindOffset = _readyToRunReader.PEReader.GetOffset(unwindRva);
+
+                BaseUnwindInfo unwindInfo = null;
+                if (_readyToRunReader.Machine == Machine.Amd64)
+                {
+                    unwindInfo = new Amd64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    if (i == 0)
+                    {
+                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    }
+                }
+                else if (_readyToRunReader.Machine == Machine.I386)
+                {
+                    unwindInfo = new x86.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    if (i == 0)
+                    {
+                        gcInfo = new x86.GcInfo(_readyToRunReader.Image, unwindOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    }
+                }
+                else if (_readyToRunReader.Machine == Machine.ArmThumb2)
+                {
+                    unwindInfo = new Arm.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    if (i == 0)
+                    {
+                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion); // Arm and Arm64 use the same GcInfo format as x64
+                    }
+                }
+                else if (_readyToRunReader.Machine == Machine.Arm64)
+                {
+                    unwindInfo = new Arm64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    if (i == 0)
+                    {
+                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    }
+                }
+
+                RuntimeFunction rtf = new RuntimeFunction(
+                    _readyToRunReader,
+                    runtimeFunctionId,
+                    startRva,
+                    endRva,
+                    unwindRva,
+                    codeOffset,
+                    this,
+                    unwindInfo,
+                    gcInfo);
+
+                _runtimeFunctions.Add(rtf);
+                runtimeFunctionId++;
+                codeOffset += rtf.Size;
+            }
         }
     }
 }

@@ -48,129 +48,6 @@ enum CorJitResult
     CORJIT_RECOVERABLEERROR =  MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 5),
 };
 
-/*****************************************************************************
-Here is how CORJIT_FLAG_SKIP_VERIFICATION should be interepreted.
-Note that even if any method is inlined, it need not be verified.
-
-if (CORJIT_FLAG_SKIP_VERIFICATION is passed in to ICorJitCompiler::compileMethod())
-{
-    No verification needs to be done.
-    Just compile the method, generating unverifiable code if necessary
-}
-else
-{
-    switch(ICorMethodInfo::isInstantiationOfVerifiedGeneric())
-    {
-    case INSTVER_NOT_INSTANTIATION:
-
-        //
-        // Non-generic case, or open generic instantiation
-        //
-
-        switch(canSkipMethodVerification())
-        {
-        case CORINFO_VERIFICATION_CANNOT_SKIP:
-            {
-                ICorMethodInfo::initConstraintsForVerification(&circularConstraints)
-                if (circularConstraints)
-                {
-                    Just emit code to call CORINFO_HELP_VERIFICATION
-                    The IL will not be compiled
-                }
-                else
-                {
-                    Verify the method.
-                    if (unverifiable code is detected)
-                    {
-                        In place of branches with unverifiable code, emit code to call CORINFO_HELP_VERIFICATION
-                        Mark the method (and any of its instantiations) as unverifiable
-                    }
-                    Compile the rest of the verifiable code
-                }
-            }
-
-        case CORINFO_VERIFICATION_CAN_SKIP:
-            {
-                No verification needs to be done.
-                Just compile the method, generating unverifiable code if necessary
-            }
-
-        case CORINFO_VERIFICATION_RUNTIME_CHECK:
-            {
-                ICorMethodInfo::initConstraintsForVerification(&circularConstraints)
-                if (circularConstraints)
-                {
-                    Just emit code to call CORINFO_HELP_VERIFICATION
-                    The IL will not be compiled
-
-                    TODO: This could be changed to call CORINFO_HELP_VERIFICATION_RUNTIME_CHECK
-                }
-                else
-                {
-                    Verify the method.
-                    if (unverifiable code is detected)
-                    {
-                        In the prolog, emit code to call CORINFO_HELP_VERIFICATION_RUNTIME_CHECK
-                        Mark the method (and any of its instantiations) as unverifiable
-                    }
-                    Compile the method, generating unverifiable code if necessary
-                }
-            }
-        case CORINFO_VERIFICATION_DONT_JIT:
-            {
-                ICorMethodInfo::initConstraintsForVerification(&circularConstraints)
-                if (circularConstraints)
-                {
-                    Just emit code to call CORINFO_HELP_VERIFICATION
-                    The IL will not be compiled
-                }
-                else
-                {
-                    Verify the method.
-                    if (unverifiable code is detected)
-                    {
-                        Fail the jit
-                    }
-                }
-            }
-        }
-
-    case INSTVER_GENERIC_PASSED_VERIFICATION:
-        {
-            This cannot ever happen because the VM would pass in CORJIT_FLAG_SKIP_VERIFICATION.
-        }
-
-    case INSTVER_GENERIC_FAILED_VERIFICATION:
-
-        switch(canSkipMethodVerification())
-        {
-            case CORINFO_VERIFICATION_CANNOT_SKIP:
-                {
-                    This cannot be supported because the compiler does not know which branches should call CORINFO_HELP_VERIFICATION.
-                    The CLR will throw a VerificationException instead of trying to compile this method
-                }
-
-            case CORINFO_VERIFICATION_CAN_SKIP:
-                {
-                    This cannot ever happen because the CLR would pass in CORJIT_FLAG_SKIP_VERIFICATION.
-                }
-
-            case CORINFO_VERIFICATION_RUNTIME_CHECK:
-                {
-                    No verification needs to be done.
-                    In the prolog, emit code to call CORINFO_HELP_VERIFICATION_RUNTIME_CHECK
-                    Compile the method, generating unverifiable code if necessary
-                }
-            case CORINFO_VERIFICATION_DONT_JIT:
-                {
-                    Fail the jit
-                }
-        }
-    }
-}
-
-*/
-
 /*****************************************************************************/
 // These are flags passed to ICorJitInfo::allocMem
 // to guide the memory allocation for the code, readonly data, and read-write data
@@ -212,7 +89,6 @@ extern "C" void __stdcall jitStartup(ICorJitHost* host);
 
 class ICorJitCompiler;
 class ICorJitInfo;
-struct IEEMemoryManager;
 
 extern "C" ICorJitCompiler* __stdcall getJit();
 
@@ -245,14 +121,6 @@ public:
             ULONG                       *nativeSizeOfCode    /* OUT */
             ) = 0;
 
-    // Some JIT compilers (most notably Phoenix), cache information about EE structures from one invocation
-    // of the compiler to the next. This can be a problem when appdomains are unloaded, as some of this
-    // cached information becomes stale. The code:ICorJitCompiler.isCacheCleanupRequired is called by the EE
-    // early first to see if jit needs these notifications, and if so, the EE will call ClearCache is called
-    // whenever the compiler should abandon its cache (eg on appdomain unload)
-    virtual void clearCache() = 0;
-    virtual BOOL isCacheCleanupRequired() = 0;
-
     // Do any appropriate work at process shutdown.  Default impl is to do nothing.
     virtual void ProcessShutdownWork(ICorStaticInfo* info) {};
 
@@ -268,15 +136,6 @@ public:
     // SIMD vector it supports as an intrinsic type.  Zero means that the JIT does not support SIMD
     // intrinsics, so the EE should use the default size (i.e. the size of the IL implementation).
     virtual unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags) { return 0; }
-
-    // IL obfuscators sometimes interpose on the EE-JIT interface. This function allows the VM to
-    // tell the JIT to use a particular ICorJitCompiler to implement the methods of this interface,
-    // and not to implement those methods itself. The JIT must not return this method when getJit()
-    // is called. Instead, it must pass along all calls to this interface from within its own
-    // ICorJitCompiler implementation. If 'realJitCompiler' is nullptr, then the JIT should resume
-    // executing all the functions itself.
-    virtual void setRealJit(ICorJitCompiler* realJitCompiler) { }
-
 };
 
 //------------------------------------------------------------------------------------------
@@ -294,9 +153,6 @@ public:
 class ICorJitInfo : public ICorDynamicInfo
 {
 public:
-    // OBSOLETE: return memory manager that the JIT can use to allocate a regular memory
-    virtual IEEMemoryManager* getMemoryManager() = 0;
-
     // get a block of memory for the code, readonly data, and read-write data
     virtual void allocMem (
             ULONG               hotCodeSize,    /* IN */
@@ -360,8 +216,6 @@ public:
     virtual void * allocGCInfo (
             size_t                  size        /* IN */
             ) = 0;
-
-    virtual void yieldExecution() = 0;
 
     // Indicate how many exception handler blocks are to be returned.
     // This is guaranteed to be called before any 'setEHinfo' call.
@@ -434,14 +288,6 @@ public:
             ) = 0;
 
     virtual WORD getRelocTypeHint(void * target) = 0;
-
-    // A callback to identify the range of address known to point to
-    // compiler-generated native entry points that call back into
-    // MSIL.
-    virtual void getModuleNativeEntryPointRange(
-            void ** pStart, /* OUT */
-            void ** pEnd    /* OUT */
-            ) = 0;
 
     // For what machine does the VM expect the JIT to generate code? The VM
     // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM

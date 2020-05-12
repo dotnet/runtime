@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -138,7 +139,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeConfiguration.Checked)]
-        [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131", TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
         public async Task SslStream_NoSniFromClient_CallbackReturnsNull()
         {
             await WithVirtualConnection(async (server, client) =>
@@ -201,9 +202,7 @@ namespace System.Net.Security.Tests
 
         private async Task WithVirtualConnection(Func<SslStream, SslStream, Task> serverClientConnection, RemoteCertificateValidationCallback clientCertValidate)
         {
-            VirtualNetwork vn = new VirtualNetwork();
-            using (VirtualNetworkStream serverStream = new VirtualNetworkStream(vn, isServer: true),
-                                        clientStream = new VirtualNetworkStream(vn, isServer: false))
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (SslStream server = new SslStream(serverStream, leaveInnerStreamOpen: false),
                              client = new SslStream(clientStream, leaveInnerStreamOpen: false, clientCertValidate))
             {

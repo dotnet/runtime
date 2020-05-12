@@ -111,7 +111,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             CustomValidationAttribute attribute = GetAttribute(method);
 
             // The .NET Framework has a bug where CustomValidationAttribute doesn't
-            // validate the context. See https://github.com/dotnet/corefx/issues/18360.
+            // validate the context. See https://github.com/dotnet/runtime/issues/21100.
             if (PlatformDetection.IsNetFramework)
             {
                 Assert.False(attribute.RequiresValidationContext);
@@ -139,7 +139,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/corefx/issues/18360")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/runtime/issues/21100")]
         [MemberData(nameof(BadlyFormed_TestData))]
         public static void RequiresValidationContext_BadlyFormed_NetCore_ThrowsInvalidOperationException(Type validatorType, string method)
         {
@@ -148,7 +148,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The .NET Framework has a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/corefx/issues/18360")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The .NET Framework has a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/runtime/issues/21100")]
         [MemberData(nameof(BadlyFormed_TestData))]
         public static void RequiresValidationContext_BadlyFormed_NetFx_DoesNotThrow(Type validatorType, string method)
         {

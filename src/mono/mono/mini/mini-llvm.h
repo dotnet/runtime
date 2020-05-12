@@ -18,23 +18,22 @@ typedef enum {
 	LLVM_MODULE_FLAG_INTERP = (1 << 4)
 } LLVMModuleFlags;
 
-/* KEEP THIS IN SYNCH WITH mini-llvm-loaded.c */
-MONO_LLVM_INTERNAL void mono_llvm_init                     (gboolean enable_jit);
-MONO_LLVM_INTERNAL void mono_llvm_cleanup                  (void);
-MONO_LLVM_INTERNAL void mono_llvm_emit_method              (MonoCompile *cfg);
-MONO_LLVM_INTERNAL void mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call);
-MONO_LLVM_INTERNAL void mono_llvm_create_aot_module        (MonoAssembly *assembly, const char *global_prefix, int initial_got_size, LLVMModuleFlags flags);
-MONO_LLVM_INTERNAL void mono_llvm_emit_aot_module          (const char *filename, const char *cu_name);
-MONO_LLVM_INTERNAL void mono_llvm_emit_aot_file_info       (MonoAotFileInfo *info, gboolean has_jitted_code);
-MONO_LLVM_INTERNAL void mono_llvm_emit_aot_data            (const char *symbol, guint8 *data, int data_len);
-MONO_LLVM_INTERNAL void mono_llvm_check_method_supported   (MonoCompile *cfg);
-MONO_LLVM_INTERNAL void mono_llvm_free_domain_info         (MonoDomain *domain);
+void mono_llvm_init                     (gboolean enable_jit);
+void mono_llvm_cleanup                  (void);
+void mono_llvm_emit_method              (MonoCompile *cfg);
+void mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call);
+void mono_llvm_create_aot_module        (MonoAssembly *assembly, const char *global_prefix, int initial_got_size, LLVMModuleFlags flags);
+void mono_llvm_emit_aot_module          (const char *filename, const char *cu_name);
+void mono_llvm_emit_aot_file_info       (MonoAotFileInfo *info, gboolean has_jitted_code);
+gpointer mono_llvm_emit_aot_data        (const char *symbol, guint8 *data, int data_len);
+gpointer mono_llvm_emit_aot_data_aligned (const char *symbol, guint8 *data, int data_len, int align);
+void mono_llvm_check_method_supported   (MonoCompile *cfg);
+void mono_llvm_free_domain_info         (MonoDomain *domain);
 MONO_API void mono_personality              (void);
-int      mono_llvm_load                     (const char* bpath);
-MONO_LLVM_INTERNAL void     mono_llvm_create_vars (MonoCompile *cfg);
-MONO_LLVM_INTERNAL void     mono_llvm_fixup_aot_module         (void);
+void     mono_llvm_create_vars (MonoCompile *cfg);
+void     mono_llvm_fixup_aot_module         (void);
 
 gboolean mini_llvm_init                     (void);
-MONO_LLVM_INTERNAL MonoCPUFeatures mono_llvm_get_cpu_features  (void);
+MonoCPUFeatures mono_llvm_get_cpu_features  (void);
 
 #endif

@@ -2706,7 +2706,7 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
 
         if (pView->lpAddress == lpAddress) // this entry is associated with the section
         {
-            if (-1 == madvise(pView->lpAddress, pView->NumberOfBytesToMap, MADV_DONTNEED))
+            if (-1 == posix_madvise(pView->lpAddress, pView->NumberOfBytesToMap, POSIX_MADV_DONTNEED))
             {
                 ERROR_(LOADER)("Unable to mark the section as NotNeeded.\n");
                 retval = FALSE;

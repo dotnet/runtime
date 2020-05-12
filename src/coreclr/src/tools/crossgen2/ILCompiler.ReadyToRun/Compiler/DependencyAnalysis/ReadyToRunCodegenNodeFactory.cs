@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
@@ -66,21 +67,20 @@ namespace ILCompiler.DependencyAnalysis
             _markingComplete = true;
         }
 
-        public IMethodNode MethodEntrypoint(MethodDesc method)
+        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
+
+        public MethodWithGCInfo CompiledMethodNode(MethodDesc method)
         {
-            ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
-            return MethodEntrypoint(
-                new MethodWithToken(method, moduleToken, constrainedType: null),
-                isUnboxingStub: false,
-                isInstantiatingStub: false,
-                isPrecodeImportRequired: false);
+            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(method, false));
+            Debug.Assert(method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            return _localMethodCache.GetOrAdd(method);
         }
 
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
 
         public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
         {
-            return _allMethodsOnType.GetOrAdd(type);
+            return _allMethodsOnType.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
@@ -95,13 +95,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
-        }
-
-        private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
-
-        public BlobNode ReadOnlyDataBlob(Utf8String name, byte[] blobData, int alignment)
-        {
-            return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
 
         private struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
@@ -129,27 +122,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private struct ReadOnlyDataBlobKey : IEquatable<ReadOnlyDataBlobKey>
-        {
-            public readonly Utf8String Name;
-            public readonly byte[] Data;
-            public readonly int Alignment;
-
-            public ReadOnlyDataBlobKey(Utf8String name, byte[] data, int alignment)
-            {
-                Name = name;
-                Data = data;
-                Alignment = alignment;
-            }
-
-            // The assumption here is that the name of the blob is unique.
-            // We can't emit two blobs with the same name and different contents.
-            // The name is part of the symbolic name and we don't do any mangling on it.
-            public bool Equals(ReadOnlyDataBlobKey other) => Name.Equals(other.Name);
-            public override bool Equals(object obj) => obj is ReadOnlyDataBlobKey && Equals((ReadOnlyDataBlobKey)obj);
-            public override int GetHashCode() => Name.GetHashCode();
-        }
-
         private struct ModuleAndIntValueKey : IEquatable<ModuleAndIntValueKey>
         {
             public readonly int IntValue;
@@ -174,27 +146,32 @@ namespace ILCompiler.DependencyAnalysis
             CompilerTypeSystemContext context,
             CompilationModuleGroup compilationModuleGroup,
             NameMangler nameMangler,
-            ModuleTokenResolver moduleTokenResolver,
-            SignatureContext signatureContext,
             CopiedCorHeaderNode corHeaderNode,
             DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
-            AttributePresenceFilterNode attributePresenceFilterNode,
-            HeaderNode headerNode)
+            ReadyToRunFlags flags)
         {
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
             Target = context.Target;
             NameMangler = nameMangler;
             MetadataManager = new ReadyToRunTableManager(context);
-            Resolver = moduleTokenResolver;
-            SignatureContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
-            AttributePresenceFilter = attributePresenceFilterNode;
-            Header = headerNode;
+            Resolver = new ModuleTokenResolver(compilationModuleGroup, TypeSystemContext);
+            Header = new GlobalHeaderNode(Target, flags);
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
+
+            if (CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                // Create a null top-level signature context to force producing module overrides for all signaturess
+                SignatureContext = new SignatureContext(null, Resolver);
+            }
+            else
+            {
+                SignatureContext = new SignatureContext(CompilationModuleGroup.CompilationModuleSet.Single(), Resolver);
+            }
 
             CreateNodeCaches();
         }
@@ -228,11 +205,6 @@ namespace ILCompiler.DependencyAnalysis
                         (TypeDesc)helperKey.Target));
             });
 
-            _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
-            {
-                return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
-            });
-
             _constructedHelpers = new NodeCache<ReadyToRunHelper, Import>(helperId =>
             {
                 return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
@@ -240,9 +212,9 @@ namespace ILCompiler.DependencyAnalysis
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
 
-            _localMethodCache = new NodeCache<TypeAndMethod, MethodWithGCInfo>(key =>
+            _localMethodCache = new NodeCache<MethodDesc, MethodWithGCInfo>(key =>
             {
-                return new MethodWithGCInfo(key.Method.Method);
+                return new MethodWithGCInfo(key);
             });
 
             _methodSignatures = new NodeCache<MethodFixupKey, MethodFixupSignature>(key =>
@@ -330,7 +302,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public Win32ResourcesNode Win32ResourcesNode;
 
-        public HeaderNode Header;
+        public GlobalHeaderNode Header;
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
@@ -338,13 +310,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public ProfileDataSectionNode ProfileDataSection;
 
-        public MethodEntryPointTableNode MethodEntryPointTable;
-
         public InstanceEntryPointTableNode InstanceEntryPointTable;
 
         public ManifestMetadataTableNode ManifestMetadataTable;
-
-        public TypesTableNode TypesTable;
 
         public ImportSectionsTableNode ImportSectionsTable;
 
@@ -355,10 +323,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FilterFuncletPersonalityRoutine;
 
         public DebugInfoTableNode DebugInfoTable;
-
-        public InliningInfoNode InliningInfoTable;
-
-        public AttributePresenceFilterNode AttributePresenceFilter;
 
         public ImportSectionNode EagerImports;
 
@@ -387,7 +351,8 @@ namespace ILCompiler.DependencyAnalysis
             bool isUnboxingStub = key.IsUnboxingStub;
             bool isInstantiatingStub = key.IsInstantiatingStub;
             bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
-            if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
+            MethodDesc compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (CompilationModuleGroup.ContainsMethodBody(compilableMethod, false))
             {
                 if (isPrecodeImportRequired)
                 {
@@ -395,7 +360,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method),
+                        CompiledMethodNode(compilableMethod),
                         isUnboxingStub,
                         isInstantiatingStub);
                 }
@@ -405,7 +370,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method),
+                        CompiledMethodNode(compilableMethod),
                         isUnboxingStub,
                         isInstantiatingStub);
                 }
@@ -428,36 +393,33 @@ namespace ILCompiler.DependencyAnalysis
             return _importMethods.GetOrAdd(key);
         }
 
-        private NodeCache<TypeAndMethod, MethodWithGCInfo> _localMethodCache = new NodeCache<TypeAndMethod, MethodWithGCInfo>();
-
-        private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod)
-        {
-            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
-
-            MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-            TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType,
-                new MethodWithToken(localMethod, default(ModuleToken), constrainedType: null),
-                isUnboxingStub: false,
-                isInstantiatingStub: false,
-                isPrecodeImportRequired: false);
-            return _localMethodCache.GetOrAdd(localMethodKey);
-        }
-
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
         {
-            foreach (MethodDesc method in MetadataManager.GetCompiledMethods())
+            return EnumerateCompiledMethods(null, CompiledMethodCategory.All);
+        }
+
+        public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods(EcmaModule moduleToEnumerate, CompiledMethodCategory methodCategory)
+        {
+            foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
-                IMethodNode methodNode = MethodEntrypoint(method);
+                MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
-                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
+#if DEBUG
+                EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
+
+                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null), false, false, false);
+                MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
+                if (methodCodeNodeDebug == null && methodNodeDebug is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = localMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = localMethodImport.MethodCodeNode;
                 }
-                if (methodCodeNode == null && methodNode is PrecodeMethodImport PrecodeMethodImport)
+                if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
                 {
-                    methodCodeNode = PrecodeMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = precodeMethodImport.MethodCodeNode;
                 }
+                Debug.Assert(methodCodeNodeDebug == methodCodeNode);
+#endif
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
                 {
@@ -558,37 +520,59 @@ namespace ILCompiler.DependencyAnalysis
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);
             graph.AddRoot(exceptionInfoLookupTableNode, "ExceptionInfoLookupTable is always generated");
 
-            MethodEntryPointTable = new MethodEntryPointTableNode(Target);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
-
-            ManifestMetadataTable = new ManifestMetadataTableNode(SignatureContext.GlobalContext, this);
+            ManifestMetadataTable = new ManifestMetadataTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
-
             Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
 
-            InstanceEntryPointTable = new InstanceEntryPointTableNode(Target);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
+            AssemblyTableNode assemblyTable = null;
 
-            TypesTable = new TypesTableNode(Target);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, TypesTable, TypesTable);
+            if (CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                assemblyTable = new AssemblyTableNode(Target);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
+            }
+
+            // Generate per assembly header tables
+            int assemblyIndex = -1;
+            foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
+            {
+                assemblyIndex++;
+                HeaderNode tableHeader = Header;
+                if (assemblyTable != null)
+                {
+                    AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(Target, ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
+                    assemblyTable.Add(perAssemblyHeader);
+                    tableHeader = perAssemblyHeader;
+                }
+
+                MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule, Target);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable, methodEntryPointTable);
+
+                TypesTableNode typesTable = new TypesTableNode(Target, inputModule);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
+
+                InliningInfoNode inliningInfoTable = new InliningInfoNode(Target, inputModule);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
+
+                // Core library attributes are checked FAR more often than other dlls
+                // attributes, so produce a highly efficient table for determining if they are
+                // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
+                // as useful at this time.
+                if (inputModule == TypeSystemContext.SystemModule)
+                {
+                    AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
+                    Header.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
+                }
+            }
+
+            InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
 
             DebugInfoTable = new DebugInfoTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
-
-            InliningInfoTable = new InliningInfoNode(Target, SignatureContext.GlobalContext);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, InliningInfoTable, InliningInfoTable);
-
-            // Core library attributes are checked FAR more often than other dlls
-            // attributes, so produce a highly efficient table for determining if they are
-            // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
-            // as useful at this time.
-            if (this.AttributePresenceFilter != null)
-            {
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, AttributePresenceFilter, AttributePresenceFilter);
-            }
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",
@@ -673,7 +657,10 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
-            graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated");
+            if (!CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated for single-file R2R files");
+            }
             graph.AddRoot(DebugDirectoryNode, "Debug Directory will always contain at least one entry");
 
             if (Win32ResourcesNode != null)

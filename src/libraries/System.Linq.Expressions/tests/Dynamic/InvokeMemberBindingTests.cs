@@ -76,7 +76,7 @@ namespace System.Dynamic.Tests
         }
 
         // TODO: Use a case-insensitive binder so that the above actually works.
-        // https://github.com/dotnet/corefx/issues/14012
+        // https://github.com/dotnet/runtime/issues/19482
 
         [Fact]
         public void MethodHiding()

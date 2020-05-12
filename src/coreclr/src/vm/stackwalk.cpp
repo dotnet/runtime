@@ -47,55 +47,6 @@ Assembly* CrawlFrame::GetAssembly()
     return pAssembly;
 }
 
-#ifndef DACCESS_COMPILE
-OBJECTREF* CrawlFrame::GetAddrOfSecurityObject()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (isFrameless)
-    {
-        _ASSERTE(pFunc);
-
-#if defined(TARGET_X86)
-        if (isCachedMethod)
-        {
-            return pSecurityObject;
-        }
-        else
-#endif // TARGET_X86
-        {
-            return (static_cast <OBJECTREF*>(GetCodeManager()->GetAddrOfSecurityObject(this)));
-        }
-    }
-    else
-    {
-#ifdef FEATURE_INTERPRETER
-        // Check for an InterpreterFrame.
-        Frame* pFrm = GetFrame();
-        if (pFrm != NULL && pFrm->GetVTablePtr() == InterpreterFrame::GetMethodFrameVPtr())
-        {
-#ifdef DACCESS_COMPILE
-            // TBD: DACize the interpreter.
-            return NULL;
-#else
-            return dac_cast<PTR_InterpreterFrame>(pFrm)->GetInterpreter()->GetAddressOfSecurityObject();
-#endif
-        }
-        // Otherwise...
-#endif // FEATURE_INTERPRETER
-
-        /*ISSUE: Are there any other functions holding a security desc? */
-        if (pFunc && (pFunc->IsIL() || pFunc->IsNoMetadata()))
-                return dac_cast<PTR_FramedMethodFrame>
-                    (pFrame)->GetAddrOfSecurityDesc();
-    }
-    return NULL;
-}
-#endif
-
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
     LIMITED_METHOD_CONTRACT;
@@ -776,14 +727,11 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
         uControlPc = VirtualUnwindCallFrame(pContext);
 #else // !TARGET_UNIX
 
-#ifdef VSD_STUB_CAN_THROW_AV
-        if (IsIPinVirtualStub(uControlPc))
+        if (AdjustContextForVirtualStub(NULL, pContext))
         {
-            AdjustContextForVirtualStub(NULL, pContext);
             uControlPc = GetIP(pContext);
             break;
         }
-#endif // VSD_STUB_CAN_THROW_AV
 
         BOOL success = PAL_VirtualUnwind(pContext, NULL);
         if (!success)
@@ -947,14 +895,14 @@ StackWalkAction Thread::StackWalkFramesEx(
     {
         // SCOPE: Remember that we're walking the stack.
         //
-        // Normally, we'd use a holder (ClrFlsThreadTypeSwitch) to temporarily set this
+        // Normally, we'd use a StackWalkerWalkingThreadHolder to temporarily set this
         // flag in the thread state, but we can't in this function, since C++ destructors
         // are forbidden when this is called for exception handling (which causes
         // MakeStackwalkerCallback() not to return). Note that in exception handling
         // cases, we will have already cleared the stack walker thread state indicator inside
         // MakeStackwalkerCallback(), so we will be properly cleaned up.
 #if !defined(DACCESS_COMPILE)
-        PVOID pStackWalkThreadOrig = ClrFlsGetValue(TlsIdx_StackWalkerWalkingThread);
+        Thread* pStackWalkThreadOrig = t_pStackWalkerWalkingThread;
 #endif
         SET_THREAD_TYPE_STACKWALKER(this);
 
@@ -1189,13 +1137,6 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     _ASSERTE(pThread  != NULL);
     _ASSERTE(pRegDisp != NULL);
-
-#if !defined(DACCESS_COMPILE)
-    // When the LIGHTUNWIND flag is set, we use the stack walk cache.
-    // On x64, accesses to the stack walk cache are synchronized by
-    // a CrstStatic, which may need to call back into the host.
-    _ASSERTE(CanThisThreadCallIntoHost() || (flags & LIGHTUNWIND) == 0);
-#endif // DACCESS_COMPILE
 
 #ifdef FEATURE_EH_FUNCLETS
     _ASSERTE(!(flags & POPFRAMES));
@@ -1509,7 +1450,6 @@ void StackFrameIterator::ResetCrawlFrame()
 
     m_crawl.pThread = this->m_pThread;
 
-    m_crawl.pSecurityObject = NULL;
     m_crawl.isCachedMethod  = false;
     m_crawl.stackWalkCache.ClearEntry();
 
@@ -2945,18 +2885,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             {
                 m_crawl.isCachedMethod = m_crawl.stackWalkCache.Lookup((UINT_PTR)GetControlPC(m_crawl.pRD));
                 _ASSERTE (m_crawl.isCachedMethod != m_crawl.stackWalkCache.IsEmpty());
-
-                m_crawl.pSecurityObject = NULL;
-#if defined(TARGET_X86)
-                if (m_crawl.isCachedMethod && m_crawl.stackWalkCache.m_CacheEntry.HasSecurityObject())
-                {
-                    // pCallback will use this to save time on GetAddrOfSecurityObject
-                    StackwalkCacheUnwindInfo stackwalkCacheUnwindInfo(&m_crawl.stackWalkCache.m_CacheEntry);
-                    m_crawl.pSecurityObject = EECodeManager::GetAddrOfSecurityObjectFromCachedInfo(
-                                                m_crawl.pRD,
-                                                &stackwalkCacheUnwindInfo);
-                }
-#endif // TARGET_X86
             }
 #endif // DACCESS_COMPILE
 

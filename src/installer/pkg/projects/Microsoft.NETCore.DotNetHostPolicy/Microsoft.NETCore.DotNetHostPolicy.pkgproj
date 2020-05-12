@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <VersionProp>HostPolicyVersion</VersionProp>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,5 +10,4 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildProjectName).props" />
-
 </Project>

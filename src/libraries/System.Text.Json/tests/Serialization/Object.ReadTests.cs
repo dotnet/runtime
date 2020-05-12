@@ -109,7 +109,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueKind.Object, ((JsonElement)array[0]).ValueKind);
 
-            // Scenario described in https://github.com/dotnet/corefx/issues/36169
+            // Scenario described in https://github.com/dotnet/runtime/issues/29021
             array = JsonSerializer.Deserialize<object[]>("[1, false]");
             Assert.Equal(2, array.Length);
             Assert.IsType<JsonElement>(array[0]);
@@ -217,7 +217,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadObjectFail_ReferenceTypeMissingPublicParameterlessConstructor()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<PublicParameterizedConstructorTestClass>(@"{""Name"":""Name!""}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInternalParameterlessCtor>(@"{""Name"":""Name!""}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithPrivateParameterlessCtor>(@"{""Name"":""Name!""}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<CollectionWithoutPublicParameterlessCtor>(@"[""foo"", 1, false]"));
@@ -228,10 +227,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class PublicParameterizedConstructorTestClass
         {
-            public PublicParameterizedConstructorTestClass(string name)
-            {
-                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
-            }
+            public PublicParameterizedConstructorTestClass(string name) { }
 
             private PublicParameterizedConstructorTestClass(int internalId)
             {

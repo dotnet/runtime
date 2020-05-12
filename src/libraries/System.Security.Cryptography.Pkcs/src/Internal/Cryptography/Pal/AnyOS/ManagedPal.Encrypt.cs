@@ -64,7 +64,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 EncryptedContentInfo =
                 {
-                    ContentType = contentInfo.ContentType.Value,
+                    ContentType = contentInfo.ContentType.Value!,
 
                     ContentEncryptionAlgorithm =
                     {

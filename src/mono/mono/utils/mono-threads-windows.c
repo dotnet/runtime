@@ -200,7 +200,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	/* suspended request, this will wait until thread is suspended and thread context has been collected */
 	/* and returned. */
 	CONTEXT context;
-	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 	if (!GetThreadContext (handle, &context)) {
 		result = ResumeThread (handle);
 		g_assert (result == 1);
@@ -289,22 +289,19 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		info->async_target = NULL;
 		info->user_data = NULL;
 
-		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 
 		if (!GetThreadContext (handle, &context)) {
-			THREADS_SUSPEND_DEBUG ("RESUME FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
+			THREADS_SUSPEND_DEBUG ("RESUME FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), GetLastError ());
 			return FALSE;
 		}
 
-		g_assert (context.ContextFlags & CONTEXT_INTEGER);
-		g_assert (context.ContextFlags & CONTEXT_CONTROL);
-
 		mono_monoctx_to_sigctx (&ctx, &context);
 
-		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 		res = SetThreadContext (handle, &context);
 		if (!res) {
-			THREADS_SUSPEND_DEBUG ("RESUME FAILED (SetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
+			THREADS_SUSPEND_DEBUG ("RESUME FAILED (SetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), GetLastError ());
 			return FALSE;
 		}
 #else
@@ -313,11 +310,10 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 	}
 
 	result = ResumeThread (handle);
-	THREADS_SUSPEND_DEBUG ("RESUME %p -> %u\n", GUINT_TO_POINTER (id), result);
+	THREADS_SUSPEND_DEBUG ("RESUME %p -> %u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), result);
 
 	return result != (DWORD)-1;
 }
-
 
 void
 mono_threads_suspend_register (MonoThreadInfo *info)
@@ -366,7 +362,12 @@ mono_threads_suspend_get_abort_signal (void)
 
 #if defined (HOST_WIN32)
 
+#ifndef ENABLE_NETCORE
 #define MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE (1024 * 1024)
+#else
+// Use default stack size on netcore.
+#define MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE 0
+#endif
 
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)

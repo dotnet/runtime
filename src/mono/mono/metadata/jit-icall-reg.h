@@ -77,7 +77,6 @@ MONO_JIT_ICALL (__emul_fconv_to_i4)	\
 MONO_JIT_ICALL (__emul_fconv_to_i8)	\
 MONO_JIT_ICALL (__emul_fconv_to_ovf_i8)	\
 MONO_JIT_ICALL (__emul_fconv_to_ovf_u8)	\
-MONO_JIT_ICALL (__emul_fconv_to_ovf_u8_un)	\
 MONO_JIT_ICALL (__emul_fconv_to_r4)	\
 MONO_JIT_ICALL (__emul_fconv_to_u)	\
 MONO_JIT_ICALL (__emul_fconv_to_u1)	\
@@ -115,7 +114,6 @@ MONO_JIT_ICALL (__emul_op_irem_un) \
 MONO_JIT_ICALL (__emul_rconv_to_i8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_i8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_u8) \
-MONO_JIT_ICALL (__emul_rconv_to_ovf_u8_un) \
 MONO_JIT_ICALL (__emul_rconv_to_u4)	\
 MONO_JIT_ICALL (__emul_rconv_to_u8) \
 MONO_JIT_ICALL (__emul_rrem) \
@@ -130,9 +128,6 @@ MONO_JIT_ICALL (cominterop_set_ccw_object_domain) \
 MONO_JIT_ICALL (cominterop_type_from_handle) \
 MONO_JIT_ICALL (g_free) \
 MONO_JIT_ICALL (interp_to_native_trampoline)	\
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_mrgctx) \
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_this) \
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_vtable) \
 MONO_JIT_ICALL (mini_llvm_init_method) \
 MONO_JIT_ICALL (mini_llvmonly_init_delegate) \
 MONO_JIT_ICALL (mini_llvmonly_init_delegate_virtual) \
@@ -142,7 +137,7 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_iface_call_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
-MONO_JIT_ICALL (mini_llvmonly_throw_missing_method_exception) \
+MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
 MONO_JIT_ICALL (mono_amd64_resume_unwind)	\
 MONO_JIT_ICALL (mono_amd64_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_amd64_throw_corlib_exception)	\
@@ -312,6 +307,7 @@ MONO_JIT_ICALL (mono_throw_method_access) \
 MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
+MONO_JIT_ICALL (mono_trace_tail_method) \
 MONO_JIT_ICALL (mono_upgrade_remote_class_wrapper) \
 MONO_JIT_ICALL (mono_value_copy_internal) \
 MONO_JIT_ICALL (mono_x86_start_gsharedvt_call)	\
@@ -360,20 +356,9 @@ MONO_JIT_ICALLS
 	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
 
-// Indirect mono_jit_icall_info access through a function or macro due to loaded LLVM.
-//
-#if MONO_LLVM_LOADED
-
-MONO_LLVM_INTERNAL MonoJitICallInfos*
-mono_get_jit_icall_info (void);
-
-#else
-
 extern MonoJitICallInfos mono_jit_icall_info;
 
 #define mono_get_jit_icall_info() (&mono_jit_icall_info)
-
-#endif
 
 // Convert MonoJitICallInfo* to an int or enum.
 //

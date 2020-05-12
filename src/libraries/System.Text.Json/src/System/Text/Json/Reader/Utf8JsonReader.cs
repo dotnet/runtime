@@ -1413,7 +1413,7 @@ namespace System.Text.Json
         // https://tools.ietf.org/html/rfc7159#section-6
         private bool TryGetNumber(ReadOnlySpan<byte> data, out int consumed)
         {
-            // TODO: https://github.com/dotnet/corefx/issues/33294
+            // TODO: https://github.com/dotnet/runtime/issues/27837
             Debug.Assert(data.Length > 0);
 
             _numberFormat = default;

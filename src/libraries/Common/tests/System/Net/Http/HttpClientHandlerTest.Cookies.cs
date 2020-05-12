@@ -182,7 +182,11 @@ namespace System.Net.Http.Functional.Tests
 
         private string GetCookieValue(HttpRequestData request)
         {
+#if !NETFRAMEWORK
             if (LoopbackServerFactory.Version < HttpVersion.Version20)
+#else
+            if (LoopbackServerFactory.Version < HttpVersion20.Value)
+#endif
             {
                 // HTTP/1.x must have only one value.
                 return request.GetSingleHeaderValue("Cookie");
@@ -532,7 +536,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // Issue https://github.com/dotnet/corefx/issues/26986
+                // Issue https://github.com/dotnet/runtime/issues/24979
                 // WinHttpHandler does not process the cookie.
                 return;
             }
@@ -603,7 +607,9 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { "ABC", "123", useCookies };
                 yield return new object[] { "Hello", "World", useCookies };
                 yield return new object[] { "foo", "bar", useCookies };
+#if !NETFRAMEWORK
                 yield return new object[] { "Hello World", "value", useCookies };
+#endif
                 yield return new object[] { ".AspNetCore.Session", "RAExEmXpoCbueP_QYM", useCookies };
 
                 yield return new object[]

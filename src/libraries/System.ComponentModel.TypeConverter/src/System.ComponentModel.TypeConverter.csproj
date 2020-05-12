@@ -81,12 +81,10 @@
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
     <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
-    <Compile Include="$(CommonPath)System\Drawing\ColorConverterCommon.cs">
-      <Link>System\Drawing\ColorConverterCommon.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Drawing\ColorTable.cs">
-      <Link>System\Drawing\ColorTable.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Drawing\ColorConverterCommon.cs"
+             Link="System\Drawing\ColorConverterCommon.cs" />
+    <Compile Include="$(CommonPath)System\Drawing\ColorTable.cs"
+             Link="System\Drawing\ColorTable.cs" />
     <Compile Include="System\Drawing\ColorConverter.cs" />
     <Compile Include="System\Drawing\PointConverter.cs" />
     <Compile Include="System\Drawing\RectangleConverter.cs" />
@@ -239,9 +237,8 @@
     <Compile Include="System\ComponentModel\Design\Serialization\RootDesignerSerializerAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
+             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
@@ -252,6 +249,7 @@
     <Reference Include="System.Drawing.Primitives" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.ObjectModel" />

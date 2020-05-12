@@ -390,16 +390,18 @@ namespace System.Threading.Channels.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void AllowSynchronousContinuations_WaitToReadAsync_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations)
+        [MemberData(nameof(ThreeBools))]
+        public void AllowSynchronousContinuations_Reading_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations, bool cancelable, bool waitToReadAsync)
         {
             var c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { AllowSynchronousContinuations = allowSynchronousContinuations });
 
+            CancellationToken ct = cancelable ? new CancellationTokenSource().Token : CancellationToken.None;
+
             int expectedId = Environment.CurrentManagedThreadId;
-            Task r = c.Reader.WaitToReadAsync().AsTask().ContinueWith(_ =>
+            Task t = waitToReadAsync ? (Task)c.Reader.WaitToReadAsync(ct).AsTask() : c.Reader.ReadAsync(ct).AsTask();
+            Task r = t.ContinueWith(_ =>
             {
-                Assert.Equal(allowSynchronousContinuations, expectedId == Environment.CurrentManagedThreadId);
+                Assert.Equal(allowSynchronousContinuations && !cancelable, expectedId == Environment.CurrentManagedThreadId);
             }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
             Assert.True(c.Writer.WriteAsync(42).IsCompletedSuccessfully);

@@ -128,7 +128,7 @@ public:
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL1(INT64,    GetTotalAllocatedBytes, CLR_BOOL precise);
 
-    static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, CLR_BOOL zeroingOptional);
+    static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, INT32 flags);
 
 #ifdef FEATURE_BASICFREEZE
     static
@@ -184,6 +184,7 @@ public:
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
 
         static FCDECL0(void, FCMemoryBarrier);
+        static FCDECL0(void, FCMemoryBarrierLoad);
         static void QCALLTYPE MemoryBarrierProcessWide();
 };
 

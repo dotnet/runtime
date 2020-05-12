@@ -10,12 +10,13 @@
 
 #include <Security/Security.h>
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Generate a signature for algorithms which require only the data hash blob, like DSA and ECDSA.
 
 Follows pal_seckey return conventions.
 */
-DLLEXPORT int32_t AppleCryptoNative_GenerateSignature(
+PALEXPORT int32_t AppleCryptoNative_GenerateSignature(
     SecKeyRef privateKey, uint8_t* pbDataHash, int32_t cbDataHash, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut);
 
 /*
@@ -23,7 +24,7 @@ Generate a signature for algorithms which require the pair of (dataHash, algorit
 
 Follows pal_seckey return conventions.
 */
-DLLEXPORT int32_t AppleCryptoNative_GenerateSignatureWithHashAlgorithm(SecKeyRef privateKey,
+PALEXPORT int32_t AppleCryptoNative_GenerateSignatureWithHashAlgorithm(SecKeyRef privateKey,
                                                                        uint8_t* pbDataHash,
                                                                        int32_t cbDataHash,
                                                                        PAL_HashAlgorithm hashAlgorithm,
@@ -36,7 +37,7 @@ Verify a signature for algorithms which only require the data hash blob, like DS
 Returns 1 when the signature is correct, 0 when it is incorrect, and otherwise
 follows pal_seckey return conventions.
 */
-DLLEXPORT int32_t AppleCryptoNative_VerifySignatureWithHashAlgorithm(SecKeyRef publicKey,
+PALEXPORT int32_t AppleCryptoNative_VerifySignatureWithHashAlgorithm(SecKeyRef publicKey,
                                                                      uint8_t* pbDataHash,
                                                                      int32_t cbDataHash,
                                                                      uint8_t* pbSignature,
@@ -50,9 +51,10 @@ Verify a signature for algorithms which require the pair of (dataHash, algorithm
 Returns 1 when the signature is correct, 0 when it is incorrect, and otherwise
 follows pal_seckey return conventions.
 */
-DLLEXPORT int32_t AppleCryptoNative_VerifySignature(SecKeyRef publicKey,
+PALEXPORT int32_t AppleCryptoNative_VerifySignature(SecKeyRef publicKey,
                                                     uint8_t* pbDataHash,
                                                     int32_t cbDataHash,
                                                     uint8_t* pbSignature,
                                                     int32_t cbSignature,
                                                     CFErrorRef* pErrorOut);
+#endif

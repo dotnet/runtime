@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Asn1
                 throw new ArgumentNullException(nameof(extension));
             }
 
-            ExtnId = extension.Oid;
+            ExtnId = extension.Oid!;
             Critical = extension.Critical;
             ExtnValue = extension.RawData;
         }

@@ -110,7 +110,7 @@ HRESULT CEECompileInfo::Startup(  BOOL fForceDebug,
 
         // When NGEN'ing this call may execute EE code, e.g. the managed code to set up
         // the SharedDomain.
-        hr = InitializeEE(COINITEE_DEFAULT);
+        hr = EnsureEEStarted();
     }
 
     //
@@ -1018,7 +1018,7 @@ void CEECompileInfo::CompressDebugInfo(
 {
     STANDARD_VM_CONTRACT;
 
-    CompressDebugInfo::CompressBoundariesAndVars(pOffsetMapping, iOffsetMapping, pNativeVarInfo, iNativeVarInfo, pDebugInfoBuffer, NULL);
+    CompressDebugInfo::CompressBoundariesAndVars(pOffsetMapping, iOffsetMapping, pNativeVarInfo, iNativeVarInfo, NULL, pDebugInfoBuffer, NULL);
 }
 
 ICorJitHost* CEECompileInfo::GetJitHost()
@@ -1223,11 +1223,11 @@ BOOL CEEPreloader::CanEmbedFunctionEntryPoint(
 
     MethodDesc * pMethod = GetMethod(methodHandle);
 
-    // Methods with native callable attribute are special , since
-    // they are used as LDFTN targets.Native Callable methods
+    // Methods with UnmanagedCallersOnlyAttribute are special, since
+    // they are used as LDFTN targets. UnmanagedCallersOnly methods
     // uses the same code path as reverse pinvoke and embedding them
     // in an ngen image require saving the reverse pinvoke stubs.
-    if (pMethod->HasNativeCallableAttribute())
+    if (pMethod->HasUnmanagedCallersOnlyAttribute())
         return FALSE;
 
     return TRUE;
@@ -1272,12 +1272,12 @@ BOOL CEEPreloader::DoesMethodNeedRestoringBeforePrestubIsRun(
     return FALSE;
 }
 
-BOOL CEECompileInfo::IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle)
+BOOL CEECompileInfo::IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
 
     MethodDesc * pMethod = GetMethod(handle);
-    return pMethod->HasNativeCallableAttribute();
+    return pMethod->HasUnmanagedCallersOnlyAttribute();
 }
 
 BOOL CEEPreloader::CanSkipDependencyActivation(CORINFO_METHOD_HANDLE   context,
@@ -3024,7 +3024,7 @@ HRESULT NGenModulePdbWriter::WritePDBData()
         if (strcmp((const char *)&section[sectionIndex].Name[0], ".text") == 0) {
             _ASSERTE((iCodeSection == 0) && (pCodeBase == NULL));
             iCodeSection = (USHORT)(sectionIndex + 1);
-            pCodeBase = (BYTE *)section[sectionIndex].VirtualAddress;
+            pCodeBase = (BYTE *)(size_t)section[sectionIndex].VirtualAddress;
         }
 
         // In order to support the DIA RVA-to-lines API against the PDB we're

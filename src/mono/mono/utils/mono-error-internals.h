@@ -6,6 +6,7 @@
 #define __MONO_ERROR_INTERNALS_H__
 
 #include <mono/metadata/object-forward.h>
+#include <mono/utils/mono-forward.h>
 #include "mono/utils/mono-compiler.h"
 
 /*Keep in sync with MonoError*/
@@ -32,7 +33,7 @@ typedef union _MonoErrorInternal {
 			/* Valid if error_code == MONO_ERROR_EXCEPTION_INSTANCE.
 			 * Generic error specified by a managed instance.
 			 */
-			uint32_t instance_handle;
+			MonoGCHandle instance_handle;
 		} exn;
 		const char *full_message;
 		const char *full_message_with_fields;

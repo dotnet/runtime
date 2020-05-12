@@ -366,8 +366,7 @@ namespace System.Threading.Tasks
                 for (int i = 0; i < m_maxItemsPerTask; i++)
                 {
                     // Get the next available exclusive task.  If we can't find one, bail.
-                    Task? exclusiveTask;
-                    if (!m_exclusiveTaskScheduler.m_tasks.TryDequeue(out exclusiveTask)) break;
+                    if (!m_exclusiveTaskScheduler.m_tasks.TryDequeue(out Task? exclusiveTask)) break;
 
                     // Execute the task.  If the scheduler was previously faulted,
                     // this task could have been faulted when it was queued; ignore such tasks.
@@ -414,8 +413,7 @@ namespace System.Threading.Tasks
                 for (int i = 0; i < m_maxItemsPerTask; i++)
                 {
                     // Get the next available concurrent task.  If we can't find one, bail.
-                    Task? concurrentTask;
-                    if (!m_concurrentTaskScheduler.m_tasks.TryDequeue(out concurrentTask)) break;
+                    if (!m_concurrentTaskScheduler.m_tasks.TryDequeue(out Task? concurrentTask)) break;
 
                     // Execute the task.  If the scheduler was previously faulted,
                     // this task could have been faulted when it was queued; ignore such tasks.

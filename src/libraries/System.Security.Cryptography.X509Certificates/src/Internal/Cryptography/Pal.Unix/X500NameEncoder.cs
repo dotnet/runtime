@@ -215,14 +215,14 @@ namespace Internal.Cryptography.Pal
             // 7 + 6 = 13, round up to the nearest power-of-two.
             const int InitalRdnSize = 16;
             List<byte[]> encodedSets = new List<byte[]>(InitalRdnSize);
-            char[] chars = stringForm.ToCharArray();
+            ReadOnlySpan<char> chars = stringForm;
 
             int pos;
             int end = chars.Length;
 
             int tagStart = -1;
             int tagEnd = -1;
-            Oid tagOid = null;
+            Oid? tagOid = null;
             int valueStart = -1;
             int valueEnd = -1;
             bool hadEscapedQuote = false;
@@ -403,7 +403,7 @@ namespace Internal.Cryptography.Pal
                             Debug.Assert(valueEnd != -1);
                             Debug.Assert(valueStart != -1);
 
-                            encodedSets.Add(ParseRdn(tagOid, chars, valueStart, valueEnd, hadEscapedQuote));
+                            encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote));
                             tagOid = null;
                             valueStart = -1;
                             valueEnd = -1;
@@ -472,7 +472,7 @@ namespace Internal.Cryptography.Pal
                     Debug.Assert(valueStart != -1);
                     Debug.Assert(valueEnd != -1);
 
-                    encodedSets.Add(ParseRdn(tagOid, chars, valueStart, valueEnd, hadEscapedQuote));
+                    encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote));
                     break;
 
                 // If the entire string was empty, or ended in a dnSeparator.
@@ -511,17 +511,11 @@ namespace Internal.Cryptography.Pal
             return new Oid(stringForm.Substring(tagStart, length));
         }
 
-        private static byte[] ParseRdn(Oid tagOid, char[] chars, int valueStart, int valueEnd, bool hadEscapedQuote)
+        private static byte[] ParseRdn(Oid tagOid, ReadOnlySpan<char> chars, bool hadEscapedQuote)
         {
-            ReadOnlySpan<char> charValue;
-
             if (hadEscapedQuote)
             {
-                charValue = ExtractValue(chars, valueStart, valueEnd);
-            }
-            else
-            {
-                charValue = new ReadOnlySpan<char>(chars, valueStart, valueEnd - valueStart);
+                chars = ExtractValue(chars);
             }
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
@@ -543,20 +537,20 @@ namespace Internal.Cryptography.Pal
                     try
                     {
                         // An email address with an invalid value will throw.
-                        writer.WriteCharacterString(UniversalTagNumber.IA5String, charValue);
+                        writer.WriteCharacterString(UniversalTagNumber.IA5String, chars);
                     }
                     catch (EncoderFallbackException)
                     {
                         throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
                     }
                 }
-                else if (IsValidPrintableString(charValue))
+                else if (IsValidPrintableString(chars))
                 {
-                    writer.WriteCharacterString(UniversalTagNumber.PrintableString, charValue);
+                    writer.WriteCharacterString(UniversalTagNumber.PrintableString, chars);
                 }
                 else
                 {
-                    writer.WriteCharacterString(UniversalTagNumber.UTF8String, charValue);
+                    writer.WriteCharacterString(UniversalTagNumber.UTF8String, chars);
                 }
 
                 writer.PopSequence();
@@ -580,18 +574,13 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static char[] ExtractValue(char[] chars, int valueStart, int valueEnd)
+        private static char[] ExtractValue(ReadOnlySpan<char> chars)
         {
-            // The string is guaranteed to be between ((valueEnd - valueStart) / 2) (all quotes) and
-            // (valueEnd - valueStart - 1) (one escaped quote)
-            List<char> builder = new List<char>(valueEnd - valueStart - 1);
-
+            var builder = new List<char>(chars.Length);
             bool skippedQuote = false;
 
-            for (int i = valueStart; i < valueEnd; i++)
+            foreach (char c in chars)
             {
-                char c = chars[i];
-
                 if (c == '"' && !skippedQuote)
                 {
                     skippedQuote = true;

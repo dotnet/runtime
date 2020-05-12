@@ -5,143 +5,100 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusions Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs">
-      <Link>CommonTest\System\Net\SslProtocolSupport.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
-      <Link>Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs">
-      <Link>Common\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\CharArrayHelpers.cs">
-      <Link>Common\System\CharArrayHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\StringExtensions.cs">
-      <Link>Common\System\StringExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs">
-      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs">
-      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\NoWriteNoSeekStreamContent.cs">
-      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs">
-      <Link>Common\System\Net\Http\WinInetProxyHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Windows.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
-      <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
-      <Link>Common\System\Text\SimpleRegex.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\RendezvousAwaitable.cs">
-      <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
-      <Link>ProductionCode\WinHttpAuthHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpCertificateHelper.cs">
-      <Link>ProductionCode\WinHttpCertificateHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs">
-      <Link>ProductionCode\WinHttpChannelBinding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs">
-      <Link>ProductionCode\WinHttpCookieContainerAdapter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpException.cs">
-      <Link>ProductionCode\WinHttpException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpHandler.cs">
-      <Link>ProductionCode\WinHttpHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestCallback.cs">
-      <Link>ProductionCode\WinHttpRequestCallback.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestState.cs">
-      <Link>ProductionCode\WinHttpRequestState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestStream.cs">
-      <Link>ProductionCode\WinHttpRequestStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseHeaderReader.cs">
-      <Link>ProductionCode\WinHttpResponseHeaderReader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseParser.cs">
-      <Link>ProductionCode\WinHttpResponseParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseStream.cs">
-      <Link>ProductionCode\WinHttpResponseStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpTraceHelper.cs">
-      <Link>ProductionCode\WinHttpTraceHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs">
-      <Link>ProductionCode\WinHttpTransportContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs">
-      <Link>ProductionCode\HttpWindowsProxy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs">
-      <Link>ProductionCode\FailedProxyCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs">
-      <Link>ProductionCode\IMultiWebProxy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\MultiProxy.cs">
-      <Link>ProductionCode\MultiProxy.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
+             Link="CommonTest\System\Net\SslProtocolSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
+             Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs"
+             Link="Common\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"
+             Link="Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs"
+             Link="Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
+    <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
+             Link="Common\System\CharArrayHelpers.cs" />
+    <Compile Include="$(CommonPath)System\StringExtensions.cs"
+             Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
+             Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
+             Link="Common\System\Net\HttpKnownHeaderNames.cs" />
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
+             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
+    <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs"
+             Link="Common\System\Net\HttpStatusDescription.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
+             Link="Common\System\Net\UriScheme.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
+             Link="Common\System\Net\SecurityProtocol.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
+             Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs"
+             Link="Common\System\Net\Http\WinInetProxyHelper.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs"
+             Link="Common\System\Net\Security\CertificateHelper.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Windows.cs"
+             Link="Common\System\Net\Security\CertificateHelper.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\ExceptionServices\ExceptionStackTrace.cs"
+             Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
+    <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
+             Link="Common\System\Text\SimpleRegex.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\RendezvousAwaitable.cs"
+             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="..\..\src\System\Net\Http\NoWriteNoSeekStreamContent.cs"
+             Link="ProductionCode\NoWriteNoSeekStreamContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs"
+             Link="ProductionCode\WinHttpAuthHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpCertificateHelper.cs"
+             Link="ProductionCode\WinHttpCertificateHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs"
+             Link="ProductionCode\WinHttpChannelBinding.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs"
+             Link="ProductionCode\WinHttpCookieContainerAdapter.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpException.cs"
+             Link="ProductionCode\WinHttpException.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpHandler.cs"
+             Link="ProductionCode\WinHttpHandler.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestCallback.cs"
+             Link="ProductionCode\WinHttpRequestCallback.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestState.cs"
+             Link="ProductionCode\WinHttpRequestState.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestStream.cs"
+             Link="ProductionCode\WinHttpRequestStream.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseHeaderReader.cs"
+             Link="ProductionCode\WinHttpResponseHeaderReader.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseParser.cs"
+             Link="ProductionCode\WinHttpResponseParser.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseStream.cs"
+             Link="ProductionCode\WinHttpResponseStream.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpTraceHelper.cs"
+             Link="ProductionCode\WinHttpTraceHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs"
+             Link="ProductionCode\WinHttpTransportContext.cs" />
+    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs"
+             Link="ProductionCode\HttpWindowsProxy.cs" />
+    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs"
+             Link="ProductionCode\FailedProxyCache.cs" />
+    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs"
+             Link="ProductionCode\IMultiWebProxy.cs" />
+    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\MultiProxy.cs"
+             Link="ProductionCode\MultiProxy.cs" />
     <Compile Include="APICallHistory.cs" />
     <Compile Include="ClientCertificateHelper.cs" />
     <Compile Include="ClientCertificateScenarioTest.cs" />

@@ -1082,7 +1082,7 @@ compare_by_interval_start_pos_func (gconstpointer a, gconstpointer b)
 #if 0
 #define LSCAN_DEBUG(a) do { a; } while (0)
 #else
-#define LSCAN_DEBUG(a)
+#define LSCAN_DEBUG(a) do { } while (0) /* non-empty to avoid warning */
 #endif
 
 static gint32*
@@ -2866,7 +2866,6 @@ insert_safepoints (MonoCompile *cfg)
 
 	g_assert (mini_safepoints_enabled ());
 
-#ifndef MONO_LLVM_LOADED
 	if (COMPILE_LLVM (cfg)) {
 		if (!cfg->llvm_only) {
 			/* We rely on LLVM's safepoints insertion capabilities. */
@@ -2875,7 +2874,6 @@ insert_safepoints (MonoCompile *cfg)
 			return;
 		}
 	}
-#endif
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
@@ -3051,6 +3049,9 @@ init_backend (MonoBackend *backend)
 static gboolean
 is_simd_supported (MonoCompile *cfg)
 {
+#ifdef DISABLE_SIMD
+    return FALSE;
+#endif
 	// FIXME: Clean this up
 #ifdef TARGET_WASM
 	if ((mini_get_cpu_features (cfg) & MONO_CPU_WASM_SIMD) == 0)
@@ -3177,6 +3178,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->interp = (flags & JIT_FLAG_INTERP) != 0;
 	cfg->use_current_cpu = (flags & JIT_FLAG_USE_CURRENT_CPU) != 0;
 	cfg->self_init = (flags & JIT_FLAG_SELF_INIT) != 0;
+	cfg->code_exec_only = (flags & JIT_FLAG_CODE_EXEC_ONLY) != 0;
 	cfg->backend = current_backend;
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
@@ -4169,6 +4171,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	mini_patch_llvm_jit_callees (target_domain, method, code);
 #ifndef DISABLE_JIT
 	mono_emit_jit_map (jinfo);
+	mono_emit_jit_dump (jinfo, code);
 #endif
 	mono_domain_unlock (target_domain);
 
@@ -4241,7 +4244,14 @@ mono_llvm_emit_aot_file_info (MonoAotFileInfo *info, gboolean has_jitted_code)
 	g_assert_not_reached ();
 }
 
-void mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
+gpointer
+mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
+{
+	g_assert_not_reached ();
+}
+
+gpointer
+mono_llvm_emit_aot_data_aligned (const char *symbol, guint8 *data, int data_len, int align)
 {
 	g_assert_not_reached ();
 }
@@ -4335,12 +4345,17 @@ mini_get_cpu_features (MonoCompile* cfg)
 #if !defined(MONO_CROSS_COMPILE)
 	if (!cfg->compile_aot || cfg->use_current_cpu) {
 		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
-#if defined(ENABLE_LLVM) && !defined(MONO_LLVM_LOADED)
+#if defined(ENABLE_LLVM)
 		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_X86)
 		features = mono_arch_get_cpu_features ();
 #endif
 	}
+#endif
+
+#if defined(TARGET_ARM64)
+	// All Arm64 devices have this set
+	features |= MONO_CPU_ARM64_BASE; 
 #endif
 
 	// apply parameters passed via -mattr

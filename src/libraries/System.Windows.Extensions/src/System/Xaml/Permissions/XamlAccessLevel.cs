@@ -33,8 +33,8 @@ namespace System.Xaml.Permissions
         public static XamlAccessLevel PrivateAccessTo(string assemblyQualifiedTypeName)
         {
             int nameBoundary = assemblyQualifiedTypeName.IndexOf(',');
-            string typeName = assemblyQualifiedTypeName.Substring(0, nameBoundary).Trim();
-            string assemblyFullName = assemblyQualifiedTypeName.Substring(nameBoundary + 1).Trim();
+            string typeName = assemblyQualifiedTypeName.AsSpan(0, nameBoundary).Trim().ToString();
+            string assemblyFullName = assemblyQualifiedTypeName.AsSpan(nameBoundary + 1).Trim().ToString();
             AssemblyName assemblyName = new AssemblyName(assemblyFullName);
             return new XamlAccessLevel(assemblyName.FullName, typeName);
         }

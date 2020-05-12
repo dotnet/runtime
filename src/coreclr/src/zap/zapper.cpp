@@ -668,11 +668,6 @@ Zapper::~Zapper()
             _ASSERTE(m_hJitLib != NULL);
             _ASSERTE(m_pJitCompiler != NULL);
 
-            // We're unloading the fallback JIT dll, so clear the fallback shim. We do this even though
-            // we'll unload the main JIT below, in case there are other places that have loaded the main JIT
-            // but not the fallback JIT (note that LoadLibrary reference counts the number of loads that have been done).
-            m_pJitCompiler->setRealJit(nullptr);
-
             FreeLibrary(m_hJitLegacy);
         }
 #endif
@@ -1119,7 +1114,7 @@ IMetaDataAssemblyEmit * Zapper::CreateAssemblyEmitter()
 
     // Hardwire the metadata version to be the current runtime version so that the ngen image
     // does not change when the directory runtime is installed in different directory (e.g. v2.0.x86chk vs. v2.0.80826).
-    BSTRHolder strVersion(SysAllocString(W("v")VER_PRODUCTVERSION_NO_QFE_STR_L));
+    BSTRHolder strVersion(SysAllocString(CLR_METADATA_VERSION_L));
     VARIANT versionOption;
     V_VT(&versionOption) = VT_BSTR;
     V_BSTR(&versionOption) = strVersion;
@@ -1185,10 +1180,18 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
 
-    // .NET Core requires SSE2.
-    m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
-
 #endif // TARGET_X86
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // .NET Core requires SSE2.
+    m_pOpt->m_compilerFlags.Set(InstructionSet_X86Base);
+    m_pOpt->m_compilerFlags.Set(InstructionSet_SSE);
+    m_pOpt->m_compilerFlags.Set(InstructionSet_SSE2);
+#endif
+#if defined(TARGET_ARM64)
+    m_pOpt->m_compilerFlags.Set(InstructionSet_ArmBase);
+    m_pOpt->m_compilerFlags.Set(InstructionSet_AdvSimd);
+#endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // If we're crossgenning CoreLib, allow generating non-VEX intrinsics. The generated code might
@@ -1203,21 +1206,23 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3);
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41);
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42);
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
-        // Leaving out CORJIT_FLAGS::CORJIT_FLAG_USE_AVX, CORJIT_FLAGS::CORJIT_FLAG_USE_FMA
-        // CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2, CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1,
-        // CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2 on purpose - these require VEX encodings
+        m_pOpt->m_compilerFlags.Set(InstructionSet_AES);
+        m_pOpt->m_compilerFlags.Set(InstructionSet_PCLMULQDQ);
+        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE3);
+        m_pOpt->m_compilerFlags.Set(InstructionSet_SSSE3);
+        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE41);
+        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE42);
+        m_pOpt->m_compilerFlags.Set(InstructionSet_POPCNT);
+        // Leaving out InstructionSet_AVX, InstructionSet_FMA, InstructionSet_AVX2,
+        // InstructionSet_BMI1, InstructionSet_BMI2 on purpose - these require VEX encodings
         // and the JIT doesn't support generating code for methods with mixed encodings.
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
+        // Also leaving out InstructionSet_LZCNT because BSR from InstructionSet_X86Base
+        // is used as a fallback in CoreLib and doesn't require an IsSupported check.
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    m_pOpt->m_compilerFlags.Set64BitInstructionSetVariants();
+    m_pOpt->m_compilerFlags.EnsureValidInstructionSetSupport();
 
     if (   m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO)
         && m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE)

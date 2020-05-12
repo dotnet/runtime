@@ -13,7 +13,6 @@
 #include "stdafx.h"
 #include "debugdebugger.h"
 #include "../inc/common.h"
-#include "perflog.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
 #include "../../dlls/mscorrc/resource.h"
 
@@ -1752,7 +1751,7 @@ void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
     // The debugger can then use ReadProcessMemory to read through this array.
     ULONG_PTR rgData [] = {
         CLRDBG_EXCEPTION_DATA_CHECKSUM,
-        (ULONG_PTR) g_pMSCorEE,
+        (ULONG_PTR) g_hThisInst,
         (ULONG_PTR) pManagedEvent
     };
 
@@ -3634,7 +3633,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
 
     CodeVersionManager *pCodeVersionManager = module->GetCodeVersionManager();
     {
-        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(module, mdMeth);
         if (!ilCodeVersion.IsDefaultVersion())
         {
@@ -5388,6 +5387,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
     // If it doesn't exist, create it.
     if (dmod == NULL)
     {
+        LOG((LF_CORDB, LL_INFO1000, "D::LOCM dmod for m=0x%x ad=0x%x not found, creating.\n", pModule, pAppDomain));
         HRESULT hr = S_OK;
         EX_TRY
         {
@@ -5402,7 +5402,8 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
     // The module must be in the AppDomain that was requested
     _ASSERTE( (dmod == NULL) || (dmod->GetAppDomain() == pAppDomain) );
 
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=0x%x ad=0x%x -> dm=0x%x\n", pModule, pAppDomain, dmod));
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=0x%x ad=0x%x -> dm=0x%x(Mod=0x%x, DomFile=0x%x, AD=0x%x)\n",
+        pModule, pAppDomain, dmod, dmod->GetRuntimeModule(), dmod->GetDomainFile(), dmod->GetAppDomain()));
     return dmod;
 }
 
@@ -5668,7 +5669,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     // Ignore any notification exceptions sent from code:Debugger.SendRawEvent.
     // This is not a common case, but could happen in some cases described
     // in SendRawEvent. Either way, Left-Side and VM should just ignore these.
-    if (IsEventDebuggerNotification(exception, PTR_TO_CORDB_ADDRESS(g_pMSCorEE)))
+    if (IsEventDebuggerNotification(exception, PTR_TO_CORDB_ADDRESS(g_hThisInst)))
     {
         return true;
     }
@@ -9432,73 +9433,6 @@ void Debugger::SendCreateAppDomainEvent(AppDomain * pRuntimeAppDomain)
 }
 
 
-
-
-//
-// SendExitAppDomainEvent is called when an app domain is destroyed.
-//
-void Debugger::SendExitAppDomainEvent(AppDomain* pRuntimeAppDomain)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    LOG((LF_CORDB, LL_INFO100, "D::EAD: Exit AppDomain 0x%08x.\n",
-        pRuntimeAppDomain));
-
-    STRESS_LOG2(LF_CORDB, LL_INFO10000, "D::EAD: AppDomain exit:%#08x, %#08x\n",
-            pRuntimeAppDomain, CORDebuggerAttached());
-
-    Thread *thread = g_pEEInterface->GetThread();
-    // Prevent other Runtime threads from handling events.
-    SENDIPCEVENT_BEGIN(this, thread);
-
-    if (CORDebuggerAttached())
-    {
-        if (pRuntimeAppDomain->IsDefaultDomain() )
-        {
-            // The Debugger expects to never get an unload event for the default Domain.
-            // Currently we should never get here because g_fProcessDetach will be true by
-            // the time this method is called.  However, we'd like to know if this ever changes
-            _ASSERTE(!"Trying to deliver notification of unload for default domain" );
-            return;
-        }
-
-        // Send the exit appdomain event to the Right Side.
-        DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce,
-                     DB_IPCE_EXIT_APP_DOMAIN,
-                     thread,
-                     pRuntimeAppDomain);
-        m_pRCThread->SendIPCEvent();
-
-        // Delete any left over modules for this appdomain.
-        // Note that we're doing this under the lock.
-        if (m_pModules != NULL)
-        {
-            DebuggerDataLockHolder ch(this);
-            m_pModules->RemoveModules(pRuntimeAppDomain);
-        }
-
-        // Stop all Runtime threads
-        TrapAllRuntimeThreads();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::EAD: Skipping SendIPCEvent because RS detached."));
-    }
-
-    SENDIPCEVENT_END;
-}
-
-
-
 //
 // LoadAssembly is called when a new Assembly gets loaded.
 //
@@ -10010,8 +9944,10 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         }
         _ASSERTE(module != NULL);
 
-        STRESS_LOG3(LF_CORDB, LL_INFO10000, "D::UM: Unloading Mod:%#08x, %#08x, %#08x\n",
-            pRuntimeModule, pAppDomain, pRuntimeModule->IsIStream());
+        STRESS_LOG6(LF_CORDB, LL_INFO10000,
+            "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
+            pRuntimeModule, pRuntimeModule->GetDomainFile(), pRuntimeModule->IsIStream(),
+            module, module->GetRuntimeModule(), module->GetDomainFile());
 
         // Note: the appdomain the module was loaded in must match the appdomain we're unloading it from. If it doesn't,
         // then we've either found the wrong DebuggerModule in LookupModule or we were passed bad data.
@@ -12427,7 +12363,7 @@ void Debugger::GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress)
     // If its not a stub, then maybe its an address in mscoree?
     if (result == false)
     {
-        result = (IsIPInModule(g_pMSCorEE, (PCODE)stubAddress) == TRUE);
+        result = (IsIPInModule(g_hThisInst, (PCODE)stubAddress) == TRUE);
     }
 
     // This is a synchronous event (reply required)
@@ -14011,7 +13947,7 @@ void GenericHijackFuncHelper()
     if (pEEThread != NULL)
     {
         // We've got a Thread ptr, so get the continue type out of the thread's debugger word.
-        continueType = (DWORD)threadDebuggerWord;
+        continueType = (DWORD)(size_t) threadDebuggerWord;
 
         _ASSERTE(pEEThread->GetInteropDebuggingHijacked());
         pEEThread->SetInteropDebuggingHijacked(FALSE);
@@ -14911,11 +14847,9 @@ ErrExit:
     // UnLock the list
     m_pAppDomainCB->Unlock();
 
-    // send event to debugger if one is attached
-    if (CORDebuggerAttached())
-    {
-        SendExitAppDomainEvent(pAppDomain);
-    }
+    //
+    // The Debugger expects to never get an unload event for the default AppDomain.
+    //
 
     return hr;
 }
@@ -15306,6 +15240,15 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     {
         // SP is not aligned, we cannot do a FuncEval here
         LOG((LF_CORDB, LL_INFO1000, "D::FES SP is unaligned"));
+        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+    }
+
+    if (MethodDescBackpatchInfoTracker::IsLockOwnedByAnyThread())
+    {
+        // A thread may have suspended for the debugger while holding the slot backpatching lock while trying to enter
+        // cooperative GC mode. If the FuncEval calls a method that is eligible for slot backpatching (virtual or interface
+        // methods that are eligible for tiering), the FuncEval may deadlock on trying to acquire the same lock. Fail the
+        // FuncEval to avoid the issue.
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 
@@ -16563,19 +16506,14 @@ void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numberOfBytes)
     return ChangePageUsage(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
 }
 
-int DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
+void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
 {
     ASSERT(addr != NULL);
 
     CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
 
     DebuggerHeapExecutableMemoryPage *pageToFreeIn = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->data.startOfPage;
-
-    if (pageToFreeIn == NULL)
-    {
-        ASSERT(!"Couldn't locate page in which to free!");
-        return -1;
-    }
+    _ASSERTE(pageToFreeIn != NULL);
 
     int chunkNum = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->data.chunkNumber;
 
@@ -16583,8 +16521,6 @@ int DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
     ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % 64 == 0);
 
     ChangePageUsage(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
-
-    return 0;
 }
 
 DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
@@ -16677,7 +16613,7 @@ void DebuggerHeap::Destroy()
         m_hHeap = NULL;
     }
 #endif
-#ifdef TARGET_UNIX
+#ifndef HOST_WINDOWS
     if (m_execMemAllocator != NULL)
     {
         delete m_execMemAllocator;
@@ -16717,10 +16653,6 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
         return S_OK;
     }
 
-#ifndef HEAP_CREATE_ENABLE_EXECUTE
-#define HEAP_CREATE_ENABLE_EXECUTE      0x00040000      // winnt create heap with executable pages
-#endif
-
     // Create a standard, grow-able, thread-safe heap.
     DWORD dwFlags = ((fExecutable == TRUE)? HEAP_CREATE_ENABLE_EXECUTE : 0);
     m_hHeap = ::HeapCreate(dwFlags, 0, 0);
@@ -16730,7 +16662,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
     }
 #endif
 
-#ifdef TARGET_UNIX
+#ifndef HOST_WINDOWS
     m_execMemAllocator = new (nothrow) DebuggerHeapExecutableMemoryAllocator();
     ASSERT(m_execMemAllocator != NULL);
     if (m_execMemAllocator == NULL)
@@ -16820,32 +16752,25 @@ void *DebuggerHeap::Alloc(DWORD size)
     ret = ::HeapAlloc(m_hHeap, HEAP_ZERO_MEMORY, size);
 #else // USE_INTEROPSAFE_HEAP
 
-    bool allocateOnHeap = true;
-    HANDLE hExecutableHeap = NULL;
+#ifdef HOST_WINDOWS
+    HANDLE hExecutableHeap  = ClrGetProcessExecutableHeap();
 
-#ifdef TARGET_UNIX
+    if (hExecutableHeap == NULL)
+    {
+        return NULL;
+    }
+
+    ret = ::HeapAlloc(hExecutableHeap, 0, size);
+#else // HOST_WINDOWS
     if (m_fExecutable)
     {
-        allocateOnHeap = false;
         ret = m_execMemAllocator->Allocate(size);
     }
     else
     {
-        hExecutableHeap  = ClrGetProcessHeap();
+        ret = malloc(size);
     }
-#else // TARGET_UNIX
-    hExecutableHeap  = ClrGetProcessExecutableHeap();
-#endif
-
-    if (allocateOnHeap)
-    {
-        if (hExecutableHeap == NULL)
-        {
-            return NULL;
-        }
-
-        ret = ClrHeapAlloc(hExecutableHeap, NULL, S_SIZE_T(size));
-    }
+#endif // HOST_WINDOWS
 
 #endif // USE_INTEROPSAFE_HEAP
 
@@ -16876,7 +16801,7 @@ void *DebuggerHeap::Realloc(void *pMem, DWORD newSize, DWORD oldSize)
     _ASSERTE(newSize != 0);
     _ASSERTE(oldSize != 0);
 
-#if defined(USE_INTEROPSAFE_HEAP) && !defined(USE_INTEROPSAFE_CANARY) && !defined(TARGET_UNIX)
+#if defined(USE_INTEROPSAFE_HEAP) && !defined(USE_INTEROPSAFE_CANARY) && defined(HOST_WINDOWS)
     // No canaries in this case.
     // Call into realloc.
     void *ret;
@@ -16929,23 +16854,20 @@ void DebuggerHeap::Free(void *pMem)
 #else
     if (pMem != NULL)
     {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
         HANDLE hProcessExecutableHeap  = ClrGetProcessExecutableHeap();
         _ASSERTE(hProcessExecutableHeap != NULL);
-        ClrHeapFree(hProcessExecutableHeap, NULL, pMem);
-#else // !TARGET_UNIX
-        if(!m_fExecutable)
+        ::HeapFree(hProcessExecutableHeap, NULL, pMem);
+#else // HOST_WINDOWS
+        if (m_fExecutable)
         {
-            HANDLE hProcessHeap  = ClrGetProcessHeap();
-            _ASSERTE(hProcessHeap != NULL);
-            ClrHeapFree(hProcessHeap, NULL, pMem);
+            m_execMemAllocator->Free(pMem);
         }
         else
         {
-            INDEBUG(int ret =) m_execMemAllocator->Free(pMem);
-            _ASSERTE(ret == 0);
+            free(pMem);
         }
-#endif // !TARGET_UNIX
+#endif // HOST_WINDOWS
     }
 #endif
 }

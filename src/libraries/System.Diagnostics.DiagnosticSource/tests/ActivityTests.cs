@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -84,9 +85,9 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("world", anotherActivity.GetBaggageItem("hello"));
                     Assert.Equal(4, anotherActivity.Baggage.Count());
                     Assert.Equal(new KeyValuePair<string, string>("hello", "world"), anotherActivity.Baggage.First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(1).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(1).First());
                     Assert.Equal(new KeyValuePair<string, string>(Key + 1, Value + 1), anotherActivity.Baggage.Skip(2).First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(3).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(3).First());
                 }
                 finally
                 {
@@ -115,8 +116,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(activity, activity.AddTag(Key + i, Value + i));
                 List<KeyValuePair<string, string>> tags = activity.Tags.ToList();
                 Assert.Equal(i + 1, tags.Count);
-                Assert.Equal(tags[tags.Count - i - 1].Key, Key + i);
-                Assert.Equal(tags[tags.Count - i - 1].Value, Value + i);
+                Assert.Equal(tags[i].Key, Key + i);
+                Assert.Equal(tags[i].Value, Value + i);
             }
         }
 
@@ -1190,7 +1191,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [OuterLoop("https://github.com/dotnet/corefx/issues/23072")]
+        [OuterLoop("https://github.com/dotnet/runtime/issues/23104")]
         public void DiagnosticSourceStartStop()
         {
             using (DiagnosticListener listener = new DiagnosticListener("Testing"))
@@ -1345,6 +1346,88 @@ namespace System.Diagnostics.Tests
 
             Activity.Current = stopped;
             Assert.Same(started, Activity.Current);
+        }
+
+        [Fact]
+        public void TestDispose()
+        {
+            Activity current = Activity.Current;
+            using (Activity activity = new Activity("Mine").Start())
+            {
+                Assert.Same(activity, Activity.Current);
+                Assert.Same(current, activity.Parent);
+            }
+
+            Assert.Same(current, Activity.Current);
+        }
+
+        [Fact]
+        public void TestCustomProperties()
+        {
+            Activity activity = new Activity("Custom");
+            activity.SetCustomProperty("P1", "Prop1");
+            activity.SetCustomProperty("P2", "Prop2");
+            activity.SetCustomProperty("P3", null);
+
+            Assert.Equal("Prop1", activity.GetCustomProperty("P1"));
+            Assert.Equal("Prop2", activity.GetCustomProperty("P2"));
+            Assert.Null(activity.GetCustomProperty("P3"));
+            Assert.Null(activity.GetCustomProperty("P4"));
+
+            activity.SetCustomProperty("P1", "Prop5");
+            Assert.Equal("Prop5", activity.GetCustomProperty("P1"));
+
+        }
+
+        [Fact]
+        public void TestKind()
+        {
+            Activity activity = new Activity("Kind");
+            Assert.Equal(ActivityKind.Internal, activity.Kind);
+        }
+
+        [Fact]
+        public void TestDisplayName()
+        {
+            Activity activity = new Activity("Op1");
+            Assert.Equal("Op1", activity.OperationName);
+            Assert.Equal("Op1", activity.DisplayName);
+
+            activity.DisplayName = "Op2";
+            Assert.Equal("Op1", activity.OperationName);
+            Assert.Equal("Op2", activity.DisplayName);
+        }
+
+        [Fact]
+        public void TestEvent()
+        {
+            Activity activity = new Activity("EventTest");
+            Assert.Equal(0, activity.Events.Count());
+
+            DateTimeOffset ts1 = DateTimeOffset.UtcNow;
+            DateTimeOffset ts2 = ts1.AddMinutes(1);
+
+            Assert.True(object.ReferenceEquals(activity, activity.AddEvent(new ActivityEvent("Event1", ts1))));
+            Assert.True(object.ReferenceEquals(activity, activity.AddEvent(new ActivityEvent("Event2", ts2))));
+
+            Assert.Equal(2, activity.Events.Count());
+            Assert.Equal("Event1", activity.Events.ElementAt(0).Name);
+            Assert.Equal(ts1, activity.Events.ElementAt(0).Timestamp);
+            Assert.Equal(0, activity.Events.ElementAt(0).Attributes.Count());
+
+            Assert.Equal("Event2", activity.Events.ElementAt(1).Name);
+            Assert.Equal(ts2, activity.Events.ElementAt(1).Timestamp);
+            Assert.Equal(0, activity.Events.ElementAt(1).Attributes.Count());
+        }
+
+        [Fact]
+        public void TestIsAllDataRequested()
+        {
+            // Activity constructor allways set IsAllDataRequested to true for compatability.
+            Activity a1 = new Activity("a1");
+            Assert.True(a1.IsAllDataRequested);
+            Assert.True(object.ReferenceEquals(a1, a1.AddTag("k1", "v1")));
+            Assert.Equal(1, a1.Tags.Count());
         }
 
         public void Dispose()

@@ -5,7 +5,7 @@
 <#@ import namespace="System" #>
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Runtime.InteropServices" #>
-<#@ include file="..\..\common\src\corelib\System\Numerics\GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
+<#@ include file="..\..\System.Private.CoreLib\src\System\Numerics\GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
 
 using System;
 using System.Globalization;
@@ -1458,7 +1458,7 @@ namespace System.Numerics.Tests
             }
             while (Util.AnyEqual(values1, values2));
 
-            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Array.Copy(values1, values2, Vector<T>.Count / 2);
             Vector<T> vec1 = new Vector<T>(values1);
             Vector<T> vec2 = new Vector<T>(values2);
 
@@ -1492,7 +1492,7 @@ namespace System.Numerics.Tests
             }
             while (Util.AnyEqual(values1, values2));
 
-            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Array.Copy(values1, values2, Vector<T>.Count / 2);
             Vector<T> vec1 = new Vector<T>(values1);
             Vector<T> vec2 = new Vector<T>(values2);
 
@@ -1529,7 +1529,7 @@ namespace System.Numerics.Tests
             }
             while (Util.AnyEqual(values1, values2));
 
-            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Array.Copy(values1, values2, Vector<T>.Count / 2);
             Vector<T> vec1 = new Vector<T>(values1);
             Vector<T> vec2 = new Vector<T>(values2);
 
@@ -1673,12 +1673,72 @@ namespace System.Numerics.Tests
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector = new Vector<T>(values);
 
-            Vector<T> SquareRootVector = Vector.SquareRoot(vector);
-            ValidateVector(SquareRootVector,
+            Vector<T> squareRootVector = Vector.SquareRoot(vector);
+            ValidateVector(squareRootVector,
                 (index, val) =>
                 {
                     T expected = Util.Sqrt(values[index]);
                     AssertEqual(expected, val, $"SquareRoot( {FullString(values[index])} )", precision);
+                });
+        }
+
+        [Fact]
+        private void CeilingSingle()
+        {
+            float[] values = GenerateRandomValuesForVector<float>();
+            Vector<float> vector = new Vector<float>(values);
+
+            Vector<float> ceilVector = Vector.Ceiling(vector);
+            ValidateVector(ceilVector,
+                (index, val) =>
+                {
+                    float expected = MathF.Ceiling(values[index]);
+                    AssertEqual(expected, val, $"Ceiling( {FullString(values[index])} )", -1);
+                });
+        }
+
+        [Fact]
+        private void CeilingDouble()
+        {
+            double[] values = GenerateRandomValuesForVector<double>();
+            Vector<double> vector = new Vector<double>(values);
+
+            Vector<double> ceilVector = Vector.Ceiling(vector);
+            ValidateVector(ceilVector,
+                (index, val) =>
+                {
+                    double expected = Math.Ceiling(values[index]);
+                    AssertEqual(expected, val, $"Ceiling( {FullString(values[index])} )", -1);
+                });
+        }
+
+        [Fact]
+        private void FloorSingle()
+        {
+            float[] values = GenerateRandomValuesForVector<float>();
+            Vector<float> vector = new Vector<float>(values);
+
+            Vector<float> ceilVector = Vector.Floor(vector);
+            ValidateVector(ceilVector,
+                (index, val) =>
+                {
+                    float expected = MathF.Floor(values[index]);
+                    AssertEqual(expected, val, $"Ceiling( {FullString(values[index])} )", -1);
+                });
+        }
+
+        [Fact]
+        private void FloorDouble()
+        {
+            double[] values = GenerateRandomValuesForVector<double>();
+            Vector<double> vector = new Vector<double>(values);
+
+            Vector<double> ceilVector = Vector.Floor(vector);
+            ValidateVector(ceilVector,
+                (index, val) =>
+                {
+                    double expected = Math.Floor(values[index]);
+                    AssertEqual(expected, val, $"Ceiling( {FullString(values[index])} )", -1);
                 });
         }
 

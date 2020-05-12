@@ -13,7 +13,7 @@ namespace System.Net.Internals
         {
             private readonly EndPoint? _endPoint;
 
-            public ExtendedSocketException(int errorCode, EndPoint endPoint)
+            public ExtendedSocketException(int errorCode, EndPoint? endPoint)
                 : base(errorCode)
             {
                 _endPoint = endPoint;
@@ -29,7 +29,7 @@ namespace System.Net.Internals
                 (_endPoint == null) ? base.Message : base.Message + " " + _endPoint.ToString();
         }
 
-        public static SocketException CreateSocketException(int socketError, EndPoint endPoint)
+        public static SocketException CreateSocketException(int socketError, EndPoint? endPoint)
         {
             return new ExtendedSocketException(socketError, endPoint);
         }

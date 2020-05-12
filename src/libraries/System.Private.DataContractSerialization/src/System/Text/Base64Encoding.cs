@@ -11,7 +11,7 @@ namespace System.Text
 {
     internal class Base64Encoding : Encoding
     {
-        private static readonly byte[] s_char2val = new byte[128]
+        private static ReadOnlySpan<byte> Char2val => new byte[128] // rely on C# compiler optimization to eliminate allocation
         {
             /*    0-15 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
             /*   16-31 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -25,7 +25,7 @@ namespace System.Text
 
         private const string Val2Char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-        private static readonly byte[] s_val2byte = new byte[]
+        private static ReadOnlySpan<byte> Val2byte => new byte[]
         {
             (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F', (byte)'G', (byte)'H', (byte)'I', (byte)'J', (byte)'K', (byte)'L', (byte)'M', (byte)'N', (byte)'O', (byte)'P',
             (byte)'Q', (byte)'R', (byte)'S', (byte)'T', (byte)'U', (byte)'V', (byte)'W', (byte)'X', (byte)'Y', (byte)'Z', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f',
@@ -71,7 +71,7 @@ namespace System.Text
                 return 0;
             if ((count % 4) != 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new FormatException(SR.Format(SR.XmlInvalidBase64Length, count.ToString())));
-            fixed (byte* _char2val = &s_char2val[0])
+            fixed (byte* _char2val = &Char2val[0])
             {
                 fixed (char* _chars = &chars[index])
                 {
@@ -134,7 +134,7 @@ namespace System.Text
                 return 0;
             if ((charCount % 4) != 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new FormatException(SR.Format(SR.XmlInvalidBase64Length, charCount.ToString())));
-            fixed (byte* _char2val = &s_char2val[0])
+            fixed (byte* _char2val = &Char2val[0])
             {
                 fixed (char* _chars = &chars[charIndex])
                 {
@@ -212,7 +212,7 @@ namespace System.Text
                 return 0;
             if ((charCount % 4) != 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new FormatException(SR.Format(SR.XmlInvalidBase64Length, charCount.ToString())));
-            fixed (byte* _char2val = &s_char2val[0])
+            fixed (byte* _char2val = &Char2val[0])
             {
                 fixed (byte* _chars = &chars[charIndex])
                 {
@@ -394,7 +394,7 @@ namespace System.Text
 
             if (byteCount > 0)
             {
-                fixed (byte* _val2byte = &s_val2byte[0])
+                fixed (byte* _val2byte = &Val2byte[0])
                 {
                     fixed (byte* _bytes = &bytes[byteIndex])
                     {

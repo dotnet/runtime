@@ -2106,7 +2106,7 @@ namespace MonoTests.System.Drawing
                     new CharacterRange (2, 1)
                 };
 
-        Region[] Measure(Graphics gfx, RectangleF rect)
+        Region[] Measure_Helper(Graphics gfx, RectangleF rect)
         {
             using (StringFormat format = StringFormat.GenericTypographic)
             {
@@ -2124,10 +2124,10 @@ namespace MonoTests.System.Drawing
         {
             using (Graphics gfx = Graphics.FromImage(new Bitmap(1, 1)))
             {
-                Region[] zero = Measure(gfx, new RectangleF(0, 0, 0, 0));
+                Region[] zero = Measure_Helper(gfx, new RectangleF(0, 0, 0, 0));
                 Assert.Equal(3, zero.Length);
 
-                Region[] small = Measure(gfx, new RectangleF(0, 0, 100, 100));
+                Region[] small = Measure_Helper(gfx, new RectangleF(0, 0, 100, 100));
                 Assert.Equal(3, small.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2139,7 +2139,7 @@ namespace MonoTests.System.Drawing
                     Assert.Equal(sb.Height, zb.Height);
                 }
 
-                Region[] max = Measure(gfx, new RectangleF(0, 0, float.MaxValue, float.MaxValue));
+                Region[] max = Measure_Helper(gfx, new RectangleF(0, 0, float.MaxValue, float.MaxValue));
                 Assert.Equal(3, max.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2158,7 +2158,7 @@ namespace MonoTests.System.Drawing
         {
             using (Graphics gfx = Graphics.FromImage(new Bitmap(1, 1)))
             {
-                Region[] min = Measure(gfx, new RectangleF(0, 0, float.MinValue, float.MinValue));
+                Region[] min = Measure_Helper(gfx, new RectangleF(0, 0, float.MinValue, float.MinValue));
                 Assert.Equal(3, min.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2169,7 +2169,7 @@ namespace MonoTests.System.Drawing
                     Assert.Equal(8388608.0f, mb.Height);
                 }
 
-                Region[] neg = Measure(gfx, new RectangleF(0, 0, -20, -20));
+                Region[] neg = Measure_Helper(gfx, new RectangleF(0, 0, -20, -20));
                 Assert.Equal(3, neg.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2307,7 +2307,7 @@ namespace MonoTests.System.Drawing
         {
             if (PlatformDetection.IsArmOrArm64Process)
             {
-                // [ActiveIssue("https://github.com/dotnet/corefx/issues/35744")]
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
                 throw new SkipTestException("Precision on float numbers");
             }
 
@@ -3162,7 +3162,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformPoints()
         {

@@ -332,7 +332,7 @@ namespace System.Security.AccessControl
 
                     default:
                         throw new ArgumentOutOfRangeException(
-nameof(modification),
+                            nameof(modification),
                             SR.ArgumentOutOfRange_Enum);
                 }
             }
@@ -377,7 +377,7 @@ nameof(modification),
 
                     default:
                         throw new ArgumentOutOfRangeException(
-nameof(modification),
+                            nameof(modification),
                             SR.ArgumentOutOfRange_Enum);
                 }
             }
@@ -471,7 +471,7 @@ nameof(modification),
 
                 default:
                     throw new ArgumentOutOfRangeException(
-nameof(modification),
+                        nameof(modification),
                         SR.ArgumentOutOfRange_Enum);
             }
 

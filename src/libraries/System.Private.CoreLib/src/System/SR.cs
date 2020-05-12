@@ -15,6 +15,10 @@ namespace System
     {
         // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
         // by default it returns false.
+        // Native code generators can replace the value this returns based on user input at the time of native code generation.
+        // Marked as NoInlining because if this is used in an AoT compiled app that is not compiled into a single file, the user
+        // could compile each module with a different setting for this. We want to make sure there's a consistent behavior
+        // that doesn't depend on which native module this method got inlined into.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool UsingResourceKeys()
         {
@@ -29,6 +33,9 @@ namespace System
 
         internal static string GetResourceString(string resourceKey, string? defaultString)
         {
+            if (UsingResourceKeys())
+                return defaultString ?? resourceKey;
+
             string? resourceString = null;
             try { resourceString = InternalGetResourceString(resourceKey); }
             catch (MissingManifestResourceException) { }
@@ -46,6 +53,7 @@ namespace System
         private static int _infinitelyRecursingCount;
         private static bool _resourceManagerInited = false;
 
+        [PreserveDependency(".cctor()", "System.Resources.ResourceManager")]
         private static string? InternalGetResourceString(string? key)
         {
             if (string.IsNullOrEmpty(key))

@@ -176,7 +176,7 @@ namespace System.Net
             {
                 try
                 {
-                    Uri proxyAddress = proxy.GetProxy(address);
+                    Uri? proxyAddress = proxy.GetProxy(address);
                     if (proxyAddress != null)
                     {
                         if (proxyAddress.Scheme != Uri.UriSchemeHttp)

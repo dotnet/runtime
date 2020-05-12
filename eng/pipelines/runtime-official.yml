@@ -61,6 +61,38 @@ stages:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
   #
+  # Build Mono release
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - Android_x64
+      - Android_x86
+      - Android_arm
+      - Android_arm64
+      - tvOS_x64
+      - tvOS_arm64
+      - iOS_x64
+      - iOS_arm
+      - iOS_arm64
+      - OSX_x64
+      - Linux_x64
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_x64
+      - Browser_wasm
+      # - Linux_musl_arm64
+      - Windows_NT_x64
+      # - Windows_NT_x86
+      # - Windows_NT_arm
+      # - Windows_NT_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  #
   # Build libraries using live CoreLib from CoreCLR
   #
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -78,6 +110,29 @@ stages:
       - Windows_NT_x64
       - Windows_NT_arm
       - Windows_NT_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        liveRuntimeBuildConfig: release
+
+  #
+  # Build libraries using live CoreLib from Mono
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      runtimeFlavor: mono
+      platforms:
+      - Android_x64
+      - Android_x86
+      - Android_arm
+      - Android_arm64
+      - tvOS_x64
+      - tvOS_arm64
+      - iOS_x64
+      - iOS_arm
+      - iOS_arm64
+      - Browser_wasm
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
@@ -119,6 +174,32 @@ stages:
       - Windows_NT_x64
       - Windows_NT_arm
       - Windows_NT_arm64
+
+    #
+    # Installer Build for platforms using Mono
+    #
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: false
+        buildFullPlatformManifest: false
+      runtimeFlavor: mono
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      - tvOS_x64
+      - tvOS_arm64
+      - iOS_arm
+      - iOS_arm64
+      - iOS_x64
+      - Android_arm
+      - Android_arm64
+      - Android_x64
+      - Android_x86
+      - Browser_wasm
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

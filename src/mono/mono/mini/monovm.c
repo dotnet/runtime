@@ -15,16 +15,20 @@
 typedef struct {
 	int assembly_count;
 	char **basenames; /* Foo.dll */
+	int *basename_lens;
 	char **assembly_filepaths; /* /blah/blah/blah/Foo.dll */
 } MonoCoreTrustedPlatformAssemblies;
 
 typedef struct {
 	int dir_count;
 	char **dirs;
-} MonoCoreNativeLibPaths;
+} MonoCoreLookupPaths;
 
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
-static MonoCoreNativeLibPaths *native_lib_paths;
+static MonoCoreLookupPaths *native_lib_paths;
+static MonoCoreLookupPaths *app_paths;
+static MonoCoreLookupPaths *app_ni_paths;
+static MonoCoreLookupPaths *platform_resource_roots;
 
 static void
 mono_core_trusted_platform_assemblies_free (MonoCoreTrustedPlatformAssemblies *a)
@@ -37,7 +41,7 @@ mono_core_trusted_platform_assemblies_free (MonoCoreTrustedPlatformAssemblies *a
 }
 
 static void
-mono_core_native_lib_paths_free (MonoCoreNativeLibPaths *dl)
+mono_core_lookup_paths_free (MonoCoreLookupPaths *dl)
 {
 	if (!dl)
 		return;
@@ -65,19 +69,22 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->assembly_count = asm_count;
 	a->assembly_filepaths = parts;
 	a->basenames = g_new0 (char*, asm_count + 1);
+	a->basename_lens = g_new0 (int, asm_count + 1);
 	for (int i = 0; i < asm_count; ++i) {
-		a->basenames[i] = g_path_get_basename (a->assembly_filepaths [i]);
+		a->basenames [i] = g_path_get_basename (a->assembly_filepaths [i]);
+		a->basename_lens [i] = strlen (a->basenames [i]);
 	}
 	a->basenames [asm_count] = NULL;
+	a->basename_lens [asm_count] = 0;
 
 	trusted_platform_assemblies = a;
 	return TRUE;
 }
 
-static gboolean
-parse_native_dll_search_directories (const char *native_dlls_dirs)
+static MonoCoreLookupPaths *
+parse_lookup_paths (const char *search_path)
 {
-	char **parts = g_strsplit (native_dlls_dirs, G_SEARCHPATH_SEPARATOR_S, 0);
+	char **parts = g_strsplit (search_path, G_SEARCHPATH_SEPARATOR_S, 0);
 	int dir_count = 0;
 	for (char **p = parts; *p != NULL && **p != '\0'; p++) {
 #if 0
@@ -87,12 +94,10 @@ parse_native_dll_search_directories (const char *native_dlls_dirs)
 #endif
 		dir_count++;
 	}
-	MonoCoreNativeLibPaths *dl = g_new0 (MonoCoreNativeLibPaths, 1);
+	MonoCoreLookupPaths *dl = g_new0 (MonoCoreLookupPaths, 1);
 	dl->dirs = parts;
 	dl->dir_count = dir_count;
-
-	native_lib_paths = dl;
-	return TRUE;
+	return dl;
 }
 
 static MonoAssembly*
@@ -115,15 +120,16 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	MonoAssemblyLoadContext *default_alc = mono_domain_default_alc (mono_alc_domain (alc));
 
 	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
+	size_t basename_len = strlen (basename);
 
 	for (int i = 0; i < a->assembly_count; ++i) {
-		if (!strcmp (basename, a->basenames[i])) {
+		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, default_alc);
 			req.request.predicate = predicate;
 			req.request.predicate_ud = predicate_ud;
 
-			const char *fullpath = a->assembly_filepaths[i];
+			const char *fullpath = a->assembly_filepaths [i];
 
 			gboolean found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
 
@@ -143,7 +149,7 @@ leave:
 	if (!result) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: did not find '%s'.", aname->name);
 	} else {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "netcore preload hook: loading '%s' from '%s'.", aname->name, result->image->name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: loading '%s' from '%s'.", aname->name, result->image->name);
 	}
 	return result;
 }
@@ -151,25 +157,30 @@ leave:
 static void
 install_assembly_loader_hooks (void)
 {
-	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE);
+	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE, FALSE);
 }
 
 static gboolean
 parse_properties (int propertyCount, const char **propertyKeys, const char **propertyValues)
 {
-	// The a partial list of relevant properties is
+	// A partial list of relevant properties is at:
 	// https://docs.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
-	// TODO: We should also pick up at least APP_PATHS and APP_NI_PATHS
-	// and PLATFORM_RESOURCE_ROOTS for satellite assemblies in culture-specific subdirectories
 
 	for (int i = 0; i < propertyCount; ++i) {
-		if (!strcmp (propertyKeys[i], "TRUSTED_PLATFORM_ASSEMBLIES")) {
+		size_t prop_len = strlen (propertyKeys [i]);
+		if (prop_len == 27 && !strncmp (propertyKeys [i], "TRUSTED_PLATFORM_ASSEMBLIES", 27)) {
 			parse_trusted_platform_assemblies (propertyValues[i]);
-		} else if (!strcmp (propertyKeys[i], "NATIVE_DLL_SEARCH_DIRECTORIES")) {
-			parse_native_dll_search_directories (propertyValues[i]);
-		} else if (!strcmp (propertyKeys[i], "System.Globalization.Invariant")) {
+		} else if (prop_len == 9 && !strncmp (propertyKeys [i], "APP_PATHS", 9)) {
+			app_paths = parse_lookup_paths (propertyValues [i]);
+		} else if (prop_len == 12 && !strncmp (propertyKeys [i], "APP_NI_PATHS", 12)) {
+			app_ni_paths = parse_lookup_paths (propertyValues [i]);
+		} else if (prop_len == 23 && !strncmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS", 23)) {
+			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
+		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {
+			native_lib_paths = parse_lookup_paths (propertyValues [i]);
+		} else if (prop_len == 30 && !strncmp (propertyKeys [i], "System.Globalization.Invariant", 30)) {
 			// TODO: Ideally we should propagate this through AppContext options
-			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues[i], TRUE);
+			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues [i], TRUE);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.
@@ -190,7 +201,11 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 
 	install_assembly_loader_hooks ();
 	if (native_lib_paths != NULL)
-		mono_set_pinvoke_search_directories (native_lib_paths->dir_count, native_lib_paths->dirs);
+		mono_set_pinvoke_search_directories (native_lib_paths->dir_count, g_strdupv (native_lib_paths->dirs));
+	// Our load hooks don't distinguish between normal, AOT'd, and satellite lookups the way CoreCLR's does.
+	// For now, just set assemblies_path with APP_PATHS and leave the rest.
+	if (app_paths != NULL)
+		mono_set_assemblies_path_direct (g_strdupv (app_paths->dirs));
 
 	/*
 	 * Don't use Mono's legacy assembly name matching behavior - respect
@@ -239,15 +254,6 @@ monovm_execute_assembly (int argc, const char **argv, const char *managedAssembl
 int
 monovm_shutdown (int *latchedExitCode)
 {
-	mono_set_pinvoke_search_directories (0, NULL);
-	MonoCoreNativeLibPaths *dl = native_lib_paths;
-	native_lib_paths = NULL;
-	mono_core_native_lib_paths_free (dl);
-
-	MonoCoreTrustedPlatformAssemblies *a = trusted_platform_assemblies;
-	trusted_platform_assemblies = NULL;
-	mono_core_trusted_platform_assemblies_free (a);
-
 	*latchedExitCode = mono_environment_exitcode_get ();
 
 	return 0;

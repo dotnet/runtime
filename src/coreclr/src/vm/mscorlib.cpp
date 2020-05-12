@@ -67,6 +67,7 @@
 #include "variant.h"
 #include "oavariant.h"
 #include "mngstdinterfaces.h"
+#include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
 
 #include "stubhelpers.h"
@@ -86,6 +87,8 @@
 #include "eventpipe.h"
 #include "eventpipeinternal.h"
 #endif //FEATURE_PERFTRACING
+
+#include "tailcallhelp.h"
 
 #endif // CROSSGEN_MSCORLIB
 
@@ -346,7 +349,7 @@ const MscorlibClassDescription c_rgMscorlibClassDescriptions[] =
     // Include all exception types here that are defined in mscorlib.  Omit exceptions defined elsewhere.
     #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) { ns , # reKind },
     #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-    #define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...)
+    #define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...)
     #include "rexcep.h"
 };
 const USHORT c_nMscorlibClassDescriptions = NumItems(c_rgMscorlibClassDescriptions);
@@ -367,14 +370,13 @@ const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[] =
 };
 const USHORT c_nMscorlibFieldDescriptions = NumItems(c_rgMscorlibFieldDescriptions) + 1;
 
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // ECalls
 //
+
+// ECalls defined by libraries-native shims
+EXTERN_C const LPVOID gPalGlobalizationNative[];
 
 // When compiling crossgen, we only need the target version of the ecall tables
 #if !defined(CROSSGEN_COMPILE) || defined(CROSSGEN_MSCORLIB)

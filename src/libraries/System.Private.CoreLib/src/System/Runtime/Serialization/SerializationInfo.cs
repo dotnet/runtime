@@ -92,8 +92,7 @@ namespace System.Runtime.Serialization
 
             if (cachedValue == 0)
             {
-                bool isEnabled = false;
-                if (AppContext.TryGetSwitch(SwitchPrefix + switchSuffix, out isEnabled) && isEnabled)
+                if (AppContext.TryGetSwitch(SwitchPrefix + switchSuffix, out bool isEnabled) && isEnabled)
                 {
                     cachedValue = 1;
                 }
@@ -438,8 +437,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            int index;
-            if (_nameToIndex.TryGetValue(name, out index))
+            if (_nameToIndex.TryGetValue(name, out int index))
             {
                 return index;
             }
@@ -497,8 +495,7 @@ namespace System.Runtime.Serialization
             if (!type.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
 
             if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
             {
@@ -514,8 +511,7 @@ namespace System.Runtime.Serialization
             Debug.Assert((object)type != null, "[SerializationInfo.GetValue]type ==null");
             Debug.Assert(type.IsRuntimeImplemented(), "[SerializationInfo.GetValue]type is not a runtime type");
 
-            Type? foundType;
-            object? value = GetElementNoThrow(name, out foundType);
+            object? value = GetElementNoThrow(name, out Type? foundType);
             if (value == null)
                 return null;
 
@@ -531,111 +527,96 @@ namespace System.Runtime.Serialization
 
         public bool GetBoolean(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(bool)) ? (bool)value! : _converter.ToBoolean(value!); // if value is null To* method will either deal with it or throw
         }
 
         public char GetChar(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(char)) ? (char)value! : _converter.ToChar(value!);
         }
 
         [CLSCompliant(false)]
         public sbyte GetSByte(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(sbyte)) ? (sbyte)value! : _converter.ToSByte(value!);
         }
 
         public byte GetByte(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(byte)) ? (byte)value! : _converter.ToByte(value!);
         }
 
         public short GetInt16(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(short)) ? (short)value! : _converter.ToInt16(value!);
         }
 
         [CLSCompliant(false)]
         public ushort GetUInt16(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(ushort)) ? (ushort)value! : _converter.ToUInt16(value!);
         }
 
         public int GetInt32(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(int)) ? (int)value! : _converter.ToInt32(value!);
         }
 
         [CLSCompliant(false)]
         public uint GetUInt32(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(uint)) ? (uint)value! : _converter.ToUInt32(value!);
         }
 
         public long GetInt64(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(long)) ? (long)value! : _converter.ToInt64(value!);
         }
 
         [CLSCompliant(false)]
         public ulong GetUInt64(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(ulong)) ? (ulong)value! : _converter.ToUInt64(value!);
         }
 
         public float GetSingle(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(float)) ? (float)value! : _converter.ToSingle(value!);
         }
 
 
         public double GetDouble(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(double)) ? (double)value! : _converter.ToDouble(value!);
         }
 
         public decimal GetDecimal(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(decimal)) ? (decimal)value! : _converter.ToDecimal(value!);
         }
 
         public DateTime GetDateTime(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(DateTime)) ? (DateTime)value! : _converter.ToDateTime(value!);
         }
 
         public string? GetString(string name)
         {
-            Type foundType;
-            object? value = GetElement(name, out foundType);
+            object? value = GetElement(name, out Type foundType);
             return ReferenceEquals(foundType, typeof(string)) || value == null ? (string?)value : _converter.ToString(value);
         }
     }

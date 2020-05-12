@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -386,18 +387,20 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(Uri uri1, object obj, bool expected)
+        public void EqualsTest(Uri uri1, object obj, bool expected)
         {
             Uri uri2 = obj as Uri;
+
             if (uri1 != null)
             {
                 Assert.Equal(expected, uri1.Equals(obj));
-                if (uri2 != null)
+
+                if (uri2 != null && expected)
                 {
-                    bool onlyCaseDifference = string.Equals(uri1.OriginalString, uri2.OriginalString, StringComparison.OrdinalIgnoreCase);
-                    Assert.Equal(expected || onlyCaseDifference, uri1.GetHashCode().Equals(uri2.GetHashCode()));
+                    Assert.Equal(uri1.GetHashCode(), uri2.GetHashCode());
                 }
             }
+
             if (!(obj is string))
             {
                 Assert.Equal(expected, uri1 == uri2);
@@ -536,7 +539,7 @@ namespace System.Tests
 
             Uri invalidPunicodeUri = new Uri("http://xn--\u1234pck.com");
             yield return new object[] { invalidPunicodeUri, UriComponents.Host, "xn--\u1234pck.com" };
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // expected platform differences, see https://github.com/dotnet/corefx/issues/8242
+            if (PlatformDetection.IsNlsGlobalization) // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
             {
                 yield return new object[] { invalidPunicodeUri, UriComponents.NormalizedHost, "xn--\u1234pck.com" };
             }
@@ -599,9 +602,9 @@ namespace System.Tests
         [MemberData(nameof(GetComponents_Basic_TestData))]
         public void GetComponents(Uri uri, UriComponents components, string expected)
         {
-            GetComponents(uri, components, UriFormat.SafeUnescaped, expected);
-            GetComponents(uri, components, UriFormat.Unescaped, expected);
-            GetComponents(uri, components, UriFormat.UriEscaped, expected);
+            GetComponents_Advanced(uri, components, UriFormat.SafeUnescaped, expected);
+            GetComponents_Advanced(uri, components, UriFormat.Unescaped, expected);
+            GetComponents_Advanced(uri, components, UriFormat.UriEscaped, expected);
         }
 
         public static IEnumerable<object[]> GetComponents_Advanced_TestData()
@@ -667,7 +670,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetComponents_Advanced_TestData))]
-        public void GetComponents(Uri uri, UriComponents components, UriFormat format, string expected)
+        public void GetComponents_Advanced(Uri uri, UriComponents components, UriFormat format, string expected)
         {
             Assert.Equal(expected, uri.GetComponents(components, format));
         }

@@ -16,6 +16,8 @@ namespace System.Net.Http.Tests
         private readonly ITestOutputHelper _output;
         private static readonly Uri fooHttp = new Uri("http://foo.com");
         private static readonly Uri fooHttps = new Uri("https://foo.com");
+        private static readonly Uri fooWs = new Uri("ws://foo.com");
+        private static readonly Uri fooWss = new Uri("wss://foo.com");
 
         // This will clean specific environmental variables
         // to be sure they do not interfere with the test.
@@ -61,6 +63,11 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooHttps);
                 Assert.True(u != null && u.Host == "1.1.1.1");
 
+                u = p.GetProxy(fooWs);
+                Assert.True(u != null && u.Host == "1.1.1.1");
+                u = p.GetProxy(fooWss);
+                Assert.True(u != null && u.Host == "1.1.1.1");
+
                 Environment.SetEnvironmentVariable("http_proxy", "http://1.1.1.2:3001");
                 Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
@@ -70,6 +77,11 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooHttp);
                 Assert.True(u != null && u.Host == "1.1.1.2" && u.Port == 3001);
                 u = p.GetProxy(fooHttps);
+                Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
+
+                u = p.GetProxy(fooWs);
+                Assert.True(u != null && u.Host == "1.1.1.2" && u.Port == 3001);
+                u = p.GetProxy(fooWss);
                 Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
 
                 // Set https to invalid strings and use only IP & port for http.
@@ -83,12 +95,20 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooHttps);
                 Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
 
+                u = p.GetProxy(fooWs);
+                Assert.True(u != null && u.Host == "1.1.1.3" && u.Port == 3003);
+                u = p.GetProxy(fooWss);
+                Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
+
                 // Try valid URI with unsupported protocol. It will be ignored
                 // to mimic curl behavior.
                 Environment.SetEnvironmentVariable("https_proxy", "socks5://1.1.1.4:3004");
                 Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 u = p.GetProxy(fooHttps);
+                Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
+
+                u = p.GetProxy(fooWss);
                 Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
 
                 // Set https to valid URI but different from http.
@@ -99,6 +119,11 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooHttp);
                 Assert.True(u != null && u.Host == "1.1.1.3" && u.Port == 3003);
                 u = p.GetProxy(fooHttps);
+                Assert.True(u != null && u.Host == "1.1.1.5" && u.Port == 3005);
+
+                u = p.GetProxy(fooWs);
+                Assert.True(u != null && u.Host == "1.1.1.3" && u.Port == 3003);
+                u = p.GetProxy(fooWss);
                 Assert.True(u != null && u.Host == "1.1.1.5" && u.Port == 3005);
             }).Dispose();
         }

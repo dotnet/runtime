@@ -33,6 +33,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15319", TestRuntimes.Mono)]
         [InlineData(typeof(PI_BaseClass), nameof(PI_BaseClass.PublicGetPublicSetProperty), true, false, true, false)]
         [InlineData(typeof(PI_BaseClass), nameof(PI_BaseClass.PublicGetProperty1), true, false, false, false)]
         [InlineData(typeof(PI_BaseClass), nameof(PI_BaseClass.PublicSetProperty), false, false, true, false)]

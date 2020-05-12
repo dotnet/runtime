@@ -12,7 +12,7 @@ namespace System.Configuration
     // Need the System.Security.Cryptography.Xml package published before this can be enabled,
     // for now, make it throw PlatformNotSupported.
     //
-    // https://github.com/dotnet/corefx/issues/14950
+    // https://github.com/dotnet/runtime/issues/19838
 
     public sealed class RsaProtectedConfigurationProvider : ProtectedConfigurationProvider
     {

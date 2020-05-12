@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- TODO: Add net472 configuration after OOB package bug is fixed: https://github.com/dotnet/corefx/issues/23889 -->
+  <!-- TODO: Add net472 configuration after OOB package bug is fixed: https://github.com/dotnet/runtime/issues/23497 -->
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
@@ -10,12 +10,11 @@
     <ReferenceFromRuntime Include="System.ComponentModel.Composition" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
-      <Link>Common\System\IO\TempDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
+             Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="IMetadataView.cs" />
     <Compile Include="MetadataTests_IMetadataView.cs" />
     <Compile Include="System\LazyHelper.cs" />

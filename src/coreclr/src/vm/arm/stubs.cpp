@@ -1414,9 +1414,9 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 
     ThumbEmitLoadRegIndirect(dest, dest, offsetof(TEB, ThreadLocalStoragePointer));
 
-    ThumbEmitLoadRegIndirect(dest, dest, sizeof(void *) * (g_TlsIndex & 0xFFFF));
+    ThumbEmitLoadRegIndirect(dest, dest, sizeof(void *) * _tls_index);
 
-    ThumbEmitLoadRegIndirect(dest, dest, (g_TlsIndex & 0x7FFF0000) >> 16);
+    ThumbEmitLoadRegIndirect(dest, dest, (int)Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo));
 
 #endif // TARGET_UNIX
 }
@@ -1609,7 +1609,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 #ifndef CROSSGEN_COMPILE
 
-void StubLinkerCPU::ThumbEmitCallManagedMethod(MethodDesc *pMD, bool fTailcall)
+void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
 {
     bool isRelative = MethodTable::VTableIndir2_t::isRelative
                       && pMD->IsVtableSlot();
@@ -1631,12 +1631,6 @@ void StubLinkerCPU::ThumbEmitCallManagedMethod(MethodDesc *pMD, bool fTailcall)
 
         if (isRelative)
         {
-            if (!fTailcall)
-            {
-                // str r4, [sp, 0]
-                ThumbEmitStoreRegIndirect(ThumbReg(4), thumbRegSp, 0);
-            }
-
             // mov r4, r12
             ThumbEmitMovRegReg(ThumbReg(4), ThumbReg(12));
         }
@@ -1648,33 +1642,19 @@ void StubLinkerCPU::ThumbEmitCallManagedMethod(MethodDesc *pMD, bool fTailcall)
         {
             // add r12, r4
             ThumbEmitAddReg(ThumbReg(12), ThumbReg(4));
-
-            if (!fTailcall)
-            {
-                // ldr r4, [sp, 0]
-                ThumbEmitLoadRegIndirect(ThumbReg(4), thumbRegSp, 0);
-            }
         }
     }
 
-    if (fTailcall)
+    if (!isRelative)
     {
-        if (!isRelative)
-        {
-            // bx r12
-            ThumbEmitJumpRegister(ThumbReg(12));
-        }
-        else
-        {
-            // Replace LR with R12 on stack: hybrid-tail call, same as for EmitShuffleThunk
-            // str r12, [sp, 4]
-            ThumbEmitStoreRegIndirect(ThumbReg(12), thumbRegSp, 4);
-        }
+        // bx r12
+        ThumbEmitJumpRegister(ThumbReg(12));
     }
     else
     {
-        // blx r12
-        ThumbEmitCallRegister(ThumbReg(12));
+        // Replace LR with R12 on stack: hybrid-tail call, same as for EmitShuffleThunk
+        // str r12, [sp, 4]
+        ThumbEmitStoreRegIndirect(ThumbReg(12), thumbRegSp, 4);
     }
 }
 
@@ -1745,7 +1725,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         ThumbEmitProlog(1, 0, FALSE);
     }
 
-    ThumbEmitCallManagedMethod(pSharedMD, true);
+    ThumbEmitTailCallManagedMethod(pSharedMD);
 
     if (isRelative)
     {
@@ -1818,47 +1798,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
-
-void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
-{
-    pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-    // Next, copy all the callee saved registers
-    UpdateRegDisplayFromCalleeSavedRegisters(pRD, &m_calleeSavedRegisters);
-
-    // Set ControlPC to be the same as the saved "return address"
-    // value, which is actually a ControlPC in the frameless method (e.g.
-    // faulting address incase of AV or TAE).
-    pRD->pCurrentContext->Pc = m_ReturnAddress;
-
-    // Set the caller SP
-    pRD->pCurrentContext->Sp = dac_cast<TADDR>(this) + sizeof(*this);
-
-    // Finally, syncup the regdisplay with the context
-    SyncRegDisplayToCurrentContext(pRD);
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
-}
-
-#ifndef DACCESS_COMPILE
-
-void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    r4  = pContext->R4;
-    r5  = pContext->R5;
-    r6  = pContext->R6;
-    r7  = pContext->R7;
-    r8  = pContext->R8;
-    r9  = pContext->R9;
-    r10 = pContext->R10;
-    r11 = pContext->R11;
-    m_ReturnAddress = pContext->Lr;
-}
-
-#endif // !DACCESS_COMPILE
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
@@ -2103,414 +2042,6 @@ void InitJITHelpers1()
 }
 
 #endif // CROSSGEN_COMPILE
-
-void StubLinkerCPU::ThumbEmitNearJump(CodeLabel *target)
-{
-    WRAPPER_NO_CONTRACT;
-    EmitLabelRef(target, reinterpret_cast<ThumbNearJump&>(gThumbNearJump), 0xe);
-}
-
-void StubLinkerCPU::ThumbEmitCondFlagJump(CodeLabel *target, UINT cond)
-{
-    WRAPPER_NO_CONTRACT;
-    EmitLabelRef(target, reinterpret_cast<ThumbNearJump&>(gThumbNearJump), cond);
-}
-
-void StubLinkerCPU::ThumbEmitCondRegJump(CodeLabel *target, BOOL nonzero, ThumbReg reg)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(reg <= 7);
-    UINT variation = reg;
-    if(nonzero)
-        variation = variation | 0x8;
-    EmitLabelRef(target, reinterpret_cast<ThumbCondJump&>(gThumbCondJump), variation);
-}
-
-void StubLinkerCPU::ThumbCopyOneTailCallArg(UINT * pnSrcAlign, const ArgLocDesc * pArgLoc, UINT * pcbStackSpace)
-{
-    if (pArgLoc->m_fRequires64BitAlignment && (*pnSrcAlign & 1)) {
-        // ADD R0, #4
-        ThumbEmitIncrement(ThumbReg(0), 4);
-        *pnSrcAlign = 0;
-    }
-
-    // Integer register arguments
-    if (pArgLoc->m_cGenReg > 0) {
-        int iReg = pArgLoc->m_idxGenReg;
-        int maxReg = iReg + pArgLoc->m_cGenReg;
-        while (iReg + 2 <= maxReg) {
-            // LDM r0!, {r4,r5} ; Post incremented loads (2 bytes)
-            ThumbEmitLoadStoreMultiple(ThumbReg(0), true, ThumbReg(4).Mask() | ThumbReg(5).Mask());
-            // STR r4, [R1, #offset of arg reg] ; (2 bytes)
-            ThumbEmitStoreRegIndirect(ThumbReg(4), ThumbReg(1), offsetof(T_CONTEXT, R0) + (iReg * sizeof(DWORD)));
-            iReg++;
-            // STR r5, [R1, #offset of arg reg] ; (2 bytes)
-            ThumbEmitStoreRegIndirect(ThumbReg(5), ThumbReg(1), offsetof(T_CONTEXT, R0) + (iReg * sizeof(DWORD)));
-            iReg++;
-        }
-        if (iReg < maxReg) {
-            // LDR r3, [R0], #+4 ; Post incremented load (4 bytes)
-            ThumbEmitLoadIndirectPostIncrement(ThumbReg(3), ThumbReg(0), 4);
-            (*pnSrcAlign)++;
-
-            // STR r3, [R1, #offset of arg reg] ; (2 bytes)
-            ThumbEmitStoreRegIndirect(ThumbReg(3), ThumbReg(1), offsetof(T_CONTEXT, R0) + (iReg * sizeof(DWORD)));
-        }
-    }
-    if (pArgLoc->m_cFloatReg > 0) {
-        int iReg = pArgLoc->m_idxFloatReg;
-        int maxReg = iReg + pArgLoc->m_cFloatReg;
-        while (iReg + 2 <= maxReg) {
-            // LDM r0!, {r4,r5} ; Post incremented loads (2 bytes)
-            ThumbEmitLoadStoreMultiple(ThumbReg(0), true, ThumbReg(4).Mask() | ThumbReg(5).Mask());
-            // STR r4, [R1, #offset of arg reg] ; (2 bytes)
-            ThumbEmitStoreRegIndirect(ThumbReg(4), ThumbReg(1), offsetof(T_CONTEXT, S) + (iReg * sizeof(DWORD)));
-            iReg++;
-            // STR r5, [R1, #offset of arg reg] ; (2 bytes)
-            ThumbEmitStoreRegIndirect(ThumbReg(5), ThumbReg(1), offsetof(T_CONTEXT, S) + (iReg * sizeof(DWORD)));
-            iReg++;
-        }
-        if (iReg < maxReg) {
-            // LDR r3, [R0], #+4 ; Post incremented load (4 bytes)
-            ThumbEmitLoadIndirectPostIncrement(ThumbReg(3), ThumbReg(0), 4);
-            (*pnSrcAlign)++;
-
-            // STR r3, [R1, #offset of arg reg] ; (2 bytes)
-            ThumbEmitStoreRegIndirect(ThumbReg(3), ThumbReg(1), offsetof(T_CONTEXT, S) + (iReg * sizeof(DWORD)));
-        }
-    }
-
-    if (pArgLoc->m_cStack > 0) {
-        // Copy to the stack
-        // Be careful because this can get big and ugly.
-        _ASSERTE(*pcbStackSpace <= (pArgLoc->m_idxStack * sizeof(DWORD)));
-
-        // Pad the output
-        if (*pcbStackSpace < (pArgLoc->m_idxStack * sizeof(DWORD)))
-        {
-            const UINT cbPad = ((pArgLoc->m_idxStack * sizeof(DWORD)) - *pcbStackSpace);
-            _ASSERTE(cbPad == 4);
-            // ADD R2, #4
-            ThumbEmitIncrement(ThumbReg(2), cbPad);
-            *pcbStackSpace += cbPad;
-        }
-        int cStack = pArgLoc->m_cStack;
-        *pcbStackSpace += (cStack * sizeof(DWORD));
-
-        // Now start the copying
-        if (cStack > 8) {
-            // Loop to copy in 16-byte chunks per loop.
-            // Sacrifice r3 for the loop counter
-            ThumbEmitMovConstant(ThumbReg(3), pArgLoc->m_cStack & ~3);
-            // LoopLabel:
-            CodeLabel *pLoopLabel = NewCodeLabel();
-            EmitLabel(pLoopLabel);
-            const WORD mask = ThumbReg(4).Mask() | ThumbReg(5).Mask() | ThumbReg(6).Mask() | ThumbReg(7).Mask();
-            // LDM r0!, {r4,r5,r6,r7} ; Post incremented loads (2 bytes)
-            ThumbEmitLoadStoreMultiple(ThumbReg(0), true, mask);
-            // STM r2!, {r4,r5,r6,r7} ; Post incremented stores (2 bytes)
-            ThumbEmitLoadStoreMultiple(ThumbReg(2), false, mask);
-            // SUBS r3, #4
-            Emit16((WORD)(0x3800 | (ThumbReg(3) << 8) | 4));
-            // BNZ LoopLabel
-            ThumbEmitCondFlagJump(pLoopLabel, thumbCondNe.cond);
-
-            cStack = cStack % 4;
-            // Now deal with the tail if any
-        }
-        _ASSERTE(cStack <= 8);
-
-        while (cStack > 1) {
-            _ASSERTE(cStack >= 2);
-            WORD mask = ThumbReg(4).Mask() | ThumbReg(5).Mask();
-            cStack -= 2;
-            if (cStack > 0) {
-                mask |= ThumbReg(6).Mask();
-                cStack--;
-                // Instead of copying 4 slots and leaving a single slot remainder
-                // which would require us to use the bigger opcodes for the tail
-                // Only copy 3 slots this loop, saving 2 for next time. :)
-                if (cStack == 1 || cStack > 2) {
-                    mask |= ThumbReg(7).Mask();
-                    cStack--;
-                }
-                else {
-                    // We're reading an odd amount from the stack
-                    (*pnSrcAlign)++;
-                }
-            }
-
-            // LDM r0!, {r4,r5,r6,r7} ; Post incremented loads (2 bytes)
-            ThumbEmitLoadStoreMultiple(ThumbReg(0), true, mask);
-            // STM r2!, {r4,r5,r6,r7} ; Post incremented stores (2 bytes)
-            ThumbEmitLoadStoreMultiple(ThumbReg(2), false, mask);
-            _ASSERTE((cStack == 0) || (cStack >= 2));
-        }
-        if (cStack > 0) {
-            _ASSERTE(cStack == 1);
-            // We're reading an odd amount from the stack
-            (*pnSrcAlign)++;
-            // LDR r12, [R0], #+4 ; Post incremented load (4 bytes)
-            ThumbEmitLoadIndirectPostIncrement(ThumbReg(12), ThumbReg(0), 4);
-            // STR r12, [R2], #+4 ; Post incremented store (4 bytes)
-            ThumbEmitStoreIndirectPostIncrement(ThumbReg(12), ThumbReg(2), 4);
-        }
-    }
-}
-
-
-Stub * StubLinkerCPU::CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
-                                                  MethodDesc* pMD,
-                                                  CorInfoHelperTailCallSpecialHandling flags)
-{
-    STANDARD_VM_CONTRACT;
-
-    CPUSTUBLINKER   sl;
-    CPUSTUBLINKER*  pSl = &sl;
-
-    // Generates a function that looks like this:
-    // size_t CopyArguments(va_list args,         (R0)
-    //                      CONTEXT *pCtx,        (R1)
-    //                      DWORD   *pvStack,     (R2)
-    //                      size_t  cbStack)      (R3)
-    // {
-    //     if (pCtx != NULL) {
-    //         foreach (arg in args) {
-    //             copy into pCtx or pvStack
-    //         }
-    //     }
-    //     return <size of stack needed>;
-    // }
-    //
-
-    Module * module = GetModule(pSig->scope);
-    Instantiation classInst((TypeHandle*)pSig->sigInst.classInst, pSig->sigInst.classInstCount);
-    Instantiation methodInst((TypeHandle*)pSig->sigInst.methInst, pSig->sigInst.methInstCount);
-    SigTypeContext typeCtxt(classInst, methodInst);
-
-    // The -8 is because R11 points at the pushed {R11, LR} pair, and it is aligned.
-    // This is the magic distance, between the frame pointer and the Frame.
-    const UINT cbFrameOffset = (sizeof(FrameWithCookie<TailCallFrame>) - 8);
-
-    bool fNeedExtraRegs = false;
-    UINT copyEstimate = 0;
-    {
-        // Do a quick scan of the arguments looking for ones that will probably need extra registers
-        // and guestimating the size of the method
-        if (flags & CORINFO_TAILCALL_STUB_DISPATCH_ARG)
-            copyEstimate += 6;
-
-        if (pSig->hasThis())
-            copyEstimate += 6;
-
-        MetaSig msig(pSig->pSig, pSig->cbSig, module, &typeCtxt);
-        if (pSig->hasTypeArg())
-            msig.SetHasParamTypeArg();
-        ArgIterator argPlacer(&msig);
-
-        if (argPlacer.HasRetBuffArg()) {
-            copyEstimate += 24;
-        }
-
-        if (pSig->hasTypeArg() || pSig->isVarArg())
-            copyEstimate += 6;
-
-        int argOffset;
-        while ((argOffset = argPlacer.GetNextOffset()) != TransitionBlock::InvalidOffset)
-        {
-            ArgLocDesc argLoc;
-            argPlacer.GetArgLoc(argOffset, &argLoc);
-
-            if (argLoc.m_cStack  > 1 || argLoc.m_cGenReg > 1 || argLoc.m_cFloatReg > 1) {
-                fNeedExtraRegs = true;
-            }
-            else {
-                copyEstimate += 8;
-            }
-        }
-    }
-
-    if (fNeedExtraRegs) {
-        // Inject a proper prolog
-        // push {r4-r7,lr}
-        pSl->ThumbEmitProlog(4, 0, false);
-    }
-
-    CodeLabel *pNullLabel = pSl->NewCodeLabel();
-
-    if (!fNeedExtraRegs && copyEstimate < 100) {
-        // The real range of BCZ is 0-126, but that's hard to estimate that precisely
-        // and we don't want to do that much work just to save a few bytes
-
-        // BCZ R1, NullLabel
-        pSl->ThumbEmitCondRegJump(pNullLabel, false, ThumbReg(1));
-    }
-    else {
-        // CMP R1, 0 ; T1 encoding
-        pSl->Emit16((WORD)(0x2900));
-
-        // BEQ NullLabel
-        pSl->ThumbEmitCondFlagJump(pNullLabel, thumbCondEq.cond);
-    }
-
-    UINT cbStackSpace = 0;
-    UINT cbReturnBufferSpace = 0;
-    UINT nSrcAlign = 0;
-
-    if (flags & CORINFO_TAILCALL_STUB_DISPATCH_ARG) {
-        // This is set for stub dispatch or 'thisInSecretRegister'
-        // The JIT placed an extra argument in the list that needs to
-        // get shoved into R4, and not counted.
-        // pCtx->R4 = va_arg(args, DWORD);
-
-        // LDR r3, [R0], #+4 ; Post incremented load (4 bytes)
-        pSl->ThumbEmitLoadIndirectPostIncrement(ThumbReg(3), ThumbReg(0), 4);
-        // STR r3, [R1, #offset of R4] ; (2 bytes)
-        pSl->ThumbEmitStoreRegIndirect(ThumbReg(3), ThumbReg(1), offsetof(T_CONTEXT, R4));
-        nSrcAlign++;
-    }
-
-
-    MetaSig msig(pSig->pSig, pSig->cbSig, module, &typeCtxt);
-    if (pSig->hasTypeArg())
-        msig.SetHasParamTypeArg();
-    ArgIterator argPlacer(&msig);
-    ArgLocDesc argLoc;
-
-    // First comes the 'this' pointer
-    if (argPlacer.HasThis()) {
-        argPlacer.GetThisLoc(&argLoc);
-        pSl->ThumbCopyOneTailCallArg(&nSrcAlign, &argLoc, &cbStackSpace);
-    }
-
-    // Next comes the return buffer
-    if (argPlacer.HasRetBuffArg()) {
-        // We always reserve space for the return buffer, but we never zero it out,
-        // and we never report it.  Thus the callee shouldn't do RVO and expect
-        // to be able to read GC pointers from it.
-        // If the passed in return buffer is already pointing above the frame,
-        // then we need to pass it along (so it will get passed out).
-        // Otherwise we assume the caller is returning void, so we just pass in
-        // dummy space to be overwritten.
-
-        argPlacer.GetRetBuffArgLoc(&argLoc);
-        _ASSERTE(argLoc.m_cStack == 0);
-        _ASSERTE(argLoc.m_cFloatReg == 0);
-        _ASSERTE(argLoc.m_cGenReg == 1);
-
-        // Grab some space from the top of the frame and pass that in as a dummy
-        // buffer if needed. Align to 8-byte boundary (after taking in account the Frame).
-        // Do this by adding the Frame size, align, then remove the Frame size...
-        _ASSERTE((pSig->retType == CORINFO_TYPE_REFANY) || (pSig->retType == CORINFO_TYPE_VALUECLASS));
-        TypeHandle th(pSig->retTypeClass);
-        UINT cbUsed = ((th.GetSize() + cbFrameOffset + 0x7) & ~0x7) - cbFrameOffset;
-        _ASSERTE(cbUsed >= th.GetSize());
-        cbReturnBufferSpace += cbUsed;
-
-        // LDR r3, [R0], #+4 ; Post incremented load (4 bytes)
-        pSl->ThumbEmitLoadIndirectPostIncrement(ThumbReg(3), ThumbReg(0), 4);
-
-        // LDR r12, [R1, #offset of R11] ; (2 bytes)
-        pSl->ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(1), offsetof(T_CONTEXT, R11));
-
-        // CMP r3, r12 ; (2 bytes)
-        pSl->ThumbEmitCmpReg(ThumbReg(3), ThumbReg(12));
-
-        CodeLabel *pSkipLabel = pSl->NewCodeLabel();
-        // BHI NullLabel ; skip if R3 > R12 unsigned (2 bytes)
-        pSl->ThumbEmitCondFlagJump(pSkipLabel, thumbCondHi.cond);
-
-        // Also check the lower bound of the stack in case the return buffer is on the GC heap
-        // and the GC heap is below the stack
-        // CMP r3, sp ; (2 bytes)
-        pSl->ThumbEmitCmpReg(ThumbReg(3), thumbRegSp);
-        // BLO NullLabel ; skip if r3 < sp unsigned (2 bytes)
-        pSl->ThumbEmitCondFlagJump(pSkipLabel, thumbCondCc.cond);
-
-        // If the caller is expecting us to simulate a return buffer for the callee
-        // pass that pointer in now, by subtracting from R11 space for the Frame
-        // and space for the return buffer.
-        UINT offset = cbUsed + cbFrameOffset;
-        if (offset < 4096) {
-            // SUB r3, r12, #offset ; (4 bytes)
-            pSl->ThumbEmitSub(ThumbReg(3), ThumbReg(12), offset);
-        }
-        else {
-            offset = UINT(-int(offset)); // Silence the @#$%^ warning
-            // MOVW/MOVT (4-8 bytes)
-            // ADD r3, r12; (2 bytes)
-            pSl->ThumbEmitAdd(ThumbReg(3), ThumbReg(12), offset);
-        }
-        // SkipLabel:
-        pSl->EmitLabel(pSkipLabel);
-        // STR r3, [R1, #offset of arg reg] ; (2 bytes)
-        pSl->ThumbEmitStoreRegIndirect(ThumbReg(3), ThumbReg(1), offsetof(T_CONTEXT, R0) + (argLoc.m_idxGenReg * sizeof(DWORD)));
-
-        nSrcAlign++;
-    }
-
-    // Generics Instantiation Parameter
-    if (pSig->hasTypeArg()) {
-        argPlacer.GetParamTypeLoc(&argLoc);
-        pSl->ThumbCopyOneTailCallArg(&nSrcAlign, &argLoc, &cbStackSpace);
-    }
-
-    // VarArgs Cookie Parameter
-    if (pSig->isVarArg()) {
-        argPlacer.GetVASigCookieLoc(&argLoc);
-        pSl->ThumbCopyOneTailCallArg(&nSrcAlign, &argLoc, &cbStackSpace);
-    }
-
-    // Now for *all* the 'real' arguments
-    int argOffset;
-    while ((argOffset = argPlacer.GetNextOffset()) != TransitionBlock::InvalidOffset)
-    {
-        argPlacer.GetArgLoc(argOffset, &argLoc);
-
-        pSl->ThumbCopyOneTailCallArg(&nSrcAlign, &argLoc, &cbStackSpace);
-    }
-
-    // Now that we are done moving arguments, add back in the stack space we reserved
-    // for the return buffer.
-    cbStackSpace += cbReturnBufferSpace;
-
-    // Keep the stack space 8-byte aligned
-    if ((cbStackSpace + cbFrameOffset) & 7) {
-        cbStackSpace += 4;
-    }
-    _ASSERTE(((cbStackSpace + cbFrameOffset) & 7) == 0);
-
-    CodeLabel *pReturnLabel = pSl->NewCodeLabel();
-    // B ReturnLabel:
-    pSl->ThumbEmitNearJump(pReturnLabel);
-
-    // NullLabel:
-    pSl->EmitLabel(pNullLabel);
-    // MOVW/MOVT r0, 0 ; No GCLayout info
-    pSl->ThumbEmitMovConstant(ThumbReg(0), 0);
-    // STR r0, [r3]
-    pSl->ThumbEmitStoreRegIndirect(ThumbReg(0), ThumbReg(3), 0);
-
-    // ReturnLabel:
-    pSl->EmitLabel(pReturnLabel);
-
-    // MOVW/MOVT r0, #cbStackSpace
-    pSl->ThumbEmitMovConstant(ThumbReg(0), cbStackSpace);
-
-    if (fNeedExtraRegs) {
-        // Inject a proper prolog
-        // pop {r4-r7,pc}
-        pSl->ThumbEmitEpilog();
-    }
-    else {
-        // bx lr
-        pSl->ThumbEmitJumpRegister(thumbRegLr);
-    }
-
-    LoaderHeap* pHeap = pMD->GetLoaderAllocator()->GetStubHeap();
-    return pSl->Link(pHeap);
-}
-
 
 VOID ResetCurrentContext()
 {
@@ -2769,6 +2300,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
+
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -2777,6 +2310,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
     pArgs->signature = pLookup->signature;
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
     // It's available only via the run-time helper function,
 
@@ -2791,17 +2326,14 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     else
     {
         int indirectionsSize = 0;
+        if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+        {
+            indirectionsSize += (pLookup->sizeOffset >= 0xFFF ? 10 : 4);
+            indirectionsSize += 12;
+        }
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
-            {
-                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 2);
-                indirectionsSize += 4;
-            }
-            else
-            {
-                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 4);
-            }
+            indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 4);
         }
 
         int codeSize = indirectionsSize + (pLookup->testForNull ? 26 : 2);
@@ -2815,76 +2347,80 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 2;
         }
 
+        BYTE* pBLECall = NULL;
+
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
-                if (pLookup->offsets[i] >= 0xFF)
+                _ASSERTE(pLookup->testForNull && i > 0);
+
+                if (pLookup->sizeOffset >= 0xFFF)
                 {
                     // mov r2, offset
-                    MovRegImm(p, 2, pLookup->offsets[i]);
-                    p += 8;
-
-                    // add r0, r2
-                    *(WORD *)p = 0x4410;
-                    p += 2;
+                    MovRegImm(p, 2, pLookup->sizeOffset); p += 8;
+                    // ldr r1, [r0, r2]
+                    *(WORD*)p = 0x5881; p += 2;
                 }
                 else
                 {
-                    // add r0, <offset>
-                   *(WORD *)p = (WORD)((WORD)0x3000 | (WORD)((0x00FF) & pLookup->offsets[i]));
-                   p += 2;
+                    // ldr r1, [r0 + offset]
+                    *(WORD*)p = 0xF8D0; p += 2;
+                    *(WORD*)p = (WORD)(0xFFF & pLookup->sizeOffset) | 0x1000; p += 2;
                 }
 
-                // r0 is pointer + offset[0]
-                // ldr r2, [r0]
-                *(WORD *)p = 0x6802;
-                p += 2;
+                // mov r2, slotOffset
+                MovRegImm(p, 2, slotOffset); p += 8;
 
-                // r2 is offset1
-                // add r0, r2
-                *(WORD *)p = 0x4410;
+                // cmp r1,r2
+                *(WORD*)p = 0x4291; p += 2;
+
+                // ble 'CALL HELPER'
+                pBLECall = p;       // Offset filled later
+                *(WORD*)p = 0xdd00; p += 2;
+            }
+            if (pLookup->offsets[i] >= 0xFFF)
+            {
+                // mov r2, offset
+                MovRegImm(p, 2, pLookup->offsets[i]);
+                p += 8;
+
+                // ldr r0, [r0, r2]
+                *(WORD *)p = 0x5880;
                 p += 2;
             }
             else
             {
-                if (pLookup->offsets[i] >= 0xFFF)
-                {
-                    // mov r2, offset
-                    MovRegImm(p, 2, pLookup->offsets[i]);
-                    p += 8;
-
-                    // ldr r0, [r0, r2]
-                    *(WORD *)p = 0x5880;
-                    p += 2;
-                }
-                else
-                {
-                    // ldr r0, [r0 + offset]
-                    *(WORD *)p = 0xF8D0;
-                    p += 2;
-                    *(WORD *)p = (WORD)(0xFFF & pLookup->offsets[i]);
-                    p += 2;
-                }
+                // ldr r0, [r0 + offset]
+                *(WORD *)p = 0xF8D0;
+                p += 2;
+                *(WORD *)p = (WORD)(0xFFF & pLookup->offsets[i]);
+                p += 2;
             }
         }
 
         // No null test required
         if (!pLookup->testForNull)
         {
+            _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+
             // mov pc, lr
             *(WORD *)p = 0x46F7;
             p += 2;
         }
         else
         {
-            // cbz r0, nullvaluelabel
+            // cbz r0, 'CALL HELPER'
             *(WORD *)p = 0xB100;
             p += 2;
             // mov pc, lr
             *(WORD *)p = 0x46F7;
             p += 2;
-            // nullvaluelabel:
+
+            // CALL HELPER:
+            if (pBLECall != NULL)
+                *(WORD*)pBLECall |= (((BYTE)(p - pBLECall) - 4) >> 1);
+
             // mov r0, r3
             *(WORD *)p = 0x4618;
             p += 2;

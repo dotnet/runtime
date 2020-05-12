@@ -5,8 +5,15 @@
 
 #include <stdint.h>
 
-#include "pal_icushim.h"
+#include "pal_icushim_internal.h"
 #include "pal_idna.h"
+
+#if defined(TARGET_WINDOWS)
+// Windows icu headers doesn't define this member as it is marked as deprecated as of ICU 55.
+enum {
+    UIDNA_ALLOW_UNASSIGNED=1
+};
+#endif
 
 static const uint32_t AllowUnassigned = 0x1;
 static const uint32_t UseStd3AsciiRules = 0x2;

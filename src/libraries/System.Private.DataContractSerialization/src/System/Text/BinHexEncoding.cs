@@ -9,7 +9,7 @@ namespace System.Text
 {
     internal class BinHexEncoding : Encoding
     {
-        private static readonly byte[] s_char2val = new byte[128]
+        private static ReadOnlySpan<byte> Char2val => new byte[128] // rely on C# compiler optimization to eliminate allocation
         {
             /*    0-15 */
                               0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -66,7 +66,7 @@ namespace System.Text
                 throw new ArgumentException(SR.XmlArrayTooSmall, nameof(bytes));
             if (charCount > 0)
             {
-                fixed (byte* _char2val = &s_char2val[0])
+                fixed (byte* _char2val = &Char2val[0])
                 {
                     fixed (byte* _bytes = &bytes[byteIndex])
                     {

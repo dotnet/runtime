@@ -164,10 +164,7 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
         jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
     }
 
-    if (canSkipMethodVerification(m_currentMethodHandle) == CORINFO_VERIFICATION_CAN_SKIP)
-    {
-        jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION);
-    }
+    jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION);
 
     if (m_pImage->m_profileDataSections[MethodBlockCounts].pData &&
         !m_zapper->m_pOpt->m_ignoreProfileData)
@@ -465,7 +462,7 @@ void ZapInfo::CompileMethod()
         const char* namespaceName;
         getMethodNameFromMetadata(m_currentMethodHandle, nullptr, &namespaceName, nullptr);
         if (strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0
-            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0
+            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0
             || strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
         {
             if (m_zapper->m_pOpt->m_verbose)
@@ -482,15 +479,17 @@ void ZapInfo::CompileMethod()
     {
         // READYTORUN: FUTURE: Producedure spliting
         m_jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
-
-        if (!(methodAttribs & CORINFO_FLG_NOSECURITYWRAP) || (methodAttribs & CORINFO_FLG_SECURITYCHECK))
-        {
-            if (m_zapper->m_pOpt->m_verbose)
-                m_zapper->Warning(W("ReadyToRun: Methods with security checks not supported\n"));
-            ThrowHR(E_NOTIMPL);
-        }
     }
 #endif
+
+#ifdef TARGET_X86
+    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(m_currentMethodHandle))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallersOnlyAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif // TARGET_X86
 
     if (m_pImage->m_stats)
     {
@@ -510,7 +509,7 @@ void ZapInfo::CompileMethod()
                                                      &m_currentMethodInfo,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      &pCode,
-                                                     &cCode );
+                                                     &cCode);
         if (FAILED(res))
         {
             // We will fall back to the "main" JIT on failure.
@@ -891,11 +890,6 @@ DWORD ZapInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     return sizeof(m_jitFlags);
 }
 
-IEEMemoryManager* ZapInfo::getMemoryManager()
-{
-    return GetEEMemoryManager();
-}
-
 bool ZapInfo::runWithErrorTrap(void (*function)(void*), void* param)
 {
     return m_pEEJitInfo->runWithErrorTrap(function, param);
@@ -1170,12 +1164,6 @@ void * ZapInfo::allocGCInfo(size_t size)
 
     return m_pGCInfo;
 }
-
-void ZapInfo::yieldExecution()
-{
-    // nothing necessary here
-}
-
 
 void ZapInfo::setEHcount(unsigned cEH)
 {
@@ -1613,10 +1601,9 @@ CORINFO_CLASS_HANDLE ZapInfo::getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN * pRes
     return m_pEEJitInfo->getTokenTypeAsHandle(pResolvedToken);
 }
 
-CORINFO_LOOKUP_KIND
-ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE   context)
+void ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND * pLookupKind)
 {
-    return m_pEEJitInfo->getLocationOfThisType(context);
+    m_pEEJitInfo->getLocationOfThisType(context, pLookupKind);
 }
 
 void
@@ -1730,14 +1717,14 @@ void ZapInfo::embedGenericSignature(CORINFO_LOOKUP * pLookup)
     }
 }
 
-void* ZapInfo::getTailCallCopyArgsThunk (
-                    CORINFO_SIG_INFO       *pSig,
-                    CorInfoHelperTailCallSpecialHandling flags)
+bool ZapInfo::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    void * pStub = m_pEEJitInfo->getTailCallCopyArgsThunk(pSig, flags);
-    if (pStub == NULL)
-        return NULL;
-    return m_pImage->GetWrappers()->GetStub(pStub);
+    ThrowHR(E_NOTIMPL);
+    return false;
 }
 
 bool ZapInfo::convertPInvokeCalliToCall(
@@ -1934,6 +1921,11 @@ PVOID ZapInfo::embedDirectCall(CORINFO_METHOD_HANDLE ftn,
     return pEntryPointOrThunkToEmbed;
 }
 
+void ZapInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled)
+{
+    m_pEEJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+}
+
 void ZapInfo::getFunctionEntryPoint(
                                 CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
                                 CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
@@ -2006,15 +1998,6 @@ void * ZapInfo::getMethodSync(CORINFO_METHOD_HANDLE ftn,
     AppendConditionalImport(pImport);
 
     *ppIndirection = pImport;
-    return NULL;
-}
-
-void * ZapInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void **ppIndirection)
-{
-    // We will never be able to return this directly in prejit mode.
-    _ASSERTE(ppIndirection != NULL);
-
-    *ppIndirection = NULL;
     return NULL;
 }
 
@@ -2133,7 +2116,7 @@ void ZapInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
 //
 // This strips the CORINFO_FLG_JIT_INTRINSIC flag from some of the named intrinsic methods.
 //
-DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn, ICorDynamicInfo* pJitInfo)
+DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINFO_METHOD_HANDLE ftn, ICorDynamicInfo* pJitInfo)
 {
     if (attribs & CORINFO_FLG_JIT_INTRINSIC)
     {
@@ -2151,8 +2134,8 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0;
-#elif TARGET_ARM64
-        fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0;
+#elif defined(TARGET_ARM64)
+        fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0;
 #endif
 
         fIsHWIntrinsic = fIsPlatformHWIntrinsic || (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
@@ -2169,28 +2152,40 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
         // answer for the CPU the code is running on.
         fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
         if (fIsPlatformHWIntrinsic)
         {
             // Simplify the comparison logic by grabbing the name of the ISA
             const char* isaName = (enclosingClassName == nullptr) ? className : enclosingClassName;
 
-            if ((strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0))
+            bool fIsPlatformRequiredISA     = false;
+            bool fIsPlatformSubArchitecture = false;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+            fIsPlatformRequiredISA     = (strcmp(isaName, "X86Base") == 0) || (strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0);
+            fIsPlatformSubArchitecture = strcmp(className, "X64") == 0;
+#elif defined(TARGET_ARM64)
+            fIsPlatformRequiredISA     = (strcmp(isaName, "ArmBase") == 0) || (strcmp(isaName, "AdvSimd") == 0);
+            fIsPlatformSubArchitecture = strcmp(className, "Arm64") == 0;
+#endif
+
+            if (fIsPlatformRequiredISA)
             {
-                if ((enclosingClassName == nullptr) || (strcmp(className, "X64") == 0))
+                if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
-                    // If it's anything related to Sse/Sse2, we can expand unconditionally since this is
-                    // a baseline requirement of CoreCLR.
+                    // If the ISA is required by CoreCLR for the platform, we can expand unconditionally
                     fTreatAsRegularMethodCall = false;
                 }
             }
-            else if ((strcmp(className, "Avx") == 0) || (strcmp(className, "Fma") == 0) || (strcmp(className, "Avx2") == 0) || (strcmp(className, "Bmi1") == 0) || (strcmp(className, "Bmi2") == 0))
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+            else if ((strcmp(isaName, "Avx") == 0) || (strcmp(isaName, "Fma") == 0) || (strcmp(isaName, "Avx2") == 0)
+                     || (strcmp(isaName, "Bmi1") == 0) || (strcmp(isaName, "Bmi2") == 0) || (strcmp(isaName, "Lzcnt") == 0))
             {
-                if ((enclosingClassName == nullptr) || (strcmp(className, "X64") == 0))
+                if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
-                    // If it is the get_IsSupported method for an ISA which requires the VEX
-                    // encoding we want to expand unconditionally. This will force those code
+                    // If it is the get_IsSupported method for an ISA which is intentionally not enabled
+                    // for crossgen, we want to expand unconditionally. This will force those code
                     // paths to be treated as dead code and dropped from the compilation.
+                    // See Zapper::InitializeCompilerFlags
                     //
                     // For all of the other intrinsics in an ISA which requires the VEX encoding
                     // we need to treat them as regular method calls. This is done because RyuJIT
@@ -2199,7 +2194,20 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
                     fTreatAsRegularMethodCall = !fIsGetIsSupportedMethod;
                 }
             }
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef TARGET_X86
+            else if (fIsPlatformSubArchitecture)
+            {
+                // For ISAs not handled explicitly above, the IsSupported check will always
+                // be treated as a regular method call. If we are evaulating a method in the X64
+                // namespace, we know it will never be supported on x86, so we can allow the code
+                // to be treated as dead. We treat all non-IsSupported methods as regular method
+                // calls so they throw PNSE if used withoug the IsSupported check.
+                fTreatAsRegularMethodCall = !fIsGetIsSupportedMethod;
+            }
+#endif // TARGET_X86
         }
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         else if (strcmp(namespaceName, "System") == 0)
         {
             if ((strcmp(className, "Math") == 0) || (strcmp(className, "MathF") == 0))
@@ -2208,6 +2216,40 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
                 // However, we don't know the ISAs the target machine supports so we should
                 // fallback to the method call implementation instead.
                 fTreatAsRegularMethodCall = strcmp(methodName, "Round") == 0;
+            }
+        }
+        else if (strcmp(namespaceName, "System.Numerics") == 0)
+        {
+            if ((strcmp(className, "Vector3") == 0) || (strcmp(className, "Vector4") == 0))
+            {
+                // Vector3 and Vector4 have constructors which take a smaller Vector and create bolt on
+                // a larger vector. This uses insertps instruction when compiled with SSE4.1 instruction support
+                // which must not be generated inline in R2R images that actually support an SSE2 only mode.
+                if (strcmp(methodName, ".ctor") == 0)
+                {
+                    CORINFO_SIG_INFO sig;
+                    pZapInfo->getMethodSig(ftn, &sig, NULL);
+                    CORINFO_CLASS_HANDLE argClass;
+                    if ((CorInfoType)pZapInfo->getArgType(&sig, sig.args, &argClass) == CORINFO_TYPE_VALUECLASS)
+                    {
+                        fTreatAsRegularMethodCall = TRUE;
+                    }
+                }
+                else if (strcmp(methodName, "Dot") == 0)
+                {
+                    // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                    // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                    fTreatAsRegularMethodCall = TRUE;
+                }
+            }
+            else if ((strcmp(className, "Vector2") == 0) || (strcmp(className, "Vector") == 0) || (strcmp(className, "Vector`1") == 0))
+            {
+                if (strcmp(methodName, "Dot") == 0)
+                {
+                    // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                    // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                    fTreatAsRegularMethodCall = TRUE;
+                }
             }
         }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -2247,7 +2289,7 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                               (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_KINDONLY),
                               pResult);
 
-    pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, pResult->hMethod, m_pEEJitInfo);
+    pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(this, pResult->methodFlags, pResult->hMethod, m_pEEJitInfo);
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
@@ -2265,22 +2307,17 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 m_zapper->Warning(W("ReadyToRun: Runtime method access checks not supported\n"));
             ThrowHR(E_NOTIMPL);
         }
-
-        if (pResult->methodFlags & CORINFO_FLG_SECURITYCHECK)
-        {
-            if (m_zapper->m_pOpt->m_verbose)
-                m_zapper->Warning(W("ReadyToRun: Methods with security checks not supported\n"));
-            ThrowHR(E_NOTIMPL);
-        }
-
-        if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
-        {
-            if (m_zapper->m_pOpt->m_verbose)
-                m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not supported\n"));
-            ThrowHR(E_NOTIMPL);
-        }
     }
 #endif
+
+#ifdef TARGET_X86
+    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(pResult->hMethod))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif // TARGET_X86
 
     if (flags & CORINFO_CALLINFO_KINDONLY)
         return;
@@ -2855,13 +2892,6 @@ WORD ZapInfo::getRelocTypeHint(void * target)
 #endif
 }
 
-void ZapInfo::getModuleNativeEntryPointRange(void** pStart, void** pEnd)
-{
-    // Initialize outparams to default range of (0,0).
-    *pStart = 0;
-    *pEnd = 0;
-}
-
 DWORD ZapInfo::getExpectedTargetArchitecture()
 {
     return IMAGE_FILE_MACHINE_NATIVE;
@@ -2988,7 +3018,19 @@ void ZapInfo::setVars(CORINFO_METHOD_HANDLE ftn,
     return;
 }
 
-void * ZapInfo::allocateArray(ULONG cBytes)
+void ZapInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    // No patchpoint info when prejitting
+    UNREACHABLE();
+}
+
+PatchpointInfo* ZapInfo::getOSRInfo(unsigned * ilOffset)
+{
+    // No patchpoint info when prejitting
+    UNREACHABLE();
+}
+
+void * ZapInfo::allocateArray(size_t cBytes)
 {
     return new BYTE[cBytes];
 }
@@ -3023,12 +3065,6 @@ CorInfoType ZapInfo::getFieldType(CORINFO_FIELD_HANDLE field,
 unsigned ZapInfo::getFieldOffset(CORINFO_FIELD_HANDLE field)
 {
     return m_pEEJitInfo->getFieldOffset(field);
-}
-
-bool ZapInfo::isWriteBarrierHelperRequired(
-                        CORINFO_FIELD_HANDLE    field)
-{
-    return m_pEEJitInfo->isWriteBarrierHelperRequired(field);
 }
 
 void ZapInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
@@ -3281,11 +3317,6 @@ CorInfoInlineTypeCheck ZapInfo::canInlineTypeCheck (CORINFO_CLASS_HANDLE cls, Co
     return m_pEEJitInfo->canInlineTypeCheck(cls, source);
 }
 
-BOOL ZapInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE cls)
-{
-    return m_pEEJitInfo->canInlineTypeCheckWithObjectVTable(cls);
-}
-
 DWORD ZapInfo::getClassAttribs(CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->getClassAttribs(cls);
@@ -3372,12 +3403,6 @@ BOOL ZapInfo::isMoreSpecificType(
                 CORINFO_CLASS_HANDLE cls2)
 {
     return m_pEEJitInfo->isMoreSpecificType(cls1, cls2);
-}
-
-BOOL ZapInfo::shouldEnforceCallvirtRestriction(
-        CORINFO_MODULE_HANDLE scopeHnd)
-{
-    return m_zapper->m_pEEJitInfo->shouldEnforceCallvirtRestriction(scopeHnd);
 }
 
 CORINFO_CLASS_HANDLE ZapInfo::getParentType (
@@ -3601,11 +3626,6 @@ CorInfoHelpFunc ZapInfo::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
     return m_pEEJitInfo->getSharedCCtorHelper(clsHnd);
 }
 
-CorInfoHelpFunc ZapInfo::getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
-{
-    return m_pEEJitInfo->getSecurityPrologHelper(ftn);
-}
-
 CORINFO_CLASS_HANDLE  ZapInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
 {
     return m_pEEJitInfo->getTypeForBox(cls);
@@ -3789,12 +3809,6 @@ size_t ZapInfo::findNameOfToken(CORINFO_MODULE_HANDLE tokenScope,
     return m_pEEJitInfo->findNameOfToken(tokenScope, token, szFQName, FQNameCapacity);
 }
 
-CorInfoCanSkipVerificationResult ZapInfo::canSkipVerification (
-        CORINFO_MODULE_HANDLE tokenScope)
-{
-    return m_pEEJitInfo->canSkipVerification(tokenScope);
-}
-
 BOOL ZapInfo::isValidToken (
             CORINFO_MODULE_HANDLE       tokenScope,
             unsigned                    token)
@@ -3839,7 +3853,7 @@ unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
 DWORD ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
     DWORD result = m_pEEJitInfo->getMethodAttribs(ftn);
-    return FilterNamedIntrinsicMethodAttribs(result, ftn, m_pEEJitInfo);
+    return FilterNamedIntrinsicMethodAttribs(this, result, ftn, m_pEEJitInfo);
 }
 
 void ZapInfo::setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs)
@@ -3882,22 +3896,6 @@ void ZapInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     return m_pEEJitInfo->reportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
 }
 
-
-CorInfoInstantiationVerification ZapInfo::isInstantiationOfVerifiedGeneric(
-        CORINFO_METHOD_HANDLE method)
-{
-    return m_pEEJitInfo->isInstantiationOfVerifiedGeneric(method);
-}
-
-
-void ZapInfo::initConstraintsForVerification(CORINFO_METHOD_HANDLE method,
-                                                            BOOL *pfHasCircularClassConstraints,
-                                                            BOOL *pfHasCircularMethodConstraints)
-{
-     m_pEEJitInfo->
-              initConstraintsForVerification(method,pfHasCircularClassConstraints,pfHasCircularMethodConstraints);
-}
-
 bool ZapInfo::canTailCall(CORINFO_METHOD_HANDLE caller,
                                          CORINFO_METHOD_HANDLE declaredCallee,
                                          CORINFO_METHOD_HANDLE exactCallee,
@@ -3928,30 +3926,6 @@ void ZapInfo::reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,
                                                const char * reason)
 {
     return m_pEEJitInfo->reportTailCallDecision(callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
-}
-
-
-CorInfoCanSkipVerificationResult ZapInfo::canSkipMethodVerification (
-        CORINFO_METHOD_HANDLE ftnHandle)
-{
-    // ILStubs are generated internally by the CLR. There is no need to
-    // verify it, or any of its callees.
-    if (m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB))
-        return CORINFO_VERIFICATION_CAN_SKIP;
-
-    CorInfoCanSkipVerificationResult canSkipVer =
-        m_pEEJitInfo->canSkipMethodVerification(ftnHandle);
-
-    if (canSkipVer == CORINFO_VERIFICATION_RUNTIME_CHECK)
-    {
-        // Transparent code could be partial trust, but we don't know at NGEN time.
-        // Since the JIT is not hardened against unverifiable/illegal code, tell it
-        // to just not jit the method if it hits unverifiable code, rathern than
-        // injecting a runtime callout and continuing trying to JIT the method.
-        canSkipVer = CORINFO_VERIFICATION_DONT_JIT;
-    }
-
-    return canSkipVer;
 }
 
 void ZapInfo::getEHinfo(CORINFO_METHOD_HANDLE ftn,

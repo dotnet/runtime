@@ -173,7 +173,7 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public Blend Blend
+        public Blend? Blend
         {
             get
             {

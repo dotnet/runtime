@@ -81,6 +81,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15097", TestRuntimes.Mono)]
         public void GetFunctionPointer_GenericDelegate_ThrowsArgumentException()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);

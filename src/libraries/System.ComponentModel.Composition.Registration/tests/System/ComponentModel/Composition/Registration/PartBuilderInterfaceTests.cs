@@ -48,6 +48,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void StandardExportInterfacesShouldWork()
         {
             var builder = new RegistrationBuilder();
@@ -82,6 +83,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void StandardExportInterfacesDefaultContractShouldWork()
         {            //Same test as above only using default export builder
             var builder = new RegistrationBuilder();

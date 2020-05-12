@@ -92,6 +92,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15087", TestRuntimes.Mono)]
         [MemberData(nameof(DestroyStructure_InvalidType_TestData))]
         public void DestroyStructure_NonRuntimeType_ThrowsArgumentException(Type invalidType)
         {
@@ -105,6 +106,28 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("structureType", () => Marshal.DestroyStructure((IntPtr)1, typeof(AutoLayoutStruct)));
         }
 
+        [Fact]
+        public void DestroyStructure_NestedNonBlittableStruct_Success()
+        {
+            WINTRUST_BLOB_INFO wbi = new WINTRUST_BLOB_INFO();
+            byte[] contentBytes = System.Text.Encoding.Unicode.GetBytes("foo");
+
+            wbi.gSubject.Data1 = 0x603bcc1f;
+            wbi.gSubject.Data2 = 0x4b59;
+            wbi.gSubject.Data3 = 0x4e08;
+            wbi.gSubject.Data4 = new byte[] { 0xb7, 0x24, 0xd2, 0xc6, 0x29, 0x7e, 0xf3, 0x51 };
+
+            wbi.cbStruct = (uint)Marshal.SizeOf(wbi);
+            wbi.pcwszDisplayName = "bar";
+
+            IntPtr pBlob = Marshal.AllocCoTaskMem(Marshal.SizeOf(wbi));
+            Marshal.StructureToPtr(wbi, pBlob, false);
+
+            Marshal.DestroyStructure<WINTRUST_BLOB_INFO>(pBlob);
+
+            Marshal.FreeCoTaskMem(pBlob);
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct TestStruct
         {
@@ -116,6 +139,31 @@ namespace System.Runtime.InteropServices.Tests
         public struct AutoLayoutStruct
         {
             public int i;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        internal struct GUID
+        {
+            internal uint Data1;
+            internal ushort Data2;
+            internal ushort Data3;
+
+            /// unsigned char[8]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+            internal byte[] Data4;
+        }
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct WINTRUST_BLOB_INFO
+        {
+            internal uint cbStruct;
+
+            /// GUID->_GUID
+            internal GUID gSubject;
+            //[MarshalAs(UnmanagedType.Struct)]
+            //internal Guid gSubject;
+
+            [MarshalAsAttribute(UnmanagedType.LPWStr)]
+            internal string pcwszDisplayName;
         }
     }
 }

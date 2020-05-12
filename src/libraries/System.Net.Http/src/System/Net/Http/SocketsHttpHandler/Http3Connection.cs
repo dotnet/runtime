@@ -27,11 +27,11 @@ namespace System.Net.Http
         private const int MaximumUnknownFramePayloadLength = 4096;
 
         private readonly HttpConnectionPool _pool;
-        private readonly HttpAuthority _origin;
+        private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
         private readonly byte[] _altUsedEncodedHeader;
-        private QuicConnection _connection;
-        private Task _connectionClosedTask;
+        private QuicConnection? _connection;
+        private Task? _connectionClosedTask;
 
         // Keep a collection of requests around so we can process GOAWAY.
         private readonly Dictionary<QuicStream, Http3RequestStream> _activeRequests = new Dictionary<QuicStream, Http3RequestStream>();
@@ -40,7 +40,7 @@ namespace System.Net.Http
         private long _lastProcessedStreamId = -1;
 
         // Our control stream.
-        private QuicStream _clientControl;
+        private QuicStream? _clientControl;
 
         // Current SETTINGS from the server.
         private int _maximumHeadersLength = int.MaxValue; // TODO: this is not yet observed by Http3Stream when buffering headers.
@@ -56,13 +56,13 @@ namespace System.Net.Http
         private readonly Queue<TaskCompletionSourceWithCancellation<bool>> _waitingRequests = new Queue<TaskCompletionSourceWithCancellation<bool>>();
 
         // A connection-level error will abort any future operations.
-        private Exception _abortException;
+        private Exception? _abortException;
 
         public HttpAuthority Authority => _authority;
         public HttpConnectionPool Pool => _pool;
         public int MaximumRequestHeadersLength => _maximumHeadersLength;
         public byte[] AltUsedEncodedHeaderBytes => _altUsedEncodedHeader;
-        public Exception AbortException => Volatile.Read(ref _abortException);
+        public Exception? AbortException => Volatile.Read(ref _abortException);
         private object SyncObj => _activeRequests;
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace System.Net.Http
             }
         }
 
-        public Http3Connection(HttpConnectionPool pool, HttpAuthority origin, HttpAuthority authority, QuicConnection connection)
+        public Http3Connection(HttpConnectionPool pool, HttpAuthority? origin, HttpAuthority authority, QuicConnection connection)
         {
             _pool = pool;
             _origin = origin;
@@ -148,7 +148,7 @@ namespace System.Net.Http
                 {
                     if (closeTask.IsFaulted && NetEventSource.IsEnabled)
                     {
-                        Trace($"{nameof(QuicConnection)} failed to close: {closeTask.Exception.InnerException}");
+                        Trace($"{nameof(QuicConnection)} failed to close: {closeTask.Exception!.InnerException}");
                     }
 
                     try
@@ -167,7 +167,7 @@ namespace System.Net.Http
         {
             // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
 
-            TaskCompletionSourceWithCancellation<bool> waitForAvailableStreamTcs = null;
+            TaskCompletionSourceWithCancellation<bool>? waitForAvailableStreamTcs = null;
 
             lock (SyncObj)
             {
@@ -191,8 +191,8 @@ namespace System.Net.Http
 
             // Allocate an active request
 
-            QuicStream quicStream = null;
-            Http3RequestStream requestStream = null;
+            QuicStream? quicStream = null;
+            Http3RequestStream? requestStream = null;
 
             try
             {
@@ -213,7 +213,7 @@ namespace System.Net.Http
 
                 // 0-byte write to force QUIC to allocate a stream ID.
                 await quicStream.WriteAsync(Array.Empty<byte>(), cancellationToken).ConfigureAwait(false);
-                requestStream.StreamId = quicStream.StreamId;
+                requestStream!.StreamId = quicStream.StreamId;
 
                 bool goAway;
                 lock (SyncObj)
@@ -278,7 +278,7 @@ namespace System.Net.Http
         {
             Debug.Assert(Monitor.IsEntered(SyncObj));
 
-            while (_waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool> tcs))
+            while (_waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
             {
                 tcs.TrySetException(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy));
             }
@@ -297,7 +297,7 @@ namespace System.Net.Http
                 _requestStreamsRemaining += (newMaximumStreamCount - _maximumRequestStreams);
                 _maximumRequestStreams = newMaximumStreamCount;
 
-                while (_requestStreamsRemaining != 0 && _waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool> tcs))
+                while (_requestStreamsRemaining != 0 && _waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
                 {
                     if (tcs.TrySetResult(true))
                     {
@@ -316,7 +316,7 @@ namespace System.Net.Http
         internal Exception Abort(Exception abortException)
         {
             // Only observe the first exception we get.
-            Exception firstException = Interlocked.CompareExchange(ref _abortException, abortException, null);
+            Exception? firstException = Interlocked.CompareExchange(ref _abortException, abortException, null);
 
             if (firstException != null)
             {
@@ -412,10 +412,10 @@ namespace System.Net.Http
             }
         }
 
-        public override void Trace(string message, [CallerMemberName] string memberName = null) =>
+        public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             Trace(0, message, memberName);
 
-        internal void Trace(long streamId, string message, [CallerMemberName] string memberName = null) =>
+        internal void Trace(long streamId, string message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 _pool?.GetHashCode() ?? 0,    // pool ID
                 GetHashCode(),                // connection ID
@@ -423,11 +423,11 @@ namespace System.Net.Http
                 memberName,                   // method name
                 message);                     // message
 
-        private async ValueTask SendSettingsAsync()
+        private async Task SendSettingsAsync()
         {
             try
             {
-                _clientControl = _connection.OpenUnidirectionalStream();
+                _clientControl = _connection!.OpenUnidirectionalStream();
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -471,7 +471,7 @@ namespace System.Net.Http
                         }
 
                         // No cancellation token is needed here; we expect the operation to cancel itself when _connection is disposed.
-                        streamTask = _connection.AcceptStreamAsync(CancellationToken.None);
+                        streamTask = _connection!.AcceptStreamAsync(CancellationToken.None);
                     }
 
                     QuicStream stream = await streamTask.ConfigureAwait(false);

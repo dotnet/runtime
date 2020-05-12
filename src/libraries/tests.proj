@@ -1,76 +1,34 @@
-<Project InitialTargets="IncludeProjectReferences">
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
-  <Import Project="$(RepositoryEngineeringDir)coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
+<Project Sdk="Microsoft.Build.Traversal">
 
-  <PropertyGroup Condition="'$(EnableCoverageSupport)' == 'true'">
-    <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
-    <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <SerializeProjects>true</SerializeProjects>
-  </PropertyGroup>
   <PropertyGroup>
-    <TargetFramework>netcoreapp5.0</TargetFramework> 
+    <TestInParallel Condition="'$(Coverage)' == 'true'">false</TestInParallel>
+    <!-- For tests we want to continue running if a test run failed. -->
+    <TestContinueOnError>ErrorAndContinue</TestContinueOnError>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+    <CoverageReportInputPath>$(ArtifactsBinDir)\*.Tests\**\coverage.opencover.xml</CoverageReportInputPath>
+    <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
+    <EnableCoverageSupport>true</EnableCoverageSupport>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
-    <!-- We currently only test with C# projects. -->
-    <Project Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\**\*.Tests.csproj" />
-    <Project Condition="'$(SkipTestRestore)' != 'true' and '$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
-    <Project Condition="'$(SkipTestRestore)' == 'true' and '$(DirectoryToBuild)' == ''" Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
-    <Project Remove="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
-    <Project Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj" />
-  </ItemGroup>
-
-  <Target Name="IncludeProjectReferences">
-    <ItemGroup>
-      <ProjectReference Include="@(Project)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="GenerateCoverageReport"
-          Condition="'$(EnableCoverageSupport)' == 'true' and '$(SkipCoverageReport)' != 'true'"
-          AfterTargets="TestAllProjects"
-          Inputs="$(CoverageReportInputPath)"
-          Outputs="$(CoverageReportResultsPath)">
-    <Exec Command="$(CoverageReportCommandLine)" />
-  </Target>
-
-  <Import Project="$(RepositoryEngineeringDir)coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
-  <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects">
-    <MSBuild Targets="Build"
-             Projects="@(Project)"
-             Properties="BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndStop" />
+  <!-- Projects that don't support code coverage measurement. -->
+  <ItemGroup Condition="'$(Coverage)' == 'true'">
+    <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
+  </ItemGroup>
 
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
-  </Target>
+  <ItemGroup>
+    <!-- We currently only test with C# projects. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(BuildAllConfigurations)' != 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
+                      Condition="'$(BuildAllConfigurations)' == 'true'" />
+  </ItemGroup>
 
-  <Target Name="Test" DependsOnTargets="TestAllProjects" />
-  <Target Name="TestAllProjects">
-    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
-         however since the project names are unique it will essentially force each to run in its own batch -->
-    <MSBuild Targets="Test"
-             Projects="@(Project)"
-             Condition="'$(SerializeProjects)' == 'true' and '%(Identity)' != ''"
-             Properties="TestAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
-             ContinueOnError="ErrorAndContinue" />
-
-    <MSBuild Targets="Test"
-             Projects="@(Project)"
-             Condition="'$(SerializeProjects)' != 'true'"
-             Properties="TestAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndContinue" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
-  </Target>
+  <Target Name="GenerateMergedCoverageReport"
+          Condition="'$(Coverage)' == 'true'"
+          AfterTargets="Test"
+          DependsOnTargets="GenerateCoverageReport" />
 
 </Project>

@@ -11,9 +11,9 @@
   <CustomElement xmlns="">asd</CustomElement>
   <entry>
     <id>uuid:71d91f91-f5f9-4175-9065-4b7cb357fc4d;id=1</id>
-    <title type="text">SyndicationFeed released for .net Core</title>
+    <title type="text">SyndicationFeed released for .NET</title>
     <updated>2017-06-26T21:41:43Z</updated>
     <link rel="alternate" href="http://contoso.com/news/path" />
-    <content type="text">A lot of text describing the release of .net core feature</content>
+    <content type="text">A lot of text describing the release of .NET feature</content>
   </entry>
 </feed>

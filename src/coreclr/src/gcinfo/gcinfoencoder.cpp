@@ -1834,7 +1834,7 @@ void GcInfoEncoder::Build()
                     // Time to encode the call site
 
                     // Find the match and emit it
-                    UINT32 liveStateOffset;
+                    UINT32 liveStateOffset = 0;
                     bool found = hashMap.Lookup(&liveState, &liveStateOffset);
                     _ASSERTE(found);
                     (void)found;
@@ -1859,7 +1859,7 @@ void GcInfoEncoder::Build()
 
             // Encode call sites at offsets past the last transition
             {
-                UINT32 liveStateOffset;
+                UINT32 liveStateOffset = 0;
                 bool found = hashMap.Lookup(&liveState, &liveStateOffset);
                 _ASSERTE(found);
                 (void)found;

@@ -6,8 +6,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(__BuildArch)</PackagePlatform>
-    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(TargetArchitecture)</PackagePlatform>
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
@@ -21,7 +20,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <ProductDestination>$(RootRepoDir)\artifacts\bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)</ProductDestination>
+    <ProductDestination>$(RepoRoot)\artifacts\bin\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)</ProductDestination>
     <RefDestination>$(ProductDestination)\ref</RefDestination>
   </PropertyGroup>
 

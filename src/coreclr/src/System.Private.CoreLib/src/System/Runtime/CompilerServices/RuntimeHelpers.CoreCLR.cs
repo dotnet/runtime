@@ -7,13 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
@@ -93,8 +86,7 @@ namespace System.Runtime.CompilerServices
         {
             unsafe
             {
-                int length;
-                IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out length);
+                IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
                 fixed (IntPtr* pInstantiation = instantiationHandles)
                 {
                     _PrepareMethod(method.GetMethodInfo(), pInstantiation, length);
@@ -265,8 +257,38 @@ namespace System.Runtime.CompilerServices
 
             return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
         }
-    }
 
+        /// <summary>
+        /// Allocate memory that is associated with the <paramref name="type"/> and
+        /// will be freed if and when the <see cref="System.Type"/> is unloaded.
+        /// </summary>
+        /// <param name="type">Type associated with the allocated memory.</param>
+        /// <param name="size">Amount of memory in bytes to allocate.</param>
+        /// <returns>The allocated memory</returns>
+        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
+        {
+            RuntimeType? rt = type as RuntimeType;
+            if (rt == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+
+            if (size < 0)
+                throw new ArgumentOutOfRangeException(nameof(size));
+
+            return AllocateTypeAssociatedMemoryInternal(new QCallTypeHandle(ref rt), (uint)size);
+        }
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern IntPtr AllocateTypeAssociatedMemoryInternal(QCallTypeHandle type, uint size);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void FreeTailCallArgBuffer();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
+    }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
     internal class RawData
@@ -305,6 +327,8 @@ namespace System.Runtime.CompilerServices
         public ushort InterfaceCount;
         [FieldOffset(ParentMethodTableOffset)]
         public MethodTable* ParentMethodTable;
+        [FieldOffset(ElementTypeOffset)]
+        public void* ElementType;
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
@@ -317,21 +341,31 @@ namespace System.Runtime.CompilerServices
                                                              | 0x40000000 // enum_flag_ComObject
                                                              | 0x00400000;// enum_flag_ICastable;
 
-        private const int ParentMethodTableOffset = 0x10
+        private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG
-        + sizeof(nuint)   // adjust for debug_m_szClassName
+#if TARGET_64BIT
+            8
+#else
+            4
 #endif
-        ;
+#else
+            0
+#endif
+            ;
+
+        private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
 
 #if TARGET_64BIT
-        private const int InterfaceMapOffset = 0x38
+        private const int ElementTypeOffset = 0x30 + DebugClassNamePtr;
 #else
-        private const int InterfaceMapOffset = 0x24
+        private const int ElementTypeOffset = 0x20 + DebugClassNamePtr;
 #endif
-#if DEBUG
-        + sizeof(nuint)   // adjust for debug_m_szClassName
+
+#if TARGET_64BIT
+        private const int InterfaceMapOffset = 0x38 + DebugClassNamePtr;
+#else
+        private const int InterfaceMapOffset = 0x24 + DebugClassNamePtr;
 #endif
-        ;
 
         public bool HasComponentSize
         {
@@ -388,4 +422,24 @@ namespace System.Runtime.CompilerServices
             }
         }
     }
+
+    // Helper structs used for tail calls via helper.
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct PortableTailCallFrame
+    {
+        public PortableTailCallFrame* Prev;
+        public IntPtr TailCallAwareReturnAddress;
+        public IntPtr NextCall;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TailCallTls
+    {
+        public PortableTailCallFrame* Frame;
+        public IntPtr ArgBuffer;
+        private IntPtr _argBufferSize;
+        private IntPtr _argBufferGCDesc;
+        private fixed byte _argBufferInline[64];
+    }
+
 }

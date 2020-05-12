@@ -10,7 +10,9 @@
 #include <search.h>
 #include <string.h>
 
+#include "pal_errors_internal.h"
 #include "pal_collation.h"
+#include "pal_atomic.h"
 
 c_static_assert_msg(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
 c_static_assert_msg(UCOL_LESS < 0, "managed side requires less than zero for a < b");
@@ -167,7 +169,7 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
         ((needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule) ? 5 * g_HalfFullCharsLength : 0);
 
     UChar* items;
-    customRules->items = items = malloc((size_t)capacity * sizeof(UChar));
+    customRules->items = items = (UChar*)malloc((size_t)capacity * sizeof(UChar));
     if (customRules->items == NULL)
     {
         free(customRules);
@@ -266,7 +268,7 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
         const UChar* localeRules = ucol_getRules(pCollator, &localeRulesLength);
         int32_t completeRulesLength = localeRulesLength + customRuleLength + 1;
 
-        UChar* completeRules = calloc((size_t)completeRulesLength, sizeof(UChar));
+        UChar* completeRules = (UChar*)calloc((size_t)completeRulesLength, sizeof(UChar));
 
         for (int i = 0; i < localeRulesLength; i++)
         {
@@ -402,8 +404,7 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
         pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
         UCollator* pNull = NULL;
 
-        // we are not using the standard atomic_compare_exchange_strong to workaround bugs in clang 5.0 (https://bugs.llvm.org/show_bug.cgi?id=37457)
-        if (!__atomic_compare_exchange_n(&pSortHandle->collatorsPerOption[options], &pNull, pCollator, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        if (!pal_atomic_cas_ptr((void* volatile*)&pSortHandle->collatorsPerOption[options], pCollator, pNull))
         {
             ucol_close(pCollator);
             pCollator = pSortHandle->collatorsPerOption[options];
@@ -418,7 +419,7 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
 {
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, 0, &err);
-    int32_t result = 0;
+    int32_t result = -1;
 
     if (U_SUCCESS(err))
     {
@@ -427,9 +428,6 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
     else
     {
         assert(FALSE && "Unexpected ucol_getVersion to fail.");
-
-        // we didn't use UCOL_TAILORINGS_VERSION because it is deprecated in ICU v5
-        result = UCOL_RUNTIME_VERSION << 16 | UCOL_BUILDER_VERSION;
     }
     return result;
 }
@@ -447,6 +445,20 @@ int32_t GlobalizationNative_CompareString(
 
     if (U_SUCCESS(err))
     {
+        // Workaround for https://unicode-org.atlassian.net/projects/ICU/issues/ICU-9396
+        // The ucol_strcoll routine on some older versions of ICU doesn't correctly
+        // handle nullptr inputs. We'll play defensively and always flow a non-nullptr.
+
+        UChar dummyChar = 0;
+        if (lpStr1 == NULL)
+        {
+            lpStr1 = &dummyChar;
+        }
+        if (lpStr2 == NULL)
+        {
+            lpStr2 = &dummyChar; 
+        }
+
         result = ucol_strcoll(pColl, lpStr1, cwStr1Length, lpStr2, cwStr2Length);
     }
 
@@ -466,7 +478,28 @@ int32_t GlobalizationNative_IndexOf(
                         int32_t options,
                         int32_t* pMatchedLength)
 {
+    assert(cwTargetLength > 0);
+
     int32_t result = USEARCH_DONE;
+
+    // It's possible somebody passed us (source = <empty>, target = <non-empty>).
+    // ICU's usearch_* APIs don't handle empty source inputs properly. However,
+    // if this occurs the user really just wanted us to perform an equality check.
+    // We can't short-circuit the operation because depending on the collation in
+    // use, certain code points may have zero weight, which means that empty
+    // strings may compare as equal to non-empty strings.
+
+    if (cwSourceLength == 0)
+    {
+        result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+        if (result == UCOL_EQUAL && pMatchedLength != NULL)
+        {
+            *pMatchedLength = cwTargetLength;
+        }
+
+        return (result == UCOL_EQUAL) ? 0 : -1;
+    }
+    
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
@@ -501,9 +534,31 @@ int32_t GlobalizationNative_LastIndexOf(
                         int32_t cwTargetLength,
                         const UChar* lpSource,
                         int32_t cwSourceLength,
-                        int32_t options)
+                        int32_t options,
+                        int32_t* pMatchedLength)
 {
+    assert(cwTargetLength > 0);
+
     int32_t result = USEARCH_DONE;
+
+    // It's possible somebody passed us (source = <empty>, target = <non-empty>).
+    // ICU's usearch_* APIs don't handle empty source inputs properly. However,
+    // if this occurs the user really just wanted us to perform an equality check.
+    // We can't short-circuit the operation because depending on the collation in
+    // use, certain code points may have zero weight, which means that empty
+    // strings may compare as equal to non-empty strings.
+
+    if (cwSourceLength == 0)
+    {
+        result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+        if (result == UCOL_EQUAL && pMatchedLength != NULL)
+        {
+            *pMatchedLength = cwTargetLength;
+        }
+
+        return (result == UCOL_EQUAL) ? 0 : -1;
+    }
+
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
@@ -514,6 +569,13 @@ int32_t GlobalizationNative_LastIndexOf(
         if (U_SUCCESS(err))
         {
             result = usearch_last(pSearch, &err);
+
+            // if the search was successful,
+            // we'll try to get the matched string length.
+            if (result != USEARCH_DONE && pMatchedLength != NULL)
+            {
+                *pMatchedLength = usearch_getMatchedLength(pSearch);
+            }
             usearch_close(pSearch);
         }
     }
@@ -568,11 +630,15 @@ int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
         {
             UChar32 srcCodepoint, trgCodepoint;
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
             U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
             U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
             if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
             {
@@ -769,14 +835,16 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
         int32_t idx = usearch_last(pSearch, pErrorCode);
         if (idx != USEARCH_DONE)
         {
-            if ((idx + usearch_getMatchedLength(pSearch)) == patternLength)
+            int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
+            assert(matchEnd <= textLength);
+
+            if (matchEnd == textLength)
             {
                 result = TRUE;
             }
             else
             {
-                int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
-                int32_t remainingStringLength = patternLength - matchEnd;
+                int32_t remainingStringLength = textLength - matchEnd;
 
                 result = CanIgnoreAllCollationElements(pCollator, pText + matchEnd, remainingStringLength);
             }
@@ -851,11 +919,15 @@ int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
     {
         UChar32 str1Codepoint, str2Codepoint;
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
         U16_NEXT(lpStr1, str1Idx, cwStr1Length, str1Codepoint);
         U16_NEXT(lpStr2, str2Idx, cwStr2Length, str2Codepoint);
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
         if (str1Codepoint != str2Codepoint && u_toupper(str1Codepoint) != u_toupper(str2Codepoint))
         {

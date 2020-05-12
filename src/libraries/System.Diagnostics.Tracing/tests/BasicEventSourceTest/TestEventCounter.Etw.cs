@@ -14,7 +14,7 @@ namespace BasicEventSourceTests
         private static bool IsProcessElevated => s_isElevated.Value;
 
         [ConditionalFact(nameof(IsProcessElevated))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/27106")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25035")]
         public void Test_Write_Metric_ETW()
         {
             using (var listener = new EtwListener())

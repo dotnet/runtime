@@ -42,7 +42,6 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFileName(path));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/27552")]
         [Theory,
             MemberData(nameof(TestData_GetPathRoot_Windows)),
             MemberData(nameof(TestData_GetPathRoot_Unc)),
@@ -78,7 +77,7 @@ namespace System.IO.Tests
             {
                 foreach (string[] tempPath in GetTempPath_SetEnvVar_Data())
                 {
-                    GetTempPath_SetEnvVar("TMP", tempPath[0], tempPath[1]);
+                    GetTempPath_SetEnvVar_Helper("TMP", tempPath[0], tempPath[1]);
                 }
             }).Dispose();
         }
@@ -273,7 +272,7 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            // https://github.com/dotnet/corefx/issues/11965
+            // https://github.com/dotnet/runtime/issues/18664
             InlineData(@"\\LOCALHOST\share\test.txt.~SS", @"\\LOCALHOST\share\test.txt.~SS"),
             InlineData(@"\\LOCALHOST\share1", @"\\LOCALHOST\share1"),
             InlineData(@"\\LOCALHOST\share3\dir", @"\\LOCALHOST\share3\dir"),

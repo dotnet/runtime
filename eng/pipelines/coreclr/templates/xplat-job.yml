@@ -108,7 +108,7 @@ jobs:
 
     - ${{ if ne(parameters.crossrootfsDir, '') }}:
       - name: crossArg
-        value: 'cross'
+        value: '-cross'
     - ${{ if eq(parameters.crossrootfsDir, '') }}:
       - name: crossArg
         value: ''

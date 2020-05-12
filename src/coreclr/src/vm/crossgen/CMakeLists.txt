@@ -11,6 +11,7 @@ set(VM_CROSSGEN_SOURCES
   ../ceemain.cpp
   ../class.cpp
   ../classhash.cpp
+  ../classlayoutinfo.cpp
   ../clrex.cpp
   ../clrprivbinderutil.cpp
   ../clsload.cpp
@@ -60,6 +61,7 @@ set(VM_CROSSGEN_SOURCES
   ../methodtablebuilder.cpp
   ../mlinfo.cpp
   ../mscorlib.cpp
+  ../nativeimage.cpp
   ../olevariant.cpp
   ../pefile.cpp
   ../peimage.cpp
@@ -74,6 +76,7 @@ set(VM_CROSSGEN_SOURCES
   ../stubcache.cpp
   ../stubgen.cpp
   ../stublink.cpp
+  ../tailcallhelp.cpp
   ../typectxt.cpp
   ../typedesc.cpp
   ../typeequivalencehash.cpp
@@ -171,6 +174,7 @@ set(VM_CROSSGEN_HEADERS
   ../stubgen.h
   ../stublink.h
   ../stublink.inl
+  ../tailcallhelp.h
   ../typectxt.h
   ../typedesc.h
   ../typedesc.inl

@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Description>Abstractions for modifying .net core host-binaries</Description>
+    <Description>Abstractions for modifying .NET host binaries</Description>
+    <IsShipping>false</IsShipping>
   </PropertyGroup>
-    
+
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -13,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata">
-      <Version>1.5.0</Version>
+      <Version>1.8.0</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>

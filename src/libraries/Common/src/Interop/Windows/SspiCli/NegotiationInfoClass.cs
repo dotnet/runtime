@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.InteropServices;
 
 namespace System.Net
@@ -10,7 +11,7 @@ namespace System.Net
     // Kerberos are used in the context of a Negotiate handshake
     internal static partial class NegotiationInfoClass
     {
-        internal static string GetAuthenticationPackageName(SafeHandle safeHandle, int negotiationState)
+        internal static string? GetAuthenticationPackageName(SafeHandle safeHandle, int negotiationState)
         {
             if (safeHandle.IsInvalid)
             {
@@ -28,7 +29,7 @@ namespace System.Net
                 if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE ||
                     negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
                 {
-                    string name;
+                    string? name;
                     unsafe
                     {
                         name = Marshal.PtrToStringUni(((SecurityPackageInfo*)packageInfo)->Name);

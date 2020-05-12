@@ -789,6 +789,50 @@ public:
     // instead.
     TADDR               m_pRCW;
 #endif
+
+public:
+    bool TryGetManagedObjectComWrapper(_Out_ void** mocw)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        *mocw = m_managedObjectComWrapper;
+        return (*mocw != NULL);
+    }
+
+#ifndef DACCESS_COMPILE
+    bool TrySetManagedObjectComWrapper(_In_ void* mocw, _In_ void* curr = NULL)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (FastInterlockCompareExchangePointer(
+                        &m_managedObjectComWrapper,
+                        mocw,
+                        curr) == curr);
+    }
+#endif // !DACCESS_COMPILE
+
+    bool TryGetExternalComObjectContext(_Out_ void** eoc)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        *eoc = m_externalComObjectContext;
+        return (*eoc != NULL);
+    }
+
+#ifndef DACCESS_COMPILE
+    bool TrySetExternalComObjectContext(_In_ void* eoc, _In_ void* curr = NULL)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (FastInterlockCompareExchangePointer(
+                        &m_externalComObjectContext,
+                        eoc,
+                        curr) == curr);
+    }
+#endif // !DACCESS_COMPILE
+
+private:
+    // See InteropLib API for usage.
+    void* m_managedObjectComWrapper;
+    void* m_externalComObjectContext;
 #endif // FEATURE_COMINTEROP
 
 };

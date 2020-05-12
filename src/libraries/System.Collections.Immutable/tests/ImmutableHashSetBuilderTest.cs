@@ -332,5 +332,30 @@ namespace System.Collections.Immutable.Tests
             ImmutableHashSet<int>.Builder nullBuilder = null;
             AssertExtensions.Throws<ArgumentNullException>("builder", () => nullBuilder.ToImmutableHashSet());
         }
+
+        [Fact]
+        public void TryGetValue()
+        {
+            var builder = ImmutableHashSet.Create(1, 2, 3).ToBuilder();
+            Assert.True(builder.TryGetValue(2, out _));
+
+            builder = ImmutableHashSet.Create(CustomEqualityComparer.Instance, 1, 2, 3, 4).ToBuilder();
+            var existing = 0;
+            Assert.True(builder.TryGetValue(5, out existing));
+            Assert.Equal(4, existing);
+        }
+
+        private class CustomEqualityComparer : IEqualityComparer<int>
+        {
+            private CustomEqualityComparer()
+            {
+            }
+
+            public static CustomEqualityComparer Instance { get; } = new CustomEqualityComparer();
+
+            public bool Equals(int x, int y) => x >> 1 == y >> 1;
+
+            public int GetHashCode(int obj) => (obj >> 1).GetHashCode();
+        }
     }
 }

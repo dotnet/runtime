@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include <windows.h>
-#include <clrdata.h>
-#include <cor.h>
-#include <cordebug.h>
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 #include <elf.h>
 #ifdef HOST_UNIX
 #include <link.h>
@@ -16,18 +10,8 @@
 #include <vector>
 
 #if TARGET_64BIT
-#define PRIx PRIx64
-#define PRIu PRIu64
-#define PRId PRId64
-#define PRIA "016"
-#define PRIxA PRIA PRIx
 #define TARGET_WORDSIZE 64
 #else
-#define PRIx PRIx32
-#define PRIu PRIu32
-#define PRId PRId32
-#define PRIA "08"
-#define PRIxA PRIA PRIx
 #define TARGET_WORDSIZE 32
 #endif
 
@@ -49,7 +33,6 @@ typedef struct {
 class ElfReader
 {
 private:
-    void* m_rdebugAddr;                     // DT_DEBUG
     void* m_gnuHashTableAddr;               // DT_GNU_HASH
     void* m_stringTableAddr;                // DT_STRTAB
     int m_stringTableSize;                  // DT_STRSIZ
@@ -62,14 +45,12 @@ private:
 public:
     ElfReader();
     virtual ~ElfReader();
-    bool PopulateELFInfo(uint64_t baseAddress);
-    bool PopulateELFInfo(ElfW(Phdr)* phdrAddr, int phnum);
-    bool TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset);
 #ifdef HOST_UNIX
-     bool EnumerateLinkMapEntries();
+    bool EnumerateElfInfo(ElfW(Phdr)* phdrAddr, int phnum);
 #endif
-    bool EnumerateProgramHeaders(uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
-    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
+    bool PopulateForSymbolLookup(uint64_t baseAddress);
+    bool TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset);
+    bool EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias = nullptr, ElfW(Dyn)** pdynamicAddr = nullptr);
 
 private:
     bool GetSymbol(int32_t index, ElfW(Sym)* symbol);
@@ -78,7 +59,10 @@ private:
     uint32_t Hash(const std::string& symbolName);
     bool GetChain(int index, int32_t* chain);
     bool GetStringAtIndex(int index, std::string& result);
-    bool EnumerateDynamicEntries(ElfW(Dyn)* dynamicAddr);
+#ifdef HOST_UNIX
+    bool EnumerateLinkMapEntries(ElfW(Dyn)* dynamicAddr);
+#endif
+    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, ElfW(Dyn)** pdynamicAddr);
     virtual void VisitModule(uint64_t baseAddress, std::string& moduleName) { };
     virtual void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr) { };
     virtual bool ReadMemory(void* address, void* buffer, size_t size) = 0;

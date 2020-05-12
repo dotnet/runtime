@@ -1,7 +1,6 @@
 project(System.Native C)
 
 set(NATIVE_SOURCES
-    pal_console.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
@@ -23,7 +22,15 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
-if (CLR_CMAKE_TARGET_LINUX)
+if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_log.m
+        pal_searchpath.m)
+else ()
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_console.c)
+endif ()
+
+if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
 
     if (!HAVE_LINUX_RTNETLINK_H)
@@ -49,12 +56,12 @@ if (GEN_SHARED_LIB)
 
     if (CLR_CMAKE_TARGET_FREEBSD)
         target_link_libraries(System.Native pthread)
-    if (HAVE_INOTIFY)
-        find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
-        target_link_libraries(System.Native ${INOTIFY_LIBRARY})
+        if (HAVE_INOTIFY)
+            find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+            target_link_libraries(System.Native ${INOTIFY_LIBRARY})
+        endif ()
     endif ()
-    endif ()
-    install_library_and_symbols (System.Native)
+    install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
 add_library(System.Native-Static
@@ -62,8 +69,10 @@ add_library(System.Native-Static
     ${NATIVE_SOURCES}
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Native-Static PROPERTIES PREFIX "")
+if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    target_link_libraries(System.Native "-framework Foundation")
+endif ()
+
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Native-Static DESTINATION .)

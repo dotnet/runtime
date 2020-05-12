@@ -6957,7 +6957,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                                    //if there is a layout, use it to compute
                                    //the size, otherwise there is just the one
                                    //entry.
-                                   DictionaryLayout::GetFirstDictionaryBucketSize(mt->GetNumGenericArgs(), layout),
+                                   DictionaryLayout::GetDictionarySizeFromLayout(mt->GetNumGenericArgs(), layout),
                                    METHODTABLES );
 
             DisplayStartArrayWithOffset( m_pEntries, NULL, Dictionary,
@@ -7983,7 +7983,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
             {
                 PTR_DictionaryLayout layout(wrapped->IsSharedByGenericMethodInstantiations()
                                             ? dac_cast<TADDR>(wrapped->GetDictLayoutRaw()) : NULL );
-                dictSize = DictionaryLayout::GetFirstDictionaryBucketSize(imd->GetNumGenericMethodArgs(),
+                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(), 
                                                                           layout);
             }
         }
@@ -8337,9 +8337,6 @@ NativeImageDumper::DumpEEClassForMethodTable( PTR_MethodTable mt )
         DisplayWriteFieldInt( m_cbNativeSize, eecli->m_cbNativeSize,
                               EEClassLayoutInfo, VERBOSE_TYPES );
         DisplayWriteFieldInt( m_cbManagedSize, eecli->m_cbManagedSize,
-                              EEClassLayoutInfo, VERBOSE_TYPES );
-        DisplayWriteFieldInt( m_LargestAlignmentRequirementOfAllMembers,
-                              eecli->m_LargestAlignmentRequirementOfAllMembers,
                               EEClassLayoutInfo, VERBOSE_TYPES );
         DisplayWriteFieldInt( m_ManagedLargestAlignmentRequirementOfAllMembers,
                               eecli->m_ManagedLargestAlignmentRequirementOfAllMembers,

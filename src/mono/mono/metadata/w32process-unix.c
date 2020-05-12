@@ -1034,7 +1034,6 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 **s
 		procname = mono_unicode_from_external (procname_ext, &bytes);
 		if (procname == NULL) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't get procname %p", __func__, handle);
-			/* bugger */
 			g_free (procname_ext);
 			mono_w32handle_unref (handle_data);
 			return FALSE;
@@ -1522,9 +1521,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	 * 5) $PATH
 	 *
 	 * Just to make things more interesting, tokens can contain
-	 * white space if they are surrounded by quotation marks.  I'm
-	 * beginning to understand just why windows apps are generally
-	 * so crap, with an API like this :-(
+	 * white space if they are surrounded by quotation marks.
 	 */
 	if (appname != NULL) {
 		cmd = mono_unicode_to_external_checked (appname, error);
@@ -1814,7 +1811,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* Copy each environ string into 'strings' turning it into utf8 (or the requested encoding) at the same time */
 		for (gsize i = 0; i < array_length; ++i) {
 			MONO_HANDLE_ARRAY_GETREF (var, array, i);
-			gchandle_t gchandle = 0;
+			MonoGCHandle gchandle = NULL;
 			env_strings [i] = mono_unicode_to_external (mono_string_handle_pin_chars (var, &gchandle));
 			mono_gchandle_free_internal (gchandle);
 		}

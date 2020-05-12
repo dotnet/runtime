@@ -14,7 +14,7 @@ using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
     public class RuntimeBinderTests
     {
         [Fact]
@@ -75,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             }
         }
 
-        // https://github.com/dotnet/coreclr/issues/7103
+        // https://github.com/dotnet/runtime/issues/6625
         [Fact]
         public void InternalsVisibleToTest()
         {
@@ -391,65 +391,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
             Func<CallSite, ICounterBoth, object> target2 = getter.Target;
             Assert.Equal(message, Assert.Throws<RuntimeBinderException>(() => target2(getter, null)).Message);
-        }
-
-        // This is not the defined COM interface for IKnownFolderManager.
-        // We need a registered COM interface and CoClass to validate the behavior with dynamic and COM.
-        // The real IKnownFolderManager interface is available on Windows Vista+, so it is on all platforms that we're testing.
-        [ComImport]
-        [Guid("8BE2D872-86AA-4d47-B776-32CCA40C7018")]
-        interface Not_IKnownFolderManager
-        {
-            void MethodCall();
-
-            int this[int i] { get; set; }
-
-            int Property { get; set; }
-        }
-
-        [CoClass(typeof(KnownFolderManagerClass))]
-        [ComImport]
-        [Guid("8BE2D872-86AA-4d47-B776-32CCA40C7018")]
-        interface KnownFolderManager : Not_IKnownFolderManager { }
-
-        [Guid("4df0c730-df9d-4ae3-9153-aa6b82e9795a")]
-        class KnownFolderManagerClass { }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public void DynamicComThrowsException()
-        {
-            Assert.Throws<RuntimeBinderException>(() =>
-            {
-                var a = new { Manager = new KnownFolderManagerClass() };
-                dynamic d = a;
-                d.Manager.MethodCall();
-            });
-            Assert.Throws<RuntimeBinderException>(() =>
-            {
-                var a = new { Manager = new KnownFolderManagerClass() };
-                dynamic d = a;
-                return d.Manager[0];
-            });
-            Assert.Throws<RuntimeBinderException>(() =>
-            {
-                var a = new { Manager = new KnownFolderManagerClass() };
-                dynamic d = a;
-                d.Manager[0] = 1;
-            });
-            Assert.Throws<RuntimeBinderException>(() =>
-            {
-                var a = new { Manager = new KnownFolderManagerClass() };
-                dynamic d = a;
-                d.Manager.Property = 1;
-            });
-            Assert.Throws<RuntimeBinderException>(() =>
-            {
-                var a = new { Manager = new KnownFolderManagerClass() };
-                dynamic d = a;
-                d.Manager.Property = 1;
-            });
         }
     }
 }

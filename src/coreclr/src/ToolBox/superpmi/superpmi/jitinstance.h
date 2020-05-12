@@ -16,11 +16,9 @@ class JitInstance
 private:
     char*          PathToOriginalJit;
     char*          PathToTempJit;
-    HANDLE         ourHeap;
     HMODULE        hLib;
     PgetJit        pngetJit;
     PjitStartup    pnjitStartup;
-    PsxsJitStartup pnsxsJitStartup;
     ICorJitHost*   jitHost;
     ICorJitInfo*   icji;
     SimpleTimer    stj;
@@ -68,8 +66,8 @@ public:
 
     const MethodContext::Environment& getEnvironment();
 
-    void* allocateArray(ULONG size);
-    void* allocateLongLivedArray(ULONG size);
+    void* allocateArray(size_t size);
+    void* allocateLongLivedArray(size_t size);
     void freeArray(void* array);
     void freeLongLivedArray(void* array);
 };

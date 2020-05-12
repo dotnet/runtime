@@ -115,10 +115,13 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
 //    base type of SIMD vector.
 //    sizeBytes if non-null is set to size in bytes.
 //
+// Notes:
+//    If the size of the struct is already known call structSizeMightRepresentSIMDType
+//    to determine if this api needs to be called.
+//
 // TODO-Throughput: current implementation parses class name to find base type. Change
 //         this when we implement  SIMD intrinsic identification for the final
 //         product.
-//
 var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
     assert(supportSIMDTypes());
@@ -159,11 +162,13 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
         if (typeHnd == m_simdHandleCache->SIMDFloatHandle)
         {
             simdBaseType = TYP_FLOAT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<Float>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDIntHandle)
         {
             simdBaseType = TYP_INT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<Int>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDVector2Handle)
@@ -189,46 +194,55 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
         }
         else if (typeHnd == m_simdHandleCache->SIMDVectorHandle)
         {
+            size = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type Vector\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDUShortHandle)
         {
             simdBaseType = TYP_USHORT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<ushort>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDUByteHandle)
         {
             simdBaseType = TYP_UBYTE;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<ubyte>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDDoubleHandle)
         {
             simdBaseType = TYP_DOUBLE;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<Double>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDLongHandle)
         {
             simdBaseType = TYP_LONG;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<Long>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDShortHandle)
         {
             simdBaseType = TYP_SHORT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<short>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDByteHandle)
         {
             simdBaseType = TYP_BYTE;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<byte>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDUIntHandle)
         {
             simdBaseType = TYP_UINT;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<uint>\n");
         }
         else if (typeHnd == m_simdHandleCache->SIMDULongHandle)
         {
             simdBaseType = TYP_ULONG;
+            size         = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<ulong>\n");
         }
 
@@ -250,6 +264,8 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             {
                 if (wcsncmp(&(className[16]), W("Vector`1["), 9) == 0)
                 {
+                    size = getSIMDVectorRegisterByteLength();
+
                     if (wcsncmp(&(className[25]), W("System.Single"), 13) == 0)
                     {
                         m_simdHandleCache->SIMDFloatHandle = typeHnd;
@@ -345,6 +361,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                 else if (wcsncmp(&(className[16]), W("Vector"), 6) == 0)
                 {
                     m_simdHandleCache->SIMDVectorHandle = typeHnd;
+                    size                                = getSIMDVectorRegisterByteLength();
                     JITDUMP(" Found type Vector\n");
                 }
                 else
@@ -352,18 +369,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                     JITDUMP("  Unknown SIMD Type\n");
                 }
             }
-        }
-        if (simdBaseType != TYP_UNKNOWN && sizeBytes != nullptr)
-        {
-            // If not a fixed size vector then its size is same as SIMD vector
-            // register length in bytes
-            if (size == 0)
-            {
-                size = getSIMDVectorRegisterByteLength();
-            }
-
-            *sizeBytes = size;
-            setUsesSIMDTypes(true);
         }
     }
 #ifdef FEATURE_HW_INTRINSICS
@@ -765,17 +770,26 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             }
         }
 
-        if (sizeBytes != nullptr)
+#if defined(TARGET_XARCH)
+        // Even though Vector256 is TYP_SIMD32, if AVX isn't supported, then it must
+        // be treated as a regular struct
+        if (size == YMM_REGSIZE_BYTES && (simdBaseType != TYP_UNKNOWN) && !compExactlyDependsOn(InstructionSet_AVX))
         {
-            *sizeBytes = size;
+            simdBaseType = TYP_UNKNOWN;
         }
-
-        if (simdBaseType != TYP_UNKNOWN)
-        {
-            setUsesSIMDTypes(true);
-        }
+#endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
+
+    if (sizeBytes != nullptr)
+    {
+        *sizeBytes = size;
+    }
+
+    if (simdBaseType != TYP_UNKNOWN)
+    {
+        setUsesSIMDTypes(true);
+    }
 
     return simdBaseType;
 }
@@ -1049,6 +1063,46 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     }
 
     return nullptr;
+}
+
+/* static */ bool Compiler::vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
+{
+    switch (intrinsicId)
+    {
+        case SIMDIntrinsicInit:
+        case SIMDIntrinsicGetItem:
+        case SIMDIntrinsicAdd:
+        case SIMDIntrinsicSub:
+        case SIMDIntrinsicMul:
+        case SIMDIntrinsicDiv:
+        case SIMDIntrinsicSqrt:
+        case SIMDIntrinsicMin:
+        case SIMDIntrinsicMax:
+        case SIMDIntrinsicAbs:
+        case SIMDIntrinsicEqual:
+        case SIMDIntrinsicLessThan:
+        case SIMDIntrinsicLessThanOrEqual:
+        case SIMDIntrinsicGreaterThan:
+        case SIMDIntrinsicGreaterThanOrEqual:
+        case SIMDIntrinsicBitwiseAnd:
+        case SIMDIntrinsicBitwiseAndNot:
+        case SIMDIntrinsicBitwiseOr:
+        case SIMDIntrinsicBitwiseXor:
+        case SIMDIntrinsicDotProduct:
+        case SIMDIntrinsicCast:
+        case SIMDIntrinsicConvertToSingle:
+        case SIMDIntrinsicConvertToDouble:
+        case SIMDIntrinsicConvertToInt32:
+        case SIMDIntrinsicConvertToInt64:
+        case SIMDIntrinsicNarrow:
+        case SIMDIntrinsicWidenHi:
+        case SIMDIntrinsicWidenLo:
+            return true;
+
+        default:
+            break;
+    }
+    return false;
 }
 
 // Pops and returns GenTree node from importer's type stack.
@@ -2432,13 +2486,11 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         return nullptr;
     }
 
-#ifdef FEATURE_CORECLR
-    // For coreclr, we also exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
+    // Exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) == 0)
     {
         return nullptr;
     }
-#endif // FEATURE_CORECLR
 
     // Get base type and intrinsic Id
     var_types                baseType = TYP_UNKNOWN;
@@ -3084,6 +3136,19 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             retVal = gtNewSIMDNode(genActualType(callType), op1, nullptr, simdIntrinsicID, baseType, size);
         }
         break;
+
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
+#if defined(TARGET_XARCH)
+            // Rounding instructions are only available from SSE4.1.
+            if (getSIMDSupportLevel() < SIMD_SSE4_Supported)
+            {
+                return nullptr;
+            }
+#endif // defined(TARGET_XARCH)
+            op1    = impSIMDPopStack(simdType);
+            retVal = gtNewSIMDNode(genActualType(callType), op1, simdIntrinsicID, baseType, size);
+            break;
 
         case SIMDIntrinsicAbs:
             op1    = impSIMDPopStack(simdType);

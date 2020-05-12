@@ -15,15 +15,15 @@ namespace System
         public static System.Threading.Tasks.Task AsTask(this global::Windows.Foundation.IAsyncAction source) { throw null; }
         public static System.Threading.Tasks.Task AsTask(this global::Windows.Foundation.IAsyncAction source, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source) { throw null; }
-        public static System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, System.IProgress<TProgress> progress) { throw null; }
+        public static System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, System.IProgress<TProgress>? progress) { throw null; }
         public static System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public static System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, System.Threading.CancellationToken cancellationToken, System.IProgress<TProgress> progress) { throw null; }
+        public static System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, System.Threading.CancellationToken cancellationToken, System.IProgress<TProgress>? progress) { throw null; }
         public static System.Threading.Tasks.Task<TResult> AsTask<TResult>(this global::Windows.Foundation.IAsyncOperation<TResult> source) { throw null; }
         public static System.Threading.Tasks.Task<TResult> AsTask<TResult>(this global::Windows.Foundation.IAsyncOperation<TResult> source, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source) { throw null; }
-        public static System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, System.IProgress<TProgress> progress) { throw null; }
+        public static System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, System.IProgress<TProgress>? progress) { throw null; }
         public static System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public static System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, System.Threading.CancellationToken cancellationToken, System.IProgress<TProgress> progress) { throw null; }
+        public static System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, System.Threading.CancellationToken cancellationToken, System.IProgress<TProgress>? progress) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this global::Windows.Foundation.IAsyncAction source) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -122,7 +122,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [System.CLSCompliantAttribute(false)]
         public static global::Windows.Storage.Streams.IBuffer GetWindowsRuntimeBuffer(this System.IO.MemoryStream underlyingStream, int positionInStream, int length) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool IsSameData(this global::Windows.Storage.Streams.IBuffer buffer, global::Windows.Storage.Streams.IBuffer otherBuffer) { throw null; }
+        public static bool IsSameData(this global::Windows.Storage.Streams.IBuffer buffer, global::Windows.Storage.Streams.IBuffer? otherBuffer) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] ToArray(this global::Windows.Storage.Streams.IBuffer source) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -137,13 +137,13 @@ namespace Windows.Foundation
         public Point(double x, double y) { throw null; }
         public double X { get { throw null; } set { } }
         public double Y { get { throw null; } set { } }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public bool Equals(global::Windows.Foundation.Point value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw null; }
         public static bool operator !=(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(global::System.IFormatProvider provider) { throw null; }
+        public string ToString(global::System.IFormatProvider? provider) { throw null; }
     }
     public partial struct Rect : global::System.IFormattable
     {
@@ -162,14 +162,14 @@ namespace Windows.Foundation
         public double X { get { throw null; } set { } }
         public double Y { get { throw null; } set { } }
         public bool Contains(global::Windows.Foundation.Point point) { throw null; }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public bool Equals(global::Windows.Foundation.Rect value) { throw null; }
         public override int GetHashCode() { throw null; }
         public void Intersect(global::Windows.Foundation.Rect rect) { }
         public static bool operator ==(global::Windows.Foundation.Rect rect1, global::Windows.Foundation.Rect rect2) { throw null; }
         public static bool operator !=(global::Windows.Foundation.Rect rect1, global::Windows.Foundation.Rect rect2) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(global::System.IFormatProvider provider) { throw null; }
+        public string ToString(global::System.IFormatProvider? provider) { throw null; }
         public void Union(global::Windows.Foundation.Point point) { }
         public void Union(global::Windows.Foundation.Rect rect) { }
     }
@@ -181,7 +181,7 @@ namespace Windows.Foundation
         public double Height { get { throw null; } set { } }
         public bool IsEmpty { get { throw null; } }
         public double Width { get { throw null; } set { } }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public bool Equals(global::Windows.Foundation.Size value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(global::Windows.Foundation.Size size1, global::Windows.Foundation.Size size2) { throw null; }
@@ -198,13 +198,13 @@ namespace Windows.UI
         public byte B { get { throw null; } set { } }
         public byte G { get { throw null; } set { } }
         public byte R { get { throw null; } set { } }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public bool Equals(global::Windows.UI.Color color) { throw null; }
         public static global::Windows.UI.Color FromArgb(byte a, byte r, byte g, byte b) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(global::Windows.UI.Color color1, global::Windows.UI.Color color2) { throw null; }
         public static bool operator !=(global::Windows.UI.Color color1, global::Windows.UI.Color color2) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(global::System.IFormatProvider provider) { throw null; }
+        public string ToString(global::System.IFormatProvider? provider) { throw null; }
     }
 }

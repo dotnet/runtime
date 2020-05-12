@@ -243,7 +243,16 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_TABLE_IDX,  /* "Field:Field" }, */
 	MONO_MT_END,
 
-#define FIELD_POINTER_SCHEMA_OFFSET FIELD_RVA_SCHEMA_OFFSET + 3
+#define ENCLOG_SCHEMA_OFFSET FIELD_RVA_SCHEMA_OFFSET + 3
+	MONO_MT_UINT32,    /* "Token" }, */
+	MONO_MT_UINT32,    /* "FuncCode" }, */
+	MONO_MT_END,
+
+#define ENCMAP_SCHEMA_OFFSET ENCLOG_SCHEMA_OFFSET + 3
+	MONO_MT_UINT32,    /* "Token" }, */
+	MONO_MT_END,
+
+#define FIELD_POINTER_SCHEMA_OFFSET ENCMAP_SCHEMA_OFFSET + 2
 	MONO_MT_TABLE_IDX,  /* "Field" }, */
 	MONO_MT_END,
 
@@ -470,8 +479,8 @@ table_description [] = {
 	TYPESPEC_SCHEMA_OFFSET,
 	IMPLMAP_SCHEMA_OFFSET,
 	FIELD_RVA_SCHEMA_OFFSET,
-	NULL_SCHEMA_OFFSET,
-	NULL_SCHEMA_OFFSET,
+	ENCLOG_SCHEMA_OFFSET,
+	ENCMAP_SCHEMA_OFFSET,
 	ASSEMBLY_SCHEMA_OFFSET, /* 0x20 */
 	ASSEMBLYPROC_SCHEMA_OFFSET,
 	ASSEMBLYOS_SCHEMA_OFFSET,
@@ -1049,7 +1058,8 @@ const char *
 mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *error)
 {
 	if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
-		mono_error_set_bad_image_by_name (error, meta->name ? meta->name : "unknown image", "string heap index %ud out bounds %u", index, meta->heap_strings.size);
+		const char *image_name = meta && meta->name ? meta->name : "unknown image";
+		mono_error_set_bad_image_by_name (error, image_name, "string heap index %ud out bounds %u: %s", index, meta->heap_strings.size, image_name);
 		return NULL;
 	}
 	return meta->heap_strings.data + index;
@@ -1118,7 +1128,8 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 	if (G_UNLIKELY (index == 0 && meta->heap_blob.size == 0))
 		return NULL;
 	if (G_UNLIKELY (!(index < meta->heap_blob.size))) {
-		mono_error_set_bad_image_by_name (error, meta->name ? meta->name : "unknown image", "blob heap index %u out of bounds %u", index, meta->heap_blob.size);
+		const char *image_name = meta && meta->name ? meta->name : "unknown image";
+		mono_error_set_bad_image_by_name (error, image_name, "blob heap index %u out of bounds %u: %s", index, meta->heap_blob.size, image_name);
 		return NULL;
 	}
 	return meta->heap_blob.data + index;
@@ -1207,13 +1218,13 @@ mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t
 	const char *image_name = image && image->name ? image->name : "unknown image";
 
 	if (G_UNLIKELY (! (idx < t->rows && idx >= 0))) {
-		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows", idx, t->rows);
+		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows: %s", idx, t->rows, image_name);
 		return FALSE;
 	}
 	const char *data = t->base + idx * t->row_size;
 
 	if (G_UNLIKELY (res_size != count)) {
-		mono_error_set_bad_image_by_name (error, image_name, "res_size %d != count %d", res_size, count);
+		mono_error_set_bad_image_by_name (error, image_name, "res_size %d != count %d: %s", res_size, count, image_name);
 		return FALSE;
 	}
 
@@ -1228,7 +1239,7 @@ mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t
 		case 4:
 			res [i] = read32 (data); break;
 		default:
-			mono_error_set_bad_image_by_name (error, image_name, "unexpected table [%d] size %d", i, n);
+			mono_error_set_bad_image_by_name (error, image_name, "unexpected table [%d] size %d: %s", i, n, image_name);
 			return FALSE;
 		}
 		data += n;
@@ -2508,11 +2519,11 @@ signature_in_image (MonoMethodSignature *sig, MonoImage *image)
 	gpointer iter = NULL;
 	MonoType *p;
 
-	while ((p = mono_signature_get_params (sig, &iter)) != NULL)
+	while ((p = mono_signature_get_params_internal (sig, &iter)) != NULL)
 		if (type_in_image (p, image))
 			return TRUE;
 
-	return type_in_image (mono_signature_get_return_type (sig), image);
+	return type_in_image (mono_signature_get_return_type_internal (sig), image);
 }
 
 static gboolean
@@ -2559,7 +2570,13 @@ retry:
 		return signature_in_image (type->data.method, image);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return image == mono_get_image_for_generic_param (type->data.generic_param);
+		if (image == mono_get_image_for_generic_param (type->data.generic_param))
+			return TRUE;
+		else if (type->data.generic_param->gshared_constraint) {
+			type = type->data.generic_param->gshared_constraint;
+			goto retry;
+		}
+		return FALSE;
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type_internal () */
 		return image == m_class_get_image (mono_class_from_mono_type_internal (type));
@@ -2796,6 +2813,12 @@ delete_image_set (MonoImageSet *set)
 
 	g_hash_table_destroy (set->aggregate_modifiers_cache);
 
+	for (i = 0; i < set->gshared_types_len; ++i) {
+		if (set->gshared_types [i])
+			g_hash_table_destroy (set->gshared_types [i]);
+	}
+	g_free (set->gshared_types);
+
 	mono_wrapper_caches_free (&set->wrapper_caches);
 
 	image_sets_lock ();
@@ -2970,8 +2993,8 @@ collect_signature_images (MonoMethodSignature *sig, CollectData *data)
 	gpointer iter = NULL;
 	MonoType *p;
 
-	collect_type_images (mono_signature_get_return_type (sig), data);
-	while ((p = mono_signature_get_params (sig, &iter)) != NULL)
+	collect_type_images (mono_signature_get_return_type_internal (sig), data);
+	while ((p = mono_signature_get_params_internal (sig, &iter)) != NULL)
 		collect_type_images (p, data);
 }
 
@@ -3031,13 +3054,16 @@ retry:
 		type = m_class_get_byval_arg (type->data.array->eklass);
 		goto retry;
 	case MONO_TYPE_FNPTR:
-		//return signature_in_image (type->data.method, image);
-		g_assert_not_reached ();
+		collect_signature_images (type->data.method, data);
+		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 	{
 		MonoImage *image = mono_get_image_for_generic_param (type->data.generic_param);
 		add_image (image, data);
+		type = type->data.generic_param->gshared_constraint;
+		if (type)
+			goto retry;
 		break;
 	}
 	case MONO_TYPE_CLASS:
@@ -3312,17 +3338,23 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 }
 
 MonoImageSet *
-mono_metadata_get_image_set_for_class (MonoClass *klass)
+mono_metadata_get_image_set_for_type (MonoType *type)
 {
 	MonoImageSet *set;
 	CollectData image_set_data;
 
 	collect_data_init (&image_set_data);
-	collect_type_images (m_class_get_byval_arg (klass), &image_set_data);
+	collect_type_images (type, &image_set_data);
 	set = get_image_set (image_set_data.images, image_set_data.nimages);
 	collect_data_free (&image_set_data);
 
 	return set;
+}
+
+MonoImageSet *
+mono_metadata_get_image_set_for_class (MonoClass *klass)
+{
+	return mono_metadata_get_image_set_for_type (m_class_get_byval_arg (klass));
 }
 
 MonoImageSet *
@@ -3350,6 +3382,29 @@ mono_metadata_get_image_set_for_aggregate_modifiers (MonoAggregateModContainer *
 	collect_data_free (&image_set_data);
 
 	return set;
+}
+
+MonoImageSet *
+mono_metadata_merge_image_sets (MonoImageSet *set1, MonoImageSet *set2)
+{
+	MonoImage **images = g_newa (MonoImage*, set1->nimages + set2->nimages);
+
+	/* Add images from set1 */
+	memcpy (images, set1->images, sizeof (MonoImage*) * set1->nimages);
+
+	int nimages = set1->nimages;
+	// FIXME: Quaratic
+	/* Add images from set2 */
+	for (int i = 0; i < set2->nimages; ++i) {
+		int j;
+		for (j = 0; j < set1->nimages; ++j) {
+			if (set2->images [i] == set1->images [j])
+				break;
+		}
+		if (j == set1->nimages)
+			images [nimages ++] = set2->images [i];
+	}
+	return get_image_set (images, nimages);
 }
 
 static gboolean
@@ -5648,8 +5703,8 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 		return FALSE;
 
 	while (TRUE) {
-		MonoType *t1 = mono_signature_get_params (s1, &iter1);
-		MonoType *t2 = mono_signature_get_params (s2, &iter2);
+		MonoType *t1 = mono_signature_get_params_internal (s1, &iter1);
+		MonoType *t2 = mono_signature_get_params_internal (s2, &iter2);
 
 		if (t1 == NULL || t2 == NULL)
 			return (t1 == t2);

@@ -57,6 +57,9 @@
 
 #endif
 
+#if _MSC_VER
+#pragma warning(disable:4293) // FIXME negative shift is undefined
+#endif
 
 /* If the bank is mirrored return the true logical bank that the register in the
  * physical register bank is allocated to.

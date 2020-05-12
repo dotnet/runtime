@@ -45,7 +45,7 @@ namespace Microsoft.Win32
             int length = i != -1 ? i : keyName.Length;
 
             // Determine the potential base key from the length.
-            RegistryKey baseKey = null;
+            RegistryKey? baseKey = null;
             switch (length)
             {
                 case 10: baseKey = Users; break; // HKEY_USERS
@@ -68,28 +68,26 @@ namespace Microsoft.Win32
             throw new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(keyName)), nameof(keyName));
         }
 
-        public static object GetValue(string keyName, string valueName, object defaultValue)
+        public static object? GetValue(string keyName, string? valueName, object? defaultValue)
         {
-            string subKeyName;
-            RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out subKeyName);
+            RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out string subKeyName);
 
-            using (RegistryKey key = basekey.OpenSubKey(subKeyName))
+            using (RegistryKey? key = basekey.OpenSubKey(subKeyName))
             {
                 return key?.GetValue(valueName, defaultValue);
             }
         }
 
-        public static void SetValue(string keyName, string valueName, object value)
+        public static void SetValue(string keyName, string? valueName, object value)
         {
             SetValue(keyName, valueName, value, RegistryValueKind.Unknown);
         }
 
-        public static void SetValue(string keyName, string valueName, object value, RegistryValueKind valueKind)
+        public static void SetValue(string keyName, string? valueName, object value, RegistryValueKind valueKind)
         {
-            string subKeyName;
-            RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out subKeyName);
+            RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out string subKeyName);
 
-            using (RegistryKey key = basekey.CreateSubKey(subKeyName))
+            using (RegistryKey? key = basekey.CreateSubKey(subKeyName))
             {
                 Debug.Assert(key != null, "An exception should be thrown if failed!");
                 key.SetValue(valueName, value, valueKind);

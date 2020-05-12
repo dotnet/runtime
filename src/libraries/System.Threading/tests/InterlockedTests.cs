@@ -242,7 +242,7 @@ namespace System.Threading.Tests
         public void InterlockedAnd_Int32()
         {
             int value = 0x12345670;
-            Assert.Equal(0x02244220, Interlocked.And(ref value, 0x7654321));
+            Assert.Equal(0x12345670, Interlocked.And(ref value, 0x7654321));
             Assert.Equal(0x02244220, value);
         }
 
@@ -250,7 +250,7 @@ namespace System.Threading.Tests
         public void InterlockedAnd_UInt32()
         {
             uint value = 0x12345670u;
-            Assert.Equal(0x02244220u, Interlocked.And(ref value, 0x7654321));
+            Assert.Equal(0x12345670u, Interlocked.And(ref value, 0x7654321));
             Assert.Equal(0x02244220u, value);
         }
 
@@ -258,7 +258,7 @@ namespace System.Threading.Tests
         public void InterlockedAnd_Int64()
         {
             long value = 0x12345670;
-            Assert.Equal(0x02244220, Interlocked.And(ref value, 0x7654321));
+            Assert.Equal(0x12345670, Interlocked.And(ref value, 0x7654321));
             Assert.Equal(0x02244220, value);
         }
 
@@ -266,7 +266,7 @@ namespace System.Threading.Tests
         public void InterlockedAnd_UInt64()
         {
             ulong value = 0x12345670u;
-            Assert.Equal(0x02244220u, Interlocked.And(ref value, 0x7654321));
+            Assert.Equal(0x12345670u, Interlocked.And(ref value, 0x7654321));
             Assert.Equal(0x02244220u, value);
         }
 
@@ -274,7 +274,7 @@ namespace System.Threading.Tests
         public void InterlockedOr_Int32()
         {
             int value = 0x12345670;
-            Assert.Equal(0x17755771, Interlocked.Or(ref value, 0x7654321));
+            Assert.Equal(0x12345670, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771, value);
         }
 
@@ -282,7 +282,7 @@ namespace System.Threading.Tests
         public void InterlockedOr_UInt32()
         {
             uint value = 0x12345670u;
-            Assert.Equal(0x17755771u, Interlocked.Or(ref value, 0x7654321));
+            Assert.Equal(0x12345670u, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771u, value);
         }
 
@@ -290,7 +290,7 @@ namespace System.Threading.Tests
         public void InterlockedOr_Int64()
         {
             long value = 0x12345670;
-            Assert.Equal(0x17755771, Interlocked.Or(ref value, 0x7654321));
+            Assert.Equal(0x12345670, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771, value);
         }
 
@@ -298,11 +298,11 @@ namespace System.Threading.Tests
         public void InterlockedOr_UInt64()
         {
             ulong value = 0x12345670u;
-            Assert.Equal(0x17755771u, Interlocked.Or(ref value, 0x7654321));
+            Assert.Equal(0x12345670u, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771u, value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/coreclr/issues/20215")]
+        [Fact]
         public void MemoryBarrierProcessWide()
         {
             // Stress MemoryBarrierProcessWide correctness using a simple AsymmetricLock
@@ -358,8 +358,6 @@ namespace System.Threading.Tests
 
             // Returning LockCookie to call Exit on is the fastest implementation because of it works naturally with the RCU pattern.
             // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie.
-            // Returning LockCookie to call Exit on is the fastest implementation because of it works naturally with the RCU pattern.
-            // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie.
             public LockCookie Enter()
             {
                 int currentThreadId = Environment.CurrentManagedThreadId;
@@ -380,6 +378,7 @@ namespace System.Threading.Tests
                     //
                     if (VolatileReadWithoutBarrier(ref _current) == entry)
                     {
+                        // at this point we know for sure that we own the lock.
                         return entry;
                     }
 
@@ -398,8 +397,13 @@ namespace System.Threading.Tests
                     var oldEntry = _current;
                     _current = new LockCookie(Environment.CurrentManagedThreadId);
 
-                    // After MemoryBarrierProcessWide, we can be sure that the Volatile.Read done by the fast thread will see that it is not a fast
-                    // thread anymore, and thus it will not attempt to enter the lock.
+                    // MemoryBarrierProcessWide ensures, process-wide, that our write to _current becomes visible
+                    // to every thread, and all writes by other threads become visible to us before we can continue.
+                    // As a result any other thread that sets Taken to true either:
+                    //    a) made it past the read of _current and owns the lock OR
+                    //    b) will see that _current has changed and will revert Taken without taking the lock
+                    // Thus we only need to wait for 'Taken' to become false and claim the lock for ourselves.
+                    // 'Taken' may yet switch to true after that, but that cannot result in other thread owning the lock.
                     Interlocked.MemoryBarrierProcessWide();
 
                     // Keep looping as long as the lock is taken by other thread

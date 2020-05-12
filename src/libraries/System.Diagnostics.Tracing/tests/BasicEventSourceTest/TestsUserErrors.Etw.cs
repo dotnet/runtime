@@ -17,7 +17,7 @@ namespace BasicEventSourceTests
         /// <summary>
         /// Test the
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
         public void Test_BadEventSource_MismatchedIds_WithEtwListener()
         {
             // We expect only one session to be on when running the test but if a ETW session was left

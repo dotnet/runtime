@@ -94,8 +94,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static Principal DirectoryEntryAsPrincipal(DirectoryEntry de, StoreCtx storeCtx)
         {
-            string className = de.SchemaClassName;
-
             // Unlike AD, we don't have to worry about cross-store refs here.  In AD, if there's
             // a cross-store ref, we'll get back a DirectoryEntry of the FPO object.  In the WinNT ADSI
             // provider, we'll get back the DirectoryEntry of the remote object itself --- ADSI does
@@ -169,7 +167,7 @@ namespace System.DirectoryServices.AccountManagement
                             break;
 
                         default:
-                            sb.Append(c.ToString());   //   x  --> x
+                            sb.Append(c);   //   x  --> x
                             break;
                     }
                 }
@@ -197,7 +195,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         default:
                             sb.Append(@"\\");
-                            sb.Append(c.ToString());    //      \x --> \x
+                            sb.Append(c);    //      \x --> \x
                             break;
                     }
                 }

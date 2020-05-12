@@ -251,8 +251,8 @@ namespace System.Net
                 return;
             }
 
-            string name = header.Substring(0, colon).Trim();
-            string val = header.Substring(colon + 1).Trim();
+            string name = header.AsSpan(0, colon).Trim().ToString();
+            string val = header.AsSpan(colon + 1).Trim().ToString();
             if (name.Equals("content-length", StringComparison.OrdinalIgnoreCase))
             {
                 // To match Windows behavior:

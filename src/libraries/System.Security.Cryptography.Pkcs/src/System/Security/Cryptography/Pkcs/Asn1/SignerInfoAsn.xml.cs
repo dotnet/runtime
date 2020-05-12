@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal ReadOnlyMemory<byte>? SignedAttributes;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn SignatureAlgorithm;
         internal ReadOnlyMemory<byte> SignatureValue;
-        internal System.Security.Cryptography.Asn1.AttributeAsn[] UnsignedAttributes;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? UnsignedAttributes;
 
         internal void Encode(AsnWriter writer)
         {

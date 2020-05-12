@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Threading;
 
 namespace System.Net.Security
@@ -20,7 +21,7 @@ namespace System.Net.Security
         {
             try
             {
-                SafeCredentialReference newRef = SafeCredentialReference.CreateReference(newHandle);
+                SafeCredentialReference? newRef = SafeCredentialReference.CreateReference(newHandle);
 
                 if (newRef == null)
                 {

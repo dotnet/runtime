@@ -3,12 +3,19 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#if defined(TARGET_UNIX)
 #include <dlfcn.h>
+#elif defined(TARGET_WINDOWS)
+#include <windows.h>
+#include <libloaderapi.h>
+#include <errhandlingapi.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
+#include "pal_icushim_internal.h"
 #include "pal_icushim.h"
 
 // Define pointers to all the used ICU functions
@@ -16,10 +23,126 @@
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
+// 35 for the actual suffix, 1 for _ and 1 for '\0'
+#define SYMBOL_CUSTOM_SUFFIX_SIZE 37
+#define SYMBOL_NAME_SIZE (128 + SYMBOL_CUSTOM_SUFFIX_SIZE)
+#define MaxICUVersionStringWithSuffixLength (MaxICUVersionStringLength + SYMBOL_CUSTOM_SUFFIX_SIZE)
+
+
+#if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID)
+
+#define MaxICUVersionStringLength 33
+
+#endif
+
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
 
-#ifdef __APPLE__
+#if defined (TARGET_UNIX)
+
+#define PER_FUNCTION_BLOCK(fn, lib) \
+    c_static_assert_msg((sizeof(#fn) + MaxICUVersionStringWithSuffixLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
+    sprintf(symbolName, #fn "%s", symbolVersion); \
+    fn##_ptr = (__typeof(fn)*)dlsym(lib, symbolName); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
+
+static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName, char* symbolVersion, char* suffix)
+{    
+    // Find out the format of the version string added to each symbol
+    // First try just the unversioned symbol
+    if (dlsym(libicuuc, "u_strlen") == NULL)
+    {
+        // Now try just the _majorVer added
+        sprintf(symbolVersion, "_%d%s", majorVer, suffix);
+        sprintf(symbolName, "u_strlen%s", symbolVersion);
+        if (dlsym(libicuuc, symbolName) == NULL)
+        {
+            if (minorVer == -1)
+                return FALSE;
+
+            // Now try the _majorVer_minorVer added
+            sprintf(symbolVersion, "_%d_%d%s", majorVer, minorVer, suffix);
+            sprintf(symbolName, "u_strlen%s", symbolVersion);
+            if (dlsym(libicuuc, symbolName) == NULL)
+            {
+                if (subVer == -1)
+                    return FALSE;
+
+                // Finally, try the _majorVer_minorVer_subVer added
+                sprintf(symbolVersion, "_%d_%d_%d%s", majorVer, minorVer, subVer, suffix);
+                sprintf(symbolName, "u_strlen%s", symbolVersion);
+                if (dlsym(libicuuc, symbolName) == NULL)
+                {
+                    return FALSE;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+#endif // TARGET_UNIX
+
+#if defined(TARGET_WINDOWS)
+
+#define sscanf sscanf_s
+
+#define PER_FUNCTION_BLOCK(fn, lib) \
+    sprintf_s(symbolName, SYMBOL_NAME_SIZE, #fn "%s", symbolVersion); \
+    fn##_ptr = (__typeof(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
+
+static int FindICULibs()
+{
+    libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (libicuuc == NULL)
+    {
+        return FALSE;
+    }
+
+    // Windows has a single dll for icu.
+    libicui18n = libicuuc;
+    return TRUE;
+}
+
+static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName, char* symbolVersion, char* suffix)
+{
+    HMODULE lib = (HMODULE)libicuuc;
+    // Find out the format of the version string added to each symbol
+    // First try just the unversioned symbol
+    if (GetProcAddress(lib, "u_strlen") == NULL)
+    {
+        // Now try just the _majorVer added
+        sprintf_s(symbolVersion, MaxICUVersionStringWithSuffixLength,"_%d%s", majorVer, suffix);
+        sprintf_s(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
+        if (GetProcAddress(lib, symbolName) == NULL)
+        {
+            if (minorVer == -1)
+                return FALSE;
+
+            // Now try the _majorVer_minorVer added
+            sprintf_s(symbolVersion, MaxICUVersionStringWithSuffixLength, "_%d_%d%s", majorVer, minorVer, suffix);
+            sprintf_s(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
+            if (GetProcAddress(lib, symbolName) == NULL)
+            {
+                if (subVer == -1)
+                    return FALSE;
+                // Finally, try the _majorVer_minorVer_subVer added
+                sprintf_s(symbolVersion, MaxICUVersionStringWithSuffixLength, "_%d_%d_%d%s", majorVer, minorVer, subVer, suffix);
+                sprintf_s(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
+                if (GetProcAddress(lib, symbolName) == NULL)
+                {
+                    return FALSE;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+#elif defined(TARGET_OSX)
 
 static int FindICULibs()
 {
@@ -41,7 +164,42 @@ static int FindICULibs()
     return TRUE;
 }
 
-#else // __APPLE__
+#elif defined(TARGET_ANDROID)
+
+// support ICU versions from 50-255
+#define MinICUVersion 50
+#define MaxICUVersion 255
+
+static int FindICULibs(char* symbolName, char* symbolVersion)
+{
+    libicui18n = dlopen("libicui18n.so", RTLD_LAZY);
+
+    if (libicui18n == NULL)
+    {
+        return FALSE;
+    }
+
+    libicuuc = dlopen("libicuuc.so", RTLD_LAZY);
+
+    if (libicuuc == NULL)
+    {
+        return FALSE;
+    }
+
+    char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
+    for (int i = MinICUVersion; i <= MaxICUVersion; i++)
+    {
+        if (FindSymbolVersion(i, -1, -1, symbolName, symbolVersion, symbolSuffix))
+        {
+            return TRUE;
+        }
+    }
+
+    fprintf(stderr, "Cannot determine ICU version.");
+    return FALSE;
+}
+
+#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
 
 #define VERSION_PREFIX_NONE ""
 #define VERSION_PREFIX_SUSE "suse"
@@ -52,12 +210,12 @@ static int FindICULibs()
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
 // equal to the version we are built against and less or equal to that version
-// plus 20 to give us enough headspace. The ICU seems to version about twice
+// plus 30 to give us enough headspace. The ICU seems to version about twice
 // a year.
 // On some platforms (mainly Alpine Linux) we want to make our minimum version
 // an earlier version than what we build that we know we support.
 #define MinICUVersion  50
-#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 20)
+#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 30)
 #define MinMinorICUVersion  1
 #define MaxMinorICUVersion  5
 #define MinSubICUVersion 1
@@ -84,36 +242,6 @@ static void GetVersionedLibFileName(const char* baseFileName, int majorVer, int 
     }
 }
 
-static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName, char* symbolVersion)
-{
-    // Find out the format of the version string added to each symbol
-    // First try just the unversioned symbol
-    if (dlsym(libicuuc, "u_strlen") == NULL)
-    {
-        // Now try just the _majorVer added
-        sprintf(symbolVersion, "_%d", majorVer);
-        sprintf(symbolName, "u_strlen%s", symbolVersion);
-        if ((dlsym(libicuuc, symbolName) == NULL) && (minorVer != -1))
-        {
-            // Now try the _majorVer_minorVer added
-            sprintf(symbolVersion, "_%d_%d", majorVer, minorVer);
-            sprintf(symbolName, "u_strlen%s", symbolVersion);
-            if ((dlsym(libicuuc, symbolName) == NULL) && (subVer != -1))
-            {
-                // Finally, try the _majorVer_minorVer_subVer added
-                sprintf(symbolVersion, "_%d_%d_%d", majorVer, minorVer, subVer);
-                sprintf(symbolName, "u_strlen%s", symbolVersion);
-                if (dlsym(libicuuc, symbolName) == NULL)
-                {
-                    return FALSE;
-                }
-            }
-        }
-    }
-
-    return TRUE;
-}
-
 // Try to open the necessary ICU libraries
 static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
@@ -129,7 +257,8 @@ static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* 
     libicuuc = dlopen(libicuucName, RTLD_LAZY);
     if (libicuuc != NULL)
     {
-        if (FindSymbolVersion(majorVer, minorVer, subVer, symbolName, symbolVersion))
+        char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
+        if (FindSymbolVersion(majorVer, minorVer, subVer, symbolName, symbolVersion, symbolSuffix))
         {
             libicui18n = dlopen(libicui18nName, RTLD_LAZY);
         }
@@ -175,14 +304,8 @@ static int FindLibWithMajorVersion(const char* versionPrefix, char* symbolName, 
     // ICU packaging documentation (http://userguide.icu-project.org/packaging)
     // describes applications link against the major (e.g. libicuuc.so.54).
 
-    // Select the version of ICU present at build time.
-    if (OpenICULibraries(MinICUVersion, -1, -1, versionPrefix, symbolName, symbolVersion))
-    {
-        return TRUE;
-    }
-
     // Select the highest supported version of ICU present on the local machine
-    for (int i = MaxICUVersion; i > MinICUVersion; i--)
+    for (int i = MaxICUVersion; i >= MinICUVersion; i--)
     {
         if (OpenICULibraries(i, -1, -1, versionPrefix, symbolName, symbolVersion))
         {
@@ -241,7 +364,20 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
            FindLibWithMajorMinorSubVersion(versionPrefix, symbolName, symbolVersion);
 }
 
-#endif // __APPLE__
+#endif
+
+static void ValidateICUDataCanLoad()
+{
+    UVersionInfo version;
+    UErrorCode err = U_ZERO_ERROR;
+    ulocdata_getCLDRVersion(version, &err);
+
+    if (U_FAILURE(err))
+    {
+        fprintf(stderr, "Could not load ICU data. UErrorCode: %d\n", err);
+        abort();
+    }
+}
 
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
@@ -249,23 +385,22 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 // return 0 if failed to load ICU and 1 otherwise
 int32_t GlobalizationNative_LoadICU()
 {
-#ifdef __APPLE__
+    char symbolName[SYMBOL_NAME_SIZE];
+    char symbolVersion[MaxICUVersionStringLength + 1]="";
+
+#if defined(TARGET_WINDOWS) || defined(TARGET_OSX)
 
     if (!FindICULibs())
     {
         return FALSE;
     }
 
-    // Get pointers to all the ICU functions that are needed
-#define PER_FUNCTION_BLOCK(fn, lib) \
-    fn##_ptr = (__typeof(fn)*)dlsym(lib, #fn); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", #fn, dlerror()); abort(); }
-
-#else // __APPLE__
-
-    char symbolName[128];
-    char symbolVersion[MaxICUVersionStringLength + 1] = "";
-
+#elif defined(TARGET_ANDROID)
+    if (!FindICULibs(symbolName, symbolVersion))
+    {
+        return FALSE;
+    }
+#else
     if (!FindICULibs(VERSION_PREFIX_NONE, symbolName, symbolVersion))
     {
         if (!FindICULibs(VERSION_PREFIX_SUSE, symbolName, symbolVersion))
@@ -273,27 +408,63 @@ int32_t GlobalizationNative_LoadICU()
             return FALSE;
         }
     }
-
-    // Get pointers to all the ICU functions that are needed
-#define PER_FUNCTION_BLOCK(fn, lib) \
-    c_static_assert_msg((sizeof(#fn) + MaxICUVersionStringLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
-    sprintf(symbolName, #fn "%s", symbolVersion); \
-    fn##_ptr = (__typeof(fn)*)dlsym(lib, symbolName); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
-
-#endif // __APPLE__
+#endif // TARGET_WINDOWS || TARGET_OSX
 
     FOR_ALL_ICU_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
+    ValidateICUDataCanLoad();
     return TRUE;
 }
+
+void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* version, const char* suffix)
+{
+    assert(icuuc != NULL);
+    assert(icuin != NULL);
+    assert(version != NULL);
+    
+    libicuuc = icuuc;
+    libicui18n = icuin;
+    int major = -1;
+    int minor = -1;
+    int build = -1;
+
+    char symbolName[SYMBOL_NAME_SIZE];
+    char symbolVersion[MaxICUVersionStringWithSuffixLength + 1]="";
+    char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
+
+    sscanf(version, "%d.%d.%d", &major, &minor, &build);
+
+    if (suffix != NULL)
+    {
+        assert(strlen(suffix) + 1 <= SYMBOL_CUSTOM_SUFFIX_SIZE);
+
+#if defined(TARGET_WINDOWS)
+        sprintf_s(symbolSuffix, SYMBOL_CUSTOM_SUFFIX_SIZE, "_%s", suffix);
+#else
+        sprintf(symbolSuffix, "_%s", suffix);
+#endif
+    }
+
+    if(!FindSymbolVersion(major, minor, build, symbolName, symbolVersion, symbolSuffix))
+    {
+        fprintf(stderr, "Could not find symbol: %s from libicuuc\n", symbolName);
+        abort();
+    }
+
+    FOR_ALL_ICU_FUNCTIONS
+    ValidateICUDataCanLoad();
+}
+
+#undef PER_FUNCTION_BLOCK
 
 // GlobalizationNative_GetICUVersion
 // return the current loaded ICU version
 int32_t GlobalizationNative_GetICUVersion()
 {
-    int32_t version;
-    u_getVersion((uint8_t *) &version);
-    return version;
+    if (u_getVersion_ptr == NULL)
+        return 0;
+    
+    UVersionInfo versionInfo;
+    u_getVersion(versionInfo);
+
+    return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];
 }

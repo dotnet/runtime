@@ -1314,11 +1314,10 @@ void EEDbgInterfaceImpl::DisableTraceCall(Thread *thread)
     thread->DecrementTraceCallCount();
 }
 
-EXTERN_C UINT32 _tls_index;
-
 void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
-                                           SIZE_T *pTLSIsSpecialIndex,
-                                           SIZE_T *pTLSCantStopIndex,
+                                           SIZE_T *pTLSEEThreadOffset,
+                                           SIZE_T *pTLSIsSpecialOffset,
+                                           SIZE_T *pTLSCantStopOffset,
                                            SIZE_T *pEEThreadStateOffset,
                                            SIZE_T *pEEThreadStateNCOffset,
                                            SIZE_T *pEEThreadPGCDisabledOffset,
@@ -1328,34 +1327,22 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
                                            DWORD  *pEEThreadSteppingStateMask,
                                            DWORD  *pEEMaxFrameValue,
                                            SIZE_T *pEEThreadDebuggerFilterContextOffset,
-                                           SIZE_T *pEEThreadCantStopOffset,
                                            SIZE_T *pEEFrameNextOffset,
                                            DWORD  *pEEIsManagedExceptionStateMask)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pTLSIndex));
-        PRECONDITION(CheckPointer(pTLSIsSpecialIndex));
-        PRECONDITION(CheckPointer(pEEThreadStateOffset));
-        PRECONDITION(CheckPointer(pEEThreadStateNCOffset));
-        PRECONDITION(CheckPointer(pEEThreadPGCDisabledOffset));
-        PRECONDITION(CheckPointer(pEEThreadPGCDisabledValue));
-        PRECONDITION(CheckPointer(pEEThreadFrameOffset));
-        PRECONDITION(CheckPointer(pEEThreadMaxNeededSize));
-        PRECONDITION(CheckPointer(pEEThreadSteppingStateMask));
-        PRECONDITION(CheckPointer(pEEMaxFrameValue));
-        PRECONDITION(CheckPointer(pEEThreadDebuggerFilterContextOffset));
-        PRECONDITION(CheckPointer(pEEThreadCantStopOffset));
-        PRECONDITION(CheckPointer(pEEFrameNextOffset));
-        PRECONDITION(CheckPointer(pEEIsManagedExceptionStateMask));
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
 
-    *pTLSIndex = g_TlsIndex;
-    *pTLSIsSpecialIndex = TlsIdx_ThreadType;
-    *pTLSCantStopIndex = TlsIdx_CantStopCount;
+#ifdef TARGET_WINDOWS
+    *pTLSIndex = _tls_index;
+    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo.m_pThread);
+    *pTLSIsSpecialOffset = Thread::GetOffsetOfThreadStatic(&t_ThreadType);
+    *pTLSCantStopOffset = Thread::GetOffsetOfThreadStatic(&t_CantStopCount);
+#else
+    *pTLSIndex = (SIZE_T)-1;
+    *pTLSEEThreadOffset = (SIZE_T)-1;
+    *pTLSIsSpecialOffset = (SIZE_T)-1;
+    *pTLSCantStopOffset = (SIZE_T)-1;
+#endif
     *pEEThreadStateOffset = Thread::GetOffsetOfState();
     *pEEThreadStateNCOffset = Thread::GetOffsetOfStateNC();
     *pEEThreadPGCDisabledOffset = Thread::GetOffsetOfGCFlag();
@@ -1363,7 +1350,6 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
     *pEEThreadFrameOffset = Thread::GetOffsetOfCurrentFrame();
     *pEEThreadMaxNeededSize = sizeof(Thread);
     *pEEThreadDebuggerFilterContextOffset = Thread::GetOffsetOfDebuggerFilterContext();
-    *pEEThreadCantStopOffset = Thread::GetOffsetOfCantStop();
     *pEEThreadSteppingStateMask = Thread::TSNC_DebuggerIsStepping;
     *pEEMaxFrameValue = (DWORD)(size_t)FRAME_TOP; // <TODO> should this be size_t for 64bit?</TODO>
     *pEEFrameNextOffset = Frame::GetOffsetOfNextLink();
@@ -1494,9 +1480,6 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
     {
         ret |= (unsigned)USER_WAIT_SLEEP_JOIN;
     }
-
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(ts & Thread::TS_UserSuspendPending));
 
     LOG((LF_CORDB,LL_INFO1000, "EEDbgII::GUS: thread 0x%x (id:0x%x)"
         " userThreadState is 0x%x\n", pThread, pThread->GetThreadId(), ret));

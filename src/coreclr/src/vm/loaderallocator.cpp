@@ -54,6 +54,14 @@ LoaderAllocator::LoaderAllocator()
     m_pVirtualCallStubManager = NULL;
 #endif
 
+#ifdef FEATURE_TIERED_COMPILATION
+    m_callCountingManager = NULL;
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    m_onStackReplacementManager = NULL;
+#endif
+
     m_fGCPressure = false;
     m_fTerminated = false;
     m_fUnloaded = false;
@@ -1211,6 +1219,13 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         m_interopDataHash.Init(0, NULL, false, &lock);
     }
 #endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_TIERED_COMPILATION
+    if (g_pConfig->TieredCompilation())
+    {
+        m_callCountingManager = new CallCountingManager();
+    }
+#endif
 }
 
 
@@ -1323,6 +1338,22 @@ void LoaderAllocator::Terminate()
     m_InteropDataCrst.Destroy();
 #endif
     m_LoaderAllocatorReferences.RemoveAll();
+
+#ifdef FEATURE_TIERED_COMPILATION
+    if (m_callCountingManager != NULL)
+    {
+        delete m_callCountingManager;
+        m_callCountingManager = NULL;
+    }
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (m_onStackReplacementManager != NULL)
+    {
+        delete m_onStackReplacementManager;
+        m_onStackReplacementManager = NULL;
+    }
+#endif
 
     // In collectible types we merge the low frequency and high frequency heaps
     // So don't destroy them twice.
@@ -1783,6 +1814,31 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
     m_handleCleanupList.InsertTail(new (pItem) HandleCleanupListItem(objHandle));
 }
 
+void AssemblyLoaderAllocator::UnregisterHandleFromCleanup(OBJECTHANDLE objHandle)
+{
+    CONTRACTL
+    {
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+        PRECONDITION(CheckPointer(objHandle));
+    }
+    CONTRACTL_END;
+
+    // FindAndRemove must be protected by a lock. Just use the loader allocator lock
+    CrstHolder ch(&m_crstLoaderAllocator);
+
+    for (HandleCleanupListItem* item = m_handleCleanupList.GetHead(); item != NULL; item = SList<HandleCleanupListItem>::GetNext(item))
+    {
+        if (item->m_handle == objHandle)
+        {
+            m_handleCleanupList.FindAndRemove(item);
+            return;
+        }
+    }
+
+    _ASSERTE(!"Trying to unregister a handle that was never registered");
+}
+
 void AssemblyLoaderAllocator::CleanupHandles()
 {
     CONTRACTL
@@ -1975,3 +2031,34 @@ BOOL LoaderAllocator::InsertComInteropData(MethodTable* pMT, InteropMethodTableD
 #endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
+
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+#ifndef DACCESS_COMPILE
+PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    if (m_onStackReplacementManager == NULL)
+    {
+        OnStackReplacementManager * newManager = new OnStackReplacementManager(this);
+
+        if (FastInterlockCompareExchangePointer(&m_onStackReplacementManager, newManager, NULL) != NULL)
+        {
+            // some thread swooped in and set the field
+            delete newManager;
+        }
+    }
+    _ASSERTE(m_onStackReplacementManager != NULL);
+    return m_onStackReplacementManager;
+}
+#endif //
+#endif // FEATURE_ON_STACK_REPLACEMENT
+

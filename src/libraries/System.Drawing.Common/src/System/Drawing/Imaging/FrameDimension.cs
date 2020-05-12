@@ -56,9 +56,9 @@ namespace System.Drawing.Imaging
         /// Returns a value indicating whether the specified object is an <see cref='FrameDimension'/> equivalent to
         /// this <see cref='FrameDimension'/>.
         /// </summary>
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
-            FrameDimension format = o as FrameDimension;
+            FrameDimension? format = o as FrameDimension;
             if (format == null)
                 return false;
             return _guid == format._guid;

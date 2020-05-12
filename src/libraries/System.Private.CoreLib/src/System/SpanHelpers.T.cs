@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 using Internal.Runtime.CompilerServices;
 
@@ -186,7 +185,7 @@ namespace System
             }
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -290,7 +289,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return index;
         Found1:
             return index + 1;
@@ -393,7 +392,7 @@ namespace System
             }
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return index;
         Found1:
             return index + 1;
@@ -442,7 +441,7 @@ namespace System
             Debug.Assert(valueLength >= 0);
 
             if (valueLength == 0)
-                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+                return searchSpaceLength;  // A zero-length sequence is always treated as "found" at the end of the search space.
 
             T valueHead = value;
             ref T valueTail = ref Unsafe.Add(ref value, 1);
@@ -533,7 +532,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -636,7 +635,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -739,7 +738,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -862,7 +861,7 @@ namespace System
         Equal:
             return true;
 
-        NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        NotEqual: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return false;
         }
 

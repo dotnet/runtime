@@ -37,7 +37,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        public void InitializeSecurityContext(SafeFreeCredentials credential, SafeDeleteContext context, string targetName, Interop.SspiCli.ContextFlags inFlags)
+        public void InitializeSecurityContext(SafeFreeCredentials? credential, SafeDeleteContext? context, string? targetName, Interop.SspiCli.ContextFlags inFlags)
         {
             if (IsEnabled())
             {
@@ -45,11 +45,11 @@ namespace System.Net
             }
         }
         [Event(InitializeSecurityContextId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private void InitializeSecurityContext(string credential, string context, string targetName, Interop.SspiCli.ContextFlags inFlags) =>
+        private void InitializeSecurityContext(string credential, string context, string? targetName, Interop.SspiCli.ContextFlags inFlags) =>
             WriteEvent(InitializeSecurityContextId, credential, context, targetName, (int)inFlags);
 
         [NonEvent]
-        public void AcceptSecurityContext(SafeFreeCredentials credential, SafeDeleteContext context, Interop.SspiCli.ContextFlags inFlags)
+        public void AcceptSecurityContext(SafeFreeCredentials? credential, SafeDeleteContext? context, Interop.SspiCli.ContextFlags inFlags)
         {
             if (IsEnabled())
             {

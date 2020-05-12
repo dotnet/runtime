@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.NetworkInformation;
@@ -33,36 +34,36 @@ namespace System.Net.Mail
 
     public class SmtpClient : IDisposable
     {
-        private string _host;
+        private string? _host;
         private int _port;
         private int _timeout = 100000;
         private bool _inCall;
         private bool _cancelled;
         private bool _timedOut;
-        private string _targetName = null;
+        private string? _targetName;
         private SmtpDeliveryMethod _deliveryMethod = SmtpDeliveryMethod.Network;
         private SmtpDeliveryFormat _deliveryFormat = SmtpDeliveryFormat.SevenBit; // Non-EAI default
-        private string _pickupDirectoryLocation = null;
-        private SmtpTransport _transport;
-        private MailMessage _message; //required to prevent premature finalization
-        private MailWriter _writer;
-        private MailAddressCollection _recipients;
-        private SendOrPostCallback _onSendCompletedDelegate;
-        private Timer _timer;
-        private ContextAwareResult _operationCompletedResult = null;
-        private AsyncOperation _asyncOp = null;
+        private string? _pickupDirectoryLocation;
+        private SmtpTransport _transport = null!; // initialized by helper called from ctor
+        private MailMessage? _message; //required to prevent premature finalization
+        private MailWriter? _writer;
+        private MailAddressCollection? _recipients;
+        private SendOrPostCallback _onSendCompletedDelegate = null!; // initialized by helper called from ctor
+        private Timer? _timer;
+        private ContextAwareResult? _operationCompletedResult;
+        private AsyncOperation? _asyncOp;
         private static readonly AsyncCallback s_contextSafeCompleteCallback = new AsyncCallback(ContextSafeCompleteCallback);
         private const int DefaultPort = 25;
-        internal string clientDomain = null;
-        private bool _disposed = false;
-        private ServicePoint _servicePoint;
+        internal string _clientDomain = null!; // initialized by helper called from ctor
+        private bool _disposed;
+        private ServicePoint? _servicePoint;
         // (async only) For when only some recipients fail.  We still send the e-mail to the others.
-        private SmtpFailedRecipientException _failedRecipientException;
+        private SmtpFailedRecipientException? _failedRecipientException;
         // ports above this limit are invalid
         private const int MaxPortValue = 65535;
-        public event SendCompletedEventHandler SendCompleted;
+        public event SendCompletedEventHandler? SendCompleted;
         private bool _useDefaultCredentials;
-        private ICredentialsByHost _customCredentials;
+        private ICredentialsByHost? _customCredentials;
 
         public SmtpClient()
         {
@@ -77,7 +78,7 @@ namespace System.Net.Mail
             }
         }
 
-        public SmtpClient(string host)
+        public SmtpClient(string? host)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
             try
@@ -91,7 +92,7 @@ namespace System.Net.Mail
             }
         }
 
-        public SmtpClient(string host, int port)
+        public SmtpClient(string? host, int port)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host, port);
             try
@@ -130,7 +131,7 @@ namespace System.Net.Mail
             if (_targetName == null)
                 _targetName = "SMTPSVC/" + _host;
 
-            if (clientDomain == null)
+            if (_clientDomain == null)
             {
                 // We use the local host name as the default client domain
                 // for the client's EHLO or HELO message. This limits the
@@ -161,14 +162,14 @@ namespace System.Net.Mail
                         sb.Append(ch);
                 }
                 if (sb.Length > 0)
-                    clientDomain = sb.ToString();
+                    _clientDomain = sb.ToString();
                 else
-                    clientDomain = "LocalHost";
+                    _clientDomain = "LocalHost";
             }
         }
 
-
-        public string Host
+        [DisallowNull]
+        public string? Host
         {
             get
             {
@@ -245,7 +246,7 @@ namespace System.Net.Mail
             }
         }
 
-        public ICredentialsByHost Credentials
+        public ICredentialsByHost? Credentials
         {
             get
             {
@@ -295,17 +296,14 @@ namespace System.Net.Mail
             get
             {
                 CheckHostAndPort();
-                if (_servicePoint == null)
-                {
-                    // This differs from desktop, where it uses an internal overload of FindServicePoint that just
-                    // takes a string host and an int port, bypassing the need for a Uri. We workaround that here by
-                    // creating an http Uri, simply for the purposes of getting an appropriate ServicePoint instance.
-                    // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
-                    // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
-                    // protocols that do not use URI."
-                    _servicePoint = ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
-                }
-                return _servicePoint;
+
+                // This differs from desktop, where it uses an internal overload of FindServicePoint that just
+                // takes a string host and an int port, bypassing the need for a Uri. We workaround that here by
+                // creating an http Uri, simply for the purposes of getting an appropriate ServicePoint instance.
+                // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
+                // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
+                // protocols that do not use URI."
+                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
             }
         }
 
@@ -333,7 +331,7 @@ namespace System.Net.Mail
             }
         }
 
-        public string PickupDirectoryLocation
+        public string? PickupDirectoryLocation
         {
             get
             {
@@ -371,7 +369,7 @@ namespace System.Net.Mail
             }
         }
 
-        public string TargetName
+        public string? TargetName
         {
             get { return _targetName; }
             set { _targetName = value; }
@@ -397,7 +395,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal MailWriter GetFileMailWriter(string pickupDirectory)
+        internal MailWriter GetFileMailWriter(string? pickupDirectory)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{nameof(pickupDirectory)}={pickupDirectory}");
 
@@ -422,12 +420,12 @@ namespace System.Net.Mail
             SendCompleted?.Invoke(this, e);
         }
 
-        private void SendCompletedWaitCallback(object operationState)
+        private void SendCompletedWaitCallback(object? operationState)
         {
-            OnSendCompleted((AsyncCompletedEventArgs)operationState);
+            OnSendCompleted((AsyncCompletedEventArgs)operationState!);
         }
 
-        public void Send(string from, string recipients, string subject, string body)
+        public void Send(string from, string recipients, string? subject, string? body)
         {
             if (_disposed)
             {
@@ -454,7 +452,7 @@ namespace System.Net.Mail
                     NetEventSource.Associate(this, message);
                 }
 
-                SmtpFailedRecipientException recipientException = null;
+                SmtpFailedRecipientException? recipientException = null;
 
                 if (InCall)
                 {
@@ -511,7 +509,7 @@ namespace System.Net.Mail
                     _timedOut = false;
                     _timer = new Timer(new TimerCallback(TimeOutCallback), null, Timeout, Timeout);
                     bool allowUnicode = false;
-                    string pickupDirectory = PickupDirectoryLocation;
+                    string? pickupDirectory = PickupDirectoryLocation;
 
                     MailWriter writer;
                     switch (DeliveryMethod)
@@ -543,7 +541,6 @@ namespace System.Net.Mail
                     _message = message;
                     message.Send(writer, DeliveryMethod != SmtpDeliveryMethod.Network, allowUnicode);
                     writer.Close();
-                    _transport.ReleaseConnection();
 
                     //throw if we couldn't send to any of the recipients
                     if (DeliveryMethod == SmtpDeliveryMethod.Network && recipientException != null)
@@ -590,7 +587,7 @@ namespace System.Net.Mail
             }
         }
 
-        public void SendAsync(string from, string recipients, string subject, string body, object userToken)
+        public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken)
         {
             if (_disposed)
             {
@@ -599,7 +596,7 @@ namespace System.Net.Mail
             SendAsync(new MailMessage(from, recipients, subject, body), userToken);
         }
 
-        public void SendAsync(MailMessage message, object userToken)
+        public void SendAsync(MailMessage message, object? userToken)
         {
             if (_disposed)
             {
@@ -662,9 +659,9 @@ namespace System.Net.Mail
                     InCall = true;
                     _cancelled = false;
                     _message = message;
-                    string pickupDirectory = PickupDirectoryLocation;
+                    string? pickupDirectory = PickupDirectoryLocation;
 
-                    CredentialCache cache;
+                    CredentialCache? cache;
                     // Skip token capturing if no credentials are used or they don't include a default one.
                     // Also do capture the token if ICredential is not of CredentialCache type so we don't know what the exact credential response will be.
                     _transport.IdentityRequired = Credentials != null && (ReferenceEquals(Credentials, CredentialCache.DefaultNetworkCredentials) || (cache = Credentials as CredentialCache) == null || IsSystemNetworkCredentialInCache(cache));
@@ -690,7 +687,6 @@ namespace System.Net.Mail
                                 if (_writer != null)
                                     _writer.Close();
 
-                                _transport.ReleaseConnection();
                                 AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(null, false, _asyncOp.UserSuppliedState);
                                 InCall = false;
                                 _asyncOp.PostOperationCompleted(_onSendCompletedDelegate, eventArgs);
@@ -703,7 +699,7 @@ namespace System.Net.Mail
                             lock (_operationCompletedResult.StartPostingAsyncOp())
                             {
                                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
-                                _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host, Port);
+                                _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host!, Port);
                                 _operationCompletedResult.FinishPostingAsyncOp();
                             }
                             break;
@@ -741,7 +737,7 @@ namespace System.Net.Mail
         private bool IsSystemNetworkCredentialInCache(CredentialCache cache)
         {
             // Check if SystemNetworkCredential is in given cache.
-            foreach (NetworkCredential credential in cache)
+            foreach (NetworkCredential? credential in cache) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
             {
                 if (ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
                 {
@@ -779,7 +775,7 @@ namespace System.Net.Mail
 
 
         //************* Task-based async public methods *************************
-        public Task SendMailAsync(string from, string recipients, string subject, string body)
+        public Task SendMailAsync(string from, string recipients, string? subject, string? body)
         {
             var message = new MailMessage(from, recipients, subject, body);
             return SendMailAsync(message, cancellationToken: default);
@@ -790,7 +786,7 @@ namespace System.Net.Mail
             return SendMailAsync(message, cancellationToken: default);
         }
 
-        public Task SendMailAsync(string from, string recipients, string subject, string body, CancellationToken cancellationToken)
+        public Task SendMailAsync(string from, string recipients, string? subject, string? body, CancellationToken cancellationToken)
         {
             var message = new MailMessage(from, recipients, subject, body);
             return SendMailAsync(message, cancellationToken);
@@ -804,7 +800,7 @@ namespace System.Net.Mail
             }
 
             // Create a TaskCompletionSource to represent the operation
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object?>();
 
             CancellationTokenRegistration ctr = default;
 
@@ -812,7 +808,7 @@ namespace System.Net.Mail
             int state = 0;
 
             // Register a handler that will transfer completion results to the TCS Task
-            SendCompletedEventHandler handler = null;
+            SendCompletedEventHandler? handler = null;
             handler = (sender, e) =>
             {
                 if (e.UserState == tcs)
@@ -850,7 +846,7 @@ namespace System.Net.Mail
 
             ctr = cancellationToken.Register(s =>
             {
-                ((SmtpClient)s).SendAsyncCancel();
+                ((SmtpClient)s!).SendAsyncCancel();
             }, this);
 
             if (Interlocked.Exchange(ref state, 1) != 0)
@@ -891,7 +887,7 @@ namespace System.Net.Mail
             }
         }
 
-        private void TimeOutCallback(object state)
+        private void TimeOutCallback(object? state)
         {
             if (!_timedOut)
             {
@@ -900,9 +896,9 @@ namespace System.Net.Mail
             }
         }
 
-        private void Complete(Exception exception, IAsyncResult result)
+        private void Complete(Exception? exception, IAsyncResult result)
         {
-            ContextAwareResult operationCompletedResult = (ContextAwareResult)result.AsyncState;
+            ContextAwareResult operationCompletedResult = (ContextAwareResult)result.AsyncState!;
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
@@ -937,7 +933,6 @@ namespace System.Net.Mail
                             exception = se;
                         }
                     }
-                    _transport.ReleaseConnection();
                 }
             }
             finally
@@ -951,9 +946,9 @@ namespace System.Net.Mail
         private static void ContextSafeCompleteCallback(IAsyncResult ar)
         {
             ContextAwareResult result = (ContextAwareResult)ar;
-            SmtpClient client = (SmtpClient)ar.AsyncState;
-            Exception exception = result.Result as Exception;
-            AsyncOperation asyncOp = client._asyncOp;
+            SmtpClient client = (SmtpClient)ar.AsyncState!;
+            Exception? exception = result.Result as Exception;
+            AsyncOperation asyncOp = client._asyncOp!;
             AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(exception, client._cancelled, asyncOp.UserSuppliedState);
             client.InCall = false;
             client._failedRecipientException = null; // Reset before the next send.
@@ -965,7 +960,7 @@ namespace System.Net.Mail
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
-                _message.EndSend(result);
+                _message!.EndSend(result);
                 // If some recipients failed but not others, throw AFTER sending the message.
                 Complete(_failedRecipientException, result);
             }
@@ -1008,8 +1003,8 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    _message.BeginSend(_writer, DeliveryMethod != SmtpDeliveryMethod.Network,
-                        IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState);
+                    _message!.BeginSend(_writer, DeliveryMethod != SmtpDeliveryMethod.Network,
+                        IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState!);
                 }
             }
             catch (Exception e)
@@ -1036,10 +1031,10 @@ namespace System.Net.Mail
                 {
                     // Detected durring Begin/EndGetConnection, restrictable using DeliveryFormat
                     bool allowUnicode = IsUnicodeSupported();
-                    ValidateUnicodeRequirement(_message, _recipients, allowUnicode);
-                    _transport.BeginSendMail(_message.Sender ?? _message.From, _recipients,
+                    ValidateUnicodeRequirement(_message!, _recipients!, allowUnicode);
+                    _transport.BeginSendMail(_message!.Sender ?? _message.From!, _recipients!,
                         _message.BuildDeliveryStatusNotificationString(), allowUnicode,
-                        new AsyncCallback(SendMailCallback), result.AsyncState);
+                        new AsyncCallback(SendMailCallback), result.AsyncState!);
                 }
             }
             catch (Exception e)
@@ -1063,18 +1058,16 @@ namespace System.Net.Mail
             {
                 address.GetSmtpAddress(allowUnicode);
             }
-            if (message.Sender != null)
-            {
-                message.Sender.GetSmtpAddress(allowUnicode);
-            }
-            message.From.GetSmtpAddress(allowUnicode);
+
+            message.Sender?.GetSmtpAddress(allowUnicode);
+            message.From!.GetSmtpAddress(allowUnicode);
         }
 
         private void GetConnection()
         {
             if (!_transport.IsConnected)
             {
-                _transport.GetConnection(_host, _port);
+                _transport.GetConnection(_host!, _port);
             }
         }
 
@@ -1095,17 +1088,11 @@ namespace System.Net.Mail
                     _cancelled = true;
                     Abort();
                 }
-
-                if ((_transport != null))
+                else
                 {
-                    _transport.ReleaseConnection();
+                    _transport?.ReleaseConnection();
                 }
-
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                }
-
+                _timer?.Dispose();
                 _disposed = true;
             }
         }

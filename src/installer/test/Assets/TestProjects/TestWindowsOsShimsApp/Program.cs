@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Runtime.InteropServices;
 
@@ -9,9 +13,9 @@ namespace TestWindowsOsShimsApp
         {
             Console.WriteLine("Hello World!");
             Console.WriteLine(string.Join(Environment.NewLine, args));
-            Console.WriteLine($"Framework Version:{GetFrameworkVersionFromAppDomain()}");
+            Console.WriteLine(RuntimeInformation.FrameworkDescription);
 
-        #if WINDOWS
+#if WINDOWS
             Version osVersion = RtlGetVersion();
             if (osVersion == null)
             {
@@ -29,12 +33,7 @@ namespace TestWindowsOsShimsApp
                     Console.WriteLine($"Reported OS version is lower than the true OS version - shims in use.");
                 }
             }
-        #endif
-        }
-
-        private static string GetFrameworkVersionFromAppDomain()
-        {
-            return System.AppDomain.CurrentDomain.GetData("FX_PRODUCT_VERSION") as string;
+#endif
         }
 
 #if WINDOWS

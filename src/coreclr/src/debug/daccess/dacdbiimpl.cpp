@@ -587,18 +587,6 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetAppDomainObject(VMPTR_AppDomain vmApp
 
 }
 
-// Determine if the specified AppDomain is the default domain
-BOOL DacDbiInterfaceImpl::IsDefaultDomain(VMPTR_AppDomain   vmAppDomain)
-{
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-    BOOL fDefaultDomain = pAppDomain->IsDefaultDomain();
-
-    return fDefaultDomain;
-}
-
-
 // Get the full AD friendly name for the given EE AppDomain.
 void DacDbiInterfaceImpl::GetAppDomainFullName(
     VMPTR_AppDomain   vmAppDomain,
@@ -5585,9 +5573,6 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
         result |= USER_WAIT_SLEEP_JOIN;
     }
 
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(ts & Thread::TS_UserSuspendPending));
-
     if (pThread->IsThreadPoolThread())
     {
         result |= USER_THREADPOOL;
@@ -7506,8 +7491,8 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if ((mHandleMask & CorHandleWeakRefCount) || (mHandleMask & CorHandleStrongRefCount))
         result |= (1 << HNDTYPE_REFCOUNTED);
 
-    if (mHandleMask & CorHandleWeakWinRT)
-        result |= (1 << HNDTYPE_WEAK_WINRT);
+    if (mHandleMask & CorHandleWeakNativeCom)
+        result |= (1 << HNDTYPE_WEAK_NATIVE_COM);
 #endif // FEATURE_COMINTEROP
 
     if (mHandleMask & CorHandleStrongDependent)
@@ -7682,8 +7667,8 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
             data.i64ExtraData = refCnt;
             break;
 
-        case HNDTYPE_WEAK_WINRT:
-            data.dwType = (DWORD)CorHandleWeakWinRT;
+        case HNDTYPE_WEAK_NATIVE_COM:
+            data.dwType = (DWORD)CorHandleWeakNativeCom;
             break;
 #endif
 

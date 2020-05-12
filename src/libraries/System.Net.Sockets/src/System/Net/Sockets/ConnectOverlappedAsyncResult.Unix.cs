@@ -19,12 +19,12 @@ namespace System.Net.Sockets
         }
 
         // This method is called by base.CompletionPortCallback base.OverlappedCallback as part of IO completion
-        internal override object PostCompletion(int numBytes)
+        internal override object? PostCompletion(int numBytes)
         {
             var errorCode = (SocketError)ErrorCode;
             if (errorCode == SocketError.Success)
             {
-                var socket = (Socket)AsyncObject;
+                var socket = (Socket)AsyncObject!;
                 socket.SetToConnected();
                 return socket;
             }

@@ -15,7 +15,7 @@ namespace System.Runtime.Serialization.Json
     {
         private const int MaxTextChunk = 2048;
 
-        private static readonly byte[] s_charType = new byte[256]
+        private static ReadOnlySpan<byte> CharTypes => new byte[256] // rely on C# compiler optimization to eliminate allocation
             {
                 CharType.None, //   0 (.)
                 CharType.None, //   1 (.)
@@ -1127,7 +1127,7 @@ namespace System.Runtime.Serialization.Json
             elementNode.BufferOffset = actualOffset;
 
             int currentCharacter = (int)BufferReader.GetByte(elementNode.NameOffset);
-            if ((s_charType[currentCharacter] & CharType.FirstName) == 0)
+            if ((CharTypes[currentCharacter] & CharType.FirstName) == 0)
             {
                 SetJsonNameWithMapping(elementNode);
             }
@@ -1136,7 +1136,7 @@ namespace System.Runtime.Serialization.Json
                 for (int i = 0, offset = elementNode.NameOffset; i < elementNode.NameLength; i++, offset++)
                 {
                     currentCharacter = (int)BufferReader.GetByte(offset);
-                    if ((s_charType[currentCharacter] & CharType.Name) == 0 || currentCharacter >= 0x80)
+                    if ((CharTypes[currentCharacter] & CharType.Name) == 0 || currentCharacter >= 0x80)
                     {
                         SetJsonNameWithMapping(elementNode);
                         break;

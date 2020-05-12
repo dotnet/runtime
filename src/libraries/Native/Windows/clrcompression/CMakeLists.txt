@@ -79,13 +79,23 @@ add_library(clrcompression
     ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
 )
 
+add_library(clrcompression-static
+    STATIC
+    ${NATIVECOMPRESSION_SOURCES}
+)
+
+SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES PREFIX "")
+SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES OUTPUT_NAME libclrcompression)
+
 # Allow specification of arguments that should be passed to the linker
 SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_FLAGS ${__LinkArgs})
+SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES LINK_FLAGS ${__LinkArgs})
 
 # Allow specification of libraries that should be linked against
 # CMake doesn't like space delimiters as input to target_link_libraries
 separate_arguments(linker_libs_sanitized WINDOWS_COMMAND ${__LinkLibraries})
 target_link_libraries(clrcompression ${linker_libs_sanitized})
+target_link_libraries(clrcompression-static ${linker_libs_sanitized})
 
 GENERATE_EXPORT_HEADER( clrcompression
      BASE_NAME clrcompression
@@ -95,5 +105,6 @@ GENERATE_EXPORT_HEADER( clrcompression
 )
 
 install (TARGETS clrcompression DESTINATION .)
+install (TARGETS clrcompression-static DESTINATION .)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/clrcompression.pdb DESTINATION .)
 

@@ -5,6 +5,7 @@
 
     <InstallerName>dotnet-host</InstallerName>
     <GenerateSharedFrameworkPart>true</GenerateSharedFrameworkPart>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <Target Name="SetupHostSpecificWixBuild"
@@ -47,6 +48,8 @@
     </ItemGroup>
   </Target>
 
-  <Import Condition="'$(PackageTargetRuntime)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(OSGroup).$(MSBuildProjectName).props" />
+  <Import 
+    Condition="'$(PackageTargetRuntime)' != '' and Exists('$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildProjectName).props')"
+    Project="$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildProjectName).props" />
 
 </Project>

@@ -20,18 +20,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class InliningInfoNode : HeaderTableNode
     {
-        private readonly EcmaModule _globalContext;
+        private readonly EcmaModule _module;
 
-        public InliningInfoNode(TargetDetails target, EcmaModule globalContext)
+        public InliningInfoNode(TargetDetails target, EcmaModule module)
             : base(target)
         {
-            _globalContext = globalContext;
+            _module = module;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunInliningInfoTable");
+            sb.Append("__ReadyToRunInliningInfoTable__");
+            sb.Append(_module.Assembly.GetName().Name);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -44,11 +45,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Build a map from inlinee to the list of inliners
             // We are only interested in the generic definitions of these.
-            foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods(_module, CompiledMethodCategory.All))
             {
                 MethodDesc[] inlinees = methodNode.InlinedMethods;
                 MethodDesc inliner = methodNode.Method;
-                MethodDesc inlinerDefinition = inliner.GetTypicalMethodDefinition();
+                EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetTypicalMethodDefinition();
+
+                // Only encode inlining info for inliners within the active module
+                Debug.Assert(inlinerDefinition.Module == _module);
 
                 foreach (MethodDesc inlinee in inlinees)
                 {
@@ -57,6 +61,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         // We don't record non-ECMA methods because they don't have tokens that
                         // diagnostic tools could reason about anyway.
+                        continue;
+                    }
+
+                    if (!factory.CompilationModuleGroup.VersionsWithMethodBody(inlinee))
+                    {
+                        // We cannot record inlining info across version bubble as cross-bubble assemblies
+                        // are not guaranteed to preserve token values. Only non-versionable methods may be
+                        // inlined across the version bubble.
+                        Debug.Assert(inlinee.IsNonVersionable());
                         continue;
                     }
 
@@ -91,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 var sig = new VertexSequence();
 
-                bool isForeignInlinee = inlinee.Module != _globalContext;
+                bool isForeignInlinee = inlinee.Module != _module;
                 sig.Append(new UnsignedConstant((uint)(inlineeRid << 1 | (isForeignInlinee ? 1 : 0))));
                 if (isForeignInlinee)
                 {
@@ -99,7 +112,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 List<EcmaMethod> sortedInliners = new List<EcmaMethod>(inlineeWithInliners.Value);
-                sortedInliners.Sort((a, b) =>
+                sortedInliners.MergeSort((a, b) =>
                 {
                     if (a == b)
                         return 0;
@@ -123,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int ridDelta = inlinerRid - baseRid;
                     baseRid = inlinerRid;
                     Debug.Assert(ridDelta >= 0);
-                    bool isForeignInliner = inliner.Module != _globalContext;
+                    bool isForeignInliner = inliner.Module != _module;
                     sig.Append(new UnsignedConstant((uint)(ridDelta << 1 | (isForeignInliner ? 1 : 0))));
                     if (isForeignInliner)
                     {
@@ -142,6 +155,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            InliningInfoNode otherInliningInfo = (InliningInfoNode)other;
+            return _module.Assembly.GetName().Name.CompareTo(otherInliningInfo._module.Assembly.GetName().Name);
         }
 
         public override int ClassCode => -87382891;

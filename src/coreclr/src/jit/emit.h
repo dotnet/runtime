@@ -192,7 +192,7 @@ public:
     UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
 
 #ifdef DEBUG
-    void Print() const;
+    void Print(LONG compMethodID) const;
 #endif // DEBUG
 
 private:
@@ -808,8 +808,6 @@ protected:
             bool iiaIsJitDataOffset() const;
             int  iiaGetJitDataOffset() const;
 
-#ifdef TARGET_ARMARCH
-
             // iiaEncodedInstrCount and its accessor functions are used to specify an instruction
             // count for jumps, instead of using a label and multiple blocks. This is used in the
             // prolog as well as for IF_LARGEJMP pseudo-branch instructions.
@@ -829,6 +827,8 @@ protected:
                 assert(abs(count) < 10);
                 iiaEncodedInstrCount = (count << iaut_SHIFT) | iaut_INST_COUNT;
             }
+
+#ifdef TARGET_ARMARCH
 
             struct
             {
@@ -1222,9 +1222,11 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ILLEGAL -1024.0f
 
-#define PERFSCORE_THROUGHPUT_4X 0.25f         // Fastest - Quad issue
-#define PERFSCORE_THROUGHPUT_3X (1.0f / 3.0f) // Faster - Three issue
-#define PERFSCORE_THROUGHPUT_2X 0.5f          // Faster - Dual issue
+#define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
+#define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
+#define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
+#define PERFSCORE_THROUGHPUT_3X (1.0f / 3.0f) // Three issue
+#define PERFSCORE_THROUGHPUT_2X 0.5f          // Dual issue
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
@@ -1233,6 +1235,8 @@ protected:
 #define PERFSCORE_THROUGHPUT_4C 4.0f   // slower - 4 cycles
 #define PERFSCORE_THROUGHPUT_5C 5.0f   // slower - 5 cycles
 #define PERFSCORE_THROUGHPUT_6C 6.0f   // slower - 6 cycles
+#define PERFSCORE_THROUGHPUT_7C 7.0f   // slower - 7 cycles
+#define PERFSCORE_THROUGHPUT_8C 8.0f   // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C 9.0f   // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C 10.0f // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f // slower - 13 cycles
@@ -1334,7 +1338,7 @@ protected:
 
     insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc* id);
 
-    void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* result);
+    void perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* result);
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 

@@ -22,17 +22,17 @@
             BuildCoreHostWindows" />
 
   <Target Name="BuildCoreHostUnix"
-          Condition="'$(OSGroup)' != 'Windows_NT'"
+          Condition="'$(TargetOS)' != 'Windows_NT'"
           DependsOnTargets="GetLatestCommitHash;GenerateNativeVersionFile">
     <PropertyGroup>
       <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
 
-      <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) -apphostver "$(AppHostVersion)" -hostver "$(HostVersion)" -fxrver "$(HostResolverVersion)" -policyver "$(HostPolicyVersion)" -commithash "$(LatestCommit)"</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) -apphostver "$(AppHostVersion)" -hostver "$(HostVersion)" -fxrver "$(HostResolverVersion)" -policyver "$(HostPolicyVersion)" -commithash "$(LatestCommit)" -os $(TargetOS)</BuildArgs>
+      <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' != 'true'">$(BuildArgs) -portablebuild=false</BuildArgs>
       <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) -cross</BuildArgs>
       <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
-      <BuildArgs Condition="'$(StripSymbols)' == 'true'">$(BuildArgs) -stripsymbols</BuildArgs>
     </PropertyGroup>
 
     <!--
@@ -44,31 +44,31 @@
   </Target>
 
   <Target Name="BuildCoreHostWindows"
-          Condition="'$(OSGroup)' == 'Windows_NT'"
+          Condition="'$(TargetOS)' == 'Windows_NT'"
           DependsOnTargets="GetLatestCommitHash">
 
     <!-- Generate Version files -->
     <ItemGroup>
       <HostFiles Include="dotnet">
-       <FileDescription>.NET Core Host</FileDescription>
+       <FileDescription>.NET Host</FileDescription>
       </HostFiles>
       <HostFiles Include="hostfxr">
-        <FileDescription>.NET Core Host Resolver - $(HostResolverVersion)</FileDescription>
+        <FileDescription>.NET Host Resolver - $(HostResolverVersion)</FileDescription>
       </HostFiles>
       <HostFiles Include="hostpolicy">
-        <FileDescription>.NET Core Host Policy - $(HostPolicyVersion)</FileDescription>
+        <FileDescription>.NET Host Policy - $(HostPolicyVersion)</FileDescription>
       </HostFiles>
       <HostFiles Include="comhost">
-        <FileDescription>.NET Core COM Host</FileDescription>
+        <FileDescription>.NET COM Host</FileDescription>
       </HostFiles>
       <HostFiles Include="ijwhost">
-        <FileDescription>.NET Core IJW Host</FileDescription>
+        <FileDescription>.NET IJW Host</FileDescription>
       </HostFiles>
       <HostFiles Include="winrthost">
-        <FileDescription>.NET Core WinRT Host</FileDescription>
+        <FileDescription>.NET WinRT Host</FileDescription>
       </HostFiles>
       <HostFiles Include="nethost">
-        <FileDescription>.NET Core Component Host</FileDescription>
+        <FileDescription>.NET Component Host</FileDescription>
       </HostFiles>
     </ItemGroup>
 
@@ -84,7 +84,7 @@
         !Exists('$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h')"/>
 
     <PropertyGroup>
-      <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $(LatestCommit) rid $(OutputRid)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $(LatestCommit) rid $(OutputRid)</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
       <BuildArgs>$(BuildArgs) rootdir $(RepoRoot)</BuildArgs>
@@ -100,7 +100,7 @@
   </Target>
 
   <Target Name="PrependWindowsHeaderIncludeToVersionHeaderFile"
-          Condition="'$(OSGroup)' == 'Windows_NT'"
+          Condition="'$(TargetOS)' == 'Windows_NT'"
           AfterTargets="GenerateNativeVersionFile">
     <PropertyGroup>
       <IncludeStatementLine>#include &lt;Windows.h&gt;</IncludeStatementLine>

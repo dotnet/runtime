@@ -13,22 +13,20 @@
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
-    <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
-    <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)/</RefPath>
-    <CoreCLROSGroup>$(OSGroup)</CoreCLROSGroup>
-    <MonoOSGroup>$(OSGroup)</MonoOSGroup>
+    <CoreCLRTargetOS>$(TargetOS)</CoreCLRTargetOS>
+    <MonoTargetOS>$(TargetOS)</MonoTargetOS>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <ReferencePath
-      Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
-      Exclude="$(RefPath)$(MSBuildProjectName).dll" />
+      Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.Win32.*.dll;$(RuntimePath)netstandard.dll"
+      Exclude="$(RuntimePath)$(MSBuildProjectName).dll" />
   </ItemGroup>
 
-  <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="ResolveReferences">
+  <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="GetFilesFromRuntime" BeforeTargets="ResolveReferences">
     <ItemGroup>
-      <ReferencePath Include="@(CoreCLRFiles)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
+      <ReferencePath Include="@(RuntimeFiles)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
     </ItemGroup>
   </Target>
 </Project>

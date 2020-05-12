@@ -244,6 +244,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-config.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-debug.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-gc.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-private-unstable.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-bridge.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\object.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\opcodes.h" />

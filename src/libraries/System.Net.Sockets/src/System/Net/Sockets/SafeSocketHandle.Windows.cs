@@ -10,12 +10,12 @@ namespace System.Net.Sockets
 {
     public partial class SafeSocketHandle
     {
-        private ThreadPoolBoundHandle _iocpBoundHandle;
+        private ThreadPoolBoundHandle? _iocpBoundHandle;
         private bool _skipCompletionPortOnSuccess;
 
         internal void SetExposed() { /* nop */ }
 
-        internal ThreadPoolBoundHandle IOCPBoundHandle
+        internal ThreadPoolBoundHandle? IOCPBoundHandle
         {
             get
             {
@@ -23,7 +23,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal ThreadPoolBoundHandle GetThreadPoolBoundHandle() => !_released ? _iocpBoundHandle : null;
+        internal ThreadPoolBoundHandle? GetThreadPoolBoundHandle() => !_released ? _iocpBoundHandle : null;
 
         // Binds the Socket Win32 Handle to the ThreadPool's CompletionPort.
         internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle(bool trySkipCompletionPortOnSuccess)
@@ -40,7 +40,7 @@ namespace System.Net.Sockets
 
             lock (this)
             {
-                ThreadPoolBoundHandle boundHandle = _iocpBoundHandle;
+                ThreadPoolBoundHandle? boundHandle = _iocpBoundHandle;
 
                 if (boundHandle == null)
                 {
@@ -208,7 +208,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        private static void ThrowSocketDisposedException(Exception innerException = null) =>
+        private static void ThrowSocketDisposedException(Exception? innerException = null) =>
             throw new ObjectDisposedException(typeof(Socket).FullName, innerException);
     }
 }

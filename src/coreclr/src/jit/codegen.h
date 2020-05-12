@@ -23,7 +23,7 @@
 #define FOREACH_REGISTER_FILE(file) (file) = &(this->intRegState);
 #endif
 
-class CodeGen : public CodeGenInterface
+class CodeGen final : public CodeGenInterface
 {
     friend class emitter;
     friend class DisAssembler;
@@ -33,6 +33,11 @@ public:
     CodeGen(Compiler* theCompiler);
 
     virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode);
+
+    void genGenerateMachineCode();
+    void genEmitMachineCode();
+    void genEmitUnwindDebugGCandEH();
+
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
     virtual bool genCreateAddrMode(GenTree*  addr,
@@ -65,6 +70,21 @@ private:
 
     // Generates SSE41 code for the given tree as a round operation
     void genSSE41RoundOp(GenTreeOp* treeNode);
+
+    instruction simdAlignedMovIns()
+    {
+        // We use movaps when non-VEX because it is a smaller instruction;
+        // however the VEX version vmovaps would be used which is the same size as vmovdqa;
+        // also vmovdqa has more available CPU ports on older processors so we switch to that
+        return compiler->canUseVexEncoding() ? INS_movdqa : INS_movaps;
+    }
+    instruction simdUnalignedMovIns()
+    {
+        // We use movups when non-VEX because it is a smaller instruction;
+        // however the VEX version vmovups would be used which is the same size as vmovdqu;
+        // but vmovdqu has more available CPU ports on older processors so we switch to that
+        return compiler->canUseVexEncoding() ? INS_movdqu : INS_movups;
+    }
 #endif // defined(TARGET_XARCH)
 
     void genPrepForCompiler();
@@ -186,6 +206,12 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
+    void**   codePtr;
+    ULONG*   nativeSizeOfCode;
+    unsigned codeSize;
+    void*    coldCodePtr;
+    void*    consPtr;
+
 #ifdef DEBUG
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
@@ -241,6 +267,9 @@ protected:
     // Prolog/epilog generation
     //
     //-------------------------------------------------------------------------
+
+    unsigned prologSize;
+    unsigned epilogSize;
 
     //
     // Prolog functions and data (there are a few exceptions for more generally used things)
@@ -949,6 +978,7 @@ protected:
     void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
+    void genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode);
@@ -998,6 +1028,7 @@ protected:
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
+    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
     void genSSEIntrinsic(GenTreeHWIntrinsic* node);
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
@@ -1017,6 +1048,58 @@ protected:
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(TARGET_XARCH)
+
+#ifdef TARGET_ARM64
+    class HWIntrinsicImmOpHelper final
+    {
+    public:
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+
+        void EmitBegin();
+        void EmitCaseEnd();
+
+        // Returns true after the last call to EmitCaseEnd() (i.e. this signals that code generation is done).
+        bool Done() const
+        {
+            return immValue == immUpperBound;
+        }
+
+        // Returns a value of the immediate operand that should be used for a case.
+        int ImmValue() const
+        {
+            return immValue;
+        }
+
+    private:
+        // Returns true if immOp is non contained immediate (i.e. the value of the immediate operand is enregistered in
+        // nonConstImmReg).
+        bool NonConstImmOp() const
+        {
+            return nonConstImmReg != REG_NA;
+        }
+
+        // Returns true if a non constant immediate operand can be either 0 or 1.
+        bool TestImmOpZeroOrOne() const
+        {
+            assert(NonConstImmOp());
+            return immUpperBound == 2;
+        }
+
+        emitter* GetEmitter() const
+        {
+            return codeGen->GetEmitter();
+        }
+
+        CodeGen* const codeGen;
+        BasicBlock*    endLabel;
+        BasicBlock*    nonZeroLabel;
+        int            immValue;
+        int            immUpperBound;
+        regNumber      nonConstImmReg;
+        regNumber      branchTargetReg;
+    };
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HW_INTRINSICS
 
 #if !defined(TARGET_64BIT)
@@ -1382,11 +1465,13 @@ public:
 
     void instGen_Return(unsigned stkArgSize);
 
-#ifdef TARGET_ARM64
-    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_ISH);
-#else
-    void instGen_MemoryBarrier();
-#endif
+    enum BarrierKind
+    {
+        BARRIER_FULL,      // full barrier
+        BARRIER_LOAD_ONLY, // load barier
+    };
+
+    void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 
@@ -1490,6 +1575,38 @@ inline void CodeGen::inst_FS_TT(instruction ins, GenTree* tree)
 inline void CodeGen::inst_RV_CL(instruction ins, regNumber reg, var_types type)
 {
     inst_RV(ins, reg, type);
+}
+
+/*****************************************************************************/
+
+// A simple phase that just invokes a method on the codegen instance
+//
+class CodeGenPhase final : public Phase
+{
+public:
+    CodeGenPhase(CodeGen* _codeGen, Phases _phase, void (CodeGen::*_action)())
+        : Phase(_codeGen->GetCompiler(), _phase), codeGen(_codeGen), action(_action)
+    {
+    }
+
+protected:
+    virtual PhaseStatus DoPhase() override
+    {
+        (codeGen->*action)();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+private:
+    CodeGen* codeGen;
+    void (CodeGen::*action)();
+};
+
+// Wrapper for using CodeGenPhase
+//
+inline void DoPhase(CodeGen* _codeGen, Phases _phase, void (CodeGen::*_action)())
+{
+    CodeGenPhase phase(_codeGen, _phase, _action);
+    phase.Run();
 }
 
 #endif // _CODEGEN_H_

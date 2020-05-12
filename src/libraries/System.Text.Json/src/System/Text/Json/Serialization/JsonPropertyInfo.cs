@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -38,6 +37,7 @@ namespace System.Text.Json
             jsonPropertyInfo.Options = options;
             jsonPropertyInfo.PropertyInfo = propertyInfo;
             jsonPropertyInfo.DeterminePropertyName();
+            jsonPropertyInfo.IsIgnored = true;
 
             Debug.Assert(!jsonPropertyInfo.ShouldDeserialize);
             Debug.Assert(!jsonPropertyInfo.ShouldSerialize);
@@ -83,21 +83,26 @@ namespace System.Text.Json
             Debug.Assert(NameAsString != null);
 
             // At this point propertyName is valid UTF16, so just call the simple UTF16->UTF8 encoder.
-            Name = Encoding.UTF8.GetBytes(NameAsString);
+            NameAsUtf8Bytes = Encoding.UTF8.GetBytes(NameAsString);
 
             // Cache the escaped property name.
-            EscapedName = JsonEncodedText.Encode(Name, Options.Encoder);
-
-            ulong key = JsonClassInfo.GetKey(Name);
-            PropertyNameKey = key;
+            EscapedName = JsonEncodedText.Encode(NameAsString, NameAsUtf8Bytes, Options.Encoder);
         }
 
-        private void DetermineSerializationCapabilities()
+        private void DetermineSerializationCapabilities(JsonIgnoreCondition? ignoreCondition)
         {
             if ((ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
             {
+                Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
+
+                // Three possible values for ignoreCondition:
+                // null = JsonIgnore was not placed on this property, global IgnoreReadOnlyProperties wins
+                // WhenNull = only ignore when null, global IgnoreReadOnlyProperties loses
+                // Never = never ignore (always include), global IgnoreReadOnlyProperties loses
+                bool serializeReadOnlyProperty = ignoreCondition != null || !Options.IgnoreReadOnlyProperties;
+
                 // We serialize if there is a getter + not ignoring readonly properties.
-                ShouldSerialize = HasGetter && (HasSetter || !Options.IgnoreReadOnlyProperties);
+                ShouldSerialize = HasGetter && (HasSetter || serializeReadOnlyProperty);
 
                 // We deserialize if there is a setter.
                 ShouldDeserialize = HasSetter;
@@ -118,9 +123,24 @@ namespace System.Text.Json
             }
         }
 
-        // The escaped name passed to the writer.
-        // Use a field here (not a property) to avoid value semantics.
-        public JsonEncodedText? EscapedName;
+        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
+        {
+            if (ignoreCondition != null)
+            {
+                Debug.Assert(PropertyInfo != null);
+                Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
+
+                if (ignoreCondition != JsonIgnoreCondition.Never)
+                {
+                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenNull);
+                    IgnoreNullValues = true;
+                }
+            }
+            else
+            {
+                IgnoreNullValues = Options.IgnoreNullValues;
+            }
+        }
 
         public static TAttribute? GetAttribute<TAttribute>(PropertyInfo propertyInfo) where TAttribute : Attribute
         {
@@ -130,11 +150,11 @@ namespace System.Text.Json
         public abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         public abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
-        public virtual void GetPolicies()
+        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition)
         {
-            DetermineSerializationCapabilities();
+            DetermineSerializationCapabilities(ignoreCondition);
             DeterminePropertyName();
-            IgnoreNullValues = Options.IgnoreNullValues;
+            DetermineIgnoreCondition(ignoreCondition);
         }
 
         public abstract object? GetValueAsObject(object obj);
@@ -149,6 +169,7 @@ namespace System.Text.Json
             ClassType runtimeClassType,
             PropertyInfo? propertyInfo,
             JsonConverter converter,
+            JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
         {
             Debug.Assert(converter != null);
@@ -166,15 +187,32 @@ namespace System.Text.Json
 
         public bool IsPropertyPolicy { get; protected set; }
 
-        // The name from a Json value. This is cached for performance on first deserialize.
-        public byte[]? JsonPropertyName { get; set; }
+        // There are 3 copies of the property name:
+        // 1) NameAsString. The unescaped property name.
+        // 2) NameAsUtf8Bytes. The Utf8 version of NameAsString. Used during during deserialization for property lookup.
+        // 3) EscapedName. The escaped verson of NameAsString and NameAsUtf8Bytes written during serialization. Internally shares
+        // the same instances of NameAsString and NameAsUtf8Bytes if there is no escaping.
 
-        // The name of the property with any casing policy or the name specified from JsonPropertyNameAttribute.
-        public byte[]? Name { get; private set; }
+        /// <summary>
+        /// The unescaped name of the property.
+        /// Is either the actual CLR property name,
+        /// the value specified in JsonPropertyNameAttribute,
+        /// or the value returned from PropertyNamingPolicy(clrPropertyName).
+        /// </summary>
         public string? NameAsString { get; private set; }
 
-        // Key for fast property name lookup.
-        public ulong PropertyNameKey { get; set; }
+        /// <summary>
+        /// Utf8 version of NameAsString.
+        /// </summary>
+        public byte[]? NameAsUtf8Bytes { get; private set; }
+
+        /// <summary>
+        /// The escaped name passed to the writer.
+        /// </summary>
+        /// <remarks>
+        /// JsonEncodedText is a value type so a field is used (not a property) to avoid unnecessary copies.
+        /// </remarks>
+        public JsonEncodedText? EscapedName;
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
         protected JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
@@ -194,8 +232,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonConverter<object> converter = (JsonConverter<object>)
-                        state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(typeof(object));
 
                     if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
                     {
@@ -212,8 +249,7 @@ namespace System.Text.Json
                 Debug.Assert(propValue is IDictionary<string, JsonElement>);
                 IDictionary<string, JsonElement> dictionaryJsonElement = (IDictionary<string, JsonElement>)propValue;
 
-                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)
-                    state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
 
                 if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
                 {
@@ -227,6 +263,30 @@ namespace System.Text.Json
         }
 
         public abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
+
+        public abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
+
+        public bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        {
+            Debug.Assert(this == state.Current.JsonClassInfo.DataExtensionProperty);
+
+            if (RuntimeClassInfo.ElementType == typeof(object) && reader.TokenType == JsonTokenType.Null)
+            {
+                value = null;
+                return true;
+            }
+
+            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
+            if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
+            {
+                // JsonElement is a struct that must be read in full.
+                value = null;
+                return false;
+            }
+
+            value = jsonElement;
+            return true;
+        }
 
         public Type ParentClassType { get; private set; } = null!;
 
@@ -251,5 +311,6 @@ namespace System.Text.Json
 
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }
+        public bool IsIgnored { get; private set; }
     }
 }

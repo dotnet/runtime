@@ -4,7 +4,7 @@
 
 #nullable enable
 
-// TODO https://github.com/dotnet/corefx/issues/41201: Design and expose this publicly.
+// TODO https://github.com/dotnet/runtime/issues/30902: Design and expose this publicly.
 
 namespace System.Runtime.CompilerServices
 {

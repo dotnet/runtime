@@ -497,9 +497,6 @@ class SuperPMICollect:
         # The base .MCH file path
         self.base_mch_file = None
 
-        # No dup .MCH file path
-        self.nodup_mch_file = None
-
         # Final .MCH file path
         self.final_mch_file = None
 
@@ -510,12 +507,11 @@ class SuperPMICollect:
 
         # Do a basic SuperPMI collect and validation:
         #   1. Collect MC files by running a set of sample apps.
-        #   2. Merge the MC files into a single MCH using "mcs -merge *.mc -recursive".
-        #   3. Create a thin unique MCH by using "mcs -removeDup -thin".
-        #   4. Create a clean MCH by running SuperPMI over the MCH, and using "mcs -strip" to filter
+        #   2. Create a merged thin unique MCH by using "mcs -merge -recursive -dedup -thin base.mch *.mc".
+        #   3. Create a clean MCH by running SuperPMI over the MCH, and using "mcs -strip" to filter
         #      out any failures (if any).
-        #   5. Create a TOC using "mcs -toc".
-        #   6. Verify the resulting MCH file is error-free when running SuperPMI against it with the
+        #   4. Create a TOC using "mcs -toc".
+        #   5. Verify the resulting MCH file is error-free when running SuperPMI against it with the
         #      same JIT used for collection.
         #
         #   MCH files are big. If we don't need them anymore, clean them up right away to avoid
@@ -528,7 +524,6 @@ class SuperPMICollect:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
-                self.nodup_mch_file = os.path.join(temp_location, "nodup.mch")
 
                 self.temp_location = temp_location
 
@@ -538,7 +533,7 @@ class SuperPMICollect:
                     if not os.path.isdir(final_mch_dir):
                         os.makedirs(final_mch_dir)
                 else:
-                    default_coreclr_bin_mch_location = os.path.join(coreclr_args.spmi_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+                    default_coreclr_bin_mch_location = os.path.join(self.coreclr_args.spmi_location, "mch", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
                     if not os.path.isdir(default_coreclr_bin_mch_location):
                         os.makedirs(default_coreclr_bin_mch_location)
                     self.final_mch_file = os.path.abspath(os.path.join(default_coreclr_bin_mch_location, "{}.{}.{}.mch".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type)))
@@ -563,7 +558,6 @@ class SuperPMICollect:
                         self.__merge_mch_files__()
 
                 if not self.coreclr_args.has_verified_clean_mch:
-                    self.__create_thin_unique_mch__()
                     self.__create_clean_mch_file__()
                     self.__create_toc__()
                     self.__verify_final_mch__()
@@ -594,7 +588,9 @@ class SuperPMICollect:
             env_copy["SuperPMIShimLogPath"] = self.temp_location
             env_copy["SuperPMIShimPath"] = self.jit_path
             env_copy["COMPlus_AltJit"] = "*"
+            env_copy["COMPlus_AltJitNgen"] = "*"
             env_copy["COMPlus_AltJitName"] = self.collection_shim_name
+            env_copy["COMPlus_EnableExtraSuperPmiQueries"] = "1"
 
             if self.coreclr_args.use_zapdisable:
                 env_copy["COMPlus_ZapDisable"] = "1"
@@ -605,6 +601,7 @@ class SuperPMICollect:
             print_platform_specific_environment_vars(self.coreclr_args, "SuperPMIShimPath", self.jit_path)
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJit", "*")
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJitName", self.collection_shim_name)
+            print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJitNgen", "*")
             print("")
 
             if self.collection_command != None:
@@ -694,13 +691,13 @@ class SuperPMICollect:
         """ Merge the mc files that were generated
 
         Notes:
-            mcs -merge <s_baseMchFile> <s_tempDir>\*.mc -recursive
+            mcs -merge <s_baseMchFile> <s_tempDir>\*.mc -recursive -dedup -thin
 
         """
 
         pattern = os.path.join(self.temp_location, "*.mc")
 
-        command = [self.mcs_path, "-merge", self.base_mch_file, pattern, "-recursive"]
+        command = [self.mcs_path, "-merge", self.base_mch_file, pattern, "-recursive", "-dedup", "-thin"]
         print("Invoking: " + " ".join(command))
         proc = subprocess.Popen(command)
         proc.communicate()
@@ -732,51 +729,32 @@ class SuperPMICollect:
         if not os.path.isfile(self.base_mch_file):
             raise RuntimeError("MCH file failed to be generated at: %s" % self.base_mch_file)
 
-    def __create_thin_unique_mch__(self):
-        """  Create a thin unique MCH
-
-        Notes:
-            <mcl> -removeDup -thin <s_baseMchFile> <s_nodupMchFile>
-        """
-
-        command = [self.mcs_path, "-removeDup", "-thin", self.base_mch_file, self.nodup_mch_file]
-        print("Invoking: " + " ".join(command))
-        proc = subprocess.Popen(command)
-        proc.communicate()
-
-        if not os.path.isfile(self.nodup_mch_file):
-            raise RuntimeError("Error, no dup mch file not created correctly at: %s" % self.nodup_mch_file)
-
-        if not self.coreclr_args.skip_cleanup:
-            os.remove(self.base_mch_file)
-            self.base_mch_file = None
-
     def __create_clean_mch_file__(self):
         """ Create a clean mch file
 
         Notes:
-            <SuperPMIPath> -p -f <s_baseFailMclFile> <s_nodupMchFile> <jitPath>
+            <SuperPMIPath> -p -f <s_baseFailMclFile> <s_baseMchFile> <jitPath>
 
             if <s_baseFailMclFile> is non-empty:
-                <mcl> -strip <s_baseFailMclFile> <s_nodupMchFile> <s_finalMchFile>
+                <mcl> -strip <s_baseFailMclFile> <s_baseMchFile> <s_finalMchFile>
             else
-                # copy/move nodup file to final file
+                # copy/move base file to final file
             del <s_baseFailMclFile>
         """
 
-        command = [self.superpmi_path, "-p", "-f", self.base_fail_mcl_file, self.nodup_mch_file, self.jit_path]
+        command = [self.superpmi_path, "-p", "-f", self.base_fail_mcl_file, self.base_mch_file, self.jit_path]
         print("Invoking: " + " ".join(command))
         proc = subprocess.Popen(command)
         proc.communicate()
 
         if is_nonzero_length_file(self.base_fail_mcl_file):
-            command = [self.mcs_path, "-strip", self.base_fail_mcl_file, self.nodup_mch_file, self.final_mch_file]
+            command = [self.mcs_path, "-strip", self.base_fail_mcl_file, self.base_mch_file, self.final_mch_file]
             print("Invoking: " + " ".join(command))
             proc = subprocess.Popen(command)
             proc.communicate()
         else:
             # Ideally we could just rename this file instead of copying it.
-            shutil.copy2(self.nodup_mch_file, self.final_mch_file)
+            shutil.copy2(self.base_mch_file, self.final_mch_file)
 
         if not os.path.isfile(self.final_mch_file):
             raise RuntimeError("Final mch file failed to be generated.")
@@ -785,9 +763,9 @@ class SuperPMICollect:
             if os.path.isfile(self.base_fail_mcl_file):
                 os.remove(self.base_fail_mcl_file)
                 self.base_fail_mcl_file = None
-            if os.path.isfile(self.nodup_mch_file):
-                os.remove(self.nodup_mch_file)
-                self.nodup_mch_file = None
+            if os.path.isfile(self.base_mch_file):
+                os.remove(self.base_mch_file)
+                self.base_mch_file = None
 
     def __create_toc__(self):
         """ Create a TOC file

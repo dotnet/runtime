@@ -52,10 +52,10 @@ namespace System.DirectoryServices.Protocols
         {
             checked
             {
-                IntPtr intPtrArray = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IntPtr)) * size);
+                IntPtr intPtrArray = Marshal.AllocHGlobal(IntPtr.Size * size);
                 for (int i = 0; i < size; i++)
                 {
-                    IntPtr tempPtr = (IntPtr)((long)intPtrArray + Marshal.SizeOf(typeof(IntPtr)) * i);
+                    IntPtr tempPtr = (IntPtr)((long)intPtrArray + IntPtr.Size * i);
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
                 return intPtrArray;

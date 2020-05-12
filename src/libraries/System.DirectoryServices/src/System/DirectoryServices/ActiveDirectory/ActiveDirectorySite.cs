@@ -419,7 +419,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (existing)
                 {
                     // for existing site, nTDSSiteSettings needs to exist
-                    DirectoryEntry tmp = NTDSSiteEntry;
+                    _ = NTDSSiteEntry;
                 }
 
                 _topologyTouched = true;
@@ -987,10 +987,10 @@ namespace System.DirectoryServices.ActiveDirectory
                         str.Append("(fromServer=");
                         str.Append("CN=NTDS Settings,");
                         str.Append(Utils.GetEscapedFilterValue((string)val.Key));
-                        str.Append(")");
+                        str.Append(')');
                     }
                     if (nonBridgHeadTable.Count > 1)
-                        str.Append(")");
+                        str.Append(')');
                     ADSearcher adSearcher = new ADSearcher(serverEntry,
                                                           "(&(objectClass=nTDSConnection)(objectCategory=NTDSConnection)" + str.ToString() + ")",
                                                           new string[] { "fromServer", "distinguishedName" },
@@ -1329,7 +1329,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (count > 0)
                     {
                         Debug.Assert(val != (IntPtr)0);
-                        int status = Marshal.ReadInt32(val);
                         IntPtr tmpPtr = (IntPtr)0;
                         for (int i = 0; i < count; i++)
                         {

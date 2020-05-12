@@ -15,11 +15,7 @@ MCS_NO_LIB = $(MCS_NO_UNSAFE) -unsafe
 
 MCS = $(MCS_NO_LIB)
 
-if LOADED_LLVM
-LLVMMONOF=
-else
 LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
-endif
 
 glib_libs = $(top_builddir)/mono/eglib/libeglib.la
 
@@ -154,7 +150,7 @@ clean-local:
 
 test-embed.exe: $(top_srcdir)/samples/embed/test.cs
 	$(MCS) -r:$(CLASS)/System.dll -r:$(CLASS)/System.Xml.dll -r:$(CLASS)/System.Core.dll -out:$@ $<
-	
+
 test-embed-invoke-cs.exe: $(top_srcdir)/samples/embed/invoke.cs
 	$(MCS) -r:$(CLASS)/System.dll -r:$(CLASS)/System.Xml.dll -r:$(CLASS)/System.Core.dll  -out:$@ $<
 

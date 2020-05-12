@@ -192,7 +192,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
-        public void EnvironmentVariablesAreHashtable(EnvironmentVariableTarget target)
+        public void EnvironmentVariablesAreHashtable_SpecificTarget(EnvironmentVariableTarget target)
         {
             // On NetFX, the type returned was always Hashtable
             Assert.IsType<Hashtable>(Environment.GetEnvironmentVariables(target));
@@ -200,7 +200,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
-        public void EnumerateYieldsDictionaryEntryFromIEnumerable(EnvironmentVariableTarget target)
+        public void EnumerateYieldsDictionaryEntryFromIEnumerable_SpecificTarget(EnvironmentVariableTarget target)
         {
             // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
             IDictionary vars = Environment.GetEnvironmentVariables(target);
@@ -220,8 +220,8 @@ namespace System.Tests
         public void EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
-            
-            // [ActiveIssue("https://github.com/dotnet/corefx/issues/40226")]
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/30566")]
             if (PlatformDetection.IsWindowsNanoServer && target == EnvironmentVariableTarget.User)
             {
                 lookForSetValue = false;

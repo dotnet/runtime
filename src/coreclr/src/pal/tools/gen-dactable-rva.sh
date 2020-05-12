@@ -1,1 +1,1 @@
-nm $1 | grep g_dacTable | cut -f 1 -d' ' | head -n 1 | awk '{ print "#define DAC_TABLE_RVA 0x" $1}' > $2
+${NM:-nm} -P -t x $1 | awk -F ' ' '/g_dacTable/ { print "#define DAC_TABLE_RVA 0x" substr("0000000000000000" $3, length($3) + 1); exit }' > $2

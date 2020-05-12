@@ -123,13 +123,13 @@
     #define INVALID_POINTER_CD 0xcdcdcdcdcdcdcdcd
     #define FMT_ADDR           " %08x`%08x "
     #define LFMT_ADDR          W(" %08x`%08x ")
-    #define DBG_ADDR(ptr)      (((UINT_PTR) (ptr)) >> 32), (((UINT_PTR) (ptr)) & 0xffffffff)
+    #define DBG_ADDR(ptr)      (DWORD)(((UINT_PTR) (ptr)) >> 32), (DWORD)(((UINT_PTR) (ptr)) & 0xffffffff)
 #else // HOST_64BIT
     #define INVALID_POINTER_CC 0xcccccccc
     #define INVALID_POINTER_CD 0xcdcdcdcd
     #define FMT_ADDR           " %08x "
     #define LFMT_ADDR          W(" %08x ")
-    #define DBG_ADDR(ptr)      ((UINT_PTR)(ptr))
+    #define DBG_ADDR(ptr)      (DWORD)((UINT_PTR)(ptr))
 #endif // HOST_64BIT
 
 #ifdef TARGET_ARM

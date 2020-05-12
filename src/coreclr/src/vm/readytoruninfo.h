@@ -15,20 +15,50 @@
 #include "nativeformatreader.h"
 #include "inlinetracking.h"
 #include "wellknownattributes.h"
+#include "nativeimage.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
+class NativeImage;
 class PrepareCodeConfig;
 
+typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
+class ReadyToRunCoreInfo
+{
+private:
+    PTR_PEImageLayout               m_pLayout;
+    PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
+    
+public:
+    ReadyToRunCoreInfo();
+    ReadyToRunCoreInfo(PEImageLayout * pLayout, READYTORUN_CORE_HEADER * pCoreHeader);
+
+    PTR_PEImageLayout GetLayout() const { return m_pLayout; }
+    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
+
+    PTR_PEImageLayout GetImage() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pLayout;
+    }
+};
+
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
+typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
+typedef DPTR(class NativeImage) PTR_NativeImage;
+
 class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
 
     PTR_Module                      m_pModule;
-
-    PTR_PEImageLayout               m_pLayout;
     PTR_READYTORUN_HEADER           m_pHeader;
+    bool                            m_isComponentAssembly;
+    PTR_NativeImage                 m_pNativeImage;
+    PTR_ReadyToRunInfo              m_pCompositeInfo;
+
+    ReadyToRunCoreInfo              m_component;
+    PTR_ReadyToRunCoreInfo          m_pComposite;
 
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
@@ -36,10 +66,13 @@ class ReadyToRunInfo
     PTR_CORCOMPILE_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
 
+    bool                            m_readyToRunCodeDisabled;
+
     NativeFormat::NativeReader      m_nativeReader;
     NativeFormat::NativeArray       m_methodDefEntryPoints;
     NativeFormat::NativeHashtable   m_instMethodEntryPoints;
     NativeFormat::NativeHashtable   m_availableTypesHashtable;
+
     NativeFormat::NativeHashtable   m_pMetaDataHashtable;
     NativeFormat::NativeCuckooFilter m_attributesPresence;
 
@@ -48,16 +81,27 @@ class ReadyToRunInfo
 
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
 
-    ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, AllocMemTracker *pamTracker);
-
 public:
+    ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, AllocMemTracker *pamTracker);
+
     static BOOL IsReadyToRunEnabled();
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 
+    bool IsComponentAssembly() const { return m_isComponentAssembly; }
+
+    static bool IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2);
+
+    PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
+
+    PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
+
+    PTR_PEImageLayout GetImage() const { return m_pComposite->GetImage(); }
+    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
+
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
-    MethodDesc * GetMethodDescForEntryPoint(PCODE entryPoint);
+    PTR_MethodDesc GetMethodDescForEntryPoint(PCODE entryPoint);
 
     BOOL HasHashtableOfTypes();
     BOOL TryLookupTypeTokenFromName(const NameHandle *pName, mdToken * pFoundTypeToken);
@@ -65,28 +109,26 @@ public:
     BOOL SkipTypeValidation()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->Flags & READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
     }
 
     BOOL IsPartial()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->Flags & READYTORUN_FLAG_PARTIAL;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
+    }
+
+    void DisableAllR2RCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_readyToRunCodeDisabled = TRUE;
     }
 
     BOOL HasNonShareablePInvokeStubs()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
     }
-
-    PTR_PEImageLayout GetImage()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLayout;
-    }
-
-    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type);
 
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T * pCount)
     {
@@ -171,7 +213,12 @@ private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
     BOOL GetEnclosingToken(IMDInternalImport * pImport, mdToken mdType, mdToken * pEnclosingToken);
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2);
-	BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
+    BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
+
+    PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
+    void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
+    
+    PTR_ReadyToRunCoreInfo GetComponentInfo() { return dac_cast<PTR_ReadyToRunCoreInfo>(&m_component); }
 };
 
 class DynamicHelpers

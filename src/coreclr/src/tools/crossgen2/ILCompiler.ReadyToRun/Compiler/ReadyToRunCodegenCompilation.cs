@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
@@ -18,6 +19,8 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.TypeSystem.Ecma;
+using System.Linq;
 
 namespace ILCompiler
 {
@@ -36,6 +39,8 @@ namespace ILCompiler
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         public Logger Logger => _logger;
 
+        public InstructionSetSupport InstructionSetSupport { get; }
+
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
@@ -43,8 +48,10 @@ namespace ILCompiler
             ILProvider ilProvider,
             DevirtualizationManager devirtualizationManager,
             IEnumerable<ModuleDesc> modulesBeingInstrumented,
-            Logger logger)
+            Logger logger,
+            InstructionSetSupport instructionSetSupport)
         {
+            InstructionSetSupport = instructionSetSupport;
             _dependencyGraph = dependencyGraph;
             _nodeFactory = nodeFactory;
             _logger = logger;
@@ -68,11 +75,34 @@ namespace ILCompiler
 
         public bool CanInline(MethodDesc caller, MethodDesc callee)
         {
+            if (JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_CODE))
+            {
+                // If the callee wants debuggable code, don't allow it to be inlined
+                return false;
+            }
+
+            if (callee.IsNoInlining)
+            {
+                return false;
+            }
+
             // Check to see if the method requires a security object.  This means they call demand and
             // shouldn't be inlined.
             if (callee.RequireSecObject)
             {
                 return false;
+            }
+
+            // If the method is MethodImpl'd by another method within the same type, then we have
+            // an issue that the importer will import the wrong body. In this case, we'll just
+            // disallow inlining because getFunctionEntryPoint will do the right thing.
+            if (callee.IsVirtual)
+            {
+                MethodDesc calleeMethodImpl = callee.OwningType.FindVirtualFunctionTargetMethodOnObjectType(callee);
+                if (calleeMethodImpl != callee)
+                {
+                    return false;
+                }
             }
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -166,8 +196,11 @@ namespace ILCompiler
             public void AddCompilationRoot(MethodDesc method, string reason)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
-                _rootAdder(methodEntryPoint, reason);
+                if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
+                {
+                    IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    _rootAdder(methodEntryPoint, reason);
+                }
             }
         }
     }
@@ -187,9 +220,9 @@ namespace ILCompiler
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corInfoImpls;
 
         /// <summary>
-        /// Name of the compilation input MSIL file.
+        /// Input MSIL file names.
         /// </summary>
-        private readonly string _inputFilePath;
+        private readonly IEnumerable<string> _inputFiles;
 
         private bool _resilient;
 
@@ -198,6 +231,7 @@ namespace ILCompiler
         private bool _generateMapFile;
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
+        public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -206,38 +240,94 @@ namespace ILCompiler
             ILProvider ilProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
-            string inputFilePath,
-            IEnumerable<ModuleDesc> modulesBeingInstrumented,
+            IEnumerable<string> inputFiles,
+            InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
             int parallelism)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, modulesBeingInstrumented, logger)
+            : base(
+                  dependencyGraph,
+                  nodeFactory,
+                  roots,
+                  ilProvider,
+                  devirtualizationManager,
+                  modulesBeingInstrumented: nodeFactory.CompilationModuleGroup.CompilationModuleSet,
+                  logger,
+                  instructionSetSupport)
         {
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
-
-            _inputFilePath = inputFilePath;
-
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
+            _inputFiles = inputFiles;
+            CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
+
+            // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
+            // code if the runtime environment doesn't support the specified instruction set
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
+            _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
         }
 
         public override void Compile(string outputFile)
         {
-            using (FileStream inputFile = File.OpenRead(_inputFilePath))
+            _dependencyGraph.ComputeMarkedNodes();
+            var nodes = _dependencyGraph.MarkedNodeList;
+
+            using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
-                PEReader inputPeReader = new PEReader(inputFile);
+                NodeFactory.SetMarkingComplete();
+                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile);
+                CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
-                _dependencyGraph.ComputeMarkedNodes();
-                var nodes = _dependencyGraph.MarkedNodeList;
-
-                using (PerfEventSource.StartStopEvents.EmittingEvents())
+                if (moduleGroup.IsCompositeBuildMode)
                 {
-                    NodeFactory.SetMarkingComplete();
-                    ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory, _generateMapFile);
+                    // In composite mode with standalone MSIL we rewrite all input MSIL assemblies to the
+                    // output folder, adding a format R2R header to them with forwarding information to
+                    // the composite executable.
+                    string outputDirectory = Path.GetDirectoryName(outputFile);
+                    string ownerExecutableName = Path.GetFileName(outputFile);
+                    foreach (string inputFile in _inputFiles)
+                    {
+                        string standaloneMsilOutputFile = Path.Combine(outputDirectory, Path.GetFileName(inputFile));
+                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName);
+                    }
                 }
             }
+        }
+
+        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName)
+        {
+            EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
+
+            CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule);
+            NodeFactory componentFactory = new NodeFactory(
+                _nodeFactory.TypeSystemContext,
+                _nodeFactory.CompilationModuleGroup,
+                _nodeFactory.NameMangler,
+                copiedCorHeader,
+                debugDirectory,
+                win32Resources: new Win32Resources.ResourceData(inputModule),
+                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component |
+                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs);
+
+            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
+            DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
+
+            componentGraph.AddRoot(componentFactory.Header, "Component module R2R header");
+            OwnerCompositeExecutableNode ownerExecutableNode = new OwnerCompositeExecutableNode(_nodeFactory.Target, ownerExecutableName);
+            componentGraph.AddRoot(ownerExecutableNode, "Owner composite executable name");
+            componentGraph.AddRoot(copiedCorHeader, "Copied COR header");
+            componentGraph.AddRoot(debugDirectory, "Debug directory");
+            if (componentFactory.Win32ResourcesNode != null)
+            {
+                componentGraph.AddRoot(componentFactory.Win32ResourcesNode, "Win32 resources");
+            }
+            componentGraph.ComputeMarkedNodes();
+            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
+            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false);
         }
 
         public override void WriteDependencyLog(string outputFileName)
@@ -249,9 +339,86 @@ namespace ILCompiler
             }
         }
 
-        internal bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type)
         {
-            // TODO: implement
+            // Primitive types and enums have fixed layout
+            if (type.IsPrimitive || type.IsEnum)
+            {
+                return true;
+            }
+
+            if (!(type is MetadataType defType))
+            {
+                // Non metadata backed types have layout defined in all version bubbles
+                return true;
+            }
+
+            if (!NodeFactory.CompilationModuleGroup.VersionsWithModule(defType.Module))
+            {
+                if (!type.IsValueType)
+                {
+                    // Eventually, we may respect the non-versionable attribute for reference types too. For now, we are going
+                    // to play it safe and ignore it.
+                    return false;
+                }
+
+                // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
+                return type is MetadataType metadataType && metadataType.IsNonVersionable();
+            }
+
+            // If the above condition passed, check that all instance fields have fixed layout as well. In particular,
+            // it is important for generic types with non-versionable layout (e.g. Nullable<T>)
+            foreach (var field in type.GetFields())
+            {
+                // Only instance fields matter here
+                if (field.IsStatic)
+                    continue;
+
+                var fieldType = field.FieldType;
+                if (!fieldType.IsValueType)
+                    continue;
+                
+                if (!IsLayoutFixedInCurrentVersionBubble(fieldType))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        {
+            // This method is not expected to be called for value types
+            Debug.Assert(!type.IsValueType);
+
+            if (type.IsObject)
+                return true;
+
+            if (!IsLayoutFixedInCurrentVersionBubble(type))
+            {
+                return false;
+            }
+            
+            type = type.BaseType;
+
+            if (type != null)
+            {
+                // If there are multiple inexact compilation units in the layout of the type, then the exact offset
+                // of a derived given field is unknown as there may or may not be alignment inserted between a type and its base
+                if (CompilationModuleGroup.TypeLayoutCompilationUnits(type).HasMultipleInexactCompilationUnits)
+                    return false;
+
+                while (!type.IsObject && type != null)
+                {
+                    if (!IsLayoutFixedInCurrentVersionBubble(type))
+                    {
+                        return false;
+                    }
+                    type = type.BaseType;
+                }
+            }
+
             return true;
         }
 

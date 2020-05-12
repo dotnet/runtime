@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "gcinfotypes.h"
+#include "patchpointinfo.h"
 
 ReturnKind GCTypeToReturnKind(CorInfoGCType gcType)
 {
@@ -924,7 +925,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         goto DO_RETURN;
     }
 
-    if (GCInfoEncodesReturnKind() && (state->returnKind != header.returnKind))
+    if (state->returnKind != header.returnKind)
     {
         state->returnKind = header.returnKind;
         codeSet           = 2; // Two byte encoding
@@ -973,7 +974,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         }
     }
 
-    if (GCInfoEncodesRevPInvokeFrame() && (state->revPInvokeOffset != header.revPInvokeOffset))
+    if (state->revPInvokeOffset != header.revPInvokeOffset)
     {
         assert(state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET ||
                state->revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
@@ -1575,7 +1576,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->doubleAlign = compiler->genDoubleAlign();
 #endif
 
-    header->security = compiler->opts.compNeedSecurityCheck;
+    header->security = false;
 
     header->handlers = compiler->ehHasCallableHandlers();
     header->localloc = compiler->compLocallocUsed;
@@ -1587,14 +1588,11 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->genericsContextIsMethodDesc =
         header->genericsContext && (compiler->info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC));
 
-    if (GCInfoEncodesReturnKind())
-    {
-        ReturnKind returnKind = getReturnKind();
-        _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
-        _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-        _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
-        header->returnKind = returnKind;
-    }
+    ReturnKind returnKind = getReturnKind();
+    _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
+    _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
+    _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+    header->returnKind = returnKind;
 
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
     if (compiler->getNeedsGSSecurityCookie())
@@ -3891,20 +3889,43 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
                 assert(false);
         }
 
-        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(
-            compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
-                                                  compiler->isFramePointerUsed()),
-            ctxtParamType);
+        int offset = 0;
+
+        if (compiler->opts.IsOSR())
+        {
+            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
+            offset                 = ppInfo->GenericContextArgOffset();
+            assert(offset != -1);
+        }
+        else
+        {
+            offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
+                                                           compiler->isFramePointerUsed());
+        }
+
+        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(offset, ctxtParamType);
     }
     // As discussed above, handle the case where the generics context is obtained via
     // the method table of "this".
     else if (compiler->lvaKeepAliveAndReportThis())
     {
         assert(compiler->info.compThisArg != BAD_VAR_NUM);
-        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(
-            compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
-                                                  compiler->isFramePointerUsed()),
-            GENERIC_CONTEXTPARAM_THIS);
+
+        int offset = 0;
+
+        if (compiler->opts.IsOSR())
+        {
+            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
+            offset                 = ppInfo->GenericContextArgOffset();
+            assert(offset != -1);
+        }
+        else
+        {
+            offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
+                                                           compiler->isFramePointerUsed());
+        }
+
+        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(offset, GENERIC_CONTEXTPARAM_THIS);
     }
 
     if (compiler->getNeedsGSSecurityCookie())
@@ -3912,33 +3933,31 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         assert(compiler->lvaGSSecurityCookie != BAD_VAR_NUM);
 
         // The lv offset is FP-relative, and the using code expects caller-sp relative, so translate.
+        int offset = compiler->lvaGetCallerSPRelativeOffset(compiler->lvaGSSecurityCookie);
+
+        if (compiler->opts.IsOSR())
+        {
+            // The offset computed above already includes the OSR frame adjustment, plus the
+            // pop of the "pseudo return address" from the OSR frame.
+            //
+            // To get to caller-SP, we need to subtract off the original frame size and the
+            // pushed RA and RBP for that frame. But ppInfo's FpToSpDelta also accounts for the
+            // pseudo RA between the original method frame and the OSR frame. So the net adjustment
+            // is simply FpToSpDelta plus one register.
+            PatchpointInfo* ppInfo     = compiler->info.compPatchpointInfo;
+            int             adjustment = ppInfo->FpToSpDelta() + REGSIZE_BYTES;
+            offset -= adjustment;
+            JITDUMP("OSR cookie adjustment %d, final caller-SP offset %d\n", adjustment, offset);
+        }
+
         // The code offset ranges assume that the GS Cookie slot is initialized in the prolog, and is valid
         // through the remainder of the method.  We will not query for the GS Cookie while we're in an epilog,
         // so the question of where in the epilog it becomes invalid is moot.
-        gcInfoEncoderWithLog->SetGSCookieStackSlot(compiler->lvaGetCallerSPRelativeOffset(
-                                                       compiler->lvaGSSecurityCookie),
-                                                   prologSize, methodSize);
+        gcInfoEncoderWithLog->SetGSCookieStackSlot(offset, prologSize, methodSize);
     }
-    else if (compiler->opts.compNeedSecurityCheck || compiler->lvaReportParamTypeArg() ||
-             compiler->lvaKeepAliveAndReportThis())
+    else if (compiler->lvaReportParamTypeArg() || compiler->lvaKeepAliveAndReportThis())
     {
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
-    }
-
-    if (compiler->opts.compNeedSecurityCheck)
-    {
-        assert(compiler->lvaSecurityObject != BAD_VAR_NUM);
-
-        // A VM requirement due to how the decoder works (it ignores partially interruptible frames when
-        // an exception has escaped, but the VM requires the security object to live on).
-        assert(compiler->codeGen->GetInterruptible());
-
-        // The lv offset is FP-relative, and the using code expects caller-sp relative, so translate.
-        // The normal GC lifetime reporting mechanisms will report a proper lifetime to the GC.
-        // The security subsystem can safely assume that anywhere it might walk the stack, it will be
-        // valid (null or a live GC ref).
-        gcInfoEncoderWithLog->SetSecurityObjectStackSlot(
-            compiler->lvaGetCallerSPRelativeOffset(compiler->lvaSecurityObject));
     }
 
 #if defined(FEATURE_EH_FUNCLETS)

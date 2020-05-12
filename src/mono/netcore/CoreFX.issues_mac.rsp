@@ -1,2 +1,0 @@
-# https://github.com/mono/mono/issues/17547
--nomethod System.IO.Tests.FileSystemWatcherTests_netstandard17.DroppedWatcher_Collectible

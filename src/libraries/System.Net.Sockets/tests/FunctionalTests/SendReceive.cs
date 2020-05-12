@@ -44,11 +44,16 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/16945")]
+        public static IEnumerable<object[]> LoopbackWithBool =>
+            from addr in Loopbacks
+            from b in new[] { false, true }
+            select new object[] { addr[0], b };
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1712")]
         [OuterLoop]
         [Theory]
-        [MemberData(nameof(Loopbacks))]
-        public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress)
+        [MemberData(nameof(LoopbackWithBool))]
+        public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress, bool useClone)
         {
             IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
 
@@ -57,11 +62,13 @@ namespace System.Net.Sockets.Tests
             const int AckTimeout = 10000;
             const int TestTimeout = 30000;
 
-            var left = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            left.BindToAnonymousPort(leftAddress);
+            using var origLeft = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using var origRight = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            origLeft.BindToAnonymousPort(leftAddress);
+            origRight.BindToAnonymousPort(rightAddress);
 
-            var right = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            right.BindToAnonymousPort(rightAddress);
+            using var left = useClone ? new Socket(origLeft.SafeHandle) : origLeft;
+            using var right = useClone ? new Socket(origRight.SafeHandle) : origRight;
 
             var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
             var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
@@ -74,25 +81,22 @@ namespace System.Net.Sockets.Tests
             var receivedChecksums = new uint?[DatagramsToSend];
             Task leftThread = Task.Run(async () =>
             {
-                using (left)
+                EndPoint remote = leftEndpoint.Create(leftEndpoint.Serialize());
+                var recvBuffer = new byte[DatagramSize];
+                for (int i = 0; i < DatagramsToSend; i++)
                 {
-                    EndPoint remote = leftEndpoint.Create(leftEndpoint.Serialize());
-                    var recvBuffer = new byte[DatagramSize];
-                    for (int i = 0; i < DatagramsToSend; i++)
-                    {
-                        SocketReceiveFromResult result = await ReceiveFromAsync(
-                            left, new ArraySegment<byte>(recvBuffer), remote);
-                        Assert.Equal(DatagramSize, result.ReceivedBytes);
-                        Assert.Equal(rightEndpoint, result.RemoteEndPoint);
+                    SocketReceiveFromResult result = await ReceiveFromAsync(
+                        left, new ArraySegment<byte>(recvBuffer), remote);
+                    Assert.Equal(DatagramSize, result.ReceivedBytes);
+                    Assert.Equal(rightEndpoint, result.RemoteEndPoint);
 
-                        int datagramId = recvBuffer[0];
-                        Assert.Null(receivedChecksums[datagramId]);
-                        receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
+                    int datagramId = recvBuffer[0];
+                    Assert.Null(receivedChecksums[datagramId]);
+                    receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
 
-                        receiverAck.Release();
-                        bool gotAck = await senderAck.WaitAsync(TestTimeout);
-                        Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
-                    }
+                    receiverAck.Release();
+                    bool gotAck = await senderAck.WaitAsync(TestTimeout);
+                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
                 }
             });
 
@@ -1196,7 +1200,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void SendIovMaxUdp_SuccessOrMessageSize()
         {
             // sending more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -1237,7 +1241,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public async Task ReceiveIovMaxUdp_SuccessOrMessageSize()
         {
             // receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -1309,7 +1313,7 @@ namespace System.Net.Sockets.Tests
             await receiveTask;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [PlatformSpecific(~TestPlatforms.Windows)] // All data is sent, even when very large (100M).
         public void SocketSendWouldBlock_ReturnsBytesSent()
         {
@@ -1338,7 +1342,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Socket_ReceiveFlags_Success()
         {

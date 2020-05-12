@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Security.Principal;
 
 namespace System.Net
 {
     internal partial class ContextAwareResult
     {
-        private WindowsIdentity _windowsIdentity;
+        private WindowsIdentity? _windowsIdentity;
 
         // Security: We need an assert for a call into WindowsIdentity.GetCurrent.
         private void SafeCaptureIdentity()

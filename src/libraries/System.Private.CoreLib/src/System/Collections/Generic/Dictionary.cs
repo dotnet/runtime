@@ -261,7 +261,7 @@ namespace System.Collections.Generic
                 else
                 {
                     // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/coreclr/issues/17273
+                    // https://github.com/dotnet/runtime/issues/10050
                     // So cache in a local rather than get EqualityComparer per loop iteration
                     EqualityComparer<TValue> defaultComparer = EqualityComparer<TValue>.Default;
                     for (int i = 0; i < _count; i++)
@@ -352,7 +352,7 @@ namespace System.Collections.Generic
                         i--;
                         do
                         {
-                            // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                            // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                             // Test in if to drop range check for following array access
                             if ((uint)i >= (uint)entries.Length)
                             {
@@ -376,7 +376,7 @@ namespace System.Collections.Generic
                     else
                     {
                         // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                        // https://github.com/dotnet/coreclr/issues/17273
+                        // https://github.com/dotnet/runtime/issues/10050
                         // So cache in a local rather than get EqualityComparer per loop iteration
                         EqualityComparer<TKey> defaultComparer = EqualityComparer<TKey>.Default;
 
@@ -384,7 +384,7 @@ namespace System.Collections.Generic
                         i--;
                         do
                         {
-                            // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                            // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                             // Test in if to drop range check for following array access
                             if ((uint)i >= (uint)entries.Length)
                             {
@@ -416,7 +416,7 @@ namespace System.Collections.Generic
                     i--;
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -500,7 +500,7 @@ namespace System.Collections.Generic
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -512,7 +512,6 @@ namespace System.Collections.Generic
                             if (behavior == InsertionBehavior.OverwriteExisting)
                             {
                                 entries[i].value = value;
-                                _version++;
                                 return true;
                             }
 
@@ -538,12 +537,12 @@ namespace System.Collections.Generic
                 else
                 {
                     // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/coreclr/issues/17273
+                    // https://github.com/dotnet/runtime/issues/10050
                     // So cache in a local rather than get EqualityComparer per loop iteration
                     EqualityComparer<TKey> defaultComparer = EqualityComparer<TKey>.Default;
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -555,7 +554,6 @@ namespace System.Collections.Generic
                             if (behavior == InsertionBehavior.OverwriteExisting)
                             {
                                 entries[i].value = value;
-                                _version++;
                                 return true;
                             }
 
@@ -583,7 +581,7 @@ namespace System.Collections.Generic
             {
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                     // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length)
                     {
@@ -595,7 +593,6 @@ namespace System.Collections.Generic
                         if (behavior == InsertionBehavior.OverwriteExisting)
                         {
                             entries[i].value = value;
-                            _version++;
                             return true;
                         }
 

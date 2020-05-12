@@ -161,11 +161,13 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_GuidAsRoot()
     {
-        Xml_GuidAsRoot(new XmlSerializer(typeof(Guid)));
+        Xml_GuidAsRoot_Helper(new XmlSerializer(typeof(Guid)));
     }
 
-    private static void Xml_GuidAsRoot(XmlSerializer serializer)
+    private static void Xml_GuidAsRoot_Helper(XmlSerializer serializer)
     {
+        // TODO: the 'serializer' parameter is not used, this test might have issues
+
         foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
         {
             Assert.StrictEqual(SerializeAndDeserialize<Guid>(value, string.Format(@"<?xml version=""1.0""?>
@@ -314,10 +316,10 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ListGenericRoot()
     {
-        Xml_ListGenericRoot(new XmlSerializer(typeof(List<string>)));
+        Xml_ListGenericRoot_Helper(new XmlSerializer(typeof(List<string>)));
     }
 
-    private static void Xml_ListGenericRoot(XmlSerializer serializer)
+    private static void Xml_ListGenericRoot_Helper(XmlSerializer serializer)
     {
         List<string> x = new List<string>();
         x.Add("zero");
@@ -963,8 +965,8 @@ public static partial class XmlSerializerTests
     public static void Xml_FromTypes()
     {
         var serializers = XmlSerializer.FromTypes(new Type[] { typeof(Guid), typeof(List<string>) });
-        Xml_GuidAsRoot(serializers[0]);
-        Xml_ListGenericRoot(serializers[1]);
+        Xml_GuidAsRoot_Helper(serializers[0]);
+        Xml_ListGenericRoot_Helper(serializers[1]);
 
         serializers = XmlSerializer.FromTypes(null);
         Assert.Equal(0, serializers.Length);
@@ -2629,7 +2631,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/39105")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/1395")]
     public static void Xml_TypeWithReadOnlyMyCollectionProperty()
     {
         var value = new TypeWithReadOnlyMyCollectionProperty();

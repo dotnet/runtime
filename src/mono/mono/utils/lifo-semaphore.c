@@ -23,7 +23,7 @@ mono_lifo_semaphore_delete (LifoSemaphore *semaphore)
 int32_t
 mono_lifo_semaphore_timed_wait (LifoSemaphore *semaphore, int32_t timeout_ms)
 {
-	LifoSemaphoreWaitEntry wait_entry = { 0 };
+	LifoSemaphoreWaitEntry wait_entry = {0};
 
 	mono_coop_cond_init (&wait_entry.condition);
 	mono_coop_mutex_lock (&semaphore->mutex);

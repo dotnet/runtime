@@ -4083,7 +4083,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 
 	//If filename begin with +, append the pid at the end
 	if (filename && *filename == '+')
-		filename = g_strdup_printf ("%s.%d", filename + 1, getpid ());
+		filename = g_strdup_printf ("%s.%d", filename + 1, (int)process_id ());
 
 	if (!filename) {
 		if (log_config.do_report)

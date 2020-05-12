@@ -1,6 +1,6 @@
 # Native hosting
 
-Native hosting is the ability to host the .NET Core runtime in an arbitrary process, one which didn't start from .NET Core produced binaries.
+Native hosting is the ability to host the .NET runtime in an arbitrary process, one which didn't start from .NET Core produced binaries.
 
 #### Terminology
 * "native host" - the code which uses the proposed APIs. Can be any non .NET Core application (.NET Core applications have easier ways to perform these scenarios).
@@ -18,27 +18,27 @@ App (native or .NET Core both) which needs to use some of the other services pro
 
 ## Existing support
 * **C-style ABI in `coreclr`**
-`coreclr` exposes ABI to host the .NET Core runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/hosts/inc/coreclrhost.h) for the exposed functions.
-This API requires the native host to locate the runtime and to fully specify all startup parameters for the runtime. There's no inherent interoperability between these APIs and the .NET Core SDK.
+`coreclr` exposes ABI to host the .NET runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/hosts/inc/coreclrhost.h) for the exposed functions.
+This API requires the native host to locate the runtime and to fully specify all startup parameters for the runtime. There's no inherent interoperability between these APIs and the .NET SDK.
 * **COM-style ABI in `coreclr`**
-`coreclr` exposes COM-style ABI to host the .NET Core runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/pal/prebuilt/inc/mscoree.h) for more details.
+`coreclr` exposes COM-style ABI to host the .NET runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/pal/prebuilt/inc/mscoree.h) for more details.
 Similarly to the C-style ABI the COM-style ABI also requires the native host to locate the runtime and to fully specify all startup parameters.
-There's no inherent interoperability between these APIs and the .NET Core SDK.
+There's no inherent interoperability between these APIs and the .NET SDK.
 The COM-style ABI is deprecated and should not be used going forward.
 * **`hostfxr` and `hostpolicy` APIs**
 The hosting layer of .NET Core already exposes some functionality as C-style ABI on either the `hostfxr` or `hostpolicy` libraries. These can execute application, determine available SDKs, determine native dependency locations, resolve component dependencies and so on.
-Unlike the above `coreclr` based APIs these don't require the caller to fully specify all startup parameters, instead these APIs understand artifacts produced by .NET Core SDK making it much easier to consume SDK produced apps/libraries.
+Unlike the above `coreclr` based APIs these don't require the caller to fully specify all startup parameters, instead these APIs understand artifacts produced by .NET SDK making it much easier to consume SDK produced apps/libraries.
 The native host is still required to locate the `hostfxr` or `hostpolicy` libraries. These APIs are also designed for specific narrow scenarios, any usage outside of these bounds is typically not possible.
 
 
 ## Scope
-This document focuses on hosting which cooperates with the .NET Core SDK and consumes the artifacts produced by building the managed app/libraries directly. It completely ignores the COM-style ABI as it's hard to use from some programming languages.
+This document focuses on hosting which cooperates with the .NET SDK and consumes the artifacts produced by building the managed app/libraries directly. It completely ignores the COM-style ABI as it's hard to use from some programming languages.
 
-As such the document explicitly excludes any hosting based on directly loading `coreclr`. Instead it focuses on using the existing .NET Core hosting layer in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md).
+As such the document explicitly excludes any hosting based on directly loading `coreclr`. Instead it focuses on using the existing .NET Core hosting layer in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md).
 
 
 ## High-level proposal
-In .NET Core 3.0 the hosting layer (see [here](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md)) ships with several hosts. These are binaries which act as the entry points to the .NET Core hosting/runtime:
+In .NET Core 3.0 the hosting layer (see [here](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md)) ships with several hosts. These are binaries which act as the entry points to the .NET Core hosting/runtime:
 * The "muxer" (`dotnet.exe`)
 * The `apphost` (`.exe` which is part of the app)
 * The `comhost` (`.dll` which is part of the app and acts as COM server)
@@ -61,7 +61,7 @@ At the same time add the ability to pass additional runtime properties when star
 ## New host binary for finding `hostfxr`
 New library `nethost` which provides a way to locate the right `hostfxr`.
 This is a dynamically loaded library (`.dll`, `.so`, `.dylib`). For ease of use there is a header file for C/C++ apps as well as `.lib` for easy linking on Windows.
-Native hosts ship this library as part of the app. Unlike the `apphost`, `comhost` and `ijwhost`, the `nethost` will not be directly supported by the .NET Core SDK since it's target usage is not from .NET Core apps.
+Native hosts ship this library as part of the app. Unlike the `apphost`, `comhost` and `ijwhost`, the `nethost` will not be directly supported by the .NET SDK since it's target usage is not from .NET Core apps.
 
 The `nethost` is part of the `Microsoft.NETCore.DotNetAppHost` package. Users are expected to either download the package directly or rely on .NET SDK to pull it down.
 
@@ -298,9 +298,9 @@ Starts the runtime and returns a function pointer to specified functionality of 
 * `host_context_handle` - handle to the initialized host context.
 * `type` - the type of runtime functionality requested
   * `hdt_load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. See below for details (Loading managed components)
-  * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/COM-activation.md) for more details.
-  * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/IJW-activation.md) for more details.
-  * `hdt_winrt_activation` - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/WinRT-activation.md) for more details.
+  * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/COM-activation.md) for more details.
+  * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/IJW-activation.md) for more details.
+  * `hdt_winrt_activation` - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/WinRT-activation.md) for more details.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 Initially the function will only work if `hostfxr_initialize_for_runtime_config` was used to initialize the host context. Later on this could be relaxed to allow being used in combination with `hostfxr_initialize_for_dotnet_command_line`.
@@ -376,7 +376,7 @@ One such scenario is a COM host on multiple threads. The app is not running any 
 At the same time it gives the native app (`comhost` in this case) the ability to query and modify runtime properties in between the `hostfxr_initialize...` and `hostfxr_get_runtime_delegate` calls on the `first host context`.
 
 ### API usage
-The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/core-setup/blob/master/src/corehost/cli/hostfxr.h) header file.
+The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/runtime/blob/master/src/installer/corehost/cli/hostfxr.h) header file.
 The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/runtime/blob/master/src/installer/corehost/cli/coreclr_delegates.h) header file.
 
 Currently we don't plan to ship these files, but it's possible to take them from the repo and use it.

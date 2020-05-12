@@ -129,7 +129,7 @@ namespace Microsoft.VisualBasic.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/39888", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30419", TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(0, 0)]
         [InlineData(33, 33)]
@@ -514,7 +514,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [MemberData(nameof(Join_Object_TestData))]
         [MemberData(nameof(Join_String_TestData))]
-        public void Join(object[] source, string delimiter, string expected)
+        public void Join_ObjectArray(object[] source, string delimiter, string expected)
         {
             Assert.Equal(expected, Strings.Join(source, delimiter));
         }
@@ -531,7 +531,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Join_String_TestData))]
-        public void Join(string[] source, string delimiter, string expected)
+        public void Join_StringArray(string[] source, string delimiter, string expected)
         {
             Assert.Equal(expected, Strings.Join(source, delimiter));
         }
@@ -552,7 +552,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData('a', 'a')]
         [InlineData('A', 'a')]
         [InlineData('1', '1')]
-        public void LCase(char value, char expected)
+        public void LCase_Char(char value, char expected)
         {
             Assert.Equal(expected, Strings.LCase(value));
         }
@@ -565,7 +565,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("abc", "abc")]
         [InlineData("ABC", "abc")]
         [InlineData("123", "123")]
-        public void LCase(string value, string expected)
+        public void LCase_String(string value, string expected)
         {
             Assert.Equal(expected, Strings.LCase(value));
         }
@@ -576,7 +576,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData('a', 'A')]
         [InlineData('A', 'A')]
         [InlineData('1', '1')]
-        public void UCase(char value, char expected)
+        public void UCase_Char(char value, char expected)
         {
             Assert.Equal(expected, Strings.UCase(value));
         }
@@ -589,7 +589,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("abc", "ABC")]
         [InlineData("ABC", "ABC")]
         [InlineData("123", "123")]
-        public void UCase(string value, string expected)
+        public void UCase_String(string value, string expected)
         {
             Assert.Equal(expected, Strings.UCase(value));
         }
@@ -877,42 +877,42 @@ namespace Microsoft.VisualBasic.Tests
         [MemberData(nameof(StrDup_Object_TestData))]
         [MemberData(nameof(StrDup_Char_TestData))]
         [MemberData(nameof(StrDup_String_TestData))]
-        public void StrDup(int number, object character, object expected)
+        public void StrDup_Int_Object_Object(int number, object character, object expected)
         {
             Assert.Equal(expected, Strings.StrDup(number, character));
         }
 
         [Theory]
         [MemberData(nameof(StrDup_Object_ArgumentException_TestData))]
-        public void StrDup_ArgumentException(int number, object character)
+        public void StrDup_ArgumentException_Int_Object(int number, object character)
         {
             Assert.Throws< ArgumentException>(() => Strings.StrDup(number, character));
         }
 
         [Theory]
         [MemberData(nameof(StrDup_Char_TestData))]
-        public void StrDup(int number, char character, string expected)
+        public void StrDup_Int_Char_String(int number, char character, string expected)
         {
             Assert.Equal(expected, Strings.StrDup(number, character));
         }
 
         [Theory]
         [MemberData(nameof(StrDup_Char_ArgumentException_TestData))]
-        public void StrDup_ArgumentException(int number, char character)
+        public void StrDup_ArgumentException_Int_Char(int number, char character)
         {
             Assert.Throws<ArgumentException>(() => Strings.StrDup(number, character));
         }
 
         [Theory]
         [MemberData(nameof(StrDup_String_TestData))]
-        public void StrDup(int number, string character, string expected)
+        public void StrDup_Int_String_String(int number, string character, string expected)
         {
             Assert.Equal(expected, Strings.StrDup(number, character));
         }
 
         [Theory]
         [MemberData(nameof(StrDup_String_ArgumentException_TestData))]
-        public void StrDup_ArgumentException(int number, string character)
+        public void StrDup_ArgumentException_Int_String(int number, string character)
         {
             Assert.Throws<ArgumentException>(() => Strings.StrDup(number, character));
         }

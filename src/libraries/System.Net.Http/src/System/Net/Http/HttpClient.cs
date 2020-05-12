@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +15,7 @@ namespace System.Net.Http
     {
         #region Fields
 
-        private static IWebProxy s_defaultProxy;
+        private static IWebProxy? s_defaultProxy;
         private static readonly TimeSpan s_defaultTimeout = TimeSpan.FromSeconds(100);
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
         private static readonly TimeSpan s_infiniteTimeout = Threading.Timeout.InfiniteTimeSpan;
@@ -24,10 +25,10 @@ namespace System.Net.Http
         private volatile bool _disposed;
 
         private CancellationTokenSource _pendingRequestsCts;
-        private HttpRequestHeaders _defaultRequestHeaders;
+        private HttpRequestHeaders? _defaultRequestHeaders;
         private Version _defaultRequestVersion = HttpUtilities.DefaultRequestVersion;
 
-        private Uri _baseAddress;
+        private Uri? _baseAddress;
         private TimeSpan _timeout;
         private int _maxResponseContentBufferSize;
 
@@ -44,17 +45,8 @@ namespace System.Net.Http
             }
         }
 
-        public HttpRequestHeaders DefaultRequestHeaders
-        {
-            get
-            {
-                if (_defaultRequestHeaders == null)
-                {
-                    _defaultRequestHeaders = new HttpRequestHeaders();
-                }
-                return _defaultRequestHeaders;
-            }
-        }
+        public HttpRequestHeaders DefaultRequestHeaders =>
+            _defaultRequestHeaders ??= new HttpRequestHeaders(forceHeaderStoreItems: true);
 
         public Version DefaultRequestVersion
         {
@@ -66,7 +58,7 @@ namespace System.Net.Http
             }
         }
 
-        public Uri BaseAddress
+        public Uri? BaseAddress
         {
             get { return _baseAddress; }
             set
@@ -144,16 +136,16 @@ namespace System.Net.Http
 
         #region Simple Get Overloads
 
-        public Task<string> GetStringAsync(string requestUri) =>
+        public Task<string> GetStringAsync(string? requestUri) =>
             GetStringAsync(CreateUri(requestUri));
 
-        public Task<string> GetStringAsync(Uri requestUri) =>
+        public Task<string> GetStringAsync(Uri? requestUri) =>
             GetStringAsync(requestUri, CancellationToken.None);
 
-        public Task<string> GetStringAsync(string requestUri, CancellationToken cancellationToken) =>
+        public Task<string> GetStringAsync(string? requestUri, CancellationToken cancellationToken) =>
             GetStringAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<string> GetStringAsync(Uri requestUri, CancellationToken cancellationToken) =>
+        public Task<string> GetStringAsync(Uri? requestUri, CancellationToken cancellationToken) =>
             GetStringAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
 
         private async Task<string> GetStringAsyncCore(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
@@ -165,7 +157,7 @@ namespace System.Net.Http
                 responseMessage.EnsureSuccessStatusCode();
 
                 // Get the response content.
-                HttpContent c = responseMessage.Content;
+                HttpContent? c = responseMessage.Content;
                 if (c != null)
                 {
 #if NET46
@@ -201,16 +193,16 @@ namespace System.Net.Http
             }
         }
 
-        public Task<byte[]> GetByteArrayAsync(string requestUri) =>
+        public Task<byte[]> GetByteArrayAsync(string? requestUri) =>
             GetByteArrayAsync(CreateUri(requestUri));
 
-        public Task<byte[]> GetByteArrayAsync(Uri requestUri) =>
+        public Task<byte[]> GetByteArrayAsync(Uri? requestUri) =>
             GetByteArrayAsync(requestUri, CancellationToken.None);
 
-        public Task<byte[]> GetByteArrayAsync(string requestUri, CancellationToken cancellationToken) =>
+        public Task<byte[]> GetByteArrayAsync(string? requestUri, CancellationToken cancellationToken) =>
             GetByteArrayAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<byte[]> GetByteArrayAsync(Uri requestUri, CancellationToken cancellationToken) =>
+        public Task<byte[]> GetByteArrayAsync(Uri? requestUri, CancellationToken cancellationToken) =>
             GetByteArrayAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
 
         private async Task<byte[]> GetByteArrayAsyncCore(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
@@ -222,7 +214,7 @@ namespace System.Net.Http
                 responseMessage.EnsureSuccessStatusCode();
 
                 // Get the response content.
-                HttpContent c = responseMessage.Content;
+                HttpContent? c = responseMessage.Content;
                 if (c != null)
                 {
 #if NET46
@@ -289,23 +281,23 @@ namespace System.Net.Http
             }
         }
 
-        public Task<Stream> GetStreamAsync(string requestUri) =>
+        public Task<Stream> GetStreamAsync(string? requestUri) =>
             GetStreamAsync(CreateUri(requestUri));
 
-        public Task<Stream> GetStreamAsync(string requestUri, CancellationToken cancellationToken) =>
+        public Task<Stream> GetStreamAsync(string? requestUri, CancellationToken cancellationToken) =>
             GetStreamAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<Stream> GetStreamAsync(Uri requestUri) =>
+        public Task<Stream> GetStreamAsync(Uri? requestUri) =>
             GetStreamAsync(requestUri, CancellationToken.None);
 
-        public Task<Stream> GetStreamAsync(Uri requestUri, CancellationToken cancellationToken) =>
+        public Task<Stream> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken) =>
             FinishGetStreamAsync(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
 
         private async Task<Stream> FinishGetStreamAsync(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
         {
             HttpResponseMessage response = await getTask.ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            HttpContent c = response.Content;
+            HttpContent? c = response.Content;
             return c != null ?
                 (c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false)) :
                 Stream.Null;
@@ -315,65 +307,65 @@ namespace System.Net.Http
 
         #region REST Send Overloads
 
-        public Task<HttpResponseMessage> GetAsync(string requestUri)
+        public Task<HttpResponseMessage> GetAsync(string? requestUri)
         {
             return GetAsync(CreateUri(requestUri));
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri requestUri)
+        public Task<HttpResponseMessage> GetAsync(Uri? requestUri)
         {
             return GetAsync(requestUri, defaultCompletionOption);
         }
 
-        public Task<HttpResponseMessage> GetAsync(string requestUri, HttpCompletionOption completionOption)
+        public Task<HttpResponseMessage> GetAsync(string? requestUri, HttpCompletionOption completionOption)
         {
             return GetAsync(CreateUri(requestUri), completionOption);
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri requestUri, HttpCompletionOption completionOption)
+        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption)
         {
             return GetAsync(requestUri, completionOption, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> GetAsync(string requestUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetAsync(string? requestUri, CancellationToken cancellationToken)
         {
             return GetAsync(CreateUri(requestUri), cancellationToken);
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri requestUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, CancellationToken cancellationToken)
         {
             return GetAsync(requestUri, defaultCompletionOption, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> GetAsync(string requestUri, HttpCompletionOption completionOption,
+        public Task<HttpResponseMessage> GetAsync(string? requestUri, HttpCompletionOption completionOption,
             CancellationToken cancellationToken)
         {
             return GetAsync(CreateUri(requestUri), completionOption, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri requestUri, HttpCompletionOption completionOption,
+        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption,
             CancellationToken cancellationToken)
         {
             return SendAsync(CreateRequestMessage(HttpMethod.Get, requestUri), completionOption, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PostAsync(string requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent content)
         {
             return PostAsync(CreateUri(requestUri), content);
         }
 
-        public Task<HttpResponseMessage> PostAsync(Uri requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent content)
         {
             return PostAsync(requestUri, content, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> PostAsync(string requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             return PostAsync(CreateUri(requestUri), content, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PostAsync(Uri requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Post, requestUri);
@@ -381,23 +373,23 @@ namespace System.Net.Http
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PutAsync(string requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent content)
         {
             return PutAsync(CreateUri(requestUri), content);
         }
 
-        public Task<HttpResponseMessage> PutAsync(Uri requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent content)
         {
             return PutAsync(requestUri, content, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> PutAsync(string requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             return PutAsync(CreateUri(requestUri), content, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PutAsync(Uri requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Put, requestUri);
@@ -405,23 +397,23 @@ namespace System.Net.Http
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(string requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent content)
         {
             return PatchAsync(CreateUri(requestUri), content);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(Uri requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent content)
         {
             return PatchAsync(requestUri, content, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(string requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             return PatchAsync(CreateUri(requestUri), content, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(Uri requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Patch, requestUri);
@@ -429,22 +421,22 @@ namespace System.Net.Http
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> DeleteAsync(string requestUri)
+        public Task<HttpResponseMessage> DeleteAsync(string? requestUri)
         {
             return DeleteAsync(CreateUri(requestUri));
         }
 
-        public Task<HttpResponseMessage> DeleteAsync(Uri requestUri)
+        public Task<HttpResponseMessage> DeleteAsync(Uri? requestUri)
         {
             return DeleteAsync(requestUri, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> DeleteAsync(string requestUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> DeleteAsync(string? requestUri, CancellationToken cancellationToken)
         {
             return DeleteAsync(CreateUri(requestUri), cancellationToken);
         }
 
-        public Task<HttpResponseMessage> DeleteAsync(Uri requestUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> DeleteAsync(Uri? requestUri, CancellationToken cancellationToken)
         {
             return SendAsync(CreateRequestMessage(HttpMethod.Delete, requestUri), cancellationToken);
         }
@@ -491,12 +483,14 @@ namespace System.Net.Http
             CancellationTokenSource cts;
             bool disposeCts;
             bool hasTimeout = _timeout != s_infiniteTimeout;
+            long timeoutTime = long.MaxValue;
             if (hasTimeout || cancellationToken.CanBeCanceled)
             {
                 disposeCts = true;
                 cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
                 if (hasTimeout)
                 {
+                    timeoutTime = Environment.TickCount64 + (_timeout.Ticks / TimeSpan.TicksPerMillisecond);
                     cts.CancelAfter(_timeout);
                 }
             }
@@ -512,21 +506,27 @@ namespace System.Net.Http
             {
                 sendTask = base.SendAsync(request, cts.Token);
             }
-            catch
+            catch (Exception e)
             {
                 HandleFinishSendAsyncCleanup(cts, disposeCts);
+
+                if (e is OperationCanceledException operationException && TimeoutFired(cancellationToken, timeoutTime))
+                {
+                    throw CreateTimeoutException(operationException);
+                }
+
                 throw;
             }
 
             return completionOption == HttpCompletionOption.ResponseContentRead && !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase) ?
-                FinishSendAsyncBuffered(sendTask, request, cts, disposeCts) :
-                FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts);
+                FinishSendAsyncBuffered(sendTask, request, cts, disposeCts, cancellationToken, timeoutTime) :
+                FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts, cancellationToken, timeoutTime);
         }
 
         private async Task<HttpResponseMessage> FinishSendAsyncBuffered(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts, CancellationToken callerToken, long timeoutTime)
         {
-            HttpResponseMessage response = null;
+            HttpResponseMessage? response = null;
             try
             {
                 // Wait for the send request to complete, getting back the response.
@@ -548,6 +548,13 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 response?.Dispose();
+
+                if (e is OperationCanceledException operationException && TimeoutFired(callerToken, timeoutTime))
+                {
+                    HandleSendAsyncTimeout(operationException);
+                    throw CreateTimeoutException(operationException);
+                }
+
                 HandleFinishSendAsyncError(e, cts);
                 throw;
             }
@@ -558,7 +565,7 @@ namespace System.Net.Http
         }
 
         private async Task<HttpResponseMessage> FinishSendAsyncUnbuffered(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts, CancellationToken callerToken, long timeoutTime)
         {
             try
             {
@@ -573,6 +580,12 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
+                if (e is OperationCanceledException operationException && TimeoutFired(callerToken, timeoutTime))
+                {
+                    HandleSendAsyncTimeout(operationException);
+                    throw CreateTimeoutException(operationException);
+                }
+
                 HandleFinishSendAsyncError(e, cts);
                 throw;
             }
@@ -580,6 +593,14 @@ namespace System.Net.Http
             {
                 HandleFinishSendAsyncCleanup(cts, disposeCts);
             }
+        }
+
+        private bool TimeoutFired(CancellationToken callerToken, long timeoutTime) => !callerToken.IsCancellationRequested && Environment.TickCount64 >= timeoutTime;
+
+        private TaskCanceledException CreateTimeoutException(OperationCanceledException originalException)
+        {
+            return new TaskCanceledException(string.Format(SR.net_http_request_timedout, _timeout.TotalSeconds),
+                new TimeoutException(originalException.Message, originalException), originalException.CancellationToken);
         }
 
         private void HandleFinishSendAsyncError(Exception e, CancellationTokenSource cts)
@@ -592,6 +613,15 @@ namespace System.Net.Http
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, "Canceled");
                 throw new OperationCanceledException(cts.Token);
+            }
+        }
+
+        private void HandleSendAsyncTimeout(OperationCanceledException e)
+        {
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Error(this, e);
+                NetEventSource.Error(this, "Canceled due to timeout");
             }
         }
 
@@ -701,7 +731,7 @@ namespace System.Net.Http
 
         private void PrepareRequestMessage(HttpRequestMessage request)
         {
-            Uri requestUri = null;
+            Uri? requestUri = null;
             if ((request.RequestUri == null) && (_baseAddress == null))
             {
                 throw new InvalidOperationException(SR.net_http_client_invalid_requesturi);
@@ -739,7 +769,7 @@ namespace System.Net.Http
             }
         }
 
-        private static void CheckBaseAddress(Uri baseAddress, string parameterName)
+        private static void CheckBaseAddress(Uri? baseAddress, string parameterName)
         {
             if (baseAddress == null)
             {
@@ -757,10 +787,10 @@ namespace System.Net.Http
             }
         }
 
-        private Uri CreateUri(string uri) =>
+        private Uri? CreateUri(string? uri) =>
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
 
-        private HttpRequestMessage CreateRequestMessage(HttpMethod method, Uri uri) =>
+        private HttpRequestMessage CreateRequestMessage(HttpMethod method, Uri? uri) =>
             new HttpRequestMessage(method, uri) { Version = _defaultRequestVersion };
         #endregion Private Helpers
     }

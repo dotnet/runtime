@@ -718,17 +718,14 @@ namespace System.Text.Json
 #endif
                     );
 
-            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
-            // Todo: https://github.com/dotnet/runtime/issues/32351
-            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+            AssertContentsAgainstJsonNet(expectedValue, value);
         }
 
         public static void AssertContents(string expectedValue, MemoryStream stream)
         {
             string value = Encoding.UTF8.GetString(stream.ToArray());
 
-            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
-            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+            AssertContentsAgainstJsonNet(expectedValue, value);
         }
 
         public static void AssertContentsNotEqual(string expectedValue, ArrayBufferWriter<byte> buffer)
@@ -740,8 +737,16 @@ namespace System.Text.Json
 #endif
                     );
 
-            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
-            // Todo: https://github.com/dotnet/runtime/issues/32351
+            AssertContentsNotEqualAgainstJsonNet(expectedValue, value);
+        }
+
+        public static void AssertContentsAgainstJsonNet(string expectedValue, string value)
+        {
+            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+        }
+
+        public static void AssertContentsNotEqualAgainstJsonNet(string expectedValue, string value)
+        {
             Assert.NotEqual(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
         }
 
@@ -814,5 +819,60 @@ namespace System.Text.Json
             => s_replaceNewlines ?
             value.Replace(CompiledNewline, Environment.NewLine) :
             value;
+
+        public static void AssertJsonEqual(string expected, string actual)
+        {
+            using JsonDocument expectedDom = JsonDocument.Parse(expected);
+            using JsonDocument actualDom = JsonDocument.Parse(actual);
+            AssertJsonEqual(expectedDom.RootElement, actualDom.RootElement);
+        }
+
+        private static void AssertJsonEqual(JsonElement expected, JsonElement actual)
+        {
+            JsonValueKind valueKind = expected.ValueKind;
+            Assert.Equal(valueKind, actual.ValueKind);
+
+            switch (valueKind)
+            {
+                case JsonValueKind.Object:
+                    var propertyNames = new HashSet<string>();
+
+                    foreach (JsonProperty property in expected.EnumerateObject())
+                    {
+                        propertyNames.Add(property.Name);
+                    }
+
+                    foreach (JsonProperty property in actual.EnumerateObject())
+                    {
+                        propertyNames.Add(property.Name);
+                    }
+
+                    foreach (string name in propertyNames)
+                    {
+                        AssertJsonEqual(expected.GetProperty(name), actual.GetProperty(name));
+                    }
+                    break;
+                case JsonValueKind.Array:
+                    JsonElement.ArrayEnumerator expectedEnumerator = actual.EnumerateArray();
+                    JsonElement.ArrayEnumerator actualEnumerator = expected.EnumerateArray();
+
+                    while (expectedEnumerator.MoveNext())
+                    {
+                        Assert.True(actualEnumerator.MoveNext());
+                        AssertJsonEqual(expectedEnumerator.Current, actualEnumerator.Current);
+                    }
+
+                    Assert.False(actualEnumerator.MoveNext());
+                    break;
+                case JsonValueKind.String:
+                    Assert.Equal(expected.GetString(), actual.GetString());
+                    break;
+                case JsonValueKind.Number:
+                    Assert.Equal(expected.GetRawText(), actual.GetRawText());
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
     }
 }

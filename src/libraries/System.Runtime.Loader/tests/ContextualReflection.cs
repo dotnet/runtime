@@ -144,6 +144,7 @@ namespace System.Runtime.Loader.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
     public class ContextualReflectionTest : IClassFixture<ContextualReflectionTestFixture>
     {
         IContextualReflectionTestFixture _fixture;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
@@ -62,7 +63,7 @@ namespace System.Net.Security
     {
         public readonly SecurityBufferType Type;
         public readonly ReadOnlySpan<byte> Token;
-        public readonly SafeHandle UnmanagedToken;
+        public readonly SafeHandle? UnmanagedToken;
 
         public InputSecurityBuffer(ReadOnlySpan<byte> data, SecurityBufferType tokentype)
         {
@@ -85,10 +86,10 @@ namespace System.Net.Security
         public int offset;
         public int size;
         public SecurityBufferType type;
-        public byte[] token;
-        public SafeHandle unmanagedToken;
+        public byte[]? token;
+        public SafeHandle? unmanagedToken;
 
-        public SecurityBuffer(byte[] data, int offset, int size, SecurityBufferType tokentype)
+        public SecurityBuffer(byte[]? data, int offset, int size, SecurityBufferType tokentype)
         {
             if (offset < 0 || offset > (data == null ? 0 : data.Length))
             {
@@ -107,7 +108,7 @@ namespace System.Net.Security
             this.unmanagedToken = null;
         }
 
-        public SecurityBuffer(byte[] data, SecurityBufferType tokentype)
+        public SecurityBuffer(byte[]? data, SecurityBufferType tokentype)
         {
             this.offset = 0;
             this.size = data == null ? 0 : data.Length;

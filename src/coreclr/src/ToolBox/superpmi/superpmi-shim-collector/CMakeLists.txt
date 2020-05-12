@@ -15,16 +15,14 @@ include_directories(.)
 include_directories(../superpmi-shared)
 
 set(SUPERPMI_SHIM_COLLECTOR_SOURCES
-    coreclrcallbacks.cpp
     jithost.cpp
     icorjitcompiler.cpp
     icorjitinfo.cpp
-    ieememorymanager.cpp
-    iexecutionengine.cpp
     superpmi-shim-collector.cpp
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
     ../superpmi-shared/errorhandling.cpp
+    ../superpmi-shared/hash.cpp
     ../superpmi-shared/logging.cpp
     ../superpmi-shared/mclist.cpp
     ../superpmi-shared/methodcontext.cpp
@@ -51,7 +49,7 @@ target_precompile_header(TARGET superpmi-shim-collector HEADER standardpch.h)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-collector
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

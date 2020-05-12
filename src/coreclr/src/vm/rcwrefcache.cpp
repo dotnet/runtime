@@ -209,23 +209,40 @@ HRESULT RCWRefCache::AddReferenceFromRCWToCCW(RCW *pRCW, ComCallWrapper *pCCW)
     CONTRACTL_END;
 
     // Try adding reference using dependent handles
-    return AddReferenceUsingDependentHandle(pRCW, pCCW);
+    return AddReferenceUsingDependentHandle(pRCW->GetExposedObject(), pCCW->GetObjectRef());
 }
 
 //
-// Add RCW -> CCW reference using dependent handle
-// May fail if OOM
+// Add a reference from obj1 to obj2
 //
-HRESULT RCWRefCache::AddReferenceUsingDependentHandle(RCW *pRCW, ComCallWrapper *pCCW)
+HRESULT RCWRefCache::AddReferenceFromObjectToObject(OBJECTREF obj1, OBJECTREF obj2)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pRCW));
-        PRECONDITION(CheckPointer(pCCW));
-        PRECONDITION(CheckPointer(OBJECTREFToObject(pCCW->GetObjectRef())));
+        PRECONDITION(obj1 != NULL);
+        PRECONDITION(obj2 != NULL);
+    }
+    CONTRACTL_END;
+
+    // Try adding reference using dependent handles
+    return AddReferenceUsingDependentHandle(obj1, obj2);
+}
+
+//
+// Add obj1 -> obj2 reference using dependent handle
+// May fail if OOM
+//
+HRESULT RCWRefCache::AddReferenceUsingDependentHandle(OBJECTREF obj1, OBJECTREF obj2)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(OBJECTREFToObject(obj2)));
     }
     CONTRACTL_END;
 
@@ -242,7 +259,7 @@ HRESULT RCWRefCache::AddReferenceUsingDependentHandle(RCW *pRCW, ComCallWrapper 
         // No, we need to create a new handle
         EX_TRY
         {
-            OBJECTHANDLE depHnd = m_pAppDomain->CreateDependentHandle(pRCW->GetExposedObject(), pCCW->GetObjectRef());
+            OBJECTHANDLE depHnd = m_pAppDomain->CreateDependentHandle(obj1, obj2);
             m_depHndList.Push(depHnd);
 
             STRESS_LOG2(
@@ -267,8 +284,8 @@ HRESULT RCWRefCache::AddReferenceUsingDependentHandle(RCW *pRCW, ComCallWrapper 
         OBJECTHANDLE depHnd = (OBJECTHANDLE) m_depHndList[m_dwDepHndListFreeIndex];
 
         IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-        mgr->StoreObjectInHandle(depHnd, OBJECTREFToObject(pRCW->GetExposedObject()));
-        mgr->SetDependentHandleSecondary(depHnd, OBJECTREFToObject(pCCW->GetObjectRef()));
+        mgr->StoreObjectInHandle(depHnd, OBJECTREFToObject(obj1));
+        mgr->SetDependentHandleSecondary(depHnd, OBJECTREFToObject(obj2));
 
         STRESS_LOG3(
             LF_INTEROP, LL_INFO1000,

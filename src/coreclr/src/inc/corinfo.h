@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 96fc0c0a-9f77-450d-9663-ee33ae0fcae8 */
-    0x96fc0c0a,
-    0x9f77,
-    0x450d,
-    {0x96, 0x63, 0xee, 0x33, 0xae, 0x0f, 0xca, 0xe8}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 8b2226a2-ac30-4f5c-ae5c-926c792ecdb9 */
+    0x8b2226a2,
+    0xac30,
+    0x4f5c,
+    { 0xae, 0x5c, 0x92, 0x6c, 0x79, 0x2e, 0xcd, 0xb9 }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -338,6 +338,8 @@ private:
     }
 };
 
+#include "corinfoinstructionset.h"
+
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
 // Compilers can emit calls to these helpers.
@@ -383,7 +385,6 @@ enum CorInfoHelpFunc
     /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
        which is the right helper to use to allocate an object of a given type. */
 
-    CORINFO_HELP_NEW_CROSSCONTEXT,  // cross context new object
     CORINFO_HELP_NEWFAST,
     CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
     CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
@@ -460,21 +461,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
     CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
                                           // in its ManagedClassObject
-
-    /* Security callout support */
-
-    CORINFO_HELP_SECURITY_PROLOG,   // Required if CORINFO_FLG_SECURITYCHECK is set, or CORINFO_FLG_NOSECURITYWRAP is not set
-    CORINFO_HELP_SECURITY_PROLOG_FRAMED, // Slow version of CORINFO_HELP_SECURITY_PROLOG. Used for instrumentation.
-
-    CORINFO_HELP_METHOD_ACCESS_CHECK, // Callouts to runtime security access checks
-    CORINFO_HELP_FIELD_ACCESS_CHECK,
-    CORINFO_HELP_CLASS_ACCESS_CHECK,
-
-    CORINFO_HELP_DELEGATE_SECURITY_CHECK, // Callout to delegate security transparency check
-
-     /* Verification runtime callout support */
-
-    CORINFO_HELP_VERIFICATION_RUNTIME_CHECK, // Do a Demand for UnmanagedCode permission at runtime
 
     /* GC support */
 
@@ -647,6 +633,8 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
+    CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+
     CORINFO_HELP_COUNT,
 };
 
@@ -814,13 +802,13 @@ enum CorInfoFlag
     CORINFO_FLG_SHAREDINST            = 0x00020000, // the code for this method is shared between different generic instantiations (also set on classes/types)
     CORINFO_FLG_DELEGATE_INVOKE       = 0x00040000, // "Delegate
     CORINFO_FLG_PINVOKE               = 0x00080000, // Is a P/Invoke call
-    CORINFO_FLG_SECURITYCHECK         = 0x00100000, // Is one of the security routines that does a stackwalk (e.g. Assert, Demand)
+//  CORINFO_FLG_UNUSED                = 0x00100000,
     CORINFO_FLG_NOGCCHECK             = 0x00200000, // This method is FCALL that has no GC check.  Don't put alone in loops
     CORINFO_FLG_INTRINSIC             = 0x00400000, // This method MAY have an intrinsic ID
     CORINFO_FLG_CONSTRUCTOR           = 0x00800000, // This method is an instance or type initializer
     CORINFO_FLG_AGGRESSIVE_OPT        = 0x01000000, // The method may contain hot code and should be aggressively optimized if possible
     CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS = 0x02000000, // Indicates that tier 0 JIT should not be used for a method that contains a loop
-    CORINFO_FLG_NOSECURITYWRAP        = 0x04000000, // The method requires no security checks
+//  CORINFO_FLG_UNUSED                = 0x04000000,
 //  CORINFO_FLG_UNUSED                = 0x08000000,
     CORINFO_FLG_DONT_INLINE           = 0x10000000, // The method should not be inlined
     CORINFO_FLG_DONT_INLINE_CALLER    = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
@@ -834,11 +822,11 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    CORINFO_FLG_CONTEXTFUL            = 0x00400000, // is this a contextful class?
+    // unused                         = 0x00400000,
     CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
-    CORINFO_FLG_MARSHAL_BYREF         = 0x04000000, // is this a subclass of MarshalByRef ?
+    // CORINFO_FLG_UNUSED             = 0x04000000,
     CORINFO_FLG_CONTAINS_STACK_PTR    = 0x08000000, // This class has a stack pointer inside it
     CORINFO_FLG_VARIANCE              = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
     CORINFO_FLG_BEFOREFIELDINIT       = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
@@ -850,8 +838,8 @@ enum CorInfoFlag
 enum CorInfoMethodRuntimeFlags
 {
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
-    CORINFO_FLG_VERIFIABLE          = 0x00000002, // The method has verifiable code
-    CORINFO_FLG_UNVERIFIABLE        = 0x00000004, // The method has unverifiable code
+    // unused                       = 0x00000002,
+    // unused                       = 0x00000004,
     CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
     CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
 };
@@ -861,7 +849,7 @@ enum CORINFO_ACCESS_FLAGS
 {
     CORINFO_ACCESS_ANY        = 0x0000, // Normal access
     CORINFO_ACCESS_THIS       = 0x0001, // Accessed via the this reference
-    CORINFO_ACCESS_UNWRAP     = 0x0002, // Accessed via an unwrap reference
+    // UNUSED                 = 0x0002,
 
     CORINFO_ACCESS_NONNULL    = 0x0004, // Instance is guaranteed non-null
 
@@ -949,6 +937,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
     CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
+    CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
     CORINFO_INTRINSIC_InterlockedAdd32,
     CORINFO_INTRINSIC_InterlockedAdd64,
     CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -958,6 +947,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_InterlockedCmpXchg32,
     CORINFO_INTRINSIC_InterlockedCmpXchg64,
     CORINFO_INTRINSIC_MemoryBarrier,
+    CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_GetCurrentManagedThread,
     CORINFO_INTRINSIC_GetManagedThreadId,
     CORINFO_INTRINSIC_ByReference_Ctor,
@@ -1043,17 +1033,6 @@ enum CorInfoTailCall
     TAILCALL_FAIL           = -1,   // Couldn't do a tail call
 };
 
-enum CorInfoCanSkipVerificationResult
-{
-    CORINFO_VERIFICATION_CANNOT_SKIP    = 0,    // Cannot skip verification during jit time.
-    CORINFO_VERIFICATION_CAN_SKIP       = 1,    // Can skip verification during jit time.
-    CORINFO_VERIFICATION_RUNTIME_CHECK  = 2,    // Cannot skip verification during jit time,
-                                                //     but need to insert a callout to the VM to ask during runtime
-                                                //     whether to raise a verification or not (if the method is unverifiable).
-    CORINFO_VERIFICATION_DONT_JIT       = 3,    // Cannot skip verification during jit time,
-                                                //     but do not jit the method if is is unverifiable.
-};
-
 enum CorInfoInitClassResult
 {
     CORINFO_INITCLASS_NOT_REQUIRED  = 0x00, // No class initialization required, but the class is not actually initialized yet
@@ -1097,38 +1076,14 @@ enum CorInfoIndirectCallReason
     CORINFO_INDIRECT_CALL_COUNT
 };
 
-// This is for use when the JIT is compiling an instantiation
-// of generic code.  The JIT needs to know if the generic code itself
-// (which can be verified once and for all independently of the
-// instantiations) passed verification.
-enum CorInfoInstantiationVerification
-{
-    // The method is NOT a concrete instantiation (eg. List<int>.Add()) of a method
-    // in a generic class or a generic method. It is either the typical instantiation
-    // (eg. List<T>.Add()) or entirely non-generic.
-    INSTVER_NOT_INSTANTIATION           = 0,
-
-    // The method is an instantiation of a method in a generic class or a generic method,
-    // and the generic class was successfully verified
-    INSTVER_GENERIC_PASSED_VERIFICATION = 1,
-
-    // The method is an instantiation of a method in a generic class or a generic method,
-    // and the generic class failed verification
-    INSTVER_GENERIC_FAILED_VERIFICATION = 2,
-};
-
-// When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-// calling convention/argument passing/handling details to the helper
-enum CorInfoHelperTailCallSpecialHandling
-{
-    CORINFO_TAILCALL_NORMAL =               0x00000000,
-    CORINFO_TAILCALL_STUB_DISPATCH_ARG =    0x00000001,
-};
-
-
 inline bool dontInline(CorInfoInline val) {
     return(val < 0);
 }
+
+// Patchpoint info is passed back and forth across the interface
+// but is opaque.
+
+struct PatchpointInfo;
 
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
@@ -1177,6 +1132,7 @@ enum CorInfoSigInfoFlags
     CORINFO_SIGFLAG_IS_LOCAL_SIG           = 0x01,
     CORINFO_SIGFLAG_IL_STUB                = 0x02,
     CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
+    CORINFO_SIGFLAG_FAT_CALL               = 0x08,
 };
 
 struct CORINFO_SIG_INST
@@ -1321,6 +1277,7 @@ struct CORINFO_LOOKUP_KIND
 //
 #define CORINFO_MAXINDIRECTIONS 4
 #define CORINFO_USEHELPER ((WORD) 0xffff)
+#define CORINFO_NO_SIZE_CHECK ((WORD) 0xffff)
 
 struct CORINFO_RUNTIME_LOOKUP
 {
@@ -1343,6 +1300,7 @@ struct CORINFO_RUNTIME_LOOKUP
     // If set, test the lowest bit and dereference if set (see code:FixupPointer)
     bool                    testForFixup;
 
+    WORD                    sizeOffset;
     SIZE_T                  offsets[CORINFO_MAXINDIRECTIONS];
 
     // If set, first offset is indirect.
@@ -1575,7 +1533,6 @@ enum CorInfoIsAccessAllowedResult
 {
     CORINFO_ACCESS_ALLOWED = 0,           // Call allowed
     CORINFO_ACCESS_ILLEGAL = 1,           // Call not allowed
-    CORINFO_ACCESS_RUNTIME_CHECK = 2,     // Ask at runtime whether to allow the call or not
 };
 
 
@@ -1648,7 +1605,7 @@ struct CORINFO_CALL_INFO
 
     unsigned                classFlags;         //flags for CORINFO_RESOLVED_TOKEN::hClass
 
-    CORINFO_SIG_INFO       sig;
+    CORINFO_SIG_INFO        sig;
 
     //Verification information
     unsigned                verMethodFlags;     // flags for CORINFO_RESOLVED_TOKEN::hMethod
@@ -1662,8 +1619,6 @@ struct CORINFO_CALL_INFO
     //      JIT may either insert the callsiteCalloutHelper into the code (as per a verification error) or
     //      call throwExceptionFromHelper on the callsiteCalloutHelper.  In this case callsiteCalloutHelper
     //      is guaranteed not to return.
-    //  - CORINFO_ACCESS_RUNTIME_CHECK - The jit must insert the callsiteCalloutHelper at the call site.
-    //      the helper may return
     CorInfoIsAccessAllowedResult accessAllowed;
     CORINFO_HELPER_DESC     callsiteCalloutHelper;
 
@@ -1818,13 +1773,6 @@ struct CORINFO_EE_INFO
     // Wrapper delegate offsets
     unsigned    offsetOfWrapperDelegateIndirectCell;
 
-    // Remoting offsets
-    unsigned    offsetOfTransparentProxyRP;
-    unsigned    offsetOfRealProxyServer;
-
-    // Array offsets
-    unsigned    offsetOfObjArrayData;
-
     // Reverse PInvoke offsets
     unsigned    sizeOfReversePInvokeFrame;
 
@@ -1839,9 +1787,30 @@ struct CORINFO_EE_INFO
     CORINFO_RUNTIME_ABI targetAbi;
 
     CORINFO_OS  osType;
-    unsigned    osMajor;
-    unsigned    osMinor;
-    unsigned    osBuild;
+};
+
+// Flags passed from JIT to runtime.
+enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
+{
+    // The callsite is a callvirt instruction.
+    CORINFO_TAILCALL_IS_CALLVIRT       = 0x00000001,
+    CORINFO_TAILCALL_THIS_ARG_IS_BYREF = 0x00000002,
+};
+
+// Flags passed from runtime to JIT.
+enum CORINFO_TAILCALL_HELPERS_FLAGS
+{
+    // The StoreArgs stub needs to be passed the target function pointer as the
+    // first argument.
+    CORINFO_TAILCALL_STORE_TARGET = 0x00000001,
+};
+
+struct CORINFO_TAILCALL_HELPERS
+{
+    CORINFO_TAILCALL_HELPERS_FLAGS flags;
+    CORINFO_METHOD_HANDLE          hStoreArgs;
+    CORINFO_METHOD_HANDLE          hCallTarget;
+    CORINFO_METHOD_HANDLE          hDispatcher;
 };
 
 // This is used to indicate that a finally has been called
@@ -1956,12 +1925,6 @@ struct CORINFO_VarArgInfo
 
 #define OFFSETOF__CORINFO_String__stringLen               SIZEOF__CORINFO_Object
 #define OFFSETOF__CORINFO_String__chars                   (OFFSETOF__CORINFO_String__stringLen + sizeof(unsigned __int32) /* stringLen */)
-
-enum CorInfoSecurityRuntimeChecks
-{
-    CORINFO_ACCESS_SECURITY_NONE                          = 0,
-    CORINFO_ACCESS_SECURITY_TRANSPARENCY                  = 0x0001  // check that transparency rules are enforced between the caller and callee
-};
 
 
 /* data to optimize delegate construction */
@@ -2192,26 +2155,6 @@ public:
             BOOL                        *pfIsOpenDelegate /* is the delegate open */
             ) = 0;
 
-    // Indicates if the method is an instance of the generic
-    // method that passes (or has passed) verification
-    virtual CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric (
-            CORINFO_METHOD_HANDLE   method /* IN  */
-            ) = 0;
-
-    // Loads the constraints on a typical method definition, detecting cycles;
-    // for use in verification.
-    virtual void initConstraintsForVerification(
-            CORINFO_METHOD_HANDLE   method, /* IN */
-            BOOL *pfHasCircularClassConstraints, /* OUT */
-            BOOL *pfHasCircularMethodConstraint /* OUT */
-            ) = 0;
-
-    // Returns enum whether the method does not require verification
-    // Also see ICorModuleInfo::canSkipVerification
-    virtual CorInfoCanSkipVerificationResult canSkipMethodVerification (
-            CORINFO_METHOD_HANDLE       ftnHandle
-            ) = 0;
-
     // load and restore the method
     virtual void methodMustBeLoadedBeforeCodeIsRun(
             CORINFO_METHOD_HANDLE       method
@@ -2226,6 +2169,16 @@ public:
     virtual void getGSCookie(
             GSCookie * pCookieVal,                     // OUT
             GSCookie ** ppCookieVal                    // OUT
+            ) = 0;
+
+    // Provide patchpoint info for the method currently being jitted.
+    virtual void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            ) = 0;
+
+    // Get patchpoint info and il offset for the method currently being jitted.
+    virtual PatchpointInfo* getOSRInfo(
+            unsigned                       *ilOffset        // [OUT] il offset of OSR entry point
             ) = 0;
 
     /**********************************************************************************/
@@ -2266,21 +2219,6 @@ public:
     virtual CORINFO_CLASS_HANDLE getTokenTypeAsHandle (
             CORINFO_RESOLVED_TOKEN *    pResolvedToken /* IN  */) = 0;
 
-    // Returns true if the module does not require verification
-    //
-    // If fQuickCheckOnlyWithoutCommit=TRUE, the function only checks that the
-    // module does not currently require verification in the current AppDomain.
-    // This decision could change in the future, and so should not be cached.
-    // If it is cached, it should only be used as a hint.
-    // This is only used by ngen for calculating certain hints.
-    //
-
-    // Returns enum whether the module does not require verification
-    // Also see ICorMethodInfo::canSkipMethodVerification();
-    virtual CorInfoCanSkipVerificationResult canSkipVerification (
-            CORINFO_MODULE_HANDLE       module     /* IN  */
-            ) = 0;
-
     // Checks if the given metadata token is valid
     virtual BOOL isValidToken (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
@@ -2299,10 +2237,6 @@ public:
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
             int*                        length      /* OUT */
-            ) = 0;
-
-    virtual BOOL shouldEnforceCallvirtRestriction(
-            CORINFO_MODULE_HANDLE   scope
             ) = 0;
 
     /**********************************************************************************/
@@ -2358,10 +2292,6 @@ public:
     //     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
     //     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
     virtual CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source) = 0;
-
-    // If this method returns true, JIT will do optimization to inline the check for
-    //     GetTypeFromHandle(handle) == obj.GetType()
-    virtual BOOL canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual DWORD getClassAttribs (
@@ -2473,10 +2403,6 @@ public:
     // returns helper to trigger static constructor
     virtual CorInfoHelpFunc getSharedCCtorHelper(
             CORINFO_CLASS_HANDLE clsHnd
-            ) = 0;
-
-    virtual CorInfoHelpFunc getSecurityPrologHelper(
-            CORINFO_METHOD_HANDLE   ftn
             ) = 0;
 
     // This is not pretty.  Boxing nullable<T> actually returns
@@ -2694,12 +2620,6 @@ public:
                         CORINFO_FIELD_HANDLE    field
                         ) = 0;
 
-    // TODO: jit64 should be switched to the same plan as the i386 jits - use
-    // getClassGClayout to figure out the need for writebarrier helper, and inline the copying.
-    // The interpretted value class copy is slow. Once this happens, USE_WRITE_BARRIER_HELPERS
-    virtual bool isWriteBarrierHelperRequired(
-                        CORINFO_FIELD_HANDLE    field) = 0;
-
     virtual void getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                CORINFO_METHOD_HANDLE  callerHandle,
                                CORINFO_ACCESS_FLAGS   flags,
@@ -2778,7 +2698,7 @@ public:
     // For eg, use this to allocated memory for reporting debug info,
     // which will be handed to the EE by setVars() and setBoundaries()
     virtual void * allocateArray(
-                        ULONG              cBytes
+                        size_t              cBytes
                         ) = 0;
 
     // JitCompiler will free arrays passed by the EE using this
@@ -3062,24 +2982,9 @@ public:
     //      CORINFO_LOOKUP_THISOBJ     use vtable pointer of 'this' param
     //      CORINFO_LOOKUP_CLASSPARAM  use vtable hidden param
     //      CORINFO_LOOKUP_METHODPARAM use enclosing type of method-desc hidden param
-    virtual CORINFO_LOOKUP_KIND getLocationOfThisType(
-                    CORINFO_METHOD_HANDLE context
-                    ) = 0;
-
-    // NOTE: the two methods below--getPInvokeUnmanagedTarget and getAddressOfPInvokeFixup--are
-    //       deprecated. New code should instead use getAddressOfPInvokeTarget, which subsumes the
-    //       functionality of these methods.
-
-    // return the unmanaged target *if method has already been prelinked.*
-    virtual void* getPInvokeUnmanagedTarget(
-                    CORINFO_METHOD_HANDLE   method,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
-
-    // return address of fixup area for late-bound PInvoke calls.
-    virtual void* getAddressOfPInvokeFixup(
-                    CORINFO_METHOD_HANDLE   method,
-                    void                  **ppIndirection = NULL
+    virtual void getLocationOfThisType(
+                    CORINFO_METHOD_HANDLE context,
+                    CORINFO_LOOKUP_KIND* pLookupKind
                     ) = 0;
 
     // return the address of the PInvoke target. May be a fixup area in the
@@ -3227,17 +3132,31 @@ public:
                 CORINFO_METHOD_HANDLE methHnd
                 ) = 0;
 
-    // return a thunk that will copy the arguments for the given signature.
-    virtual void* getTailCallCopyArgsThunk (
-                    CORINFO_SIG_INFO       *pSig,
-                    CorInfoHelperTailCallSpecialHandling flags
-                    ) = 0;
+    // Obtain tailcall help for the specified call site.
+    virtual bool getTailCallHelpers(
+
+        // The resolved token for the call. Can be null for calli.
+        CORINFO_RESOLVED_TOKEN* callToken,
+
+        // The signature at the callsite.
+        CORINFO_SIG_INFO* sig,
+
+        // Flags for the tailcall site.
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+
+        // The resulting help.
+        CORINFO_TAILCALL_HELPERS* pResult) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
     virtual bool convertPInvokeCalliToCall(
                     CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     bool fMustConvert
                     ) = 0;
+
+    virtual void notifyInstructionSetUsage(
+                CORINFO_InstructionSet instructionSet,
+                bool supportEnabled
+            ) = 0;
 };
 
 /**********************************************************************************/

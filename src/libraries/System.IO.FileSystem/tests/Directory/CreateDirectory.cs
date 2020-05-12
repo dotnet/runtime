@@ -508,7 +508,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/1221")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
         {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
@@ -527,7 +527,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/1221")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
         public void SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
         {
             var drive = IOServices.GetNotReadyDrive();

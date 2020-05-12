@@ -146,16 +146,6 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 
 #define SWITCHOUT_HANDLE_VALUE ((HANDLE)(LONG_PTR)-2)
 
-//
-// CoInitializeEE flags.
-//
-typedef enum tagCOINITEE
-{
-    COINITEE_DEFAULT        = 0x0,          // Default initialization mode.
-    COINITEE_DLL            = 0x1,          // Initialization mode for loading DLL.
-    COINITEE_MAIN           = 0x2           // Initialize prior to entering the main routine
-} COINITIEE;
-
 //*****************************************************************************
 //*****************************************************************************
 //

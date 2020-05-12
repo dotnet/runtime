@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Mail;
 using System.Text;
 
@@ -23,8 +24,8 @@ namespace System.Net.Mime
     {
         private readonly TrackingStringDictionary _parameters = new TrackingStringDictionary();
 
-        private string _mediaType;
-        private string _subType;
+        private string _mediaType = null!; // initialized by helper called from ctor
+        private string _subType = null!; // initialized by helper called from ctor
         private bool _isChanged;
         private string _type;
         private bool _isPersisted;
@@ -59,7 +60,7 @@ namespace System.Net.Mime
             ParseValue();
         }
 
-        public string Boundary
+        public string? Boundary
         {
             get { return Parameters["boundary"]; }
             set
@@ -75,7 +76,7 @@ namespace System.Net.Mime
             }
         }
 
-        public string CharSet
+        public string? CharSet
         {
             get { return Parameters["charset"]; }
             set
@@ -125,18 +126,18 @@ namespace System.Net.Mime
             }
         }
 
-
+        [AllowNull]
         public string Name
         {
             get
             {
-                string value = Parameters["name"];
-                Encoding nameEncoding = MimeBasePart.DecodeEncoding(value);
+                string? value = Parameters["name"];
+                Encoding? nameEncoding = MimeBasePart.DecodeEncoding(value);
                 if (nameEncoding != null)
                 {
                     value = MimeBasePart.DecodeHeaderValue(value);
                 }
-                return value;
+                return value!;
             }
             set
             {
@@ -151,14 +152,13 @@ namespace System.Net.Mime
             }
         }
 
-
         public StringDictionary Parameters => _parameters;
 
         internal void Set(string contentType, HeaderCollection headers)
         {
             _type = contentType;
             ParseValue();
-            headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType), ToString());
+            headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType)!, ToString());
             _isPersisted = true;
         }
 
@@ -166,7 +166,7 @@ namespace System.Net.Mime
         {
             if (IsChanged || !_isPersisted || forcePersist)
             {
-                headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType), ToString());
+                headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType)!, ToString());
                 _isPersisted = true;
             }
         }
@@ -194,12 +194,12 @@ namespace System.Net.Mime
             builder.Append(_subType);  // Must not have unicode, already validated
 
             // Validate and encode unicode where required
-            foreach (string key in Parameters.Keys)
+            foreach (string? key in Parameters.Keys) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
             {
                 builder.Append("; ");
-                EncodeToBuffer(key, builder, allowUnicode);
+                EncodeToBuffer(key!, builder, allowUnicode);
                 builder.Append('=');
-                EncodeToBuffer(_parameters[key], builder, allowUnicode);
+                EncodeToBuffer(_parameters[key!]!, builder, allowUnicode);
             }
 
             return builder.ToString();
@@ -207,7 +207,7 @@ namespace System.Net.Mime
 
         private static void EncodeToBuffer(string value, StringBuilder builder, bool allowUnicode)
         {
-            Encoding encoding = MimeBasePart.DecodeEncoding(value);
+            Encoding? encoding = MimeBasePart.DecodeEncoding(value);
             if (encoding != null) // Manually encoded elsewhere, pass through
             {
                 builder.Append('\"').Append(value).Append('"');
@@ -225,7 +225,7 @@ namespace System.Net.Mime
             }
         }
 
-        public override bool Equals(object rparam) =>
+        public override bool Equals(object? rparam) =>
             rparam == null ? false : string.Equals(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase);
 
         public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
@@ -235,7 +235,7 @@ namespace System.Net.Mime
         private void ParseValue()
         {
             int offset = 0;
-            Exception exception = null;
+            Exception? exception = null;
 
             try
             {
@@ -269,7 +269,7 @@ namespace System.Net.Mime
                             break;
                         }
 
-                        string paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset, null);
+                        string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset, null);
 
                         if (paramAttribute == null || paramAttribute.Length == 0)
                         {
@@ -277,7 +277,7 @@ namespace System.Net.Mime
                             break;
                         }
 
-                        string paramValue;
+                        string? paramValue;
                         if (offset >= _type.Length || _type[offset++] != '=')
                         {
                             exception = new FormatException(SR.ContentTypeInvalid);

@@ -359,17 +359,17 @@ namespace System.Runtime.Serialization
                 return type.FullName!;
             }
 
-            var builder = new StringBuilder(type.GetGenericTypeDefinition().FullName).Append("[");
+            var builder = new StringBuilder(type.GetGenericTypeDefinition().FullName).Append('[');
 
             bool hasTypeForwardedFrom;
             foreach (Type genericArgument in type.GetGenericArguments())
             {
-                builder.Append("[").Append(GetClrTypeFullName(genericArgument)).Append(", ");
+                builder.Append('[').Append(GetClrTypeFullName(genericArgument)).Append(", ");
                 builder.Append(GetClrAssemblyName(genericArgument, out hasTypeForwardedFrom)).Append("],");
             }
 
             //remove the last comma and close typename for generic with a close bracket
-            return builder.Remove(builder.Length - 1, 1).Append("]").ToString();
+            return builder.Remove(builder.Length - 1, 1).Append(']').ToString();
         }
     }
 

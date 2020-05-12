@@ -23,9 +23,7 @@ git clone https://github.com/dotnet/runtime
 CMake
 -----
 
-CoreCLR has a dependency on CMake for the build. You can download it from [CMake downloads](http://www.cmake.org/download/).
-
-Alternatively, you can install CMake from [Homebrew](http://brew.sh/).
+CoreCLR has a dependency on CMake for the build. You can install it with [Homebrew](https://brew.sh/).
 
 ```sh
 brew install cmake
@@ -33,20 +31,19 @@ brew install cmake
 
 ICU
 ---
-ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/).
+ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](https://brew.sh/).
 
 ```sh
 brew install icu4c
-brew link --force icu4c
 ```
 
-Build the Runtime and Microsoft Core Library
+Build the Runtime and System.Private.CoreLib
 ============================================
 
-To Build CoreCLR, run build.sh from the root of the coreclr repo.
+To Build CoreCLR, run build.sh to build the CoreCLR subset category of the runtime:
 
-```sh
-./src/coreclr/build.sh
+```
+./build.sh -subset clr
 ```
 
 After the build has completed, there should some files placed in `artifacts/bin/coreclr/OSX.x64.Debug`. The ones we are interested in are:

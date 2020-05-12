@@ -10,13 +10,13 @@ namespace System.Runtime.Loader
     internal partial struct LibraryNameVariation
     {
         private const string LibraryNamePrefix = "lib";
-#if TARGET_OSX
+#if TARGET_OSX || TARGET_IOS || TARGET_TVOS
         private const string LibraryNameSuffix = ".dylib";
 #else
         private const string LibraryNameSuffix = ".so";
 #endif
 
-        internal static IEnumerable<LibraryNameVariation> DetermineLibraryNameVariations(string libName, bool isRelativePath)
+        internal static IEnumerable<LibraryNameVariation> DetermineLibraryNameVariations(string libName, bool isRelativePath, bool forOSLoader = false)
         {
             // This is a copy of the logic in DetermineLibNameVariations in dllimport.cpp in CoreCLR
 

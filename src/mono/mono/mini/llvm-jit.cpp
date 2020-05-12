@@ -24,6 +24,7 @@
 #include <llvm/Support/Memory.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/IR/Mangler.h>
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/LegacyPassNameParser.h"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
@@ -33,7 +34,12 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Transforms/Scalar.h"
+
+#if LLVM_API_VERSION >= 800
+#include "llvm/CodeGen/BuiltinGCs.h"
+#else
 #include "llvm/CodeGen/GCs.h"
+#endif
 
 #include <cstdlib>
 
@@ -48,6 +54,17 @@ extern cl::opt<std::string> MonoEHFrameSymbol;
 void
 mono_llvm_set_unhandled_exception_handler (void)
 {
+}
+
+// noop function that merely ensures that certain symbols are not eliminated
+// from the resulting binary.
+static void
+link_gc () {
+#if LLVM_API_VERSION >= 800
+	llvm::linkAllBuiltinGCs();
+#else
+	llvm::linkCoreCLRGC(); // Mono uses built-in "coreclr" GCStrategy
+#endif
 }
 
 template <typename T>
@@ -67,19 +84,12 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
 
 static MonoNativeTlsKey current_cfg_tls_id;
 
-static unsigned char*
+static unsigned char *
 alloc_code (LLVMValueRef function, int size)
 {
-	MonoCompile *cfg;
-
-	cfg = (MonoCompile*)mono_native_tls_get_value (current_cfg_tls_id);
-
-	if (cfg) {
-		// FIXME: dynamic
-		return (unsigned char*)mono_domain_code_reserve (cfg->domain, size);
-	} else {
-		return (unsigned char*)mono_domain_code_reserve (mono_domain_get (), size);
-	}
+	auto cfg = (MonoCompile *)mono_native_tls_get_value (current_cfg_tls_id);
+	g_assert (cfg);
+	return (unsigned char *)mono_domain_code_reserve (cfg->domain, size);
 }
 
 class MonoJitMemoryManager : public RTDyldMemoryManager
@@ -152,6 +162,38 @@ MonoJitMemoryManager::finalizeMemory(std::string *ErrMsg)
 	return false;
 }
 
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#define NO_CALL_FRAME_OPT " -no-x86-call-frame-opt"
+#else
+#define NO_CALL_FRAME_OPT ""
+#endif
+
+// The OptimizationList is automatically populated with registered Passes by the
+// PassNameParser.
+//
+static cl::list<const PassInfo*, bool, PassNameParser>
+PassList(cl::desc("Optimizations available:"));
+
+static void
+init_function_pass_manager (legacy::FunctionPassManager &fpm)
+{
+	auto reg = PassRegistry::getPassRegistry ();
+	for (size_t i = 0; i < PassList.size(); i++) {
+		Pass *pass = PassList[i]->getNormalCtor()();
+		if (pass->getPassKind () == llvm::PT_Function || pass->getPassKind () == llvm::PT_Loop) {
+			fpm.add (pass);
+		} else {
+			auto info = reg->getPassInfo (pass->getPassID());
+			auto name = info->getPassArgument ();
+			printf("Opt pass is ignored: %.*s\n", name.size(), name.data());
+		}
+	}
+	// -place-safepoints pass is mandatory
+	fpm.add (createPlaceSafepointsPass ());
+
+	fpm.doInitialization();
+}
+
 #if LLVM_API_VERSION >= 900
 
 struct MonoLLVMJIT {
@@ -162,8 +204,9 @@ struct MonoLLVMJIT {
 	LegacyRTDyldObjectLinkingLayer object_layer;
 	LegacyIRCompileLayer<decltype(object_layer), SimpleCompiler> compile_layer;
 	DataLayout data_layout;
+	legacy::FunctionPassManager fpm;
 
-	MonoLLVMJIT (TargetMachine *tm)
+	MonoLLVMJIT (TargetMachine *tm, Module *pgo_module)
 		: mmgr (std::make_shared<MonoJitMemoryManager>())
 		, target_machine (tm)
 		, object_layer (
@@ -176,10 +219,12 @@ struct MonoLLVMJIT {
 			AcknowledgeORCv1Deprecation, object_layer,
 			SimpleCompiler{*target_machine})
 		, data_layout (target_machine->createDataLayout())
+		, fpm (pgo_module)
 	{
 		compile_layer.setNotifyCompiled ([] (VModuleKey, std::unique_ptr<Module> module) {
 			module.release ();
 		});
+		init_function_pass_manager (fpm);
 	}
 
 	VModuleKey
@@ -223,7 +268,7 @@ struct MonoLLVMJIT {
 	}
 
 	std::string
-	mangle (const std::string &name)
+	mangle (llvm::StringRef name)
 	{
 		std::string ret;
 		raw_string_ostream out{ret};
@@ -247,8 +292,9 @@ struct MonoLLVMJIT {
 	{
 		auto module = func->getParent ();
 		module->setDataLayout (data_layout);
-		// The lifetime of this module is managed by the C API, and the
-		// `unique_ptr` created here will be released in the
+		fpm.run (*func);
+		// The lifetime of this module is managed by Mono, not LLVM, so
+		// the `unique_ptr` created here will be released in the
 		// NotifyCompiled callback.
 		auto k = add_module (std::unique_ptr<Module>(module));
 		auto bodysym = compile_layer.findSymbolIn (k, mangle (func), false);
@@ -270,18 +316,12 @@ struct MonoLLVMJIT {
 };
 
 static MonoLLVMJIT *
-make_mono_llvm_jit (TargetMachine *target_machine)
+make_mono_llvm_jit (TargetMachine *target_machine, llvm::Module *pgo_module)
 {
-	return new MonoLLVMJIT{target_machine};
+	return new MonoLLVMJIT{target_machine, pgo_module};
 }
 
 #elif LLVM_API_VERSION > 600
-
-// The OptimizationList is automatically populated with registered Passes by the
-// PassNameParser.
-//
-static cl::list<const PassInfo*, bool, PassNameParser>
-PassList(cl::desc("Optimizations available:"));
 
 class MonoLLVMJIT {
 public:
@@ -294,47 +334,9 @@ public:
 		: TM(TM), ObjectLayer([=] { return std::shared_ptr<RuntimeDyld::MemoryManager> (mm); }),
 		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)),
 		  modules(),
-		  fpm (NULL) {
-		initPassManager ();
-	}
-
-	void initPassManager () {
-		PassRegistry &registry = *PassRegistry::getPassRegistry();
-		initializeCore(registry);
-		initializeScalarOpts(registry);
-		initializeInstCombine(registry);
-		initializeTarget(registry);
-		initializeLoopIdiomRecognizeLegacyPassPass(registry);
-		linkCoreCLRGC(); // Mono uses built-in "coreclr" GCStrategy
-
-		// FIXME: find optimal mono specific order of passes
-		// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
-		// the following order is based on a stripped version of "OPT -O2"
-		const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks";
-		const char *opts = g_getenv ("MONO_LLVM_OPT");
-		if (opts == NULL)
-			opts = default_opts;
-		else if (opts[0] == '+') // Append passes to the default order if starts with '+', overwrite otherwise
-			opts = g_strdup_printf ("%s %s", default_opts, opts + 1);
-		else if (opts[0] != ' ') // pass order has to start with a leading whitespace
-			opts = g_strdup_printf (" %s", opts);
-
-		char **args = g_strsplit (opts, " ", -1);
-		llvm::cl::ParseCommandLineOptions (g_strv_length (args), args, "");
-
-		for (size_t i = 0; i < PassList.size(); i++) {
-			Pass *pass = PassList[i]->getNormalCtor()();
-			if (pass->getPassKind () == llvm::PT_Function || pass->getPassKind () == llvm::PT_Loop) {
-				fpm.add (pass);
-			} else {
-				printf("Opt pass is ignored: %s\n", args[i + 1]);
-			}
-		}
-		// -place-safepoints pass is mandatory
-		fpm.add (createPlaceSafepointsPass ());
-
-		g_strfreev (args);
-		fpm.doInitialization();
+		  fpm (nullptr)
+	{
+		init_function_pass_manager (fpm);
 	}
 
 	ModuleHandleT addModule(Function *F, std::shared_ptr<Module> M) {
@@ -431,7 +433,7 @@ private:
 static MonoJitMemoryManager *mono_mm;
 
 static MonoLLVMJIT *
-make_mono_llvm_jit (TargetMachine *target_machine)
+make_mono_llvm_jit (TargetMachine *target_machine, llvm::Module *)
 {
 	mono_mm = new MonoJitMemoryManager ();
 	return new MonoLLVMJIT(target_machine, mono_mm);
@@ -439,12 +441,42 @@ make_mono_llvm_jit (TargetMachine *target_machine)
 
 #endif
 
+static llvm::Module *dummy_pgo_module = nullptr;
 static MonoLLVMJIT *jit;
+
+static void
+init_passes_and_options ()
+{
+	PassRegistry &registry = *PassRegistry::getPassRegistry();
+	initializeCore(registry);
+	initializeScalarOpts(registry);
+	initializeInstCombine(registry);
+	initializeTarget(registry);
+	initializeLoopIdiomRecognizeLegacyPassPass(registry);
+
+	// FIXME: find optimal mono specific order of passes
+	// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
+	// the following order is based on a stripped version of "OPT -O2"
+	const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks" NO_CALL_FRAME_OPT;
+	const char *opts = g_getenv ("MONO_LLVM_OPT");
+	if (opts == NULL)
+		opts = default_opts;
+	else if (opts[0] == '+') // Append passes to the default order if starts with '+', overwrite otherwise
+		opts = g_strdup_printf ("%s %s", default_opts, opts + 1);
+	else if (opts[0] != ' ') // pass order has to start with a leading whitespace
+		opts = g_strdup_printf (" %s", opts);
+
+	char **args = g_strsplit (opts, " ", -1);
+	llvm::cl::ParseCommandLineOptions (g_strv_length (args), args, "");
+	g_strfreev (args);
+}
 
 void
 mono_llvm_jit_init ()
 {
 	if (jit != nullptr) return;
+
+	link_gc ();
 
 	mono_native_tls_alloc (&current_cfg_tls_id, NULL);
 
@@ -466,17 +498,26 @@ mono_llvm_jit_init ()
 		EB.setTargetOptions (opts);
 	}
 
-	EB.setOptLevel(CodeGenOpt::Aggressive);
-	EB.setMCPU(sys::getHostCPUName());
+	EB.setOptLevel (CodeGenOpt::Aggressive);
+	EB.setMCPU (sys::getHostCPUName ());
+
+#ifdef TARGET_AMD64
+	EB.setMArch ("x86-64");
+#elif TARGET_X86
+	EB.setMArch ("x86");
+#elif TARGET_ARM64
+	EB.setMArch ("aarch64");
+#elif TARGET_ARM
+	EB.setMArch ("arm");
+#else
+	g_assert_not_reached ();
+#endif
+
 	auto TM = EB.selectTarget ();
 	assert (TM);
-
-	jit = make_mono_llvm_jit (TM);
-}
-
-void
-mono_llvm_jit_set_tls_cfg (MonoCompile *cfg) {
-	mono_native_tls_set_value (current_cfg_tls_id, cfg);
+	dummy_pgo_module = unwrap (LLVMModuleCreateWithName("dummy-pgo-module"));
+	init_passes_and_options ();
+	jit = make_mono_llvm_jit (TM, dummy_pgo_module);
 }
 
 MonoEERef
@@ -492,9 +533,12 @@ mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
  * CALLEE_ADDRS. Return the EH frame address in EH_FRAME.
  */
 gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
+mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
 {
-	return jit->compile (unwrap<Function> (method), nvars, callee_vars, callee_addrs, eh_frame);
+	mono_native_tls_set_value (current_cfg_tls_id, cfg);
+	auto ret = jit->compile (unwrap<Function> (method), nvars, callee_vars, callee_addrs, eh_frame);
+	mono_native_tls_set_value (current_cfg_tls_id, nullptr);
+	return ret;
 }
 
 void
@@ -514,10 +558,6 @@ mono_llvm_jit_init ()
 {
 }
 
-void
-mono_llvm_jit_set_tls_cfg (MonoCompile *cfg) {
-}
-
 MonoEERef
 mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
 {
@@ -526,7 +566,7 @@ mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
 }
 
 gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
+mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
 {
 	g_assert_not_reached ();
 	return NULL;

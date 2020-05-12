@@ -15,9 +15,9 @@ namespace Microsoft.Win32
         public static readonly Microsoft.Win32.RegistryKey LocalMachine;
         public static readonly Microsoft.Win32.RegistryKey PerformanceData;
         public static readonly Microsoft.Win32.RegistryKey Users;
-        public static object GetValue(string keyName, string valueName, object defaultValue) { throw null; }
-        public static void SetValue(string keyName, string valueName, object value) { }
-        public static void SetValue(string keyName, string valueName, object value, Microsoft.Win32.RegistryValueKind valueKind) { }
+        public static object? GetValue(string keyName, string? valueName, object? defaultValue) { throw null; }
+        public static void SetValue(string keyName, string? valueName, object value) { }
+        public static void SetValue(string keyName, string? valueName, object value, Microsoft.Win32.RegistryValueKind valueKind) { }
     }
     public enum RegistryHive
     {
@@ -40,8 +40,8 @@ namespace Microsoft.Win32
         public Microsoft.Win32.RegistryKey CreateSubKey(string subkey) { throw null; }
         public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck) { throw null; }
         public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, Microsoft.Win32.RegistryOptions registryOptions) { throw null; }
-        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, Microsoft.Win32.RegistryOptions registryOptions, System.Security.AccessControl.RegistrySecurity registrySecurity) { throw null; }
-        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, System.Security.AccessControl.RegistrySecurity registrySecurity) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, Microsoft.Win32.RegistryOptions registryOptions, System.Security.AccessControl.RegistrySecurity? registrySecurity) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, System.Security.AccessControl.RegistrySecurity? registrySecurity) { throw null; }
         public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, bool writable) { throw null; }
         public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, bool writable, Microsoft.Win32.RegistryOptions options) { throw null; }
         public void DeleteSubKey(string subkey) { }
@@ -57,22 +57,22 @@ namespace Microsoft.Win32
         public System.Security.AccessControl.RegistrySecurity GetAccessControl() { throw null; }
         public System.Security.AccessControl.RegistrySecurity GetAccessControl(System.Security.AccessControl.AccessControlSections includeSections) { throw null; }
         public string[] GetSubKeyNames() { throw null; }
-        public object GetValue(string name) { throw null; }
-        public object GetValue(string name, object defaultValue) { throw null; }
-        public object GetValue(string name, object defaultValue, Microsoft.Win32.RegistryValueOptions options) { throw null; }
-        public Microsoft.Win32.RegistryValueKind GetValueKind(string name) { throw null; }
+        public object? GetValue(string? name) { throw null; }
+        public object? GetValue(string? name, object? defaultValue) { throw null; }
+        public object? GetValue(string? name, object? defaultValue, Microsoft.Win32.RegistryValueOptions options) { throw null; }
+        public Microsoft.Win32.RegistryValueKind GetValueKind(string? name) { throw null; }
         public string[] GetValueNames() { throw null; }
         public static Microsoft.Win32.RegistryKey OpenBaseKey(Microsoft.Win32.RegistryHive hKey, Microsoft.Win32.RegistryView view) { throw null; }
         public static Microsoft.Win32.RegistryKey OpenRemoteBaseKey(Microsoft.Win32.RegistryHive hKey, string machineName) { throw null; }
         public static Microsoft.Win32.RegistryKey OpenRemoteBaseKey(Microsoft.Win32.RegistryHive hKey, string machineName, Microsoft.Win32.RegistryView view) { throw null; }
-        public Microsoft.Win32.RegistryKey OpenSubKey(string name) { throw null; }
-        public Microsoft.Win32.RegistryKey OpenSubKey(string name, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck) { throw null; }
-        public Microsoft.Win32.RegistryKey OpenSubKey(string name, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, System.Security.AccessControl.RegistryRights rights) { throw null; }
-        public Microsoft.Win32.RegistryKey OpenSubKey(string name, bool writable) { throw null; }
-        public Microsoft.Win32.RegistryKey OpenSubKey(string name, System.Security.AccessControl.RegistryRights rights) { throw null; }
+        public Microsoft.Win32.RegistryKey? OpenSubKey(string name) { throw null; }
+        public Microsoft.Win32.RegistryKey? OpenSubKey(string name, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck) { throw null; }
+        public Microsoft.Win32.RegistryKey? OpenSubKey(string name, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, System.Security.AccessControl.RegistryRights rights) { throw null; }
+        public Microsoft.Win32.RegistryKey? OpenSubKey(string name, bool writable) { throw null; }
+        public Microsoft.Win32.RegistryKey? OpenSubKey(string name, System.Security.AccessControl.RegistryRights rights) { throw null; }
         public void SetAccessControl(System.Security.AccessControl.RegistrySecurity registrySecurity) { }
-        public void SetValue(string name, object value) { }
-        public void SetValue(string name, object value, Microsoft.Win32.RegistryValueKind valueKind) { }
+        public void SetValue(string? name, object value) { }
+        public void SetValue(string? name, object value, Microsoft.Win32.RegistryValueKind valueKind) { }
         public override string ToString() { throw null; }
     }
     public enum RegistryKeyPermissionCheck

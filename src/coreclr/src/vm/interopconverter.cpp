@@ -17,13 +17,70 @@
 #include "runtimecallablewrapper.h"
 #include "cominterfacemarshaler.h"
 #include "binder.h"
+#include <interoplibinterface.h>
 #include "winrttypenameconverter.h"
 #include "typestring.h"
+
+namespace
+{
+    bool TryGetComIPFromObjectRefUsingComWrappers(
+        _In_ OBJECTREF instance,
+        _Outptr_ IUnknown** wrapperRaw)
+    {
+#ifdef FEATURE_COMWRAPPERS
+        return GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(instance, (void**)wrapperRaw);
+#else
+        return false;
+#endif // FEATURE_COMWRAPPERS
+    }
+
+    bool TryGetObjectRefFromComIPUsingComWrappers(
+        _In_ IUnknown* pUnknown,
+        _In_ DWORD dwFlags,
+        _Out_ OBJECTREF *pObjOut)
+    {
+#ifdef FEATURE_COMWRAPPERS
+        return GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(pUnknown, dwFlags, pObjOut);
+#else
+        return false;
+#endif // FEATURE_COMWRAPPERS
+    }
+
+    void EnsureObjectRefIsValidForSpecifiedClass(
+        _In_ OBJECTREF *obj,
+        _In_ DWORD dwFlags,
+        _In_ MethodTable *pMTClass)
+    {
+        _ASSERTE(*obj != NULL);
+        _ASSERTE(pMTClass != NULL);
+
+        if ((dwFlags & ObjFromComIP::CLASS_IS_HINT) != 0)
+            return;
+
+        // make sure we can cast to the specified class
+        FAULT_NOT_FATAL();
+
+        // Bad format exception thrown for backward compatibility
+        THROW_BAD_FORMAT_MAYBE(pMTClass->IsArray() == FALSE, BFA_UNEXPECTED_ARRAY_TYPE, pMTClass);
+
+        if (CanCastComObject(*obj, pMTClass))
+            return;
+
+        StackSString ssObjClsName;
+        StackSString ssDestClsName;
+
+        (*obj)->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
+        pMTClass->_GetFullyQualifiedNameForClass(ssDestClsName);
+
+        COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
+            ssObjClsName.GetUnicode(), ssDestClsName.GetUnicode());
+    }
+}
 
 //--------------------------------------------------------------------------------
 // IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, ...)
 // Convert ObjectRef to a COM IP, based on MethodTable* pMT.
-IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecurityCheck, BOOL bEnableCustomizedQueryInterface)
+IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnableCustomizedQueryInterface)
 {
     CONTRACT (IUnknown*)
     {
@@ -45,6 +102,18 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
     if (*poref == NULL)
         RETURN NULL;
 
+    if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
+    {
+        GUID iid;
+        pMT->GetGuid(&iid, /*bGenerateIfNotFound*/ FALSE, /*bClassic*/ FALSE);
+
+        IUnknown* pvObj;
+        hr = SafeQueryInterface(pUnk, iid, &pvObj);
+        if (FAILED(hr))
+            COMPlusThrowHR(hr);
+
+        RETURN pvObj;
+    }
 
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
 
@@ -57,7 +126,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
         CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(poref);
 
         GetComIPFromCCW::flags flags = GetComIPFromCCW::None;
-        if (!bSecurityCheck)                    { flags |= GetComIPFromCCW::SuppressSecurityCheck; }
         if (!bEnableCustomizedQueryInterface)   { flags |= GetComIPFromCCW::SuppressCustomizedQueryInterface; }
 
         pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, GUID_NULL, pMT, flags);
@@ -110,6 +178,35 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
 
     if (*poref == NULL)
         RETURN NULL;
+
+    if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
+    {
+        hr = S_OK;
+
+        IUnknown* pvObj;
+        if (ReqIpType & ComIpType_Dispatch)
+        {
+            hr = SafeQueryInterface(pUnk, IID_IDispatch, &pvObj);
+            pUnk->Release();
+        }
+        else if (ReqIpType & ComIpType_Inspectable)
+        {
+            hr = SafeQueryInterface(pUnk, IID_IInspectable, &pvObj);
+            pUnk->Release();
+        }
+        else
+        {
+            pvObj = pUnk;
+        }
+
+        if (FAILED(hr))
+            COMPlusThrowHR(hr);
+
+        if (pFetchedIpType != NULL)
+            *pFetchedIpType = ReqIpType;
+
+        RETURN pvObj;
+    }
 
     MethodTable *pMT = (*poref)->GetMethodTable();
 
@@ -376,6 +473,17 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     if (*poref == NULL)
         RETURN NULL;
 
+    if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
+    {
+        IUnknown* pvObj;
+        hr = SafeQueryInterface(pUnk, iid, &pvObj);
+        pUnk->Release();
+        if (FAILED(hr))
+            COMPlusThrowHR(hr);
+
+        RETURN pvObj;
+    }
+
     MethodTable *pMT = (*poref)->GetMethodTable();
 
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
@@ -434,9 +542,18 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
     _ASSERTE(g_fComStarted && "COM has not been started up, make sure EnsureComStarted is called before any COM objects are used!");
 
     IUnknown *pUnk = *ppUnk;
+    *pObjOut = NULL;
+
+    if (TryGetObjectRefFromComIPUsingComWrappers(pUnk, dwFlags, pObjOut))
+    {
+        if (pMTClass != NULL)
+            EnsureObjectRefIsValidForSpecifiedClass(pObjOut, dwFlags, pMTClass);
+
+        return;
+    }
+
     Thread * pThread = GetThread();
 
-    *pObjOut = NULL;
     IUnknown* pOuter = pUnk;
     SafeComHolder<IUnknown> pAutoOuterUnk = NULL;
 
@@ -537,22 +654,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         // make sure we can cast to the specified class
         if (pMTClass != NULL)
         {
-            FAULT_NOT_FATAL();
-
-            // Bad format exception thrown for backward compatibility
-            THROW_BAD_FORMAT_MAYBE(pMTClass->IsArray() == FALSE, BFA_UNEXPECTED_ARRAY_TYPE, pMTClass);
-
-            if (!CanCastComObject(*pObjOut, pMTClass))
-            {
-                StackSString ssObjClsName;
-                StackSString ssDestClsName;
-
-                (*pObjOut)->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
-                pMTClass->_GetFullyQualifiedNameForClass(ssDestClsName);
-
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
-                                ssObjClsName.GetUnicode(), ssDestClsName.GetUnicode());
-            }
+            EnsureObjectRefIsValidForSpecifiedClass(pObjOut, dwFlags, pMTClass);
         }
         else if (dwFlags & ObjFromComIP::REQUIRE_IINSPECTABLE)
         {

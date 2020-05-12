@@ -288,7 +288,7 @@ class CEECompileInfo : public ICorCompileInfo
     BOOL IsEmptyString(mdString token,
                        CORINFO_MODULE_HANDLE module);
 
-    BOOL IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle);
+    BOOL IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle);
 
     BOOL IsCachingOfInliningHintsEnabled()
     {

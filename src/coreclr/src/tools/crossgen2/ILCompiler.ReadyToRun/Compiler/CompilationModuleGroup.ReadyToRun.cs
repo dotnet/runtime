@@ -5,6 +5,9 @@
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.ReadyToRunConstants;
+using Internal.TypeSystem.Ecma;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ILCompiler
 {
@@ -58,5 +61,30 @@ namespace ILCompiler
         /// Gets the flags to be stored in the generated ReadyToRun module header.
         /// </summary>
         public abstract ReadyToRunFlags GetReadyToRunFlags();
+
+        /// <summary>
+        /// When set to true, unconditionally add module overrides to all signatures. This is needed in composite
+        /// build mode so that import cells and instance entry point table are caller module-agnostic.
+        /// </summary>
+        public bool EnforceOwningType(EcmaModule module)
+        {
+            return IsCompositeBuildMode || module != CompilationModuleSet.Single();
+        }
+
+        /// <summary>
+        /// Returns true when the compiler is running in composite build mode i.e. building an arbitrary number of
+        /// input MSIL assemblies into a single output R2R binary.
+        /// </summary>
+        public abstract bool IsCompositeBuildMode { get; }
+
+        /// <summary>
+        /// Returns true when the compiler is running in large version bubble mode
+        /// </summary>
+        public abstract bool IsInputBubble { get; }
+
+        /// <summary>
+        /// List of input modules to use for the compilation.
+        /// </summary>
+        public abstract IEnumerable<EcmaModule> CompilationModuleSet { get; }
     }
 }

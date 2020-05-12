@@ -37,5 +37,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         {
             return key.ExportParameters(includePrivate);
         }
+
+        protected override void Exercise(ECDiffieHellman key) => key.Exercise();
     }
 }

@@ -258,6 +258,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(SetConstant_Invalid_TestData))]
         public void SetConstant_InvalidType_ThrowsArgumentException(FieldBuilder field, object defaultValue)
         {

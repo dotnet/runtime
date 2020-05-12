@@ -130,6 +130,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     break;
                 case Oids.RsaOaep when !asn.HasNullEquivalentParameters():
                     keyLength = 0;
+                    Debug.Assert(asn.Parameters != null);
                     parameters = asn.Parameters.Value.ToArray();
                     break;
                 default:

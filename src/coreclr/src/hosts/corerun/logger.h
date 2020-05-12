@@ -42,6 +42,7 @@ public:
     Logger& operator<< (double val);
     Logger& operator<< (long double val);
     Logger& operator<< (const wchar_t* val);
+    Logger& operator<< (const char* val);
     Logger& operator<< (Logger& ( *pf )(Logger&));
     static Logger& endl ( Logger& log );
     static Logger& hresult ( Logger& log);

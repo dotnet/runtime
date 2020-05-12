@@ -15,17 +15,15 @@ include_directories(.)
 include_directories(../superpmi-shared)
 
 set(SUPERPMI_SHIM_COUNTER_SOURCES
-    coreclrcallbacks.cpp
     jithost.cpp
     icorjitcompiler.cpp
     icorjitinfo.cpp
-    ieememorymanager.cpp
-    iexecutionengine.cpp
     methodcallsummarizer.cpp
     superpmi-shim-counter.cpp
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
     ../superpmi-shared/errorhandling.cpp
+    ../superpmi-shared/hash.cpp
     ../superpmi-shared/logging.cpp
     ../superpmi-shared/mclist.cpp
     ../superpmi-shared/methodcontext.cpp
@@ -53,7 +51,7 @@ target_precompile_header(TARGET superpmi-shim-counter HEADER standardpch.h)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-counter
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

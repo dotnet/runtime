@@ -111,7 +111,7 @@ gint run_tests_main(gint argc, gchar **argv)
 gint main(gint argc, gchar **argv)
 #endif
 {
-	gint i, j, c, iterations = 1;
+	gint j, iterations = 1;
 	StringArray *tests_to_run = NULL;
 	gdouble time_start;
 	gboolean report_time = FALSE;
@@ -121,6 +121,8 @@ gint main(gint argc, gchar **argv)
 	gboolean debug = FALSE;
 
 #if HAVE_GETOPT_H
+	int c;
+	int i;
 	static struct option long_options [] = {
 		{"help",       no_argument,       0, 'h'},
 		{"time",       no_argument,       0, 't'},

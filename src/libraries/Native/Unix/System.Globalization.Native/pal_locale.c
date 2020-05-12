@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <locale.h>
 
+#include "pal_locale_internal.h"
 #include "pal_locale.h"
 
 int32_t UErrorCodeToBool(UErrorCode status)

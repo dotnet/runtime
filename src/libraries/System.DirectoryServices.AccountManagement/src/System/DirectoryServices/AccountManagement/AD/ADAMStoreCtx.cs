@@ -333,7 +333,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             filter.Append("(objectClass=");
                             filter.Append(objectClass);
-                            filter.Append(")");
+                            filter.Append(')');
                         }
 
                         _cachedBindableObjectFilter = filter.ToString();

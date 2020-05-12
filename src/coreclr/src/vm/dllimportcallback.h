@@ -146,43 +146,9 @@ public:
         return m_cbRetPop;
     }
 
-    CorPinvokeMap GetCallingConvention()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            SUPPORTS_DAC;
-            PRECONDITION(IsCompletelyInited());
-        }
-        CONTRACTL_END;
-
-        return (CorPinvokeMap)m_callConv;
-    }
-
-    VOID SetCallingConvention(const CorPinvokeMap callConv)
-    {
-        m_callConv = (UINT16)callConv;
-    }
-
 #else
     PCODE GetExecStubEntryPoint();
 #endif
-
-    UINT32 GetCbActualArgSize()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(IsCompletelyInited());
-        }
-        CONTRACTL_END;
-
-        return m_cbActualArgSize;
-    }
 
     BOOL IsCompletelyInited()
     {
@@ -198,13 +164,9 @@ public:
         return (UINT32)offsetof(UMThunkMarshInfo, m_pILStub);
     }
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    // Compiles an unmanaged to managed thunk for the given signature. The thunk
-    // will call the stub or, if fNoStub == TRUE, directly the managed target.
-    Stub *CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStaticSigInfo* pSigInfo, MetaSig *pMetaSig, BOOL fNoStub);
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
+#ifdef TARGET_X86
 
-#if defined(TARGET_X86) && defined(FEATURE_STUBS_AS_IL)
+#ifdef FEATURE_STUBS_AS_IL
     struct ArgumentRegisters
     {
         UINT32 Ecx;
@@ -212,17 +174,26 @@ public:
     };
 
     VOID SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, char *pDst);
-#endif // TARGET_X86 && FEATURE_STUBS_AS_IL
+#else
+private:
+    VOID SetUpForUnmanagedCallersOnly();
+
+    // Compiles an unmanaged to managed thunk for the given signature. The thunk
+    // will call the stub or, if fNoStub == TRUE, directly the managed target.
+    Stub *CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStaticSigInfo* pSigInfo, MetaSig *pMetaSig, BOOL fNoStub);
+#endif // FEATURE_STUBS_AS_IL
+
+#endif // TARGET_X86
 
 private:
     PCODE             m_pILStub;            // IL stub for marshaling
                                             // On x86, NULL for no-marshal signatures
                                             // On non-x86, the managed entrypoint for no-delegate no-marshal signatures
+#ifdef TARGET_X86
     UINT32            m_cbActualArgSize;    // caches m_pSig.SizeOfFrameArgumentArray()
                                             // On x86/Linux we have to augment with numRegistersUsed * STACK_ELEM_SIZE
-#if defined(TARGET_X86)
     UINT16            m_cbRetPop;           // stack bytes popped by callee (for UpdateRegDisplay)
-#if defined(FEATURE_STUBS_AS_IL)
+#ifdef FEATURE_STUBS_AS_IL
     UINT32            m_cbStackArgSize;     // stack bytes pushed for managed code
 #else
     Stub*             m_pExecStub;          // UMEntryThunk jumps directly here
@@ -543,20 +514,14 @@ private:
 // One-time creation of special prestub to initialize UMEntryThunks.
 //-------------------------------------------------------------------------
 Stub *GenerateUMThunkPrestub();
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
-//-------------------------------------------------------------------------
-// NExport stub
-//-------------------------------------------------------------------------
-#if  !defined(HOST_64BIT) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
 EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 EXCEPTION_HANDLER_DECL(UMThunkPrestubHandler);
-#endif // HOST_64BIT
+
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);
-
-EXTERN_C void UMThunkStub(void);
 
 #ifdef _DEBUG
 void STDCALL LogUMTransition(UMEntryThunk* thunk);

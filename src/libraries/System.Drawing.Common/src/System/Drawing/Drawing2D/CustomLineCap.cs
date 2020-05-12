@@ -14,18 +14,18 @@ namespace System.Drawing.Drawing2D
 #endif
 
         // Handle to native line cap object
-        internal SafeCustomLineCapHandle nativeCap = null;
+        internal SafeCustomLineCapHandle nativeCap = null!;
 
         private bool _disposed = false;
 
         // For subclass creation
         internal CustomLineCap() { }
 
-        public CustomLineCap(GraphicsPath fillPath, GraphicsPath strokePath) : this(fillPath, strokePath, LineCap.Flat) { }
+        public CustomLineCap(GraphicsPath? fillPath, GraphicsPath? strokePath) : this(fillPath, strokePath, LineCap.Flat) { }
 
-        public CustomLineCap(GraphicsPath fillPath, GraphicsPath strokePath, LineCap baseCap) : this(fillPath, strokePath, baseCap, 0) { }
+        public CustomLineCap(GraphicsPath? fillPath, GraphicsPath? strokePath, LineCap baseCap) : this(fillPath, strokePath, baseCap, 0) { }
 
-        public CustomLineCap(GraphicsPath fillPath, GraphicsPath strokePath, LineCap baseCap, float baseInset)
+        public CustomLineCap(GraphicsPath? fillPath, GraphicsPath? strokePath, LineCap baseCap, float baseInset)
         {
             IntPtr nativeLineCap;
             int status = Gdip.GdipCreateCustomLineCap(

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "pal_locale_internal.h"
 #include "pal_localeStringData.h"
 
 /*
@@ -77,7 +78,7 @@ static UErrorCode GetLocaleIso639LanguageTwoLetterName(const char* locale, UChar
     UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
     int32_t length = uloc_getLanguage(locale, NULL, 0, &ignore) + 1;
 
-    char* buf = calloc((size_t)length, sizeof(char));
+    char* buf = (char*)calloc((size_t)length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -120,7 +121,7 @@ static UErrorCode GetLocaleIso3166CountryName(const char* locale, UChar* value, 
     UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
     int32_t length = uloc_getCountry(locale, NULL, 0, &ignore) + 1;
 
-    char* buf = calloc((size_t)length, sizeof(char));
+    char* buf = (char*)calloc((size_t)length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;

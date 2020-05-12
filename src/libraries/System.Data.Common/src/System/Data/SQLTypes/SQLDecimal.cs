@@ -1881,7 +1881,7 @@ namespace System.Data.SqlTypes
         // The array in Shiloh. Listed here for comparison.
         //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
         //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
-        private static readonly byte[] s_rgCLenFromPrec = new byte[]
+        private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
             2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
@@ -1892,7 +1892,7 @@ namespace System.Data.SqlTypes
         {
             Debug.Assert(bPrec <= MaxPrecision && bPrec > 0, "bPrec <= MaxPrecision && bPrec > 0",
                            "Invalid numeric precision");
-            return s_rgCLenFromPrec[bPrec - 1];
+            return RgCLenFromPrec[bPrec - 1];
         }
 
         // check whether is zero

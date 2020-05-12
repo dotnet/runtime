@@ -194,7 +194,6 @@ mono_debug_lookup_locals (MonoMethod *method);
 MonoDebugMethodAsyncInfo*
 mono_debug_lookup_method_async_debug_info (MonoMethod *method);
 
-// The intent here is really MONO_LLVM_INTERNAL but that is not necessarily available.
 MONO_API
 MonoDebugSourceLocation *
 mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset);

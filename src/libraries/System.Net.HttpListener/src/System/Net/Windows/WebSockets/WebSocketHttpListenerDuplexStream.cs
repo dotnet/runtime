@@ -280,6 +280,11 @@ namespace System.Net.WebSockets
                     eventArgs.FinishOperationSuccess((int)bytesReturned, true);
                     completedAsynchronouslyOrWithError = false;
                 }
+                else if (statusCode == Interop.HttpApi.ERROR_HANDLE_EOF)
+                {
+                    eventArgs.FinishOperationSuccess(0, true);
+                    completedAsynchronouslyOrWithError = false;
+                }
                 else
                 {
                     completedAsynchronouslyOrWithError = true;

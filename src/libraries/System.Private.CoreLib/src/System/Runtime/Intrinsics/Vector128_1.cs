@@ -31,7 +31,7 @@ namespace System.Runtime.Intrinsics
         where T : struct
     {
         // These fields exist to ensure the alignment is 8, rather than 1.
-        // This also allows the debug view to work https://github.com/dotnet/coreclr/issues/15694)
+        // This also allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
         private readonly ulong _00;
         private readonly ulong _01;
 
@@ -56,6 +56,18 @@ namespace System.Runtime.Intrinsics
             {
                 ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
                 return default;
+            }
+        }
+
+        /// <summary>Gets a new <see cref="Vector128{T}" /> with all bits set to 1.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector128<T> AllBitsSet
+        {
+            [Intrinsic]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return Vector128.Create(0xFFFFFFFF).As<uint, T>();
             }
         }
 

@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security;
 
 namespace System.Drawing
@@ -61,7 +62,7 @@ namespace System.Drawing
             /// </summary>
             public int RefCheckThreshold { get; set; } = int.MaxValue;
 
-            public object this[int index]
+            public object? this[int index]
             {
                 get
                 {
@@ -81,7 +82,7 @@ namespace System.Drawing
                 int currentCount = Count;
                 for (int i = 0; i < currentCount; i++)
                 {
-                    object item = this[currentIndex];
+                    object? item = this[currentIndex];
 
                     if (item == null)
                     {
@@ -95,7 +96,7 @@ namespace System.Drawing
                 }
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 if (!(obj is WeakRefCollection other))
                 {
@@ -111,7 +112,8 @@ namespace System.Drawing
                 {
                     if (InnerList[i] != other.InnerList[i])
                     {
-                        if (InnerList[i] == null || !InnerList[i].Equals(other.InnerList[i]))
+                        // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                        if (InnerList[i] == null || !InnerList[i]!.Equals(other.InnerList[i]))
                         {
                             return false;
                         }
@@ -123,7 +125,8 @@ namespace System.Drawing
 
             public override int GetHashCode() => base.GetHashCode();
 
-            private WeakRefObject CreateWeakRefObject(object value)
+            [return: NotNullIfNotNull("value")]
+            private WeakRefObject? CreateWeakRefObject(object? value)
             {
                 if (value == null)
                 {
@@ -173,7 +176,7 @@ namespace System.Drawing
 
                 for (int idx = 0; idx < InnerList.Count; idx++)
                 {
-                    if (InnerList[idx] != null && InnerList[idx].GetHashCode() == hash)
+                    if (InnerList[idx] != null && InnerList[idx]!.GetHashCode() == hash)
                     {
                         RemoveAt(idx);
                         return;
@@ -185,17 +188,17 @@ namespace System.Drawing
 
             public bool IsFixedSize => InnerList.IsFixedSize;
 
-            public bool Contains(object value) => InnerList.Contains(CreateWeakRefObject(value));
+            public bool Contains(object? value) => InnerList.Contains(CreateWeakRefObject(value));
 
             public void RemoveAt(int index) => InnerList.RemoveAt(index);
 
-            public void Remove(object value) => InnerList.Remove(CreateWeakRefObject(value));
+            public void Remove(object? value) => InnerList.Remove(CreateWeakRefObject(value));
 
-            public int IndexOf(object value) => InnerList.IndexOf(CreateWeakRefObject(value));
+            public int IndexOf(object? value) => InnerList.IndexOf(CreateWeakRefObject(value));
 
-            public void Insert(int index, object value) => InnerList.Insert(index, CreateWeakRefObject(value));
+            public void Insert(int index, object? value) => InnerList.Insert(index, CreateWeakRefObject(value));
 
-            public int Add(object value)
+            public int Add(object? value)
             {
                 if (Count > RefCheckThreshold)
                 {
@@ -238,13 +241,13 @@ namespace System.Drawing
 
                 internal bool IsAlive => _weakHolder.IsAlive;
 
-                internal object Target => _weakHolder.Target;
+                internal object? Target => _weakHolder.Target;
 
                 public override int GetHashCode() => _hash;
 
-                public override bool Equals(object obj)
+                public override bool Equals(object? obj)
                 {
-                    WeakRefObject other = obj as WeakRefObject;
+                    WeakRefObject? other = obj as WeakRefObject;
 
                     if (other == this)
                     {

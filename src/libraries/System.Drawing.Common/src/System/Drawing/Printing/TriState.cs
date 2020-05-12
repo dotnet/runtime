@@ -47,9 +47,9 @@ namespace System.Drawing.Printing
             return !(left == right);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
-            TriState state = (TriState)o;
+            TriState state = (TriState)o!;
             return _value == state._value;
         }
 

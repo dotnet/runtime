@@ -120,8 +120,8 @@ namespace System.Security.AccessControl
             else if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(offset),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+                    nameof(offset),
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             else if (binaryForm.Length - offset < BinaryLength)
             {
@@ -130,8 +130,8 @@ nameof(offset),
                 //
 
                 throw new ArgumentOutOfRangeException(
-nameof(binaryForm),
-                     SR.ArgumentOutOfRange_ArrayTooSmall);
+                    nameof(binaryForm),
+                    SR.ArgumentOutOfRange_ArrayTooSmall);
             }
             else if (Length > ushort.MaxValue)
             {
@@ -193,8 +193,8 @@ nameof(binaryForm),
             if (flags == AceFlags.None)
             {
                 throw new ArgumentException(
-                     SR.Arg_EnumAtLeastOneFlag,
-nameof(auditFlags));
+                    SR.Arg_EnumAtLeastOneFlag,
+                    nameof(auditFlags));
             }
 
             return flags;
@@ -251,8 +251,8 @@ nameof(auditFlags));
             else if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(offset),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+                    nameof(offset),
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             else if (binaryForm.Length - offset < HeaderLength)
             {
@@ -261,8 +261,8 @@ nameof(offset),
                 //
 
                 throw new ArgumentOutOfRangeException(
-nameof(binaryForm),
-                     SR.ArgumentOutOfRange_ArrayTooSmall);
+                    nameof(binaryForm),
+                    SR.ArgumentOutOfRange_ArrayTooSmall);
             }
             else if ((binaryForm[offset + 3] << 8) + (binaryForm[offset + 2] << 0) > binaryForm.Length - offset)
             {
@@ -272,8 +272,8 @@ nameof(binaryForm),
                 //
 
                 throw new ArgumentOutOfRangeException(
-nameof(binaryForm),
-                     SR.ArgumentOutOfRange_ArrayTooSmall);
+                    nameof(binaryForm),
+                    SR.ArgumentOutOfRange_ArrayTooSmall);
             }
         }
 
@@ -392,8 +392,8 @@ nameof(binaryForm),
         InvalidParameter:
 
             throw new ArgumentException(
-                 SR.ArgumentException_InvalidAceBinaryForm,
-nameof(binaryForm));
+                SR.ArgumentException_InvalidAceBinaryForm,
+                nameof(binaryForm));
         }
 
         #endregion
@@ -763,8 +763,8 @@ nameof(binaryForm));
             if (type <= AceType.MaxDefinedAceType)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(type),
-                     SR.ArgumentOutOfRange_InvalidUserDefinedAceType);
+                    nameof(type),
+                    SR.ArgumentOutOfRange_InvalidUserDefinedAceType);
             }
 
             SetOpaque(opaque);
@@ -827,13 +827,13 @@ nameof(type),
                 if (opaque.Length > MaxOpaqueLength)
                 {
                     throw new ArgumentOutOfRangeException(
-nameof(opaque),
+                        nameof(opaque),
                         SR.Format(SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLength));
                 }
                 else if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
-nameof(opaque),
+                        nameof(opaque),
                         SR.Format(SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
                 }
             }
@@ -1280,13 +1280,13 @@ nameof(opaque),
                 if (opaque.Length > MaxOpaqueLengthInternal)
                 {
                     throw new ArgumentOutOfRangeException(
-nameof(opaque),
+                        nameof(opaque),
                         SR.Format(SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLengthInternal));
                 }
                 else if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
-nameof(opaque),
+                        nameof(opaque),
                         SR.Format(SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
                 }
             }

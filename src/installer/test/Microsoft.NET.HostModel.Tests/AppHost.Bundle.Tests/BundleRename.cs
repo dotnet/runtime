@@ -27,9 +27,11 @@ namespace AppHost.Bundle.Tests
         private void Bundle_can_be_renamed_while_running(bool renameFirstRun)
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile = BundleHelper.GetPublishedSingleFilePath(fixture);
-            string renameFile = Path.Combine(BundleHelper.GetPublishPath(fixture), Path.GetRandomFileName());
-            string writeFile = Path.Combine(BundleHelper.GetPublishPath(fixture), "lock");
+            string singleFile = BundleHelper.BundleApp(fixture);
+            string outputDir = Path.GetDirectoryName(singleFile);
+            string renameFile = Path.Combine(outputDir, Path.GetRandomFileName());
+            string waitFile = Path.Combine(outputDir, "wait");
+            string resumeFile = Path.Combine(outputDir, "resume");
 
             if (!renameFirstRun)
             {
@@ -43,19 +45,21 @@ namespace AppHost.Bundle.Tests
                     .HaveStdOutContaining("Hello World!");
             }
 
-            var singleExe = Command.Create(singleFile, writeFile)
+            // Once the App starts running, it creates the waitFile, and waits until resumeFile file is created.
+            var singleExe = Command.Create(singleFile, waitFile, resumeFile)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Start();
 
-            // Once the App starts running, it creates the writeFile, and waits until the file is deleted.
-            while (!File.Exists(writeFile))
+            while (!File.Exists(waitFile) && !singleExe.Process.HasExited)
             {
                 Thread.Sleep(100);
             }
 
+            Assert.True(File.Exists(waitFile));
+
             File.Move(singleFile, renameFile);
-            File.Delete(writeFile);
+            File.Create(resumeFile).Close();
 
             var result = singleExe.WaitForExit(fExpectedToFail: false);
 
@@ -78,7 +82,6 @@ namespace AppHost.Bundle.Tests
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid,
-                                    singleFile: true,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFixture));
             }
 

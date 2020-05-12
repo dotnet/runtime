@@ -1097,14 +1097,6 @@ inline BOOL MethodTable::IsWinRTDelegate()
 #endif // FEATURE_COMINTEROP
 
 //==========================================================================================
-inline UINT32 MethodTable::GetNativeSize()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetClass());
-    return GetClass()->GetNativeSize();
-}
-
-//==========================================================================================
 inline PTR_MethodTable MethodTable::GetCanonicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1261,7 +1253,7 @@ inline DWORD MethodTable::GetInstAndDictSize()
     if (!HasInstantiation())
         return 0;
     else
-        return DictionaryLayout::GetFirstDictionaryBucketSize(GetNumGenericArgs(), GetClass()->GetDictionaryLayout());
+        return DictionaryLayout::GetDictionarySizeFromLayout(GetNumGenericArgs(), GetClass()->GetDictionaryLayout());
 }
 
 //==========================================================================================

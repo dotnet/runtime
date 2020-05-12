@@ -322,6 +322,15 @@ namespace System
             return GetGCHandle(new QCallTypeHandle(ref nativeHandle), type);
         }
 
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern IntPtr FreeGCHandle(QCallTypeHandle typeHandle, IntPtr objHandle);
+
+        internal IntPtr FreeGCHandle(IntPtr objHandle)
+        {
+            RuntimeTypeHandle nativeHandle = GetNativeHandle();
+            return FreeGCHandle(new QCallTypeHandle(ref nativeHandle), objHandle);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetNumVirtuals(RuntimeType type);
 
@@ -468,8 +477,7 @@ namespace System
         internal RuntimeType Instantiate(Type[]? inst)
         {
             // defensive copy to be sure array is not mutated from the outside during processing
-            int instCount;
-            IntPtr[]? instHandles = CopyRuntimeTypeHandles(inst, out instCount);
+            IntPtr[]? instHandles = CopyRuntimeTypeHandles(inst, out int instCount);
 
             fixed (IntPtr* pInst = instHandles)
             {
@@ -579,10 +587,8 @@ namespace System
 
         internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType[]? typeContext, RuntimeType[]? methodContext, RuntimeType toType)
         {
-            int typeContextLength;
-            int methodContextLength;
-            IntPtr[]? typeContextHandles = CopyRuntimeTypeHandles(typeContext, out typeContextLength);
-            IntPtr[]? methodContextHandles = CopyRuntimeTypeHandles(methodContext, out methodContextLength);
+            IntPtr[]? typeContextHandles = CopyRuntimeTypeHandles(typeContext, out int typeContextLength);
+            IntPtr[]? methodContextHandles = CopyRuntimeTypeHandles(methodContext, out int methodContextLength);
 
             fixed (IntPtr* pTypeContextHandles = typeContextHandles, pMethodContextHandles = methodContextHandles)
             {
@@ -1198,9 +1204,8 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(typeToken),
                     SR.Format(SR.Argument_InvalidToken, typeToken, new ModuleHandle(module)));
 
-            int typeInstCount, methodInstCount;
-            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
-            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
+            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
@@ -1232,10 +1237,9 @@ namespace System
 
         internal static IRuntimeMethodInfo ResolveMethodHandleInternal(RuntimeModule module, int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
-            int typeInstCount, methodInstCount;
 
-            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
-            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
+            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
 
             RuntimeMethodHandleInternal handle = ResolveMethodHandleInternalCore(module, methodToken, typeInstantiationContextHandles, typeInstCount, methodInstantiationContextHandles, methodInstCount);
             IRuntimeMethodInfo retVal = new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
@@ -1279,9 +1283,8 @@ namespace System
                     SR.Format(SR.Argument_InvalidToken, fieldToken, new ModuleHandle(module)));
 
             // defensive copy to be sure array is not mutated from the outside during processing
-            int typeInstCount, methodInstCount;
-            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
-            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
+            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {

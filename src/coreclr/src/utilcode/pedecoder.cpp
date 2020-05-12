@@ -2326,7 +2326,7 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
         PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
         if (pHeader->Signature == READYTORUN_SIGNATURE)
         {
-            const_cast<PEDecoder *>(this)->m_pReadyToRunHeader = pHeader;
+            const_cast<PEDecoder*>(this)->m_pReadyToRunHeader = pHeader;
             return pHeader;
         }
     }
@@ -2334,6 +2334,41 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
     const_cast<PEDecoder *>(this)->m_flags |= FLAG_HAS_NO_READYTORUN_HEADER;
     return NULL;
 }
+
+#ifndef DACCESS_COMPILE
+void *PEDecoder::GetExport(LPCSTR exportName) const
+{
+    // Get the export directory entry
+    PIMAGE_DATA_DIRECTORY pExportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
+    if (pExportDirectoryEntry->VirtualAddress == 0 || pExportDirectoryEntry->Size == 0)
+    {
+        return NULL;
+    }
+    
+    uint8_t *imageBase = (uint8_t *)GetBase();
+    const IMAGE_EXPORT_DIRECTORY *pExportDir = (const IMAGE_EXPORT_DIRECTORY *)GetDirectoryData(pExportDirectoryEntry);
+    
+    uint32_t namePointerCount = VAL32(pExportDir->NumberOfNames);
+    uint32_t addressTableRVA = VAL32(pExportDir->AddressOfFunctions);
+    uint32_t namePointersRVA = VAL32(pExportDir->AddressOfNames);
+
+    for (uint32_t nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
+    {
+        uint32_t namePointerRVA = VAL32(*(const uint32_t *)&imageBase[namePointersRVA + sizeof(uint32_t) * nameIndex]);
+        if (namePointerRVA != 0)
+        {
+            const char *namePointer = (const char *)&imageBase[namePointerRVA];
+            if (!strcmp(namePointer, exportName))
+            {
+                uint32_t exportRVA = VAL32(*(const uint32_t *)&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
+                return &imageBase[exportRVA];
+            }
+        }
+    }
+
+    return NULL;
+}
+#endif
 
 //
 // code:PEDecoder::CheckILMethod and code:PEDecoder::ComputeILMethodSize really belong to
@@ -2857,7 +2892,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
         READYTORUN_HEADER * pHeader = GetReadyToRunHeader();
 
         PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(pHeader) + sizeof(READYTORUN_HEADER));
-        for (DWORD i = 0; i < pHeader->NumberOfSections; i++)
+        for (DWORD i = 0; i < pHeader->CoreHeader.NumberOfSections; i++)
         {
             // Verify that section types are sorted
             _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));

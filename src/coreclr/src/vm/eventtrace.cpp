@@ -31,6 +31,7 @@
 #include "ex.h"
 #include "dbginterface.h"
 #include "finalizerthread.h"
+#include "clrversion.h"
 
 #define Win32EventWrite EventWrite
 
@@ -38,13 +39,6 @@
 #include "comcallablewrapper.h"
 #include "runtimecallablewrapper.h"
 #endif
-
-// Flags used to store some runtime information for Event Tracing
-BOOL g_fEEOtherStartup=FALSE;
-BOOL g_fEEComActivatedStartup=FALSE;
-GUID g_EEComObjectGuid=GUID_NULL;
-
-BOOL g_fEEHostedStartup = FALSE;
 
 #endif // FEATURE_REDHAWK
 
@@ -980,7 +974,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 #ifndef FEATURE_REDHAWK
     }
     EX_CATCH { }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 #endif // FEATURE_REDHAWK
 
     return hr;
@@ -1758,7 +1752,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
         return -1;
 
@@ -1797,7 +1791,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
             return -1;
     }
@@ -1817,7 +1811,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 return -1;
         }
@@ -1856,7 +1850,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 return -1;
         }
@@ -1894,7 +1888,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         // won't have a name in it.
         pVal->sName.Clear();
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 
     // Now that we know the full size of this type's data, see if it fits in our
     // batch or whether we need to flush
@@ -1992,7 +1986,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSyst
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
         return;
 
@@ -2557,7 +2551,7 @@ VOID ETW::GCLog::SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj)
         EX_CATCH
         {
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
     }
 }
 
@@ -2983,7 +2977,7 @@ BOOL ETW::TypeSystemLog::AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule 
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 
     return fSucceeded;
 }
@@ -3390,7 +3384,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -3428,7 +3422,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
     {
         *pfCreatedNew = FALSE;
@@ -3524,7 +3518,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
             {
                 *pfCreatedNew = FALSE;
@@ -3556,7 +3550,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -4245,9 +4239,6 @@ VOID EtwCallbackCommon(
     static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
     static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
 #endif // !defined(HOST_UNIX)
-    GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-    GCEventLevel level = static_cast<GCEventLevel>(Level);
-    GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
 
     DOTNET_TRACE_CONTEXT * ctxToUpdate;
     switch(ProviderIndex)
@@ -4276,6 +4267,26 @@ VOID EtwCallbackCommon(
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
+    }
+
+    if (
+#if !defined(HOST_UNIX)
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
+#endif
+        (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
+    {
+#if !defined(HOST_UNIX)
+        // On Windows, consolidate level and keywords across event pipe and ETW contexts -
+        // ETW may still want to see events that event pipe doesn't care about and vice versa
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask |
+                                                              ctxToUpdate->EtwProvider->MatchAnyKeyword);
+        GCEventLevel level = static_cast<GCEventLevel>(max(ctxToUpdate->EventPipeProvider.Level,
+                                                           ctxToUpdate->EtwProvider->Level));
+#else
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
+        GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
+#endif
+        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -4495,10 +4506,6 @@ extern "C"
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
 
-        GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-        GCEventLevel level = static_cast<GCEventLevel>(Level);
-        GCHeapUtilities::RecordEventStateChange(!!bIsPublicTraceHandle, keywords, level);
-
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
         CallbackProviderIndex providerIndex = DotNETRuntime;
@@ -4634,7 +4641,6 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
-        bIsCSE = (pExInfo->GetCorruptionSeverity() == ProcessCorrupting);
         bIsCLSCompliant = IsException((gc.exceptionObj)->GetMethodTable()) &&
                           ((gc.exceptionObj)->GetMethodTable() != MscorlibBinder::GetException(kRuntimeWrappedException));
 
@@ -4649,7 +4655,6 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         exceptionFlags = ((bHasInnerException ? ETW::ExceptionLog::ExceptionStructs::HasInnerException : 0) |
                           (bIsNestedException ? ETW::ExceptionLog::ExceptionStructs::IsNestedException : 0) |
                           (bIsReThrownException ? ETW::ExceptionLog::ExceptionStructs::IsReThrownException : 0) |
-                          (bIsCSE ? ETW::ExceptionLog::ExceptionStructs::IsCSE : 0) |
                           (bIsCLSCompliant ? ETW::ExceptionLog::ExceptionStructs::IsCLSCompliant : 0));
 
         if (pCf->IsFrameless())
@@ -4939,48 +4944,23 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             UINT8 startupMode = 0;
             UINT startupFlags = 0;
             PathString dllPath;
-            UINT8 Sku = 0;
-            _ASSERTE(CLRHosted() || g_fEEHostedStartup || // CLR started through one of the Hosting API CLRHosted() returns true if CLR started through the V2 Interface while
-                                                          // g_fEEHostedStartup is true if CLR is hosted through the V1 API.
-                     g_fEEComActivatedStartup ||          //CLR started as a COM object
-                     g_fEEOtherStartup  );                //In case none of the 4 above mentioned cases are true for example ngen, ildasm then we asssume its a "other" startup
+            UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 
-            Sku = ETW::InfoLog::InfoStructs::CoreCLR;
+            //version info for coreclr.dll
+            USHORT vmMajorVersion = RuntimeFileMajorVersion;
+            USHORT vmMinorVersion = RuntimeFileMinorVersion;
+            USHORT vmBuildVersion = RuntimeFileBuildVersion;
+            USHORT vmRevisionVersion = RuntimeFileRevisionVersion;
 
-            //version info for clr.dll
-            USHORT vmMajorVersion = CLR_MAJOR_VERSION;
-            USHORT vmMinorVersion = CLR_MINOR_VERSION;
-            USHORT vmBuildVersion = CLR_BUILD_VERSION;
-            USHORT vmQfeVersion = CLR_BUILD_VERSION_QFE;
+            //version info for System.Private.CoreLib.dll
+            USHORT bclMajorVersion = RuntimeProductMajorVersion;
+            USHORT bclMinorVersion = RuntimeProductMinorVersion;
+            USHORT bclBuildVersion = RuntimeProductPatchVersion;
+            USHORT bclRevisionVersion = 0;
 
-            //version info for mscorlib.dll
-            USHORT bclMajorVersion = VER_ASSEMBLYMAJORVERSION;
-            USHORT bclMinorVersion = VER_ASSEMBLYMINORVERSION;
-            USHORT bclBuildVersion = VER_ASSEMBLYBUILD;
-            USHORT bclQfeVersion = VER_ASSEMBLYBUILD_QFE;
-
-            LPCGUID comGUID=&g_EEComObjectGuid;
+            LPCGUID comGUID=&IID_NULL;
 
             PCWSTR lpwszCommandLine = W("");
-
-
-
-            // Determine the startupmode
-            if (CLRHosted() || g_fEEHostedStartup)
-            {
-                //Hosted CLR
-                startupMode = ETW::InfoLog::InfoStructs::HostedCLR;
-            }
-            else if(g_fEEComActivatedStartup)
-            {
-                //com activated
-                startupMode = ETW::InfoLog::InfoStructs::COMActivated;
-            }
-            else if(g_fEEOtherStartup)
-            {
-                //startup type is other
-                startupMode = ETW::InfoLog::InfoStructs::Other;
-            }
 
 
             // if WszGetModuleFileName fails, we return an empty string
@@ -4996,11 +4976,11 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                   bclMajorVersion,
                                                   bclMinorVersion,
                                                   bclBuildVersion,
-                                                  bclQfeVersion,
+                                                  bclRevisionVersion,
                                                   vmMajorVersion,
                                                   vmMinorVersion,
                                                   vmBuildVersion,
-                                                  vmQfeVersion,
+                                                  vmRevisionVersion,
                                                   startupFlags,
                                                   startupMode,
                                                   lpwszCommandLine,
@@ -5014,11 +4994,11 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                 bclMajorVersion,
                                                 bclMinorVersion,
                                                 bclBuildVersion,
-                                                bclQfeVersion,
+                                                bclRevisionVersion,
                                                 vmMajorVersion,
                                                 vmMinorVersion,
                                                 vmBuildVersion,
-                                                vmQfeVersion,
+                                                vmRevisionVersion,
                                                 startupFlags,
                                                 startupMode,
                                                 lpwszCommandLine,
@@ -6297,7 +6277,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 goto done;      
 
@@ -7003,9 +6983,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 #ifdef FEATURE_CODE_VERSIONING
         if (fGetCodeIds && pMD->IsVersionable())
         {
-            CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-            _ASSERTE(pCodeVersionManager->LockOwnedByCurrentThread());
-            nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, codeStart);
+            _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+            nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, codeStart);
             if (nativeCodeVersion.IsNull())
             {
                 // The code version manager hasn't been updated with the jitted code
@@ -7142,7 +7121,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
 #ifdef FEATURE_CODE_VERSIONING
         if (pDomainFilter)
         {
-            CodeVersionManager::TableLockHolder lkRejitMgrModule(pDomainFilter->GetCodeVersionManager());
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             SendEventsForJitMethodsHelper(
                 pLoaderAllocatorFilter,
                 dwEventOptions,

@@ -11,8 +11,8 @@ namespace System.ServiceProcess.Tests
     {
         private const string KeyIsoSvcName = "KEYISO";
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19223")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19223
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21463")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/21463
         public static void GetServices()
         {
             bool foundKeyIsoSvc = false;

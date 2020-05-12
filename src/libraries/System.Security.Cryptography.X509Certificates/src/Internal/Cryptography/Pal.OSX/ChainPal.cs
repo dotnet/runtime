@@ -21,9 +21,9 @@ namespace Internal.Cryptography.Pal
 
         private static readonly SafeCreateHandle s_emptyArray = Interop.CoreFoundation.CFArrayCreate(Array.Empty<IntPtr>(), UIntPtr.Zero);
         private Stack<SafeHandle> _extraHandles;
-        private SafeX509ChainHandle _chainHandle;
-        public X509ChainElement[] ChainElements { get; private set; }
-        public X509ChainStatus[] ChainStatus { get; private set; }
+        private SafeX509ChainHandle? _chainHandle;
+        public X509ChainElement[]? ChainElements { get; private set; }
+        public X509ChainStatus[]? ChainStatus { get; private set; }
         private DateTime _verificationTime;
         private X509RevocationMode _revocationMode;
 
@@ -32,11 +32,11 @@ namespace Internal.Cryptography.Pal
             _extraHandles = new Stack<SafeHandle>();
         }
 
-        public SafeX509ChainHandle SafeHandle => null;
+        public SafeX509ChainHandle? SafeHandle => null;
 
         internal void OpenTrustHandle(
             ICertificatePal leafCert,
-            X509Certificate2Collection extraStore,
+            X509Certificate2Collection? extraStore,
             X509RevocationMode revocationMode,
             X509Certificate2Collection customTrustStore,
             X509ChainTrustMode trustMode)
@@ -102,7 +102,7 @@ namespace Internal.Cryptography.Pal
                 return;
 
             Stack<SafeHandle> extraHandles = _extraHandles;
-            _extraHandles = null;
+            _extraHandles = null!;
 
             _chainHandle?.Dispose();
 
@@ -112,11 +112,11 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public bool? Verify(X509VerificationFlags flags, out Exception exception)
+        public bool? Verify(X509VerificationFlags flags, out Exception? exception)
         {
             exception = null;
 
-            return ChainVerifier.Verify(ChainElements, flags);
+            return ChainVerifier.Verify(ChainElements!, flags);
         }
 
         private SafeCreateHandle PreparePoliciesArray(bool checkRevocation)
@@ -150,7 +150,7 @@ namespace Internal.Cryptography.Pal
 
         private SafeCreateHandle PrepareCertsArray(
             ICertificatePal cert,
-            X509Certificate2Collection extraStore,
+            X509Certificate2Collection? extraStore,
             X509Certificate2Collection customTrustStore,
             X509ChainTrustMode trustMode)
         {
@@ -241,7 +241,7 @@ namespace Internal.Cryptography.Pal
             using (SafeCFDateHandle cfEvaluationTime = Interop.CoreFoundation.CFDateCreate(verificationTime))
             {
                 ret = Interop.AppleCrypto.AppleCryptoNative_X509ChainEvaluate(
-                    _chainHandle,
+                    _chainHandle!,
                     cfEvaluationTime,
                     allowNetwork,
                     out osStatus);
@@ -256,7 +256,7 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException();
             }
 
-            Tuple<X509Certificate2, int>[] elements = ParseResults(_chainHandle, _revocationMode);
+            Tuple<X509Certificate2, int>[] elements = ParseResults(_chainHandle!, _revocationMode);
             Debug.Assert(elements.Length > 0);
 
             if (!IsPolicyMatch(elements, applicationPolicy, certificatePolicy))
@@ -362,7 +362,7 @@ namespace Internal.Cryptography.Pal
 
             ChainElements = elements;
 
-            X509ChainElement rollupElement = BuildElement(null, allStatus);
+            X509ChainElement rollupElement = BuildElement(null!, allStatus);
             ChainStatus = rollupElement.ChainElementStatus;
         }
 
@@ -478,7 +478,7 @@ namespace Internal.Cryptography.Pal
                 if ((mapping.ChainStatusFlag & flags) == mapping.ChainStatusFlag)
                 {
                     int osStatus;
-                    string errorString;
+                    string? errorString;
 
                     // Disambiguate the NotTimeValid code to get the right string.
                     if (mapping.ChainStatusFlag == X509ChainStatusFlags.NotTimeValid)
@@ -542,7 +542,7 @@ namespace Internal.Cryptography.Pal
 
             internal readonly X509ChainStatusFlags ChainStatusFlag;
             internal readonly int OSStatus;
-            internal readonly string ErrorString;
+            internal readonly string? ErrorString;
 
             private X509ChainErrorMapping(X509ChainStatusFlags flag)
             {
@@ -594,7 +594,7 @@ namespace Internal.Cryptography.Pal
         public static IChainPal BuildChain(
             bool useMachineContext,
             ICertificatePal cert,
-            X509Certificate2Collection extraStore,
+            X509Certificate2Collection? extraStore,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
             X509RevocationMode revocationMode,

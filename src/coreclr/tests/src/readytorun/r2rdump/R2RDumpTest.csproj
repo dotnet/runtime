@@ -3,16 +3,16 @@
     <OutputType>Exe</OutputType>
     <CLSCompliant>false</CLSCompliant>
     <CoreClrDir>..\..\..\..\..\..\</CoreClrDir>
-    <R2RDumpCommand>$(CoreClrDir)artifacts\bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\netcoreapp2.0\R2RDump.dll</R2RDumpCommand>
+    <R2RDumpCommand>$(CoreClrDir)artifacts\bin\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\netcoreapp2.0\R2RDump.dll</R2RDumpCommand>
     <DotnetToolCommand>$(CoreClrDir).dotnet\dotnet</DotnetToolCommand>
     <BashCoreClrDir>../../../../../../</BashCoreClrDir>
-    <BashR2RDumpCommand>$(BashCoreClrDir)artifacts/bin/coreclr/$(BuildOS).$(BuildArch).$(BuildType)/netcoreapp2.0/R2RDump.dll</BashR2RDumpCommand>
+    <BashR2RDumpCommand>$(BashCoreClrDir)artifacts/bin/coreclr/$(TargetOS).$(TargetArchitecture).$(Configuration)/netcoreapp2.0/R2RDump.dll</BashR2RDumpCommand>
     <BashDotnetToolCommand>$(CoreClrDir).dotnet/dotnet</BashDotnetToolCommand>
-    <CLRTestExecutionArguments>$(CoreClrDir)tests\src\readytorun\r2rdump\files\$(BuildOS).$(BuildArch).$(BuildType)\</CLRTestExecutionArguments>
+    <CLRTestExecutionArguments>$(CoreClrDir)tests\src\readytorun\r2rdump\files\$(TargetOS).$(TargetArchitecture).$(Configuration)\</CLRTestExecutionArguments>
     <!-- Test unsupported outside of windows -->
     <!-- Test unsupported on arm targets -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition=" '$(Platform)' == 'arm64' or '$(Platform)' == 'arm' or '$(TargetsUnix)' == 'true' ">true</DisableProjectBuild>
+    <DisableProjectBuild Condition=" '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetsUnix)' == 'true' ">true</DisableProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Fails with JIT stress modes, issue #19415 -->

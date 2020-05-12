@@ -43,10 +43,10 @@ Test cases are categorized by priority level. The most important subset should b
     * `<GCStressIncompatible>true</GCStressIncompatible>`
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
-* Add NuGet references by updating the following [test project](https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/test_dependencies.csproj).
+* Add NuGet references by updating the following [test project](https://github.com/dotnet/runtime/blob/master/src/coreclr/tests/src/Common/test_dependencies/test_dependencies.csproj).
 * Get access to System.Private.CoreLib types and methods that are not exposed via public surface by adding the following to the csproj:
     * `<ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>`
-* Update exclusion list at [tests/issues.targets](https://github.com/dotnet/coreclr/blob/master/tests/issues.targets) if the test fails due to active bug.
+* Update exclusion list at [tests/issues.targets](https://github.com/dotnet/runtime/blob/master/src/coreclr/tests/issues.targets) if the test fails due to active bug.
 
 ### Creating a C# test project
 
@@ -60,7 +60,7 @@ Test cases are categorized by priority level. The most important subset should b
 1. Indicate the success of the test by returning `100`. Failure can be indicated by any non-`100` value.
 
     Example:
-    ```
+    ```CSharp
         static public int Main(string[] notUsed)
         {
             try

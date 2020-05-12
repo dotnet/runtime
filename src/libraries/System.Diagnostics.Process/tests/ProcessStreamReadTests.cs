@@ -143,6 +143,7 @@ namespace System.Diagnostics.Tests
 
                     // Wait child process close to be sure that output buffer has been flushed
                     Assert.True(p.WaitForExit(WaitInMS), "Child process didn't close");
+                    p.WaitForExit(); // wait for event handlers to complete
 
                     Assert.Equal(1, dataReceived.Count);
                     Assert.Equal(1, dataReceived[0]);
@@ -239,6 +240,7 @@ namespace System.Diagnostics.Tests
 
                     // Wait child process close
                     Assert.True(p.WaitForExit(WaitInMS), "Child process didn't close");
+                    p.WaitForExit(); // wait for event handlers to complete
 
                     // Wait for value 7,8,9
                     using (CancellationTokenSource cts = new CancellationTokenSource(WaitInMS))
@@ -326,12 +328,13 @@ namespace System.Diagnostics.Tests
                 writer.WriteLine(expected);
             }
             Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // wait for event handlers to complete
         }
 
         [Fact]
         public void TestEOFReceivedWhenStdInClosed()
         {
-            // This is the test for the fix of https://github.com/dotnet/corefx/issues/13447.
+            // This is the test for the fix of https://github.com/dotnet/runtime/issues/19277.
             //
             // Summary of the issue:
             // When an application starts more than one child processes with their standard inputs redirected on Unix,
@@ -368,6 +371,7 @@ namespace System.Diagnostics.Tests
                 // The first child process should be unblocked and write out 'NULL', and then exit.
                 p1.StandardInput.Close();
                 Assert.True(p1.WaitForExit(WaitInMS));
+                p1.WaitForExit(); // wait for event handlers to complete
             }
             finally
             {
@@ -377,6 +381,7 @@ namespace System.Diagnostics.Tests
 
             // Cleanup
             Assert.True(p2.WaitForExit(WaitInMS));
+            p2.WaitForExit(); // wait for event handlers to complete
             p2.Dispose();
             p1.Dispose();
         }
@@ -451,6 +456,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnCoreClr("Avoid asserts in FileStream.Read when concurrently disposed", ~RuntimeConfiguration.Release)]
         public void TestClosingStreamsAsyncDoesNotThrow()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
@@ -526,6 +532,7 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<InvalidOperationException>(() => p.StandardOutput);
                 Assert.Throws<InvalidOperationException>(() => p.StandardError);
                 Assert.True(p.WaitForExit(WaitInMS));
+                p.WaitForExit(); // wait for event handlers to complete
             }
 
             {
@@ -543,6 +550,7 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<InvalidOperationException>(() => p.BeginOutputReadLine());
                 Assert.Throws<InvalidOperationException>(() => p.BeginErrorReadLine());
                 Assert.True(p.WaitForExit(WaitInMS));
+                p.WaitForExit(); // wait for event handlers to complete
             }
         }
 

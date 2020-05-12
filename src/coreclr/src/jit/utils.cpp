@@ -1264,7 +1264,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWSFAST:
             case CORINFO_HELP_NEWSFAST_ALIGN8:
             case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
-            case CORINFO_HELP_NEW_CROSSCONTEXT:
             case CORINFO_HELP_NEWFAST:
             case CORINFO_HELP_NEWSFAST_FINALIZE:
             case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
@@ -1313,6 +1312,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
                 noThrow       = true;
@@ -1448,10 +1448,6 @@ void HelperCallProperties::init()
                 break;
 
             // These helper calls may throw an exception
-            case CORINFO_HELP_METHOD_ACCESS_CHECK:
-            case CORINFO_HELP_FIELD_ACCESS_CHECK:
-            case CORINFO_HELP_CLASS_ACCESS_CHECK:
-            case CORINFO_HELP_DELEGATE_SECURITY_CHECK:
             case CORINFO_HELP_MON_EXIT_STATIC:
 
                 break;
@@ -1470,9 +1466,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_MON_ENTER_STATIC:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
-            case CORINFO_HELP_SECURITY_PROLOG:
-            case CORINFO_HELP_SECURITY_PROLOG_FRAMED:
-            case CORINFO_HELP_VERIFICATION_RUNTIME_CHECK:
             case CORINFO_HELP_GETFIELDADDR:
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:

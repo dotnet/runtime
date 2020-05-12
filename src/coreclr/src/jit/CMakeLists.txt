@@ -67,6 +67,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizer.cpp
+  patchpoint.cpp
   phase.cpp
   rangecheck.cpp
   rationalize.cpp
@@ -169,6 +170,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     regset.h
     sideeffects.h
     simd.h
+    simdashwintrinsic.h
     simdintrinsiclist.h
     sm.h
     smallhash.h
@@ -186,6 +188,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     unwind.h
     utils.h
     valuenum.h
+    valuenumfuncs.h
     valuenumtype.h
     varset.h
     vartype.h
@@ -202,14 +205,16 @@ if (CLR_CMAKE_TARGET_WIN32)
       instrsarm.h
       instrsarm64.h
       registerarm.h
-      registerarm64.h)
+      registerarm64.h
+      simdashwintrinsiclistarm64.h)
   elseif (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
     list (APPEND JIT_HEADERS
       emitfmtsxarch.h
       emitxarch.h
       hwintrinsiclistxarch.h
       hwintrinsic.h
-      instrsxarch.h)
+      instrsxarch.h
+      simdashwintrinsiclistxarch.h)
   endif ()
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -221,6 +226,7 @@ set( JIT_AMD64_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetamd64.cpp
   unwindamd64.cpp
@@ -247,6 +253,7 @@ set( JIT_I386_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetx86.cpp
   unwindx86.cpp
@@ -262,6 +269,7 @@ set( JIT_ARM64_SOURCES
   lsraarmarch.cpp
   lsraarm64.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   targetarm64.cpp
   unwindarm.cpp
   unwindarm64.cpp
@@ -312,11 +320,14 @@ else()
 
   if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
     # This is required to force using our own PAL, not one that we are loaded with.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 
     set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
-  elseif(CLR_CMAKE_TARGET_DARWIN)
+  elseif(CLR_CMAKE_TARGET_OSX)
     set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
+  elseif(CLR_CMAKE_HOST_SUNOS)
+    # Add linker exports file option
+    set(JIT_EXPORTS_LINKER_OPTION -Wl,-M,${JIT_EXPORTS_FILE})
   endif()
 
   set(SHARED_LIB_SOURCES ${SOURCES})
@@ -334,7 +345,7 @@ set(JIT_ARCH_LINK_LIBRARIES
 
 if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
-       mscorrc_debug
+       mscorrc
        coreclrpal
        palrt
     )
@@ -357,6 +368,7 @@ else()
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
+# optional arguments: ADDITIONAL_DESTINATION path
 function(add_jit jitName)
     if(CLR_CMAKE_TARGET_WIN32)
         add_definitions(-DFX_VER_INTERNALNAME_STR=${jitName}.dll)
@@ -383,7 +395,7 @@ function(add_jit jitName)
     )
 
     # add the install targets
-    install_clr(TARGETS ${jitName})
+    install_clr(TARGETS ${jitName} ${ARGN})
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})

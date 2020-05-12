@@ -52,7 +52,6 @@ namespace System.Reflection.Emit
         {
             ModuleBuilder dynMod;
             SignatureHelper sigHelp;
-            int sigLength;
             byte[] signature;
             byte[] mungedSig;
             int index;
@@ -77,7 +76,7 @@ namespace System.Reflection.Emit
 
             sigHelp = SignatureHelper.GetFieldSigHelper(dynMod);
             sigHelp.AddArgument(m_localType);
-            signature = sigHelp.InternalGetSignature(out sigLength);
+            signature = sigHelp.InternalGetSignature(out int sigLength);
 
             // The symbol store doesn't want the calling convention on the
             // front of the signature, but InternalGetSignature returns

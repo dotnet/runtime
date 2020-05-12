@@ -1091,9 +1091,7 @@ namespace System.Text
             }
             Debug.Assert(insertingChars + this.Length < int.MaxValue);
 
-            StringBuilder chunk;
-            int indexInChunk;
-            MakeRoom(index, (int)insertingChars, out chunk, out indexInChunk, false);
+            MakeRoom(index, (int)insertingChars, out StringBuilder chunk, out int indexInChunk, false);
             unsafe
             {
                 fixed (char* valuePtr = value)
@@ -1140,9 +1138,7 @@ namespace System.Text
 
             if (length > 0)
             {
-                StringBuilder chunk;
-                int indexInChunk;
-                Remove(startIndex, length, out chunk, out indexInChunk);
+                Remove(startIndex, length, out _, out _);
             }
 
             return this;
@@ -2140,9 +2136,7 @@ namespace System.Text
 
             if (valueCount > 0)
             {
-                StringBuilder chunk;
-                int indexInChunk;
-                MakeRoom(index, valueCount, out chunk, out indexInChunk, false);
+                MakeRoom(index, valueCount, out StringBuilder chunk, out int indexInChunk, false);
                 ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, value, valueCount);
             }
         }

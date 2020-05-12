@@ -324,6 +324,9 @@
   <data name="net_http_invalid_response_premature_eof" xml:space="preserve">
     <value>The response ended prematurely.</value>
   </data>
+  <data name="net_http_invalid_response_missing_frame" xml:space="preserve">
+    <value>The response ended prematurely while waiting for the next frame from the server.</value>
+  </data>
   <data name="net_http_invalid_response_premature_eof_bytecount" xml:space="preserve">
     <value>The response ended prematurely, with at least {0} additional bytes expected.</value>
   </data>
@@ -536,5 +539,20 @@
   </data>
   <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
     <value>The HTTP/3 server attempted to reference a dynamic table index that does not exist.</value>
+  </data>
+  <data name="net_http_request_timedout" xml:space="preserve">
+    <value>The request was canceled due to the configured HttpClient.Timeout of {0} seconds elapsing.</value>
+  </data>
+  <data name="net_quic_connectionaborted" xml:space="preserve">
+    <value>Connection aborted by peer ({0}).</value>
+  </data>
+  <data name="net_quic_notsupported" xml:space="preserve">
+    <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
+  </data>
+  <data name="net_quic_operationaborted" xml:space="preserve">
+    <value>Operation aborted.</value>
+  </data>
+  <data name="net_quic_streamaborted" xml:space="preserve">
+    <value>Stream aborted by peer ({0}).</value>
   </data>
 </root>

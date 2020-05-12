@@ -42,14 +42,6 @@
 //
 //========================================================================
 
-#define ProfileTrackArrayAlloc(orObject) \
-            OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);\
-            GCPROTECT_BEGIN(objref);\
-            ProfilerObjectAllocatedCallback(objref, (ClassID) orObject->GetTypeHandle().AsPtr());\
-            GCPROTECT_END();\
-            orObject = (ArrayBase *) OBJECTREFToObject(objref);
-
-
 inline gc_alloc_context* GetThreadAllocContext()
 {
     WRAPPER_NO_CONTRACT;
@@ -69,7 +61,7 @@ inline gc_alloc_context* GetThreadAllocContext()
 //   1) JIT_TrialAllocFastSP (and related assembly alloc helpers), which attempt to
 //      acquire it but move into an alloc slow path if acquiring fails
 //      (but does not decrement the lock variable when doing so)
-//   2) Alloc and AllocAlign8 in gchelpers.cpp, which acquire the lock using
+//   2) Alloc in gchelpers.cpp, which acquire the lock using
 //      the Acquire and Release methods below.
 class GlobalAllocLock {
     friend struct AsmOffsets;
@@ -194,13 +186,12 @@ inline void CheckObjectSize(size_t alloc_size)
 }
 
 
-// There are only three ways to get into allocate an object.
+// There are only two ways to allocate an object.
 //     * Call optimized helpers that were generated on the fly. This is how JIT compiled code does most
 //         allocations, however they fall back code:Alloc, when for all but the most common code paths. These
 //         helpers are NOT used if profiler has asked to track GC allocation (see code:TrackAllocations)
 //     * Call code:Alloc - When the jit helpers fall back, or we do allocations within the runtime code
 //         itself, we ultimately call here.
-//     * Call code:AllocLHeap - Used very rarely to force allocation to be on the large object heap.
 //
 // While this is a choke point into allocating an object, it is primitive (it does not want to know about
 // MethodTable and thus does not initialize that pointer. It also does not know if the object is finalizable
@@ -256,88 +247,6 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     return retVal;
 }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-// Helper for allocating 8-byte aligned objects (on platforms where this doesn't happen naturally, e.g. 32-bit
-// platforms).
-inline Object* AllocAlign8(size_t size, GC_ALLOC_FLAGS flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
-    } CONTRACTL_END;
-
-    if (flags & GC_ALLOC_CONTAINS_REF)
-        flags &= ~ GC_ALLOC_ZEROING_OPTIONAL;
-
-    Object *retVal = NULL;
-    CheckObjectSize(size);
-
-    if (GCHeapUtilities::UseThreadAllocationContexts())
-    {
-        gc_alloc_context *threadContext = GetThreadAllocContext();
-        GCStress<gc_on_alloc>::MaybeTrigger(threadContext);
-        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(threadContext, size, flags);
-    }
-    else
-    {
-        GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        gc_alloc_context *globalContext = &g_global_alloc_context;
-        GCStress<gc_on_alloc>::MaybeTrigger(globalContext);
-        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(globalContext, size, flags);
-    }
-
-    if (!retVal)
-    {
-        ThrowOutOfMemory();
-    }
-
-    return retVal;
-}
-#endif // FEATURE_64BIT_ALIGNMENT
-
-// This is one of three ways of allocating an object (see code:Alloc for more). This variation is used in the
-// rare circumstance when you want to allocate an object on the large object heap but the object is not big
-// enough to naturally go there.
-//
-// One (and only?) example of where this is needed is 8 byte aligning of arrays of doubles. See
-// code:EEConfig.GetDoubleArrayToLargeObjectHeapThreshold and code:CORINFO_HELP_NEWARR_1_ALIGN8 for more.
-inline Object* AllocLHeap(size_t size, GC_ALLOC_FLAGS flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative (don't assume large heap doesn't compact!)
-    } CONTRACTL_END;
-
-
-    _ASSERTE(!NingenEnabled() && "You cannot allocate managed objects inside the ngen compilation process.");
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
-    if (flags & GC_ALLOC_CONTAINS_REF)
-        flags &= ~GC_ALLOC_ZEROING_OPTIONAL;
-
-    Object *retVal = NULL;
-    CheckObjectSize(size);
-
-    retVal = GCHeapUtilities::GetGCHeap()->AllocLHeap(size, flags);
-
-    if (!retVal)
-    {
-        ThrowOutOfMemory();
-    }
-
-    return retVal;
-}
-
-
 #ifdef  _LOGALLOC
 int g_iNumAllocs = 0;
 
@@ -364,7 +273,7 @@ bool ToLogOrNotToLog(size_t size, const char *typeName)
 // this function is called on managed allocation path with unprotected Object*
 // as a result LogAlloc cannot call anything that would toggle the GC mode else
 // you'll introduce several GC holes!
-inline void LogAlloc(size_t size, MethodTable *pMT, Object* object)
+inline void LogAlloc(Object* object)
 {
     CONTRACTL
     {
@@ -375,6 +284,9 @@ inline void LogAlloc(size_t size, MethodTable *pMT, Object* object)
     CONTRACTL_END;
 
 #ifdef LOGGING
+    MethodTable* pMT = object->GetMethodTable();
+    size_t size      = object->GetSize();
+
     if (LoggingOn(LF_GCALLOC, LL_INFO10))
     {
         LogSpewAlways("Allocated %5d bytes for %s_TYPE" FMT_ADDR FMT_CLASS "\n",
@@ -394,9 +306,44 @@ inline void LogAlloc(size_t size, MethodTable *pMT, Object* object)
 #endif
 }
 #else
-#define LogAlloc(size, pMT, object)
+#define LogAlloc( object)
 #endif
 
+// signals completion of the object to GC and sends events if necessary
+template <class TObj>
+void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
+{
+    _ASSERTE(orObject->HasEmptySyncBlockInfo());
+
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
+    {
+        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
+    }
+
+#ifdef  _LOGALLOC
+    LogAlloc(orObject);
+#endif // _LOGALLOC
+
+    // Notify the profiler of the allocation
+    // do this after initializing bounds so callback has size information
+    if (TrackAllocations() ||
+        (TrackLargeAllocations() && flags & GC_ALLOC_LARGE_OBJECT_HEAP))
+    {
+        OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
+        GCPROTECT_BEGIN(objref);
+        ProfilerObjectAllocatedCallback(objref, (ClassID) orObject->GetTypeHandle().AsPtr());
+        GCPROTECT_END();
+        orObject = (TObj*) OBJECTREFToObject(objref);
+    }
+
+#ifdef FEATURE_EVENT_TRACE
+    // Send ETW event for allocation
+    if(ETW::TypeSystemLog::IsHeapAllocEventEnabled())
+    {
+        ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
+    }
+#endif // FEATURE_EVENT_TRACE
+}
 
 inline SIZE_T MaxArrayLength(SIZE_T componentSize)
 {
@@ -407,7 +354,7 @@ inline SIZE_T MaxArrayLength(SIZE_T componentSize)
     return (componentSize == 1) ? 0X7FFFFFC7 : 0X7FEFFFFF;
 }
 
-OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL{
         THROWS;
@@ -417,10 +364,10 @@ OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS 
 
     MethodTable* pArrayMT = arrayType.AsMethodTable();
 
-    return AllocateSzArray(pArrayMT, cElements, flags, bAllocateInLargeHeap);
+    return AllocateSzArray(pArrayMT, cElements, flags);
 }
 
-OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL{
         THROWS;
@@ -428,6 +375,8 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
+    // IBC Log MethodTable access
+    g_IBCLogger.LogMethodTableAccess(pArrayMT);
     SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
 
     _ASSERTE(pArrayMT->CheckInstanceActivated());
@@ -438,9 +387,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     // Disallow the creation of void[] (an array of System.Void)
     if (elemType == ELEMENT_TYPE_VOID)
         COMPlusThrow(kArgumentException);
-
-    // IBC Log MethodTable access
-    g_IBCLogger.LogMethodTableAccess(pArrayMT);
 
     if (cElements < 0)
         COMPlusThrow(kOverflowException);
@@ -468,39 +414,25 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        bAllocateInLargeHeap = TRUE;
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
     }
 #endif
 
     if (totalSize >= g_pConfig->GetGCLOHThreshold())
-    {
-        bAllocateInLargeHeap = TRUE;
-    }
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    flags |= (pArrayMT->ContainsPointers() ? GC_ALLOC_CONTAINS_REF : GC_ALLOC_NO_FLAGS);
+    if (pArrayMT->ContainsPointers())
+        flags |= GC_ALLOC_CONTAINS_REF;
 
     ArrayBase* orArray = NULL;
-    if (bAllocateInLargeHeap)
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        orArray = (ArrayBase*)AllocLHeap(totalSize, flags);
-        orArray->SetArrayMethodTableForLargeObject(pArrayMT);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
+        orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
     {
-#ifdef FEATURE_64BIT_ALIGNMENT
-        MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
-        if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
-        {
-            // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
-            // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
-            // header that requires alignment we need to be careful. However it just so happens that all the
-            // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
-            // in their headers so the alignment requirements for the header and the payload are the same.
-            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            orArray = (ArrayBase*)AllocAlign8(totalSize, flags);
-        }
-        else
-#else
+#ifndef FEATURE_64BIT_ALIGNMENT
         if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8) &&
             (totalSize < g_pConfig->GetGCLOHThreshold() - MIN_OBJECT_SIZE))
         {
@@ -537,44 +469,30 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         }
         else
 #endif  // FEATURE_64BIT_ALIGNMENT
-
         {
+#ifdef FEATURE_64BIT_ALIGNMENT
+            MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
+            if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+            {
+                // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
+                // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
+                // header that requires alignment we need to be careful. However it just so happens that all the
+                // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
+                // in their headers so the alignment requirements for the header and the payload are the same.
+                _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
+                flags |= GC_ALLOC_ALIGN8;
+            }
+#endif
             orArray = (ArrayBase*)Alloc(totalSize, flags);
         }
-        orArray->SetArrayMethodTable(pArrayMT);
+        orArray->SetMethodTable(pArrayMT);
     }
 
     // Initialize Object
     orArray->m_NumComponents = cElements;
 
-    bool bProfilerNotifyLargeAllocation = false;
-
-    if (bAllocateInLargeHeap)
-    {
-        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
-        bProfilerNotifyLargeAllocation = TrackLargeAllocations();
-    }
-
-#ifdef  _LOGALLOC
-    LogAlloc(totalSize, pArrayMT, orArray);
-#endif // _LOGALLOC
-
-    // Notify the profiler of the allocation
-    // do this after initializing bounds so callback has size information
-    if (TrackAllocations() || bProfilerNotifyLargeAllocation)
-    {
-        ProfileTrackArrayAlloc(orArray);
-    }
-
-#ifdef FEATURE_EVENT_TRACE
-    // Send ETW event for allocation
-    if(ETW::TypeSystemLog::IsHeapAllocEventEnabled())
-    {
-        ETW::TypeSystemLog::SendObjectAllocatedEvent(orArray);
-    }
-#endif // FEATURE_EVENT_TRACE
-
-    return ObjectToOBJECTREF((Object *) orArray);
+    PublishObjectAndNotify(orArray, flags);
+    return ObjectToOBJECTREF((Object*)orArray);
 }
 
 void ThrowOutOfMemoryDimensionsExceeded()
@@ -595,7 +513,7 @@ void ThrowOutOfMemoryDimensionsExceeded()
 //
 // This is wrapper overload to handle TypeHandle arrayType
 //
-OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL
     {
@@ -604,7 +522,7 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, G
 
     MethodTable* pArrayMT = arrayType.AsMethodTable();
 
-    return AllocateArrayEx(pArrayMT, pArgs, dwNumArgs, flags, bAllocateInLargeHeap);
+    return AllocateArrayEx(pArrayMT, pArgs, dwNumArgs, flags);
 }
 
 //
@@ -614,7 +532,7 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, G
 // allocate sub-arrays and fill them in.
 //
 // For arrays with lower bounds, pBounds is <lower bound 1>, <count 1>, <lower bound 2>, ...
-OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL {
         THROWS;
@@ -624,8 +542,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         PRECONDITION(dwNumArgs > 0);
     } CONTRACTL_END;
 
-    ArrayBase * orArray = NULL;
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
     {
@@ -633,6 +549,15 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         delete a;
     }
 #endif
+
+    // IBC Log MethodTable access
+    g_IBCLogger.LogMethodTableAccess(pArrayMT);
+    SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
+
+    // keep original flags in case the call is recursive (jugged array case)
+    // the aditional flags that we infer here, such as GC_ALLOC_CONTAINS_REF
+    // may not be applicable to inner arrays
+    GC_ALLOC_FLAGS flagsOriginal = flags;
 
    _ASSERTE(pArrayMT->CheckInstanceActivated());
     PREFIX_ASSUME(pArrayMT != NULL);
@@ -646,11 +571,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 
     // Calculate the total number of elements in the array
     UINT32 cElements;
-
-    // IBC Log MethodTable access
-    g_IBCLogger.LogMethodTableAccess(pArrayMT);
-    SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
-
     SIZE_T componentSize = pArrayMT->GetComponentSize();
     bool maxArrayDimensionLengthOverflow = false;
     bool providedLowerBounds = false;
@@ -664,7 +584,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         if (rank == 1 && (dwNumArgs == 1 || pArgs[0] == 0))
         {
             TypeHandle szArrayType = ClassLoader::LoadArrayTypeThrowing(pArrayMT->GetArrayElementTypeHandle(), ELEMENT_TYPE_SZARRAY, 1);
-            return AllocateSzArray(szArrayType, pArgs[dwNumArgs - 1], flags, bAllocateInLargeHeap);
+            return AllocateSzArray(szArrayType, pArgs[dwNumArgs - 1], flags);
         }
 
         providedLowerBounds = (dwNumArgs == 2*rank);
@@ -726,21 +646,21 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        bAllocateInLargeHeap = TRUE;
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
     }
 #endif
 
     if (totalSize >= g_pConfig->GetGCLOHThreshold())
-    {
-        bAllocateInLargeHeap = TRUE;
-    }
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    flags |= (pArrayMT->ContainsPointers() ? GC_ALLOC_CONTAINS_REF : GC_ALLOC_NO_FLAGS);
+    if (pArrayMT->ContainsPointers())
+        flags |= GC_ALLOC_CONTAINS_REF;
 
-    if (bAllocateInLargeHeap)
+    ArrayBase* orArray = NULL;
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        orArray = (ArrayBase *) AllocLHeap(totalSize, flags);
-        orArray->SetArrayMethodTableForLargeObject(pArrayMT);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
+        orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
     {
@@ -754,31 +674,15 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
             // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
             // in their headers so the alignment requirements for the header and the payload are the same.
             _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            orArray = (ArrayBase *) AllocAlign8(totalSize, flags);
+            flags |= GC_ALLOC_ALIGN8;
         }
-        else
 #endif
-        {
-            orArray = (ArrayBase *) Alloc(totalSize, flags);
-        }
-        orArray->SetArrayMethodTable(pArrayMT);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
+        orArray->SetMethodTable(pArrayMT);
     }
 
     // Initialize Object
     orArray->m_NumComponents = cElements;
-
-    bool bProfilerNotifyLargeAllocation = false;
-
-    if (bAllocateInLargeHeap)
-    {
-        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
-        bProfilerNotifyLargeAllocation = TrackLargeAllocations();
-    }
-
-#ifdef  _LOGALLOC
-    LogAlloc(totalSize, pArrayMT, orArray);
-#endif // _LOGALLOC
-
     if (kind == ELEMENT_TYPE_ARRAY)
     {
         INT32 *pCountsPtr      = (INT32 *) orArray->GetBoundsPtr();
@@ -791,20 +695,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         }
     }
 
-    // Notify the profiler of the allocation
-    // do this after initializing bounds so callback has size information
-    if (TrackAllocations() || bProfilerNotifyLargeAllocation)
-    {
-        ProfileTrackArrayAlloc(orArray);
-    }
-
-#ifdef FEATURE_EVENT_TRACE
-    // Send ETW event for allocation
-    if(ETW::TypeSystemLog::IsHeapAllocEventEnabled())
-    {
-        ETW::TypeSystemLog::SendObjectAllocatedEvent(orArray);
-    }
-#endif // FEATURE_EVENT_TRACE
+    PublishObjectAndNotify(orArray, flags);
 
     if (kind != ELEMENT_TYPE_ARRAY)
     {
@@ -828,7 +719,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
                     TypeHandle subArrayType = pArrayMT->GetArrayElementTypeHandle();
                     for (UINT32 i = 0; i < cElements; i++)
                     {
-                        OBJECTREF obj = AllocateArrayEx(subArrayType, &pArgs[1], dwNumArgs-1, flags, bAllocateInLargeHeap);
+                        OBJECTREF obj = AllocateArrayEx(subArrayType, &pArgs[1], dwNumArgs-1, flagsOriginal);
                         outerArray->SetAt(i, obj);
                     }
 
@@ -935,7 +826,8 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     _ASSERTE(arrayType.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 #endif //_DEBUG
 
-    return AllocateSzArray(arrayType, (INT32) cElements, GC_ALLOC_NO_FLAGS, bAllocateInLargeHeap);
+    GC_ALLOC_FLAGS flags = bAllocateInLargeHeap ? GC_ALLOC_LARGE_OBJECT_HEAP : GC_ALLOC_NO_FLAGS;
+    return AllocateSzArray(arrayType, (INT32) cElements, flags);
 }
 
 STRINGREF AllocateString( DWORD cchStringLength )
@@ -945,8 +837,6 @@ STRINGREF AllocateString( DWORD cchStringLength )
         GC_TRIGGERS;
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
-
-    StringObject    *orObject  = NULL;
 
 #ifdef _DEBUG
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
@@ -963,50 +853,23 @@ STRINGREF AllocateString( DWORD cchStringLength )
     if (cchStringLength > 0x3FFFFFDF)
         ThrowOutOfMemory();
 
-    SIZE_T ObjectSize = PtrAlign(StringObject::GetSize(cchStringLength));
-    _ASSERTE(ObjectSize > cchStringLength);
+    SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
+    _ASSERTE(totalSize > cchStringLength);
 
     SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
 
-    orObject = (StringObject *)Alloc( ObjectSize, GC_ALLOC_NO_FLAGS);
+    GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
+    if (totalSize >= g_pConfig->GetGCLOHThreshold())
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    // Object is zero-init already
-    _ASSERTE( orObject->HasEmptySyncBlockInfo() );
+    StringObject* orString = (StringObject*)Alloc(totalSize, flags);
 
     // Initialize Object
-    //<TODO>@TODO need to build a LARGE g_pStringMethodTable before</TODO>
-    orObject->SetMethodTable( g_pStringClass );
-    orObject->SetStringLength( cchStringLength );
+    orString->SetMethodTable(g_pStringClass);
+    orString->SetStringLength(cchStringLength);
 
-    bool bProfilerNotifyLargeAllocation = false;
-    if (ObjectSize >= g_pConfig->GetGCLOHThreshold())
-    {
-        bProfilerNotifyLargeAllocation = TrackLargeAllocations();
-        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
-    }
-
-    // Notify the profiler of the allocation
-    if (TrackAllocations() || bProfilerNotifyLargeAllocation)
-    {
-        OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
-        GCPROTECT_BEGIN(objref);
-        ProfilerObjectAllocatedCallback(objref, (ClassID) orObject->GetTypeHandle().AsPtr());
-        GCPROTECT_END();
-
-        orObject = (StringObject *) OBJECTREFToObject(objref);
-    }
-
-#ifdef FEATURE_EVENT_TRACE
-    // Send ETW event for allocation
-    if(ETW::TypeSystemLog::IsHeapAllocEventEnabled())
-    {
-        ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
-    }
-#endif // FEATURE_EVENT_TRACE
-
-    LogAlloc(ObjectSize, g_pStringClass, orObject);
-
-    return( ObjectToSTRINGREF(orObject) );
+    PublishObjectAndNotify(orString, flags);
+    return ObjectToSTRINGREF(orString);
 }
 
 #ifdef FEATURE_UTF8STRING
@@ -1017,8 +880,6 @@ UTF8STRINGREF AllocateUtf8String(DWORD cchStringLength)
         GC_TRIGGERS;
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
-
-    Utf8StringObject    *orObject = NULL;
 
 #ifdef _DEBUG
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
@@ -1040,50 +901,23 @@ UTF8STRINGREF AllocateUtf8String(DWORD cchStringLength)
     if (cchStringLength > 0x7FFFFFBF)
         ThrowOutOfMemory();
 
-    SIZE_T ObjectSize = PtrAlign(Utf8StringObject::GetSize(cchStringLength));
-    _ASSERTE(ObjectSize > cchStringLength);
+    SIZE_T totalSize = PtrAlign(Utf8StringObject::GetSize(cchStringLength));
+    _ASSERTE(totalSize > cchStringLength);
 
     SetTypeHandleOnThreadForAlloc(TypeHandle(g_pUtf8StringClass));
 
-    orObject = (Utf8StringObject *)Alloc(ObjectSize, GC_ALLOC_NO_FLAGS);
+    GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
+    if (totalSize >= g_pConfig->GetGCLOHThreshold())
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    // Object is zero-init already
-    _ASSERTE(orObject->HasEmptySyncBlockInfo());
+    Utf8StringObject* orString = (Utf8StringObject*)Alloc(totalSize, flags);
 
     // Initialize Object
-    orObject->SetMethodTable(g_pUtf8StringClass);
-    orObject->SetLength(cchStringLength);
+    orString->SetMethodTable(g_pUtf8StringClass);
+    orString->SetLength(cchStringLength);
 
-    bool bProfilerNotifyLargeAllocation = false;
-
-    if (ObjectSize >= g_pConfig->GetGCLOHThreshold())
-    {
-        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
-        bProfilerNotifyLargeAllocation = TrackLargeAllocations();
-    }
-
-    // Notify the profiler of the allocation
-    if (TrackAllocations() || bProfilerNotifyLargeAllocation)
-    {
-        OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
-        GCPROTECT_BEGIN(objref);
-        ProfilerObjectAllocatedCallback(objref, (ClassID)orObject->GetTypeHandle().AsPtr());
-        GCPROTECT_END();
-
-        orObject = (Utf8StringObject *)OBJECTREFToObject(objref);
-    }
-
-#ifdef FEATURE_EVENT_TRACE
-    // Send ETW event for allocation
-    if (ETW::TypeSystemLog::IsHeapAllocEventEnabled())
-    {
-        ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
-    }
-#endif // FEATURE_EVENT_TRACE
-
-    LogAlloc(ObjectSize, g_pUtf8StringClass, orObject);
-
-    return( ObjectToUTF8STRINGREF(orObject) );
+    PublishObjectAndNotify(orString, flags);
+    return ObjectToUTF8STRINGREF(orString);
 }
 #endif // FEATURE_UTF8STRING
 
@@ -1137,7 +971,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
         PRECONDITION(pMT->CheckInstanceActivated());
     } CONTRACTL_END;
 
-    Object     *orObject = NULL;
     // use unchecked oref here to avoid triggering assert in Validate that the AD is
     // not set becuase it isn't until near the end of the fcn at which point we can allow
     // the check.
@@ -1161,9 +994,16 @@ OBJECTREF AllocateObject(MethodTable *pMT
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
     {
-        DWORD baseSize = pMT->GetBaseSize();
-        GC_ALLOC_FLAGS flags = ((pMT->ContainsPointers() ? GC_ALLOC_CONTAINS_REF : GC_ALLOC_NO_FLAGS) |
-                                (pMT->HasFinalizer() ? GC_ALLOC_FINALIZE : GC_ALLOC_NO_FLAGS));
+        GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
+        if (pMT->ContainsPointers())
+            flags |= GC_ALLOC_CONTAINS_REF;
+
+        if (pMT->HasFinalizer())
+            flags |= GC_ALLOC_FINALIZE;
+
+        DWORD totalSize = pMT->GetBaseSize();
+        if (totalSize >= g_pConfig->GetGCLOHThreshold())
+            flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         if (pMT->RequiresAlign8())
@@ -1175,51 +1015,24 @@ OBJECTREF AllocateObject(MethodTable *pMT
             // first field is aligned relative to the header) and true for boxed value types (where we can't
             // do the same padding without introducing more complexity in type layout and unboxing stubs).
             _ASSERTE(sizeof(Object) == 4);
-            flags |= pMT->IsValueType() ? GC_ALLOC_ALIGN8_BIAS : GC_ALLOC_NO_FLAGS;
-            orObject = (Object *) AllocAlign8(baseSize, flags);
+            flags |= GC_ALLOC_ALIGN8;
+            if (pMT->IsValueType())
+                flags |= GC_ALLOC_ALIGN8_BIAS;
         }
-        else
 #endif // FEATURE_64BIT_ALIGNMENT
-        {
-            orObject = (Object*)Alloc(baseSize, flags);
-        }
 
-        // verify zero'd memory (at least for sync block)
-        _ASSERTE( orObject->HasEmptySyncBlockInfo() );
+        Object* orObject = (Object*)Alloc(totalSize, flags);
 
-        bool bProfilerNotifyLargeAllocation = false;
-        if ((baseSize >= g_pConfig->GetGCLOHThreshold()))
+        if (flags & GC_ALLOC_USER_OLD_HEAP)
         {
-            orObject->SetMethodTableForLargeObject(pMT);
-            bProfilerNotifyLargeAllocation = TrackLargeAllocations();
-            GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
+            orObject->SetMethodTableForUOHObject(pMT);
         }
         else
         {
             orObject->SetMethodTable(pMT);
         }
 
-        // Notify the profiler of the allocation
-        if (TrackAllocations() || bProfilerNotifyLargeAllocation)
-        {
-            OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
-            GCPROTECT_BEGIN(objref);
-            ProfilerObjectAllocatedCallback(objref, (ClassID) orObject->GetTypeHandle().AsPtr());
-            GCPROTECT_END();
-
-            orObject = (Object *) OBJECTREFToObject(objref);
-        }
-
-#ifdef FEATURE_EVENT_TRACE
-        // Send ETW event for allocation
-        if(ETW::TypeSystemLog::IsHeapAllocEventEnabled())
-        {
-            ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
-        }
-#endif // FEATURE_EVENT_TRACE
-
-        LogAlloc(pMT->GetBaseSize(), pMT, orObject);
-
+        PublishObjectAndNotify(orObject, flags);
         oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(orObject);
     }
 
@@ -1553,7 +1366,7 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-        BYTE *refObject = *(BYTE **)((MethodTable*)ref)->GetLoaderAllocatorObjectHandle();
+        BYTE *refObject = *(BYTE **)ref->GetLoaderAllocatorObjectHandle();
         if((BYTE*) refObject >= g_ephemeral_low && (BYTE*) refObject < g_ephemeral_high)
         {
             // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered

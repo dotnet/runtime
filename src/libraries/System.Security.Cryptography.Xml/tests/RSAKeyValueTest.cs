@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             // FormatException exception because .NET Framework does not
             // check if Convert.FromBase64String throws
-            // Related to: https://github.com/dotnet/corefx/issues/18690
+            // Related to: https://github.com/dotnet/runtime/issues/21236
             try
             {
                 rsa.LoadXml(xmlDocument.DocumentElement);

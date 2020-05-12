@@ -14,5 +14,5 @@ Perform the EC Diffie-Hellman key agreement between the provided keys.
 
 Follows pal_seckey return conventions.
 */
-DLLEXPORT int32_t
+PALEXPORT int32_t
 AppleCryptoNative_EcdhKeyAgree(SecKeyRef privateKey, SecKeyRef publicKey, CFDataRef* pAgreeOut, CFErrorRef* pErrorOut);

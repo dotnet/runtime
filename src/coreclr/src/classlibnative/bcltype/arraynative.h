@@ -26,7 +26,6 @@ class ArrayNative
 {
 public:
     static FCDECL1(INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
-    static FCDECL2(FC_BOOL_RET, IsValueOfElementType, ArrayBase* arrayUNSAFE, Object* valueUNSAFE);
 
     static FCDECL1(void, Initialize, ArrayBase* pArray);
 

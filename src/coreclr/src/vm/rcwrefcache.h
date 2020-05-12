@@ -32,6 +32,11 @@ public :
     HRESULT AddReferenceFromRCWToCCW(RCW *pRCW, ComCallWrapper *pCCW);
 
     //
+    // Add a reference from obj1 to obj2
+    //
+    HRESULT AddReferenceFromObjectToObject(OBJECTREF obj1, OBJECTREF obj2);
+
+    //
     // Enumerate all Jupiter RCWs in the RCW cache and do the callback
     // I'm using template here so there is no perf penality
     //
@@ -84,10 +89,10 @@ public :
 
 private :
     //
-    // Add RCW -> CCW reference using dependent handle
+    // Add obj1 -> obj2 reference using dependent handle
     // May fail if OOM
     //
-    HRESULT AddReferenceUsingDependentHandle(RCW *pRCW, ComCallWrapper *pCCW);
+    HRESULT AddReferenceUsingDependentHandle(OBJECTREF obj1, OBJECTREF obj2);
 
 private :
     AppDomain      *m_pAppDomain;                   // Domain

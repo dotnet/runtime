@@ -1065,46 +1065,10 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         GCPROTECT_BEGIN(throwable);
         throwable = pThread->GetThrowable();
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
+        if (IsProcessCorruptedStateException(exceptionCode, throwable))
         {
-            // Setup the state in current exception tracker indicating the corruption severity
-            // of the active exception.
-            CEHelper::SetupCorruptionSeverityForActiveException(bRethrownException, bNestedException,
-                CEHelper::ShouldTreatActiveExceptionAsNonCorrupting());
-
             // Failfast if exception indicates corrupted process state
-            if (pExInfo->GetCorruptionSeverity() == ProcessCorrupting)
-                EEPOLICY_HANDLE_FATAL_ERROR(exceptionCode);
-        }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-        // Check if we are dealing with AV or not and if we are,
-        // ensure that this is a real AV and not managed AV exception
-        BOOL fIsThrownExceptionAV = FALSE;
-        if ((pExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION) &&
-            (MscorlibBinder::GetException(kAccessViolationException) == throwable->GetMethodTable()))
-        {
-            // Its an AV - set the flag
-            fIsThrownExceptionAV = TRUE;
-        }
-
-        // Did we get an AV?
-        if (fIsThrownExceptionAV == TRUE)
-        {
-            // Get the escalation policy action for handling AV
-            EPolicyAction actionAV = GetEEPolicy()->GetActionOnFailure(FAIL_AccessViolation);
-
-            // Valid actions are: eNoAction (default behviour) or eRudeExitProcess
-            _ASSERTE(((actionAV == eNoAction) || (actionAV == eRudeExitProcess)));
-            if (actionAV == eRudeExitProcess)
-            {
-                LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: AccessViolation handler found and doing RudeExitProcess due to escalation policy (eRudeExitProcess)\n"));
-
-                // EEPolicy::HandleFatalError will help us RudeExit the process.
-                // RudeExitProcess due to AV is to prevent a security risk - we are ripping
-                // at the boundary, without looking for the handlers.
-                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_SECURITY);
-            }
+            EEPOLICY_HANDLE_FATAL_ERROR(exceptionCode);
         }
 
         // If we're out of memory, then we figure there's probably not memory to maintain a stack trace, so we skip it.
@@ -1421,10 +1385,6 @@ CPFH_UnwindFrames1(Thread* pThread, EXCEPTION_REGISTRATION_RECORD* pEstablisherF
     tct.pTopFrame = GetCurrFrame(pEstablisherFrame); // highest frame to search to
     tct.pBottomFrame = NULL;
 
-    // Set the flag indicating if the current exception represents a longjmp.
-    // See comment in COMPlusUnwindCallback for details.
-    CORRUPTING_EXCEPTIONS_ONLY(tct.m_fIsLongJump = (exceptionCode == STATUS_LONGJUMP);)
-
     #ifdef _DEBUG
     tct.pCurrentExceptionRecord = pEstablisherFrame;
     tct.pPrevExceptionRecord = GetPrevSEHRecord(pEstablisherFrame);
@@ -1692,7 +1652,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
     {
         if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
         {
-            EEPolicy::HandleStackOverflow(SOD_ManagedFrameHandler, (void*)pEstablisherFrame);
+            EEPolicy::HandleStackOverflow();
 
             // VC's unhandled exception filter plays with stack.  It VirtualAlloc's a new stack, and
             // then launch Watson from the new stack.  When Watson asks CLR to save required data, we
@@ -2395,20 +2355,6 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     if (fIsILStub)
         pUserMDForILStub = GetUserMethodForILStub(pThread, currentSP, pFunc, &pILStubFrame);
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    CorruptionSeverity currentSeverity = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetCorruptionSeverity();
-    {
-        // We must defer to the MethodDesc of the user method instead of the IL stub
-        // itself because the user can specify the policy on a per-method basis and
-        // that won't be reflected via the IL stub's MethodDesc.
-        MethodDesc * pMDWithCEAttribute = fIsILStub ? pUserMDForILStub : pFunc;
-
-        // Check if the exception can be delivered to the method? It will check if the exception
-        // is a CE or not. If it is, it will check if the method can process it or not.
-        fMethodCanHandleException = CEHelper::CanMethodHandleException(currentSeverity, pMDWithCEAttribute);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
     // Let the profiler know that we are searching for a handler within this function instance
     if (fGiveDebuggerAndProfilerNotification)
         EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionEnter(pFunc);
@@ -2435,29 +2381,12 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
             ExceptionNotifications::DeliverFirstChanceNotification();
         }
     }
+
     IJitManager* pJitManager = pCf->GetJitManager();
     _ASSERTE(pJitManager);
+
     EH_CLAUSE_ENUMERATOR pEnumState;
-    unsigned EHCount = 0;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // If exception cannot be handled, then just bail out. We shouldnt examine the EH clauses
-    // in such a method.
-    if (!fMethodCanHandleException)
-    {
-        LOG((LF_EH, LL_INFO100, "COMPlusThrowCallback - CEHelper decided not to look for exception handlers in the method(MD:%p).\n", pFunc));
-
-        // Set the flag to skip this frame since the CE cannot be delivered
-        _ASSERTE(currentSeverity == ProcessCorrupting);
-
-        // Ensure EHClause count is zero
-        EHCount = 0;
-    }
-    else
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-    {
-        EHCount = pJitManager->InitializeEHEnumeration(pCf->GetMethodToken(), &pEnumState);
-    }
+    unsigned EHCount = pJitManager->InitializeEHEnumeration(pCf->GetMethodToken(), &pEnumState);
 
     if (EHCount == 0)
     {
@@ -2737,59 +2666,6 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
 
     TypeHandle thrownType = TypeHandle();
 
-    BOOL fCanMethodHandleException = TRUE;
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // MethodDesc's security information (i.e. whether it is critical or transparent) is calculated lazily.
-    // If this method's security information was not precalculated, then it would have been in the first pass
-    // already using Security::IsMethodCritical which could take have taken us down a path which is GC_TRIGGERS.
-    //
-    //
-    // However, this unwind callback (for X86) is GC_NOTRIGGER and at this point the security information would have been
-    // calculated already. Hence, we wouldnt endup in the GC_TRIGGERS path. Thus, to keep SCAN.EXE (static contract analyzer) happy,
-    // we will pass a FALSE to the CanMethodHandleException call, indicating we dont need to calculate security information (and thus,
-    // not go down the GC_TRIGGERS path.
-    //
-    // Check if the exception can be delivered to the method? It will check if the exception
-    // is a CE or not. If it is, it will check if the method can process it or not.
-    CorruptionSeverity currentSeverity = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetCorruptionSeverity();
-
-    // We have to do this check for x86 since, unlike 64bit which will setup a new exception tracker for longjmp,
-    // x86 only sets up new trackers in the first pass (and longjmp is 2nd pass only exception). Hence, we pass
-    // this information in the callback structure without affecting any existing exception tracker (incase longjmp was
-    // a nested exception).
-    if (pData->m_fIsLongJump)
-    {
-        // Longjump is not a CSE. With a CSE in progress, this can be invoked by either:
-        //
-        // 1) Managed code (e.g. finally/fault/catch), OR
-        // 2) By native code
-        //
-        // In scenario (1), managed code can invoke it only if it was attributed with HPCSE attribute. Thus,
-        // longjmp is no different than managed code doing a "throw new Exception();".
-        //
-        // In scenario (2), longjmp is no different than any other non-CSE native exception raised.
-        //
-        // In both these case, longjmp should be treated as non-CSE. Since x86 does not setup a tracker for
-        // it (see comment above), we pass this information (of whether the current exception is a longjmp or not)
-        // to this callback (from UnwindFrames) to setup the correct corruption severity.
-        //
-        // http://www.nynaeve.net/?p=105 has a brief description of how exception-safe setjmp/longjmp works.
-        currentSeverity = NotCorrupting;
-    }
-    {
-        MethodDesc * pFuncWithCEAttribute = pFunc;
-        Frame * pILStubFrame = NULL;
-        if (pFunc->IsILStub())
-        {
-            // We must defer to the MethodDesc of the user method instead of the IL stub
-            // itself because the user can specify the policy on a per-method basis and
-            // that won't be reflected via the IL stub's MethodDesc.
-            pFuncWithCEAttribute = GetUserMethodForILStub(pThread, (UINT_PTR)pStack, pFunc, &pILStubFrame);
-        }
-        fCanMethodHandleException = CEHelper::CanMethodHandleException(currentSeverity, pFuncWithCEAttribute, FALSE);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 #ifdef DEBUGGING_SUPPORTED
     LOG((LF_EH, LL_INFO1000, "COMPlusUnwindCallback: Intercept %d, pData->pFunc 0x%X, pFunc 0x%X, pData->pStack 0x%X, pStack 0x%X\n",
          pExInfo->m_ExceptionFlags.DebuggerInterceptInfo(),
@@ -2815,24 +2691,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
         EEToProfilerExceptionInterfaceWrapper::ExceptionUnwindFunctionEnter(pFunc);
 
     EH_CLAUSE_ENUMERATOR pEnumState;
-    unsigned EHCount;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    if (!fCanMethodHandleException)
-    {
-        LOG((LF_EH, LL_INFO100, "COMPlusUnwindCallback - CEHelper decided not to look for exception handlers in the method(MD:%p).\n", pFunc));
-
-        // Set the flag to skip this frame since the CE cannot be delivered
-        _ASSERTE(currentSeverity == ProcessCorrupting);
-
-        // Force EHClause count to be zero
-        EHCount = 0;
-    }
-    else
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-    {
-        EHCount = pJitManager->InitializeEHEnumeration(pCf->GetMethodToken(), &pEnumState);
-    }
+    unsigned EHCount = pJitManager->InitializeEHEnumeration(pCf->GetMethodToken(), &pEnumState);
 
     if (EHCount == 0)
     {
@@ -3631,7 +3490,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 #endif // !FEATURE_EH_FUNCLETS
 }
-#endif // !DACCESS_COMPILE
 
 // Returns TRUE if caller should resume execution.
 BOOL
@@ -3653,7 +3511,7 @@ AdjustContextForVirtualStub(
     PCODE f_IP = GetIP(pContext);
 
     VirtualCallStubManager::StubKind sk;
-    /* VirtualCallStubManager *pMgr = */ VirtualCallStubManager::FindStubManager(f_IP, &sk);
+    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(f_IP, &sk);
 
     if (sk == VirtualCallStubManager::SK_DISPATCH)
     {
@@ -3679,11 +3537,12 @@ AdjustContextForVirtualStub(
         return FALSE;
     }
 
-    PCODE callsite = GetAdjustedCallAddress(*dac_cast<PTR_PCODE>(GetSP(pContext)));
+    PCODE callsite = *dac_cast<PTR_PCODE>(GetSP(pContext));
     if (pExceptionRecord != NULL)
     {
         pExceptionRecord->ExceptionAddress = (PVOID)callsite;
     }
+
     SetIP(pContext, callsite);
 
 #if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
@@ -3693,7 +3552,35 @@ AdjustContextForVirtualStub(
 #endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 
     // put ESP back to what it was before the call.
-    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*)));
+    TADDR sp = GetSP(pContext) + sizeof(void*);
+
+#ifndef UNIX_X86_ABI
+    // set the ESP to what it would be after the call (remove pushed arguments)
+
+    size_t stackArgumentsSize;
+    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    {
+        ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+
+        DispatchHolder *holder = DispatchHolder::FromDispatchEntry(f_IP);
+        MethodTable *pMT = (MethodTable*)holder->stub()->expectedMT();
+        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, f_IP, sk));
+        MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, pMT);
+        stackArgumentsSize = pMD->SizeOfArgStack();
+    }
+    else
+    {
+        // Compute the stub entry address from the address of failure (location of dereferencing of "this" pointer)
+        ResolveHolder *holder = ResolveHolder::FromResolveEntry(f_IP - ResolveStub::offsetOfThisDeref());
+        stackArgumentsSize = holder->stub()->stackArgumentsSize();
+    }
+
+    sp += stackArgumentsSize;
+#endif // UNIX_X86_ABI
+
+    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(sp)));
 
     return TRUE;
 }
+
+#endif // !DACCESS_COMPILE

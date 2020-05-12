@@ -18,15 +18,14 @@ namespace System.Globalization.Tests
         }
 
         /// <summary>
-        /// Not testing for Windows as the culture data can change
+        /// Not testing for NLS as the culture data can change
         /// https://blogs.msdn.microsoft.com/shawnste/2005/04/05/culture-data-shouldnt-be-considered-stable-except-for-invariant/
         /// In the CultureInfoAll test class we are testing the expected behavior
-        /// for Windows by enumerating all locales on the system and then test them.
+        /// for NLS by enumerating all locales on the system and then test them.
         /// </summary>
-        [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(PercentPositivePattern_TestData))]
-        public void PercentPositivePattern_Get_ReturnsExpected(NumberFormatInfo format, int expected)
+        public void PercentPositivePattern_Get_ReturnsExpected_ICU(NumberFormatInfo format, int expected)
         {
             Assert.Equal(expected, format.PercentPositivePattern);
         }

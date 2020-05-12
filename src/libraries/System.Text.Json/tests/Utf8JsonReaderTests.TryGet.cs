@@ -1157,27 +1157,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData("\"ABC=\"")]
-        [InlineData("\"AB+D\"")]
-        [InlineData("\"ABCD\"")]
-        [InlineData("\"ABC/\"")]
-        [InlineData("\"++++\"")]
-        [InlineData(null)]  // Large randomly generated string
+        [MemberData(nameof(JsonBase64TestData.ValidBase64Tests), MemberType = typeof(JsonBase64TestData))]
         public static void ValidBase64(string jsonString)
         {
-            if (jsonString == null)
-            {
-                var random = new Random(42);
-                var charArray = new char[502];
-                charArray[0] = '"';
-                for (int i = 1; i < charArray.Length; i++)
-                {
-                    charArray[i] = (char)random.Next('A', 'Z'); // ASCII values (between 65 and 90) that constitute valid base 64 string.
-                }
-                charArray[charArray.Length - 1] = '"';
-                jsonString = new string(charArray);
-            }
-
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
             var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
@@ -1192,28 +1174,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData("\"ABC===\"")]
-        [InlineData("\"ABC\"")]
-        [InlineData("\"ABC!\"")]
-        [InlineData(null)]  // Large randomly generated string
+        [MemberData(nameof(JsonBase64TestData.InvalidBase64Tests), MemberType = typeof(JsonBase64TestData))]
         public static void InvalidBase64(string jsonString)
         {
-            if (jsonString == null)
-            {
-                var random = new Random(42);
-                var charArray = new char[500];
-                charArray[0] = '"';
-                for (int i = 1; i < charArray.Length; i++)
-                {
-                    charArray[i] = (char)random.Next('?', '\\'); // ASCII values (between 63 and 91) that don't need to be escaped.
-                }
-
-                charArray[256] = '\\';
-                charArray[257] = '"';
-                charArray[charArray.Length - 1] = '"';
-                jsonString = new string(charArray);
-            }
-
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
             var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
@@ -1373,27 +1336,27 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonGuidTestData.ValidGuidTests), MemberType = typeof(JsonGuidTestData))]
         public static void TryGetGuid_HasValueSequence_RetrievesGuid(string testString, string expectedString)
         {
-            TryGetGuid_HasValueSequence_RetrievesGuid(testString, expectedString, isFinalBlock: true);
-            TryGetGuid_HasValueSequence_RetrievesGuid(testString, expectedString, isFinalBlock: false);
-        }
+            static void test(string testString, string expectedString, bool isFinalBlock)
+            {
+                byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
+                ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+                var json = new Utf8JsonReader(sequence, isFinalBlock: isFinalBlock, state: default);
 
-        private static void TryGetGuid_HasValueSequence_RetrievesGuid(string testString, string expectedString, bool isFinalBlock)
-        {
-            byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
-            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
-            var json = new Utf8JsonReader(sequence, isFinalBlock: isFinalBlock, state: default);
+                Guid expected = new Guid(expectedString);
 
-            Guid expected = new Guid(expectedString);
+                Assert.True(json.Read(), "json.Read()");
+                Assert.Equal(JsonTokenType.String, json.TokenType);
 
-            Assert.True(json.Read(), "json.Read()");
-            Assert.Equal(JsonTokenType.String, json.TokenType);
+                Assert.True(json.HasValueSequence, "json.HasValueSequence");
+                Assert.False(json.ValueSequence.IsEmpty, "json.ValueSequence.IsEmpty");
+                Assert.True(json.ValueSpan.IsEmpty, "json.ValueSpan.IsEmpty");
+                Assert.True(json.TryGetGuid(out Guid actual), "TryGetGuid");
+                Assert.Equal(expected, actual);
+                Assert.Equal(expected, json.GetGuid());
+            }
 
-            Assert.True(json.HasValueSequence, "json.HasValueSequence");
-            Assert.False(json.ValueSequence.IsEmpty, "json.ValueSequence.IsEmpty");
-            Assert.True(json.ValueSpan.IsEmpty, "json.ValueSpan.IsEmpty");
-            Assert.True(json.TryGetGuid(out Guid actual), "TryGetGuid");
-            Assert.Equal(expected, actual);
-            Assert.Equal(expected, json.GetGuid());
+            test(testString, expectedString, isFinalBlock: true);
+            test(testString, expectedString, isFinalBlock: false);
         }
 
         [Theory]
@@ -1416,25 +1379,25 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonGuidTestData.InvalidGuidTests), MemberType = typeof(JsonGuidTestData))]
         public static void TryGetGuid_HasValueSequence_False(string testString)
         {
-            TryGetGuid_HasValueSequence_False(testString, isFinalBlock: true);
-            TryGetGuid_HasValueSequence_False(testString, isFinalBlock: false);
-        }
+            static void test(string testString, bool isFinalBlock)
+            {
+                byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
+                ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+                var json = new Utf8JsonReader(sequence, isFinalBlock: isFinalBlock, state: default);
 
-        private static void TryGetGuid_HasValueSequence_False(string testString, bool isFinalBlock)
-        {
-            byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
-            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
-            var json = new Utf8JsonReader(sequence, isFinalBlock: isFinalBlock, state: default);
+                Assert.True(json.Read(), "json.Read()");
+                Assert.Equal(JsonTokenType.String, json.TokenType);
+                Assert.True(json.HasValueSequence, "json.HasValueSequence");
+                // If the string is empty, the ValueSequence is empty, because it contains all 0 bytes between the two characters
+                Assert.Equal(string.IsNullOrEmpty(testString), json.ValueSequence.IsEmpty);
+                Assert.False(json.TryGetGuid(out Guid actual), "json.TryGetGuid(out Guid actual)");
+                Assert.Equal(Guid.Empty, actual);
 
-            Assert.True(json.Read(), "json.Read()");
-            Assert.Equal(JsonTokenType.String, json.TokenType);
-            Assert.True(json.HasValueSequence, "json.HasValueSequence");
-            // If the string is empty, the ValueSequence is empty, because it contains all 0 bytes between the two characters
-            Assert.Equal(string.IsNullOrEmpty(testString), json.ValueSequence.IsEmpty);
-            Assert.False(json.TryGetGuid(out Guid actual), "json.TryGetGuid(out Guid actual)");
-            Assert.Equal(Guid.Empty, actual);
+                JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetGuid());
+            }
 
-            JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetGuid());
+            test(testString, isFinalBlock: true);
+            test(testString, isFinalBlock: false);
         }
     }
 }

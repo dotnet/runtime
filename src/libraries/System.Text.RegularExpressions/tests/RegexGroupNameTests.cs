@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using System.Collections;
 using System.Diagnostics;
 
-namespace System.Text.RegularExpressionsTests
+namespace System.Text.RegularExpressions.Tests
 {
     /// <summary>
     /// Tests the Name property on the Group class.

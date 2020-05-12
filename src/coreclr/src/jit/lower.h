@@ -28,7 +28,7 @@ public:
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
     }
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
     // This variant of LowerRange is called from outside of the main Lowering pass,
     // so it creates its own instance of Lowering to do so.
@@ -119,8 +119,6 @@ private:
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
-    void CheckVSQuirkStackPaddingNeeded(GenTreeCall* call);
-
     // ------------------------------
     // Call Lowering
     // ------------------------------
@@ -134,11 +132,16 @@ private:
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
+#if !FEATURE_MULTIREG_RET
+    void LowerRetStruct(GenTreeUnOp* ret);
+    void LowerRetStructLclVar(GenTreeUnOp* ret);
+    void LowerCallStruct(GenTreeCall* call);
+#endif
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
-    GenTree* LowerTailCallViaHelper(GenTreeCall* callNode, GenTree* callTarget);
+    GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
     void LowerFastTailCall(GenTreeCall* callNode);
     void RehomeArgForFastTailCall(unsigned int lclNum,
                                   GenTree*     insertTempBefore,
@@ -312,6 +315,7 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     void LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
+    void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
 

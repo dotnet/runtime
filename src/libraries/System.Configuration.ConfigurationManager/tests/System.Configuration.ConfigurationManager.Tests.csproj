@@ -7,30 +7,22 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
-      <Link>Common\System\IO\TempDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs">
-      <Link>Source\ConfigPathUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs">
-      <Link>Source\ExceptionUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\StringUtil.cs">
-      <Link>Source\StringUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\TypeUtil.cs">
-      <Link>Source\TypeUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\UrlPath.cs">
-      <Link>Source\UrlPath.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs">
-      <Link>Source\ValidatorUtils.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
+             Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs"
+             Link="Source\ConfigPathUtility.cs" />
+    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs"
+             Link="Source\ExceptionUtil.cs" />
+    <Compile Include="..\src\System\Configuration\StringUtil.cs"
+             Link="Source\StringUtil.cs" />
+    <Compile Include="..\src\System\Configuration\TypeUtil.cs"
+             Link="Source\TypeUtil.cs" />
+    <Compile Include="..\src\System\Configuration\UrlPath.cs"
+             Link="Source\UrlPath.cs" />
+    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs"
+             Link="Source\ValidatorUtils.cs" />
     <Compile Include="Mono\CallbackValidatorTest.cs" />
     <Compile Include="Mono\CommaDelimitedStringCollectionConverterTest.cs" />
     <Compile Include="Mono\CommaDelimitedStringCollectionTest.cs" />
@@ -78,6 +70,7 @@
     <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementTests.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyAttributeTests.cs" />
+    <Compile Include="System\Configuration\CustomHostTests.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyTests.cs" />
     <Compile Include="System\Configuration\ConfigurationTests.cs" />
     <Compile Include="System\Configuration\BasicCustomSectionTests.cs" />

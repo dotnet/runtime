@@ -26,7 +26,7 @@ namespace System.Drawing.Design
         /// <summary>
         /// Represents the entry at the specified index of the <see cref='string'/>.
         /// </summary>
-        public string this[int index] => ((string)(InnerList[index]));
+        public string this[int index] => ((string)(InnerList[index])!);
 
         /// <summary>
         /// Gets a value indicating whether the  <see cref='CategoryNameCollection'/> contains the specified

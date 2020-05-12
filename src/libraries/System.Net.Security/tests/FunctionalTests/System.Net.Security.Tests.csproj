@@ -2,131 +2,105 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks Condition="'$(TargetsUnix)' == 'true'">true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
-  <Choose>
-    <!-- Disable the whole workitem on Windows arm64 until https://github.com/dotnet/core-eng/issues/5118 is fixed. -->
-    <When Condition="'$(ArchGroup)' != 'arm64' or '$(TargetsWindows)' != 'true'">
-      <ItemGroup>
-        <Compile Include="NotifyReadVirtualNetworkStream.cs" />
-        <Compile Include="DummyTcpServer.cs" />
-        <Compile Include="TestConfiguration.cs" />
-        <Compile Include="TestHelper.cs" />
-        <!-- SslStream Tests -->
-        <Compile Include="CertificateValidationClientServer.cs" />
-        <Compile Include="CertificateValidationRemoteServer.cs" />
-        <Compile Include="ClientAsyncAuthenticateTest.cs" />
-        <Compile Include="ClientDefaultEncryptionTest.cs" />
-        <Compile Include="ParameterValidationTest.cs" />
-        <Compile Include="ServerAllowNoEncryptionTest.cs" />
-        <Compile Include="ServerAsyncAuthenticateTest.cs" />
-        <Compile Include="ServerNoEncryptionTest.cs" />
-        <Compile Include="ServerRequireEncryptionTest.cs" />
-        <Compile Include="SslStreamStreamToStreamTest.cs" />
-        <Compile Include="SslStreamNetworkStreamTest.cs" />
-        <Compile Include="TransportContextTest.cs" />
-        <!-- NegotiateStream Tests -->
-        <Compile Include="NegotiateStreamInvalidOperationTest.cs" />
-        <Compile Include="NegotiateStreamStreamToStreamTest.cs" />
-        <Compile Include="ServiceNameCollectionTest.cs" />
-        <Compile Include="NegotiateStreamKerberosTest.cs" />
-        <!-- Common test files -->
-        <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs">
-          <Link>Common\System\IO\DelegateStream.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs">
-          <Link>Common\System\Net\Capability.Security.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\SslStreamCertificatePolicy.cs">
-          <Link>Common\System\Net\SslStreamCertificatePolicy.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
-          <Link>Common\System\Net\Configuration.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs">
-          <Link>Common\System\Net\Configuration.Security.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs">
-          <Link>Common\System\Net\Configuration.Certificates.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs">
-          <Link>Common\System\Net\Configuration.Http.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\HttpsTestClient.cs">
-          <Link>Common\System\Net\HttpsTestClient.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs">
-          <Link>Common\System\Net\HttpsTestServer.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs">
-          <Link>Common\System\Net\SslProtocolSupport.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs">
-          <Link>Common\System\Net\TestLogging.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs">
-          <Link>Common\System\Net\VerboseTestLogging.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs">
-          <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetwork.cs">
-          <Link>Common\System\Net\VirtualNetwork\VirtualNetwork.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs">
-          <Link>Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
-          <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-          <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
-        </Compile>
-      </ItemGroup>
-      <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-        <Compile Include="..\..\src\System\Net\Security\SniHelper.cs">
-          <Link>src\SniHelper.cs</Link>
-        </Compile>
-        <Compile Include="SniHelperTest.cs" />
-        <Compile Include="SslAuthenticationOptionsTest.cs" />
-        <Compile Include="SslStreamAlertsTest.cs" />
-        <Compile Include="SslStreamAllowRenegotiationTests.cs" />
-        <Compile Include="SslStreamAlpnTests.cs" />
-        <Compile Include="SslStreamDisposeTest.cs" />
-        <Compile Include="SslStreamSniTest.cs" />
-        <Compile Include="SslStreamEKUTest.cs" />
-        <Compile Include="SslStreamNegotiatedCipherSuiteTest.cs" />
-        <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
-        <Compile Include="SslStreamCredentialCacheTest.cs" />
-        <Compile Include="SslStreamSystemDefaultsTest.cs" />
-      </ItemGroup>
-      <ItemGroup>
-        <Compile Include="LoggingTest.cs" />
-        <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-          <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
-        </Compile>
-      </ItemGroup>
-      <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-        <Compile Include="IdentityValidator.Windows.cs" />
-        <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs">
-          <Link>Common\System\Net\Capability.Security.Windows.cs</Link>
-        </Compile>
-      </ItemGroup>
-      <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-        <Compile Include="IdentityValidator.Unix.cs" />
-        <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs">
-          <Link>Common\System\Net\Capability.Security.Unix.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
-          <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-          <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-        </Compile>
-      </ItemGroup>
-      <ItemGroup>
-        <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
-      </ItemGroup>
-    </When>
-  </Choose>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="NotifyReadVirtualNetworkStream.cs" />
+    <Compile Include="DummyTcpServer.cs" />
+    <Compile Include="TestConfiguration.cs" />
+    <Compile Include="TestHelper.cs" />
+    <!-- SslStream Tests -->
+    <Compile Include="CertificateValidationClientServer.cs" />
+    <Compile Include="CertificateValidationRemoteServer.cs" />
+    <Compile Include="ClientAsyncAuthenticateTest.cs" />
+    <Compile Include="ClientDefaultEncryptionTest.cs" />
+    <Compile Include="ParameterValidationTest.cs" />
+    <Compile Include="ServerAllowNoEncryptionTest.cs" />
+    <Compile Include="ServerAsyncAuthenticateTest.cs" />
+    <Compile Include="ServerNoEncryptionTest.cs" />
+    <Compile Include="ServerRequireEncryptionTest.cs" />
+    <Compile Include="SslStreamStreamToStreamTest.cs" />
+    <Compile Include="SslStreamNetworkStreamTest.cs" />
+    <Compile Include="TransportContextTest.cs" />
+    <!-- NegotiateStream Tests -->
+    <Compile Include="NegotiateStreamInvalidOperationTest.cs" />
+    <Compile Include="NegotiateStreamStreamToStreamTest.cs" />
+    <Compile Include="ServiceNameCollectionTest.cs" />
+    <Compile Include="NegotiateStreamKerberosTest.cs" />
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
+             Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
+             Link="Common\System\Net\Capability.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\SslStreamCertificatePolicy.cs"
+             Link="Common\System\Net\SslStreamCertificatePolicy.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
+             Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"
+             Link="Common\System\Net\Configuration.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
+             Link="Common\System\Net\Configuration.Certificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
+             Link="Common\System\Net\Configuration.Http.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\HttpsTestClient.cs"
+             Link="Common\System\Net\HttpsTestClient.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs"
+             Link="Common\System\Net\HttpsTestServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
+             Link="Common\System\Net\SslProtocolSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs"
+             Link="Common\System\Net\TestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
+             Link="Common\System\Net\VerboseTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
+             Link="Common\System\Net\EventSourceTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetwork.cs"
+             Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs"
+             Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SniHelper.cs"
+             Link="src\SniHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
+             Link="src\TlsFrameHelper.cs" />
+    <Compile Include="SniHelperTest.cs" />
+    <Compile Include="SslAuthenticationOptionsTest.cs" />
+    <Compile Include="SslStreamAlertsTest.cs" />
+    <Compile Include="SslStreamAllowRenegotiationTests.cs" />
+    <Compile Include="SslStreamAlpnTests.cs" />
+    <Compile Include="SslStreamDisposeTest.cs" />
+    <Compile Include="SslStreamSniTest.cs" />
+    <Compile Include="SslStreamEKUTest.cs" />
+    <Compile Include="SslStreamNegotiatedCipherSuiteTest.cs" />
+    <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
+    <Compile Include="SslStreamCredentialCacheTest.cs" />
+    <Compile Include="SslStreamSystemDefaultsTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="IdentityValidator.Windows.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs"
+             Link="Common\System\Net\Capability.Security.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="IdentityValidator.Unix.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs"
+             Link="Common\System\Net\Capability.Security.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+  </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -19,112 +19,82 @@
     <Compile Include="System\IO\RenamedEventHandler.cs" />
     <Compile Include="System\IO\WatcherChangeTypes.cs" />
     <Compile Include="System\IO\WaitForChangedResult.cs" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
-      <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
+             Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs">
-      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
-      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FileOperations.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadDirectoryChangesW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.ReadDirectoryChangesW.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
+             Link="Common\System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
+             Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadDirectoryChangesW.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ReadDirectoryChangesW.cs" />
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
-      <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
+             Link="Common\Interop\Windows\Interop.CreateFile.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
-      <Link>Common\Interop\Unix\libc\Interop.Read.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs">
-      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs">
-      <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
+             Link="Common\Interop\Unix\libc\Interop.Read.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
+             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
+             Link="Common\System\IO\PathInternal.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
+             Link="Common\Interop\Unix\Interop.PathConf.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
-    <Compile Include="$(CommonPath)Interop\Linux\System.Native\Interop.INotify.cs">
-      <Link>Common\Interop\Linux\Interop.inotify.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs">
-      <Link>Common\Interop\Unix\Interop.Poll.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
-      <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Linux\System.Native\Interop.INotify.cs"
+             Link="Common\Interop\Linux\Interop.inotify.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
+             Link="Common\Interop\Unix\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\Interop.Stat.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs">
-      <Link>System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.EventStream.cs">
-      <Link>Common\Interop\OSX\Interop.EventStream.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
-      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.RunLoop.cs">
-      <Link>Common\Interop\OSX\Interop.RunLoop.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RealPath.cs">
-      <Link>Common\Interop\Unix\Interop.RealPath.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Span.cs">
-      <Link>Common\Interop\Unix\Interop.Stat.Span.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
-      <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Sync.cs">
-      <Link>Common\Interop\Unix\Interop.Sync.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEventStreamHandle.OSX.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeEventStreamHandle.OSX.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs">
-      <Link>Common\System\Text\ValueUtf8Converter.cs</Link>
-    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs"
+             Link="System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.EventStream.cs"
+             Link="Common\Interop\OSX\Interop.EventStream.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
+             Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
+             Link="Common\Interop\OSX\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.RunLoop.cs"
+             Link="Common\Interop\OSX\Interop.RunLoop.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RealPath.cs"
+             Link="Common\Interop\Unix\Interop.RealPath.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Span.cs"
+             Link="Common\Interop\Unix\Interop.Stat.Span.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Sync.cs"
+             Link="Common\Interop\Unix\Interop.Sync.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEventStreamHandle.OSX.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeEventStreamHandle.OSX.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.UnknownUnix.cs" />
@@ -142,7 +112,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

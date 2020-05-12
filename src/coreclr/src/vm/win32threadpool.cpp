@@ -1502,28 +1502,13 @@ WorkRequest* ThreadpoolMgr::DequeueWorkRequest()
     RETURN entry;
 }
 
-DWORD WINAPI ThreadpoolMgr::ExecuteHostRequest(PVOID pArg)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    bool foundWork, wasNotRecalled;
-    ExecuteWorkRequest(&foundWork, &wasNotRecalled);
-    return ERROR_SUCCESS;
-}
-
 void ThreadpoolMgr::ExecuteWorkRequest(bool* foundWork, bool* wasNotRecalled)
 {
     CONTRACTL
     {
         THROWS;     // QueueUserWorkItem can throw
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -2786,14 +2771,7 @@ void ThreadpoolMgr::ProcessWaitCompletion(WaitInfo* waitInfo,
         if (asyncCallback)
             ReleaseAsyncCallback(asyncCallback);
 
-        if (SwallowUnhandledExceptions())
-        {
-            // Do nothing to swallow the exception
-        }
-        else
-        {
-            EX_RETHROW;
-        }
+        EX_RETHROW;
     }
     EX_END_CATCH(SwallowAllExceptions);
 }
@@ -4134,6 +4112,8 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
     GetCPUBusyTime_NT(&prevCPUInfo);
 #else // !TARGET_UNIX
     PAL_IOCP_CPU_INFORMATION prevCPUInfo;
+    memset(&prevCPUInfo, 0, sizeof(prevCPUInfo));
+
     GetCPUBusyTime_NT(&prevCPUInfo);                  // ignore return value the first time
 #endif // !TARGET_UNIX
 
@@ -4576,14 +4556,7 @@ void ThreadpoolMgr::TimerThreadFire()
     EX_CATCH {
         // Assert on debug builds since a dead timer thread is a fatal error
         _ASSERTE(FALSE);
-        if (SwallowUnhandledExceptions())
-        {
-            // Do nothing to swallow the exception
-        }
-        else
-        {
-            EX_RETHROW;
-        }
+        EX_RETHROW;
     }
     EX_END_CATCH(SwallowAllExceptions);
 }

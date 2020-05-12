@@ -10,11 +10,81 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class WriteValueTests
     {
+        public static bool IsX64 { get; } = IntPtr.Size >= 8;
+
         [Fact]
         public static void NullWriterThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1));
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1, typeof(int)));
+            ArgumentNullException ex;
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1));
+            Assert.Contains("writer", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1, typeof(int)));
+            Assert.Contains("writer", ex.ToString());
+        }
+
+        [Fact]
+        public async static void NullInputTypeThrows()
+        {
+            ArgumentException ex;
+            Utf8JsonWriter writer = new Utf8JsonWriter(new MemoryStream());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(writer: writer, value: null, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(writer, value: null, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(1, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.SerializeToUtf8Bytes(null, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+
+            ex = await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync(new MemoryStream(), null, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+        }
+
+        [Fact]
+        public async static void NullValueWithValueTypeThrows()
+        {
+            JsonException ex;
+
+            Utf8JsonWriter writer = new Utf8JsonWriter(new MemoryStream());
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(writer: writer, value: null, inputType: typeof(int)));
+            Assert.Contains(typeof(int).ToString(), ex.ToString());
+
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(value: null, inputType: typeof(int)));
+            Assert.Contains(typeof(int).ToString(), ex.ToString());
+
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.SerializeToUtf8Bytes(value: null, inputType: typeof(int)));
+            Assert.Contains(typeof(int).ToString(), ex.ToString());
+
+            ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.SerializeAsync(new MemoryStream(), value: null, inputType: typeof(int)));
+            Assert.Contains(typeof(int).ToString(), ex.ToString());
+        }
+
+        [Fact]
+        public async static void NullValueWithNullableSuccess()
+        {
+            byte[] nullUtf8Literal = Encoding.UTF8.GetBytes("null");
+
+            var stream = new MemoryStream();
+            Utf8JsonWriter writer = new Utf8JsonWriter(stream);
+            JsonSerializer.Serialize(writer: writer, value: null, inputType: typeof(int?));
+            byte[] jsonBytes = stream.ToArray();
+            Assert.Equal(nullUtf8Literal, jsonBytes);
+
+            string jsonString = JsonSerializer.Serialize(value: null, inputType: typeof(int?));
+            Assert.Equal("null", jsonString);
+
+            jsonBytes = JsonSerializer.SerializeToUtf8Bytes(value: null, inputType: typeof(int?));
+            Assert.Equal(nullUtf8Literal, jsonBytes);
+
+            stream = new MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, value: null, inputType: typeof(int?));
+            Assert.Equal(nullUtf8Literal, stream.ToArray());
         }
 
         [Fact]
@@ -284,6 +354,45 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected, Encoding.UTF8.GetString(stream.ToArray()));
                 }
             }
+        }
+
+        public class CustomClassToExceedMaxBufferSize
+        {
+            private static readonly string s_name = new string('a', 100_000_000);//Large enough value to cause integer overflow exception when allocating buffer and small enought to not cause a "The JSON value of length X is too large and not supported."
+            public string GetName1 => s_name;
+            public string GetName2 => s_name;
+            public string GetName3 => s_name;
+            public string GetName4 => s_name;
+            public string GetName5 => s_name;
+            public string GetName6 => s_name;
+            public string GetName7 => s_name;
+            public string GetName8 => s_name;
+            public string GetName9 => s_name;
+            public string GetName10 => s_name;
+            public string GetName11 => s_name;
+            public string GetName12 => s_name;
+            public string GetName13 => s_name;
+            public string GetName14 => s_name;
+            public string GetName15 => s_name;
+            public string GetName16 => s_name;
+            public string GetName17 => s_name;
+            public string GetName18 => s_name;
+            public string GetName19 => s_name;
+            public string GetName20 => s_name;
+        }
+
+        // NOTE: SerializeExceedMaximumBufferSize test is constrained to run on Windows and MacOSX because it causes 
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can 
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the 
+        //       time the memory is accessed which triggers the full memory allocation. 
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(IsX64))]
+        [OuterLoop]
+        public static void SerializeExceedMaximumBufferSize()
+        {
+            CustomClassToExceedMaxBufferSize temp = new CustomClassToExceedMaxBufferSize();
+
+            Assert.Throws<OutOfMemoryException>(() => JsonSerializer.Serialize(temp, typeof(CustomClassToExceedMaxBufferSize)));
         }
     }
 }

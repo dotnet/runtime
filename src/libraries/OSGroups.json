@@ -2,7 +2,7 @@
   "runtimes": {
     "Unix" : {      
     },
-    "WebAssembly" : {
+    "Browser" : {
       "#import": [
         "Linux"
       ]
@@ -15,6 +15,21 @@
     "OSX": {
       "#import": [
         "Unix"
+        ]
+      },
+    "iOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "tvOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "Android": {
+      "#import": [
+        "Linux"
         ]
       },
     "FreeBSD": {

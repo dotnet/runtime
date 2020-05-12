@@ -19,7 +19,7 @@ namespace System.Net.Mime
         //folding takes up 3 characters "\r\n "
         private const int SizeOfFoldingCRLF = 3;
 
-        private static readonly byte[] s_hexDecodeMap = new byte[]
+        private static ReadOnlySpan<byte> HexDecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0
@@ -40,7 +40,7 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         };
 
-        private ReadStateInfo _readState;
+        private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
 
         internal QEncodedStream(WriteStateInfoBase wsi) : base(new MemoryStream())
@@ -52,7 +52,7 @@ namespace System.Net.Mime
 
         internal WriteStateInfoBase WriteState => _writeState;
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (buffer == null)
             {
@@ -107,8 +107,8 @@ namespace System.Net.Mime
                         // '=\r\n' means a soft (aka. invisible) CRLF sequence...
                         if (source[0] != '\r' || source[1] != '\n')
                         {
-                            byte b1 = s_hexDecodeMap[source[0]];
-                            byte b2 = s_hexDecodeMap[source[1]];
+                            byte b1 = HexDecodeMap[source[0]];
+                            byte b2 = HexDecodeMap[source[1]];
                             if (b1 == 255)
                                 throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                             if (b2 == 255)
@@ -124,8 +124,8 @@ namespace System.Net.Mime
                         // '=\r\n' means a soft (aka. invisible) CRLF sequence...
                         if (ReadState.Byte != '\r' || *source != '\n')
                         {
-                            byte b1 = s_hexDecodeMap[ReadState.Byte];
-                            byte b2 = s_hexDecodeMap[*source];
+                            byte b1 = HexDecodeMap[ReadState.Byte];
+                            byte b2 = HexDecodeMap[*source];
                             if (b1 == 255)
                                 throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                             if (b2 == 255)
@@ -177,8 +177,8 @@ namespace System.Net.Mime
                             default:
                                 if (source[1] != '\r' || source[2] != '\n')
                                 {
-                                    byte b1 = s_hexDecodeMap[source[1]];
-                                    byte b2 = s_hexDecodeMap[source[2]];
+                                    byte b1 = HexDecodeMap[source[1]];
+                                    byte b2 = HexDecodeMap[source[2]];
                                     if (b1 == 255)
                                         throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                                     if (b2 == 255)
@@ -326,7 +326,7 @@ namespace System.Net.Mime
 
             private int _written;
 
-            internal WriteAsyncResult(QEncodedStream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+            internal WriteAsyncResult(QEncodedStream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
                 : base(null, state, callback)
             {
                 _parent = parent;
@@ -352,7 +352,7 @@ namespace System.Net.Mime
             {
                 if (!result.CompletedSynchronously)
                 {
-                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState;
+                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState!;
                     try
                     {
                         thisPtr.CompleteWrite(result);

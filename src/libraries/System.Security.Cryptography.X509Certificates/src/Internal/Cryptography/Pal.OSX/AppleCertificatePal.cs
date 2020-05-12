@@ -17,17 +17,17 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        private SafeSecIdentityHandle _identityHandle;
+        private SafeSecIdentityHandle? _identityHandle;
         private SafeSecCertificateHandle _certHandle;
         private CertificateData _certData;
         private bool _readCertData;
 
-        public static ICertificatePal FromHandle(IntPtr handle)
+        public static ICertificatePal? FromHandle(IntPtr handle)
         {
             return FromHandle(handle, true);
         }
 
-        internal static ICertificatePal FromHandle(IntPtr handle, bool throwOnFail)
+        internal static ICertificatePal? FromHandle(IntPtr handle, bool throwOnFail)
         {
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
@@ -62,11 +62,11 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
-        public static ICertificatePal FromOtherCert(X509Certificate cert)
+        public static ICertificatePal? FromOtherCert(X509Certificate cert)
         {
             Debug.Assert(cert.Pal != null);
 
-            ICertificatePal pal = FromHandle(cert.Handle);
+            ICertificatePal? pal = FromHandle(cert.Handle);
             GC.KeepAlive(cert); // ensure cert's safe handle isn't finalized while raw handle is in use
             return pal;
         }
@@ -164,12 +164,12 @@ namespace Internal.Cryptography.Pal
             _certHandle?.Dispose();
             _identityHandle?.Dispose();
 
-            _certHandle = null;
+            _certHandle = null!;
             _identityHandle = null;
         }
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;
-        internal SafeSecIdentityHandle IdentityHandle => _identityHandle;
+        internal SafeSecIdentityHandle? IdentityHandle => _identityHandle;
 
         public bool HasPrivateKey => !(_identityHandle?.IsInvalid ?? true);
 
@@ -179,7 +179,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (HasPrivateKey)
                 {
-                    return _identityHandle.DangerousGetHandle();
+                    return _identityHandle!.DangerousGetHandle();
                 }
 
                 return _certHandle?.DangerousGetHandle() ?? IntPtr.Zero;
@@ -200,7 +200,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 EnsureCertData();
-                return _certData.PublicKeyAlgorithm.AlgorithmId;
+                return _certData.PublicKeyAlgorithm.AlgorithmId!;
             }
         }
 
@@ -236,7 +236,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 EnsureCertData();
-                return _certData.SignatureAlgorithm.AlgorithmId;
+                return _certData.SignatureAlgorithm.AlgorithmId!;
             }
         }
 
@@ -284,7 +284,7 @@ namespace Internal.Cryptography.Pal
 
             foreach (X509Extension extension in _certData.Extensions)
             {
-                switch (extension.Oid.Value)
+                switch (extension.Oid!.Value)
                 {
                     case Oids.ApplicationCertPolicies:
                         policyData.ApplicationCertPolicies = extension.RawData;
@@ -417,7 +417,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public RSA GetRSAPrivateKey()
+        public RSA? GetRSAPrivateKey()
         {
             if (_identityHandle == null)
                 return null;
@@ -430,7 +430,7 @@ namespace Internal.Cryptography.Pal
             return new RSAImplementation.RSASecurityTransforms(publicKey, privateKey);
         }
 
-        public DSA GetDSAPrivateKey()
+        public DSA? GetDSAPrivateKey()
         {
             if (_identityHandle == null)
                 return null;
@@ -448,7 +448,7 @@ namespace Internal.Cryptography.Pal
             return new DSAImplementation.DSASecurityTransforms(publicKey, privateKey);
         }
 
-        public ECDsa GetECDsaPrivateKey()
+        public ECDsa? GetECDsaPrivateKey()
         {
             if (_identityHandle == null)
                 return null;
@@ -472,7 +472,7 @@ namespace Internal.Cryptography.Pal
 
             DSAParameters dsaParameters = privateKey.ExportParameters(true);
 
-            using (PinAndClear.Track(dsaParameters.X))
+            using (PinAndClear.Track(dsaParameters.X!))
             using (typedKey = new DSAImplementation.DSASecurityTransforms())
             {
                 typedKey.ImportParameters(dsaParameters);
@@ -491,7 +491,7 @@ namespace Internal.Cryptography.Pal
 
             ECParameters ecParameters = privateKey.ExportParameters(true);
 
-            using (PinAndClear.Track(ecParameters.D))
+            using (PinAndClear.Track(ecParameters.D!))
             using (typedKey = new ECDsaImplementation.ECDsaSecurityTransforms())
             {
                 typedKey.ImportParameters(ecParameters);
@@ -510,12 +510,12 @@ namespace Internal.Cryptography.Pal
 
             RSAParameters rsaParameters = privateKey.ExportParameters(true);
 
-            using (PinAndClear.Track(rsaParameters.D))
-            using (PinAndClear.Track(rsaParameters.P))
-            using (PinAndClear.Track(rsaParameters.Q))
-            using (PinAndClear.Track(rsaParameters.DP))
-            using (PinAndClear.Track(rsaParameters.DQ))
-            using (PinAndClear.Track(rsaParameters.InverseQ))
+            using (PinAndClear.Track(rsaParameters.D!))
+            using (PinAndClear.Track(rsaParameters.P!))
+            using (PinAndClear.Track(rsaParameters.Q!))
+            using (PinAndClear.Track(rsaParameters.DP!))
+            using (PinAndClear.Track(rsaParameters.DQ!))
+            using (PinAndClear.Track(rsaParameters.InverseQ!))
             using (typedKey = new RSAImplementation.RSASecurityTransforms())
             {
                 typedKey.ImportParameters(rsaParameters);
@@ -523,9 +523,9 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal AppleCertificatePal MoveToKeychain(SafeKeychainHandle keychain, SafeSecKeyRefHandle privateKey)
+        internal AppleCertificatePal? MoveToKeychain(SafeKeychainHandle keychain, SafeSecKeyRefHandle? privateKey)
         {
-            SafeSecIdentityHandle identity = Interop.AppleCrypto.X509MoveToKeychain(
+            SafeSecIdentityHandle? identity = Interop.AppleCrypto.X509MoveToKeychain(
                 _certHandle,
                 keychain,
                 privateKey);
@@ -627,7 +627,9 @@ namespace Internal.Cryptography.Pal
         {
             using (IExportPal storePal = StorePal.FromCertificate(this))
             {
-                return storePal.Export(contentType, password);
+                byte[]? exported = storePal.Export(contentType, password);
+                Debug.Assert(exported != null);
+                return exported;
             }
         }
 

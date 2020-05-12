@@ -17,7 +17,7 @@ namespace System.Net.Http
 {
     internal sealed class MacProxy : IWebProxy
     {
-        public ICredentials Credentials { get; set; }
+        public ICredentials? Credentials { get; set; }
 
         private static Uri GetProxyUri(string scheme, CFProxy proxy)
         {
@@ -26,14 +26,14 @@ namespace System.Net.Http
                 proxy.HostName,
                 proxy.PortNumber);
 
-            // TODO https://github.com/dotnet/corefx/issues/26593 - Credentials are not propagated
+            // TODO https://github.com/dotnet/runtime/issues/24799 - Credentials are not propagated
 
             return uriBuilder.Uri;
         }
 
-        public Uri ExecuteProxyAutoConfiguration(SafeCreateHandle cfurl, CFProxy proxy)
+        public Uri? ExecuteProxyAutoConfiguration(SafeCreateHandle cfurl, CFProxy proxy)
         {
-            Uri result = null;
+            Uri? result = null;
             CFRunLoopRef runLoop = CFRunLoopGetCurrent();
 
             // Callback that will be called after executing the configuration script
@@ -68,7 +68,7 @@ namespace System.Net.Http
                 CFNetworkExecuteProxyAutoConfigurationURL(proxy.AutoConfigurationURL, cfurl, cb, ref clientContext) :
                 CFNetworkExecuteProxyAutoConfigurationScript(proxy.AutoConfigurationJavaScript, cfurl, cb, ref clientContext);
 
-            using (var mode = CFStringCreateWithCString(typeof(MacProxy).FullName))
+            using (var mode = CFStringCreateWithCString(typeof(MacProxy).FullName!))
             {
                 IntPtr modeHandle = mode.DangerousGetHandle();
                 CFRunLoopAddSource(runLoop, loopSource, modeHandle);
@@ -81,7 +81,7 @@ namespace System.Net.Http
             return result;
         }
 
-        public Uri GetProxy(Uri targetUri)
+        public Uri? GetProxy(Uri targetUri)
         {
             using (SafeCFDictionaryHandle systemProxySettings = CFNetworkCopySystemProxySettings())
             using (SafeCreateHandle cfurl = CFURLCreateWithString(targetUri.AbsoluteUri))
@@ -97,7 +97,7 @@ namespace System.Net.Http
 
                         if (proxy.ProxyType == CFProxy.kCFProxyTypeAutoConfigurationURL || proxy.ProxyType == CFProxy.kCFProxyTypeAutoConfigurationJavaScript)
                         {
-                            Uri result = ExecuteProxyAutoConfiguration(cfurl, proxy);
+                            Uri? result = ExecuteProxyAutoConfiguration(cfurl, proxy);
                             if (result != null)
                                 return result;
                         }
@@ -117,7 +117,7 @@ namespace System.Net.Http
             if (targetUri == null)
                 throw new ArgumentNullException(nameof(targetUri));
 
-            Uri proxyUri = GetProxy(targetUri);
+            Uri? proxyUri = GetProxy(targetUri);
             return Equals(proxyUri, targetUri) || proxyUri == null;
         }
     }

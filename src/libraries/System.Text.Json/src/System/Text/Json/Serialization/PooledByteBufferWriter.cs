@@ -136,9 +136,19 @@ namespace System.Text.Json
 
             if (sizeHint > availableSpace)
             {
-                int growBy = Math.Max(sizeHint, _rentedBuffer.Length);
+                int currentLength = _rentedBuffer.Length;
+                int growBy = Math.Max(sizeHint, currentLength);
 
-                int newSize = checked(_rentedBuffer.Length + growBy);
+                int newSize = currentLength + growBy;
+
+                if ((uint)newSize > int.MaxValue)
+                {
+                    newSize = currentLength + sizeHint;
+                    if ((uint)newSize > int.MaxValue)
+                    {
+                        ThrowHelper.ThrowOutOfMemoryException_BufferMaximumSizeExceeded((uint)newSize);
+                    }
+                }
 
                 byte[] oldBuffer = _rentedBuffer;
 

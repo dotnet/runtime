@@ -65,7 +65,7 @@ jobs:
 
 #
 # Build with RuntimeFlavor only. This excercise code paths where only Configuration is
-# specified. Catches cases where we depend on ConfigurationGroup also being specified
+# specified. Catches cases where we depend on Configuration also being specified
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -77,3 +77,18 @@ jobs:
       testGroup: innerloop
       nameSuffix: RuntimeFlavor_Mono
       buildArgs: /p:RuntimeFlavor=Mono
+
+#
+# Build Mono + Libraries. This excercises the code path where we build libraries without
+# first building CoreCLR
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Mono_Libraries
+      buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono

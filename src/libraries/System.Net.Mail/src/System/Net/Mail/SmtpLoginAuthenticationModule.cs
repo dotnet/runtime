@@ -15,14 +15,14 @@ namespace System.Net.Mail
         {
         }
 
-        public Authorization Authenticate(string challenge, NetworkCredential credential, object sessionCookie, string spn, ChannelBinding channelBindingToken)
+        public Authorization? Authenticate(string? challenge, NetworkCredential? credential, object sessionCookie, string? spn, ChannelBinding? channelBindingToken)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 lock (_sessions)
                 {
-                    NetworkCredential cachedCredential;
+                    NetworkCredential? cachedCredential;
                     if (!_sessions.TryGetValue(sessionCookie, out cachedCredential))
                     {
                         if (credential == null || ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))

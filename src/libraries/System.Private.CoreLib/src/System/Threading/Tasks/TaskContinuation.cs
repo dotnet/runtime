@@ -257,10 +257,10 @@ namespace System.Threading.Tasks
     }
 
     /// <summary>Provides the standard implementation of a task continuation.</summary>
-    internal class StandardTaskContinuation : TaskContinuation
+    internal sealed class ContinueWithTaskContinuation : TaskContinuation
     {
         /// <summary>The unstarted continuation task.</summary>
-        internal readonly Task m_task;
+        internal Task? m_task;
         /// <summary>The options to use with the continuation task.</summary>
         internal readonly TaskContinuationOptions m_options;
         /// <summary>The task scheduler with which to run the continuation task.</summary>
@@ -270,7 +270,7 @@ namespace System.Threading.Tasks
         /// <param name="task">The task to be activated.</param>
         /// <param name="options">The continuation options.</param>
         /// <param name="scheduler">The scheduler to use for the continuation.</param>
-        internal StandardTaskContinuation(Task task, TaskContinuationOptions options, TaskScheduler scheduler)
+        internal ContinueWithTaskContinuation(Task task, TaskContinuationOptions options, TaskScheduler scheduler)
         {
             Debug.Assert(task != null, "TaskContinuation ctor: task is null");
             Debug.Assert(scheduler != null, "TaskContinuation ctor: scheduler is null");
@@ -292,6 +292,10 @@ namespace System.Threading.Tasks
             Debug.Assert(completedTask != null);
             Debug.Assert(completedTask.IsCompleted, "ContinuationTask.Run(): completedTask not completed");
 
+            Task? continuationTask = m_task;
+            Debug.Assert(continuationTask != null);
+            m_task = null;
+
             // Check if the completion status of the task works with the desired
             // activation criteria of the TaskContinuationOptions.
             TaskContinuationOptions options = m_options;
@@ -303,7 +307,6 @@ namespace System.Threading.Tasks
                         (options & TaskContinuationOptions.NotOnFaulted) == 0);
 
             // If the completion status is allowed, run the continuation.
-            Task continuationTask = m_task;
             if (isRightKind)
             {
                 // If the task was cancel before running (e.g a ContinueWhenAll with a cancelled caancelation token)
@@ -333,20 +336,29 @@ namespace System.Threading.Tasks
                     }
                 }
             }
-            // Otherwise, the final state of this task does not match the desired
-            // continuation activation criteria; cancel it to denote this.
-            else continuationTask.InternalCancel(false);
-        }
-
-        internal override Delegate[]? GetDelegateContinuationsForDebugger()
-        {
-            if (m_task.m_action == null)
+            else
             {
-                return m_task.GetDelegateContinuationsForDebugger();
+                // Otherwise, the final state of this task does not match the desired continuation activation criteria; cancel it to denote this.
+                Task.ContingentProperties? cp = continuationTask.m_contingentProperties; // no need to volatile read, as we only care about the token, which is only assignable at construction
+                if (cp is null || cp.m_cancellationToken == default)
+                {
+                    // With no cancellation token, use an optimized path that doesn't need to account for concurrent completion.
+                    // This is primarily valuable for continuations created with TaskContinuationOptions.NotOn* options, where
+                    // we'll cancel the continuation if it's not needed.
+                    continuationTask.InternalCancelContinueWithInitialState();
+                }
+                else
+                {
+                    // There's a non-default token.  Follow the normal internal cancellation path.
+                    continuationTask.InternalCancel();
+                }
             }
-
-            return new Delegate[] { m_task.m_action };
         }
+
+        internal override Delegate[]? GetDelegateContinuationsForDebugger() =>
+            m_task is null ? null :
+            m_task.m_action is null ? m_task.GetDelegateContinuationsForDebugger() :
+            new Delegate[] { m_task.m_action };
     }
 
     /// <summary>Task continuation for awaiting with a current synchronization context.</summary>
@@ -422,9 +434,8 @@ namespace System.Threading.Tasks
         {
             return () =>
                 {
-                    Guid savedActivityId;
                     Guid activityId = TplEventSource.CreateGuidForTaskID(continuationId);
-                    System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out savedActivityId);
+                    System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out Guid savedActivityId);
                     try { action(); }
                     finally { System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId); }
                 };

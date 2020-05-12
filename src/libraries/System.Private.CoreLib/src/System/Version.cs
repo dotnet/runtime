@@ -293,7 +293,7 @@ namespace System
         public static Version Parse(ReadOnlySpan<char> input) =>
             ParseVersion(input, throwOnFailure: true)!;
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out Version? result)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out Version? result)
         {
             if (input == null)
             {
@@ -400,7 +400,7 @@ namespace System
             // so it can become a simple test
             if (v2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (v1 is null) ? true : false;
             }
 

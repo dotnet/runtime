@@ -40,9 +40,9 @@ namespace BasicEventSourceTests
 
         [Fact]
 #if !USE_MDT_EVENTSOURCE
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, reason: "https://github.com/dotnet/corefx/issues/23661")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, reason: "https://github.com/dotnet/runtime/issues/23380")]
 #endif
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25029")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24036")]
         public void Test_Write_Metric_EventListener()
         {
             using (var listener = new EventListenerListener())

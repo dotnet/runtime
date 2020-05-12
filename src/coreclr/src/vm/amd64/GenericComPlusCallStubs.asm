@@ -13,9 +13,6 @@ ifdef FEATURE_COMINTEROP
 include AsmMacros.inc
 include asmconstants.inc
 
-CTPMethodTable__s_pThunkTable equ ?s_pThunkTable@CTPMethodTable@@0PEAVMethodTable@@EA
-InstantiatedMethodDesc__IMD_GetComPlusCallInfo equ ?IMD_GetComPlusCallInfo@InstantiatedMethodDesc@@QEAAPEAUComPlusCallInfo@@XZ
-
 
 extern CLRToCOMWorker:proc
 extern ProcessCLRException:proc

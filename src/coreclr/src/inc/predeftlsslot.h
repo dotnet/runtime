@@ -13,50 +13,11 @@
 // See: https://github.com/dotnet/diagnostics/blob/master/src/inc/predeftlsslot.h
 // ******************************************************************************
 
-// And here are the predefined slots for accessing TLS from various DLLs of the CLR.
-// Note that we want to support combinations of Debug and Retail DLLs for testing
-// purposes, so we burn the slots into the retail EE even if a debug CLR dll needs
-// them.
+// The historic location of ThreadType slot kept for compatibility with SOS
+// TODO: Introduce DAC API to make this hack unnecessary
 enum PredefinedTlsSlots
 {
-    TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
-    TlsIdx_JitPerf,
-    TlsIdx_JitX86Perf,
-    TlsIdx_JitLogEnv,
-    TlsIdx_AssertDlgStatus, // Whether the thread is displaying an assert dialog
-    TlsIdx_StressLog,
-    TlsIdx_CantStopCount, // Can't-stop counter for any thread
-    TlsIdx_Check,
-    TlsIdx_ForbidGCLoaderUseCount,
-    TlsIdx_ClrDebugState,         // Pointer to ClrDebugState* structure
-    TlsIdx_StressThread,
-
-    // Add more indices here.
-    TlsIdx_ThreadType, // bit flags to indicate special thread's type
-    TlsIdx_CantAllocCount, //Can't allocate memory on heap in this thread
-
-    // A transient thread value that indicates this thread is currently walking its stack
-    // or the stack of another thread. This value is useful to help short-circuit
-    // some problematic checks in the loader, guarantee that types & assemblies
-    // encountered during the walk must already be loaded, and provide information to control
-    // assembly loading behavior during stack walks.
-    //
-    // This value is set around the main portions of the stack walk (as those portions may
-    // enter the type & assembly loaders). This is also explicitly cleared while the
-    // walking thread calls the stackwalker callback or needs to execute managed code, as
-    // such calls may execute arbitrary code unrelated to the actual stack walking, and
-    // may never return, in the case of exception stackwalk callbacks.
-    TlsIdx_StackWalkerWalkingThread, // Thread* that the stack walker is currently walking.
-
-    // Save the last exception info.  Sometimes we need this info in our EX_CATCH, such as for SO.
-    // It will be better if VC can supply this in catch(...) block.
-    // !!! These data may become stale.  Use it only inside exception handling code.
-    // !!! Please access these fields through GetCurrentExceptionPointers which validates the data to some level.
-    TlsIdx_EXCEPTION_CODE,
-    TlsIdx_PEXCEPTION_RECORD,
-    TlsIdx_PCONTEXT,
-
-    MAX_PREDEFINED_TLS_SLOT
+    TlsIdx_ThreadType = 11 // bit flags to indicate special thread's type
 };
 
 enum TlsThreadTypeFlag // flag used for thread type in Tls data
@@ -78,8 +39,6 @@ enum TlsThreadTypeFlag // flag used for thread type in Tls data
     ThreadType_ETWRundownThread         = 0x00010000,
     ThreadType_GenericInstantiationCompare= 0x00020000, // Used to indicate that the thread is determining if a generic instantiation in an ngen image matches a lookup.
 };
-
-static_assert(TlsIdx_ThreadType == 11, "SOS in diagnostics repo has a dependency on this value.");
 
 #endif
 

@@ -101,8 +101,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (_this is IDictionary<K, V> _this_dictionary)
             {
-                V value;
-                bool hasKey = _this_dictionary.TryGetValue(item.Key, out value);
+                bool hasKey = _this_dictionary.TryGetValue(item.Key, out V value);
 
                 if (!hasKey)
                     return false;
@@ -152,8 +151,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             else
             {
                 IVector<KeyValuePair<K, V>> _this_vector = Unsafe.As<IVector<KeyValuePair<K, V>>>(this);
-                uint index;
-                bool exists = _this_vector.IndexOf(item, out index);
+                bool exists = _this_vector.IndexOf(item, out uint index);
 
                 if (!exists)
                     return false;

@@ -353,6 +353,12 @@ protected:
         return (0 != (dwMarshalFlags & MARSHAL_FLAG_RETVAL));
     }
 
+    static inline bool IsInMemberFunction(DWORD dwMarshalFlags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (0 != (dwMarshalFlags & MARSHAL_FLAG_IN_MEMBER_FUNCTION));
+    }
+
     static inline bool IsHiddenLengthParam(DWORD dwMarshalFlags)
     {
         LIMITED_METHOD_CONTRACT;
@@ -363,6 +369,16 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
         return (0 != (dwMarshalFlags & MARSHAL_FLAG_FIELD));
+    }
+
+    static void EmitLoadNativeLocalAddrForByRefDispatch(ILCodeStream* pslILEmit, DWORD local)
+    {
+        WRAPPER_NO_CONTRACT;
+        pslILEmit->EmitLDLOCA(local);
+
+        // Convert the loaded local containing a native address
+        // into a non-GC type for the byref case.
+        pslILEmit->EmitCONV_I();
     }
 
     void EmitLoadManagedValue(ILCodeStream* pslILEmit)
@@ -387,6 +403,16 @@ protected:
     {
         WRAPPER_NO_CONTRACT;
         m_nativeHome.EmitLoadHomeAddr(pslILEmit);
+    }
+
+    void EmitLoadNativeHomeAddrForByRefDispatch(ILCodeStream* pslILEmit)
+    {
+        WRAPPER_NO_CONTRACT;
+        EmitLoadNativeHomeAddr(pslILEmit);
+
+        // Convert the loaded value containing a native address
+        // into a non-GC type for the byref case.
+        pslILEmit->EmitCONV_I();
     }
 
     void EmitStoreManagedValue(ILCodeStream* pslILEmit)
@@ -415,6 +441,7 @@ protected:
 
     void EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwPinnedLocal)
     {
+        WRAPPER_NO_CONTRACT;
         if (g_pConfig->InteropLogArguments())
         {
             m_pslNDirect->EmitLogNativeArgument(pslILEmit, dwPinnedLocal);
@@ -660,7 +687,7 @@ public:
         {
             if (IsNativePassedByRef())
             {
-                EmitLoadNativeHomeAddr(pslILEmit);
+                EmitLoadNativeHomeAddrForByRefDispatch(pslILEmit);
             }
             else
             {
@@ -699,7 +726,7 @@ public:
         bool byrefNativeReturn = false;
         CorElementType typ = ELEMENT_TYPE_VOID;
         UINT32 nativeSize = 0;
-        bool nativeMethodIsMemberFunction = (CorInfoCallConv)m_pslNDirect->GetStubTargetCallingConv() == CORINFO_CALLCONV_THISCALL;
+        bool nativeMethodIsMemberFunction = IsInMemberFunction(dwMarshalFlags);
 
         // we need to convert value type return types to primitives as
         // JIT does not inline P/Invoke calls that return structures
@@ -801,7 +828,7 @@ public:
             if (IsHresultSwap(dwMarshalFlags) || byrefNativeReturn)
             {
                 EmitReInitNative(m_pcsMarshal);
-                EmitLoadNativeHomeAddr(pcsDispatch);    // load up the byref native type as an extra arg
+                EmitLoadNativeHomeAddrForByRefDispatch(pcsDispatch);    // load up the byref native type as an extra arg
             }
             else
             {

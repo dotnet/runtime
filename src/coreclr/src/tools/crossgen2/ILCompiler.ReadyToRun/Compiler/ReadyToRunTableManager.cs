@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
@@ -27,11 +28,33 @@ namespace ILCompiler
         }
     }
 
+    public enum CompiledMethodCategory
+    {
+        NonInstantiated,
+        Instantiated,
+        All
+    }
+
     // TODO-REFACTOR: merge with the table manager
     public class MetadataManager
     {
         protected readonly CompilerTypeSystemContext _typeSystemContext;
-        private List<MethodDesc> _methodsGenerated = new List<MethodDesc>();
+        private class PerModuleMethodsGenerated
+        {
+            public PerModuleMethodsGenerated(EcmaModule module)
+            {
+                Module = module;
+            }
+
+            public readonly EcmaModule Module;
+            public List<IMethodNode> MethodsGenerated = new List<IMethodNode>();
+            public List<IMethodNode> GenericMethodsGenerated = new List<IMethodNode>();
+        }
+
+        private Dictionary<EcmaModule, PerModuleMethodsGenerated> _methodsGenerated = new Dictionary<EcmaModule, PerModuleMethodsGenerated>();
+        private List<IMethodNode> _completeSortedMethods = new List<IMethodNode>();
+        private List<IMethodNode> _completeSortedGenericMethods = new List<IMethodNode>();
+
         private bool _sortedMethods = false;
 
         public MetadataManager(CompilerTypeSystemContext context)
@@ -54,22 +77,99 @@ namespace ILCompiler
                 lock (_methodsGenerated)
                 {
                     Debug.Assert(!_sortedMethods);
-                    _methodsGenerated.Add(methodNode.Method);
+                    MethodDesc method = methodNode.Method;
+                    EcmaModule module = (EcmaModule)((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                    if (!_methodsGenerated.TryGetValue(module, out var perModuleData))
+                    {
+                        perModuleData = new PerModuleMethodsGenerated(module);
+                        _methodsGenerated[module] = perModuleData;
+                    }
+                    if (method.HasInstantiation || method.OwningType.HasInstantiation)
+                    {
+                        perModuleData.GenericMethodsGenerated.Add(methodNode);
+                    }
+                    else
+                    {
+                        perModuleData.MethodsGenerated.Add(methodNode);
+                    }
                 }
             }
         }
-        public IEnumerable<MethodDesc> GetCompiledMethods()
+
+        public IEnumerable<IMethodNode> GetCompiledMethods(EcmaModule moduleToEnumerate, CompiledMethodCategory methodCategory)
         {
             lock (_methodsGenerated)
             {
                 if (!_sortedMethods)
                 {
                     TypeSystemComparer comparer = new TypeSystemComparer();
-                    _methodsGenerated.Sort((x, y) => comparer.Compare(x, y));
+                    Comparison<IMethodNode> sortHelper = (x, y) => comparer.Compare(x.Method, y.Method);
+
+                    List<PerModuleMethodsGenerated> perModuleDatas = new List<PerModuleMethodsGenerated>(_methodsGenerated.Values);
+                    perModuleDatas.Sort((x, y) => x.Module.CompareTo(y.Module));
+
+                    foreach (var perModuleData in perModuleDatas)
+                    {
+                        perModuleData.MethodsGenerated.MergeSort(sortHelper);
+                        perModuleData.GenericMethodsGenerated.MergeSort(sortHelper);
+                        _completeSortedMethods.AddRange(perModuleData.MethodsGenerated);
+                        _completeSortedMethods.AddRange(perModuleData.GenericMethodsGenerated);
+                        _completeSortedGenericMethods.AddRange(perModuleData.GenericMethodsGenerated);
+                    }
+                    _completeSortedMethods.MergeSort(sortHelper);
+                    _completeSortedGenericMethods.MergeSort(sortHelper);
                     _sortedMethods = true;
                 }
             }
-            return _methodsGenerated;
+            if (moduleToEnumerate == null)
+            {
+                if (methodCategory == CompiledMethodCategory.All)
+                {
+                    return _completeSortedMethods;
+                }
+                else if (methodCategory == CompiledMethodCategory.Instantiated)
+                {
+                    return _completeSortedGenericMethods;
+                }
+                else
+                {
+                    // This isn't expected to be needed, and thus isn't implemented
+                    throw new ArgumentException();
+                }
+            }
+            else if (_methodsGenerated.TryGetValue(moduleToEnumerate, out var perModuleData))
+            {
+                if (methodCategory == CompiledMethodCategory.All)
+                {
+                    return GetCompiledMethodsAllMethodsInModuleHelper(moduleToEnumerate);
+                }
+
+                if (methodCategory == CompiledMethodCategory.Instantiated)
+                {
+                    return perModuleData.GenericMethodsGenerated;
+                }
+                else
+                {
+                    Debug.Assert(methodCategory == CompiledMethodCategory.NonInstantiated);
+                    return perModuleData.MethodsGenerated;
+                }
+            }
+            else
+            {
+                return Array.Empty<IMethodNode>();
+            }
+        }
+
+        private IEnumerable<IMethodNode> GetCompiledMethodsAllMethodsInModuleHelper(EcmaModule moduleToEnumerate)
+        {
+            foreach (var node in GetCompiledMethods(moduleToEnumerate, CompiledMethodCategory.Instantiated))
+            {
+                yield return node;
+            }
+            foreach (var node in GetCompiledMethods(moduleToEnumerate, CompiledMethodCategory.NonInstantiated))
+            {
+                yield return node;
+            }
         }
     }
 
@@ -78,27 +178,19 @@ namespace ILCompiler
         public ReadyToRunTableManager(CompilerTypeSystemContext typeSystemContext)
             : base(typeSystemContext) {}
 
-        public IEnumerable<TypeInfo<TypeDefinitionHandle>> GetDefinedTypes()
+        public IEnumerable<TypeInfo<TypeDefinitionHandle>> GetDefinedTypes(EcmaModule module)
         {
-            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
+            foreach (TypeDefinitionHandle typeDefHandle in module.MetadataReader.TypeDefinitions)
             {
-                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
-                foreach (TypeDefinitionHandle typeDefHandle in module.MetadataReader.TypeDefinitions)
-                {
-                    yield return new TypeInfo<TypeDefinitionHandle>(module.MetadataReader, typeDefHandle);
-                }
+                yield return new TypeInfo<TypeDefinitionHandle>(module.MetadataReader, typeDefHandle);
             }
         }
 
-            public IEnumerable<TypeInfo<ExportedTypeHandle>> GetExportedTypes()
+        public IEnumerable<TypeInfo<ExportedTypeHandle>> GetExportedTypes(EcmaModule module)
         {
-            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
+            foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
             {
-                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
-                foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
-                {
-                    yield return new TypeInfo<ExportedTypeHandle>(module.MetadataReader, exportedTypeHandle);
-                }
+                yield return new TypeInfo<ExportedTypeHandle>(module.MetadataReader, exportedTypeHandle);
             }
         }
     }

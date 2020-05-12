@@ -68,61 +68,9 @@ private:
     }
 };
 
-template<typename T>
-struct ComSmartPtr
-{
-    ComSmartPtr()
-        : p{}
-    { }
-
-    ComSmartPtr(_In_ const ComSmartPtr &) = delete;
-    ComSmartPtr(_Inout_ ComSmartPtr &&) = delete;
-
-    ComSmartPtr& operator=(_In_ const ComSmartPtr &) = delete;
-    ComSmartPtr& operator=(_Inout_ ComSmartPtr &&) = delete;
-
-    ~ComSmartPtr()
-    {
-        if (p != nullptr)
-            p->Release();
-    }
-
-    operator T*()
-    {
-        return p;
-    }
-
-    T** operator&()
-    {
-        return &p;
-    }
-
-    T* operator->()
-    {
-        return p;
-    }
-
-    void Attach(_In_opt_ T *t)
-    {
-        if (p != nullptr)
-            p->Release();
-
-        p = t;
-    }
-
-    T *Detach()
-    {
-        T *tmp = p;
-        p = nullptr;
-        return tmp;
-    }
-
-    T *p;
-};
+#include <ComHelpers.h>
 
 #ifndef COM_CLIENT
-    #include <ComHelpers.h>
-
     #define DEF_FUNC(n) virtual COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE n
 
     #include "NumericTesting.h"

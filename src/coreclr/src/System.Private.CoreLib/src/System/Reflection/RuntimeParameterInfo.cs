@@ -44,8 +44,7 @@ namespace System.Reflection
             {
                 MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(RuntimeMethodHandle.GetDeclaringType(methodHandle));
 
-                MetadataEnumResult tkParamDefs;
-                scope.EnumParams(tkMethodDef, out tkParamDefs);
+                scope.EnumParams(tkMethodDef, out MetadataEnumResult tkParamDefs);
 
                 cParamDefs = tkParamDefs.Length;
 
@@ -57,10 +56,9 @@ namespace System.Reflection
                 for (int i = 0; i < cParamDefs; i++)
                 {
                     #region Populate ParameterInfos
-                    ParameterAttributes attr;
-                    int position, tkParamDef = tkParamDefs[i];
+                    int tkParamDef = tkParamDefs[i];
 
-                    scope.GetParamDefProps(tkParamDef, out position, out attr);
+                    scope.GetParamDefProps(tkParamDef, out int position, out ParameterAttributes attr);
 
                     position--;
 

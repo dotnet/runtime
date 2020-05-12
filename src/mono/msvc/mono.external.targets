@@ -184,8 +184,13 @@
             <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_VERSION" />
         </_GetLLVMConfiguration>
 
+        <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--build-mode">
+            <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_BUILD_MODE" />
+        </_GetLLVMConfiguration>
+
         <Error Text="Compiling with stock LLVM is not supported, please use the Mono LLVM repo at https://github.com/mono/llvm." Condition="!$(MONO_LLVM_VERSION.Contains('mono'))" />
         <Error Text="Expected llvm version 3.6 or 6.0, but llvm-config --version returned $(MONO_LLVM_VERSION)." Condition="!$(MONO_LLVM_VERSION.StartsWith('3.6')) and !$(MONO_LLVM_VERSION.StartsWith('6.0'))" />
+        <Error Text="LLVM build Configuration=$(MONO_LLVM_BUILD_MODE) doesn't match current build Configuration=$(Configuration)." Condition="'$(Configuration.ToUpper())'!='$(MONO_LLVM_BUILD_MODE.ToUpper())'" />
 
         <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--mono-api-version">
             <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_API_VERSION" />

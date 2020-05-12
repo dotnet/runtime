@@ -591,8 +591,6 @@ namespace System.ServiceModel.Syndication
                 }
             }
             reader.MoveToElement();
-            string localName = reader.LocalName;
-            string nameSpace = reader.NamespaceURI;
             string val = (kind == TextSyndicationContentKind.XHtml) ? reader.ReadInnerXml() : reader.ReadElementString();
             TextSyndicationContent result = new TextSyndicationContent(val, kind);
             if (attrs != null)

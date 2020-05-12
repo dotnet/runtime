@@ -86,6 +86,20 @@ mono_arch_fregname (int reg)
 	return "unknown fp";
 }
 
+const char *
+mono_arch_xregname (int reg)
+{
+	static const char * rnames[] = {
+		"v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9",
+		"v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19",
+		"v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29",
+		"v30", "v31"
+	};
+	if (reg >= 0 && reg < 32)
+		return rnames [reg];
+	return "unknown";
+}
+
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
@@ -255,12 +269,6 @@ guint32
 mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 	*exclude_mask = 0;
-	return 0;
-}
-
-guint32
-mono_arch_cpu_enumerate_simd_versions (void)
-{
 	return 0;
 }
 

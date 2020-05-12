@@ -47,16 +47,16 @@ if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND ILDASM_SOURCES ${ILDASM_HEADERS})
 endif(CLR_CMAKE_TARGET_WIN32)
 
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 
     # The following linked options can be inserted into the linker libraries list to
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
 _add_executable(ildasm
     ${ILDASM_SOURCES}
@@ -94,7 +94,7 @@ if(CLR_CMAKE_HOST_WIN32)
 else()
     list(APPEND ILDASM_LINK_LIBRARIES
         coreclrpal
-        mscorrc_debug
+        mscorrc
         palrt
     )
 endif(CLR_CMAKE_HOST_WIN32)
@@ -102,7 +102,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(ildasm
         ${ILDASM_LINK_LIBRARIES}
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

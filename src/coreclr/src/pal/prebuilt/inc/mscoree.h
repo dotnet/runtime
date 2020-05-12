@@ -70,9 +70,6 @@ extern "C"{
 /* interface __MIDL_itf_mscoree_0000_0000 */
 /* [local] */ 
 
-#define DECLARE_DEPRECATED 
-#define DEPRECATED_CLR_STDAPI STDAPI
-
 struct IActivationFactory;
 
 struct IHostControl;
@@ -166,56 +163,6 @@ typedef struct _BucketParameters
     WCHAR pszEventTypeName[ 255 ];
     WCHAR pszParams[ 10 ][ 255 ];
     } 	BucketParameters;
-
-typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0006
-    {
-        OPR_ThreadAbort	= 0,
-        OPR_ThreadRudeAbortInNonCriticalRegion	= ( OPR_ThreadAbort + 1 ) ,
-        OPR_ThreadRudeAbortInCriticalRegion	= ( OPR_ThreadRudeAbortInNonCriticalRegion + 1 ) ,
-        OPR_AppDomainUnload	= ( OPR_ThreadRudeAbortInCriticalRegion + 1 ) ,
-        OPR_AppDomainRudeUnload	= ( OPR_AppDomainUnload + 1 ) ,
-        OPR_ProcessExit	= ( OPR_AppDomainRudeUnload + 1 ) ,
-        OPR_FinalizerRun	= ( OPR_ProcessExit + 1 ) ,
-        MaxClrOperation	= ( OPR_FinalizerRun + 1 ) 
-    } 	EClrOperation;
-
-typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0007
-    {
-        FAIL_NonCriticalResource	= 0,
-        FAIL_CriticalResource	= ( FAIL_NonCriticalResource + 1 ) ,
-        FAIL_FatalRuntime	= ( FAIL_CriticalResource + 1 ) ,
-        FAIL_OrphanedLock	= ( FAIL_FatalRuntime + 1 ) ,
-        FAIL_StackOverflow	= ( FAIL_OrphanedLock + 1 ) ,
-        FAIL_AccessViolation	= ( FAIL_StackOverflow + 1 ) ,
-        FAIL_CodeContract	= ( FAIL_AccessViolation + 1 ) ,
-        MaxClrFailure	= ( FAIL_CodeContract + 1 ) 
-    } 	EClrFailure;
-
-typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0008
-    {
-        eRuntimeDeterminedPolicy	= 0,
-        eHostDeterminedPolicy	= ( eRuntimeDeterminedPolicy + 1 ) 
-    } 	EClrUnhandledException;
-
-typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0009
-    {
-        eNoAction	= 0,
-        eThrowException	= ( eNoAction + 1 ) ,
-        eAbortThread	= ( eThrowException + 1 ) ,
-        eRudeAbortThread	= ( eAbortThread + 1 ) ,
-        eUnloadAppDomain	= ( eRudeAbortThread + 1 ) ,
-        eRudeUnloadAppDomain	= ( eUnloadAppDomain + 1 ) ,
-        eExitProcess	= ( eRudeUnloadAppDomain + 1 ) ,
-        eFastExitProcess	= ( eExitProcess + 1 ) ,
-        eRudeExitProcess	= ( eFastExitProcess + 1 ) ,
-        MaxPolicyAction	= (eRudeExitProcess + 1 )
-    } 	EPolicyAction;
-
-
 
 extern RPC_IF_HANDLE __MIDL_itf_mscoree_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_mscoree_0000_0000_v0_0_s_ifspec;
@@ -872,10 +819,6 @@ EXTERN_C const IID IID_ICLRRuntimeHost4;
 
 /* interface __MIDL_itf_mscoree_0000_0003 */
 /* [local] */ 
-
-#undef DEPRECATED_CLR_STDAPI
-#undef DECLARE_DEPRECATED
-#undef DEPRECATED_CLR_API_MESG
 
 
 extern RPC_IF_HANDLE __MIDL_itf_mscoree_0000_0003_v0_0_c_ifspec;

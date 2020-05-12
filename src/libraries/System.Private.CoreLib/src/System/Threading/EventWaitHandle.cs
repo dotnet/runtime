@@ -30,8 +30,7 @@ namespace System.Threading
 
         public static EventWaitHandle OpenExisting(string name)
         {
-            EventWaitHandle? result;
-            switch (OpenExistingWorker(name, out result))
+            switch (OpenExistingWorker(name, out EventWaitHandle? result))
             {
                 case OpenExistingResult.NameNotFound:
                     throw new WaitHandleCannotBeOpenedException();
@@ -45,9 +44,7 @@ namespace System.Threading
             }
         }
 
-        public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result)
-        {
-            return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
-        }
+        public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result) =>
+            OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
     }
 }

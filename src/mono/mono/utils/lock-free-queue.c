@@ -58,9 +58,9 @@
 
 #include <mono/utils/lock-free-queue.h>
 
-#define INVALID_NEXT	((MonoLockFreeQueueNode *volatile)-1)
-#define END_MARKER	((MonoLockFreeQueueNode *volatile)-2)
-#define FREE_NEXT	((MonoLockFreeQueueNode *volatile)-3)
+#define INVALID_NEXT	((MonoLockFreeQueueNode*)-1)
+#define END_MARKER	((MonoLockFreeQueueNode*)-2)
+#define FREE_NEXT	((MonoLockFreeQueueNode*)-3)
 
 /*
  * Initialize a lock-free queue in-place at @q.

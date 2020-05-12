@@ -649,10 +649,8 @@ namespace System.Diagnostics.Tracing
         {
             m_config = ValidateSettings(settings);
 
-            Guid eventSourceGuid;
-            string? eventSourceName;
 
-            GetMetadata(out eventSourceGuid, out eventSourceName, out _, out _);
+            GetMetadata(out Guid eventSourceGuid, out string? eventSourceName, out _, out _);
 
             if (eventSourceGuid.Equals(Guid.Empty) || eventSourceName == null)
             {
@@ -1373,28 +1371,29 @@ namespace System.Diagnostics.Tracing
             int dataCount,
             IntPtr data)
         {
+#if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
+            bool allAreNull = true;
 #if FEATURE_MANAGED_ETW
-            if (m_etwProvider == null)
+            allAreNull &= (m_etwProvider == null);
+            if (m_etwProvider != null
+                && !m_etwProvider.WriteEventRaw(ref eventDescriptor, eventHandle, activityID, relatedActivityID, dataCount, data))
             {
                 ThrowEventSourceException(eventName);
-            }
-            else
-            {
-                if (!m_etwProvider.WriteEventRaw(ref eventDescriptor, eventHandle, activityID, relatedActivityID, dataCount, data))
-                    ThrowEventSourceException(eventName);
             }
 #endif // FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
-            if (m_eventPipeProvider == null)
+            allAreNull &= (m_eventPipeProvider == null);
+            if (m_eventPipeProvider != null
+                && !m_eventPipeProvider.WriteEventRaw(ref eventDescriptor, eventHandle, activityID, relatedActivityID, dataCount, data))
             {
                 ThrowEventSourceException(eventName);
             }
-            else
-            {
-                if (!m_eventPipeProvider.WriteEventRaw(ref eventDescriptor, eventHandle, activityID, relatedActivityID, dataCount, data))
-                    ThrowEventSourceException(eventName);
-            }
 #endif // FEATURE_PERFTRACING
+            if (allAreNull)
+            {
+                ThrowEventSourceException(eventName);
+            }
+#endif // FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
         }
 
         // FrameworkEventSource is on the startup path for the framework, so we have this internal overload that it can use
@@ -2150,49 +2149,95 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private unsafe void WriteEventString(EventLevel level, long keywords, string msgString)
+        // WriteEventString is used for logging an error message (or similar) to
+        // ETW and EventPipe providers. It is not a general purpose API, it will
+        // log the message with Level=LogAlways and Keywords=All to make sure whoever
+        // is listening gets the message.
+        private unsafe void WriteEventString(string msgString)
         {
+#if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
+            bool allAreNull = true;
 #if FEATURE_MANAGED_ETW
-            if (m_etwProvider != null)
+            allAreNull &= (m_etwProvider == null);
+#endif // FEATURE_MANAGED_ETW
+#if FEATURE_PERFTRACING
+            allAreNull &= (m_eventPipeProvider == null);
+#endif // FEATURE_PERFTRACING
+            if (allAreNull)
             {
-                const string EventName = "EventSourceMessage";
-                if (SelfDescribingEvents)
-                {
-                    EventSourceOptions opt = new EventSourceOptions
-                    {
-                        Keywords = (EventKeywords)unchecked(keywords),
-                        Level = level
-                    };
-                    var msg = new { message = msgString };
-                    var tlet = new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { msg.GetType() });
-                    WriteMultiMergeInner(EventName, ref opt, tlet, null, null, msg);
-                }
-                else
-                {
-                    // We want the name of the provider to show up so if we don't have a manifest we create
-                    // on that at least has the provider name (I don't define any events).
-                    if (m_rawManifest == null && m_outOfBandMessageCount == 1)
-                    {
-                        ManifestBuilder manifestBuilder = new ManifestBuilder(Name, Guid, Name, null, EventManifestOptions.None);
-                        manifestBuilder.StartEvent(EventName, new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
-                        manifestBuilder.AddEventParameter(typeof(string), "message");
-                        manifestBuilder.EndEvent();
-                        SendManifest(manifestBuilder.CreateManifest());
-                    }
+                return;
+            }
 
-                    // We use this low level routine to bypass the enabled checking, since the eventSource itself is only partially inited.
-                    fixed (char* msgStringPtr = msgString)
+            EventLevel level = EventLevel.LogAlways;
+            long keywords = -1;
+            const string EventName = "EventSourceMessage";
+            if (SelfDescribingEvents)
+            {
+                EventSourceOptions opt = new EventSourceOptions
+                {
+                    Keywords = (EventKeywords)unchecked(keywords),
+                    Level = level
+                };
+                var msg = new { message = msgString };
+                var tlet = new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { msg.GetType() });
+                WriteMultiMergeInner(EventName, ref opt, tlet, null, null, msg);
+            }
+            else
+            {
+                // We want the name of the provider to show up so if we don't have a manifest we create
+                // on that at least has the provider name (I don't define any events).
+                if (m_rawManifest == null && m_outOfBandMessageCount == 1)
+                {
+                    ManifestBuilder manifestBuilder = new ManifestBuilder(Name, Guid, Name, null, EventManifestOptions.None);
+                    manifestBuilder.StartEvent(EventName, new EventAttribute(0) { Level = level, Task = (EventTask)0xFFFE });
+                    manifestBuilder.AddEventParameter(typeof(string), "message");
+                    manifestBuilder.EndEvent();
+                    SendManifest(manifestBuilder.CreateManifest());
+                }
+
+                // We use this low level routine to bypass the enabled checking, since the eventSource itself is only partially inited.
+                fixed (char* msgStringPtr = msgString)
+                {
+                    EventDescriptor descr = new EventDescriptor(0, 0, 0, (byte)level, 0, 0, keywords);
+                    EventProvider.EventData data = default;
+                    data.Ptr = (ulong)msgStringPtr;
+                    data.Size = (uint)(2 * (msgString.Length + 1));
+                    data.Reserved = 0;
+#if FEATURE_MANAGED_ETW
+                    if (m_etwProvider != null)
                     {
-                        EventDescriptor descr = new EventDescriptor(0, 0, 0, (byte)level, 0, 0, keywords);
-                        EventProvider.EventData data = default;
-                        data.Ptr = (ulong)msgStringPtr;
-                        data.Size = (uint)(2 * (msgString.Length + 1));
-                        data.Reserved = 0;
                         m_etwProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
                     }
+#endif // FEATURE_MANAGED_ETW
+#if FEATURE_PERFTRACING
+                    if (m_eventPipeProvider != null)
+                    {
+                        if (m_writeEventStringEventHandle == IntPtr.Zero)
+                        {
+                            lock (m_createEventLock)
+                            {
+                                if (m_writeEventStringEventHandle == IntPtr.Zero)
+                                {
+                                    string eventName = "EventSourceMessage";
+                                    EventParameterInfo paramInfo = default(EventParameterInfo);
+                                    paramInfo.SetInfo("message", typeof(string));
+                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, new EventParameterInfo[] { paramInfo });
+                                    uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
+
+                                    fixed (byte* pMetadata = metadata)
+                                    {
+                                        m_writeEventStringEventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(0, eventName, keywords, 0, (uint)level, pMetadata, metadataLength);
+                                    }
+                                }
+                            }
+                        }
+
+                        m_eventPipeProvider.WriteEvent(ref descr, m_writeEventStringEventHandle, null, null, 1, (IntPtr)((void*)&data));
+                    }
+#endif // FEATURE_PERFTRACING
                 }
             }
-#endif // FEATURE_MANAGED_ETW
+#endif // FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
         }
 
         /// <summary>
@@ -2871,13 +2916,10 @@ namespace System.Diagnostics.Tracing
             if (m_eventData == null)
             {
                 Guid eventSourceGuid = Guid.Empty;
-                string? eventSourceName = null;
-                EventMetadata[]? eventData = null;
-                byte[]? manifest = null;
 
                 // Try the GetMetadata provided by the ILTransform in ProjectN. The default sets all to null, and in that case we fall back
                 // to the reflection approach.
-                GetMetadata(out eventSourceGuid, out eventSourceName, out eventData, out manifest);
+                GetMetadata(out eventSourceGuid, out string? eventSourceName, out EventMetadata[]? eventData, out byte[]? manifest);
 
                 if (eventSourceGuid.Equals(Guid.Empty) || eventSourceName == null || eventData == null || manifest == null)
                 {
@@ -3808,7 +3850,7 @@ namespace System.Diagnostics.Tracing
                     msg = "Reached message limit.   End of EventSource error messages.";
                 }
 
-                WriteEventString(EventLevel.LogAlways, -1, msg);
+                WriteEventString(msg);
                 WriteStringToAllListeners("EventSourceMessage", msg);
             }
             catch { }      // If we fail during last chance logging, well, we have to give up....
@@ -3865,6 +3907,8 @@ namespace System.Diagnostics.Tracing
         private volatile OverideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
 #endif
 #if FEATURE_PERFTRACING
+        private object m_createEventLock = new object();
+        private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
         private volatile OverideEventProvider m_eventPipeProvider = null!;
 #endif
         private bool m_completelyInited;                // The EventSource constructor has returned without exception.
@@ -5296,7 +5340,7 @@ namespace System.Diagnostics.Tracing
             sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.Append("<provider name=\"").Append(providerName).
-               Append("\" guid=\"{").Append(providerGuid.ToString()).Append("}");
+               Append("\" guid=\"{").Append(providerGuid.ToString()).Append('}');
             if (dllName != null)
                 sb.Append("\" resourceFileName=\"").Append(dllName).Append("\" messageFileName=\"").Append(dllName);
 
@@ -5551,8 +5595,7 @@ namespace System.Diagnostics.Tracing
             if (channelTab.Count == MaxCountChannels)
                 ManifestError(SR.EventSource_MaxChannelExceeded);
 
-            ChannelInfo? info;
-            if (!channelTab.TryGetValue((int)channel, out info))
+            if (!channelTab.TryGetValue((int)channel, out ChannelInfo? info))
             {
                 // If we were not given an explicit channel, allocate one.
                 if (channelKeyword != 0)
@@ -5876,8 +5919,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW_CHANNELS
         private string? GetChannelName(EventChannel channel, string eventName, string? eventMessage)
         {
-            ChannelInfo? info = null;
-            if (channelTab == null || !channelTab.TryGetValue((int)channel, out info))
+            if (channelTab == null || !channelTab.TryGetValue((int)channel, out ChannelInfo? info))
             {
                 if (channel < EventChannel.Admin) // || channel > EventChannel.Debug)
                     ManifestError(SR.Format(SR.EventSource_UndefinedChannel, channel, eventName));
@@ -5909,9 +5951,8 @@ namespace System.Diagnostics.Tracing
             if (task == EventTask.None)
                 return "";
 
-            string? ret;
             taskTab ??= new Dictionary<int, string>();
-            if (!taskTab.TryGetValue((int)task, out ret))
+            if (!taskTab.TryGetValue((int)task, out string? ret))
                 ret = taskTab[(int)task] = eventName;
             return ret;
         }
@@ -5944,8 +5985,7 @@ namespace System.Diagnostics.Tracing
                     return "win:Receive";
             }
 
-            string? ret;
-            if (opcodeTab == null || !opcodeTab.TryGetValue((int)opcode, out ret))
+            if (opcodeTab == null || !opcodeTab.TryGetValue((int)opcode, out string? ret))
             {
                 ManifestError(SR.Format(SR.EventSource_UndefinedOpcode, opcode, eventName), true);
                 ret = null;
@@ -6052,7 +6092,6 @@ namespace System.Diagnostics.Tracing
         {
             StringBuilder? stringBuilder = null;        // We lazily create this
             int writtenSoFar = 0;
-            int chIdx = -1;
             for (int i = 0; ;)
             {
                 if (i >= eventMessage.Length)
@@ -6063,6 +6102,7 @@ namespace System.Diagnostics.Tracing
                     return stringBuilder.ToString();
                 }
 
+                int chIdx;
                 if (eventMessage[i] == '%')
                 {
                     // handle format message escaping character '%' by escaping it
@@ -6125,8 +6165,7 @@ namespace System.Diagnostics.Tracing
 
         private int TranslateIndexToManifestConvention(int idx, string evtName)
         {
-            List<int>? byteArrArgIndices;
-            if (perEventByteArrayArgIndices.TryGetValue(evtName, out byteArrArgIndices))
+            if (perEventByteArrayArgIndices.TryGetValue(evtName, out List<int>? byteArrArgIndices))
             {
                 foreach (int byArrIdx in byteArrArgIndices)
                 {

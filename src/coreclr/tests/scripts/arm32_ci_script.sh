@@ -421,7 +421,7 @@ __coreFxNativeBinDir=
 __coreFxBinDir=
 __testDirFile=
 __verboseFlag=
-__buildOS="Linux"
+__targetOS="Linux"
 __buildArch="armel"
 __linuxCodeName="tizen"
 __skipRootFS=0
@@ -540,7 +540,7 @@ elif [[ "$__buildConfig" == "checked" ]]; then
 else
     __buildConfig="Debug"
 fi
-__buildDirName="$__buildOS.$__buildArch.$__buildConfig"
+__buildDirName="$__targetOS.$__buildArch.$__buildConfig"
 
 #Define emulator paths
 __TempFolder="bindings/tmp/arm32_ci_temp"

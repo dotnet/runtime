@@ -167,14 +167,24 @@ namespace System.Buffers
 
             if (sizeHint > FreeCapacity)
             {
-                int growBy = Math.Max(sizeHint, _buffer.Length);
+                int currentLength = _buffer.Length;
+                int growBy = Math.Max(sizeHint, currentLength);
 
-                if (_buffer.Length == 0)
+                if (currentLength == 0)
                 {
                     growBy = Math.Max(growBy, DefaultInitialBufferSize);
                 }
 
-                int newSize = checked(_buffer.Length + growBy);
+                int newSize = currentLength + growBy;
+
+                if ((uint)newSize > int.MaxValue)
+                {
+                    newSize = currentLength + sizeHint;
+                    if ((uint)newSize > int.MaxValue)
+                    {
+                        ThrowOutOfMemoryException((uint)newSize);
+                    }
+                }
 
                 Array.Resize(ref _buffer, newSize);
             }
@@ -185,6 +195,11 @@ namespace System.Buffers
         private static void ThrowInvalidOperationException_AdvancedTooFar(int capacity)
         {
             throw new InvalidOperationException(SR.Format(SR.BufferWriterAdvancedTooFar, capacity));
+        }
+
+        private static void ThrowOutOfMemoryException(uint capacity)
+        {
+            throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
         }
     }
 }

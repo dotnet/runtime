@@ -224,6 +224,7 @@ namespace System.Linq.Expressions.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("field", () => Expression.Field(null, (FieldInfo)null));
             AssertExtensions.Throws<ArgumentNullException>("fieldName", () => Expression.Field(Expression.Constant(new FC()), (string)null));
+            AssertExtensions.Throws<ArgumentNullException>("fieldName", () => Expression.Field(Expression.Constant(new FC()), typeof(FC), (string)null));
         }
 
         [Fact]
@@ -554,6 +555,7 @@ namespace System.Linq.Expressions.Tests
 
 #if FEATURE_COMPILE
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14920", TestRuntimes.Mono)]
         public static void Property_NoGetOrSetAccessors_ThrowsArgumentException()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);

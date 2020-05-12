@@ -19,6 +19,6 @@ namespace Internal.Cryptography
 
         public abstract DateTime Date { get; }
         public abstract SubjectIdentifierOrKey OriginatorIdentifierOrKey { get; }
-        public abstract CryptographicAttributeObject OtherKeyAttribute { get; }
+        public abstract CryptographicAttributeObject? OtherKeyAttribute { get; }
     }
 }

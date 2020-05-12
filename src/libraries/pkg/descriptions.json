@@ -15,6 +15,212 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.Caching.Abstractions",
+    "Description": "Caching abstractions for in-memory cache and distributed cache.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Caching.Distributed.IDistributedCache",
+      "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Caching.Memory",
+    "Description": "In-memory cache implementation of Microsoft.Extensions.Caching.Memory.IMemoryCache.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration",
+    "Description": "Implementation of key-value pair based configuration for Microsoft.Extensions.Configuration. Includes the memory configuration provider.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Abstractions",
+    "Description": "Abstractions of key-value pair based configuration.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Configuration.IConfiguration",
+      "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+      "Microsoft.Extensions.Configuration.IConfigurationProvider",
+      "Microsoft.Extensions.Configuration.IConfigurationRoot",
+      "Microsoft.Extensions.Configuration.IConfigurationSection"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Binder",
+    "Description": "Functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.CommandLine",
+    "Description": "Command line configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.EnvironmentVariables",
+    "Description": "Environment variables configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.FileExtensions",
+    "Description": "Extension methods for configuring file-based configuration providers for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Ini",
+    "Description": "INI configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Json",
+    "Description": "JSON configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.UserSecrets",
+    "Description": "User secrets configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Xml",
+    "Description": "XML configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyInjection",
+    "Description": "Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyModel",
+    "Description": "Abstractions for reading `.deps` files.",
+    "CommonTypes": [
+        "Microsoft.Extensions.DependencyModel.DependencyContext"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+    "Description": "Abstractions for dependency injection.",
+    "CommonTypes": [
+      "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Abstractions",
+    "Description": "Abstractions of files and directories.",
+    "CommonTypes": [
+      "Microsoft.Extensions.FileProviders.IDirectoryContents",
+      "Microsoft.Extensions.FileProviders.IFileInfo",
+      "Microsoft.Extensions.FileProviders.IFileProvider"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Composite",
+    "Description": "Composite file and directory providers for Microsoft.Extensions.FileProviders.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Physical",
+    "Description": "File provider for physical files for Microsoft.Extensions.FileProviders.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.FileSystemGlobbing",
+    "Description": "File system globbing to find files matching a specified pattern.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Hosting",
+    "Description": "Hosting and startup infrastructures for applications.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Hosting.Abstractions",
+    "Description": "Hosting and startup abstractions for applications.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Http",
+    "Description": "The HttpClient factory is a pattern for configuring and retrieving named HttpClients in a composable way. The HttpClient factory provides extensibility to plug in DelegatingHandlers that address cross-cutting concerns such as service location, load balancing, and reliability. The default HttpClient factory provides built-in diagnostics and logging and manages the lifetimes of connections in a performant way.",
+    "CommonTypes": [
+      "System.Net.Http.IHttpClientFactory"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging",
+    "Description": "Logging infrastructure default implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Abstractions",
+    "Description": "Logging abstractions for Microsoft.Extensions.Logging.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Logging.ILogger",
+      "Microsoft.Extensions.Logging.ILoggerFactory",
+      "Microsoft.Extensions.Logging.ILogger&lt;TCategoryName&gt;",
+      "Microsoft.Extensions.Logging.LogLevel",
+      "Microsoft.Extensions.Logging.Logger&lt;T&gt;",
+      "Microsoft.Extensions.Logging.LoggerMessage",
+      "Microsoft.Extensions.Logging.Abstractions.NullLogger"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Configuration",
+    "Description": "Configuration support for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Console",
+    "Description": "Console logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Debug",
+    "Description": "Debug output logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a debugger monitor by writing messages with System.Diagnostics.Debug.WriteLine().",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.EventLog",
+    "Description": "Windows Event Log logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.EventSource",
+    "Description": "EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.TraceSource",
+    "Description": "TraceSource logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a trace listener by writing messages with System.Diagnostics.TraceSource.TraceEvent().",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options",
+    "Description": "Provides a strongly typed way of specifying and accessing settings using dependency injection.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options.ConfigurationExtensions",
+    "Description": "Provides additional configuration specific functionality related to Options.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options.DataAnnotations",
+    "Description": "Provides additional DataAnnotations specific functionality related to Options.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Internal.Transport",
+    "Description": "Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Primitives",
+    "Description": "Primitives shared by framework extensions. Commonly used types include:",
+    "CommonTypes": [
+      "Microsoft.Extensions.Primitives.IChangeToken",
+      "Microsoft.Extensions.Primitives.StringValues",
+      "Microsoft.Extensions.Primitives.StringSegment"
+    ]
+  },
+  {
     "Name": "Microsoft.Bcl.HashCode",
     "Description": "Provides the HashCode type for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
     "CommonTypes": [
@@ -76,7 +282,7 @@
   },
   {
     "Name": "Microsoft.NETCore.Runtime",
-    "Description": "The .NET Core runtime.",
+    "Description": "The .NET runtime.",
     "CommonTypes": []
   },
   {
@@ -144,7 +350,7 @@
   },
   {
     "Name": "Microsoft.XmlSerializer.Generator",
-    "Description": "Like the Xml Serializer Generator (sgen.exe) on desktop, Microsoft.XmlSerializer.Generator NuGet package is the solution for .NET Core and .NET Standard Libraries. It creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
+    "Description": "Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
     "CommonTypes": []
   },
   {
@@ -695,7 +901,7 @@
   },
   {
     "Name": "System.Drawing.Primitives",
-    "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
+    "Description": "Provides basic drawing primitive structures.",
     "CommonTypes": [
       "System.Drawing.Color",
       "System.Drawing.Point",
@@ -1033,6 +1239,15 @@
     "Description": "Provides a simple, programmatically controlled HTTP protocol listener.",
     "CommonTypes": [
       "System.Net.HttpListener"
+    ]
+  },
+  {
+    "Name": "System.Net.Http.Json",
+    "Description": "Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that perform automatic serialization and deserialization using System.Text.Json.",
+    "CommonTypes": [
+      "System.Net.Http.Json.HttpClientJsonExtensions",
+      "System.Net.Http.Json.HttpContentJsonExtensions",
+      "System.Net.Http.Json.JsonContent"
     ]
   },
   {

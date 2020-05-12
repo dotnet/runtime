@@ -309,24 +309,6 @@ public:
     virtual
     VMPTR_OBJECTHANDLE GetAppDomainObject(VMPTR_AppDomain vmAppDomain) = 0;
 
-    //
-    // Determine if the specified AppDomain is the default domain
-    //
-    // Arguments:
-    //  vmAppDomain     - VM pointer to the AppDomain ojbect of interest
-    //
-    // Return Value:
-    //    TRUE if this is the default appdomain, else FALSE.
-    //
-    // Notes:
-    //    The default domain is the only one which cannot be unloaded and exists for the life
-    //    of the process.
-    //    A well behaved target only has 1 default domain.
-    //
-    virtual
-    BOOL IsDefaultDomain(VMPTR_AppDomain vmAppDomain) = 0;
-
-
     virtual
     void GetAssemblyFromDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Assembly * vmAssembly) = 0;
 

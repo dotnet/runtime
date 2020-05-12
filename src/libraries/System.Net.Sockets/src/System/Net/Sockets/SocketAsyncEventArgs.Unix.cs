@@ -14,7 +14,7 @@ namespace System.Net.Sockets
         private IntPtr _acceptedFileDescriptor;
         private int _socketAddressSize;
         private SocketFlags _receivedFlags;
-        private Action<int, byte[], int, SocketFlags, SocketError> _transferCompletionCallback;
+        private Action<int, byte[]?, int, SocketFlags, SocketError>? _transferCompletionCallback;
 
         private void InitializeInternals()
         {
@@ -38,20 +38,6 @@ namespace System.Net.Sockets
 
         private void CompleteCore() { }
 
-        private void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
-        {
-            Debug.Assert(socketError != SocketError.IOPending);
-
-            if (socketError == SocketError.Success)
-            {
-                FinishOperationSyncSuccess(bytesTransferred, flags);
-            }
-            else
-            {
-                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
-            }
-        }
-
         private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
         {
             CompleteAcceptOperation(acceptedFileDescriptor, socketAddress, socketAddressSize, socketError);
@@ -66,7 +52,7 @@ namespace System.Net.Sockets
             _acceptAddressBufferCount = socketAddressSize;
         }
 
-        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle)
+        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle? acceptHandle)
         {
             if (!_buffer.Equals(default))
             {
@@ -79,11 +65,11 @@ namespace System.Net.Sockets
 
             IntPtr acceptedFd;
             int socketAddressLen = _acceptAddressBufferCount / 2;
-            SocketError socketError = handle.AsyncContext.AcceptAsync(_acceptBuffer, ref socketAddressLen, out acceptedFd, AcceptCompletionCallback);
+            SocketError socketError = handle.AsyncContext.AcceptAsync(_acceptBuffer!, ref socketAddressLen, out acceptedFd, AcceptCompletionCallback);
 
             if (socketError != SocketError.IOPending)
             {
-                CompleteAcceptOperation(acceptedFd, _acceptBuffer, socketAddressLen, socketError);
+                CompleteAcceptOperation(acceptedFd, _acceptBuffer!, socketAddressLen, socketError);
                 FinishOperationSync(socketError, 0, SocketFlags.None);
             }
 
@@ -95,9 +81,12 @@ namespace System.Net.Sockets
             CompletionCallback(0, SocketFlags.None, socketError);
         }
 
+        internal unsafe SocketError DoOperationConnectEx(Socket socket, SafeSocketHandle handle)
+            => DoOperationConnect(socket, handle);
+
         internal unsafe SocketError DoOperationConnect(Socket socket, SafeSocketHandle handle)
         {
-            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress.Buffer, _socketAddress.Size, ConnectCompletionCallback);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, _socketAddress.Size, ConnectCompletionCallback);
             if (socketError != SocketError.IOPending)
             {
                 FinishOperationSync(socketError, 0, SocketFlags.None);
@@ -112,19 +101,19 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        private Action<int, byte[], int, SocketFlags, SocketError> TransferCompletionCallback =>
+        private Action<int, byte[]?, int, SocketFlags, SocketError> TransferCompletionCallback =>
             _transferCompletionCallback ?? (_transferCompletionCallback = TransferCompletionCallbackCore);
 
-        private void TransferCompletionCallbackCore(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
+        private void TransferCompletionCallbackCore(int bytesTransferred, byte[]? socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
         {
             CompleteTransferOperation(bytesTransferred, socketAddress, socketAddressSize, receivedFlags, socketError);
 
             CompletionCallback(bytesTransferred, receivedFlags, socketError);
         }
 
-        private void CompleteTransferOperation(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
+        private void CompleteTransferOperation(int bytesTransferred, byte[]? socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
         {
-            Debug.Assert(socketAddress == null || socketAddress == _socketAddress.Buffer, $"Unexpected socketAddress: {socketAddress}");
+            Debug.Assert(socketAddress == null || socketAddress == _socketAddress!.Buffer, $"Unexpected socketAddress: {socketAddress}");
             _socketAddressSize = socketAddressSize;
             _receivedFlags = receivedFlags;
         }
@@ -143,7 +132,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveAsync(_bufferListInternal, _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveAsync(_bufferListInternal!, _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -163,14 +152,14 @@ namespace System.Net.Sockets
             SocketFlags flags;
             SocketError errorCode;
             int bytesReceived = 0;
-            int socketAddressLen = _socketAddress.Size;
+            int socketAddressLen = _socketAddress!.Size;
             if (_bufferList == null)
             {
                 errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer.Slice(_offset, _count), _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferListInternal, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferListInternal!, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -206,9 +195,9 @@ namespace System.Net.Sockets
             _socketAddressSize = 0;
 
             bool isIPv4, isIPv6;
-            Socket.GetIPProtocolInformation(socket.AddressFamily, _socketAddress, out isIPv4, out isIPv6);
+            Socket.GetIPProtocolInformation(socket.AddressFamily, _socketAddress!, out isIPv4, out isIPv6);
 
-            int socketAddressSize = _socketAddress.Size;
+            int socketAddressSize = _socketAddress!.Size;
             int bytesReceived;
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
@@ -234,7 +223,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.SendAsync(_bufferListInternal, _socketFlags, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendAsync(_bufferListInternal!, _socketFlags, out bytesSent, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -258,7 +247,7 @@ namespace System.Net.Sockets
             {
                 for (int i = 0; i < elements.Length; i++)
                 {
-                    string path = elements[i]?.FilePath;
+                    string? path = elements[i]?.FilePath;
                     if (path != null)
                     {
                         files[i] = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, useAsync: true);
@@ -279,7 +268,7 @@ namespace System.Net.Sockets
                 // this check, but it's good enough for most situations.
                 if (exc is FileNotFoundException fnfe)
                 {
-                    string dirname = Path.GetDirectoryName(fnfe.FileName);
+                    string? dirname = Path.GetDirectoryName(fnfe.FileName);
                     if (!string.IsNullOrEmpty(dirname) && !Directory.Exists(dirname))
                     {
                         throw new DirectoryNotFoundException(fnfe.Message);
@@ -311,7 +300,7 @@ namespace System.Net.Sockets
             _socketAddressSize = 0;
 
             int bytesSent;
-            int socketAddressLen = _socketAddress.Size;
+            int socketAddressLen = _socketAddress!.Size;
             SocketError errorCode;
             if (_bufferList == null)
             {
@@ -319,7 +308,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.SendToAsync(_bufferListInternal, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_bufferListInternal!, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -348,34 +337,12 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void LogSendPacketsBuffers(int size)
-        {
-            foreach (SendPacketsElement spe in _sendPacketsElements)
-            {
-                if (spe != null)
-                {
-                    if (spe.Buffer != null && spe.Count > 0)
-                    {
-                        NetEventSource.DumpBuffer(this, spe.Buffer, spe.Offset, Math.Min(spe.Count, size));
-                    }
-                    else if (spe.FilePath != null)
-                    {
-                        NetEventSource.NotLoggedFile(spe.FilePath, _currentSocket, _completedOperation);
-                    }
-                    else if (spe.FileStream != null)
-                    {
-                        NetEventSource.NotLoggedFile(spe.FileStream.Name, _currentSocket, _completedOperation);
-                    }
-                }
-            }
-        }
-
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
         {
-            System.Buffer.BlockCopy(_acceptBuffer, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
-            _acceptSocket = _currentSocket.CreateAcceptSocket(
+            System.Buffer.BlockCopy(_acceptBuffer!, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
+            _acceptSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
-                _currentSocket._rightEndPoint.Create(remoteSocketAddress));
+                _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
             return SocketError.Success;
         }
 
@@ -408,7 +375,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                if (_currentSocket.Disposed)
+                if (_currentSocket!.Disposed)
                 {
                     socketError = SocketError.OperationAborted;
                 }

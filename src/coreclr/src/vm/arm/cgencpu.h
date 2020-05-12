@@ -784,19 +784,6 @@ public:
         Emit16((WORD)((imm3 << 12) | (dest << 8) | imm8));
     }
 
-    void ThumbEmitCmpReg(ThumbReg reg1, ThumbReg reg2)
-    {
-        if(reg1 < 8 && reg2 <8)
-        {
-            Emit16((WORD)(0x4280 | reg2 << 3 | reg1));
-        }
-        else
-        {
-            _ASSERTE(reg1 != ThumbReg(15) && reg2 != ThumbReg(15));
-            Emit16((WORD)(0x4500 | reg2 << 3 | (reg1 & 0x7) | (reg1 & 0x8 ? 0x80 : 0x0)));
-        }
-    }
-
     void ThumbEmitIncrement(ThumbReg dest, unsigned int value)
     {
         while (value)
@@ -934,25 +921,11 @@ public:
     }
 #endif // FEATURE_INTERPRETER
 
-    void ThumbEmitCondFlagJump(CodeLabel * target,UINT cond);
-
-    void ThumbEmitCondRegJump(CodeLabel *target, BOOL nonzero, ThumbReg reg);
-
-    void ThumbEmitNearJump(CodeLabel *target);
-
     // Scratches r12.
-    void ThumbEmitCallManagedMethod(MethodDesc *pMD, bool fTailcall);
+    void ThumbEmitTailCallManagedMethod(MethodDesc *pMD);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
     VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
-
-    static Stub * CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
-                                              MethodDesc* pMD,
-                                              CorInfoHelperTailCallSpecialHandling flags);
-
-private:
-    void ThumbCopyOneTailCallArg(UINT * pnSrcAlign, const ArgLocDesc * pArgLoc, UINT * pcbStackSpace);
-    void ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *pMD, void *pHiddenArg);
 };
 
 extern "C" void SinglecastDelegateInvokeStub();
@@ -1059,9 +1032,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
 #define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
 
-#ifndef TARGET_UNIX
-#define JIT_Stelem_Ref                      JIT_Stelem_Ref
-#endif
 
 //------------------------------------------------------------------------
 //
@@ -1339,5 +1309,167 @@ inline size_t GetARMInstructionLength(PBYTE pInstr)
 {
     return GetARMInstructionLength(*(WORD*)pInstr);
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Call counting
+
+#ifdef FEATURE_TIERED_COMPILATION
+
+#define DISABLE_COPY(T) \
+    T(const T &) = delete; \
+    T &operator =(const T &) = delete
+
+typedef UINT16 CallCount;
+typedef DPTR(CallCount) PTR_CallCount;
+
+////////////////////////////////////////////////////////////////
+// CallCountingStub
+
+class CallCountingStub;
+typedef DPTR(const CallCountingStub) PTR_CallCountingStub;
+
+class CallCountingStub
+{
+public:
+    static const SIZE_T Alignment = sizeof(void *);
+
+#ifndef DACCESS_COMPILE
+protected:
+    static const PCODE TargetForThresholdReached;
+
+    CallCountingStub() = default;
+
+public:
+    static const CallCountingStub *From(TADDR stubIdentifyingToken);
+
+    PCODE GetEntryPoint() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return PINSTRToPCODE((TADDR)this);
+    }
+#endif
+
+public:
+    PTR_CallCount GetRemainingCallCountCell() const;
+    PCODE GetTargetForMethod() const;
+
+    DISABLE_COPY(CallCountingStub);
+};
+
+////////////////////////////////////////////////////////////////
+// CallCountingStubShort
+
+class CallCountingStubShort;
+typedef DPTR(const CallCountingStubShort) PTR_CallCountingStubShort;
+
+#pragma pack(push, 1)
+class CallCountingStubShort : public CallCountingStub
+{
+private:
+    const UINT16 m_part0[16];
+    CallCount *const m_remainingCallCountCell;
+    const PCODE m_targetForMethod;
+    const PCODE m_targetForThresholdReached;
+
+#ifndef DACCESS_COMPILE
+public:
+    CallCountingStubShort(CallCount *remainingCallCountCell, PCODE targetForMethod)
+        : m_part0{  0xb401,                 //     push {r0}
+                    0xf8df, 0xc01c,         //     ldr  r12, [pc, #(m_remainingCallCountCell)]
+                    0xf8bc, 0x0000,         //     ldrh r0, [r12]
+                    0x1e40,                 //     subs r0, r0, #1
+                    0xf8ac, 0x0000,         //     strh r0, [r12]
+                    0xbc01,                 //     pop  {r0}
+                    0xd001,                 //     beq  L0
+                    0xf8df, 0xf00c,         //     ldr  pc, [pc, #(m_targetForMethod)]
+                    0xf2af, 0x0c1c,         // L0: adr  r12, #(this)
+                                            // (r12 == stub-identifying token == this)
+                    0xf8df, 0xf008},        //     ldr  pc, [pc, #(m_targetForThresholdReached)]
+        m_remainingCallCountCell(remainingCallCountCell),
+        m_targetForMethod(targetForMethod),
+        m_targetForThresholdReached(TargetForThresholdReached)
+    {
+        WRAPPER_NO_CONTRACT;
+        static_assert_no_msg(sizeof(CallCountingStubShort) % Alignment == 0);
+        _ASSERTE(remainingCallCountCell != nullptr);
+        _ASSERTE(PCODEToPINSTR(targetForMethod) != NULL);
+    }
+
+    static bool Is(TADDR stubIdentifyingToken)
+    {
+        WRAPPER_NO_CONTRACT;
+        return true;
+    }
+
+    static const CallCountingStubShort *From(TADDR stubIdentifyingToken)
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(Is(stubIdentifyingToken));
+
+        const CallCountingStubShort *stub = (const CallCountingStubShort *)stubIdentifyingToken;
+        _ASSERTE(IS_ALIGNED(stub, Alignment));
+        return stub;
+    }
+#endif
+
+public:
+    static bool Is(PTR_CallCountingStub callCountingStub)
+    {
+        WRAPPER_NO_CONTRACT;
+        return true;
+    }
+
+    static PTR_CallCountingStubShort From(PTR_CallCountingStub callCountingStub)
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(Is(callCountingStub));
+
+        return dac_cast<PTR_CallCountingStubShort>(callCountingStub);
+    }
+
+    PCODE GetTargetForMethod() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_targetForMethod;
+    }
+
+    friend CallCountingStub;
+    DISABLE_COPY(CallCountingStubShort);
+};
+#pragma pack(pop)
+
+////////////////////////////////////////////////////////////////
+// CallCountingStub definitions
+
+#ifndef DACCESS_COMPILE
+inline const CallCountingStub *CallCountingStub::From(TADDR stubIdentifyingToken)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(stubIdentifyingToken != NULL);
+
+    return CallCountingStubShort::From(stubIdentifyingToken);
+}
+#endif
+
+inline PTR_CallCount CallCountingStub::GetRemainingCallCountCell() const
+{
+    WRAPPER_NO_CONTRACT;
+    return PTR_CallCount(dac_cast<PTR_CallCountingStubShort>(this)->m_remainingCallCountCell);
+}
+
+inline PCODE CallCountingStub::GetTargetForMethod() const
+{
+    WRAPPER_NO_CONTRACT;
+    return CallCountingStubShort::From(PTR_CallCountingStub(this))->GetTargetForMethod();
+}
+
+////////////////////////////////////////////////////////////////
+
+#undef DISABLE_COPY
+
+#endif // FEATURE_TIERED_COMPILATION
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // __cgencpu_h__

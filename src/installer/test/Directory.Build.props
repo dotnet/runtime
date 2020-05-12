@@ -10,16 +10,7 @@
     <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>$(NetCoreAppCurrent)</TestInfraTargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetOSTrait Condition="'$(OSGroup)' == 'Windows_NT'">nonwindowstests</TargetOSTrait>
-    <TargetOSTrait Condition="'$(OSGroup)' == 'Linux'">nonlinuxtests</TargetOSTrait>
-    <TargetOSTrait Condition="'$(OSGroup)' == 'OSX'">nonosxtests</TargetOSTrait>
-    <TargetOSTrait Condition="'$(OSGroup)' == 'FreeBSD'">nonfreebsdtests</TargetOSTrait>
-    <TargetOSTrait Condition="'$(OSGroup)' == 'NetBSD'">nonnetbsdtests</TargetOSTrait>
-
-    <TestRunnerAdditionalArguments Condition="'$(TargetOSTrait)' != ''">-notrait category=$(TargetOSTrait)</TestRunnerAdditionalArguments>
+    <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
   </PropertyGroup>
 
 </Project>

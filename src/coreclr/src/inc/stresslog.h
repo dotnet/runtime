@@ -266,7 +266,7 @@ public:
     static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
                     unsigned maxBytesTotal, HMODULE hMod);
     static void Terminate(BOOL fProcessDetach=FALSE);
-    static void ThreadDetach(ThreadStressLog *msgs);         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
+    static void ThreadDetach();         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
     static int NewChunk ()
     {
         return InterlockedIncrement (&theLog.totalChunk);
@@ -302,13 +302,15 @@ public:
     unsigned MaxSizeTotal;               //maximum memory allowed for stress log
     Volatile<LONG> totalChunk;              //current number of total chunks allocated
     Volatile<ThreadStressLog*> logs;        // the list of logs for every thread.
-    Volatile<unsigned> TLSslot;             // Each thread gets a log this is used to fetch each threads log
+    unsigned padding;                       // Preserve the layout for SOS
     Volatile<LONG> deadCount;               // count of dead threads in the log
     CRITSEC_COOKIE lock;                    // lock
     unsigned __int64 tickFrequency;         // number of ticks per second
     unsigned __int64 startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     SIZE_T   moduleOffset;                  // Used to compute format strings.
+
+    static thread_local ThreadStressLog* t_pCurrentThreadLog;
 
 // private:
     static void Enter(CRITSEC_COOKIE dummy = NULL);
@@ -462,9 +464,10 @@ struct StressLogChunk
     DWORD dwSig2;
 
 #if !defined(STRESS_LOG_READONLY)
+#ifdef HOST_WINDOWS
     static HANDLE s_LogChunkHeap;
 
-    void * operator new (size_t) throw()
+    void * operator new (size_t size) throw()
     {
         if (IsInCantAllocStressLogRegion ())
         {
@@ -473,14 +476,30 @@ struct StressLogChunk
 
         _ASSERTE (s_LogChunkHeap != NULL);
         //no need to zero memory because we could handle garbage contents
-        return ClrHeapAlloc (s_LogChunkHeap, 0, S_SIZE_T(sizeof (StressLogChunk)));
+        return HeapAlloc (s_LogChunkHeap, 0, size);
     }
 
     void operator delete (void * chunk)
     {
         _ASSERTE (s_LogChunkHeap != NULL);
-        ClrHeapFree (s_LogChunkHeap, 0, chunk);
+        HeapFree (s_LogChunkHeap, 0, chunk);
     }
+#else
+    void* operator new (size_t size) throw()
+    {
+        if (IsInCantAllocStressLogRegion())
+        {
+            return NULL;
+        }
+
+        return malloc(size);
+    }
+
+    void operator delete (void* chunk)
+    {
+        free(chunk);
+    }
+#endif
 #endif //!STRESS_LOG_READONLY
 
     StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)

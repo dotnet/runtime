@@ -595,7 +595,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20893")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22225")]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnectAsync_Static_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -721,7 +721,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
+        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/runtime/issues/16265
         public void AcceptV6BoundToSpecificV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -731,7 +731,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
+        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/runtime/issues/16265
         public void AcceptV4BoundToSpecificV6_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -741,7 +741,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
+        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/runtime/issues/16265
         public void AcceptV6BoundToAnyV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>

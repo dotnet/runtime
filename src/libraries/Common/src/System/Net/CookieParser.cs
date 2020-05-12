@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace System.Net
 {
@@ -39,12 +41,12 @@ namespace System.Net
     //
     // Used to split a single or multi-cookie (header) string into individual
     // tokens.
-    internal class CookieTokenizer
+    internal struct CookieTokenizer
     {
         private bool _eofCookie;
         private int _index;
         private readonly int _length;
-        private string _name;
+        private string? _name;
         private bool _quoted;
         private int _start;
         private CookieToken _token;
@@ -54,7 +56,7 @@ namespace System.Net
         private int _cookieStartIndex;
         private int _cookieLength;
 
-        internal CookieTokenizer(string tokenStream)
+        internal CookieTokenizer(string tokenStream) : this()
         {
             _length = tokenStream.Length;
             _tokenStream = tokenStream;
@@ -80,7 +82,7 @@ namespace System.Net
             }
         }
 
-        internal string Name
+        internal string? Name
         {
             get
             {
@@ -448,7 +450,7 @@ namespace System.Net
                 }
             }
 
-            internal bool IsEqualTo(string value)
+            internal bool IsEqualTo(string? value)
             {
                 return string.Equals(_name, value, StringComparison.OrdinalIgnoreCase);
             }
@@ -506,36 +508,37 @@ namespace System.Net
     // CookieParser
     //
     // Takes a cookie header, makes cookies.
-    internal class CookieParser
+    internal struct CookieParser
     {
-        private readonly CookieTokenizer _tokenizer;
-        private Cookie _savedCookie;
+        private CookieTokenizer _tokenizer;
+        private Cookie? _savedCookie;
 
         internal CookieParser(string cookieString)
         {
             _tokenizer = new CookieTokenizer(cookieString);
+            _savedCookie = null;
         }
 
 #if SYSTEM_NET_PRIMITIVES_DLL
-        private static bool InternalSetNameMethod(Cookie cookie, string value)
+        private static bool InternalSetNameMethod(Cookie cookie, string? value)
         {
             return cookie.InternalSetName(value);
         }
 #else
-        private static Func<Cookie, string, bool> s_internalSetNameMethod;
-        private static Func<Cookie, string, bool> InternalSetNameMethod
+        private static Func<Cookie, string?, bool>? s_internalSetNameMethod = null;
+        private static Func<Cookie, string?, bool> InternalSetNameMethod
         {
             get
             {
                 if (s_internalSetNameMethod == null)
                 {
-                    // TODO https://github.com/dotnet/corefx/issues/13607:
+                    // TODO https://github.com/dotnet/runtime/issues/19348:
                     // We need to use Cookie.InternalSetName instead of the Cookie.set_Name wrapped in a try catch block, as
                     // Cookie.set_Name keeps the original name if the string is empty or null.
                     // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
-                    MethodInfo method = typeof(Cookie).GetMethod("InternalSetName", BindingFlags.Instance | BindingFlags.NonPublic);
+                    MethodInfo? method = typeof(Cookie).GetMethod("InternalSetName", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(method != null, "We need to use an internal method named InternalSetName that is declared on Cookie.");
-                    s_internalSetNameMethod = (Func<Cookie, string, bool>)Delegate.CreateDelegate(typeof(Func<Cookie, string, bool>), method);
+                    s_internalSetNameMethod = (Func<Cookie, string?, bool>)Delegate.CreateDelegate(typeof(Func<Cookie, string?, bool>), method);
                 }
 
                 return s_internalSetNameMethod;
@@ -543,15 +546,15 @@ namespace System.Net
         }
 #endif
 
-        private static FieldInfo s_isQuotedDomainField = null;
+        private static FieldInfo? s_isQuotedDomainField = null;
         private static FieldInfo IsQuotedDomainField
         {
             get
             {
                 if (s_isQuotedDomainField == null)
                 {
-                    // TODO https://github.com/dotnet/corefx/issues/13607:
-                    FieldInfo field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
+                    // TODO https://github.com/dotnet/runtime/issues/19348:
+                    FieldInfo? field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(field != null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
                     s_isQuotedDomainField = field;
                 }
@@ -560,15 +563,15 @@ namespace System.Net
             }
         }
 
-        private static FieldInfo s_isQuotedVersionField = null;
+        private static FieldInfo? s_isQuotedVersionField;
         private static FieldInfo IsQuotedVersionField
         {
             get
             {
                 if (s_isQuotedVersionField == null)
                 {
-                    // TODO https://github.com/dotnet/corefx/issues/13607:
-                    FieldInfo field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
+                    // TODO https://github.com/dotnet/runtime/issues/19348:
+                    FieldInfo? field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(field != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
                     s_isQuotedVersionField = field;
                 }
@@ -580,9 +583,9 @@ namespace System.Net
         // Get
         //
         // Gets the next cookie or null if there are no more cookies.
-        internal Cookie Get()
+        internal Cookie? Get()
         {
-            Cookie cookie = null;
+            Cookie? cookie = null;
 
             // Only the first occurrence of an attribute value must be counted.
             bool commentSet = false;
@@ -615,7 +618,7 @@ namespace System.Net
                                     if (!commentSet)
                                     {
                                         commentSet = true;
-                                        cookie.Comment = _tokenizer.Value;
+                                        cookie!.Comment = _tokenizer.Value;
                                     }
                                     break;
 
@@ -623,9 +626,9 @@ namespace System.Net
                                     if (!commentUriSet)
                                     {
                                         commentUriSet = true;
-                                        if (Uri.TryCreate(CheckQuoted(_tokenizer.Value), UriKind.Absolute, out Uri parsed))
+                                        if (Uri.TryCreate(CheckQuoted(_tokenizer.Value), UriKind.Absolute, out Uri? parsed))
                                         {
-                                            cookie.CommentUri = parsed;
+                                            cookie!.CommentUri = parsed;
                                         }
                                     }
                                     break;
@@ -634,7 +637,7 @@ namespace System.Net
                                     if (!domainSet)
                                     {
                                         domainSet = true;
-                                        cookie.Domain = CheckQuoted(_tokenizer.Value);
+                                        cookie!.Domain = CheckQuoted(_tokenizer.Value);
                                         IsQuotedDomainField.SetValue(cookie, _tokenizer.Quoted);
                                     }
                                     break;
@@ -647,12 +650,12 @@ namespace System.Net
                                         if (DateTime.TryParse(CheckQuoted(_tokenizer.Value),
                                             CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out DateTime expires))
                                         {
-                                            cookie.Expires = expires;
+                                            cookie!.Expires = expires;
                                         }
                                         else
                                         {
                                             // This cookie will be rejected
-                                            InternalSetNameMethod(cookie, string.Empty);
+                                            InternalSetNameMethod(cookie!, string.Empty);
                                         }
                                     }
                                     break;
@@ -663,12 +666,12 @@ namespace System.Net
                                         expiresSet = true;
                                         if (int.TryParse(CheckQuoted(_tokenizer.Value), out int parsed))
                                         {
-                                            cookie.Expires = DateTime.Now.AddSeconds(parsed);
+                                            cookie!.Expires = DateTime.Now.AddSeconds(parsed);
                                         }
                                         else
                                         {
                                             // This cookie will be rejected
-                                            InternalSetNameMethod(cookie, string.Empty);
+                                            InternalSetNameMethod(cookie!, string.Empty);
                                         }
                                     }
                                     break;
@@ -677,7 +680,7 @@ namespace System.Net
                                     if (!pathSet)
                                     {
                                         pathSet = true;
-                                        cookie.Path = _tokenizer.Value;
+                                        cookie!.Path = _tokenizer.Value;
                                     }
                                     break;
 
@@ -687,12 +690,12 @@ namespace System.Net
                                         portSet = true;
                                         try
                                         {
-                                            cookie.Port = _tokenizer.Value;
+                                            cookie!.Port = _tokenizer.Value;
                                         }
                                         catch
                                         {
                                             // This cookie will be rejected
-                                            InternalSetNameMethod(cookie, string.Empty);
+                                            InternalSetNameMethod(cookie!, string.Empty);
                                         }
                                     }
                                     break;
@@ -704,13 +707,13 @@ namespace System.Net
                                         int parsed;
                                         if (int.TryParse(CheckQuoted(_tokenizer.Value), out parsed))
                                         {
-                                            cookie.Version = parsed;
+                                            cookie!.Version = parsed;
                                             IsQuotedVersionField.SetValue(cookie, _tokenizer.Quoted);
                                         }
                                         else
                                         {
                                             // This cookie will be rejected
-                                            InternalSetNameMethod(cookie, string.Empty);
+                                            InternalSetNameMethod(cookie!, string.Empty);
                                         }
                                     }
                                     break;
@@ -724,7 +727,7 @@ namespace System.Net
                                     if (!discardSet)
                                     {
                                         discardSet = true;
-                                        cookie.Discard = true;
+                                        cookie!.Discard = true;
                                     }
                                     break;
 
@@ -732,19 +735,19 @@ namespace System.Net
                                     if (!secureSet)
                                     {
                                         secureSet = true;
-                                        cookie.Secure = true;
+                                        cookie!.Secure = true;
                                     }
                                     break;
 
                                 case CookieToken.HttpOnly:
-                                    cookie.HttpOnly = true;
+                                    cookie!.HttpOnly = true;
                                     break;
 
                                 case CookieToken.Port:
                                     if (!portSet)
                                     {
                                         portSet = true;
-                                        cookie.Port = string.Empty;
+                                        cookie!.Port = string.Empty;
                                     }
                                     break;
                             }
@@ -756,9 +759,9 @@ namespace System.Net
             return cookie;
         }
 
-        internal Cookie GetServer()
+        internal Cookie? GetServer()
         {
-            Cookie cookie = _savedCookie;
+            Cookie? cookie = _savedCookie;
             _savedCookie = null;
 
             // Only the first occurrence of an attribute value must be counted.
@@ -791,7 +794,7 @@ namespace System.Net
                                     if (!domainSet)
                                     {
                                         domainSet = true;
-                                        cookie.Domain = CheckQuoted(_tokenizer.Value);
+                                        cookie!.Domain = CheckQuoted(_tokenizer.Value);
                                         IsQuotedDomainField.SetValue(cookie, _tokenizer.Quoted);
                                     }
                                     break;
@@ -800,7 +803,7 @@ namespace System.Net
                                     if (!pathSet)
                                     {
                                         pathSet = true;
-                                        cookie.Path = _tokenizer.Value;
+                                        cookie!.Path = _tokenizer.Value;
                                     }
                                     break;
 
@@ -810,12 +813,12 @@ namespace System.Net
                                         portSet = true;
                                         try
                                         {
-                                            cookie.Port = _tokenizer.Value;
+                                            cookie!.Port = _tokenizer.Value;
                                         }
                                         catch (CookieException)
                                         {
                                             // This cookie will be rejected
-                                            InternalSetNameMethod(cookie, string.Empty);
+                                            InternalSetNameMethod(cookie!, string.Empty);
                                         }
                                     }
                                     break;
@@ -842,7 +845,7 @@ namespace System.Net
                             if (_tokenizer.Token == CookieToken.Port && !portSet)
                             {
                                 portSet = true;
-                                cookie.Port = string.Empty;
+                                cookie!.Port = string.Empty;
                             }
                             break;
                     }

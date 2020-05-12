@@ -79,7 +79,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal((byte)128, testBinary[1]);
             Assert.Equal((byte)64, testBinary[0]);
 
-            // See https://github.com/dotnet/corefx/issues/39883
+            // See https://github.com/dotnet/runtime/issues/30416
             Assert.Throws<IndexOutOfRangeException>(() => testBinary[testBinary.Length]);
 
             Assert.Throws<SqlNullValueException>(() => SqlBinary.Null[2]);

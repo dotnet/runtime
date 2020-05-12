@@ -4,6 +4,6 @@
   <!-- Properties that should be defined for all managed product assemblies -->
   <PropertyGroup>
     <Company>Microsoft Corporation</Company>
-    <Product>Microsoft%AE .NET Core</Product>
+    <Product>Microsoft%AE .NET</Product>
   </PropertyGroup>
 </Project>

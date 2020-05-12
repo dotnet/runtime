@@ -5,7 +5,7 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
     <!-- For arm/arm64 we set a 30 min timeout temporarily until we split up slow test assemblies. -->
-    <TimeoutInSeconds Condition="'$(ArchGroup)' == 'arm64' or '$(ArchGroup)' == 'arm'">1800</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'">1800</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
     
@@ -13,7 +13,7 @@
          Package testing doesn't run on xunit. -->
     <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
     
-    <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildConfiguration).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
     <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
 
     <!-- The helix runtime payload and the tests to run -->
@@ -21,11 +21,11 @@
     <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
 
     <HelixConfiguration>$(Configuration)</HelixConfiguration>
-    <HelixArchitecture>$(ArchGroup)</HelixArchitecture>
+    <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
 
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
-    test run name will be displayed as $(BuildConfiguration)-$(HelixTargetQueue) -->
-    <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
+    test run name will be displayed as $(BuildSettings)-$(HelixTargetQueue) -->
+    <TestRunNamePrefix>$(BuildSettings)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
@@ -64,10 +64,8 @@
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
       if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand Condition="'$(OSGroup)' == 'Windows_NT'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(OSGroup)' != 'Windows_NT'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
-    <!-- TODO: remove rsp argument when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
-    <HelixCommand Condition="'$(RuntimeFlavor)' == 'mono'">$(HelixCommand) --rsp-file "$(MonoRspFileName)"</HelixCommand>
+    <HelixCommand Condition="'$(TargetOS)' == 'Windows_NT'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetOS)' != 'Windows_NT'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
   <!--

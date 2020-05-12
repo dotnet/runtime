@@ -353,48 +353,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             }
         }
 #endif // FEATURE_SIMD
-        if ((location->TypeGet() == TYP_STRUCT) && !assignment->IsPhiDefn() && !value->IsMultiRegCall())
-        {
-            if ((location->OperGet() == GT_LCL_VAR))
-            {
-                // We need to construct a block node for the location.
-                // Modify lcl to be the address form.
-                location->SetOper(addrForm(locationOp));
-                LclVarDsc* varDsc     = &(comp->lvaTable[location->AsLclVarCommon()->GetLclNum()]);
-                location->gtType      = TYP_BYREF;
-                GenTreeBlk*  storeBlk = nullptr;
-                unsigned int size     = varDsc->lvExactSize;
-
-                if (varDsc->HasGCPtr())
-                {
-                    CORINFO_CLASS_HANDLE structHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-                    GenTreeObj*          objNode   = comp->gtNewObjNode(structHnd, location);
-                    objNode->ChangeOper(GT_STORE_OBJ);
-                    objNode->SetData(value);
-                    storeBlk = objNode;
-                }
-                else
-                {
-                    storeBlk = new (comp, GT_STORE_BLK)
-                        GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, location, value, comp->typGetBlkLayout(size));
-                }
-                storeBlk->gtFlags |= GTF_ASG;
-                storeBlk->gtFlags |= ((location->gtFlags | value->gtFlags) & GTF_ALL_EFFECT);
-
-                GenTree* insertionPoint = location->gtNext;
-                BlockRange().InsertBefore(insertionPoint, storeBlk);
-                use.ReplaceWith(comp, storeBlk);
-                BlockRange().Remove(assignment);
-                JITDUMP("After transforming local struct assignment into a block op:\n");
-                DISPTREERANGE(BlockRange(), use.Def());
-                JITDUMP("\n");
-                return;
-            }
-            else
-            {
-                assert(location->OperIsBlk());
-            }
-        }
     }
 
     switch (locationOp)
@@ -810,6 +768,32 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         break;
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwIntrinsicNode = node->AsHWIntrinsic();
+
+            if (!hwIntrinsicNode->isSIMD())
+            {
+                break;
+            }
+
+            noway_assert(comp->supportSIMDTypes());
+
+            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
+            // structs that are passed or returned in a different register type than their enregistered
+            // type(s).
+            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->gtSIMDSize == TARGET_POINTER_SIZE))
+            {
+                // This happens when it is consumed by a GT_RET_EXPR.
+                // It can only be a Vector2f or Vector2i.
+                assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
+                hwIntrinsicNode->gtType = TYP_SIMD8;
+            }
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         default:
             // These nodes should not be present in HIR.
             assert(!node->OperIs(GT_CMP, GT_SETCC, GT_JCC, GT_JCMP, GT_LOCKADD));
@@ -859,7 +843,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     return Compiler::WALK_CONTINUE;
 }
 
-void Rationalizer::DoPhase()
+//------------------------------------------------------------------------
+// DoPhase: Run the rationalize over the method IR.
+//
+// Returns:
+//    PhaseStatus indicating, what, if anything, was modified
+//
+PhaseStatus Rationalizer::DoPhase()
 {
     class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
     {
@@ -953,4 +943,6 @@ void Rationalizer::DoPhase()
     }
 
     comp->compRationalIRForm = true;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }

@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
 
@@ -48,17 +49,17 @@ namespace System.Security.Authentication.ExtendedProtection
             Debug.Assert(list != null);
             Debug.Assert(additionalCapacity >= 0);
 
-            foreach (string item in list)
+            foreach (string? item in list)
             {
                 InnerList.Add(item);
             }
         }
 
-        public bool Contains(string searchServiceName)
+        public bool Contains(string? searchServiceName)
         {
-            string searchName = NormalizeServiceName(searchServiceName);
+            string? searchName = NormalizeServiceName(searchServiceName);
 
-            foreach (string serviceName in InnerList)
+            foreach (string? serviceName in InnerList)
             {
                 if (string.Equals(serviceName, searchName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -78,14 +79,14 @@ namespace System.Security.Authentication.ExtendedProtection
         /// </summary>
         private void AddIfNew(IEnumerable serviceNames, bool expectStrings)
         {
-            List<string> list = serviceNames as List<string>;
+            List<string>? list = serviceNames as List<string>;
             if (list != null)
             {
                 AddIfNew(list);
                 return;
             }
 
-            ServiceNameCollection snc = serviceNames as ServiceNameCollection;
+            ServiceNameCollection? snc = serviceNames as ServiceNameCollection;
             if (snc != null)
             {
                 AddIfNew(snc.InnerList);
@@ -94,13 +95,13 @@ namespace System.Security.Authentication.ExtendedProtection
 
             // NullReferenceException is thrown when serviceNames is null,
             // which is consistent with the behavior of the .NET Framework.
-            foreach (object item in serviceNames)
+            foreach (object? item in serviceNames)
             {
                 // To match the behavior of the .NET Framework, when an item
                 // in the collection is not a string:
                 //  - Throw InvalidCastException when expectStrings is true.
                 //  - Throw ArgumentException when expectStrings is false.
-                AddIfNew(expectStrings ? (string)item : item as string);
+                AddIfNew(expectStrings ? (string)item! : (item as string)!);
             }
         }
 
@@ -124,16 +125,16 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             Debug.Assert(serviceNames != null);
 
-            foreach (string serviceName in serviceNames)
+            foreach (string? serviceName in serviceNames)
             {
-                AddIfNew(serviceName);
+                AddIfNew(serviceName!);
             }
         }
 
         /// <summary>
         /// Normalize, check for duplicates, and add if the value is unique.
         /// </summary>
-        private void AddIfNew(string serviceName)
+        private void AddIfNew([MaybeNull]string serviceName)
         {
             if (string.IsNullOrEmpty(serviceName))
             {
@@ -153,7 +154,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// </summary>
         private static int GetCountOrOne(IEnumerable collection)
         {
-            ICollection<string> c = collection as ICollection<string>;
+            ICollection<string>? c = collection as ICollection<string>;
             return c != null ? c.Count : 1;
         }
 
@@ -164,7 +165,7 @@ namespace System.Security.Authentication.ExtendedProtection
         // prefix/host:port
         // prefix/host/DistinguishedName
         // prefix/host:port/DistinguishedName
-        private static string NormalizeServiceName(string inputServiceName)
+        private static string? NormalizeServiceName(string? inputServiceName)
         {
             if (string.IsNullOrWhiteSpace(inputServiceName))
             {
@@ -240,7 +241,7 @@ namespace System.Security.Authentication.ExtendedProtection
 
             // Now we have a valid DNS host, normalize it.
 
-            Uri constructedUri;
+            Uri? constructedUri;
 
             // We need to avoid any unexpected exceptions on this code path.
             if (!Uri.TryCreate(UriScheme.Http + UriScheme.SchemeDelimiter + host, UriKind.Absolute, out constructedUri))

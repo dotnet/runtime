@@ -8,10 +8,7 @@ namespace System.Reflection
     {
         public static unsafe object? GetValue(MetadataImport scope, int token, RuntimeTypeHandle fieldTypeHandle, bool raw)
         {
-            CorElementType corElementType = 0;
-            long buffer = 0;
-            int length;
-            string? stringVal = scope.GetDefaultValue(token, out buffer, out length, out corElementType);
+            string? stringVal = scope.GetDefaultValue(token, out long buffer, out int length, out CorElementType corElementType);
 
             RuntimeType fieldType = fieldTypeHandle.GetRuntimeType();
 

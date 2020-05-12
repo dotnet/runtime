@@ -102,7 +102,9 @@ namespace System.Drawing
 
                 if (_color != value)
                 {
+#if FEATURE_SYSTEM_EVENTS
                     Color oldColor = _color;
+#endif
                     InternalSetColor(value);
 
 #if FEATURE_SYSTEM_EVENTS

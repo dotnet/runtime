@@ -62,7 +62,7 @@ namespace System.Drawing
                 throw new ArgumentException(SR.Format(SR.ColorNotSystemColor, c.ToString()));
             }
 
-            Pen[] systemPens = (Pen[])Gdip.ThreadData[s_systemPensKey];
+            Pen[]? systemPens = (Pen[]?)Gdip.ThreadData[s_systemPensKey];
             if (systemPens == null)
             {
                 systemPens = new Pen[(int)KnownColor.WindowText + (int)KnownColor.MenuHighlight - (int)KnownColor.YellowGreen];

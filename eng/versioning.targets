@@ -10,7 +10,7 @@
 
   <!-- Assembly metadata indicating that an assembly is a framework (as opposed to user) assembly:
        Test projects need to not have this because of the way "IsFrameworkAssembly" APIs work to check this. -->
-  <ItemGroup Condition="'$(IsTestProject)' != 'true'" >
+  <ItemGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'" >
     <AssemblyMetadata Include=".NETFrameworkAssembly">
       <Value></Value>
     </AssemblyMetadata>
@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <Target Name="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
-    Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' and '$(IsTestProject)' != 'true'">
+          Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
 
     <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all DotNet assemblies (non test) that have a reference to System.Runtime.InteropServices -->
     <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)'==''">
@@ -42,9 +42,9 @@
     <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
 
     <!-- SDK sets product to assembly but we want it to be our product name -->
-    <Product>Microsoft%AE .NET Core</Product>
+    <Product>Microsoft%AE .NET</Product>
 
-    <!-- Use the .NET Core product branding version for informational version description -->
+    <!-- Use the .NET product branding version for informational version description -->
     <InformationalVersion>$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(VersionSuffix)' != ''">$(InformationalVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
@@ -69,6 +69,7 @@
   <!-- Note: ReferenceAssemblies.targets still uses @(AssemblyInfoLines) as well. So if you remove this, those need to migrate too. -->
   <Target Name="_WriteNonStringAssemblyInfoAttributes"
           AfterTargets="CoreGenerateAssemblyInfo"
+          BeforeTargets="BeforeCompile;CoreCompile"
           Inputs="$(MSBuildProjectFile)"
           Outputs="$(AssemblyInfoFile)">
 
@@ -95,5 +96,40 @@
       <Compile Include="$(AssemblyInfoFile)" />
       <FileWrites Include="$(AssemblyInfoFile)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="GenerateRuntimeVersionFile"
+          DependsOnTargets="GenerateNativeVersionFile">
+
+    <PropertyGroup>
+      <RuntimeVersionFile Condition="'$(RuntimeVersionFile)' == ''">$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
+
+      <_RuntimeVersionFileContents>
+<![CDATA[
+#define RuntimeAssemblyMajorVersion $(MajorVersion)
+#define RuntimeAssemblyMinorVersion $(MinorVersion)
+
+#define RuntimeFileMajorVersion $(FileVersion.Split('.')[0])
+#define RuntimeFileMinorVersion $(FileVersion.Split('.')[1])
+#define RuntimeFileBuildVersion $(FileVersion.Split('.')[2])
+#define RuntimeFileRevisionVersion $(FileVersion.Split('.')[3])
+
+#define RuntimeProductMajorVersion $(Version.Split(".-")[0])
+#define RuntimeProductMinorVersion $(Version.Split(".-")[1])
+#define RuntimeProductPatchVersion $(Version.Split(".-")[2])
+
+#define RuntimeProductVersion $(Version)
+ ]]>
+      </_RuntimeVersionFileContents>
+    </PropertyGroup>
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(RuntimeVersionFile)))" />
+
+    <WriteLinesToFile
+      File="$(RuntimeVersionFile)"
+      Lines="$(_RuntimeVersionFileContents)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+
   </Target>
 </Project>

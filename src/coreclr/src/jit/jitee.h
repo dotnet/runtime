@@ -27,7 +27,6 @@ public:
         JIT_FLAG_TARGET_P4               = 9,
         JIT_FLAG_USE_FCOMI               = 10, // Generated code may use fcomi(p) instruction
         JIT_FLAG_USE_CMOV                = 11, // Generated code may use cmov instruction
-        JIT_FLAG_USE_SSE2                = 12, // Generated code may use SSE-2 instructions
 
     #else // !defined(TARGET_X86)
 
@@ -39,21 +38,11 @@ public:
 
     #endif // !defined(TARGET_X86)
 
-        JIT_FLAG_UNUSED6                 = 13,
-
-    #if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-        JIT_FLAG_USE_AVX                 = 14,
-        JIT_FLAG_USE_AVX2                = 15,
-        JIT_FLAG_USE_AVX_512             = 16,
-
-    #else // !defined(TARGET_X86) && !defined(TARGET_AMD64)
+        JIT_FLAG_OSR                     = 13, // Generate alternate version for On Stack Replacement
 
         JIT_FLAG_UNUSED7                 = 14,
         JIT_FLAG_UNUSED8                 = 15,
         JIT_FLAG_UNUSED9                 = 16,
-
-    #endif // !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
     #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
         JIT_FLAG_FEATURE_SIMD            = 17,
@@ -81,7 +70,7 @@ public:
         JIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         JIT_FLAG_USE_PINVOKE_HELPERS     = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         JIT_FLAG_REVERSE_PINVOKE         = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        JIT_FLAG_DESKTOP_QUIRKS          = 38, // The JIT should generate desktop-quirk-compatible code
+        // JIT_FLAG_UNUSED               = 38,
         JIT_FLAG_TIER0                   = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         JIT_FLAG_TIER1                   = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
 
@@ -92,57 +81,6 @@ public:
 #endif // !defined(TARGET_ARM)
 
         JIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
-
-#if defined(TARGET_ARM64)
-
-        JIT_FLAG_HAS_ARM64_AES           = 43, // ID_AA64ISAR0_EL1.AES is 1 or better
-        JIT_FLAG_HAS_ARM64_ATOMICS       = 44, // ID_AA64ISAR0_EL1.Atomic is 2 or better
-        JIT_FLAG_HAS_ARM64_CRC32         = 45, // ID_AA64ISAR0_EL1.CRC32 is 1 or better
-        JIT_FLAG_HAS_ARM64_DCPOP         = 46, // ID_AA64ISAR1_EL1.DPB is 1 or better
-        JIT_FLAG_HAS_ARM64_DP            = 47, // ID_AA64ISAR0_EL1.DP is 1 or better
-        JIT_FLAG_HAS_ARM64_FCMA          = 48, // ID_AA64ISAR1_EL1.FCMA is 1 or better
-        JIT_FLAG_HAS_ARM64_FP            = 49, // ID_AA64PFR0_EL1.FP is 0 or better
-        JIT_FLAG_HAS_ARM64_FP16          = 50, // ID_AA64PFR0_EL1.FP is 1 or better
-        JIT_FLAG_HAS_ARM64_JSCVT         = 51, // ID_AA64ISAR1_EL1.JSCVT is 1 or better
-        JIT_FLAG_HAS_ARM64_LRCPC         = 52, // ID_AA64ISAR1_EL1.LRCPC is 1 or better
-        JIT_FLAG_HAS_ARM64_PMULL         = 53, // ID_AA64ISAR0_EL1.AES is 2 or better
-        JIT_FLAG_HAS_ARM64_SHA1          = 54, // ID_AA64ISAR0_EL1.SHA1 is 1 or better
-        JIT_FLAG_HAS_ARM64_SHA256        = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
-        JIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
-        JIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
-        JIT_FLAG_HAS_ARM64_ADVSIMD      = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
-        JIT_FLAG_HAS_ARM64_ADVSIMD_V81  = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
-        JIT_FLAG_HAS_ARM64_ADVSIMD_FP16 = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
-        JIT_FLAG_HAS_ARM64_SM3           = 61, // ID_AA64ISAR0_EL1.SM3 is 1 or better
-        JIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
-        JIT_FLAG_HAS_ARM64_SVE           = 63  // ID_AA64PFR0_EL1.SVE is 1 or better
-
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
-
-        JIT_FLAG_USE_SSE3                = 43,
-        JIT_FLAG_USE_SSSE3               = 44,
-        JIT_FLAG_USE_SSE41               = 45,
-        JIT_FLAG_USE_SSE42               = 46,
-        JIT_FLAG_USE_AES                 = 47,
-        JIT_FLAG_USE_BMI1                = 48,
-        JIT_FLAG_USE_BMI2                = 49,
-        JIT_FLAG_USE_FMA                 = 50,
-        JIT_FLAG_USE_LZCNT               = 51,
-        JIT_FLAG_USE_PCLMULQDQ           = 52,
-        JIT_FLAG_USE_POPCNT              = 53,
-        JIT_FLAG_UNUSED23                = 54,
-        JIT_FLAG_UNUSED24                = 55,
-        JIT_FLAG_UNUSED25                = 56,
-        JIT_FLAG_UNUSED26                = 57,
-        JIT_FLAG_UNUSED27                = 58,
-        JIT_FLAG_UNUSED28                = 59,
-        JIT_FLAG_UNUSED29                = 60,
-        JIT_FLAG_UNUSED30                = 61,
-        JIT_FLAG_UNUSED31                = 62,
-        JIT_FLAG_UNUSED32                = 63
-
-
-#else // !defined(TARGET_ARM64) && !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
         JIT_FLAG_UNUSED12                = 43,
         JIT_FLAG_UNUSED13                = 44,
@@ -166,8 +104,6 @@ public:
         JIT_FLAG_UNUSED31                = 62,
         JIT_FLAG_UNUSED32                = 63
 
-#endif // !defined(TARGET_ARM64) && !defined(TARGET_X86) && !defined(TARGET_AMD64)
-
     };
     // clang-format on
 
@@ -187,6 +123,16 @@ public:
         m_jitFlags = 0;
     }
 
+    CORINFO_InstructionSetFlags GetInstructionSetFlags() const
+    {
+        return m_instructionSetFlags;
+    }
+
+    void SetInstructionSetFlags(CORINFO_InstructionSetFlags instructionSetFlags)
+    {
+        m_instructionSetFlags = instructionSetFlags;
+    }
+
     void Set(JitFlag flag)
     {
         m_jitFlags |= 1ULL << (unsigned __int64)flag;
@@ -202,16 +148,6 @@ public:
         return (m_jitFlags & (1ULL << (unsigned __int64)flag)) != 0;
     }
 
-    void Add(const JitFlags& other)
-    {
-        m_jitFlags |= other.m_jitFlags;
-    }
-
-    void Remove(const JitFlags& other)
-    {
-        m_jitFlags &= ~other.m_jitFlags;
-    }
-
     bool IsEmpty() const
     {
         return m_jitFlags == 0;
@@ -222,8 +158,9 @@ public:
         // We don't want to have to check every one, so we assume it is exactly the same values as the JitFlag
         // values defined in this type.
         m_jitFlags = flags.GetFlagsRaw();
+        m_instructionSetFlags.SetFromFlagsRaw(flags.GetInstructionSetFlagsRaw());
 
-        C_ASSERT(sizeof(m_jitFlags) == sizeof(CORJIT_FLAGS));
+        C_ASSERT(sizeof(JitFlags) == sizeof(CORJIT_FLAGS));
 
 #define FLAGS_EQUAL(a, b) C_ASSERT((unsigned)(a) == (unsigned)(b))
 
@@ -242,15 +179,6 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4, JIT_FLAG_TARGET_P4);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI, JIT_FLAG_USE_FCOMI);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV, JIT_FLAG_USE_CMOV);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2, JIT_FLAG_USE_SSE2);
-
-#endif
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX, JIT_FLAG_USE_AVX);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2, JIT_FLAG_USE_AVX2);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX_512, JIT_FLAG_USE_AVX_512);
 
 #endif
 
@@ -280,7 +208,6 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND, JIT_FLAG_SAMPLING_JIT_BACKGROUND);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS, JIT_FLAG_USE_PINVOKE_HELPERS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE, JIT_FLAG_REVERSE_PINVOKE);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_DESKTOP_QUIRKS, JIT_FLAG_DESKTOP_QUIRKS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TIER0, JIT_FLAG_TIER0);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TIER1, JIT_FLAG_TIER1);
 
@@ -291,50 +218,10 @@ public:
 #endif // TARGET_ARM
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING, JIT_FLAG_NO_INLINING);
-
-#if defined(TARGET_ARM64)
-
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_AES, JIT_FLAG_HAS_ARM64_AES);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ATOMICS, JIT_FLAG_HAS_ARM64_ATOMICS);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_CRC32, JIT_FLAG_HAS_ARM64_CRC32);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_DCPOP, JIT_FLAG_HAS_ARM64_DCPOP);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_DP, JIT_FLAG_HAS_ARM64_DP);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FCMA, JIT_FLAG_HAS_ARM64_FCMA);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP, JIT_FLAG_HAS_ARM64_FP);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP16, JIT_FLAG_HAS_ARM64_FP16);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_JSCVT, JIT_FLAG_HAS_ARM64_JSCVT);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_LRCPC, JIT_FLAG_HAS_ARM64_LRCPC);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_PMULL, JIT_FLAG_HAS_ARM64_PMULL);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA1, JIT_FLAG_HAS_ARM64_SHA1);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA256, JIT_FLAG_HAS_ARM64_SHA256);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA512, JIT_FLAG_HAS_ARM64_SHA512);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA3, JIT_FLAG_HAS_ARM64_SHA3);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD, JIT_FLAG_HAS_ARM64_ADVSIMD);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD_V81, JIT_FLAG_HAS_ARM64_ADVSIMD_V81);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD_FP16, JIT_FLAG_HAS_ARM64_ADVSIMD_FP16);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SM3, JIT_FLAG_HAS_ARM64_SM3);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SM4, JIT_FLAG_HAS_ARM64_SM4);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SVE, JIT_FLAG_HAS_ARM64_SVE);
-
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
-
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3, JIT_FLAG_USE_SSE3);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3, JIT_FLAG_USE_SSSE3);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41, JIT_FLAG_USE_SSE41);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42, JIT_FLAG_USE_SSE42);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AES, JIT_FLAG_USE_AES);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1, JIT_FLAG_USE_BMI1);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2, JIT_FLAG_USE_BMI2);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_FMA, JIT_FLAG_USE_FMA);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT, JIT_FLAG_USE_LZCNT);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ, JIT_FLAG_USE_PCLMULQDQ);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT, JIT_FLAG_USE_POPCNT);
-
-#endif // TARGET_X86 || TARGET_AMD64
-
 #undef FLAGS_EQUAL
     }
 
 private:
-    unsigned __int64 m_jitFlags;
+    unsigned __int64            m_jitFlags;
+    CORINFO_InstructionSetFlags m_instructionSetFlags;
 };

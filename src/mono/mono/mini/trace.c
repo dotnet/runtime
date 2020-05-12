@@ -27,6 +27,10 @@
 #include "trace.h"
 #include <mono/metadata/callspec.h>
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 #if defined (HOST_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
 #  undef printf
 #  define printf(...) g_log("mono", G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
@@ -434,6 +438,34 @@ mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 	//printf (" ip: %p\n", MONO_RETURN_ADDRESS_N (1));
 	printf ("\n");
 	fflush (stdout);
+
+	mono_atomic_store_release (&output_lock, 0);
+}
+
+void
+mono_trace_tail_method (MonoMethod *method, MonoJitInfo *ji, MonoMethod *target)
+{
+	char *fname, *tname;
+
+	if (!trace_spec.enabled)
+		return;
+
+	fname = mono_method_full_name (method, TRUE);
+	tname = mono_method_full_name (target, TRUE);
+	indent (-1);
+
+	while (output_lock != 0 || mono_atomic_cas_i32 (&output_lock, 1, 0) != 0)
+		mono_thread_info_yield ();
+
+	/* FIXME: Might be better to pass the ji itself from the JIT */
+	if (!ji)
+		ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_RETURN_ADDRESS (), NULL);
+
+	printf ("TAILC:%c %s->%s\n", frame_kind (ji), fname, tname);
+	fflush (stdout);
+
+	g_free (fname);
+	g_free (tname);
 
 	mono_atomic_store_release (&output_lock, 0);
 }

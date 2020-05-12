@@ -14,7 +14,7 @@ namespace System.IO.Ports.Tests
     public class AbortOnError : PortsTest
     {
         /// <summary>
-        /// This is a test for https://github.com/dotnet/corefx/issues/17396, Connect issue 584116
+        /// This is a test for https://github.com/dotnet/runtime/issues/20728, Connect issue 584116
         ///
         /// The situation is as follows:
         /// * Some user of the port causes DCB.fAbortOnError to be set at some point

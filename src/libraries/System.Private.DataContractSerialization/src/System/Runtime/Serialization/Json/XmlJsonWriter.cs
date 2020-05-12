@@ -1034,7 +1034,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            WriteString(string.Concat(highChar, lowChar));
+            WriteString(new string(stackalloc char[2] { highChar, lowChar }));
         }
 
         public override void WriteValue(bool value)

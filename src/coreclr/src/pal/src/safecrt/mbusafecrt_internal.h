@@ -18,6 +18,8 @@
 #ifndef MBUSAFECRT_INTERNAL_H
 #define MBUSAFECRT_INTERNAL_H
 
+#define PAL_IMPLEMENTATION
+
 #include "pal_mstypes.h"
 
 #ifndef DLLEXPORT
@@ -62,6 +64,10 @@ typedef struct miniFILE_struct
     char* _base;
     int _flag;
 } miniFILE;
+
+#undef _IOWRT
+#undef _IOREAD
+#undef _IOMYBUF
 
 #define _IOSTRG 1
 #define _IOWRT 2

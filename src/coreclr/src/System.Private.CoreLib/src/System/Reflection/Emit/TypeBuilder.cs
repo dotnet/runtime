@@ -721,6 +721,8 @@ namespace System.Reflection.Emit
 
         public override Module Module => GetModuleBuilder();
 
+        public override bool IsByRefLike => false;
+
         internal int MetadataTokenInternal => m_tdType.Token;
 
         #endregion
@@ -1142,7 +1144,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(names));
 
             if (names.Length == 0)
-                throw new ArgumentException();
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
             for (int i = 0; i < names.Length; i++)
                 if (names[i] == null)
@@ -1774,8 +1776,7 @@ namespace System.Reflection.Emit
                 parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
 
             // get the signature in byte form
-            int sigLength;
-            sigBytes = sigHelper.InternalGetSignature(out sigLength);
+            sigBytes = sigHelper.InternalGetSignature(out int sigLength);
 
             ModuleBuilder module = m_module;
 

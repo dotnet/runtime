@@ -300,8 +300,8 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 		gcinfo = caller_cinfo;
 	}
 
-	DEBUG_AMD64_GSHAREDVT_PRINT ("source sig: (%s) return (%s)\n", mono_signature_get_desc (caller_sig, FALSE), mono_type_full_name (mono_signature_get_return_type (caller_sig))); // Leak
-	DEBUG_AMD64_GSHAREDVT_PRINT ("dest sig: (%s) return (%s)\n", mono_signature_get_desc (callee_sig, FALSE), mono_type_full_name (mono_signature_get_return_type (callee_sig)));
+	DEBUG_AMD64_GSHAREDVT_PRINT ("source sig: (%s) return (%s)\n", mono_signature_get_desc (caller_sig, FALSE), mono_type_full_name (mono_signature_get_return_type_internal (caller_sig))); // Leak
+	DEBUG_AMD64_GSHAREDVT_PRINT ("dest sig: (%s) return (%s)\n", mono_signature_get_desc (callee_sig, FALSE), mono_type_full_name (mono_signature_get_return_type_internal (callee_sig)));
 
 	if (gcinfo->ret.storage == ArgGsharedvtVariableInReg) {
 		/*

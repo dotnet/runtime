@@ -8,7 +8,7 @@ namespace System.Net.Security
 {
     internal static partial class CertificateHelper
     {
-        internal static X509Certificate2 GetEligibleClientCertificate()
+        internal static X509Certificate2? GetEligibleClientCertificate()
         {
             // Get initial list of client certificates from the MY store.
             X509Certificate2Collection candidateCerts;

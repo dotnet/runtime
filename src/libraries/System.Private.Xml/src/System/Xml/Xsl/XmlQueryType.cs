@@ -406,7 +406,7 @@ namespace System.Xml.Xsl
                 for (int i = 0; i < Count; i++)
                 {
                     if (i != 0)
-                        sb.Append("|");
+                        sb.Append('|');
                     sb.Append(this[i].TypeCode.ToString());
                 }
 

@@ -5,9 +5,7 @@
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
-      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs" Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="Asn1\Reader\Asn1ReaderTests.cs" />
     <Compile Include="Asn1\Reader\ComprehensiveReadTests.cs" />
     <Compile Include="Asn1\Reader\ParseTag.cs" />
@@ -53,11 +51,30 @@
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
-      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs">
-      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
-    </Compile>
+    <Compile Include="PemEncodingFindTests.cs" />
+    <Compile Include="PemEncodingTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
+  </ItemGroup>
+  <Import Project="Cbor\System.Formats.Cbor.Shared.projitems" />
+  <ItemGroup>
+    <Compile Include="Cbor.Tests\CborReaderTests.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.String.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Integer.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Helpers.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Map.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.SkipValue.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Simple.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Tag.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Array.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Helpers.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Array.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Map.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Simple.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Tag.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Integer.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.String.cs" />
+    <Compile Include="Cbor.Tests\CborRoundtripTests.cs" />
   </ItemGroup>
 </Project>

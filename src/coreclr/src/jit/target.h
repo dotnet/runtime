@@ -6,11 +6,11 @@
 #ifndef TARGET_H_
 #define TARGET_H_
 
-#if defined(FEATURE_CORECLR) && defined(TARGET_UNIX)
+#if defined(TARGET_UNIX)
 #define FEATURE_VARARG 0
-#else // !(defined(FEATURE_CORECLR) && defined(TARGET_UNIX))
+#else
 #define FEATURE_VARARG 1
-#endif // !(defined(FEATURE_CORECLR) && defined(TARGET_UNIX))
+#endif
 
 /*****************************************************************************/
 // The following are human readable names for the target architectures
@@ -196,10 +196,8 @@ typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
-// The pseudorandom nop insertion is not necessary for current CoreCLR scenarios
-// #if defined(FEATURE_CORECLR) && !defined(TARGET_ARM)
+// The pseudorandom nop insertion is not necessary for current scenarios
 // #define PSEUDORANDOM_NOP_INSERTION
-// #endif
 
 /*****************************************************************************/
 
@@ -239,6 +237,9 @@ typedef unsigned char   regNumberSmall;
 
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass an argument.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
+
+  #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
+                                           // This is also the maximum number of registers for a MultiReg node.
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the
@@ -520,6 +521,9 @@ typedef unsigned char   regNumberSmall;
   #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register  (Max is two SIMD16s)
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass a single argument in multiple registers.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
+
+  #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
+                                           // This is also the maximum number of registers for a MultiReg node.
 #else // !UNIX_AMD64_ABI
   #define WINDOWS_AMD64_ABI                // Uses the Windows ABI for AMD64
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
@@ -529,6 +533,11 @@ typedef unsigned char   regNumberSmall;
   #define MAX_RET_MULTIREG_BYTES        0  // No multireg return values
   #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument (no arguments are passed using multiple registers)
   #define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
+
+  #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
+                                           // This is also the maximum number of registers for a MultiReg node.
+                                           // Note that this must be greater than 1 so that GenTreeLclVar can have an array of
+                                           // MAX_MULTIREG_COUNT - 1.
 #endif // !UNIX_AMD64_ABI
 
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
@@ -835,7 +844,6 @@ typedef unsigned char   regNumberSmall;
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\amd64\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_CALLEE_TRASH
-  #define RBM_PROFILER_LEAVE_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
@@ -846,9 +854,11 @@ typedef unsigned char   regNumberSmall;
   // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
   // STOP_FOR_GC helper preserves all the 4 possible return registers.
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
 #else
   // See vm\amd64\asmhelpers.asm for more details.
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
 #endif
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
@@ -906,6 +916,9 @@ typedef unsigned char   regNumberSmall;
   #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 4 doubles)
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 floats or doubles using an HFA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
+
+  #define MAX_MULTIREG_COUNT            4  // Maxiumum number of registers defined by a single instruction (including calls).
+                                           // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
   #define USER_ARGS_COME_LAST      1
@@ -1217,6 +1230,9 @@ typedef unsigned char   regNumberSmall;
   #define MAX_RET_MULTIREG_BYTES       64  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
+
+  #define MAX_MULTIREG_COUNT            4  // Maxiumum number of registers defined by a single instruction (including calls).
+                                           // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
   #define USER_ARGS_COME_LAST      1

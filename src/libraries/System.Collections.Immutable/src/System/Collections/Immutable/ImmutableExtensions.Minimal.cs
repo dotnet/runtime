@@ -114,7 +114,7 @@ namespace System.Collections.Immutable
 
                 // Array.Copy can throw an ArrayTypeMismatchException if the underlying type of
                 // the destination array is not typeof(T[]), but is assignment-compatible with T[].
-                // See https://github.com/dotnet/corefx/issues/2241 for more info.
+                // See https://github.com/dotnet/runtime/issues/14794 for more info.
                 if (sequence.GetType() == typeof(T[]))
                 {
                     var sourceArray = (T[])sequence;

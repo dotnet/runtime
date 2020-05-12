@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal.Native
         /// appends to the OidCollection while this method is in progress. In such a case, this method guarantees only that this won't create
         /// an unmanaged buffer overflow condition.
         /// </summary>
-        public static SafeHandle ToLpstrArray(this OidCollection oids, out int numOids)
+        public static SafeHandle ToLpstrArray(this OidCollection? oids, out int numOids)
         {
             if (oids == null || oids.Count == 0)
             {
@@ -32,7 +32,7 @@ namespace Internal.Cryptography.Pal.Native
             var oidStrings = new string[oids.Count];
             for (int i = 0; i < oidStrings.Length; i++)
             {
-                oidStrings[i] = oids[i].Value;
+                oidStrings[i] = oids[i].Value!;
             }
 
             unsafe
@@ -70,7 +70,7 @@ namespace Internal.Cryptography.Pal.Native
 
         public static byte[] ValueAsAscii(this Oid oid)
         {
-            return Encoding.ASCII.GetBytes(oid.Value);
+            return Encoding.ASCII.GetBytes(oid.Value!);
         }
 
         public unsafe delegate void DecodedObjectReceiver(void* pvDecodedObject, int cbDecodedObject);

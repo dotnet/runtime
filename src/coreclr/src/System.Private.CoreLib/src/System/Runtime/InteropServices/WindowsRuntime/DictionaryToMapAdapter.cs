@@ -28,10 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal V Lookup<K, V>(K key) where K : notnull
         {
             IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
-            V value;
-            bool keyFound = _this.TryGetValue(key, out value);
-
-            if (!keyFound)
+            if (!_this.TryGetValue(key, out V value))
             {
                 Debug.Assert(key != null);
                 Exception e = new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));

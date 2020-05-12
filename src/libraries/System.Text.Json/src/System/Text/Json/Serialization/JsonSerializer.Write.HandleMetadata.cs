@@ -23,7 +23,7 @@ namespace System.Text.Json
             MetadataPropertyName metadataToWrite;
 
             // If the jsonConverter supports immutable dictionaries or value types, don't write any metadata
-            if (!jsonConverter.CanHaveIdMetadata || jsonConverter.TypeToConvert.IsValueType)
+            if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
             {
                 metadataToWrite = MetadataPropertyName.NoMetadata;
             }
@@ -53,7 +53,7 @@ namespace System.Text.Json
             MetadataPropertyName metadataToWrite;
 
             // If the jsonConverter supports immutable enumerables or value type collections, don't write any metadata
-            if (!jsonConverter.CanHaveIdMetadata || jsonConverter.TypeToConvert.IsValueType)
+            if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
             {
                 writer.WriteStartArray();
                 metadataToWrite = MetadataPropertyName.NoMetadata;

@@ -4,7 +4,7 @@
     <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
-    <DisableProjectBuild Condition="'$(Platform)' == 'arm' or '$(Platform)' == 'arm64'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">true</DisableProjectBuild>
     <!-- WinRT interop is not compatible with unloadability -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

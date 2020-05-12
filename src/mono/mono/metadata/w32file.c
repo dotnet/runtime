@@ -538,7 +538,7 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArrayHandle dest,
 		return 0;
 	}
 
-	guint32 buffer_handle = 0;
+	MonoGCHandle buffer_handle = NULL;
 	buffer = MONO_ARRAY_HANDLE_PIN (dest, guchar, dest_offset, &buffer_handle);
 	result = mono_w32file_read (handle, buffer, count, &n, io_error);
 	mono_gchandle_free_internal (buffer_handle);
@@ -568,7 +568,7 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArrayHandle src,
 		return 0;
 	}
 	
-	guint32 src_handle = 0;
+	MonoGCHandle src_handle = NULL;
 	buffer = MONO_ARRAY_HANDLE_PIN (src, guchar, src_offset, &src_handle);
 	result = mono_w32file_write (handle, buffer, count, &n, io_error);
 	mono_gchandle_free_internal (src_handle);
@@ -788,10 +788,14 @@ ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar (void)
 gunichar2 
 ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void)
 {
+#if TARGET_WASM
+	return (gunichar2) '\\';	/* backslash issue https://github.com/mono/mono/issues/18933 */ 
+#else	
 	if (IS_PORTABILITY_SET)
 		return (gunichar2) '\\';	/* backslash */
 	else
 		return (gunichar2) '/';	/* forward slash */
+#endif		
 }
 
 gunichar2 

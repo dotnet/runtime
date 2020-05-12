@@ -39,7 +39,10 @@ VPTR_CLASS(RangeSectionStubManager)
 VPTR_CLASS(ILStubManager)
 VPTR_CLASS(InteropDispatchStubManager)
 VPTR_CLASS(DelegateInvokeStubManager)
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallStubManager)
+#endif
+VPTR_CLASS(CallCountingStubManager)
 VPTR_CLASS(PEFile)
 VPTR_CLASS(PEAssembly)
 VPTR_CLASS(PEImageLayout)
@@ -84,6 +87,7 @@ VPTR_CLASS(ResumableFrame)
 VPTR_CLASS(RedirectedThreadFrame)
 #endif
 VPTR_CLASS(StubDispatchFrame)
+VPTR_CLASS(CallCountingHelperFrame)
 VPTR_CLASS(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(DynamicHelperFrame)
@@ -91,7 +95,9 @@ VPTR_CLASS(DynamicHelperFrame)
 #if defined(TARGET_X86)
 VPTR_CLASS(UMThkCallFrame)
 #endif
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallFrame)
+#endif
 VPTR_CLASS(ExceptionFilterFrame)
 
 #ifdef _DEBUG

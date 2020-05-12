@@ -94,9 +94,7 @@ namespace System
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            string[] names;
-            Array values;
-            GetEnumData(out names, out values);
+            GetEnumData(out string[] names, out Array values);
             return names;
         }
 

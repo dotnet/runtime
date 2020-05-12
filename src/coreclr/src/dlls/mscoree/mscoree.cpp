@@ -16,9 +16,10 @@
 #include "metadataexports.h"
 #include "ex.h"
 
-#include "product_version.h"
-
 #include <dbgenginemetrics.h>
+
+// Globals
+extern HINSTANCE g_hThisInst;
 
 // Locals.
 BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
@@ -26,17 +27,12 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                        DWORD        dwReason,               // Reason for loading.
                        LPVOID       lpReserved);                // Unused.
 
-// Globals.
-HINSTANCE g_hThisInst;  // This library.
-
 #ifndef CROSSGEN_COMPILE
 //*****************************************************************************
 // Handle lifetime of loaded library.
 //*****************************************************************************
 
 #include <shlwapi.h>
-
-extern "C" IExecutionEngine* IEE();
 
 #ifdef TARGET_WINDOWS
 
@@ -62,15 +58,11 @@ extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpRe
             // Initialization" check and makes it pass.
             __security_init_cookie();
 
-            // It's critical that we invoke InitUtilCode() before the CRT initializes.
+            // It's critical that we initialize g_hmodCoreCLR before the CRT initializes.
             // We have a lot of global ctors that will break if we let the CRT initialize without
             // this step having been done.
 
-            CoreClrCallbacks cccallbacks;
-            cccallbacks.m_hmodCoreCLR               = (HINSTANCE)hInstance;
-            cccallbacks.m_pfnIEE                    = IEE;
-            cccallbacks.m_pfnGetCORSystemDirectory  = GetCORSystemDirectoryInternaL;
-            InitUtilcode(cccallbacks);
+            g_hmodCoreCLR = (HINSTANCE)hInstance;
 
             if (!(result = _CRT_INIT(hInstance, dwReason, lpReserved)))
             {
@@ -115,15 +107,7 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     case DLL_PROCESS_ATTACH:
         {
 #ifndef TARGET_WINDOWS
-            // It's critical that we invoke InitUtilCode() before the CRT initializes.
-            // We have a lot of global ctors that will break if we let the CRT initialize without
-            // this step having been done.
-
-            CoreClrCallbacks cccallbacks;
-            cccallbacks.m_hmodCoreCLR = (HINSTANCE)hInstance;
-            cccallbacks.m_pfnIEE = IEE;
-            cccallbacks.m_pfnGetCORSystemDirectory = GetCORSystemDirectoryInternaL;
-            InitUtilcode(cccallbacks);
+            g_hmodCoreCLR = (HINSTANCE)hInstance;
 #endif
 
             // Save the module handle.
@@ -330,21 +314,6 @@ STDAPI ReOpenMetaDataWithMemoryEx(
     return hr;
 }
 
-// Replacement for legacy shim API GetCORRequiredVersion(...) used in linked libraries.
-// Used in code:TiggerStorage::GetDefaultVersion#CallTo_CLRRuntimeHostInternal_GetImageVersionString.
-HRESULT
-CLRRuntimeHostInternal_GetImageVersionString(
-    __out_ecount_opt(*pcchBuffer) LPWSTR wszBuffer,
-    __inout                       DWORD *pcchBuffer)
-{
-    // Simply forward the call to the ICLRRuntimeHostInternal implementation.
-    STATIC_CONTRACT_WRAPPER;
-
-    HRESULT hr = GetCORVersionInternal(wszBuffer, *pcchBuffer, pcchBuffer);
-
-    return hr;
-} // CLRRuntimeHostInternal_GetImageVersionString
-
 STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
 {
     CONTRACTL {
@@ -376,67 +345,6 @@ STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
 
     END_ENTRYPOINT_NOTHROW;
     return hr;
-}
-
-//
-// Returns version of the runtime (null-terminated).
-//
-// Arguments:
-//    pBuffer - [out] Output buffer allocated by caller of size cchBuffer.
-//    cchBuffer - Size of pBuffer in characters.
-//    pdwLength - [out] Size of the version string in characters (incl. null-terminator). Will be filled
-//                even if ERROR_INSUFFICIENT_BUFFER is returned.
-//
-// Return Value:
-//    S_OK - Output buffer contains the version string.
-//    HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) - *pdwLength contains required size of the buffer in
-//                                                    characters.
-
-STDAPI GetCORVersionInternal(
-__out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
-                              DWORD cchBuffer,
-                        __out DWORD *pdwLength)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(pBuffer, NULL_OK));
-        PRECONDITION(CheckPointer(pdwLength));
-    } CONTRACTL_END;
-
-    HRESULT hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    if ((pBuffer != NULL) && (cchBuffer > 0))
-    {   // Initialize the output for case the function fails
-        *pBuffer = W('\0');
-    }
-
-#define VERSION_NUMBER_NOSHIM W("v") QUOTE_MACRO_L(CLR_MAJOR_VERSION.CLR_MINOR_VERSION.CLR_BUILD_VERSION)
-
-    DWORD length = (DWORD)(wcslen(VERSION_NUMBER_NOSHIM) + 1);
-    if (length > cchBuffer)
-    {
-        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    }
-    else
-    {
-        if (pBuffer == NULL)
-        {
-            hr = E_POINTER;
-        }
-        else
-        {
-            CopyMemory(pBuffer, VERSION_NUMBER_NOSHIM, length * sizeof(WCHAR));
-            hr = S_OK;
-        }
-    }
-    *pdwLength = length;
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-
 }
 
 static DWORD g_dwSystemDirectory = 0;

@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <!-- Get artifact locations to sign. -->
-  <Import Project="$(RepositoryEngineeringDir)/liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 
   <ItemGroup>
     <!--
@@ -52,7 +53,7 @@
 
     <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
     <ItemsToSign
-      Condition="'$(ConfigurationGroup)' == 'Release' and '$(TargetArchitecture)' == 'x86'"
+      Condition="'$(Configuration)' == 'Release' and '$(TargetArchitecture)' == 'x86'"
       Include="$(CoreCLRArtifactsPath)Redist\ucrt\DLLs\$(TargetArchitecture)\api-ms-win-core-xstate-l2-1-0.dll" />
 
     <!-- Sign libraries. -->
@@ -71,7 +72,6 @@
 
     <!-- Sign managed libraries in installer subset. -->
     <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.DotNet.PlatformAbstractions/**/*.dll" />
-    <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.Extensions.DependencyModel/**/*.dll" />
     <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.NET.HostModel/**/*.dll" />
   </ItemGroup>
 

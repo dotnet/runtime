@@ -9,26 +9,26 @@
 /*
 Shims the ERR_clear_error method.
 */
-DLLEXPORT void CryptoNative_ErrClearError(void);
+PALEXPORT void CryptoNative_ErrClearError(void);
 
 /*
 Shim to ERR_get_error which also returns whether the error
 was caused by an allocation failure.
 */
-DLLEXPORT uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure);
+PALEXPORT uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure);
 
-DLLEXPORT uint64_t CryptoNative_ErrPeekError(void);
+PALEXPORT uint64_t CryptoNative_ErrPeekError(void);
 
-DLLEXPORT uint64_t CryptoNative_ErrPeekLastError(void);
+PALEXPORT uint64_t CryptoNative_ErrPeekLastError(void);
 
 /*
 Shims the ERR_reason_error_string method.
 
 Returns the string for the specified error.
 */
-DLLEXPORT const char* CryptoNative_ErrReasonErrorString(uint64_t error);
+PALEXPORT const char* CryptoNative_ErrReasonErrorString(uint64_t error);
 
 /*
 Direct shim to ERR_error_string_n.
 */
-DLLEXPORT void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len);
+PALEXPORT void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len);

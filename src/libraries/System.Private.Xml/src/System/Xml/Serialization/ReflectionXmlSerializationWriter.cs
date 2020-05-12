@@ -839,7 +839,7 @@ namespace System.Xml.Serialization
                                 {
                                     if (shouldAppendWhitespace)
                                     {
-                                        sb.Append(" ");
+                                        sb.Append(' ');
                                     }
 
                                     sb.Append(stringValue);
@@ -1034,7 +1034,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    Debug.Fail("https://github.com/dotnet/corefx/issues/10593: Add More Tests for Serialization Code");
+                    Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
                 }
             }
             else if (o is byte[] a)
@@ -1053,12 +1053,12 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    Debug.Fail("https://github.com/dotnet/corefx/issues/10593: Add More Tests for Serialization Code");
+                    Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
                 }
             }
             else
             {
-                Debug.Fail("https://github.com/dotnet/corefx/issues/10593: Add More Tests for Serialization Code");
+                Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
             }
         }
 

@@ -68,12 +68,23 @@ jobs:
 
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
-
+     
+    # Build product defines what we are trying to build, either coreclr or mono
     - name: buildProductArtifactName
       value: 'CoreCLRProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    # We need this because both mono and coreclr build currently depends on CoreClr
+    - name: coreClrProductArtifactName
+      value: 'CoreCLRProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: coreClrProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: corelibProductArtifactName
+      value: 'CoreLib_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: managedTestArtifactName
       value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
@@ -115,5 +126,12 @@ jobs:
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
+
+    - name: osArg
+      value: ''
+
+    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      - name: osArg
+        value: -os FreeBSD
 
     steps: ${{ parameters.steps }}

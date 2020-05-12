@@ -8,16 +8,16 @@ namespace System.Drawing
 {
     public static class SystemIcons
     {
-        private static Icon s_application = null;
-        private static Icon s_asterisk = null;
-        private static Icon s_error = null;
-        private static Icon s_exclamation = null;
-        private static Icon s_hand = null;
-        private static Icon s_information = null;
-        private static Icon s_question = null;
-        private static Icon s_warning = null;
-        private static Icon s_winlogo = null;
-        private static Icon s_shield = null;
+        private static Icon? s_application = null;
+        private static Icon? s_asterisk = null;
+        private static Icon? s_error = null;
+        private static Icon? s_exclamation = null;
+        private static Icon? s_hand = null;
+        private static Icon? s_information = null;
+        private static Icon? s_question = null;
+        private static Icon? s_warning = null;
+        private static Icon? s_winlogo = null;
+        private static Icon? s_shield = null;
 
         public static Icon Application => GetIcon(ref s_application, SafeNativeMethods.IDI_APPLICATION);
 
@@ -51,7 +51,7 @@ namespace System.Drawing
             }
         }
 
-        private static Icon GetIcon(ref Icon icon, int iconId)
+        private static Icon GetIcon(ref Icon? icon, int iconId)
         {
             return icon ?? (icon = new Icon(SafeNativeMethods.LoadIcon(NativeMethods.NullHandleRef, (IntPtr)iconId)));
         }

@@ -60,6 +60,12 @@ PEImageLayout* PEImageLayout::LoadFlat(PEImage* pOwner)
     return new FlatImageLayout(pOwner);
 }
 
+PEImageLayout *PEImageLayout::LoadNative(LPCWSTR fullPath)
+{
+    STANDARD_VM_CONTRACT;
+    return new NativeImageLayout(fullPath);
+}
+
 PEImageLayout* PEImageLayout::Map(PEImage* pOwner)
 {
     CONTRACT(PEImageLayout*)
@@ -629,10 +635,47 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     Init(m_FileView, size);
 }
 
+NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
+{
+    PVOID loadedImage;
+#if TARGET_UNIX
+    {
+        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+        HANDLE fileHandle = WszCreateFile(
+            fullPath,
+            GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_DELETE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
 
+        if (fileHandle == INVALID_HANDLE_VALUE)
+        {
+            ThrowLastError();
+        }
+
+        loadedImage = PAL_LOADLoadPEFile(fileHandle);
+    }
+#else
+    loadedImage = CLRLoadLibraryEx(fullPath, NULL, GetLoadWithAlteredSearchPathFlag());
+#endif
+    
+    if (loadedImage == NULL)
+    {
+        ThrowLastError();
+    }
+
+
+#if TARGET_UNIX
+    PEDecoder::Init(loadedImage, /* relocated */ false);
+    ApplyBaseRelocations();
+    SetRelocated();
+#else // TARGET_UNIX
+    PEDecoder::Init(loadedImage, /* relocated */ true);
+#endif // TARGET_UNIX
+}
 #endif // !DACESS_COMPILE
-
-
 
 #ifdef DACCESS_COMPILE
 void

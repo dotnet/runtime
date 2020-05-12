@@ -10,7 +10,7 @@ namespace System.Threading.Tasks
 {
     internal static class ExceptionDispatchHelper
     {
-        internal static void ThrowAsync(Exception exception, SynchronizationContext targetContext)
+        internal static void ThrowAsync(Exception? exception, SynchronizationContext? targetContext)
         {
             if (exception == null)
                 return;
@@ -26,7 +26,7 @@ namespace System.Threading.Tasks
             {
                 try
                 {
-                    targetContext.Post((edi) => ((ExceptionDispatchInfo)edi).Throw(), exceptionDispatchInfo);
+                    targetContext.Post((edi) => ((ExceptionDispatchInfo)edi!).Throw(), exceptionDispatchInfo);
                 }
                 catch
                 {
@@ -39,7 +39,7 @@ namespace System.Threading.Tasks
             bool scheduled = true;
             try
             {
-                new SynchronizationContext().Post((edi) => ((ExceptionDispatchInfo)edi).Throw(), exceptionDispatchInfo);
+                new SynchronizationContext().Post((edi) => ((ExceptionDispatchInfo)edi!).Throw(), exceptionDispatchInfo);
             }
             catch
             {

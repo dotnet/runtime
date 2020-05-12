@@ -417,7 +417,7 @@ public:
             else
             {
                 assert(sizeof(size_t) == sizeof(int));
-                sprintf_s(ptr, remaining, "%08zX", bits);
+                sprintf_s(ptr, remaining, "%08X", (DWORD)bits);
             }
             return res;
         }

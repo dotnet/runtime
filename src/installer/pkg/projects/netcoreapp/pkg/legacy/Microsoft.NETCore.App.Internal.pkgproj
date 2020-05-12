@@ -3,6 +3,7 @@
   <PropertyGroup>
     <!-- Make this Internal package's runtime.json point to the non-Internal runtime packages. -->
     <RuntimeProjectFile>$(MSBuildThisFileDirectory)Microsoft.NETCore.App.pkgproj</RuntimeProjectFile>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />

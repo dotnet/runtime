@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class EnumBuilderPropertyTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void Guid_TypeCreated()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
@@ -53,6 +54,13 @@ namespace System.Reflection.Emit.Tests
             arrType = enumBuilder.MakeArrayType(2);
             Assert.True(arrType.IsArray);
             Assert.False(arrType.IsSZArray);
+        }
+
+        [Fact]
+        public void IsByRefLikeReturnsFalse()
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
+            Assert.False(enumBuilder.IsByRefLike);
         }
     }
 }

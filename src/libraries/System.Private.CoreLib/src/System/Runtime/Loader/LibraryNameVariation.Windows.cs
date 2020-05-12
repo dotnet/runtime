@@ -10,13 +10,15 @@ namespace System.Runtime.Loader
     {
         private const string LibraryNameSuffix = ".dll";
 
-        internal static IEnumerable<LibraryNameVariation> DetermineLibraryNameVariations(string libName, bool isRelativePath)
+        internal static IEnumerable<LibraryNameVariation> DetermineLibraryNameVariations(string libName, bool isRelativePath, bool forOSLoader = false)
         {
             // This is a copy of the logic in DetermineLibNameVariations in dllimport.cpp in CoreCLR
 
             yield return new LibraryNameVariation(string.Empty, string.Empty);
 
+            // Follow LoadLibrary rules if forOSLoader is true
             if (isRelativePath &&
+                (!forOSLoader || libName.Contains('.') && !libName.EndsWith('.')) &&
                 !libName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
                 !libName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {

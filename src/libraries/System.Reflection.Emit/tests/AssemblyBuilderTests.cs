@@ -37,6 +37,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(DefineDynamicAssembly_TestData))]
         public void DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess(AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -57,6 +58,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(DefineDynamicAssembly_CustomAttributes_TestData))]
         public void DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess_CustomAttributeBuilder(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder> attributes)
         {
@@ -113,6 +115,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(DefineDynamicModule_TestData))]
         public void DefineDynamicModule(string name)
         {
@@ -284,7 +287,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(AssemblyBuilder assembly, object obj, bool expected)
+        public void EqualsTest(AssemblyBuilder assembly, object obj, bool expected)
         {
             Assert.Equal(expected, assembly.Equals(obj));
             if (obj is AssemblyBuilder)

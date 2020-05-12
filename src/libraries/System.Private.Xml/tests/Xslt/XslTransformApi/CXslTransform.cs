@@ -474,6 +474,7 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15353", TestRuntimes.Mono)]
         public void TC_AbsolutePath_Transform(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
@@ -2097,6 +2098,7 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15353", TestRuntimes.Mono)]
         public void TC_AbsolutePath_Transform(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>

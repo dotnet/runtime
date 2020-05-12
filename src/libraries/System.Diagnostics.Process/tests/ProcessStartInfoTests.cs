@@ -14,6 +14,7 @@ using System.ComponentModel;
 using System.Security;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -350,7 +351,7 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/12696")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18978")]
         [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
@@ -903,7 +904,9 @@ namespace System.Diagnostics.Tests
             Assert.Equal(workingDirectory ?? string.Empty, info.WorkingDirectory);
         }
 
-        [Fact(Skip = "Manual test")]
+        [Fact]
+        [OuterLoop("Opens a browser")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_WebPage()
         {
@@ -916,6 +919,8 @@ namespace System.Diagnostics.Tests
             using (var p = Process.Start(info))
             {
                 Assert.NotNull(p);
+                p.WaitForInputIdle();
+                p.Kill();
             }
         }
 
@@ -956,13 +961,13 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute
-                                                    nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/corefx/issues/20388
+                                                    nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/runtime/issues/22007
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_TextFile_ShellExecute()
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
-                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/28953)]
+                return; // [ActiveIssue(https://github.com/dotnet/runtime/issues/25823)]
 
             string tempFile = GetTestFilePath() + ".txt";
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
@@ -1068,7 +1073,7 @@ namespace System.Diagnostics.Tests
             {
                 TheoryData<bool> data = new TheoryData<bool> { false };
 
-                if (   !PlatformDetection.IsInAppContainer // https://github.com/dotnet/corefx/issues/20204
+                if (   !PlatformDetection.IsInAppContainer // https://github.com/dotnet/runtime/issues/21919
                     && !PlatformDetection.IsWindowsNanoServer // By design
                     && !PlatformDetection.IsWindowsIoTCore)
                     data.Add(true);
@@ -1081,6 +1086,7 @@ namespace System.Diagnostics.Tests
         private const int ERROR_BAD_EXE_FORMAT = 0xC1;
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadVerb(bool useShellExecute)
@@ -1096,6 +1102,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadExe(bool useShellExecute)
@@ -1111,7 +1118,7 @@ namespace System.Diagnostics.Tests
 
             int expected = ERROR_BAD_EXE_FORMAT;
 
-            // Windows Nano bug see https://github.com/dotnet/corefx/issues/10290
+            // Windows Nano bug see https://github.com/dotnet/runtime/issues/17919
             if (PlatformDetection.IsWindowsNanoServer)
                 expected = ERROR_SUCCESS;
 

@@ -22,5 +22,6 @@ void mono_gc_bzero_aligned (void *dest, size_t size);
 void mono_gc_memmove_atomic (void *dest, const void *src, size_t size);
 void mono_gc_memmove_aligned (void *dest, const void *src, size_t size);
 guint64 mono_determine_physical_ram_size (void);
+guint64 mono_determine_physical_ram_available_size (void);
 
 #endif

@@ -85,7 +85,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/12716")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18984")]
         [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
         [Fact]
         public void UnhandledException_Called()
@@ -167,6 +167,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void FirstChanceException_Called()
         {
             RemoteExecutor.Invoke(() => {
@@ -570,7 +571,7 @@ namespace System.Tests
 
                 Type t = Type.GetType("AssemblyResolveTestApp.Class1, AssemblyResolveTestApp", true);
                 Assert.NotNull(t);
-                // https://github.com/dotnet/corefx/issues/38361
+                // https://github.com/dotnet/runtime/issues/29817
                 // Assert.True(AssemblyResolveFlag);
             }).Dispose();
         }
@@ -600,12 +601,13 @@ namespace System.Tests
                 MethodInfo myMethodInfo = ptype.GetMethod("foo");
                 object ret = myMethodInfo.Invoke(null, null);
                 Assert.NotNull(ret);
-                // https://github.com/dotnet/corefx/issues/38361
+                // https://github.com/dotnet/runtime/issues/29817
                 // Assert.True(AssemblyResolveFlag);
             }).Dispose();
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void AssemblyResolve_IsNotCalledForCoreLibResources()
         {
             RemoteExecutor.Invoke(() =>
@@ -668,6 +670,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void ResourceResolve()
         {
             RemoteExecutor.Invoke(() => {
@@ -744,6 +747,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
@@ -843,6 +847,7 @@ namespace System.Tests
         };
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceFromObjectHandleFullSignature(string physicalFileName, string assemblyFile, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType)
         {
@@ -907,6 +912,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void AssemblyResolve_FirstChanceException()
         {
             RemoteExecutor.Invoke(() => {
@@ -935,7 +941,7 @@ namespace System.Tests
                     return null;
                 };
 
-                // The issue resolved by https://github.com/dotnet/coreclr/issues/24450, was only reproduced when there was a Resolving handler present
+                // The issue resolved by https://github.com/dotnet/coreclr/pull/24450, was only reproduced when there was a Resolving handler present
                 System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += resolvingHandler;
 
                 assembly.GetType("System.Tests.AGenericClass`1[[Bogus, BogusAssembly]]", false);

@@ -62,7 +62,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/28027")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25440")]
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_ConnectThruProxy_Success(Uri server)
@@ -228,6 +228,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData("ws://")]
         [InlineData("wss://")]
         public async Task NonSecureConnect_ConnectThruProxy_CONNECTisUsed(string connectionType)

@@ -347,7 +347,7 @@ namespace System.Net
                     if (j < 0 || j == i + 1)
                         return null;
 
-                    attrValue = headerValue.Substring(i + 1, j - i - 1).Trim();
+                    attrValue = headerValue.AsSpan(i + 1, j - i - 1).Trim().ToString();
                 }
                 else
                 {
@@ -360,7 +360,7 @@ namespace System.Net
                     if (j == i)
                         return null;
 
-                    attrValue = headerValue.Substring(i, j - i).Trim();
+                    attrValue = headerValue.AsSpan(i, j - i).Trim().ToString();
                 }
 
                 return attrValue;

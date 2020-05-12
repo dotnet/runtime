@@ -58,8 +58,8 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RUNTIME_LOOKUP(
     const MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
 {
     char buffer[MAX_BUFFER_SIZE];
-    sprintf_s(buffer, MAX_BUFFER_SIZE, " sig-%016llX hlp-%u ind-%u tfn-%u tff-%u { ", lookup.signature, lookup.helper,
-              lookup.indirections, lookup.testForNull, lookup.testForFixup);
+    sprintf_s(buffer, MAX_BUFFER_SIZE, " sig-%016llX hlp-%u ind-%u tfn-%u tff-%u so-%u { ", lookup.signature, lookup.helper,
+              lookup.indirections, lookup.testForNull, lookup.testForFixup, lookup.sizeOffset);
     std::string resultDump(buffer);
     for (int i = 0; i < CORINFO_MAXINDIRECTIONS; i++)
     {
@@ -115,13 +115,11 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_SHAREDINST);
     AddFlag(CORINFO_FLG_DELEGATE_INVOKE);
     AddFlag(CORINFO_FLG_PINVOKE);
-    AddFlag(CORINFO_FLG_SECURITYCHECK);
     AddFlag(CORINFO_FLG_NOGCCHECK);
     AddFlag(CORINFO_FLG_INTRINSIC);
     AddFlag(CORINFO_FLG_CONSTRUCTOR);
     AddFlag(CORINFO_FLG_AGGRESSIVE_OPT);
     AddFlag(CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS);
-    AddFlag(CORINFO_FLG_NOSECURITYWRAP);
     AddFlag(CORINFO_FLG_DONT_INLINE);
     AddFlag(CORINFO_FLG_DONT_INLINE_CALLER);
     AddFlag(CORINFO_FLG_JIT_INTRINSIC);
@@ -130,11 +128,9 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_ARRAY);
     AddFlag(CORINFO_FLG_OVERLAPPING_FIELDS);
     AddFlag(CORINFO_FLG_INTERFACE);
-    AddFlag(CORINFO_FLG_CONTEXTFUL);
     AddFlag(CORINFO_FLG_CUSTOMLAYOUT);
     AddFlag(CORINFO_FLG_CONTAINS_GC_PTR);
     AddFlag(CORINFO_FLG_DELEGATE);
-    AddFlag(CORINFO_FLG_MARSHAL_BYREF);
     AddFlag(CORINFO_FLG_CONTAINS_STACK_PTR);
     AddFlag(CORINFO_FLG_VARIANCE);
     AddFlag(CORINFO_FLG_BEFOREFIELDINIT);

@@ -151,7 +151,7 @@ namespace System.Net.Http
 
                     proxyAuthScheme = ChooseAuthScheme(
                         supportedSchemes,
-                        // https://github.com/dotnet/corefx/issues/6997. If Proxy==null, we're using the system proxy which is possibly
+                        // https://github.com/dotnet/runtime/issues/16737. If Proxy==null, we're using the system proxy which is possibly
                         // discovered/calculated with a PAC file. So, we can't determine the actual proxy uri at
                         // this point since it is calculated internally in WinHTTP. For now, pass in null for the uri.
                         state.Proxy?.GetProxy(state.RequestMessage.RequestUri),
@@ -377,7 +377,7 @@ namespace System.Net.Http
 
             if (uri == null && !(credentials is NetworkCredential))
             {
-                // https://github.com/dotnet/corefx/issues/6997.
+                // https://github.com/dotnet/runtime/issues/16737.
                 // If the credentials are a NetworkCredential, the uri isn't used when calling .GetCredential() since
                 // it will work against all uri's. Otherwise, credentials is probably a CredentialCache and passing in
                 // null for a uri is invalid.

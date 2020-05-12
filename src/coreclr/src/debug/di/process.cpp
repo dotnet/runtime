@@ -7678,8 +7678,6 @@ HRESULT CordbProcess::GetRuntimeOffsets()
          m_runtimeOffsets.m_EEMaxFrameValue));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerFilterContextOffset= 0x%08x\n",
          m_runtimeOffsets.m_EEThreadDebuggerFilterContextOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadCantStopOffset=         0x%08x\n",
-         m_runtimeOffsets.m_EEThreadCantStopOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEFrameNextOffset=              0x%08x\n",
          m_runtimeOffsets.m_EEFrameNextOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEIsManagedExceptionStateMask=  0x%08x\n",
@@ -8763,18 +8761,9 @@ CordbAppDomain * CordbProcess::CacheAppDomain(VMPTR_AppDomain vmAppDomain)
     // The cache will take ownership.
     m_appDomains.AddBaseOrThrow(pAppDomain);
 
-    // see if this is the default AppDomain
-    IDacDbiInterface * pDac = m_pProcess->GetDAC();
-    BOOL               fIsDefaultDomain = FALSE;
-
-    fIsDefaultDomain = pDac->IsDefaultDomain(vmAppDomain); // throws
-
-    if (fIsDefaultDomain)
-    {
-        // If this assert fires, then it likely means the target is corrupted.
-        TargetConsistencyCheck(m_pDefaultAppDomain == NULL);
-        m_pDefaultAppDomain = pAppDomain;
-    }
+    // If this assert fires, then it likely means the target is corrupted.
+    TargetConsistencyCheck(m_pDefaultAppDomain == NULL);
+    m_pDefaultAppDomain = pAppDomain;
 
     CordbAppDomain * pReturn = pAppDomain;
     pAppDomain.ClearAndMarkDontNeuter();
@@ -8992,10 +8981,10 @@ CordbProcess::GetVersion(COR_VERSION* pVersion)
     //
     // Because we require a matching version of mscordbi.dll to debug a certain version of the runtime,
     // we can just use constants found in this particular mscordbi.dll to determine the version of the left side.
-    pVersion->dwMajor = CLR_MAJOR_VERSION;
-    pVersion->dwMinor = CLR_MINOR_VERSION;
-    pVersion->dwBuild = CLR_BUILD_VERSION;
-    pVersion->dwSubBuild = CLR_BUILD_VERSION_QFE;
+    pVersion->dwMajor = RuntimeProductMajorVersion;
+    pVersion->dwMinor = RuntimeProductMinorVersion;
+    pVersion->dwBuild = RuntimeProductPatchVersion;
+    pVersion->dwSubBuild = 0;
 
     return S_OK;
 }
@@ -11001,8 +10990,7 @@ void CordbWin32EventThread::ThreadProc()
 }
 
 // Define a holder that calls code:DeleteIPCEventHelper
-NEW_WRAPPER_TEMPLATE1(DeleteIPCEventHolderHelper, DeleteIPCEventHelper);
-typedef DeleteIPCEventHolderHelper<DebuggerIPCEvent>  DeleteIPCEventHolder;
+using DeleteIPCEventHolder = SpecializedWrapper<DebuggerIPCEvent, DeleteIPCEventHelper>;
 
 //---------------------------------------------------------------------------------------
 //
@@ -12799,7 +12787,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         PORTABILITY_ASSERT("NYI: Breakpoint size offset for this platform");
 #endif
         _ASSERTE(CORDbgGetIP(&tempDebugContext) == pEvent->u.Exception.ExceptionRecord.ExceptionAddress ||
-            (DWORD)CORDbgGetIP(&tempDebugContext) == ((DWORD)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+breakpointOpcodeSize);
+            (DWORD)(size_t)CORDbgGetIP(&tempDebugContext) == ((DWORD)(size_t)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+breakpointOpcodeSize);
     }
 #endif
 

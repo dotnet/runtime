@@ -1937,13 +1937,14 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 
         /* Is this a stack parameter reference? */
 
-        if (emitComp->lvaIsParameter(var)
+        if ((emitComp->lvaIsParameter(var)
 #if !defined(TARGET_AMD64) || defined(UNIX_AMD64_ABI)
-            && !emitComp->lvaIsRegArgument(var)
+             && !emitComp->lvaIsRegArgument(var)
 #endif // !TARGET_AMD64 || UNIX_AMD64_ABI
-                )
+                 ) ||
+            (static_cast<unsigned>(var) == emitComp->lvaRetAddrVar))
         {
-            /* If no EBP frame, arguments are off of ESP, above temps */
+            /* If no EBP frame, arguments and ret addr are off of ESP, above temps */
 
             if (!EBPbased)
             {
@@ -1981,9 +1982,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     LclVarDsc* varDsc         = emitComp->lvaTable + var;
                     bool       isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
                     // Register passed args could have a stack offset of 0.
-                    noway_assert((int)offs < 0 || isRegPassedArg);
+                    noway_assert((int)offs < 0 || isRegPassedArg || emitComp->opts.IsOSR());
 #else  // !UNIX_AMD64_ABI
-                    noway_assert((int)offs < 0);
+
+                    // OSR transitioning to RBP frame currently can have mid-frame FP
+                    noway_assert(((int)offs < 0) || emitComp->opts.IsOSR());
 #endif // !UNIX_AMD64_ABI
                 }
 
@@ -2320,9 +2323,16 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         }
         else
         {
-            if (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx))
+            // When we are using the SIB or VSIB format with EBP or R13 as a base, we must emit at least
+            // a 1 byte displacement (this is a special case in the encoding to allow for the case of no
+            // base register at all). In order to avoid this when we have no scaling, we can reverse the
+            // registers so that we don't have to add that extra byte. However, we can't do that if the
+            // index register is a vector, such as for a gather instruction.
+            //
+            if (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx) &&
+                !isFloatReg(rgx))
             {
-                /* Swap reg and rgx, such that reg is not EBP/R13 */
+                // Swap reg and rgx, such that reg is not EBP/R13.
                 regNumber tmp                       = reg;
                 id->idAddr()->iiaAddrMode.amBaseReg = reg = rgx;
                 id->idAddr()->iiaAddrMode.amIndxReg = rgx = tmp;
@@ -2833,9 +2843,16 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         // Absolute addresses marked as contained should fit within the base of addr mode.
         assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
-        // Either not generating relocatable code, or addr must be an icon handle, or the
-        // constant is zero (which we won't generate a relocation for).
-        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0));
+        // If we reach here, either:
+        // - we are not generating relocatable code, (typically the non-AOT JIT case)
+        // - the base address is a handle represented by an integer constant,
+        // - the base address is a constant zero, or
+        // - the base address is a constant that fits into the memory instruction (this can happen on x86).
+        //   This last case is captured in the FitsInAddrBase method which is used by Lowering to determine that it can
+        //   be contained.
+        //
+        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) ||
+               memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
         if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
         {
@@ -6597,6 +6614,8 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 /*****************************************************************************
  *
  *  Add a jmp instruction.
+ *  When dst is NULL, instrCount specifies number of instructions
+ *       to jump: positive is forward, negative is backward.
  */
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */)
@@ -6604,11 +6623,21 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     UNATIVE_OFFSET sz;
     instrDescJmp*  id = emitNewInstrJmp();
 
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    if (dst != nullptr)
+    {
+        assert(dst->bbFlags & BBF_JMP_TARGET);
+        assert(instrCount == 0);
+    }
+    else
+    {
+        /* Only allow non-label jmps in prolog */
+        assert(emitPrologIG);
+        assert(emitPrologIG == emitCurIG);
+        assert(instrCount != 0);
+    }
 
     id->idIns(ins);
     id->idInsFmt(IF_LABEL);
-    id->idAddr()->iiaBBlabel = dst;
 
 #ifdef DEBUG
     // Mark the finally call
@@ -6618,10 +6647,21 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
 #endif // DEBUG
 
-    /* Assume the jump will be long */
-
-    id->idjShort    = 0;
-    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+    id->idjShort = 0;
+    if (dst != nullptr)
+    {
+        /* Assume the jump will be long */
+        id->idAddr()->iiaBBlabel = dst;
+        id->idjKeepLong          = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+    }
+    else
+    {
+        id->idAddr()->iiaSetInstrCount(instrCount);
+        id->idjKeepLong = false;
+        /* This jump must be short */
+        emitSetShortJump(id);
+        id->idSetIsBound();
+    }
 
     /* Record the jump's IG and offset within it */
 
@@ -6656,15 +6696,19 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
     else
     {
-        insGroup* tgt;
+        insGroup* tgt = nullptr;
 
-        /* This is a jump - assume the worst */
-
-        sz = (ins == INS_jmp) ? JMP_SIZE_LARGE : JCC_SIZE_LARGE;
-
-        /* Can we guess at the jump distance? */
-
-        tgt = (insGroup*)emitCodeGetCookie(dst);
+        if (dst != nullptr)
+        {
+            /* This is a jump - assume the worst */
+            sz = (ins == INS_jmp) ? JMP_SIZE_LARGE : JCC_SIZE_LARGE;
+            /* Can we guess at the jump distance? */
+            tgt = (insGroup*)emitCodeGetCookie(dst);
+        }
+        else
+        {
+            sz = JMP_SIZE_SMALL;
+        }
 
         if (tgt)
         {
@@ -7739,7 +7783,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             {
                 printf("reloc ");
             }
-            printf("J_M%03u_DS%02u", Compiler::s_compMethodsCount, id->idDebugOnlyInfo()->idMemCookie);
+            printf("J_M%03u_DS%02u", emitComp->compMethodID, id->idDebugOnlyInfo()->idMemCookie);
 
             disp -= id->idDebugOnlyInfo()->idMemCookie;
         }
@@ -7877,7 +7921,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 #else
 #define SIZE_LETTER "D"
 #endif
-        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", Compiler::s_compMethodsCount, jtno);
+        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", emitComp->compMethodID, jtno);
 
         /* Display the label table (it's stored as "BasicBlock*" values) */
 
@@ -7890,7 +7934,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             lab = (insGroup*)emitCodeGetCookie(*bbp++);
             assert(lab);
 
-            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", Compiler::s_compMethodsCount, lab->igNum);
+            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
         } while (--cnt);
     }
 }
@@ -8954,11 +8998,18 @@ void emitter::emitDispIns(
 
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                if (id->idAddr()->iiaHasInstrCount())
+                {
+                    printf("%3d instr", id->idAddr()->iiaGetInstrCount());
+                }
+                else
+                {
+                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                }
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
 
@@ -9397,7 +9448,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Use the large version if this is not a byte. This trick will not
         // work in case of SSE2 and AVX instructions.
-        if ((size != EA_1BYTE) && (ins != INS_imul) && !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
+        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && !IsSSEInstruction(ins) &&
+            !IsAVXInstruction(ins))
         {
             code++;
         }
@@ -10163,8 +10215,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Use the large version if this is not a byte
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (!insIsCMOV(ins)) && !IsSSEInstruction(ins) &&
-            !IsAVXInstruction(ins))
+        // TODO-XArch-Cleanup Can the need for the 'w' size bit be encoded in the instruction flags?
+        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && (!insIsCMOV(ins)) &&
+            !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
         {
             code |= 0x1;
         }
@@ -10712,7 +10765,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
-        assert((emitChkAlign == false) || (ins == INS_lea) || (((size_t)addr & (byteSize - 1)) == 0));
+        assert((emitChkAlign == false) || (ins == INS_lea) ||
+               ((byteSize < 16) && (((size_t)addr & (byteSize - 1)) == 0)) || (((size_t)addr & (16 - 1)) == 0));
     }
     else
     {
@@ -11197,7 +11251,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #endif // TARGET_AMD64
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if ((ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) || (ins == INS_tzcnt))
+    else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
+             (ins == INS_tzcnt))
     {
         code = insEncodeRMreg(ins, code);
         if ((ins == INS_crc32) && (size > EA_1BYTE))
@@ -12045,10 +12100,12 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
  *  needs to get bound to an actual address and processed by branch shortening.
  */
 
-BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
+BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 {
     unsigned srcOffs;
     unsigned dstOffs;
+    BYTE*    srcAddr;
+    BYTE*    dstAddr;
     ssize_t  distVal;
 
     instrDescJmp* id  = (instrDescJmp*)i;
@@ -12099,16 +12156,32 @@ BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
 
     // Figure out the distance to the target
     srcOffs = emitCurCodeOffs(dst);
-    dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+    srcAddr = emitOffsetToPtr(srcOffs);
 
-    if (relAddr)
+    if (id->idAddr()->iiaHasInstrCount())
     {
-        distVal = (ssize_t)(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
+        assert(ig != nullptr);
+        int      instrCount = id->idAddr()->iiaGetInstrCount();
+        unsigned insNum     = emitFindInsNum(ig, id);
+        if (instrCount < 0)
+        {
+            // Backward branches using instruction count must be within the same instruction group.
+            assert(insNum + 1 >= (unsigned)(-instrCount));
+        }
+        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
+        dstAddr = emitOffsetToPtr(dstOffs);
     }
     else
     {
-        distVal = (ssize_t)emitOffsetToPtr(dstOffs);
+        dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+        dstAddr = emitOffsetToPtr(dstOffs);
+        if (!relAddr)
+        {
+            srcAddr = nullptr;
+        }
     }
+
+    distVal = (ssize_t)(dstAddr - srcAddr);
 
     if (dstOffs <= srcOffs)
     {
@@ -12492,7 +12565,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(id->idIsBound());
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
-            dst = emitOutputLJ(dst, id);
+            dst = emitOutputLJ(ig, dst, id);
             sz  = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
             break;
 
@@ -14757,6 +14830,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency += PERFSCORE_LATENCY_2C;
             break;
 
+        case INS_bsf:
+        case INS_bsr:
         case INS_pextrb:
         case INS_pextrd:
         case INS_pextrw:

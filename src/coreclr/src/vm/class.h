@@ -77,6 +77,7 @@ class   EEClass;
 class   EnCFieldDesc;
 class   FieldDesc;
 class   NativeFieldDescriptor;
+class   EEClassNativeLayoutInfo;
 struct  LayoutRawFieldInfo;
 class   MetaSig;
 class   MethodDesc;
@@ -100,6 +101,8 @@ enum class ParseNativeTypeFlags : int;
 
 typedef DPTR(DictionaryLayout) PTR_DictionaryLayout;
 typedef DPTR(NativeFieldDescriptor) PTR_NativeFieldDescriptor;
+typedef DPTR(NativeFieldDescriptor const) PTR_ConstNativeFieldDescriptor;
+typedef DPTR(EEClassNativeLayoutInfo) PTR_EEClassNativeLayoutInfo;
 
 
 //---------------------------------------------------------------------------------
@@ -372,63 +375,9 @@ class EEClassLayoutInfo
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
-
-    private:
-        static void ParseFieldNativeTypes(
-            IMDInternalImport* pInternalImport,
-            const mdTypeDef cl, // cl of the NStruct being loaded
-            HENUMInternal* phEnumField, // enumerator for fields
-            const ULONG cTotalFields,
-            Module* pModule, // Module that defines the scope, loader and heap (for allocate FieldMarshalers)
-            ParseNativeTypeFlags nativeTypeFlags,
-            const SigTypeContext* pTypeContext, // Type parameters for NStruct being loaded
-            BOOL* fDisqualifyFromManagedSequential,
-            LayoutRawFieldInfo* pFieldInfoArrayOut, // caller-allocated array to fill in.  Needs room for cTotalFields+1 elements
-            EEClassLayoutInfo* pEEClassLayoutInfoOut, // caller-allocated structure to fill in.
-            ULONG* cInstanceFields // [out] number of instance fields
-#ifdef _DEBUG
-            ,
-            LPCUTF8 szNamespace,
-            LPCUTF8 szName
-#endif
-        );
-
-        static void SetOffsetsAndSortFields(
-            IMDInternalImport* pInternalImport,
-            const mdTypeDef cl,
-            LayoutRawFieldInfo* pFieldInfoArray, // An array of LayoutRawFieldInfos.
-            const ULONG cInstanceFields,
-            const BOOL fExplicitOffsets,
-            const UINT32 cbAdjustedParentLayoutNativeSize,
-            Module* pModule, // Module that defines the scope for the type-load
-            LayoutRawFieldInfo** pSortArrayOut // A caller-allocated array to fill in with pointers to elements in pFieldInfoArray in ascending order when sequential layout, and declaration order otherwise.
-        );
-
-        static void CalculateSizeAndFieldOffsets(
-            const UINT32 parentSize,
-            ULONG numInstanceFields,
-            BOOL fExplicitOffsets,
-            LayoutRawFieldInfo* const* pSortedFieldInfoArray, // An array of pointers to LayoutRawFieldInfo's in ascending order when sequential layout.
-            ULONG classSizeInMetadata,
-            BYTE packingSize,
-            BYTE parentAlignmentRequirement,
-            BOOL calculatingNativeLayout,
-            EEClassLayoutInfo* pEEClassLayoutInfoOut // A pointer to a caller-allocated EEClassLayoutInfo that we are filling in.
-        );
-
-        // size (in bytes) of fixed portion of NStruct.
-        UINT32      m_cbNativeSize;
         UINT32      m_cbManagedSize;
 
     public:
-        // this is equal to the largest of the alignment requirements
-        // of each of the EEClass's members. If the NStruct extends another NStruct,
-        // the base NStruct is treated as the first member for the purpose of
-        // this calculation.
-        BYTE        m_LargestAlignmentRequirementOfAllMembers;
-
-        // Post V1.0 addition: This is the equivalent of m_LargestAlignmentRequirementOfAllMember
-        // for the managed layout.
         BYTE        m_ManagedLargestAlignmentRequirementOfAllMembers;
 
     private:
@@ -446,21 +395,7 @@ class EEClassLayoutInfo
             // explicit type inherits from this type.
             e_ZERO_SIZED                =   0x04,
             // The size of the struct is explicitly specified in the meta-data.
-            e_HAS_EXPLICIT_SIZE         = 0x08,
-#ifdef UNIX_AMD64_ABI
-#ifdef FEATURE_HFA
-#error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
-#endif // FEATURE_HFA
-            e_NATIVE_PASS_IN_REGISTERS  = 0x10, // Flag wheter a native struct is passed in registers.
-#endif // UNIX_AMD64_ABI
-#ifdef FEATURE_HFA
-            // HFA type of the unmanaged layout
-            // Note that these are not flags, they are discrete values.
-            e_R4_HFA                    = 0x10,
-            e_R8_HFA                    = 0x20,
-            e_16_HFA                    = 0x30,
-            e_HFATypeFlags              = 0x30,
-#endif
+            e_HAS_EXPLICIT_SIZE         = 0x08
         };
 
         BYTE        m_bFlags;
@@ -468,54 +403,12 @@ class EEClassLayoutInfo
         // Packing size in bytes (1, 2, 4, 8 etc.)
         BYTE        m_cbPackingSize;
 
-        // # of fields that are of the calltime-marshal variety.
-        UINT        m_numCTMFields;
-
-        // An array of NativeFieldDescriptor data blocks, used to drive call-time
-        // marshaling of NStruct reference parameters. The number of elements
-        // equals m_numCTMFields.
-        RelativePointer<PTR_NativeFieldDescriptor> m_pNativeFieldDescriptors;
-
-
     public:
-        BOOL GetNativeSize() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_cbNativeSize;
-        }
-
         UINT32 GetManagedSize() const
         {
             LIMITED_METHOD_CONTRACT;
             return m_cbManagedSize;
         }
-
-
-        BYTE GetLargestAlignmentRequirementOfAllMembers() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_LargestAlignmentRequirementOfAllMembers;
-        }
-
-        UINT GetNumCTMFields() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_numCTMFields;
-        }
-
-        PTR_NativeFieldDescriptor GetNativeFieldDescriptors() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return ReadPointerMaybeNull(this, &EEClassLayoutInfo::m_pNativeFieldDescriptors);
-        }
-
-#ifndef DACCESS_COMPILE
-        void SetNativeFieldDescriptors(NativeFieldDescriptor *pNativeFieldDescriptors)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_pNativeFieldDescriptors.SetValueMaybeNull(pNativeFieldDescriptors);
-        }
-#endif // DACCESS_COMPILE
 
         BOOL IsBlittable() const
         {
@@ -546,54 +439,11 @@ class EEClassLayoutInfo
             return (m_bFlags & e_HAS_EXPLICIT_SIZE) == e_HAS_EXPLICIT_SIZE;
         }
 
-        DWORD GetPackingSize() const
+        BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
             return m_cbPackingSize;
         }
-
-#ifdef UNIX_AMD64_ABI
-        bool IsNativeStructPassedInRegisters()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_bFlags & e_NATIVE_PASS_IN_REGISTERS) != 0;
-        }
-#else
-        bool IsNativeStructPassedInRegisters()
-        {
-            return false;
-        }
-#endif // UNIX_AMD64_ABI
-
-        CorElementType GetNativeHFATypeRaw();
-#ifdef FEATURE_HFA
-        bool IsNativeHFA()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_bFlags & e_HFATypeFlags) != 0;
-        }
-
-        CorElementType GetNativeHFAType()
-        {
-            LIMITED_METHOD_CONTRACT;
-            switch (m_bFlags & e_HFATypeFlags)
-            {
-            case e_R4_HFA: return ELEMENT_TYPE_R4;
-            case e_R8_HFA: return ELEMENT_TYPE_R8;
-            case e_16_HFA: return ELEMENT_TYPE_VALUETYPE;
-            default:       return ELEMENT_TYPE_END;
-            }
-        }
-#else // !FEATURE_HFA
-        bool IsNativeHFA()
-        {
-            return GetNativeHFATypeRaw() != ELEMENT_TYPE_END;
-        }
-        CorElementType GetNativeHFAType()
-        {
-            return GetNativeHFATypeRaw();
-        }
-#endif // !FEATURE_HFA
 
     private:
         void SetIsBlittable(BOOL isBlittable)
@@ -623,33 +473,7 @@ class EEClassLayoutInfo
             m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
                                        : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
         }
-
-#ifdef FEATURE_HFA
-        void SetNativeHFAType(CorElementType hfaType)
-        {
-            LIMITED_METHOD_CONTRACT;
-            // We should call this at most once.
-            _ASSERTE((m_bFlags & e_HFATypeFlags) == 0);
-            switch (hfaType)
-            {
-            case ELEMENT_TYPE_R4: m_bFlags |= e_R4_HFA; break;
-            case ELEMENT_TYPE_R8: m_bFlags |= e_R8_HFA; break;
-            case ELEMENT_TYPE_VALUETYPE: m_bFlags |= e_16_HFA; break;
-            default: _ASSERTE(!"Invalid HFA Type");
-            }
-        }
-#endif
-#ifdef UNIX_AMD64_ABI
-        void SetNativeStructPassedInRegisters()
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_bFlags |= e_NATIVE_PASS_IN_REGISTERS;
-        }
-#endif // UNIX_AMD64_ABI
-
 };
-
-
 
 //
 // This structure is used only when the classloader is building the interface map.  Before the class
@@ -979,6 +803,7 @@ public:
 #endif // FEATURE_PREJIT
 
     EEClassLayoutInfo *GetLayoutInfo();
+    PTR_EEClassNativeLayoutInfo GetNativeLayoutInfo();
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable *pMT);
@@ -1693,7 +1518,6 @@ public:
 
 #if defined(FEATURE_HFA)
     bool CheckForHFA(MethodTable ** pByValueClassCache);
-    VOID CheckForNativeHFA();
 #else // !FEATURE_HFA
     bool CheckForHFA();
 #endif // FEATURE_HFA
@@ -1727,24 +1551,7 @@ public:
         _ASSERTE(index != WinMDAdapter::RedirectedTypeIndex_Invalid);
         GetOptionalFields()->m_WinRTRedirectedTypeIndex = index;
     }
-#endif // FEATURE_COMINTEROP
 
-    inline UINT32 GetNativeSize()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_cbNativeSize;
-    }
-    static UINT32 GetOffsetOfNativeSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (UINT32)(offsetof(EEClass, m_cbNativeSize));
-    }
-    void SetNativeSize(UINT32 nativeSize)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_cbNativeSize = nativeSize;
-    }
-#ifdef FEATURE_COMINTEROP
     OBJECTHANDLE GetOHDelegate()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1979,12 +1786,9 @@ private:
     RelativePointer<PTR_FieldDesc> m_pFieldDescList;
     RelativePointer<PTR_MethodDescChunk> m_pChunks;
 
+#ifdef FEATURE_COMINTEROP
     union
     {
-        // valid only if EEClass::IsBlittable() or EEClass::HasLayout() is true
-        UINT32          m_cbNativeSize; // size of fixed portion in bytes
-
-#ifdef FEATURE_COMINTEROP
         // For COM+ wrapper objects that extend an unmanaged class, this field
         // may contain a delegate to be called to allocate the aggregated
         // unmanaged class (instead of using CoCreateInstance).
@@ -1992,10 +1796,8 @@ private:
 
         // For interfaces this contains the COM interface type.
         CorIfaceAttr    m_ComInterfaceType;
-#endif // FEATURE_COMINTEROP
     };
 
-#ifdef FEATURE_COMINTEROP
     ComCallWrapperTemplate *m_pccwTemplate;   // points to interop data structures used when this type is exposed to COM
 #endif // FEATURE_COMINTEROP
 
@@ -2148,15 +1950,15 @@ public:
 class LayoutEEClass : public EEClass
 {
 public:
+    DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     EEClassLayoutInfo m_LayoutInfo;
+    Volatile<PTR_EEClassNativeLayoutInfo> m_nativeLayoutInfo;
 
 #ifndef DACCESS_COMPILE
     LayoutEEClass() : EEClass(sizeof(LayoutEEClass))
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef _DEBUG
-        FillMemory(&m_LayoutInfo, sizeof(m_LayoutInfo), 0xcc);
-#endif
+        m_nativeLayoutInfo = NULL;
     }
 #endif // !DACCESS_COMPILE
 };
@@ -2170,6 +1972,7 @@ struct ComPlusCallInfo;
 class DelegateEEClass : public EEClass
 {
 public:
+    DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
     RelativePointer<PTR_MethodDesc>  m_pInvokeMethod;
@@ -2240,6 +2043,7 @@ class ArrayClass : public EEClass
 
 private:
 
+    DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     unsigned char   m_rank;
     CorElementType  m_ElementType;// Cache of element type in m_ElementTypeHnd
 
@@ -2296,6 +2100,14 @@ inline EEClassLayoutInfo *EEClass::GetLayoutInfo()
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(HasLayout());
     return &((LayoutEEClass *) this)->m_LayoutInfo;
+}
+
+inline PTR_EEClassNativeLayoutInfo EEClass::GetNativeLayoutInfo()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(HasLayout());
+
+    return ((LayoutEEClass*)this)->m_nativeLayoutInfo;
 }
 
 inline BOOL EEClass::IsBlittable()

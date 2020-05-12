@@ -23,12 +23,12 @@ namespace Internal.Cryptography.Pal
                 reader.Decrypt(password);
 
                 UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
-                AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert;
+                AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
 
-                SafeSecKeyRefHandle safeSecKeyRefHandle =
+                SafeSecKeyRefHandle? safeSecKeyRefHandle =
                     ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
 
-                AppleCertificatePal newPal;
+                AppleCertificatePal? newPal;
 
                 using (safeSecKeyRefHandle)
                 {
@@ -65,7 +65,7 @@ namespace Internal.Cryptography.Pal
             SafeKeychainHandle keychain)
         {
             Pkcs12SmallExport exporter = new Pkcs12SmallExport(new TempExportPal(cert), privateKey);
-            byte[] smallPfx = exporter.Export(X509ContentType.Pkcs12, password);
+            byte[] smallPfx = exporter.Export(X509ContentType.Pkcs12, password)!;
 
             SafeSecIdentityHandle identityHandle;
             SafeSecCertificateHandle certHandle = Interop.AppleCrypto.X509ImportCertificate(

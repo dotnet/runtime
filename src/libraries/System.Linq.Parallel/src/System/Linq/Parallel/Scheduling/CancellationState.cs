@@ -65,18 +65,8 @@ namespace System.Linq.Parallel
         //
         // Inner loop code should poll once per n loop, typically via:
         // if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-        //     CancellationState.ThrowIfCanceled(_cancellationToken);
+        //     _cancellationToken.ThrowIfCancellationRequested();;
         // (Note, this only behaves as expected if FREQ is of the form (2^n)-1
-
-        /// <summary>
-        /// Throws an OCE if the merged token has been canceled.
-        /// </summary>
-        /// <param name="token">A token to check for cancellation.</param>
-        internal static void ThrowIfCanceled(CancellationToken token)
-        {
-            if (token.IsCancellationRequested)
-                throw new OperationCanceledException(token);
-        }
 
         // Test if external cancellation was requested and occurred, and if so throw a standardize OCE with standardized message
         internal static void ThrowWithStandardMessageIfCanceled(CancellationToken externalCancellationToken)

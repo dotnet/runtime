@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             if (asnEncodedData.Oid == null)
                 throw new ArgumentNullException(nameof(asnEncodedData.Oid));
-            string szOid = base.Oid.Value;
+            string? szOid = base.Oid!.Value;
             if (szOid == null)
                 throw new ArgumentNullException("oid.Value");
             if (szOid.Length == 0)
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Pkcs
         // Public properties.
         //
 
-        public new Oid Oid
+        public new Oid? Oid
         {
             get
             {

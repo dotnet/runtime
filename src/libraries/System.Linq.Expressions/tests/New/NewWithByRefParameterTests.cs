@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(16, x);
         }
 
-        [Fact, ActiveIssue("https://github.com/dotnet/corefx/issues/13458")]
+        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/19286")]
         public void CreateByRefAliasingInterpreted()
         {
             CreateByRefAliasing(useInterpreter: true);

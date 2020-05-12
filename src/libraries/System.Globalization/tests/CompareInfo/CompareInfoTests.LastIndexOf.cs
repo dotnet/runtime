@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -16,8 +18,10 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> LastIndexOf_TestData()
         {
+            bool useNls = PlatformDetection.IsNlsGlobalization;
+
             // Empty strings
-            yield return new object[] { s_invariantCompare, "foo", "", 2, 3, CompareOptions.None, 2 };
+            yield return new object[] { s_invariantCompare, "foo", "", 2, 3, CompareOptions.None, 3 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "", "a", 0, 0, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "", "", -1, 0, CompareOptions.None, 0 };
@@ -30,8 +34,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Hello", "b", 5, 5, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "Hello", "l", 5, 0, CompareOptions.None, -1 };
 
-            yield return new object[] { s_invariantCompare, "Hello", "", 5, 5, CompareOptions.None, 4 };
-            yield return new object[] { s_invariantCompare, "Hello", "", 5, 0, CompareOptions.None, 4 };
+            yield return new object[] { s_invariantCompare, "Hello", "", 5, 5, CompareOptions.None, 5 };
+            yield return new object[] { s_invariantCompare, "Hello", "", 5, 0, CompareOptions.None, 5 };
 
             // OrdinalIgnoreCase
             yield return new object[] { s_invariantCompare, "Hello", "l", 4, 5, CompareOptions.OrdinalIgnoreCase, 3 };
@@ -75,32 +79,39 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, CompareOptions.IgnoreNonSpace, 4 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1 };
 
+            // Weightless characters
+            // NLS matches weightless characters at the end of the string
+            // ICU matches weightless characters at 1 index prior to the end of the string
+            yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "", "\u200d", -1, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, useNls ? 5 : 4 };
+
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 12, 13, CompareOptions.None, 10 };
 
             // Platform differences
-            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 11, 12, CompareOptions.None, PlatformDetection.IsWindows ? 5 : -1 };
+            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 11, 12, CompareOptions.None, PlatformDetection.IsNlsGlobalization ? 5 : -1 };
 
         }
 
         public static IEnumerable<object[]> LastIndexOf_Aesc_Ligature_TestData()
         {
-            bool isWindows = PlatformDetection.IsWindows;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
 
             // Searches for the ligature \u00C6
             string source = "Is AE or ae the same as \u00C6 or \u00E6?";
-            yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.None, isWindows ? 24 : -1 };
+            yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.None, useNls ? 24 : -1 };
             yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.None, 9 };
             yield return new object[] { s_invariantCompare, source, '\u00C6', 25, 18, CompareOptions.None, 24 };
-            yield return new object[] { s_invariantCompare, source, '\u00E6', 25, 18, CompareOptions.None, isWindows ? 9 : -1 };
+            yield return new object[] { s_invariantCompare, source, '\u00E6', 25, 18, CompareOptions.None, useNls ? 9 : -1 };
             yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.Ordinal, 9 };
             yield return new object[] { s_invariantCompare, source, '\u00C6', 25, 18, CompareOptions.Ordinal, 24 };
             yield return new object[] { s_invariantCompare, source, '\u00E6', 25, 18, CompareOptions.Ordinal, -1 };
-            yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.IgnoreCase, isWindows ? 24 : 9 };
-            yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.IgnoreCase, isWindows ? 24 : 9 };
+            yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.IgnoreCase, useNls ? 24 : 9 };
+            yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.IgnoreCase, useNls ? 24 : 9 };
             yield return new object[] { s_invariantCompare, source, '\u00C6', 25, 18, CompareOptions.IgnoreCase, 24 };
             yield return new object[] { s_invariantCompare, source, '\u00E6', 25, 18, CompareOptions.IgnoreCase, 24 };
         }
@@ -157,6 +168,32 @@ namespace System.Globalization.Tests
             // Use LastIndexOf(string, string, int, int, CompareOptions)
             Assert.Equal(expected, compareInfo.LastIndexOf(source, value, startIndex, count, options));
 
+            // Fixup offsets so that we can call the span-based APIs.
+
+            ReadOnlySpan<char> sourceSpan;
+            int adjustmentFactor; // number of chars to add to retured index from span-based APIs
+
+            if (startIndex == source.Length - 1 && count == source.Length)
+            {
+                // This idiom means "read the whole span"
+                sourceSpan = source;
+                adjustmentFactor = 0;
+            }
+            else if (startIndex == source.Length)
+            {
+                // Account for possible off-by-one at the call site
+                sourceSpan = source.AsSpan()[^(Math.Max(0, count - 1))..];
+                adjustmentFactor = source.Length - sourceSpan.Length;
+            }
+            else
+            {
+                // Bump 'startIndex' by 1, then go back 'count' chars
+                sourceSpan = source.AsSpan()[..(startIndex + 1)][^count..];
+                adjustmentFactor = startIndex + 1 - count;
+            }
+
+            if (expected < 0) { adjustmentFactor = 0; } // don't modify "not found" (-1) return values
+
             if ((compareInfo == s_invariantCompare) && ((options == CompareOptions.None) || (options == CompareOptions.IgnoreCase)))
             {
                 StringComparison stringComparison = (options == CompareOptions.IgnoreCase) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
@@ -165,20 +202,27 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected, source.LastIndexOf(value, startIndex, count, stringComparison));
 
                 // Use int MemoryExtensions.LastIndexOf(this ReadOnlySpan<char>, ReadOnlySpan<char>, StringComparison)
-                // Filter differences betweeen string-based and Span-based LastIndexOf
-                // - Empty value handling - https://github.com/dotnet/coreclr/issues/26608
-                // - Negative count
-                if (value.Length == 0 || count < 0)
-                    return;
+                Assert.Equal(expected - adjustmentFactor, sourceSpan.LastIndexOf(value.AsSpan(), stringComparison));
+            }
 
-                if (startIndex == source.Length)
+            // Now test the span-based versions - use BoundedMemory to detect buffer overruns
+
+            RunSpanLastIndexOfTest(compareInfo, sourceSpan, value, options, expected - adjustmentFactor);
+
+            static void RunSpanLastIndexOfTest(CompareInfo compareInfo, ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options, int expected)
+            {
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData(source);
+                sourceBoundedMemory.MakeReadonly();
+
+                using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData(value);
+                valueBoundedMemory.MakeReadonly();
+
+                Assert.Equal(expected, compareInfo.LastIndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
+
+                if (TryCreateRuneFrom(value, out Rune rune))
                 {
-                    startIndex--;
-                    if (count > 0)
-                        count--;
+                    Assert.Equal(expected, compareInfo.LastIndexOf(sourceBoundedMemory.Span, rune, options)); // try the Rune-based version
                 }
-                int leftStartIndex = (startIndex - count + 1);
-                Assert.Equal((expected == -1) ? -1 : (expected - leftStartIndex), source.AsSpan(leftStartIndex, count).LastIndexOf(value.AsSpan(), stringComparison));
             }
         }
 
@@ -220,9 +264,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void LastIndexOf_UnassignedUnicode()
         {
-            bool isWindows = PlatformDetection.IsWindows;
-            LastIndexOf_String(s_invariantCompare, "FooBar", "Foo\uFFFFBar", 5, 6, CompareOptions.None, isWindows ? 0 : -1);
-            LastIndexOf_String(s_invariantCompare, "~FooBar", "Foo\uFFFFBar", 6, 7, CompareOptions.IgnoreNonSpace, isWindows ? 1 : -1);
+            bool useNls = PlatformDetection.IsNlsGlobalization;
+            LastIndexOf_String(s_invariantCompare, "FooBar", "Foo\uFFFFBar", 5, 6, CompareOptions.None, useNls ? 0 : -1);
+            LastIndexOf_String(s_invariantCompare, "~FooBar", "Foo\uFFFFBar", 6, 7, CompareOptions.IgnoreNonSpace, useNls ? 1 : -1);
         }
 
         [Fact]
@@ -258,38 +302,38 @@ namespace System.Globalization.Tests
             // Options are invalid
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", CompareOptions.StringSort));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, CompareOptions.StringSort));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, CompareOptions.StringSort));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', CompareOptions.StringSort));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, CompareOptions.StringSort));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, CompareOptions.StringSort));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", (CompareOptions)(-1)));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, (CompareOptions)(-1)));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, (CompareOptions)(-1)));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, (CompareOptions)(-1)));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", (CompareOptions)(-1)));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, (CompareOptions)(-1)));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, (CompareOptions)(-1)));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, (CompareOptions)(-1)));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", (CompareOptions)0x11111111));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, (CompareOptions)0x11111111));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, (CompareOptions)0x11111111));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, (CompareOptions)0x11111111));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', (CompareOptions)0x11111111));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, (CompareOptions)0x11111111));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, (CompareOptions)0x11111111));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, (CompareOptions)0x11111111));
 
             // StartIndex < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.LastIndexOf("Test", "Test", -1, CompareOptions.None));
@@ -337,6 +381,19 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", "s", 4, 7, CompareOptions.None));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 's', 4, 6));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 's', 4, 7, CompareOptions.None));
+
+            // Count > StartIndex + 1
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", "e", 1, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", "e", 1, 3, CompareOptions.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 'e', 1, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 'e', 1, 3, CompareOptions.None));
+        }
+
+        // Attempts to create a Rune from the entirety of a given text buffer.
+        private static bool TryCreateRuneFrom(ReadOnlySpan<char> text, out Rune value)
+        {
+            return Rune.DecodeFromUtf16(text, out value, out int charsConsumed) == OperationStatus.Done
+                && charsConsumed == text.Length;
         }
     }
 }

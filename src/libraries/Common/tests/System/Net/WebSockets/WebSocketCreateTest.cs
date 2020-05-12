@@ -45,7 +45,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                // https://github.com/dotnet/corefx/issues/42339
+                // https://github.com/dotnet/runtime/issues/31382
                 return;
             }
 
@@ -102,6 +102,7 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0b_1000_0001, 0b_0_000_0001, false)] // fin + text, no mask + length == 1
         [InlineData(0b_1100_0001, 0b_0_000_0001, true)] // fin + rsv1 + text, no mask + length == 1
         [InlineData(0b_1010_0001, 0b_0_000_0001, true)] // fin + rsv2 + text, no mask + length == 1
@@ -147,6 +148,7 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ReceiveAsync_ServerSplitHeader_ValidDataReceived()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -204,7 +206,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                // https://github.com/dotnet/corefx/issues/42339
+                // https://github.com/dotnet/runtime/issues/31382
                 return;
             }
 
@@ -237,7 +239,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36016")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957")]
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]

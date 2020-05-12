@@ -67,7 +67,9 @@ typedef struct {
 	unsigned short opval;
 } MonoOpcode;
 
+MONO_BEGIN_DECLS
 MONO_API_DATA const MonoOpcode mono_opcodes [];
+MONO_END_DECLS
 
 MONO_API const char*
 mono_opcode_name (int opcode);

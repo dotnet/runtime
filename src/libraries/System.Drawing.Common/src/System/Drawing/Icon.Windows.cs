@@ -32,7 +32,7 @@ namespace System.Drawing
         private const int PNGSignature2 = 13 + (10 << 8) + (26 << 16) + (10 << 24);
 
         // Icon data
-        private readonly byte[] _iconData;
+        private readonly byte[]? _iconData;
         private uint _bestImageOffset;
         private uint _bestBitDepth;
         private uint _bestBytesInRes;
@@ -104,7 +104,7 @@ namespace System.Drawing
 
         public Icon(Type type, string resource) : this()
         {
-            Stream stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
+            Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
             if (stream == null)
             {
                 throw new ArgumentException(SR.Format(SR.ResourceNotFound, type, resource));
@@ -137,8 +137,8 @@ namespace System.Drawing
 
         private Icon(SerializationInfo info, StreamingContext context)
         {
-            _iconData = (byte[])info.GetValue("IconData", typeof(byte[])); // Do not rename (binary serialization)
-            _iconSize = (Size)info.GetValue("IconSize", typeof(Size)); // Do not rename (binary serialization)
+            _iconData = (byte[])info.GetValue("IconData", typeof(byte[]))!; // Do not rename (binary serialization)
+            _iconSize = (Size)info.GetValue("IconSize", typeof(Size))!; // Do not rename (binary serialization)
             Initialize(_iconSize.Width, _iconSize.Height);
         }
 
@@ -158,9 +158,9 @@ namespace System.Drawing
             si.AddValue("IconSize", _iconSize, typeof(Size)); // Do not rename (binary serialization)
         }
 
-        public static Icon ExtractAssociatedIcon(string filePath) => ExtractAssociatedIcon(filePath, 0);
+        public static Icon? ExtractAssociatedIcon(string filePath) => ExtractAssociatedIcon(filePath, 0);
 
-        private static unsafe Icon ExtractAssociatedIcon(string filePath, int index)
+        private static unsafe Icon? ExtractAssociatedIcon(string filePath, int index)
         {
             if (filePath == null)
             {
@@ -720,7 +720,7 @@ namespace System.Drawing
 
         private unsafe Bitmap BmpFrame()
         {
-            Bitmap bitmap = null;
+            Bitmap? bitmap = null;
             if (_iconData != null && _bestBitDepth == 32)
             {
                 // GDI+ doesnt handle 32 bpp icons with alpha properly
@@ -738,7 +738,7 @@ namespace System.Drawing
                         uint* pixelPtr = (uint*)bmpdata.Scan0.ToPointer();
 
                         // jumping the image header
-                        int newOffset = (int)(_bestImageOffset + Marshal.SizeOf(typeof(SafeNativeMethods.BITMAPINFOHEADER)));
+                        int newOffset = (int)(_bestImageOffset + sizeof(NativeMethods.BITMAPINFOHEADER));
                         // there is no color table that we need to skip since we're 32bpp
 
                         int lineLength = Size.Width * 4;
@@ -770,9 +770,9 @@ namespace System.Drawing
                         SafeNativeMethods.GetObject(new HandleRef(null, info.hbmColor), sizeof(SafeNativeMethods.BITMAP), ref bmp);
                         if (bmp.bmBitsPixel == 32)
                         {
-                            Bitmap tmpBitmap = null;
-                            BitmapData bmpData = null;
-                            BitmapData targetData = null;
+                            Bitmap? tmpBitmap = null;
+                            BitmapData? bmpData = null;
+                            BitmapData? targetData = null;
                             try
                             {
                                 tmpBitmap = Image.FromHbitmap(info.hbmColor);
@@ -833,7 +833,7 @@ namespace System.Drawing
 
                 Size size = Size;
                 bitmap = new Bitmap(size.Width, size.Height); // initialized to transparent
-                Graphics graphics = null;
+                Graphics? graphics = null;
                 using (graphics = Graphics.FromImage(bitmap))
                 {
                     try

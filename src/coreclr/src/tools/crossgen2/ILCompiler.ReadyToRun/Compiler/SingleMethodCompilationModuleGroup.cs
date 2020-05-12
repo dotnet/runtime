@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -18,11 +19,15 @@ namespace ILCompiler
 
         public SingleMethodCompilationModuleGroup(
             TypeSystemContext context,
-            IEnumerable<ModuleDesc> compilationModuleSet,
+            bool isCompositeBuildMode,
+            bool isInputBubble,
+            IEnumerable<EcmaModule> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
             bool compileGenericDependenciesFromVersionBubbleModuleSet,
             MethodDesc method) :
                 base(context,
+                     isCompositeBuildMode,
+                     isInputBubble,
                      compilationModuleSet,
                      versionBubbleModuleSet,
                      compileGenericDependenciesFromVersionBubbleModuleSet)

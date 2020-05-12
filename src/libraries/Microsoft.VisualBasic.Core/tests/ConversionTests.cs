@@ -141,7 +141,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(-1)]
         [InlineData(7)]
         [InlineData(int.MinValue)]
-        public void ErrorToString(int errorNumber)
+        public void ErrorToString_WithErrorNumber(int errorNumber)
         {
             Assert.NotNull(Conversion.ErrorToString(errorNumber));
         }
@@ -165,49 +165,49 @@ namespace Microsoft.VisualBasic.Tests
         [MemberData(nameof(Fix_Single_TestData))]
         [MemberData(nameof(Fix_Double_TestData))]
         [MemberData(nameof(Fix_Decimal_TestData))]
-        public void Fix(object value, object expected)
+        public void Fix_Object(object value, object expected)
         {
             Assert.Equal(expected, Conversion.Fix(value));
         }
 
         [Theory]
         [MemberData(nameof(Fix_Short_TestData))]
-        public void Fix(short value, short expected)
+        public void Fix_Short(short value, short expected)
         {
             Assert.Equal(expected, Conversion.Fix(value));
         }
 
         [Theory]
         [MemberData(nameof(Fix_Integer_TestData))]
-        public void Fix(int value, int expected)
+        public void Fix_Int(int value, int expected)
         {
             Assert.Equal(expected, Conversion.Fix(value));
         }
 
         [Theory]
         [MemberData(nameof(Fix_Long_TestData))]
-        public void Fix(long value, long expected)
+        public void Fix_Long(long value, long expected)
         {
             Assert.Equal(expected, Conversion.Fix(value));
         }
 
         [Theory]
         [MemberData(nameof(Fix_Single_TestData))]
-        public void Fix(float value, float expected)
+        public void Fix_Float(float value, float expected)
         {
             Assert.Equal(expected, Conversion.Fix(value));
         }
 
         [Theory]
         [MemberData(nameof(Fix_Double_TestData))]
-        public void Fix(double value, double expected)
+        public void Fix_Double(double value, double expected)
         {
             Assert.Equal(expected, Conversion.Fix(value));
         }
 
         [Theory]
         [MemberData(nameof(Fix_Decimal_TestData))]
-        public void Fix(decimal value, decimal expected)
+        public void Fix_Decimal(decimal value, decimal expected)
         {
             Assert.Equal(expected, Conversion.Fix(value));
         }
@@ -305,56 +305,56 @@ namespace Microsoft.VisualBasic.Tests
         [MemberData(nameof(Hex_Single_TestData))]
         [MemberData(nameof(Hex_Double_TestData))]
         [MemberData(nameof(Hex_Decimal_TestData))]
-        public void Hex(object value, string expected)
+        public void Hex_Object(object value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_Byte_TestData))]
-        public void Hex(byte value, string expected)
+        public void Hex_Byte(byte value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_SByte_TestData))]
-        public void Hex(sbyte value, string expected)
+        public void Hex_Sbyte(sbyte value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_UShort_TestData))]
-        public void Hex(ushort value, string expected)
+        public void Hex_Ushort(ushort value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_Short_TestData))]
-        public void Hex(short value, string expected)
+        public void Hex_Short(short value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_UInteger_TestData))]
-        public void Hex(uint value, string expected)
+        public void Hex_Uint(uint value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_Integer_TestData))]
-        public void Hex(int value, string expected)
+        public void Hex_Int(int value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_ULong_TestData))]
-        public void Hex(ulong value, string expected)
+        public void Hex_Ulong(ulong value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
@@ -362,28 +362,28 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData((long)-1, "FFFFFFFFFFFFFFFF")] // expected for object overload: "FFFFFFFF"
         [MemberData(nameof(Hex_Long_TestData))]
-        public void Hex(long value, string expected)
+        public void Hex_Long(long value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_Single_TestData))]
-        public void Hex(float value, string expected)
+        public void Hex_Float(float value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_Double_TestData))]
-        public void Hex(double value, string expected)
+        public void Hex_Double(double value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
         [Theory]
         [MemberData(nameof(Hex_Decimal_TestData))]
-        public void Hex(decimal value, string expected)
+        public void Hex_Decimal(decimal value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
         }
@@ -502,49 +502,49 @@ namespace Microsoft.VisualBasic.Tests
         [MemberData(nameof(Int_Single_TestData))]
         [MemberData(nameof(Int_Double_TestData))]
         [MemberData(nameof(Int_Decimal_TestData))]
-        public void Int(object value, object expected)
+        public void Int_Object_Object(object value, object expected)
         {
             Assert.Equal(expected, Conversion.Int(value));
         }
 
         [Theory]
         [MemberData(nameof(Int_Short_TestData))]
-        public void Int(short value, short expected)
+        public void Int_Short(short value, short expected)
         {
             Assert.Equal(expected, Conversion.Int(value));
         }
 
         [Theory]
         [MemberData(nameof(Int_Integer_TestData))]
-        public void Int(int value, int expected)
+        public void Int_Int(int value, int expected)
         {
             Assert.Equal(expected, Conversion.Int(value));
         }
 
         [Theory]
         [MemberData(nameof(Int_Long_TestData))]
-        public void Int(long value, long expected)
+        public void Int_Long(long value, long expected)
         {
             Assert.Equal(expected, Conversion.Int(value));
         }
 
         [Theory]
         [MemberData(nameof(Int_Single_TestData))]
-        public void Int(float value, float expected)
+        public void Int_Float(float value, float expected)
         {
             Assert.Equal(expected, Conversion.Int(value));
         }
 
         [Theory]
         [MemberData(nameof(Int_Double_TestData))]
-        public void Int(double value, double expected)
+        public void Int_Double(double value, double expected)
         {
             Assert.Equal(expected, Conversion.Int(value));
         }
 
         [Theory]
         [MemberData(nameof(Int_Decimal_TestData))]
-        public void Int(decimal value, decimal expected)
+        public void Int_Decimal(decimal value, decimal expected)
         {
             Assert.Equal(expected, Conversion.Int(value));
         }
@@ -636,56 +636,56 @@ namespace Microsoft.VisualBasic.Tests
         [MemberData(nameof(Oct_Single_TestData))]
         [MemberData(nameof(Oct_Double_TestData))]
         [MemberData(nameof(Oct_Decimal_TestData))]
-        public void Oct(object value, string expected)
+        public void Oct_Object(object value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_Byte_TestData))]
-        public void Oct(byte value, string expected)
+        public void Oct_Byte(byte value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_SByte_TestData))]
-        public void Oct(sbyte value, string expected)
+        public void Oct_Sbyte(sbyte value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_UShort_TestData))]
-        public void Oct(ushort value, string expected)
+        public void Oct_Ushort(ushort value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_Short_TestData))]
-        public void Oct(short value, string expected)
+        public void Oct_Short(short value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_UInteger_TestData))]
-        public void Oct(uint value, string expected)
+        public void Oct_Uint(uint value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_Integer_TestData))]
-        public void Oct(int value, string expected)
+        public void Oct_Int(int value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_ULong_TestData))]
-        public void Oct(ulong value, string expected)
+        public void Oct_Ulong(ulong value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
@@ -693,28 +693,28 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData((long)-1, "1777777777777777777777")] // expected for object overload: "37777777777"
         [MemberData(nameof(Oct_Long_TestData))]
-        public void Oct(long value, string expected)
+        public void Oct_Long(long value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_Single_TestData))]
-        public void Oct(float value, string expected)
+        public void Oct_Float(float value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_Double_TestData))]
-        public void Oct(double value, string expected)
+        public void Oct_Double(double value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
         [Theory]
         [MemberData(nameof(Oct_Decimal_TestData))]
-        public void Oct(decimal value, string expected)
+        public void Oct_Decimal(decimal value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
         }
@@ -868,56 +868,56 @@ namespace Microsoft.VisualBasic.Tests
         [MemberData(nameof(Val_Object_TestData))]
         [MemberData(nameof(Val_Char_TestData))]
         [MemberData(nameof(Val_String_TestData))]
-        public void Val(object value, double expected)
+        public void Val_Object_Double(object value, double expected)
         {
             Assert.Equal(expected, Conversion.Val(value));
         }
 
         [Theory]
         [MemberData(nameof(Val_Object_ArgumentException_TestData))]
-        public void Val_ArgumentException(object value)
+        public void Val_ArgumentException_Object(object value)
         {
             Assert.Throws<ArgumentException>(() => Conversion.Val(value));
         }
 
         [Theory]
         [MemberData(nameof(Val_Object_OverflowException_TestData))]
-        public void Val_OverflowException(object value)
+        public void Val_OverflowException_Object(object value)
         {
             Assert.Throws<OverflowException>(() => Conversion.Val(value));
         }
 
         [Theory]
         [MemberData(nameof(Val_Char_TestData))]
-        public void Val(char value, int expected)
+        public void Val_Char_Int(char value, int expected)
         {
             Assert.Equal(expected, Conversion.Val(value));
         }
 
         [Theory]
         [MemberData(nameof(Val_Char_ArgumentException_TestData))]
-        public void Val_ArgumentException(char value)
+        public void Val_ArgumentException_Char(char value)
         {
             Assert.Throws<ArgumentException>(() => Conversion.Val(value));
         }
 
         [Theory]
         [MemberData(nameof(Val_Char_OverflowException_TestData))]
-        public void Val_OverflowException(char value)
+        public void Val_OverflowException_Char(char value)
         {
             Assert.Throws<OverflowException>(() => Conversion.Val(value));
         }
 
         [Theory]
         [MemberData(nameof(Val_String_TestData))]
-        public void Val(string value, double expected)
+        public void Val_String_Double(string value, double expected)
         {
             Assert.Equal(expected, Conversion.Val(value));
         }
 
         [Theory]
         [MemberData(nameof(Val_String_ArgumentException_TestData))]
-        public void Val_ArgumentException(string value)
+        public void Val_ArgumentException_String(string value)
         {
             Assert.Throws<ArgumentException>(() => Conversion.Val(value));
         }
@@ -931,7 +931,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Val_String_OverflowException_TestData))]
-        public void Val_OverflowException(string value)
+        public void Val_OverflowException_String(string value)
         {
             Assert.Throws<OverflowException>(() => Conversion.Val(value));
         }

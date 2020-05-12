@@ -36,7 +36,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <ProductBrandPrefix Condition="'$(ProductBrandPrefix)' == ''">Microsoft .NET Core</ProductBrandPrefix>
+      <ProductBrandPrefix Condition="'$(ProductBrandPrefix)' == ''">Microsoft .NET</ProductBrandPrefix>
       <ProductBrandSuffix>$(ProductionVersion)</ProductBrandSuffix>
       <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
 
@@ -112,6 +112,7 @@
   </Target>
 
   <UsingTask TaskName="GenerateCurrentVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+  <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <Target Name="GenerateMsiVersionString">
     <PropertyGroup>

@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/15005", TestRuntimes.Mono)]
     public class PlatformHandler_HttpClientHandler : HttpClientHandlerTestBase
     {
         public PlatformHandler_HttpClientHandler(ITestOutputHelper output) : base(output) { }
@@ -191,16 +192,194 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    // Enable this to run HTTP2 tests on platform handler
-#if PLATFORM_HANDLER_HTTP2_TESTS
-    public sealed class PlatformHandlerTest_Http2 : HttpClientHandlerTest_Http2
-    {
-    }
-    
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+#if NETCOREAPP
+#if !WINHTTPHANDLER_TEST // [ActiveIssue("https://github.com/dotnet/runtime/issues/33930")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
-        protected override bool UseHttp2LoopbackServer => true;
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandlerTest_Cookies_Http2(ITestOutputHelper output) : base(output) { }
     }
 #endif
+
+    public sealed class PlatformHandler_HttpClientHandler_Asynchrony_Http2_Test : HttpClientHandler_Asynchrony_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_Asynchrony_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpProtocol_Http2_Tests : HttpProtocolTests
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpProtocol_Http2_Tests(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpProtocolTests_Http2_Dribble : HttpProtocolTests_Dribble
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpProtocolTests_Http2_Dribble(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClient_SelectedSites_Http2_Test : HttpClient_SelectedSites_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClient_SelectedSites_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientEKU_Http2_Test : HttpClientEKUTest
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientEKU_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_Decompression_Http2_Tests : HttpClientHandler_Decompression_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_Decompression_Http2_Tests(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Http2_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_ClientCertificates_Http2_Test : HttpClientHandler_ClientCertificates_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_ClientCertificates_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Http2_Test : HttpClientHandler_DefaultProxyCredentials_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Http2_Test : HttpClientHandler_MaxConnectionsPerServer_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_ServerCertificates_Http2_Test : HttpClientHandler_ServerCertificates_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_ServerCertificates_Http2_Test(ITestOutputHelper output) : base(output) {
+            AllowAllCertificates = false;
+        }
+    }
+
+    public sealed class PlatformHandler_PostScenario_Http2_Test : PostScenarioTest
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_PostScenario_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_SslProtocols_Http2_Test : HttpClientHandler_SslProtocols_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_SslProtocols_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_Proxy_Http2_Test : HttpClientHandler_Proxy_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_Proxy_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_SchSendAuxRecordHttp_Http2_Test : SchSendAuxRecordHttpTest
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_SchSendAuxRecordHttp_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+    public sealed class PlatformHandler_HttpClientHandler_Http2_Test : HttpClientHandlerTest
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandlerTest_AutoRedirect_Http2 : HttpClientHandlerTest_AutoRedirect
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandlerTest_AutoRedirect_Http2(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_DefaultCredentials_Http2_Test : DefaultCredentialsTest
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_DefaultCredentials_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_IdnaProtocol_Http2_Tests : IdnaProtocolTests
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_IdnaProtocol_Http2_Tests(ITestOutputHelper output) : base(output) { }
+        // WinHttp on Win7 does not support IDNA
+        protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
+    }
+
+    public sealed class PlatformHandler_HttpRetryProtocol_Http2_Tests : HttpRetryProtocolTests
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpRetryProtocol_Http2_Tests(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandlerTest_Cookies_Http11_Http2 : HttpClientHandlerTest_Cookies_Http11
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandlerTest_Cookies_Http11_Http2(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http2_Test : HttpClientHandler_MaxResponseHeadersLength_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_Cancellation_Http2_Test : HttpClientHandler_Cancellation_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_Cancellation_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_Authentication_Http2_Test : HttpClientHandler_Authentication_Test
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_HttpClientHandler_Authentication_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
+#endif
+    public sealed class PlatformHandler_ResponseStream_Http2_Test : ResponseStreamTest
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_ResponseStream_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
 }

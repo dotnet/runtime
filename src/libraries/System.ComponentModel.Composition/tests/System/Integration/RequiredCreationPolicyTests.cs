@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Tests.Integration
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class RequiredCreationPolicyTests
     {
         // Matrix that details which policy to use for a given part to satisfy a given import.

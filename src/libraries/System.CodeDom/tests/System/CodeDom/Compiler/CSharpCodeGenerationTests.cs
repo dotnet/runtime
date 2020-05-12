@@ -3485,5 +3485,37 @@ namespace System.CodeDom.Compiler.Tests
                       public static string StringWithSpecialNewLines = ""\u0085\u2028\u2029"";
                   }");
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void MethodTypeParameterConstraintLineOnlyAddedForTypesThatHaveConstraints()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithGenericMethod") { IsClass = true };
+
+            var method = new CodeMemberMethod();
+            method.Name = "Test";
+            var t1 = new CodeTypeParameter("T1");
+            var t2 = new CodeTypeParameter("T2");
+            t2.Constraints.Add("MyBaseClass");
+            var t3 = new CodeTypeParameter("T3");
+            var t4 = new CodeTypeParameter("T4");
+
+            method.TypeParameters.Add(t1);
+            method.TypeParameters.Add(t2);
+            method.TypeParameters.Add(t3);
+            method.TypeParameters.Add(t4);
+
+            codeTypeDeclaration.Members.Add(method);
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  public class ClassWithGenericMethod {
+
+                      private void Test<T1, T2, T3, T4>()
+                          where T2 : MyBaseClass {
+                      }
+                  }
+                ");
+        }
     }
 }

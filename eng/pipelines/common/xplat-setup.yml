@@ -11,7 +11,25 @@ parameters:
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+      runtimeFlavorDisplayName: 'CoreCLR'
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+      runtimeFlavorDisplayName: 'Mono'
     variables:
+      # Disable component governance in our CI builds. These builds are not shipping nor
+      # are they a service. Also the component governance jobs issue lots of inconsequential
+      # warnings and errors into our build timelines that make it hard to track down 
+      # real errors in the build
+      - name: skipComponentGovernanceDetection
+        value: true
+      - name: runCodesignValidationInjection
+        value: false
+
+      # Workaround for azure devops flakiness when dowloading artifacts
+      # https://github.com/dotnet/runtime/issues/32805
+      - name: System.DisableZipDownload
+        value: true
+
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
           value: '.zip'
@@ -70,21 +88,25 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
-        # FreeBSD builds only in the internal project
-        ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: dnceng-freebsd-internal
-
         # Public OSX Build Pool
         ${{ if eq(parameters.osGroup, 'OSX') }}:
+          vmImage: 'macOS-10.14'
+
+        # Public OSX Build Pool
+        ${{ if eq(parameters.osGroup, 'iOS') }}:
+          vmImage: 'macOS-10.14'
+
+        # Public OSX Build Pool
+        ${{ if eq(parameters.osGroup, 'tvOS') }}:
           vmImage: 'macOS-10.14'
 
         # Official Build Windows Pool
@@ -96,6 +118,7 @@ jobs:
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCorePublic-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019.Open
+
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
       ${{ insert }}: ${{ parameters.jobParameters }}

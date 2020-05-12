@@ -28,9 +28,6 @@ namespace System.Text.RegularExpressions.Tests
             // Testing control character escapes???: "2", "(\u0032)"
             yield return new object[] { "(\u0034)", "4", RegexOptions.None, 0, 1, true, "4", };
 
-            // Using *, +, ?, {}: Actual - "a+\\.?b*\\.?c{2}"
-            yield return new object[] { @"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc" };
-
             // Using long loop prefix
             yield return new object[] { @"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10) };
             yield return new object[] { @"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100) };
@@ -98,6 +95,37 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { Case("(?>hi|hello|hey)hi"), "hihi", options, 0, 4, true, "hihi" };
                 yield return new object[] { Case(@"a[^wyz]*w"), "abczw", RegexOptions.IgnoreCase, 0, 0, false, string.Empty };
             }
+
+            // Loops at beginning of expressions
+            yield return new object[] { @"a+", "aaa", RegexOptions.None, 0, 3, true, "aaa" };
+            yield return new object[] { @"a+\d+", "a1", RegexOptions.None, 0, 2, true, "a1" };
+            yield return new object[] { @".+\d+", "a1", RegexOptions.None, 0, 2, true, "a1" };
+            yield return new object[] { ".+\nabc", "a\nabc", RegexOptions.None, 0, 5, true, "a\nabc" };
+            yield return new object[] { @"\d+", "abcd123efg", RegexOptions.None, 0, 10, true, "123" };
+            yield return new object[] { @"\d+\d+", "abcd123efg", RegexOptions.None, 0, 10, true, "123" };
+            yield return new object[] { @"\w+123\w+", "abcd123efg", RegexOptions.None, 0, 10, true, "abcd123efg" };
+            yield return new object[] { @"\d+\w+", "abcd123efg", RegexOptions.None, 0, 10, true, "123efg" };
+            yield return new object[] { @"\w+@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{3,}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{4,}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, false, string.Empty };
+            yield return new object[] { @"\w{2,5}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{3}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{0,3}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w{0,2}c@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"\w*@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"(\w+)@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"((\w+))@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
+            yield return new object[] { @"(\w+)c@\w+.com", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.com" };
+            yield return new object[] { @"(\w+)c@\w+.com\1", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.comab" };
+            yield return new object[] { @"(\w+)@def.com\1", "abc@def.comab", RegexOptions.None, 0, 13, false, string.Empty };
+            yield return new object[] { @"(\w+)@def.com\1", "abc@def.combc", RegexOptions.None, 0, 13, true, "bc@def.combc" };
+            yield return new object[] { @"(\w*)@def.com\1", "abc@def.com", RegexOptions.None, 0, 11, true, "@def.com" };
+            yield return new object[] { @"\w+(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty };
+            yield return new object[] { @"\w+(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
+            yield return new object[] { @"(?>\w+)(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty };
+            yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
+            yield return new object[] { @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
+            yield return new object[] { @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz" };
@@ -172,6 +200,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\s+\d+", "sdf 12sad", RegexOptions.RightToLeft, 0, 9, true, " 12" };
             yield return new object[] { @"\s+\d+", " asdf12 ", RegexOptions.RightToLeft, 0, 6, false, string.Empty };
             yield return new object[] { "aaa", "aaabbb", RegexOptions.None, 3, 3, false, string.Empty };
+            yield return new object[] { "abc|def", "123def456", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "def" };
 
             yield return new object[] { @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 3, false, string.Empty };
             yield return new object[] { @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 11, 21, false, string.Empty };
@@ -323,7 +352,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"[a-[a-f]]", "abcdefghijklmnopqrstuvwxyz", RegexOptions.None, 0, 26, false, string.Empty };
 
             // \c
-            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/corefx/issues/26501
+            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/runtime/issues/24759
             {
                 yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u00FFdogiwod", RegexOptions.None, 0, 15, false, string.Empty };
             }
@@ -383,6 +412,7 @@ namespace System.Text.RegularExpressions.Tests
                 VerifyMatch(r.Match(input), expectedSuccess, expectedValue);
                 VerifyMatch(Regex.Match(input, pattern, options), expectedSuccess, expectedValue);
 
+                Assert.Equal(expectedSuccess, r.IsMatch(input));
                 Assert.Equal(expectedSuccess, Regex.IsMatch(input, pattern, options));
             }
 
@@ -462,17 +492,34 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("a", match.Value);
         }
 
-        [Fact]
-        public void Match_Timeout_Throws()
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | (RegexOptions)0x80 /* Debug */)]
+        public void Match_Timeout_Throws(RegexOptions options)
         {
-            RemoteExecutor.Invoke(() =>
+            const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
+            string input = new string('a', 50) + "@a.a";
+
+            Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, options, TimeSpan.FromMilliseconds(100)).Match(input));
+        }
+
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | (RegexOptions)0x80 /* Debug */)]
+        public void Match_DefaultTimeout_Throws(RegexOptions options)
+        {
+            RemoteExecutor.Invoke(optionsString =>
             {
                 const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
                 string input = new string('a', 50) + "@a.a";
 
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
-                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
-            }).Dispose();
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Match(input));
+            }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
@@ -492,8 +539,8 @@ namespace System.Text.RegularExpressions.Tests
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
         [OuterLoop("Can take several seconds")]
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
-        [InlineData(RegexOptions.Compiled)]
         [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
         public void Match_Timeout_Repetition_Throws(RegexOptions options)
         {
             int repetitionCount = 800_000_000;
@@ -783,7 +830,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [MemberData(nameof(Match_Advanced_TestData))]
         [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Match_Advanced_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
-        public void Match(string pattern, string input, RegexOptions options, int beginning, int length, CaptureData[] expected)
+        public void Match_Advanced(string pattern, string input, RegexOptions options, int beginning, int length, CaptureData[] expected)
         {
             Regex r;
 
@@ -919,8 +966,8 @@ namespace System.Text.RegularExpressions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/corefx/issues/26484")]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeConfiguration.Checked, RuntimeTestModes.JitMinOpts)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeConfiguration.Checked, RuntimeTestModes.JitMinOpts)]
         public void Match_ExcessPrefix(RegexOptions options)
         {
             RemoteExecutor.Invoke(optionsString =>

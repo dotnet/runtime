@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
@@ -30,9 +31,9 @@ namespace System.Net.Http
             public AuthenticationType AuthenticationType { get; }
             public string SchemeName { get; }
             public NetworkCredential Credential { get; }
-            public string ChallengeData { get; }
+            public string? ChallengeData { get; }
 
-            public AuthenticationChallenge(AuthenticationType authenticationType, string schemeName, NetworkCredential credential, string challenge)
+            public AuthenticationChallenge(AuthenticationType authenticationType, string schemeName, NetworkCredential credential, string? challenge)
             {
                 AuthenticationType = authenticationType;
                 SchemeName = schemeName;
@@ -41,7 +42,7 @@ namespace System.Net.Http
             }
         }
 
-        private static bool TryGetChallengeDataForScheme(string scheme, HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues, out string challengeData)
+        private static bool TryGetChallengeDataForScheme(string scheme, HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues, out string? challengeData)
         {
             foreach (AuthenticationHeaderValue ahv in authenticationHeaderValues)
             {
@@ -82,12 +83,12 @@ namespace System.Net.Http
         {
             challenge = default;
 
-            if (!TryGetChallengeDataForScheme(scheme, authenticationHeaderValues, out string challengeData))
+            if (!TryGetChallengeDataForScheme(scheme, authenticationHeaderValues, out string? challengeData))
             {
                 return false;
             }
 
-            NetworkCredential credential = credentials.GetCredential(uri, scheme);
+            NetworkCredential? credential = credentials.GetCredential(uri, scheme);
             if (credential == null)
             {
                 // We have no credential for this auth type, so we can't respond to the challenge.
@@ -128,7 +129,7 @@ namespace System.Net.Http
                 TryGetValidAuthenticationChallengeForScheme(BasicScheme, AuthenticationType.Basic, authUri, credentials, authenticationHeaderValues, out challenge);
         }
 
-        private static bool TryGetRepeatedChallenge(HttpResponseMessage response, string scheme, bool isProxyAuth, out string challengeData)
+        private static bool TryGetRepeatedChallenge(HttpResponseMessage response, string scheme, bool isProxyAuth, out string? challengeData)
         {
             challengeData = null;
 
@@ -186,7 +187,7 @@ namespace System.Net.Http
 
         private static async ValueTask<bool> TrySetDigestAuthToken(HttpRequestMessage request, NetworkCredential credential, DigestResponse digestResponse, bool isProxyAuth)
         {
-            string parameter = await GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
+            string? parameter = await GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
 
             // Any errors in obtaining parameter return false and we don't proceed with auth
             if (string.IsNullOrEmpty(parameter))
@@ -219,7 +220,7 @@ namespace System.Net.Http
             if (preAuthenticate)
             {
                 Debug.Assert(pool.PreAuthCredentials != null);
-                NetworkCredential credential;
+                NetworkCredential? credential;
                 lock (pool.PreAuthCredentials)
                 {
                     // Just look for basic credentials.  If in the future we support preauth
@@ -251,7 +252,7 @@ namespace System.Net.Http
                             response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
 
                             // Retry in case of nonce timeout in server.
-                            if (TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out string challengeData))
+                            if (TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out string? challengeData))
                             {
                                 digestResponse = new DigestResponse(challengeData);
                                 if (IsServerNonceStale(digestResponse) &&
@@ -291,7 +292,7 @@ namespace System.Net.Http
                                     break;
 
                                 default:
-                                    lock (pool.PreAuthCredentials)
+                                    lock (pool.PreAuthCredentials!)
                                     {
                                         try
                                         {
@@ -332,6 +333,7 @@ namespace System.Net.Http
 
         public static Task<HttpResponseMessage> SendWithRequestAuthAsync(HttpRequestMessage request, ICredentials credentials, bool preAuthenticate, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
+            Debug.Assert(request.RequestUri != null);
             return SendWithAuthAsync(request, request.RequestUri, credentials, preAuthenticate, isProxyAuth: false, doRequestAuth: true, pool, cancellationToken);
         }
     }

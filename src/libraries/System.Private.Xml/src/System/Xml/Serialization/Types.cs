@@ -1004,7 +1004,7 @@ namespace System.Xml.Serialization
                 }
                 /*
                 if (ns.Length > 0) {
-                    typeName.Append("_");
+                    typeName.Append('_');
                     typeName.Append(GetHash(ns.ToString()));
                 }
                 */

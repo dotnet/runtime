@@ -6,7 +6,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public abstract class X509SignatureGenerator
     {
-        private PublicKey _publicKey;
+        private PublicKey? _publicKey;
 
         public PublicKey PublicKey
         {

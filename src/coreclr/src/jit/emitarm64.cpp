@@ -227,22 +227,24 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsNone(id->idInsOpt()) || insOptsIndexed(id->idInsOpt()));
             break;
 
-        case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+        case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2F: // LS_2F   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2G: // LS_2G   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
             assert(isVectorRegister(id->idReg1()));
-            assert(isIntegerRegister(id->idReg2()));
-            assert(emitGetInsSC(id) == 0);
-            assert(!id->idIsLclVar());
-            break;
-
-        case IF_LS_2E: // LS_2E   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));
-            assert(isIntegerRegister(id->idReg2()));
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(id->idOpSize(), elemsize, emitGetInsSC(id)));
+            assert(isIntegerRegister(id->idReg2())); // SP
+            if (insOptsAnyArrangement(id->idInsOpt()))
+            {
+                datasize = id->idOpSize();
+                assert(isValidVectorDatasize(datasize));
+                assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            }
+            else
+            {
+                elemsize = id->idOpSize();
+                assert(isValidVectorElemsize(elemsize));
+                assert(insOptsNone(id->idInsOpt()) || insOptsPostIndex(id->idInsOpt()));
+            }
             assert(!id->idIsLclVar());
             break;
 
@@ -304,24 +306,23 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsNone(id->idInsOpt()));
             break;
 
-        case IF_LS_3F: // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Vt Rn Rm
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+        case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
+        case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
             assert(isVectorRegister(id->idReg1()));
-            assert(isIntegerRegister(id->idReg2()));
-            assert(isIntegerRegister(id->idReg3()));
-            assert(emitGetInsSC(id) == 0);
-            assert(!id->idIsLclVar());
-            break;
-
-        case IF_LS_3G: // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Vt[] Rn Rm
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));
-            assert(isIntegerRegister(id->idReg2()));
-            assert(isIntegerRegister(id->idReg3()));
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(id->idOpSize(), elemsize, emitGetInsSC(id)));
+            assert(isIntegerRegister(id->idReg2())); // SP
+            assert(isGeneralRegister(id->idReg3()));
+            if (insOptsAnyArrangement(id->idInsOpt()))
+            {
+                datasize = id->idOpSize();
+                assert(isValidVectorDatasize(datasize));
+                assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            }
+            else
+            {
+                elemsize = id->idOpSize();
+                assert(isValidVectorElemsize(elemsize));
+                assert(insOptsNone(id->idInsOpt()) || insOptsPostIndex(id->idInsOpt()));
+            }
             assert(!id->idIsLclVar());
             break;
 
@@ -472,12 +473,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isGeneralRegister(id->idReg1()));
             assert(isGeneralRegister(id->idReg2()));
             assert(isValidImmCondFlags(emitGetInsSC(id)));
-            break;
-
-        case IF_DR_2J: // DR_2J   ................ ......nnnnnddddd      Sd Sn    (sha1h)
-            assert(isValidGeneralDatasize(id->idOpSize()));
-            assert(isVectorRegister(id->idReg1()));
-            assert(isVectorRegister(id->idReg2()));
             break;
 
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
@@ -654,12 +649,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2D: // DV_2D   .Q.........iiiii ......nnnnnddddd      Vd Vn[]  (dup - vector)
+            ins      = id->idIns();
             datasize = id->idOpSize();
             assert(isValidVectorDatasize(datasize));
             assert(isValidArrangement(datasize, id->idInsOpt()));
             elemsize = optGetElemsize(id->idInsOpt());
             index    = emitGetInsSC(id);
-            assert(isValidVectorIndex(datasize, elemsize, index));
+            assert((ins == INS_dup) || isValidVectorIndex(datasize, elemsize, index));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -732,13 +728,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
                        // fminp - scalar)
-            if (id->idOpSize() == EA_8BYTE)
+            if (id->idOpSize() == EA_16BYTE)
             {
                 assert(id->idInsOpt() == INS_OPTS_2D);
             }
             else
             {
-                assert(id->idOpSize() == EA_4BYTE);
+                assert(id->idOpSize() == EA_8BYTE);
                 assert(id->idInsOpt() == INS_OPTS_2S);
             }
             assert(isVectorRegister(id->idReg1()));
@@ -746,15 +742,28 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
-            assert(id->idOpSize() == EA_4BYTE);
+            assert(id->idOpSize() == EA_16BYTE);
             assert(id->idInsOpt() == INS_OPTS_4S);
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
 
         case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
-            assert(id->idOpSize() == EA_8BYTE);
+            assert(id->idOpSize() == EA_16BYTE);
             assert(id->idInsOpt() == INS_OPTS_2D);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
+                       // umaxv, uminv)
+            assert(isValidVectorDatasize(id->idOpSize()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd Sn    (sha1h)
+            assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -778,6 +787,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
+        case IF_DV_3HI: // DV_3HI  ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (smlal{2}, umlal{2} by element)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
@@ -808,6 +818,22 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_3C: // DV_3C   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
+            switch (id->idIns())
+            {
+                case INS_tbl:
+                case INS_tbl_2regs:
+                case INS_tbl_3regs:
+                case INS_tbl_4regs:
+                case INS_tbx:
+                case INS_tbx_2regs:
+                case INS_tbx_3regs:
+                case INS_tbx_4regs:
+                    elemsize = optGetElemsize(id->idInsOpt());
+                    assert(elemsize == EA_1BYTE);
+                    break;
+                default:
+                    break;
+            }
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
@@ -833,9 +859,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidVectorIndex(EA_16BYTE, elemsize, emitGetInsSC(id)));
             break;
 
-        case IF_DV_3E: // DV_3E   ...........mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
+        case IF_DV_3E: // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
             assert(insOptsNone(id->idInsOpt()));
-            assert(id->idOpSize() == EA_8BYTE);
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
@@ -843,6 +868,23 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_DV_3F: // DV_3F   ...........mmmmm ......nnnnnddddd      Vd Vn Vm
             assert(isValidVectorDatasize(id->idOpSize()));
+            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            break;
+
+        case IF_DV_3G: // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+            assert(isValidVectorDatasize(id->idOpSize()));
+            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            assert(isValidVectorIndex(id->idOpSize(), EA_1BYTE, emitGetInsSC(id)));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            break;
+
+        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
+                       // subhn{2}, pmull{2})
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
@@ -902,7 +944,6 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DR_3C: // DR_3C   X..........mmmmm xxxsssnnnnnddddd      Rd Rn Rm ext(Rm) LSL imm(0-4)
         case IF_DR_3D: // DR_3D   X..........mmmmm cccc..nnnnnddddd      Rd Rn Rm cond
         case IF_DR_3E: // DR_3E   X........X.mmmmm ssssssnnnnnddddd      Rd Rn Rm imm(0-63)
-        case IF_DV_3F: // DV_3F   ...........mmmmm ......nnnnnddddd      Vd Vn Vm (vector) - Vd both source and dest
 
         case IF_DR_4A: // DR_4A   X..........mmmmm .aaaaannnnnddddd      Rd Rn Rm Ra
 
@@ -936,7 +977,13 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3C:  // DV_3C   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3D:  // DV_3D   .........X.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
         case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
-        case IF_DV_3E:  // DV_3E   ...........mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+        case IF_DV_3E:  // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+        case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
+        case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+        case IF_DV_3H:  // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
+                        // subhn{2}, pmull{2})
+        case IF_DV_3HI: // DV_3HI ........XXLMmmmm ....H.nnnnnddddd       Vd Vn Vm[] (smlal{2}, smlsl{2}, smull{2},
+                        // umlal{2}, umlsl{2}, umull{2} vector by elem)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
@@ -947,14 +994,16 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
         case IF_LS_2C: // LS_2C   .X.......X.iiiii iiiiP.nnnnnttttt      Rt Rn    imm(-256..+255) pre/post inc
-        case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
-        case IF_LS_2E: // LS_2E   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2F: // LS_2F   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2G: // LS_2G   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
         case IF_LS_3A: // LS_3A   .X.......X.mmmmm xxxS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
         case IF_LS_3B: // LS_3B   X............... .aaaaannnnnttttt      Rt Ra Rn
         case IF_LS_3C: // LS_3C   X.........iiiiii iaaaaannnnnttttt      Rt Ra Rn imm(im7,sh)
         case IF_LS_3D: // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
-        case IF_LS_3F: // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Vt Rn Rm
-        case IF_LS_3G: // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Vt[] Rn Rm
+        case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
+        case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
 
             // For the Store instructions the "target" register is actually a "source" value
 
@@ -1118,7 +1167,6 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_str:
         case INS_ldur:
         case INS_stur:
-        case INS_ld1:
             result = id->idOpSize();
             break;
 
@@ -1252,11 +1300,17 @@ static const char * const  bRegNames[] =
 };
 // clang-format on
 
-/*****************************************************************************
- *
- *  Return a string that represents the given register.
- */
-
+//------------------------------------------------------------------------
+// emitRegName: Returns a general-purpose register name or SIMD and floating-point scalar register name.
+//
+// Arguments:
+//    reg - A general-purpose register or SIMD and floating-point register.
+//    size - A register size.
+//    varName - unused parameter.
+//
+// Return value:
+//    A string that represents a general-purpose register name or SIMD and floating-point scalar register name.
+//
 const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
 {
     assert(reg < REG_COUNT);
@@ -1292,11 +1346,15 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
     return rn;
 }
 
-/*****************************************************************************
- *
- *  Return a string that represents the given register.
- */
-
+//------------------------------------------------------------------------
+// emitVectorRegName: Returns a SIMD vector register name.
+//
+// Arguments:
+//    reg - A SIMD and floating-point register.
+//
+// Return value:
+//    A string  that represents a SIMD vector register name.
+//
 const char* emitter::emitVectorRegName(regNumber reg)
 {
     assert((reg >= REG_V0) && (reg <= REG_V31));
@@ -1305,6 +1363,7 @@ const char* emitter::emitVectorRegName(regNumber reg)
 
     return vRegNames[index];
 }
+
 #endif // DEBUG
 
 /*****************************************************************************
@@ -1524,6 +1583,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode9[9] = {IF_DR_2E, IF_DR_2G, IF_DI_1B, IF_DI_1D, IF_DV_3C,
                                                IF_DV_2B, IF_DV_2C, IF_DV_2E, IF_DV_2F};
     const static insFormat formatEncode6A[6] = {IF_DR_3A, IF_DR_3B, IF_DR_3C, IF_DI_2A, IF_DV_3A, IF_DV_3E};
+    const static insFormat formatEncode6B[6] = {IF_LS_2D, IF_LS_3F, IF_LS_2E, IF_LS_2F, IF_LS_3G, IF_LS_2G};
     const static insFormat formatEncode5A[5] = {IF_LS_2A, IF_LS_2B, IF_LS_2C, IF_LS_3A, IF_LS_1A};
     const static insFormat formatEncode5B[5] = {IF_DV_2G, IF_DV_2H, IF_DV_2I, IF_DV_1A, IF_DV_1B};
     const static insFormat formatEncode5C[5] = {IF_DR_3A, IF_DR_3B, IF_DI_2C, IF_DV_3C, IF_DV_1B};
@@ -1536,7 +1596,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode4G[4] = {IF_DR_2E, IF_DR_2F, IF_DV_2M, IF_DV_2L};
     const static insFormat formatEncode4H[4] = {IF_DV_3E, IF_DV_3A, IF_DV_2L, IF_DV_2M};
     const static insFormat formatEncode4I[4] = {IF_DV_3D, IF_DV_3B, IF_DV_2G, IF_DV_2A};
-    const static insFormat formatEncode4J[4] = {IF_LS_2D, IF_LS_3F, IF_LS_2E, IF_LS_3G};
     const static insFormat formatEncode3A[3] = {IF_DR_3A, IF_DR_3B, IF_DI_2C};
     const static insFormat formatEncode3B[3] = {IF_DR_2A, IF_DR_2B, IF_DI_1C};
     const static insFormat formatEncode3C[3] = {IF_DR_3A, IF_DR_3B, IF_DV_3C};
@@ -1546,6 +1605,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode3G[3] = {IF_DV_2A, IF_DV_2G, IF_DV_2I};
     const static insFormat formatEncode3H[3] = {IF_DR_3A, IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode3I[3] = {IF_DR_2E, IF_DR_2F, IF_DV_2M};
+    const static insFormat formatEncode3J[3] = {IF_LS_2D, IF_LS_3F, IF_LS_2E};
+    const static insFormat formatEncode3K[3] = {IF_DR_3A, IF_DV_3H, IF_DV_3HI};
     const static insFormat formatEncode2A[2] = {IF_DR_2E, IF_DR_2F};
     const static insFormat formatEncode2B[2] = {IF_DR_3A, IF_DR_3B};
     const static insFormat formatEncode2C[2] = {IF_DR_3A, IF_DI_2D};
@@ -1563,6 +1624,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
     const static insFormat formatEncode2P[2] = {IF_DV_2Q, IF_DV_3B};
     const static insFormat formatEncode2Q[2] = {IF_DV_2S, IF_DV_3A};
+    const static insFormat formatEncode2R[2] = {IF_DV_3H, IF_DV_3HI};
 
     code_t    code           = BAD_CODE;
     insFormat insFmt         = emitInsFormat(ins);
@@ -1586,6 +1648,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 6; index++)
             {
                 if (fmt == formatEncode6A[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN6B:
+            for (index = 0; index < 6; index++)
+            {
+                if (fmt == formatEncode6B[index])
                 {
                     encoding_found = true;
                     break;
@@ -1725,17 +1798,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
-        case IF_EN4J:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4J[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
         case IF_EN3A:
             for (index = 0; index < 3; index++)
             {
@@ -1828,6 +1890,28 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 3; index++)
             {
                 if (fmt == formatEncode3I[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN3J:
+            for (index = 0; index < 3; index++)
+            {
+                if (fmt == formatEncode3J[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN3K:
+            for (index = 0; index < 3; index++)
+            {
+                if (fmt == formatEncode3K[index])
                 {
                     encoding_found = true;
                     break;
@@ -2022,90 +2106,27 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
-        case IF_BI_0A:
-        case IF_BI_0B:
-        case IF_BI_0C:
-        case IF_BI_1A:
-        case IF_BI_1B:
-        case IF_BR_1A:
-        case IF_BR_1B:
-        case IF_LS_1A:
-        case IF_LS_2A:
-        case IF_LS_2B:
-        case IF_LS_2C:
-        case IF_LS_3A:
-        case IF_LS_3B:
-        case IF_LS_3C:
-        case IF_LS_3D:
-        case IF_LS_3E:
-        case IF_DI_1A:
-        case IF_DI_1B:
-        case IF_DI_1C:
-        case IF_DI_1D:
-        case IF_DI_1E:
-        case IF_DI_1F:
-        case IF_DI_2A:
-        case IF_DI_2B:
-        case IF_DI_2C:
-        case IF_DI_2D:
-        case IF_DR_1D:
-        case IF_DR_2A:
-        case IF_DR_2B:
-        case IF_DR_2C:
-        case IF_DR_2D:
-        case IF_DR_2E:
-        case IF_DR_2F:
-        case IF_DR_2G:
-        case IF_DR_2H:
-        case IF_DR_2I:
-        case IF_DR_2J:
-        case IF_DR_3A:
-        case IF_DR_3B:
-        case IF_DR_3C:
-        case IF_DR_3D:
-        case IF_DR_3E:
-        case IF_DR_4A:
-        case IF_DV_1A:
-        case IF_DV_1B:
-        case IF_DV_1C:
-        case IF_DV_2A:
-        case IF_DV_2B:
-        case IF_DV_2C:
-        case IF_DV_2D:
-        case IF_DV_2E:
-        case IF_DV_2F:
-        case IF_DV_2G:
-        case IF_DV_2H:
-        case IF_DV_2I:
-        case IF_DV_2J:
-        case IF_DV_2K:
-        case IF_DV_2L:
-        case IF_DV_2M:
-        case IF_DV_2N:
-        case IF_DV_2O:
-        case IF_DV_2P:
-        case IF_DV_2R:
-        case IF_DV_3A:
-        case IF_DV_3AI:
-        case IF_DV_3B:
-        case IF_DV_3BI:
-        case IF_DV_3C:
-        case IF_DV_3D:
-        case IF_DV_3DI:
-        case IF_DV_3E:
-        case IF_DV_3F:
-        case IF_DV_4A:
-        case IF_SN_0A:
-        case IF_SI_0A:
-        case IF_SI_0B:
-
-            index          = 0;
-            encoding_found = true;
+        case IF_EN2R:
+            for (index = 0; index < 2; index++)
+            {
+                if (fmt == formatEncode2R[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
             break;
 
         default:
-
-            encoding_found = false;
+            if (fmt == insFmt)
+            {
+                encoding_found = true;
+                index          = 0;
+            }
+            else
+            {
+                encoding_found = false;
+            }
             break;
     }
 
@@ -2844,12 +2865,11 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
  *         'size' specifies the size of the result (16 or 32 bits)
  */
 
-/*static*/ INT32 emitter::emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size)
+/*static*/ UINT32 emitter::emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size)
 {
     bool     onesShift = (bsImm.immOnes == 1);
-    unsigned bySh      = bsImm.immBY;         // Num Bytes to shift 0,1,2,3
-    INT32    val       = (INT32)bsImm.immVal; // 8-bit immediate
-    INT32    result    = val;
+    unsigned bySh      = bsImm.immBY;          // Num Bytes to shift 0,1,2,3
+    UINT32   result    = (UINT32)bsImm.immVal; // 8-bit immediate
 
     if (bySh > 0)
     {
@@ -3208,6 +3228,68 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return false;
 }
 
+//------------------------------------------------------------------------
+// insGetRegisterListSize: Returns a size of the register list a given instruction operates on.
+//
+// Arguments:
+//   ins - An instruction which uses a register list
+//         (e.g. ld1 (2 registers), ld1r, st1, tbl, tbx).
+//
+// Return value:
+//   A number of consecutive SIMD and floating-point registers the instruction loads to/store from.
+//
+/*static*/ unsigned emitter::insGetRegisterListSize(instruction ins)
+{
+    unsigned registerListSize = 0;
+
+    switch (ins)
+    {
+        case INS_ld1:
+        case INS_ld1r:
+        case INS_st1:
+        case INS_tbl:
+        case INS_tbx:
+            registerListSize = 1;
+            break;
+
+        case INS_ld1_2regs:
+        case INS_ld2:
+        case INS_ld2r:
+        case INS_st1_2regs:
+        case INS_st2:
+        case INS_tbl_2regs:
+        case INS_tbx_2regs:
+            registerListSize = 2;
+            break;
+
+        case INS_ld1_3regs:
+        case INS_ld3:
+        case INS_ld3r:
+        case INS_st1_3regs:
+        case INS_st3:
+        case INS_tbl_3regs:
+        case INS_tbx_3regs:
+            registerListSize = 3;
+            break;
+
+        case INS_ld1_4regs:
+        case INS_ld4:
+        case INS_ld4r:
+        case INS_st1_4regs:
+        case INS_st4:
+        case INS_tbl_4regs:
+        case INS_tbx_4regs:
+            registerListSize = 4;
+            break;
+
+        default:
+            assert(!"Unexpected instruction");
+            break;
+    }
+
+    return registerListSize;
+}
+
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
 //  asserts and returns EA_UNKNOWN if an invalid 'arrangement' value is passed
 //
@@ -3280,6 +3362,48 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         assert(!" invalid 'arrangement' value");
         return INS_OPTS_NONE;
     }
+}
+
+//  For the given 'srcArrangement' returns the "widen" 'dstArrangement' specifying the destination vector register
+//  arrangement
+//  asserts and returns INS_OPTS_NONE if an invalid 'srcArrangement' value is passed
+//
+/*static*/ insOpts emitter::optWidenDstArrangement(insOpts srcArrangement)
+{
+    insOpts dstArrangement = INS_OPTS_NONE;
+
+    switch (srcArrangement)
+    {
+        case INS_OPTS_8B:
+            dstArrangement = INS_OPTS_4H;
+            break;
+
+        case INS_OPTS_16B:
+            dstArrangement = INS_OPTS_8H;
+            break;
+
+        case INS_OPTS_4H:
+            dstArrangement = INS_OPTS_2S;
+            break;
+
+        case INS_OPTS_8H:
+            dstArrangement = INS_OPTS_4S;
+            break;
+
+        case INS_OPTS_2S:
+            dstArrangement = INS_OPTS_1D;
+            break;
+
+        case INS_OPTS_4S:
+            dstArrangement = INS_OPTS_2D;
+            break;
+
+        default:
+            assert(!" invalid 'srcArrangement' value");
+            break;
+    }
+
+    return dstArrangement;
 }
 
 //  For the given 'conversion' returns the 'dstsize' specified by the conversion option
@@ -4071,6 +4195,14 @@ void emitter::emitIns_R_R(
         case INS_uaddlv:
         case INS_umaxv:
         case INS_uminv:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+            assert((opt != INS_OPTS_2S) && (opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // Reserved encodings
+            fmt = IF_DV_2T;
+            break;
+
         case INS_rev64:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -4345,7 +4477,7 @@ void emitter::emitIns_R_R(
         case INS_fminnmp:
         case INS_fminp:
             // Scalar operation
-            assert(((size == EA_4BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_8BYTE) && (opt == INS_OPTS_2D)));
+            assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_16BYTE) && (opt == INS_OPTS_2D)));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             fmt = IF_DV_2Q;
@@ -4355,7 +4487,7 @@ void emitter::emitIns_R_R(
         case INS_fmaxv:
         case INS_fminnmv:
         case INS_fminv:
-            assert(size == EA_4BYTE);
+            assert(size == EA_16BYTE);
             assert(opt == INS_OPTS_4S);
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -4363,7 +4495,7 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_addp:
-            assert(size == EA_8BYTE);
+            assert(size == EA_16BYTE);
             assert(opt == INS_OPTS_2D);
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -4408,27 +4540,30 @@ void emitter::emitIns_R_R(
         case INS_fcmgt:
         case INS_fcmle:
         case INS_fcmlt:
+        case INS_frecpe:
+        case INS_frsqrte:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
-                assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE)); // Only Double/Float supported
-                assert(opt != INS_OPTS_1D);                               // Reserved encoding
+                assert(isValidVectorElemsizeFloat(elemsize)); // Only Double/Float supported
+                assert(opt != INS_OPTS_1D);                   // Reserved encoding
                 fmt = IF_DV_2A;
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
-                assert((size == EA_8BYTE) || (size == EA_4BYTE)); // Only Double/Float supported
+                assert(isValidScalarDatasize(size)); // Only Double/Float supported
+                assert(insOptsNone(opt));
                 fmt = IF_DV_2G;
             }
             break;
+
         case INS_aesd:
         case INS_aese:
         case INS_aesmc:
@@ -4445,7 +4580,7 @@ void emitter::emitIns_R_R(
             assert(insOptsNone(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            fmt = IF_DR_2J;
+            fmt = IF_DV_2U;
             break;
 
         case INS_sha256su0:
@@ -4458,15 +4593,67 @@ void emitter::emitIns_R_R(
             fmt = IF_DV_2P;
             break;
 
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
+            __fallthrough;
+
         case INS_ld1:
-        {
+        case INS_ld1_2regs:
+        case INS_ld1_3regs:
+        case INS_ld1_4regs:
+        case INS_st1:
+        case INS_st1_2regs:
+        case INS_st1_3regs:
+        case INS_st1_4regs:
+        case INS_ld1r:
+        case INS_ld2r:
+        case INS_ld3r:
+        case INS_ld4r:
             assert(isVectorRegister(reg1));
-            assert(isIntegerRegister(reg2));
+            assert(isGeneralRegisterOrSP(reg2));
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
-            fmt = IF_LS_2D;
+
+            // Load/Store multiple structures       base register
+            // Load single structure and replicate  base register
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_2D;
             break;
-        }
+
+        case INS_urecpe:
+        case INS_ursqrte:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+            elemsize = optGetElemsize(opt);
+            assert(elemsize == EA_4BYTE);
+            fmt = IF_DV_2A;
+            break;
+
+        case INS_frecpx:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidScalarDatasize(size));
+            assert(insOptsNone(opt));
+            fmt = IF_DV_2G;
+            break;
+
+        case INS_sadalp:
+        case INS_saddlp:
+        case INS_uadalp:
+        case INS_uaddlp:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidArrangement(size, opt));
+            assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding size = 11, Q = x is reserved
+            fmt = IF_DV_2T;
+            break;
 
         default:
             unreached();
@@ -4609,6 +4796,7 @@ void emitter::emitIns_R_R_I(
     {
         bool       canEncode;
         bitMaskImm bmi;
+        unsigned   registerListSize;
 
         case INS_mov:
             // Check for the 'mov' aliases for the vector registers
@@ -4844,12 +5032,17 @@ void emitter::emitIns_R_R_I(
             {
                 if (insOptsAnyArrangement(opt))
                 {
+                    // The size and opt were modified to be based on the
+                    // return type but the immediate is based on the operand
+                    // which can be of a larger size. As such, we don't
+                    // assert the index is valid here and instead do it in
+                    // codegen.
+
                     // Vector operation
                     assert(isValidVectorDatasize(size));
                     assert(isValidArrangement(size, opt));
                     elemsize = optGetElemsize(opt);
                     assert(isValidVectorElemsize(elemsize));
-                    assert(isValidVectorIndex(size, elemsize, imm));
                     assert(opt != INS_OPTS_1D); // Reserved encoding
                     fmt = IF_DV_2D;
                     break;
@@ -5003,6 +5196,72 @@ void emitter::emitIns_R_R_I(
             unscaledOp = true;
             scale      = 0;
             isLdSt     = true;
+            break;
+
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
+            __fallthrough;
+
+        case INS_ld1:
+        case INS_ld1_2regs:
+        case INS_ld1_3regs:
+        case INS_ld1_4regs:
+        case INS_st1:
+        case INS_st1_2regs:
+        case INS_st1_3regs:
+        case INS_st1_4regs:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+
+            reg2 = encodingSPtoZR(reg2);
+
+            if (insOptsAnyArrangement(opt))
+            {
+                registerListSize = insGetRegisterListSize(ins);
+                assert(isValidVectorDatasize(size));
+                assert(isValidArrangement(size, opt));
+                assert((size * registerListSize) == imm);
+
+                // Load/Store multiple structures  post-indexed by an immediate
+                fmt = IF_LS_2E;
+            }
+            else
+            {
+                assert(insOptsNone(opt));
+                assert((ins != INS_ld1_2regs) && (ins != INS_ld1_3regs) && (ins != INS_ld1_4regs) &&
+                       (ins != INS_st1_2regs) && (ins != INS_st1_3regs) && (ins != INS_st1_4regs));
+
+                elemsize = size;
+                assert(isValidVectorElemsize(elemsize));
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+
+                // Load/Store single structure  base register
+                fmt = IF_LS_2F;
+            }
+            break;
+
+        case INS_ld1r:
+        case INS_ld2r:
+        case INS_ld3r:
+        case INS_ld4r:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+
+            elemsize         = optGetElemsize(opt);
+            registerListSize = insGetRegisterListSize(ins);
+            assert((elemsize * registerListSize) == imm);
+
+            // Load single structure and replicate  post-indexed by an immediate
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_2E;
             break;
 
         default:
@@ -5214,6 +5473,30 @@ void emitter::emitIns_R_R_R(
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_mul:
+        case INS_smull:
+        case INS_umull:
+            if (insOptsAnyArrangement(opt))
+            {
+                // ASIMD instruction
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(isValidArrangement(size, opt));
+                assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding size = 11, Q = x is reserved
+                if (ins == INS_mul)
+                {
+                    fmt = IF_DV_3A;
+                }
+                else
+                {
+                    fmt = IF_DV_3H;
+                }
+                break;
+            }
+            // Base instruction
+            __fallthrough;
+
         case INS_lsl:
         case INS_lsr:
         case INS_asr:
@@ -5225,10 +5508,8 @@ void emitter::emitIns_R_R_R(
         case INS_udiv:
         case INS_sdiv:
         case INS_mneg:
-        case INS_smull:
         case INS_smnegl:
         case INS_smulh:
-        case INS_umull:
         case INS_umnegl:
         case INS_umulh:
         case INS_lslv:
@@ -5251,44 +5532,11 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DR_3A;
             break;
 
-        case INS_mul:
-            if (insOptsNone(opt))
-            {
-                // general register
-                assert(isValidGeneralDatasize(size));
-                assert(isGeneralRegister(reg1));
-                assert(isGeneralRegister(reg2));
-                assert(isGeneralRegister(reg3));
-                fmt = IF_DR_3A;
-                break;
-            }
-            __fallthrough;
-
-        case INS_mla:
-        case INS_mls:
-        case INS_pmul:
-            assert(insOptsAnyArrangement(opt));
-            assert(isVectorRegister(reg1));
-            assert(isVectorRegister(reg2));
-            assert(isVectorRegister(reg3));
-            assert(isValidVectorDatasize(size));
-            assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-            if (ins == INS_pmul)
-            {
-                assert(elemsize == EA_1BYTE); // only supports 8B or 16B
-            }
-            else // INS_mul, INS_mla, INS_mls
-            {
-                assert(elemsize != EA_8BYTE); // can't use 2D or 1D
-            }
-            fmt = IF_DV_3A;
-            break;
-
         case INS_add:
         case INS_sub:
             if (isVectorRegister(reg1))
             {
+                // ASIMD instruction
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
 
@@ -5309,6 +5557,7 @@ void emitter::emitIns_R_R_R(
                 }
                 break;
             }
+            // Base instruction
             __fallthrough;
 
         case INS_adds:
@@ -5329,10 +5578,8 @@ void emitter::emitIns_R_R_R(
             if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
-                elemsize = optGetElemsize(opt);
-                assert(opt != INS_OPTS_1D); // Reserved encoding
+                assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = 0 is reserved
                 fmt = IF_DV_3A;
             }
             else
@@ -5344,9 +5591,35 @@ void emitter::emitIns_R_R_R(
             }
             break;
 
+        case INS_sqadd:
+        case INS_sqsub:
+        case INS_uqadd:
+        case INS_uqsub:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidArrangement(size, opt));
+                assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = 0 is reserved
+                fmt = IF_DV_3A;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert(isValidVectorElemsize(size));
+                fmt = IF_DV_3E;
+            }
+            break;
+
         case INS_fcmeq:
         case INS_fcmge:
         case INS_fcmgt:
+        case INS_frecps:
+        case INS_frsqrts:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5370,20 +5643,33 @@ void emitter::emitIns_R_R_R(
             }
             break;
 
+        case INS_mla:
+        case INS_mls:
         case INS_saba:
         case INS_sabd:
+        case INS_shadd:
+        case INS_shsub:
         case INS_smax:
         case INS_smaxp:
         case INS_smin:
         case INS_sminp:
+        case INS_srhadd:
         case INS_uaba:
         case INS_uabd:
+        case INS_uhadd:
+        case INS_uhsub:
         case INS_umax:
         case INS_umaxp:
         case INS_umin:
         case INS_uminp:
-            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
-            __fallthrough;
+        case INS_urhadd:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidArrangement(size, opt));
+            assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding size = 11, Q = x is reserved
+            fmt = IF_DV_3A;
+            break;
 
         case INS_addp:
         case INS_uzp1:
@@ -5395,13 +5681,8 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(insOptsAnyArrangement(opt));
-
-            // Vector operation
-            assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-
+            assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = 0 is reserved
             fmt = IF_DV_3A;
             break;
 
@@ -5425,6 +5706,14 @@ void emitter::emitIns_R_R_R(
         case INS_eor:
         case INS_orr:
         case INS_orn:
+        case INS_tbl:
+        case INS_tbl_2regs:
+        case INS_tbl_3regs:
+        case INS_tbl_4regs:
+        case INS_tbx:
+        case INS_tbx_2regs:
+        case INS_tbx_3regs:
+        case INS_tbx_4regs:
             if (isVectorRegister(reg1))
             {
                 assert(isValidVectorDatasize(size));
@@ -5623,6 +5912,141 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DV_3F;
             break;
 
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
+            __fallthrough;
+
+        case INS_ld1:
+        case INS_ld1_2regs:
+        case INS_ld1_3regs:
+        case INS_ld1_4regs:
+        case INS_st1:
+        case INS_st1_2regs:
+        case INS_st1_3regs:
+        case INS_st1_4regs:
+        case INS_ld1r:
+        case INS_ld2r:
+        case INS_ld3r:
+        case INS_ld4r:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidArrangement(size, opt));
+
+            // Load/Store multiple structures       post-indexed by a register
+            // Load single structure and replicate  post-indexed by a register
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_3F;
+            break;
+
+        case INS_addhn:
+        case INS_raddhn:
+        case INS_rsubhn:
+        case INS_subhn:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_8BYTE);
+            assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = x is reserved.
+            fmt = IF_DV_3H;
+            break;
+
+        case INS_addhn2:
+        case INS_raddhn2:
+        case INS_rsubhn2:
+        case INS_subhn2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_2D); // The encoding size = 11, Q = x is reserved.
+            fmt = IF_DV_3H;
+            break;
+
+        case INS_sabal:
+        case INS_sabdl:
+        case INS_saddl:
+        case INS_saddw:
+        case INS_smlal:
+        case INS_smlsl:
+        case INS_ssubl:
+        case INS_ssubw:
+        case INS_uabal:
+        case INS_uabdl:
+        case INS_uaddl:
+        case INS_uaddw:
+        case INS_umlal:
+        case INS_umlsl:
+        case INS_usubl:
+        case INS_usubw:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_8BYTE);
+            assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+            fmt = IF_DV_3H;
+            break;
+
+        case INS_sabal2:
+        case INS_sabdl2:
+        case INS_saddl2:
+        case INS_saddw2:
+        case INS_smlal2:
+        case INS_smlsl2:
+        case INS_ssubl2:
+        case INS_ssubw2:
+        case INS_umlal2:
+        case INS_umlsl2:
+        case INS_smull2:
+        case INS_uabal2:
+        case INS_uabdl2:
+        case INS_uaddl2:
+        case INS_uaddw2:
+        case INS_usubl2:
+        case INS_umull2:
+        case INS_usubw2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
+            fmt = IF_DV_3H;
+            break;
+
+        case INS_pmul:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidArrangement(size, opt));
+            assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_16B));
+            fmt = IF_DV_3A;
+            break;
+
+        case INS_pmull:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_8BYTE);
+            assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_1D));
+            fmt = IF_DV_3H;
+            break;
+
+        case INS_pmull2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_2D));
+            fmt = IF_DV_3H;
+            break;
+
         default:
             unreached();
             break;
@@ -5792,6 +6216,72 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                 scale = (size == EA_8BYTE) ? 3 : 2;
             }
             isLdSt = true;
+            break;
+
+        case INS_ld1:
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st1:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+            assert(isGeneralRegister(reg3));
+
+            assert(insOptsPostIndex(opt));
+
+            elemsize = size;
+            assert(isValidVectorElemsize(elemsize));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+
+            // Load/Store single structure  post-indexed by a register
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_3G;
+            break;
+
+        case INS_ext:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+            assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_16B));
+            assert(isValidVectorIndex(size, EA_1BYTE, imm));
+            fmt = IF_DV_3G;
+            break;
+
+        case INS_smlal:
+        case INS_smlsl:
+        case INS_smull:
+        case INS_umlal:
+        case INS_umlsl:
+        case INS_umull:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_8BYTE);
+            assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+            elemsize = optGetElemsize(opt);
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            fmt = IF_DV_3HI;
+            break;
+
+        case INS_smlal2:
+        case INS_smlsl2:
+        case INS_smull2:
+        case INS_umlal2:
+        case INS_umlsl2:
+        case INS_umull2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
+            elemsize = optGetElemsize(opt);
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            fmt = IF_DV_3HI;
             break;
 
         default:
@@ -6064,7 +6554,8 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
  *  Add an instruction referencing two registers and two constants.
  */
 
-void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2)
+void emitter::emitIns_R_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
@@ -6077,6 +6568,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
         int        lsb;
         int        width;
         bitMaskImm bmi;
+        unsigned   registerListSize;
 
         case INS_bfm:
         case INS_sbfm:
@@ -6085,6 +6577,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             assert(isGeneralRegister(reg2));
             assert(isValidImmShift(imm1, size));
             assert(isValidImmShift(imm2, size));
+            assert(insOptsNone(opt));
             bmi.immNRS = 0;
             bmi.immN   = (size == EA_8BYTE);
             bmi.immR   = imm1;
@@ -6102,6 +6595,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             width = imm2 - 1;
             assert(isValidImmShift(lsb, size));
             assert(isValidImmShift(width, size));
+            assert(insOptsNone(opt));
             bmi.immNRS = 0;
             bmi.immN   = (size == EA_8BYTE);
             bmi.immR   = lsb;
@@ -6119,6 +6613,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             width = imm2 + imm1 - 1;
             assert(isValidImmShift(lsb, size));
             assert(isValidImmShift(width, size));
+            assert(insOptsNone(opt));
             bmi.immNRS = 0;
             bmi.immN   = (size == EA_8BYTE);
             bmi.immR   = imm1;
@@ -6135,8 +6630,34 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             assert(isValidVectorElemsize(elemsize));
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm1));
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm2));
+            assert(insOptsNone(opt));
             immOut = (imm1 << 4) + imm2;
             fmt    = IF_DV_2F;
+            break;
+
+        case INS_ld1:
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st1:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+
+            elemsize = size;
+            assert(isValidVectorElemsize(elemsize));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm1));
+
+            registerListSize = insGetRegisterListSize(ins);
+            assert((elemsize * registerListSize) == (unsigned)imm2);
+            assert(insOptsPostIndex(opt));
+
+            // Load/Store single structure  post-indexed by an immediate
+            reg2   = encodingSPtoZR(reg2);
+            immOut = imm1;
+            fmt    = IF_LS_2G;
             break;
 
         default:
@@ -6149,6 +6670,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idInsOpt(opt);
 
     id->idReg1(reg1);
     id->idReg2(reg2);
@@ -9477,27 +9999,28 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
+        case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
 
             code |= insEncodeVectorsize(id->idOpSize()); // Q
-            code |= 0x5000;                         // xxx          - We only support the one register variant right now
-            code |= insEncodeVLSElemsize(elemsize); // ss
-            code |= insEncodeReg_Rn(id->idReg2());  // nnnnn
-            code |= insEncodeReg_Vt(id->idReg1());  // ttttt
+            code |= insEncodeVLSElemsize(elemsize);      // ss
+            code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_Vt(id->idReg1());       // ttttt
 
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_LS_2E: // LS_2E   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
-            elemsize = optGetElemsize(id->idInsOpt());
-            imm      = emitGetInsSC(id);
+        case IF_LS_2F: // LS_2F   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2G: // LS_2G   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
+            elemsize = id->idOpSize();
+            index    = id->idSmallCns();
             code     = emitInsCode(ins, fmt);
 
-            code |= insEncodeVLSIndex(elemsize, imm); // Q xx S ss
-            code |= insEncodeReg_Rn(id->idReg2());    // nnnnn
-            code |= insEncodeReg_Vt(id->idReg1());    // ttttt
+            code |= insEncodeVLSIndex(elemsize, index); // Q xx S ss
+            code |= insEncodeReg_Rn(id->idReg2());      // nnnnn
+            code |= insEncodeReg_Vt(id->idReg1());      // ttttt
 
             dst += emitOutput_Instr(dst, code);
             break;
@@ -9599,29 +10122,28 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_LS_3F: // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Vt Rn Rm
+        case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
 
-            code |= insEncodeReg_Vt(id->idReg1());  // ttttt
-            code |= insEncodeReg_Rn(id->idReg2());  // nnnnn
-            code |= insEncodeVLSElemsize(elemsize); // ss
-            code |= 0x5000;                         // xx.x         - We only support the one register variant right now
-            code |= insEncodeReg_Rm(id->idReg3());  // mmmmm
             code |= insEncodeVectorsize(id->idOpSize()); // Q
+            code |= insEncodeReg_Rm(id->idReg3());       // mmmmm
+            code |= insEncodeVLSElemsize(elemsize);      // ss
+            code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_Vt(id->idReg1());       // ttttt
 
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_LS_3G: // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Vt[] Rn Rm
-            elemsize = optGetElemsize(id->idInsOpt());
-            imm      = emitGetInsSC(id);
+        case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
+            elemsize = id->idOpSize();
+            index    = id->idSmallCns();
             code     = emitInsCode(ins, fmt);
 
-            code |= insEncodeVLSIndex(elemsize, imm); // Q xx S ss
-            code |= insEncodeReg_Rm(id->idReg3());    // mmmmm
-            code |= insEncodeReg_Rn(id->idReg2());    // nnnnn
-            code |= insEncodeReg_Vt(id->idReg1());    // ttttt
+            code |= insEncodeVLSIndex(elemsize, index); // Q xx S ss
+            code |= insEncodeReg_Rm(id->idReg3());      // mmmmm
+            code |= insEncodeReg_Rn(id->idReg2());      // nnnnn
+            code |= insEncodeReg_Vt(id->idReg1());      // ttttt
 
             dst += emitOutput_Instr(dst, code);
             break;
@@ -9914,13 +10436,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             break;
 
-        case IF_DR_2J: // DR_2J   ................ ......nnnnnddddd      Sd Sn   (sha1h)
-            code = emitInsCode(ins, fmt);
-            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
-            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
-            dst += emitOutput_Instr(dst, code);
-            break;
-
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize()); // X
@@ -10075,6 +10590,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn      (fabs, fcvt - vector)
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(id->idOpSize()); // Q
@@ -10156,8 +10672,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
-        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Vd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
-                       // fminp - scalar)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
             code |= insEncodeFloatElemsize(elemsize); // X
@@ -10202,7 +10716,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2L: // DV_2L   ........XX...... ......nnnnnddddd      Vd Vn      (abs, neg - scalar)
-        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
             code |= insEncodeElemsize(elemsize);   // XX
@@ -10212,6 +10725,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn      (abs, neg   - vector)
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
+                       // umaxv, uminv)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(id->idOpSize()); // Q
@@ -10249,14 +10764,29 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn     (fmaxnmv, fmaxv, fminnmv, fminv)
-            code     = emitInsCode(ins, fmt);
-            datasize = optGetDatasize(id->idInsOpt());
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Vd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
             elemsize = optGetElemsize(id->idInsOpt());
-            code |= insEncodeVectorsize(datasize);    // Q
+            code     = emitInsCode(ins, fmt);
             code |= insEncodeFloatElemsize(elemsize); // X
             code |= insEncodeReg_Vd(id->idReg1());    // ddddd
             code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
+            elemsize = optGetElemsize(id->idInsOpt());
+            code     = emitInsCode(ins, fmt);
+            code |= insEncodeElemsize(elemsize);   // XX
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd Sn   (sha1h)
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10341,12 +10871,56 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_DV_3E: // DV_3E   ...........mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+        case IF_DV_3E: // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+            code     = emitInsCode(ins, fmt);
+            elemsize = id->idOpSize();
+            code |= insEncodeElemsize(elemsize);   // XX
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_DV_3F: // DV_3F   ...........mmmmm ......nnnnnddddd      Vd Vn Vm   (vector) - source dest regs overlap
             code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Vd(id->idReg1()); // ddddd
             code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_3G: // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+            imm  = emitGetInsSC(id);
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeVectorsize(id->idOpSize()); // Q
+            code |= insEncodeReg_Vm(id->idReg3());       // mmmmm
+            code |= ((code_t)imm << 11);                 // iiii
+            code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_Vd(id->idReg1());       // ddddd
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
+                       // subhn{2}, pmull{2})
+            code     = emitInsCode(ins, fmt);
+            elemsize = optGetElemsize(id->idInsOpt());
+            code |= insEncodeElemsize(elemsize);   // XX
+            code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_3HI: // DV_3HI  ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (smlal{2}, umlal{2} by element)
+            code     = emitInsCode(ins, fmt);
+            imm      = emitGetInsSC(id);
+            elemsize = optGetElemsize(id->idInsOpt());
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            code |= insEncodeElemsize(elemsize);            // XX
+            code |= insEncodeVectorIndexLMH(elemsize, imm); // LM H
+            code |= insEncodeReg_Vd(id->idReg1());          // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());          // nnnnn
+            code |= insEncodeReg_Vm(id->idReg3());          // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10737,10 +11311,9 @@ void emitter::emitDispLSExtendOpts(insOpts opt)
         assert(!"Bad value");
 }
 
-/*****************************************************************************
- *
- *  Display a register
- */
+//------------------------------------------------------------------------
+// emitDispReg: Display a general-purpose register name or SIMD and floating-point scalar register name
+//
 void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 {
     emitAttr size = EA_SIZE(attr);
@@ -10750,10 +11323,9 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
         printf(", ");
 }
 
-/*****************************************************************************
- *
- *  Display a vector register with an arrangement suffix
- */
+//------------------------------------------------------------------------
+// emitDispVectorReg: Display a SIMD vector register name with with an arrangement suffix
+//
 void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
 {
     assert(isVectorRegister(reg));
@@ -10764,44 +11336,78 @@ void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
         printf(", ");
 }
 
-/*****************************************************************************
- *
- *  Display an vector register index suffix
- */
+//------------------------------------------------------------------------
+// emitDispVectorRegIndex: Display a SIMD vector register name with element index
+//
 void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma)
 {
     assert(isVectorRegister(reg));
     printf(emitVectorRegName(reg));
-
-    switch (elemsize)
-    {
-        case EA_1BYTE:
-            printf(".b");
-            break;
-        case EA_2BYTE:
-            printf(".h");
-            break;
-        case EA_4BYTE:
-            printf(".s");
-            break;
-        case EA_8BYTE:
-            printf(".d");
-            break;
-        default:
-            assert(!"invalid elemsize");
-            break;
-    }
-
+    emitDispElemsize(elemsize);
     printf("[%d]", index);
 
     if (addComma)
         printf(", ");
 }
 
-/*****************************************************************************
- *
- *  Display an arrangement suffix
- */
+//------------------------------------------------------------------------
+// emitDispVectorRegList: Display a SIMD vector register list
+//
+void emitter::emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma)
+{
+    assert(isVectorRegister(firstReg));
+
+    regNumber currReg = firstReg;
+
+    printf("{");
+    for (unsigned i = 0; i < listSize; i++)
+    {
+        const bool notLastRegister = (i != listSize - 1);
+        emitDispVectorReg(currReg, opt, notLastRegister);
+        currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
+    }
+    printf("}");
+
+    if (addComma)
+    {
+        printf(", ");
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispVectorElemList: Display a SIMD vector element list
+//
+void emitter::emitDispVectorElemList(
+    regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma)
+{
+    assert(isVectorRegister(firstReg));
+
+    regNumber currReg = firstReg;
+
+    printf("{");
+    for (unsigned i = 0; i < listSize; i++)
+    {
+        printf(emitVectorRegName(currReg));
+        emitDispElemsize(elemsize);
+        const bool notLastRegister = (i != listSize - 1);
+        if (notLastRegister)
+        {
+            printf(", ");
+        }
+        currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
+    }
+    printf("}");
+    printf("[%d]", index);
+
+    if (addComma)
+    {
+        printf(", ");
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispArrangement: Display a SIMD vector arrangement suffix
+//
 void emitter::emitDispArrangement(insOpts opt)
 {
     const char* str = "???";
@@ -10840,10 +11446,39 @@ void emitter::emitDispArrangement(insOpts opt)
     printf(str);
 }
 
-/*****************************************************************************
- *
- *  Display a register with an optional shift operation
- */
+//------------------------------------------------------------------------
+// emitDispElemsize: Display a SIMD vector element suffix
+//
+void emitter::emitDispElemsize(emitAttr elemsize)
+{
+    const char* str = "???";
+
+    switch (elemsize)
+    {
+        case EA_1BYTE:
+            str = ".b";
+            break;
+        case EA_2BYTE:
+            str = ".h";
+            break;
+        case EA_4BYTE:
+            str = ".s";
+            break;
+        case EA_8BYTE:
+            str = ".d";
+            break;
+
+        default:
+            assert(!"invalid elemsize");
+            break;
+    }
+
+    printf(str);
+}
+
+//------------------------------------------------------------------------
+// emitDispShiftedReg: Display a register with an optional shift operation
+//
 void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr)
 {
     emitAttr size = EA_SIZE(attr);
@@ -11110,6 +11745,7 @@ void emitter::emitDispIns(
         emitAttr     dstsize;
         ssize_t      index;
         ssize_t      index2;
+        unsigned     registerListSize;
 
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
@@ -11138,11 +11774,11 @@ void emitter::emitDispIns(
             }
             else if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
         }
         break;
@@ -11176,11 +11812,11 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg1(), size, true);
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
 
@@ -11190,11 +11826,11 @@ void emitter::emitDispIns(
             emitDispImm(emitGetInsSC(id), true);
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
 
@@ -11251,11 +11887,11 @@ void emitter::emitDispIns(
                 }
                 else if (id->idIsBound())
                 {
-                    printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
                 }
                 else
                 {
-                    printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                    printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
                 }
             }
             printf("]");
@@ -11284,17 +11920,41 @@ void emitter::emitDispIns(
             emitDispAddrRI(id->idReg2(), id->idInsOpt(), imm);
             break;
 
-        case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
-            assert(emitGetInsSC(id) == 0);
-            emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
+        case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
+            registerListSize = insGetRegisterListSize(id->idIns());
+            emitDispVectorRegList(id->idReg1(), registerListSize, id->idInsOpt(), true);
+
+            if (fmt == IF_LS_2D)
+            {
+                // Load/Store multiple structures       base register
+                // Load single structure and replicate  base register
+                emitDispAddrRI(id->idReg2(), INS_OPTS_NONE, 0);
+            }
+            else
+            {
+                // Load/Store multiple structures       post-indexed by an immediate
+                // Load single structure and replicate  post-indexed by an immediate
+                emitDispAddrRI(id->idReg2(), INS_OPTS_POST_INDEX, id->idSmallCns());
+            }
             break;
 
-        case IF_LS_2E: // LS_2E   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
-            assert(insOptsNone(id->idInsOpt()));
-            assert(emitGetInsSC(id) == 0);
-            emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
+        case IF_LS_2F: // LS_2F   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2G: // LS_2G   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
+            registerListSize = insGetRegisterListSize(id->idIns());
+            elemsize         = id->idOpSize();
+            emitDispVectorElemList(id->idReg1(), registerListSize, elemsize, id->idSmallCns(), true);
+
+            if (fmt == IF_LS_2F)
+            {
+                // Load/Store single structure  base register
+                emitDispAddrRI(id->idReg2(), INS_OPTS_NONE, 0);
+            }
+            else
+            {
+                // Load/Store single structure  post-indexed by an immediate
+                emitDispAddrRI(id->idReg2(), INS_OPTS_POST_INDEX, (registerListSize * elemsize));
+            }
             break;
 
         case IF_LS_3A: // LS_3A   .X.......X.mmmmm oooS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
@@ -11343,20 +12003,27 @@ void emitter::emitDispIns(
             emitDispAddrRI(id->idReg3(), id->idInsOpt(), 0);
             break;
 
-        case IF_LS_3F: // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Vt Rn Rm
-            assert(insOptsNone(id->idInsOpt()));
-            assert(emitGetInsSC(id) == 0);
-            emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispReg(id->idReg2(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg3(), id->idInsOpt(), 0);
-            break;
+        case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
+        case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
+            registerListSize = insGetRegisterListSize(id->idIns());
 
-        case IF_LS_3G: // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Vt[] Rn Rm
-            assert(insOptsNone(id->idInsOpt()));
-            assert(emitGetInsSC(id) == 0);
-            emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispReg(id->idReg2(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg3(), id->idInsOpt(), 0);
+            if (fmt == IF_LS_3F)
+            {
+                // Load/Store multiple structures       post-indexed by a register
+                // Load single structure and replicate  post-indexed by a register
+                emitDispVectorRegList(id->idReg1(), registerListSize, id->idInsOpt(), true);
+            }
+            else
+            {
+                // Load/Store single structure          post-indexed by a register
+                elemsize = id->idOpSize();
+                emitDispVectorElemList(id->idReg1(), registerListSize, elemsize, id->idSmallCns(), true);
+            }
+
+            printf("[");
+            emitDispReg(encodingZRtoSP(id->idReg2()), EA_8BYTE, false);
+            printf("], ");
+            emitDispReg(id->idReg3(), EA_8BYTE, false);
             break;
 
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....      Rn       imm(i12,sh)
@@ -11509,7 +12176,7 @@ void emitter::emitDispIns(
             break;
 
         case IF_DR_2E: // DR_2E   X..........mmmmm ...........ddddd      Rd    Rm
-        case IF_DR_2J: // DR_2J   ................ ......nnnnnddddd      Sd    Sn
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd    Sn
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, false);
             break;
@@ -11525,8 +12192,19 @@ void emitter::emitDispIns(
             break;
 
         case IF_DR_2H: // DR_2H   X........X...... ......nnnnnddddd      Rd Rn
-            emitDispReg(id->idReg1(), size, true);
-            emitDispReg(id->idReg2(), size, false);
+            if ((ins == INS_uxtb) || (ins == INS_uxth))
+            {
+                // There is no 64-bit variant of uxtb and uxth
+                // However, we allow idOpSize() to have EA_8BYTE value for these instruction
+                emitDispReg(id->idReg1(), EA_4BYTE, true);
+                emitDispReg(id->idReg2(), EA_4BYTE, false);
+            }
+            else
+            {
+                emitDispReg(id->idReg1(), size, true);
+                // sxtb, sxth and sxtb always operate on 32-bit source register
+                emitDispReg(id->idReg2(), EA_4BYTE, false);
+            }
             break;
 
         case IF_DR_2I: // DR_2I   X..........mmmmm cccc..nnnnn.nzcv      Rn Rm    nzcv cond
@@ -11672,25 +12350,8 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg - vector)
-            switch (ins)
-            {
-                case INS_addv:
-                case INS_saddlv:
-                case INS_smaxv:
-                case INS_sminv:
-                case INS_uaddlv:
-                case INS_umaxv:
-                case INS_uminv:
-                    elemsize = optGetElemsize(id->idInsOpt());
-                    emitDispReg(id->idReg1(), elemsize, true);
-                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
-                    break;
-
-                default:
-                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
-                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
-                    break;
-            }
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
@@ -11795,7 +12456,16 @@ void emitter::emitDispIns(
         case IF_DV_2L: // DV_2L   ........XX...... ......nnnnnddddd      Vd Vn      (abs, neg - scalar)
             elemsize = id->idOpSize();
             emitDispReg(id->idReg1(), elemsize, true);
-            emitDispReg(id->idReg2(), elemsize, false);
+            if ((ins == INS_fcmeq) || (ins == INS_fcmge) || (ins == INS_fcmgt) || (ins == INS_fcmle) ||
+                (ins == INS_fcmlt))
+            {
+                emitDispReg(id->idReg2(), elemsize, true);
+                emitDispImm(0, false);
+            }
+            else
+            {
+                emitDispReg(id->idReg2(), elemsize, false);
+            }
             break;
 
         case IF_DV_2H: // DV_2H   X........X...... ......nnnnnddddd      Rd Vn      (fmov, fcvtXX - to general)
@@ -11812,9 +12482,19 @@ void emitter::emitDispIns(
                        // fminp - scalar)
         case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
         case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
-            elemsize = id->idOpSize();
-            emitDispReg(id->idReg1(), elemsize, true);
-            emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
+                       // umaxv, uminv)
+            if ((ins == INS_sadalp) || (ins == INS_saddlp) || (ins == INS_uadalp) || (ins == INS_uaddlp))
+            {
+                emitDispVectorReg(id->idReg1(), optWidenDstArrangement(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            }
+            else
+            {
+                elemsize = optGetElemsize(id->idInsOpt());
+                emitDispReg(id->idReg1(), elemsize, true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            }
             break;
 
         case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (vector)
@@ -11826,9 +12506,24 @@ void emitter::emitDispIns(
 
         case IF_DV_3C: // DV_3C   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm  (vector)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
-            if (ins != INS_mov)
+            switch (ins)
             {
-                emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                case INS_tbl:
+                case INS_tbl_2regs:
+                case INS_tbl_3regs:
+                case INS_tbl_4regs:
+                case INS_tbx:
+                case INS_tbx_2regs:
+                case INS_tbx_3regs:
+                case INS_tbx_4regs:
+                    registerListSize = insGetRegisterListSize(ins);
+                    emitDispVectorRegList(id->idReg2(), registerListSize, INS_OPTS_16B, true);
+                    break;
+                case INS_mov:
+                    break;
+                default:
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                    break;
             }
             emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
             break;
@@ -11842,7 +12537,7 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_3D: // DV_3D   .........X.mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
-        case IF_DV_3E: // DV_3E   ...........mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
+        case IF_DV_3E: // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, true);
             emitDispReg(id->idReg3(), size, false);
@@ -11876,6 +12571,59 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, true);
             elemsize = size;
+            emitDispVectorRegIndex(id->idReg3(), elemsize, emitGetInsSC(id), false);
+            break;
+
+        case IF_DV_3G: // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispVectorReg(id->idReg3(), id->idInsOpt(), true);
+            emitDispImm(emitGetInsSC(id), false);
+            break;
+
+        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
+                       // subhn{2}, pmull{2})
+            if ((ins == INS_addhn) || (ins == INS_addhn2) || (ins == INS_raddhn) || (ins == INS_raddhn2) ||
+                (ins == INS_subhn) || (ins == INS_subhn2) || (ins == INS_rsubhn) || (ins == INS_rsubhn2))
+            {
+                // These are "high narrow" instruction i.e. their source registers are "wider" than the destination
+                // register.
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg3(), optWidenElemsize(id->idInsOpt()), false);
+            }
+            else
+            {
+                if (((ins == INS_pmull) && (id->idInsOpt() == INS_OPTS_1D)) ||
+                    (ins == (INS_pmull2) && (id->idInsOpt() == INS_OPTS_2D)))
+                {
+                    // PMULL Vd.1Q, Vn.1D, Vm.1D
+                    // PMULL2 Vd.1Q, Vn.2D, Vm.2D
+                    printf("%s.1q, ", emitVectorRegName(id->idReg1()));
+                }
+                else
+                {
+                    emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
+                }
+
+                if ((ins == INS_saddw) || (ins == INS_saddw2) || (ins == INS_uaddw) || (ins == INS_uaddw2) ||
+                    (ins == INS_ssubw) || (ins == INS_ssubw2) || (ins == INS_usubw) || (ins == INS_usubw2))
+                {
+                    emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), true);
+                }
+                else
+                {
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                }
+
+                emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
+            }
+            break;
+
+        case IF_DV_3HI:
+            emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+            elemsize = optGetElemsize(id->idInsOpt());
             emitDispVectorRegIndex(id->idReg3(), elemsize, emitGetInsSC(id), false);
             break;
 
@@ -12294,6 +13042,8 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
             case IF_LS_2C:
             case IF_LS_2D:
             case IF_LS_2E:
+            case IF_LS_2F:
+            case IF_LS_2G:
             case IF_LS_3A:
             case IF_LS_3F:
             case IF_LS_3G:
@@ -12386,6 +13136,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_BI_1B: // tbz, tbnz
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_LARGEJMP: // bcc + b
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         case IF_BR_1B: // blr, br_tail
@@ -12498,6 +13253,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_1C;
                     break;
 
+                case INS_smaddl:
+                case INS_smsubl:
+                case INS_smnegl:
+                case INS_umaddl:
+                case INS_umsubl:
+                case INS_umnegl:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);
@@ -12508,6 +13273,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_DI_1A: // cmp, cmn
         case IF_DI_1C: // tst
         case IF_DI_1D: // mov reg, imm(N,r,s)
+        case IF_DI_1E: // adr, adrp
         case IF_DI_1F: // ccmp, ccmn
         case IF_DI_2A: // add, adds, suv, subs
         case IF_DI_2C: // and, ands, eor, orr
@@ -12518,12 +13284,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_DR_2D: // cinc, cinv, cneg
         case IF_DR_2E: // mov, neg, mvn, negs
-
-        case IF_DI_1E: // adr, adrp
         case IF_DI_1B: // mov, movk, movn, movz
 
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_LARGEADR: // adrp + add
+        case IF_LARGELDC: // adrp + ldr
+
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         // ALU, shift by immediate
@@ -12539,7 +13310,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         // ALU, extend, scale
         case IF_DR_3C: // add, adc, and, bic, eon, eor, orn, orr, sub, sbc
         case IF_DR_2C: // cmp
-        case IF_DR_2J: // sha1h
+        case IF_DV_2U: // sha1h
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
@@ -12684,22 +13455,375 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_LS_2D: // ld1                         (vector - multiple structures)
-        case IF_LS_2E: // ld1                         (vector - single structure)
-        case IF_LS_3F: // ld1                         (vector - multiple structures)
-        case IF_LS_3G: // ld1                         (vector - single structure)
-            if (id->idOpSize() == EA_8BYTE)
+        case IF_LS_2D:
+        case IF_LS_2E:
+        case IF_LS_3F:
+            // Load/Store multiple structures
+            // Load single structure and replicate
+            switch (ins)
             {
-                // D-form
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_3C;
+                case INS_ld1:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_ld1_2regs:
+                case INS_ld2:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_6C;
+                    }
+                    break;
+
+                case INS_ld1_3regs:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_5C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+                        result.insLatency    = PERFSCORE_LATENCY_8C;
+                    }
+                    break;
+
+                case INS_ld1_4regs:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_6C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_8C;
+                        result.insLatency    = PERFSCORE_LATENCY_10C;
+                    }
+                    break;
+
+                case INS_ld3:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        if (optGetElemsize(id->idInsOpt()) == EA_4BYTE)
+                        {
+                            // S
+                            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                            result.insLatency    = PERFSCORE_LATENCY_5C;
+                        }
+                        else
+                        {
+                            // B/H
+                            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                            result.insLatency    = PERFSCORE_LATENCY_6C;
+                        }
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        if ((optGetElemsize(id->idInsOpt()) == EA_4BYTE) ||
+                            (optGetElemsize(id->idInsOpt()) == EA_8BYTE))
+                        {
+                            // S/D
+                            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+                            result.insLatency    = PERFSCORE_LATENCY_8C;
+                        }
+                        else
+                        {
+                            // B/H
+                            result.insThroughput = PERFSCORE_THROUGHPUT_7C;
+                            result.insLatency    = PERFSCORE_LATENCY_9C;
+                        }
+                    }
+                    break;
+
+                case INS_ld4:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        if (optGetElemsize(id->idInsOpt()) == EA_4BYTE)
+                        {
+                            // S
+                            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                            result.insLatency    = PERFSCORE_LATENCY_6C;
+                        }
+                        else
+                        {
+                            // B/H
+                            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+                            result.insLatency    = PERFSCORE_LATENCY_7C;
+                        }
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        if ((optGetElemsize(id->idInsOpt()) == EA_4BYTE) ||
+                            (optGetElemsize(id->idInsOpt()) == EA_8BYTE))
+                        {
+                            // S/D
+                            result.insThroughput = PERFSCORE_THROUGHPUT_8C;
+                            result.insLatency    = PERFSCORE_LATENCY_10C;
+                        }
+                        else
+                        {
+                            // B/H
+                            result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                            result.insLatency    = PERFSCORE_LATENCY_11C;
+                        }
+                    }
+                    break;
+
+                case INS_ld1r:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_ld2r:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    break;
+
+                case INS_ld3r:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_5C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_ld4r:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_6C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_st1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case INS_st1_2regs:
+                case INS_st2:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_1C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    break;
+
+                case INS_st1_3regs:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    break;
+
+                case INS_st1_4regs:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_st3:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_st4:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    else
+                    {
+                        assert(id->idOpSize() == EA_16BYTE);
+                        if (optGetElemsize(id->idInsOpt()) == EA_8BYTE)
+                        {
+                            // D
+                            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                            result.insLatency    = PERFSCORE_LATENCY_4C;
+                        }
+                        else
+                        {
+                            // B/H/S
+                            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+                            result.insLatency    = PERFSCORE_LATENCY_5C;
+                        }
+                    }
+                    break;
+
+                default:
+                    unreached();
             }
-            else
+            break;
+
+        case IF_LS_2F:
+        case IF_LS_2G:
+        case IF_LS_3G:
+            // Load/Store single structure
+            switch (ins)
             {
-                // Q-form
-                assert(id->idOpSize() == EA_16BYTE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                result.insLatency    = PERFSCORE_LATENCY_4C;
+                case INS_ld1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_ld2:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    break;
+
+                case INS_ld3:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_5C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_ld4:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_6C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_st1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case INS_st2:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_1C;
+                    }
+                    break;
+
+                case INS_st3:
+                case INS_st4:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                default:
+                    unreached();
             }
             break;
 
@@ -12792,6 +13916,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fcmgt:
                 case INS_fcmle:
                 case INS_fcmlt:
+                case INS_frecpe:
+                case INS_frsqrte:
+                case INS_urecpe:
+                case INS_ursqrte:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
@@ -12839,8 +13967,27 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     break;
 
+                case INS_fcmeq:
+                case INS_fcmge:
+                case INS_fcmgt:
+                case INS_fcmle:
+                case INS_fcmlt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
                 case INS_fcvtl:
+                case INS_fcvtl2:
+                case INS_fcvtn:
+                case INS_fcvtn2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_frecpe:
+                case INS_frecpx:
+                case INS_frsqrte:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
@@ -12869,9 +14016,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_DV_2Q: // faddp, fmaxnmp, fmaxp, fminnmp, fminp (scalar)
         case IF_DV_2R: // fmaxnmv, fmaxv, fminnmv, fminv
-        case IF_DV_2S: // addp (scalar)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_DV_2S: // addp (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
             break;
 
         case IF_DV_3B: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX
@@ -12887,6 +14038,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fsub:
                 case INS_fmul:
                 case INS_fmulx:
+                case INS_fmla:
+                case INS_fmls:
+                case INS_frecps:
+                case INS_frsqrts:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
@@ -12896,7 +14051,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fmaxp:
                 case INS_fminnmp:
                 case INS_fminp:
-                case INS_addp:
                     if (id->idOpSize() == EA_16BYTE)
                     {
                         // Q-form
@@ -12964,18 +14118,21 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
-        case IF_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX (scalar)
+        case IF_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX (scalar)
             switch (ins)
             {
                 case INS_fadd:
                 case INS_fsub:
-                case INS_fmin:
-                case INS_fminnm:
+                case INS_fabd:
                 case INS_fmax:
                 case INS_fmaxnm:
+                case INS_fmin:
+                case INS_fminnm:
                 case INS_fmul:
                 case INS_fmulx:
                 case INS_fnmul:
+                case INS_frecps:
+                case INS_frsqrts:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
@@ -13041,9 +14198,48 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_DV_3C: // mov,and, bic, eor, mov,mvn, orn, bsl, bit, bif (vector)
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
+        case IF_DV_3C: // mov,and, bic, eor, mov,mvn, orn, bsl, bit, bif,
+                       // tbl, tbx (vector)
+            switch (ins)
+            {
+                case INS_tbl:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+                case INS_tbl_2regs:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+                case INS_tbl_3regs:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+                case INS_tbl_4regs:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                case INS_tbx:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+                case INS_tbx_2regs:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+                case INS_tbx_3regs:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_5X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                case INS_tbx_4regs:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_6X;
+                    result.insLatency    = PERFSCORE_LATENCY_5C;
+                    break;
+                default:
+                    // All other instructions
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+            }
             break;
 
         case IF_DV_2E: // mov, dup (scalar)
@@ -13091,6 +14287,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_cmgt:
                 case INS_cmhi:
                 case INS_cmhs:
+                case INS_shadd:
+                case INS_shsub:
+                case INS_srhadd:
                 case INS_smax:
                 case INS_smaxp:
                 case INS_smin:
@@ -13099,6 +14298,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_umaxp:
                 case INS_umin:
                 case INS_uminp:
+                case INS_uhadd:
+                case INS_uhsub:
+                case INS_urhadd:
                 case INS_uzp1:
                 case INS_uzp2:
                 case INS_zip1:
@@ -13121,10 +14323,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency = PERFSCORE_LATENCY_2C;
                     break;
 
+                case INS_addp:
                 case INS_cmtst:
                 case INS_pmul:
                 case INS_sabd:
+                case INS_sqadd:
+                case INS_sqsub:
                 case INS_uabd:
+                case INS_uqadd:
+                case INS_uqsub:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     break;
@@ -13149,12 +14356,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_DV_3DI: // mul, mla, mls (scalar by elem)
+        case IF_DV_3DI: // fmul, fmulx, fmla, fmls (scalar by elem)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
         case IF_DV_3E: // add, sub, cmeq, cmge, cmgt, cmhi, cmhs, ctst, (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_3G: // ext
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
@@ -13256,10 +14468,26 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
                 case INS_rshrn:
                 case INS_rshrn2:
+                case INS_ssra:
                 case INS_srshr:
                 case INS_urshr:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                case INS_usra:
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    break;
+
+                case INS_srsra:
+                case INS_ursra:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
                 default:
@@ -13304,9 +14532,132 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
+        case IF_DV_3H:  // addhn{2}, raddhn{2}, rsubhn{2}, sabal{2}, sabdl{2}, saddl{2}, saddw{2}, ssubl{2}, ssubw{2},
+                        // pmull{2}
+        case IF_DV_3HI: // subhn{2}, uabal{2}, uabdl{2}, uaddl{2}, uaddw{2}, usubl{2}, usubw{2}
+            switch (ins)
+            {
+                case INS_addhn:
+                case INS_addhn2:
+                case INS_sabdl:
+                case INS_sabdl2:
+                case INS_saddl:
+                case INS_saddl2:
+                case INS_saddw:
+                case INS_saddw2:
+                case INS_ssubl:
+                case INS_ssubl2:
+                case INS_ssubw:
+                case INS_ssubw2:
+                case INS_subhn:
+                case INS_subhn2:
+                case INS_uabdl:
+                case INS_uabdl2:
+                case INS_uaddl:
+                case INS_uaddl2:
+                case INS_uaddw:
+                case INS_uaddw2:
+                case INS_usubl:
+                case INS_usubl2:
+                case INS_usubw:
+                case INS_usubw2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_raddhn:
+                case INS_raddhn2:
+                case INS_rsubhn:
+                case INS_rsubhn2:
+                case INS_sabal:
+                case INS_sabal2:
+                case INS_uabal:
+                case INS_uabal2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_smlal:
+                case INS_smlal2:
+                case INS_smlsl:
+                case INS_smlsl2:
+                case INS_smull:
+                case INS_smull2:
+                case INS_umlal:
+                case INS_umlal2:
+                case INS_umlsl:
+                case INS_umlsl2:
+                case INS_umull:
+                case INS_umull2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_pmull:
+                case INS_pmull2:
+                    if ((id->idInsOpt() == INS_OPTS_8B) || (id->idInsOpt() == INS_OPTS_16B))
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    else
+                    {
+                        // Crypto polynomial (64x64) multiply long
+                        assert((id->idInsOpt() == INS_OPTS_1D) || (id->idInsOpt() == INS_OPTS_2D));
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
         case IF_SI_0A: // brk   imm16
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_DV_2T: // addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv
+            switch (ins)
+            {
+                case INS_addv:
+                case INS_saddlv:
+                case INS_uaddlv:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_smaxv:
+                case INS_sminv:
+                case INS_umaxv:
+                case INS_uminv:
+                case INS_sha256h2:
+                case INS_sha256su1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_sadalp:
+                case INS_uadalp:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_saddlp:
+                case INS_uaddlp:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         default:

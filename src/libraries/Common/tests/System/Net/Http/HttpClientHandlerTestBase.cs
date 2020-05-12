@@ -32,13 +32,21 @@ namespace System.Net.Http.Functional.Tests
         protected virtual HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
         protected HttpClient CreateHttpClient(HttpMessageHandler handler) =>
-            new HttpClient(handler) { DefaultRequestVersion = UseVersion };
+            new HttpClient(handler) {
+#if !NETFRAMEWORK
+                DefaultRequestVersion = UseVersion
+#endif
+            };
 
         protected static HttpClient CreateHttpClient(string useVersionString) =>
             CreateHttpClient(CreateHttpClientHandler(useVersionString), useVersionString);
 
         protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useVersionString) =>
-            new HttpClient(handler) { DefaultRequestVersion = Version.Parse(useVersionString) };
+            new HttpClient(handler) {
+#if !NETFRAMEWORK
+                DefaultRequestVersion = Version.Parse(useVersionString)
+#endif
+            };
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion);
 
@@ -51,8 +59,10 @@ namespace System.Net.Http.Functional.Tests
         {
             return useVersion.Major switch
             {
-#if NETCOREAPP
+#if NETCOREAPP || WINHTTPHANDLER_TEST
+#if HTTP3
                 3 => Http3LoopbackServerFactory.Singleton,
+#endif
                 2 => Http2LoopbackServerFactory.Singleton,
 #endif
                 _ => Http11LoopbackServerFactory.Singleton
@@ -79,7 +89,11 @@ namespace System.Net.Http.Functional.Tests
                 wrappedHandler = new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion);
             }
 
-            return new HttpClient(wrappedHandler) { DefaultRequestVersion = remoteServer.HttpVersion };
+            return new HttpClient(wrappedHandler) {
+#if !NETFRAMEWORK
+                DefaultRequestVersion = remoteServer.HttpVersion
+#endif
+            };
         }
 
         private sealed class VersionCheckerHttpHandler : DelegatingHandler

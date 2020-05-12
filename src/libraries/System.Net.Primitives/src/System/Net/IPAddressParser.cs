@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -16,7 +18,7 @@ namespace System.Net
     {
         private const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
 
-        internal static IPAddress Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
+        internal static IPAddress? Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
         {
             if (ipSpan.Contains(':'))
             {
@@ -209,7 +211,7 @@ namespace System.Net
             }
             if (isValid || (end != ipSpan.Length))
             {
-                string scopeId = null;
+                string? scopeId = null;
                 IPv6AddressHelper.Parse(ipSpan, numbers, 0, ref scopeId);
 
                 if (scopeId?.Length > 1)

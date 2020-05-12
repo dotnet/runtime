@@ -523,7 +523,7 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler.UnobservedTaskException -= handler;
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/39155")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30122")]
         [Fact]
         public static async Task AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion()
         {

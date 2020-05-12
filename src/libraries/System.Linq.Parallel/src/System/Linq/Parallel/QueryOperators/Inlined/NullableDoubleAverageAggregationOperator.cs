@@ -117,7 +117,7 @@ namespace System.Linq.Parallel
                     if (current.HasValue)
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         checked
                         {

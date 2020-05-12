@@ -9,6 +9,7 @@
 
 #include <Security/Security.h>
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Enumerate the certificates which are root trusted by the user.
 
@@ -19,7 +20,7 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateUserRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+PALEXPORT int32_t AppleCryptoNative_StoreEnumerateUserRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
 /*
 Enumerate the certificates which are root trusted by the machine ("admin" and "system" domains).
@@ -34,7 +35,7 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+PALEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
 /*
 Enumerate the certificates which are disallowed by the user.
@@ -46,7 +47,7 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateUserDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+PALEXPORT int32_t AppleCryptoNative_StoreEnumerateUserDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
 /*
 Enumerate the certificates which are disallowed by the machine ("admin" and "system" domains).
@@ -61,4 +62,5 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+PALEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+#endif

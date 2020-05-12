@@ -12,6 +12,7 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -97,7 +98,7 @@ namespace System
         {
             if (m_value)
             {
-                if ((uint)destination.Length > 3) // uint cast, per https://github.com/dotnet/coreclr/issues/18688
+                if ((uint)destination.Length > 3) // uint cast, per https://github.com/dotnet/runtime/issues/10596
                 {
                     destination[0] = 'T';
                     destination[1] = 'r';
@@ -223,7 +224,7 @@ namespace System
 
         // Determines whether a String represents true or false.
         //
-        public static bool TryParse(string? value, out bool result)
+        public static bool TryParse([NotNullWhen(true)] string? value, out bool result)
         {
             if (value == null)
             {

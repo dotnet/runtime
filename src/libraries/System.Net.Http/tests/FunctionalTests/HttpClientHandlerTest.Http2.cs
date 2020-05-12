@@ -1636,6 +1636,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_PendingSend_SendsReset(bool waitForData)
         {
             var cts = new CancellationTokenSource();
+            var rstReceived = new TaskCompletionSource<bool>();
 
             string content = new string('*', 300);
             var stream = new CustomContent.SlowTestStream(Encoding.UTF8.GetBytes(content), null, count: 60);
@@ -1649,8 +1650,8 @@ namespace System.Net.Http.Functional.Tests
 
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.SendAsync(request, cts.Token));
 
-                    // Delay for a bit to ensure that the RST_STREAM for the previous request is sent before the next request starts.
-                    await Task.Delay(2000);
+                    // Wait until the RST_STREAM for the previous request is received before the next request starts.
+                    await rstReceived.Task.TimeoutAfter(TimeSpan.FromSeconds(60));
 
                     // Send another request to verify that connection is still functional.
                     request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -1678,7 +1679,9 @@ namespace System.Net.Http.Functional.Tests
                     frameCount++;
                  } while (frame.Type != FrameType.RstStream);
 
-                 Assert.Equal(1, frame.StreamId);
+                Assert.Equal(1, frame.StreamId);
+
+                rstReceived.SetResult(true);
 
                 frame = null;
                 (streamId, requestData) = await connection.ReadAndParseRequestHeaderAsync();
@@ -1770,7 +1773,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2Connection_Should_Wrap_HttpContent_InvalidOperationException()
         {
-            // test for https://github.com/dotnet/corefx/issues/39295
+            // test for https://github.com/dotnet/runtime/issues/30187
             var throwingContent = new ThrowingContent(() => new InvalidOperationException());
 
             var tcs = new TaskCompletionSource<bool>();
@@ -1798,7 +1801,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2Connection_Should_Not_Wrap_HttpContent_CustomException()
         {
             // Assert existing HttpConnection behaviour in which custom HttpContent exception types are surfaced as-is
-            // c.f. https://github.com/dotnet/corefx/issues/39295#issuecomment-510569836
+            // c.f. https://github.com/dotnet/runtime/issues/30187#issuecomment-510569836
 
             var throwingContent = new ThrowingContent(() => new CustomException());
 
@@ -1869,8 +1872,9 @@ namespace System.Net.Http.Functional.Tests
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (var handler = new SocketsHttpHandler())
-                using (HttpClient client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient(handler))
                 {
+                    TestHelper.EnableUnencryptedHttp2IfNecessary(handler);
                     handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                     // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
                     handler.Expect100ContinueTimeout = TimeSpan.FromSeconds(300);
@@ -1898,7 +1902,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(responseContent));
 
                 // Client should send empty request body
-                byte[] requestBody = await connection.ReadBodyAsync();
+                byte[] requestBody = await connection.ReadBodyAsync(expectEndOfStream:true);
                 Assert.Null(requestBody);
 
                 await connection.ShutdownIgnoringErrorsAsync(streamId);
@@ -1936,13 +1940,11 @@ namespace System.Net.Http.Functional.Tests
             public void Complete()
             {
                 _waitForCompletion.SetResult(true);
-                _waitForCompletion = null;
             }
 
             public void Fail(Exception e)
             {
                 _waitForCompletion.SetException(e);
-                _waitForCompletion = null;
             }
         }
 

@@ -12,7 +12,6 @@
 
 #include "peimage.h"
 #include "eeconfig.h"
-#include "apithreadstress.h"
 #include <objbase.h>
 
 #include "eventtrace.h"
@@ -206,29 +205,6 @@ BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
 
     return ((BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase());
 }
-
-    // Thread stress
-#if 0
-class OpenFileStress : APIThreadStress
-    {
-      public:
-        const SString &path;
-    PEImage::Layout layout;
-    OpenFileStress(const SString &path, PEImage::Layout layout)
-          : path(path), layout(layout)
-        {
-            WRAPPER_NO_CONTRACT;
-
-            path.Normalize();
-        }
-        void Invoke()
-        {
-            WRAPPER_NO_CONTRACT;
-
-            PEImageHolder result(PEImage::Open(path, layout));
-        }
-};
-#endif
 
 ULONG PEImage::Release()
 {

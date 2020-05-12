@@ -18,7 +18,7 @@ namespace System.Net.Security
     {
         private static int s_uniqueNameInteger = 123;
 
-        private SslAuthenticationOptions _sslAuthenticationOptions;
+        private SslAuthenticationOptions? _sslAuthenticationOptions;
 
         private int _nestedAuth;
 
@@ -34,34 +34,18 @@ namespace System.Net.Security
         // This is set on the first packet to figure out the framing style.
         private Framing _framing = Framing.Unknown;
 
-        // SSL3/TLS protocol frames definitions.
-        private enum FrameType : byte
-        {
-            ChangeCipherSpec = 20,
-            Alert = 21,
-            Handshake = 22,
-            AppData = 23
-        }
+        private TlsAlertDescription _lastAlertDescription;
+        private TlsFrameHandshakeInfo _lastFrame;
 
-        //
-        // This block is used to rule the >>re-handshakes<< that are concurrent with read/write I/O requests.
-        //
-        private const int LockNone = 0;
-        private const int LockWrite = 1;
-        private const int LockHandshake = 2;
-        private const int LockPendingWrite = 3;
-        private const int LockRead = 4;
-        private const int LockPendingRead = 6;
+        private readonly object _handshakeLock = new object();
+        private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
         private const int FrameOverhead = 32;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private ArrayBuffer _handshakeBuffer;
 
-        private int _lockWriteState;
-        private int _lockReadState;
-
-        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback localCallback)
+        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
         {
             ThrowIfExceptional();
 
@@ -84,7 +68,7 @@ namespace System.Net.Security
             try
             {
                 _sslAuthenticationOptions = new SslAuthenticationOptions(sslClientAuthenticationOptions, remoteCallback, localCallback);
-                if (_sslAuthenticationOptions.TargetHost.Length == 0)
+                if (_sslAuthenticationOptions.TargetHost!.Length == 0)
                 {
                     _sslAuthenticationOptions.TargetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);
                 }
@@ -125,9 +109,9 @@ namespace System.Net.Security
 
         private bool RemoteCertRequired => _context == null || _context.RemoteCertRequired;
 
-        private object SyncLock => _context;
+        private object? SyncLock => _context;
 
-        private int MaxDataSize => _context.MaxDataSize;
+        private int MaxDataSize => _context!.MaxDataSize;
 
         private void SetException(Exception e)
         {
@@ -155,7 +139,7 @@ namespace System.Net.Security
             // subsequent Reads first check if the context is still available.
             if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0)
             {
-                byte[] buffer = _internalBuffer;
+                byte[]? buffer = _internalBuffer;
                 if (buffer != null)
                 {
                     _internalBuffer = null;
@@ -175,7 +159,18 @@ namespace System.Net.Security
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return _context.Encrypt(buffer, ref outBuffer, out outSize);
+
+            lock (_handshakeLock)
+            {
+                if (_handshakeWaiter != null)
+                {
+                    outSize = 0;
+                    // avoid waiting under lock.
+                    return new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
+                }
+
+                return _context!.Encrypt(buffer, ref outBuffer, out outSize);
+            }
         }
 
         private SecurityStatusPal DecryptData()
@@ -184,28 +179,29 @@ namespace System.Net.Security
             return PrivateDecryptData(_internalBuffer, ref _decryptedBytesOffset, ref _decryptedBytesCount);
         }
 
-        private SecurityStatusPal PrivateDecryptData(byte[] buffer, ref int offset, ref int count)
+        private SecurityStatusPal PrivateDecryptData(byte[]? buffer, ref int offset, ref int count)
         {
-            return _context.Decrypt(buffer, ref offset, ref count);
+            return _context!.Decrypt(buffer, ref offset, ref count);
         }
 
         //
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private Task ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
+        private Task? ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
-            Task result = null;
+            Task? result;
 
             ThrowIfExceptional();
 
             if (isAsync)
             {
-                result = ForceAuthenticationAsync(new AsyncSslIOAdapter(this, cancellationToken), _context.IsServer, null, isApm);
+                result = ForceAuthenticationAsync(new AsyncSslIOAdapter(this, cancellationToken), _context!.IsServer, null, isApm);
             }
             else
             {
-                ForceAuthenticationAsync(new SyncSslIOAdapter(this), _context.IsServer, null).GetAwaiter().GetResult();
+                ForceAuthenticationAsync(new SyncSslIOAdapter(this), _context!.IsServer, null).GetAwaiter().GetResult();
+                result = null;
             }
 
             return result;
@@ -214,25 +210,26 @@ namespace System.Net.Security
         //
         // This is used to reply on re-handshake when received SEC_I_RENEGOTIATE on Read().
         //
-        private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, byte[] buffer)
+        private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, byte[]? buffer)
             where TIOAdapter : ISslIOAdapter
         {
-            lock (SyncLock)
+            try
             {
-                // Note we are already inside the read, so checking for already going concurrent handshake.
-                _lockReadState = LockHandshake;
+                await ForceAuthenticationAsync(adapter, receiveFirst: false, buffer).ConfigureAwait(false);
             }
-
-            await ForceAuthenticationAsync(adapter, receiveFirst: false, buffer).ConfigureAwait(false);
-            FinishHandshakeRead(LockNone);
+            finally
+            {
+                _handshakeWaiter!.SetResult(true);
+                _handshakeWaiter = null;
+            }
         }
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
-        private async Task ForceAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[] reAuthenticationData, bool isApm = false)
+        private async Task ForceAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false)
              where TIOAdapter : ISslIOAdapter
         {
-            _framing = Framing.Unknown;
             ProtocolToken message;
+            bool handshakeCompleted = false;
 
             if (reAuthenticationData == null)
             {
@@ -248,10 +245,10 @@ namespace System.Net.Security
 
                 if (!receiveFirst)
                 {
-                    message = _context.NextMessage(reAuthenticationData);
+                    message = _context!.NextMessage(reAuthenticationData);
                     if (message.Size > 0)
                     {
-                        await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
+                        await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
                     }
 
                     if (message.Failed)
@@ -259,23 +256,52 @@ namespace System.Net.Security
                         // tracing done in NextMessage()
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
+
+                    if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    {
+                        // We can finish renegotiation without doing any read.
+                        handshakeCompleted = true;
+                    }
                 }
 
-                _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
-                do
+                if (!handshakeCompleted)
+                {
+                    // get ready to receive first frame
+                    _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
+                }
+
+                while (!handshakeCompleted)
                 {
                     message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
                     if (message.Size > 0)
                     {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
-                        await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
+                        await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
                     }
 
                     if (message.Failed)
                     {
+                        if (_lastFrame.Header.Type == TlsContentType.Handshake && message.Size == 0)
+                        {
+                            // If we failed without OS sending out alert, inject one here to be consistent across platforms.
+                            byte[] alert = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
+                            await adapter.WriteAsync(alert, 0, alert.Length).ConfigureAwait(false);
+                        }
+                        else if (_lastFrame.Header.Type == TlsContentType.Alert && _lastAlertDescription != TlsAlertDescription.CloseNotify &&
+                                 message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
+                        {
+                            // Improve generic message and show details if we failed because of TLS Alert.
+                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastAlertDescription.ToString()), message.GetException());
+                        }
+
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
-                } while (message.Status.ErrorCode != SecurityStatusPalErrorCode.OK);
+                    else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    {
+                        // We can finish renegotiation without doing any read.
+                        handshakeCompleted = true;
+                    }
+                }
 
                 if (_handshakeBuffer.ActiveLength > 0)
                 {
@@ -285,7 +311,7 @@ namespace System.Net.Security
                     _internalBufferCount = _handshakeBuffer.ActiveLength;
                 }
 
-                ProtocolToken alertToken = null;
+                ProtocolToken? alertToken = null;
                 if (!CompleteHandshake(ref alertToken))
                 {
                     SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
@@ -326,28 +352,92 @@ namespace System.Net.Security
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            int frameSize= GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
-            if (frameSize < 0)
+            if (_framing == Framing.BeforeSSL3)
+            {
+#pragma warning disable 0618
+                _lastFrame.Header.Version = SslProtocols.Ssl2;
+#pragma warning restore 0618
+                _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+            }
+            else
+            {
+                TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame.Header);
+            }
+
+            if (_lastFrame.Header.Length < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
             }
 
+            // Header length is content only so we must add header size as well.
+            int frameSize = _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
             if (_handshakeBuffer.ActiveLength < frameSize)
             {
                 await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
             }
 
-            ProtocolToken token = _context.NextMessage(_handshakeBuffer.ActiveReadOnlySpan.Slice(0, frameSize));
+            // At this point, we have at least one TLS frame.
+            if (_lastFrame.Header.Type == TlsContentType.Alert)
+            {
+                TlsAlertLevel level = 0;
+                if (TlsFrameHelper.TryGetAlertInfo(_handshakeBuffer.ActiveReadOnlySpan, ref level, ref _lastAlertDescription))
+                {
+                    if (NetEventSource.IsEnabled && _lastAlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Fail(this, $"Received TLS alert {_lastAlertDescription}");
+                }
+            }
+            else if (_lastFrame.Header.Type == TlsContentType.Handshake)
+            {
+                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null)
+                {
+                    // Process SNI from Client Hello message
+                    TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame);
+                    _sslAuthenticationOptions.TargetHost = _lastFrame.TargetName;
+                }
+            }
+
+            return ProcessBlob(frameSize);
+        }
+
+        // Calls crypto on received data. No IO inside.
+        private ProtocolToken ProcessBlob(int frameSize)
+        {
+            int chunkSize = frameSize;
+
+            ReadOnlySpan<byte> availableData = _handshakeBuffer.ActiveReadOnlySpan;
+            // Discard() does not touch data, it just increases start index so next
+            // ActiveSpan will exclude the "discarded" data.
             _handshakeBuffer.Discard(frameSize);
 
-            return token;
+            // Often more TLS messages fit into same packet. Get as many complete frames as we can.
+            while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
+            {
+                TlsFrameHeader nextHeader = default;
+
+                if (!TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref nextHeader))
+                {
+                    break;
+                }
+
+                frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
+                if (nextHeader.Type == TlsContentType.AppData || frameSize > _handshakeBuffer.ActiveLength)
+                {
+                    // We don't have full frame left or we already have app data which needs to be processed by decrypt.
+                    break;
+                }
+
+                chunkSize += frameSize;
+                _handshakeBuffer.Discard(frameSize);
+            }
+
+            return _context!.NextMessage(availableData.Slice(0, chunkSize));
         }
 
         //
         //  This is to reset auth state on remote side.
         //  If this write succeeds we will allow auth retrying.
         //
-        private void SendAuthResetSignal(ProtocolToken message, ExceptionDispatchInfo exception)
+        private void SendAuthResetSignal(ProtocolToken? message, ExceptionDispatchInfo exception)
         {
             SetException(exception.SourceException);
 
@@ -359,7 +449,7 @@ namespace System.Net.Security
                 exception.Throw();
             }
 
-            InnerStream.Write(message.Payload, 0, message.Size);
+            InnerStream.Write(message.Payload!, 0, message.Size);
 
             exception.Throw();
         }
@@ -372,14 +462,14 @@ namespace System.Net.Security
         //
         // - Returns false if failed to verify the Remote Cert
         //
-        private bool CompleteHandshake(ref ProtocolToken alertToken)
+        private bool CompleteHandshake(ref ProtocolToken? alertToken)
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
 
-            _context.ProcessHandshakeSuccess();
+            _context!.ProcessHandshakeSuccess();
 
-            if (!_context.VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, ref alertToken))
+            if (!_context.VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, ref alertToken))
             {
                 _handshakeCompleted = false;
 
@@ -393,169 +483,6 @@ namespace System.Net.Security
             if (NetEventSource.IsEnabled)
                 NetEventSource.Exit(this, true);
             return true;
-        }
-
-        private void FinishHandshakeRead(int newState)
-        {
-            lock (SyncLock)
-            {
-                // Lock is redundant here. Included for clarity.
-                int lockState = Interlocked.Exchange(ref _lockReadState, newState);
-
-                if (lockState != LockPendingRead)
-                {
-                    return;
-                }
-
-                _lockReadState = LockRead;
-            }
-        }
-
-        // Returns:
-        // -1    - proceed
-        // 0     - queued
-        // X     - some bytes are ready, no need for IO
-        private int CheckEnqueueRead(Memory<byte> buffer)
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-
-            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
-            if (lockState != LockHandshake)
-            {
-                // Proceed, no concurrent handshake is ongoing so no need for a lock.
-                return -1;
-            }
-
-            LazyAsyncResult lazyResult = null;
-            lock (SyncLock)
-            {
-                // Check again under lock.
-                if (_lockReadState != LockHandshake)
-                {
-                    // The other thread has finished before we grabbed the lock.
-                    _lockReadState = LockRead;
-                    return -1;
-                }
-
-                _lockReadState = LockPendingRead;
-            }
-            // Need to exit from lock before waiting.
-            lazyResult.InternalWaitForCompletion();
-            ThrowIfExceptionalOrNotAuthenticated();
-            return -1;
-        }
-
-        private ValueTask<int> CheckEnqueueReadAsync(Memory<byte> buffer)
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-
-            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
-            if (lockState != LockHandshake)
-            {
-                // Proceed, no concurrent handshake is ongoing so no need for a lock.
-                return new ValueTask<int>(-1);
-            }
-
-            lock (SyncLock)
-            {
-                // Check again under lock.
-                if (_lockReadState != LockHandshake)
-                {
-                    // The other thread has finished before we grabbed the lock.
-                    _lockReadState = LockRead;
-                    return new ValueTask<int>(-1);
-                }
-
-                _lockReadState = LockPendingRead;
-                TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>(buffer, TaskCreationOptions.RunContinuationsAsynchronously);
-                return new ValueTask<int>(taskCompletionSource.Task);
-            }
-        }
-
-        private Task CheckEnqueueWriteAsync()
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-
-            // Clear previous request.
-            int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockWrite, LockNone);
-            if (lockState != LockHandshake)
-            {
-                return Task.CompletedTask;
-            }
-
-            lock (SyncLock)
-            {
-                if (_lockWriteState != LockHandshake)
-                {
-                    ThrowIfExceptionalOrNotAuthenticated();
-                    return Task.CompletedTask;
-                }
-
-                _lockWriteState = LockPendingWrite;
-                TaskCompletionSource<int> completionSource = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-                return completionSource.Task;
-            }
-        }
-
-        private void CheckEnqueueWrite()
-        {
-            // Clear previous request.
-            int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockWrite, LockNone);
-            if (lockState != LockHandshake)
-            {
-                // Proceed with write.
-                return;
-            }
-
-            LazyAsyncResult lazyResult = null;
-            lock (SyncLock)
-            {
-                if (_lockWriteState != LockHandshake)
-                {
-                    // Handshake has completed before we grabbed the lock.
-                    ThrowIfExceptionalOrNotAuthenticated();
-                    return;
-                }
-
-                _lockWriteState = LockPendingWrite;
-            }
-
-            // Need to exit from lock before waiting.
-            lazyResult.InternalWaitForCompletion();
-            ThrowIfExceptionalOrNotAuthenticated();
-            return;
-        }
-
-        private void FinishWrite()
-        {
-            int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockNone, LockWrite);
-            if (lockState != LockHandshake)
-            {
-                return;
-            }
-        }
-
-        private void FinishHandshake(Exception e)
-        {
-            lock (SyncLock)
-            {
-                if (e != null)
-                {
-                    SetException(e);
-                }
-
-                // Release read if any.
-                FinishHandshakeRead(LockNone);
-
-                // If there is a pending write we want to keep it's lock state.
-                int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockNone, LockHandshake);
-                if (lockState != LockPendingWrite)
-                {
-                    return;
-                }
-
-                _lockWriteState = LockWrite;
-            }
         }
 
         private async ValueTask WriteAsyncChunked<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
@@ -572,22 +499,38 @@ namespace System.Net.Security
         private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TIOAdapter : struct, ISslIOAdapter
         {
-            // Request a write IO slot.
-            Task ioSlot = writeAdapter.WriteLockAsync();
-            if (!ioSlot.IsCompletedSuccessfully)
-            {
-                // Operation is async and has been queued, return.
-                return WaitForWriteIOSlot(writeAdapter, ioSlot, buffer);
-            }
-
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
             byte[] outBuffer = rentedBuffer;
 
-            SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
+            SecurityStatusPal status;
+            int encryptedBytes;
+            while (true)
+            {
+                status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
+
+                // TryAgain should be rare, when renegotiation happens exactly when we want to write.
+                if (status.ErrorCode != SecurityStatusPalErrorCode.TryAgain)
+                {
+                    break;
+                }
+
+                TaskCompletionSource<bool>? waiter = _handshakeWaiter;
+                if (waiter != null)
+                {
+                    Task waiterTask = writeAdapter.WaitAsync(waiter);
+                    // We finished synchronously waiting for renegotiation. We can try again immediately.
+                    if (waiterTask.IsCompletedSuccessfully)
+                    {
+                        continue;
+                    }
+
+                    // We need to wait asynchronously as well as for the write when EncryptData is finished.
+                    return WaitAndWriteAsync(writeAdapter, buffer, waiterTask, rentedBuffer);
+                }
+            }
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                // Re-handshake status is not supported.
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
                 return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status)))));
             }
@@ -596,21 +539,51 @@ namespace System.Net.Security
             if (t.IsCompletedSuccessfully)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
-                FinishWrite();
                 return t;
             }
             else
             {
-                return CompleteAsync(t, rentedBuffer);
+                return CompleteWriteAsync(t, rentedBuffer);
             }
 
-            async ValueTask WaitForWriteIOSlot(TIOAdapter wAdapter, Task lockTask, ReadOnlyMemory<byte> buff)
+            async ValueTask WaitAndWriteAsync(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer, Task waitTask, byte[] rentedBuffer)
             {
-                await lockTask.ConfigureAwait(false);
-                await WriteSingleChunk(wAdapter, buff).ConfigureAwait(false);
+                byte[]? bufferToReturn = rentedBuffer;
+                byte[] outBuffer = rentedBuffer;
+                try
+                {
+                    // Wait for renegotiation to finish.
+                    await waitTask.ConfigureAwait(false);
+
+                    SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
+                    if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
+                    {
+                        // No need to hold on the buffer any more.
+                        ArrayPool<byte>.Shared.Return(bufferToReturn);
+                        bufferToReturn = null;
+                        // Call WriteSingleChunk() recursively to avoid code duplication.
+                        // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
+                        await WriteSingleChunk(writeAdapter, buffer).ConfigureAwait(false);
+                    }
+                    else if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    {
+                        await writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        throw new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status));
+                    }
+                }
+                finally
+                {
+                    if (bufferToReturn != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(bufferToReturn);
+                    }
+                }
             }
 
-            async ValueTask CompleteAsync(ValueTask writeTask, byte[] bufferToReturn)
+            async ValueTask CompleteWriteAsync(ValueTask writeTask, byte[] bufferToReturn)
             {
                 try
                 {
@@ -619,7 +592,6 @@ namespace System.Net.Security
                 finally
                 {
                     ArrayPool<byte>.Shared.Return(bufferToReturn);
-                    FinishWrite();
                 }
             }
         }
@@ -682,58 +654,93 @@ namespace System.Net.Security
             {
                 while (true)
                 {
-                    int copyBytes;
                     if (_decryptedBytesCount != 0)
                     {
-                        copyBytes = CopyDecryptedData(buffer);
-
-                        return copyBytes;
-                    }
-
-                    copyBytes = await adapter.ReadLockAsync(buffer).ConfigureAwait(false);
-                    if (copyBytes > 0)
-                    {
-                        return copyBytes;
+                        return CopyDecryptedData(buffer);
                     }
 
                     ResetReadBuffer();
-                    int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-                    if (readBytes == 0)
-                    {
-                        return 0;
-                    }
 
-                    int payloadBytes = GetFrameSize(new ReadOnlySpan<byte>(_internalBuffer, _internalOffset, readBytes));
+                    // Read the next frame header.
+                    if (_internalBufferCount < SecureChannel.ReadHeaderSize)
+                    {
+                        // We don't have enough bytes buffered, so issue an initial read to try to get enough.  This is
+                        // done in this method both to better consolidate error handling logic (the first read is the special
+                        // case that needs to differentiate reading 0 from > 0, and everything else needs to throw if it
+                        // doesn't read enough), and to minimize the chances that in the common case the FillBufferAsync
+                        // helper needs to yield and allocate a state machine.
+                        int readBytes = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
+                        if (readBytes == 0)
+                        {
+                            return 0;
+                        }
+
+                        _internalBufferCount += readBytes;
+                        if (_internalBufferCount < SecureChannel.ReadHeaderSize)
+                        {
+                            await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
+                        }
+                    }
+                    Debug.Assert(_internalBufferCount >= SecureChannel.ReadHeaderSize);
+
+                    // Parse the frame header to determine the payload size (which includes the header size).
+                    int payloadBytes = TlsFrameHelper.GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                     if (payloadBytes < 0)
                     {
                         throw new IOException(SR.net_frame_read_size);
                     }
 
-                    readBytes = await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
-                    Debug.Assert(readBytes >= 0);
-                    if (readBytes == 0)
+                    // Read in the rest of the payload if we don't have it.
+                    if (_internalBufferCount < payloadBytes)
                     {
-                        throw new IOException(SR.net_io_eof);
+                        await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
                     }
 
-                    // At this point, readBytes contains the size of the header plus body.
                     // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
                     // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                     _decryptedBytesOffset = _internalOffset;
                     _decryptedBytesCount = payloadBytes;
-                    SecurityStatusPal status = DecryptData();
+
+                    SecurityStatusPal status;
+                    lock (_handshakeLock)
+                    {
+                        status = DecryptData();
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
+                        {
+                            // The status indicates that peer wants to renegotiate. (Windows only)
+                            // In practice, there can be some other reasons too - like TLS1.3 session creation
+                            // of alert handling. We need to pass the data to lsass and it is not safe to do parallel
+                            // write any more as that can change TLS state and the EncryptData() can fail in strange ways.
+
+                            // To handle this we call DecryptData() under lock and we create TCS waiter.
+                            // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
+                            // Instead it will wait synchronously or asynchronously and it will try again after the wait.
+                            // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over.
+                            // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
+                            // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
+
+
+                            if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13)
+                            {
+                                // create TCS only if we plan to proceed. If not, we will throw in block bellow outside of the lock.
+                                // Tls1.3 does not have renegotiation. However on Windows this error code is used
+                                // for session management e.g. anything lsass needs to see.
+                                _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            }
+                        }
+                    }
 
                     // Treat the bytes we just decrypted as consumed
                     // Note, we won't do another buffer read until the decrypted bytes are processed
-                    ConsumeBufferedBytes(readBytes);
+                    ConsumeBufferedBytes(payloadBytes);
 
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
-                        byte[] extraBuffer = null;
+                        byte[]? extraBuffer = null;
                         if (_decryptedBytesCount != 0)
                         {
                             extraBuffer = new byte[_decryptedBytesCount];
-                            Buffer.BlockCopy(_internalBuffer, _decryptedBytesOffset, extraBuffer, 0, _decryptedBytesCount);
+                            Buffer.BlockCopy(_internalBuffer!, _decryptedBytesOffset, extraBuffer, 0, _decryptedBytesCount);
 
                             _decryptedBytesCount = 0;
                         }
@@ -743,7 +750,8 @@ namespace System.Net.Security
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
-                            if (!_sslAuthenticationOptions.AllowRenegotiation)
+                            // We determine above that we will not process it.
+                            if (_handshakeWaiter == null)
                             {
                                 if (NetEventSource.IsEnabled) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
                                 throw new IOException(SR.net_ssl_io_renego);
@@ -826,68 +834,26 @@ namespace System.Net.Security
                         return minSize;
                     }
 
-                    int bytesNeeded = minSize - _handshakeBuffer.ActiveLength;
                     task = adap.ReadAsync(_handshakeBuffer.AvailableMemory);
                 }
             }
         }
 
-        private ValueTask<int> FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
+        private async ValueTask FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int numBytesRequired)
             where TIOAdapter : ISslIOAdapter
         {
-            if (_internalBufferCount >= minSize)
-            {
-                return new ValueTask<int>(minSize);
-            }
+            Debug.Assert(_internalBufferCount > 0);
+            Debug.Assert(_internalBufferCount < numBytesRequired);
 
-            int initialCount = _internalBufferCount;
-            do
+            while (_internalBufferCount < numBytesRequired)
             {
-                ValueTask<int> t = adapter.ReadAsync(new Memory<byte>(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount));
-                if (!t.IsCompletedSuccessfully)
+                int bytesRead = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
+                if (bytesRead == 0)
                 {
-                    return InternalFillBufferAsync(adapter, t, minSize, initialCount);
-                }
-                int bytes = t.Result;
-                if (bytes == 0)
-                {
-                    if (_internalBufferCount != initialCount)
-                    {
-                        // We read some bytes, but not as many as we expected, so throw.
-                        throw new IOException(SR.net_io_eof);
-                    }
-
-                    return new ValueTask<int>(0);
+                    throw new IOException(SR.net_io_eof);
                 }
 
-                _internalBufferCount += bytes;
-            } while (_internalBufferCount < minSize);
-
-            return new ValueTask<int>(minSize);
-
-            async ValueTask<int> InternalFillBufferAsync(TIOAdapter adap, ValueTask<int> task, int min, int initial)
-            {
-                while (true)
-                {
-                    int b = await task.ConfigureAwait(false);
-                    if (b == 0)
-                    {
-                        if (_internalBufferCount != initial)
-                        {
-                            throw new IOException(SR.net_io_eof);
-                        }
-
-                        return 0;
-                    }
-
-                    _internalBufferCount += b;
-                    if (_internalBufferCount >= min)
-                    {
-                        return min;
-                    }
-
-                    task = adap.ReadAsync(new Memory<byte>(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount));
-                }
+                _internalBufferCount += bytesRead;
             }
         }
 
@@ -916,8 +882,6 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                FinishWrite();
-
                 if (e is IOException || (e is OperationCanceledException && writeAdapter.CancellationToken.IsCancellationRequested))
                 {
                     throw;
@@ -949,7 +913,7 @@ namespace System.Net.Security
             int copyBytes = Math.Min(_decryptedBytesCount, buffer.Length);
             if (copyBytes != 0)
             {
-                new Span<byte>(_internalBuffer, _decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
+                new ReadOnlySpan<byte>(_internalBuffer, _decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
 
                 _decryptedBytesOffset += copyBytes;
                 _decryptedBytesCount -= copyBytes;
@@ -981,13 +945,14 @@ namespace System.Net.Security
         {
             if (buffer == null || buffer.Length < size)
             {
-                byte[] saved = buffer;
+                byte[]? saved = buffer;
                 buffer = new byte[size];
                 if (saved != null && copyCount != 0)
                 {
                     Buffer.BlockCopy(saved, 0, buffer, 0, copyCount);
                 }
             }
+
             return buffer;
         }
 
@@ -1078,8 +1043,8 @@ namespace System.Net.Security
             }
 
             // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
-            if (bytes[0] == (byte)FrameType.Handshake || bytes[0] == (byte)FrameType.AppData
-                || bytes[0] == (byte)FrameType.Alert)
+            if (bytes[0] == (byte)TlsContentType.Handshake || bytes[0] == (byte)TlsContentType.AppData
+                || bytes[0] == (byte)TlsContentType.Alert)
             {
                 if (bytes.Length < 3)
                 {
@@ -1160,7 +1125,7 @@ namespace System.Net.Security
             }
 
             // When server has replied the framing is already fixed depending on the prior client packet
-            if (!_context.IsServer || _framing == Framing.Unified)
+            if (!_context!.IsServer || _framing == Framing.Unified)
             {
                 return Framing.BeforeSSL3;
             }
@@ -1168,10 +1133,7 @@ namespace System.Net.Security
             return Framing.Unified; // Will use Ssl2 just for this frame.
         }
 
-        //
-        // This is called from SslStream class too.
         // Returns TLS Frame size.
-        //
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
             if (NetEventSource.IsEnabled)
@@ -1184,7 +1146,7 @@ namespace System.Net.Security
                 case Framing.BeforeSSL3:
                     if (buffer.Length < 2)
                     {
-                        throw new System.IO.IOException(SR.net_ssl_io_frame);
+                        throw new IOException(SR.net_ssl_io_frame);
                     }
                     // Note: Cannot detect version mismatch for <= SSL2
 
@@ -1203,7 +1165,7 @@ namespace System.Net.Security
                 case Framing.SinceSSL3:
                     if (buffer.Length < 5)
                     {
-                        throw new System.IO.IOException(SR.net_ssl_io_frame);
+                        throw new IOException(SR.net_ssl_io_frame);
                     }
 
                     payloadSize = ((buffer[3] << 8) | buffer[4]) + 5;

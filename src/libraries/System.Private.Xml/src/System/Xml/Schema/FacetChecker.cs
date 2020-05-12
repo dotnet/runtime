@@ -156,7 +156,7 @@ namespace System.Xml.Schema
                 if (_firstPattern == true)
                 {
                     _regStr = new StringBuilder();
-                    _regStr.Append("(");
+                    _regStr.Append('(');
                     _regStr.Append(facet.Value);
                     _pattern_facet = facet;
                     _firstPattern = false;
@@ -309,7 +309,7 @@ namespace System.Xml.Schema
 
                 if ((_baseFixedFlags & RestrictionFlags.TotalDigits) != 0)
                 {
-                    if (!_datatype.IsEqual(_datatype.Restriction.TotalDigits, _derivedRestriction.TotalDigits))
+                    if (_datatype.Restriction.TotalDigits != _derivedRestriction.TotalDigits)
                     {
                         throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
@@ -334,11 +334,18 @@ namespace System.Xml.Schema
                 {
                     throw new XmlSchemaException(SR.Sch_FractionDigitsFacetInvalid, SR.Sch_FractionDigitsNotOnDecimal, facet);
                 }
+                if ((_baseFixedFlags & RestrictionFlags.FractionDigits) != 0)
+                {
+                    if (_datatype.Restriction.FractionDigits != _derivedRestriction.FractionDigits)
+                    {
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
+                    }
+                }
                 if ((_baseFlags & RestrictionFlags.FractionDigits) != 0)
                 {
                     if (_derivedRestriction.FractionDigits > _datatype.Restriction.FractionDigits)
                     {
-                        throw new XmlSchemaException(SR.Sch_TotalDigitsMismatch, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_FractionDigitsMismatch, string.Empty);
                     }
                 }
                 SetFlag(facet, RestrictionFlags.FractionDigits);
@@ -357,12 +364,12 @@ namespace System.Xml.Schema
                     }
                     try
                     {
-                        _regStr.Append(")");
+                        _regStr.Append(')');
                         string tempStr = _regStr.ToString();
                         if (tempStr.Contains('|'))
                         { // ordinal compare
-                            _regStr.Insert(0, "(");
-                            _regStr.Append(")");
+                            _regStr.Insert(0, '(');
+                            _regStr.Append(')');
                         }
                         _derivedRestriction.Patterns.Add(new Regex(Preprocess(_regStr.ToString())));
                     }
@@ -701,7 +708,7 @@ namespace System.Xml.Schema
             private static string Preprocess(string pattern)
             {
                 StringBuilder bufBld = new StringBuilder();
-                bufBld.Append("^");
+                bufBld.Append('^');
 
                 char[] source = pattern.ToCharArray();
                 int length = pattern.Length;
@@ -739,7 +746,7 @@ namespace System.Xml.Schema
                     bufBld.Append(source, copyPosition, length - copyPosition);
                 }
 
-                bufBld.Append("$");
+                bufBld.Append('$');
                 return bufBld.ToString();
             }
 

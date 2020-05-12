@@ -78,10 +78,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public TValue Lookup(TKey key)
         {
-            TValue value;
-            bool found = TryGetValue(key, out value);
-
-            if (!found)
+            if (!TryGetValue(key, out TValue value))
             {
                 Debug.Assert(key != null);
                 Exception e = new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));

@@ -24,30 +24,24 @@ CompileResult::CompileResult()
     allocMemDets.roDataSize    = 0;
     allocMemDets.xcptnsCount   = 0;
     allocMemDets.flag          = (CorJitAllocMemFlag)0;
-    allocMemDets.hotCodeBlock  = 0;
-    allocMemDets.coldCodeBlock = 0;
-    allocMemDets.roDataBlock   = 0;
+    allocMemDets.hotCodeBlock  = nullptr;
+    allocMemDets.coldCodeBlock = nullptr;
+    allocMemDets.roDataBlock   = nullptr;
 
-    allocGCInfoDets.retval = 0;
+    allocGCInfoDets.retval = nullptr;
     allocGCInfoDets.size   = 0;
 
-    codeHeap = nullptr;
+    memoryTracker = nullptr;
 }
 
 CompileResult::~CompileResult()
 {
 #define LWM(map, key, value)                                                                                           \
-    if (map != nullptr)                                                                                                \
-        delete map;
+    delete map;
 #include "crlwmlist.h"
 
-    if (CallTargetTypes != nullptr)
-        delete CallTargetTypes;
-
-#ifndef TARGET_UNIX // PAL doesn't have HeapDestroy()
-    if (codeHeap != nullptr)
-        ::HeapDestroy(codeHeap);
-#endif // !TARGET_UNIX
+    delete CallTargetTypes;
+    delete memoryTracker;
 }
 
 // Is the CompileResult empty? Define this as whether all the maps that store information given by the JIT are empty.
@@ -64,16 +58,12 @@ bool CompileResult::IsEmpty()
     return isEmpty;
 }
 
-HANDLE CompileResult::getCodeHeap()
+// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
+void* CompileResult::allocateMemory(size_t sizeInBytes)
 {
-    if (codeHeap == nullptr)
-        codeHeap = ::HeapCreate(0, 0, 0);
-    if (codeHeap == nullptr)
-    {
-        LogError("CompileResult::codeHeap() failed to acquire a heap.");
-        __debugbreak();
-    }
-    return codeHeap;
+    if (memoryTracker == nullptr)
+        memoryTracker = new MemoryTracker();
+    return memoryTracker->allocate(sizeInBytes);
 }
 
 void CompileResult::recAssert(const char* assertText)
@@ -323,6 +313,38 @@ bool CompileResult::repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorD
     *cVars = (ULONG32)value.cVars;
     *vars  = (ICorDebugInfo::NativeVarInfo*)SetVars->GetBuffer(value.vars_offset);
 
+    return true;
+}
+
+// Note - Ownership of patchpointInfo is transfered with this call. In replay icorjitinfo we should free it.
+void CompileResult::recSetPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    if (SetPatchpointInfo == nullptr)
+        SetPatchpointInfo = new LightWeightMap<DWORD, Agnostic_SetPatchpointInfo>();
+
+    Agnostic_SetPatchpointInfo value;
+    value.index = (DWORD)SetPatchpointInfo->AddBuffer((const unsigned char*) patchpointInfo, patchpointInfo->PatchpointInfoSize());
+    SetPatchpointInfo->Add(0, value);
+}
+void CompileResult::dmpSetPatchpointInfo(DWORD key, const Agnostic_SetPatchpointInfo& value)
+{
+    PatchpointInfo* patchpointInfo = (PatchpointInfo*)SetPatchpointInfo->GetBuffer(value.index);
+    printf("SetPatchpointInfo key %u, index %u{", key, value.index);
+    // todo -- dump contents
+    printf("}");
+    SetPatchpointInfo->Unlock();
+}
+bool CompileResult::repSetPatchpointInfo(PatchpointInfo** patchpointInfo)
+{
+    if ((SetPatchpointInfo == nullptr) || (SetPatchpointInfo->GetCount() == 0))
+    {
+        *patchpointInfo = nullptr;
+        return false;
+    }
+
+    Agnostic_SetPatchpointInfo value;
+    value = SetPatchpointInfo->Get(0);
+    *patchpointInfo = (PatchpointInfo*)SetPatchpointInfo->GetBuffer(value.index);
     return true;
 }
 

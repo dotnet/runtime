@@ -14,11 +14,12 @@ namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
+        private const int InitialBufferSize = 2048;
         private SafeSslHandle _sslContext;
         private Interop.AppleCrypto.SSLReadFunc _readCallback;
         private Interop.AppleCrypto.SSLWriteFunc _writeCallback;
-        private Queue<byte> _fromConnection = new Queue<byte>();
-        private Queue<byte> _toConnection = new Queue<byte>();
+        private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
+        private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
 
@@ -141,10 +142,12 @@ namespace System.Net
         {
             if (disposing)
             {
-                if (null != _sslContext)
+                SafeSslHandle sslContext = _sslContext;
+                if (null != sslContext)
                 {
-                    _sslContext.Dispose();
-                    _sslContext = null;
+                    _inputBuffer.Dispose();
+                    _outputBuffer.Dispose();
+                    sslContext.Dispose();
                 }
             }
 
@@ -153,18 +156,15 @@ namespace System.Net
 
         private unsafe int WriteToConnection(void* connection, byte* data, void** dataLength)
         {
-            ulong toWrite = (ulong)*dataLength;
-            byte* readFrom = data;
+            ulong length = (ulong)*dataLength;
+            Debug.Assert(length <= int.MaxValue);
 
-            lock (_toConnection)
-            {
-                while (toWrite > 0)
-                {
-                    _toConnection.Enqueue(*readFrom);
-                    readFrom++;
-                    toWrite--;
-                }
-            }
+            int toWrite = (int)length;
+            var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
+
+            _outputBuffer.EnsureAvailableSpace(toWrite);
+            inputBuffer.CopyTo(_outputBuffer.AvailableSpan);
+            _outputBuffer.Commit(toWrite);
 
             // Since we can enqueue everything, no need to re-assign *dataLength.
             const int noErr = 0;
@@ -175,78 +175,51 @@ namespace System.Net
         {
             const int noErr = 0;
             const int errSSLWouldBlock = -9803;
-
             ulong toRead = (ulong)*dataLength;
 
             if (toRead == 0)
             {
-
                 return noErr;
             }
 
             uint transferred = 0;
 
-            lock (_fromConnection)
+            if (_inputBuffer.ActiveLength == 0)
             {
-
-                if (_fromConnection.Count == 0)
-                {
-
-                    *dataLength = (void*)0;
-                    return errSSLWouldBlock;
-                }
-
-                byte* writePos = data;
-
-                while (transferred < toRead && _fromConnection.Count > 0)
-                {
-                    *writePos = _fromConnection.Dequeue();
-                    writePos++;
-                    transferred++;
-                }
+                *dataLength = (void*)0;
+                return errSSLWouldBlock;
             }
+
+            int limit = Math.Min((int)toRead, _inputBuffer.ActiveLength);
+
+            _inputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(data, limit));
+            _inputBuffer.Discard(limit);
+            transferred = (uint)limit;
 
             *dataLength = (void*)transferred;
             return noErr;
         }
 
-        internal void Write(byte[] buf, int offset, int count)
-        {
-            Debug.Assert(buf != null);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert(count <= buf.Length - offset);
-
-            Write(buf.AsSpan(offset, count));
-        }
-
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            lock (_fromConnection)
-            {
-                foreach (byte b in buf)
-                {
-                    _fromConnection.Enqueue(b);
-                }
-            }
+            _inputBuffer.EnsureAvailableSpace(buf.Length);
+            buf.CopyTo(_inputBuffer.AvailableSpan);
+            _inputBuffer.Commit(buf.Length);
         }
 
-        internal int BytesReadyForConnection => _toConnection.Count;
+        internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
-        internal byte[] ReadPendingWrites()
+        internal byte[]? ReadPendingWrites()
         {
-            lock (_toConnection)
+            if (_outputBuffer.ActiveLength == 0)
             {
-                if (_toConnection.Count == 0)
-                {
-                    return null;
-                }
-
-                byte[] data = _toConnection.ToArray();
-                _toConnection.Clear();
-
-                return data;
+                return null;
             }
+
+            byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
+            _outputBuffer.Discard(_outputBuffer.ActiveLength);
+
+            return buffer;
         }
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)
@@ -256,17 +229,12 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            lock (_toConnection)
-            {
-                int limit = Math.Min(count, _toConnection.Count);
+            int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
-                for (int i = 0; i < limit; i++)
-                {
-                    buf[offset + i] = _toConnection.Dequeue();
-                }
+            _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
+            _outputBuffer.Discard(limit);
 
-                return limit;
-            }
+            return limit;
         }
 
         private static readonly SslProtocols[] s_orderedSslProtocols = new SslProtocols[5]
@@ -356,7 +324,7 @@ namespace System.Net
 
             X509Chain chain = TLSCertificateExtensions.BuildNewChain(
                 certificate,
-                includeClientApplicationPolicy: false);
+                includeClientApplicationPolicy: false)!;
 
             using (chain)
             {
@@ -377,7 +345,7 @@ namespace System.Net
 
                 for (int i = 0; i < intermediateCerts.Length; i++)
                 {
-                    X509Certificate2 intermediateCert = elements[i + 1].Certificate;
+                    X509Certificate2 intermediateCert = elements[i + 1].Certificate!;
 
                     if (intermediateCert.HasPrivateKey)
                     {
@@ -402,7 +370,7 @@ namespace System.Net
                 // And since the intermediateCerts could have been new instances, Dispose them, too
                 for (int i = 0; i < elements.Count; i++)
                 {
-                    elements[i].Certificate.Dispose();
+                    elements[i].Certificate!.Dispose();
 
                     if (i < intermediateCerts.Length)
                     {

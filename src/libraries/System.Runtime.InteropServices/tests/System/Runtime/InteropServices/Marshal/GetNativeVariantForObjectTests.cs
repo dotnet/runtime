@@ -15,71 +15,6 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetNativeVariantForObjectTests
     {
-        public static IEnumerable<object[]> GetNativeVariantForObject_RoundtrippingPrimitives_TestData()
-        {
-            yield return new object[] { null, VarEnum.VT_EMPTY, IntPtr.Zero };
-
-            yield return new object[] { (sbyte)10, VarEnum.VT_I1, (IntPtr)10 };
-            yield return new object[] { (short)10, VarEnum.VT_I2, (IntPtr)10 };
-            yield return new object[] { 10, VarEnum.VT_I4, (IntPtr)10 };
-            yield return new object[] { (long)10, VarEnum.VT_I8, (IntPtr)10 };
-            yield return new object[] { (byte)10, VarEnum.VT_UI1, (IntPtr)10 };
-            yield return new object[] { (ushort)10, VarEnum.VT_UI2, (IntPtr)10 };
-            yield return new object[] { (uint)10, VarEnum.VT_UI4, (IntPtr)10 };
-            yield return new object[] { (ulong)10, VarEnum.VT_UI8, (IntPtr)10 };
-
-            yield return new object[] { true, VarEnum.VT_BOOL, (IntPtr)ushort.MaxValue };
-            yield return new object[] { false, VarEnum.VT_BOOL, IntPtr.Zero };
-
-            yield return new object[] { 10m, VarEnum.VT_DECIMAL, (IntPtr)10 };
-
-            // Well known types.
-            DateTime dateTime = new DateTime(1899, 12, 30).AddDays(20);
-            yield return new object[] { dateTime, VarEnum.VT_DATE, (IntPtr)(-1) };
-
-            yield return new object[] { DBNull.Value, VarEnum.VT_NULL, IntPtr.Zero };
-            yield return new object[] { DBNull.Value, VarEnum.VT_NULL, IntPtr.Zero };
-
-            // Arrays.
-            yield return new object[] { new sbyte[] { 10, 11, 12 }, (VarEnum)8208, (IntPtr)(-1) };
-            yield return new object[] { new short[] { 10, 11, 12 }, (VarEnum)8194, (IntPtr)(-1) };
-            yield return new object[] { new int[] { 10, 11, 12 }, (VarEnum)8195, (IntPtr)(-1) };
-            yield return new object[] { new long[] { 10, 11, 12 }, (VarEnum)8212, (IntPtr)(-1) };
-            yield return new object[] { new byte[] { 10, 11, 12 }, (VarEnum)8209, (IntPtr)(-1) };
-            yield return new object[] { new ushort[] { 10, 11, 12 }, (VarEnum)8210, (IntPtr)(-1) };
-            yield return new object[] { new uint[] { 10, 11, 12 }, (VarEnum)8211, (IntPtr)(-1) };
-            yield return new object[] { new ulong[] { 10, 11, 12 }, (VarEnum)8213, (IntPtr)(-1) };
-
-            yield return new object[] { new bool[] { true, false }, (VarEnum)8203, (IntPtr)(-1) };
-
-            yield return new object[] { new float[] { 10, 11, 12 }, (VarEnum)8196, (IntPtr)(-1) };
-            yield return new object[] { new double[] { 10, 11, 12 }, (VarEnum)8197, (IntPtr)(-1) };
-            yield return new object[] { new decimal[] { 10m, 11m, 12m }, (VarEnum)8206, (IntPtr)(-1) };
-
-            yield return new object[] { new object[] { 10, 11, 12 }, (VarEnum)8204, (IntPtr)(-1) };
-            yield return new object[] { new string[] { "a", "b", "c" }, (VarEnum)8200, (IntPtr)(-1) };
-
-            yield return new object[] { new TimeSpan[] { new TimeSpan(10) }, (VarEnum)8228, (IntPtr)(-1) };
-            yield return new object[] { new int[,] { { 10 }, { 11 }, { 12 } }, (VarEnum)8195, (IntPtr)(-1) };
-
-            // Objects.
-            var nonGenericClass = new NonGenericClass();
-            yield return new object[] { nonGenericClass, VarEnum.VT_DISPATCH, (IntPtr)(-1) };
-
-            var valueType = new StructWithValue { Value = 10 };
-            yield return new object[] { valueType, VarEnum.VT_RECORD, (IntPtr)(-1) };
-
-            var genericClass = new GenericClass<string>();
-            yield return new object[] { new object[] { nonGenericClass, genericClass, null }, (VarEnum)8204, (IntPtr)(-1) };
-
-            yield return new object[] { new object[] { valueType, null }, (VarEnum)8204, (IntPtr)(-1) };
-
-            // Delegate.
-            MethodInfo method = typeof(GetNativeVariantForObjectTests).GetMethod(nameof(NonGenericMethod), BindingFlags.NonPublic | BindingFlags.Static);
-            Delegate d = method.CreateDelegate(typeof(NonGenericDelegate));
-            yield return new object[] { d, VarEnum.VT_DISPATCH, (IntPtr)(-1) };
-        }
-
         private void GetNativeVariantForObject_RoundtrippingPrimitives_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue)
         {
             GetNativeVariantForObject_ValidObject_Success(primitive, expectedVarType, expectedValue, primitive);
@@ -100,14 +35,23 @@ namespace System.Runtime.InteropServices.Tests
             // because the native variant type uses mscorlib type VarEnum to store what type it contains.
             // To get back the original char, use GetObjectForNativeVariant<ushort> and cast to char.
             yield return new object[] { 'a', VarEnum.VT_UI2, (IntPtr)'a', (ushort)97 };
-            yield return new object[] { new char[] { 'a', 'b', 'c' }, (VarEnum)8210, (IntPtr)(-1), new ushort[] { 'a', 'b', 'c' } };
+            yield return new object[] { new char[] { 'a', 'b', 'c' }, (VarEnum.VT_ARRAY | VarEnum.VT_UI2), (IntPtr)(-1), new ushort[] { 'a', 'b', 'c' } };
 
-            // IntPtr/UIntPtr objects are converted to int/uint respectively.
+            // IntPtr/UIntPtr objects are _always_ converted to int/uint respectively.
             yield return new object[] { (IntPtr)10, VarEnum.VT_INT, (IntPtr)10, 10 };
             yield return new object[] { (UIntPtr)10, VarEnum.VT_UINT, (IntPtr)10, (uint)10 };
 
-            yield return new object[] { new IntPtr[] { (IntPtr)10, (IntPtr)11, (IntPtr)12 }, (VarEnum)8212, (IntPtr)(-1), new long[] { 10, 11, 12 } };
-            yield return new object[] { new UIntPtr[] { (UIntPtr)10, (UIntPtr)11, (UIntPtr)12 }, (VarEnum)8213, (IntPtr)(-1), new ulong[] { 10, 11, 12 } };
+            // IntPtr/UIntPtr objects in arrays are converted to the appropriate pointer width.
+            if (IntPtr.Size == 4)
+            {
+                yield return new object[] { new IntPtr[] { (IntPtr)10, (IntPtr)11, (IntPtr)12 }, (VarEnum.VT_ARRAY | VarEnum.VT_INT), (IntPtr)(-1), new int[] { 10, 11, 12 } };
+                yield return new object[] { new UIntPtr[] { (UIntPtr)10, (UIntPtr)11, (UIntPtr)12 }, (VarEnum.VT_ARRAY | VarEnum.VT_UINT), (IntPtr)(-1), new uint[] { 10, 11, 12 } };
+            }
+            else
+            {
+                yield return new object[] { new IntPtr[] { (IntPtr)10, (IntPtr)11, (IntPtr)12 }, (VarEnum.VT_ARRAY | VarEnum.VT_I8), (IntPtr)(-1), new long[] { 10, 11, 12 } };
+                yield return new object[] { new UIntPtr[] { (UIntPtr)10, (UIntPtr)11, (UIntPtr)12 }, (VarEnum.VT_ARRAY | VarEnum.VT_UI8), (IntPtr)(-1), new ulong[] { 10, 11, 12 } };
+            }
 
             // DateTime is converted to VT_DATE which is offset from December 30, 1899.
             DateTime earlyDateTime = new DateTime(1899, 12, 30);
@@ -115,47 +59,28 @@ namespace System.Runtime.InteropServices.Tests
 
             // Wrappers.
             yield return new object[] { new UnknownWrapper(10), VarEnum.VT_UNKNOWN, IntPtr.Zero, null };
-            if (!PlatformDetection.IsNetCore)
-            {
-                yield return new object[] { new DispatchWrapper(10), VarEnum.VT_DISPATCH, IntPtr.Zero, null };
-            }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(10));
-            }
+            yield return new object[] { new DispatchWrapper[] { new DispatchWrapper(null), new DispatchWrapper(null) }, (VarEnum.VT_ARRAY | VarEnum.VT_DISPATCH), (IntPtr)(-1), new object[] { null, null } };
             yield return new object[] { new ErrorWrapper(10), VarEnum.VT_ERROR, (IntPtr)10, 10 };
             yield return new object[] { new CurrencyWrapper(10), VarEnum.VT_CY, (IntPtr)100000, 10m };
             yield return new object[] { new BStrWrapper("a"), VarEnum.VT_BSTR, (IntPtr)(-1), "a" };
             yield return new object[] { new BStrWrapper(null), VarEnum.VT_BSTR, IntPtr.Zero, null };
 
-            yield return new object[] { new UnknownWrapper[] { new UnknownWrapper(null), new UnknownWrapper(10) }, (VarEnum)8205, (IntPtr)(-1), new object[] { null, 10 }  };
-            if (!PlatformDetection.IsNetCore)
-            {
-                yield return new object[] { new DispatchWrapper[] { new DispatchWrapper(null), new DispatchWrapper(10) }, (VarEnum)8201, (IntPtr)(-1), new object[] { null, 10 } };
-            }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(10));
-            }
-            yield return new object[] { new ErrorWrapper[] { new ErrorWrapper(10) }, (VarEnum)8202, (IntPtr)(-1), new uint[] { 10 } };
-            yield return new object[] { new CurrencyWrapper[] { new CurrencyWrapper(10) }, (VarEnum)8198, (IntPtr)(-1), new decimal[] { 10 } };
-            yield return new object[] { new BStrWrapper[] { new BStrWrapper("a"), new BStrWrapper(null), new BStrWrapper("c") }, (VarEnum)8200, (IntPtr)(-1), new string[] { "a", null, "c" } };
+            yield return new object[] { new UnknownWrapper[] { new UnknownWrapper(null), new UnknownWrapper(10) }, (VarEnum.VT_ARRAY | VarEnum.VT_UNKNOWN), (IntPtr)(-1), new object[] { null, 10 }  };
+            yield return new object[] { new ErrorWrapper[] { new ErrorWrapper(10) }, (VarEnum.VT_ARRAY | VarEnum.VT_ERROR), (IntPtr)(-1), new uint[] { 10 } };
+            yield return new object[] { new CurrencyWrapper[] { new CurrencyWrapper(10) }, (VarEnum.VT_ARRAY | VarEnum.VT_CY), (IntPtr)(-1), new decimal[] { 10 } };
+            yield return new object[] { new BStrWrapper[] { new BStrWrapper("a"), new BStrWrapper(null), new BStrWrapper("c") }, (VarEnum.VT_ARRAY | VarEnum.VT_BSTR), (IntPtr)(-1), new string[] { "a", null, "c" } };
 
             // Objects.
             var nonGenericClass = new NonGenericClass();
-            yield return new object[] { new NonGenericClass[] { nonGenericClass, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { nonGenericClass, null } };
+            yield return new object[] { new NonGenericClass[] { nonGenericClass, null }, (VarEnum.VT_ARRAY | VarEnum.VT_DISPATCH), (IntPtr)(-1), new object[] { nonGenericClass, null } };
 
             var genericClass = new GenericClass<string>();
-            yield return new object[] { new GenericClass<string>[] { genericClass, null }, (VarEnum)8205, (IntPtr)(-1), new object[] { genericClass, null } };
-
-            var nonGenericStruct = new NonGenericStruct();
-            yield return new object[] { new NonGenericStruct[] { nonGenericStruct }, (VarEnum)8228, (IntPtr)(-1), new NonGenericStruct[] { nonGenericStruct } };
+            yield return new object[] { new GenericClass<string>[] { genericClass, null }, (VarEnum.VT_ARRAY | VarEnum.VT_UNKNOWN), (IntPtr)(-1), new object[] { genericClass, null } };
 
             var classWithInterface = new ClassWithInterface();
             var structWithInterface = new StructWithInterface();
-            yield return new object[] { new ClassWithInterface[] { classWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, null } };
-            yield return new object[] { new StructWithInterface[] { structWithInterface }, (VarEnum)8228, (IntPtr)(-1), new StructWithInterface[] { structWithInterface } };
-            yield return new object[] { new INonGenericInterface[] { classWithInterface, structWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, structWithInterface, null } };
+            yield return new object[] { new ClassWithInterface[] { classWithInterface, null }, (VarEnum.VT_ARRAY | VarEnum.VT_DISPATCH), (IntPtr)(-1), new object[] { classWithInterface, null } };
+            yield return new object[] { new INonGenericInterface[] { classWithInterface, structWithInterface, null }, (VarEnum.VT_ARRAY | VarEnum.VT_DISPATCH), (IntPtr)(-1), new object[] { classWithInterface, structWithInterface, null } };
 
             // Enums.
             yield return new object[] { SByteEnum.Value2, VarEnum.VT_I1, (IntPtr)1, (sbyte)1 };
@@ -167,14 +92,14 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { UInt32Enum.Value2, VarEnum.VT_UI4, (IntPtr)1, (uint)1 };
             yield return new object[] { UInt64Enum.Value2, VarEnum.VT_UI8, (IntPtr)1, (ulong)1 };
 
-            yield return new object[] { new SByteEnum[] { SByteEnum.Value2 }, (VarEnum)8208, (IntPtr)(-1), new sbyte[] { 1 } };
-            yield return new object[] { new Int16Enum[] { Int16Enum.Value2 }, (VarEnum)8194, (IntPtr)(-1), new short[] { 1 } };
-            yield return new object[] { new Int32Enum[] { Int32Enum.Value2 }, (VarEnum)8195, (IntPtr)(-1), new int[] { 1 } };
-            yield return new object[] { new Int64Enum[] { Int64Enum.Value2 }, (VarEnum)8212, (IntPtr)(-1), new long[] { 1 } };
-            yield return new object[] { new ByteEnum[] { ByteEnum.Value2 }, (VarEnum)8209, (IntPtr)(-1), new byte[] { 1 } };
-            yield return new object[] { new UInt16Enum[] { UInt16Enum.Value2 }, (VarEnum)8210, (IntPtr)(-1), new ushort[] { 1 } };
-            yield return new object[] { new UInt32Enum[] { UInt32Enum.Value2 }, (VarEnum)8211, (IntPtr)(-1), new uint[] { 1 } };
-            yield return new object[] { new UInt64Enum[] { UInt64Enum.Value2 }, (VarEnum)8213, (IntPtr)(-1), new ulong[] { 1 } };
+            yield return new object[] { new SByteEnum[] { SByteEnum.Value2 }, (VarEnum.VT_ARRAY | VarEnum.VT_I1), (IntPtr)(-1), new sbyte[] { 1 } };
+            yield return new object[] { new Int16Enum[] { Int16Enum.Value2 }, (VarEnum.VT_ARRAY | VarEnum.VT_I2), (IntPtr)(-1), new short[] { 1 } };
+            yield return new object[] { new Int32Enum[] { Int32Enum.Value2 }, (VarEnum.VT_ARRAY | VarEnum.VT_I4), (IntPtr)(-1), new int[] { 1 } };
+            yield return new object[] { new Int64Enum[] { Int64Enum.Value2 }, (VarEnum.VT_ARRAY | VarEnum.VT_I8), (IntPtr)(-1), new long[] { 1 } };
+            yield return new object[] { new ByteEnum[] { ByteEnum.Value2 }, (VarEnum.VT_ARRAY | VarEnum.VT_UI1), (IntPtr)(-1), new byte[] { 1 } };
+            yield return new object[] { new UInt16Enum[] { UInt16Enum.Value2 }, (VarEnum.VT_ARRAY | VarEnum.VT_UI2), (IntPtr)(-1), new ushort[] { 1 } };
+            yield return new object[] { new UInt32Enum[] { UInt32Enum.Value2 }, (VarEnum.VT_ARRAY | VarEnum.VT_UI4), (IntPtr)(-1), new uint[] { 1 } };
+            yield return new object[] { new UInt64Enum[] { UInt64Enum.Value2 }, (VarEnum.VT_ARRAY | VarEnum.VT_UI8), (IntPtr)(-1), new ulong[] { 1 } };
 
             // Color is converted to uint.
             yield return new object[] { Color.FromArgb(10), VarEnum.VT_UI4, (IntPtr)655360, (uint)655360 };
@@ -183,7 +108,6 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [MemberData(nameof(GetNativeVariantForObject_NonRoundtrippingPrimitives_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/31077")]
         public void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
         {
             var v = new Variant();
@@ -324,19 +248,6 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("obj", () => Marshal.GetNativeVariantForObject<object>(obj, (IntPtr)1));
         }
 
-        public static IEnumerable<object[]> GetNativeVariant_NotInteropCompatible_TestData()
-        {
-            yield return new object[] { new TimeSpan(10) };
-
-            yield return new object[] { new object[] { new GenericStruct<string>() } };
-
-            yield return new object[] { new GenericStruct<string>[0]};
-            yield return new object[] { new GenericStruct<string>[] { new GenericStruct<string>() } };
-
-            yield return new object[] { new Color[0] };
-            yield return new object[] { new Color[] { Color.FromArgb(10) } };
-        }
-
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetNativeVariant_InvalidArray_ThrowsSafeArrayTypeMismatchException()
@@ -425,11 +336,6 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        public struct StructWithValue
-        {
-            public int Value;
-        }
-
         public class ClassWithInterface : INonGenericInterface { }
         public struct StructWithInterface : INonGenericInterface { }
 
@@ -442,9 +348,6 @@ namespace System.Runtime.InteropServices.Tests
         public enum UInt16Enum : ushort { Value1, Value2 }
         public enum UInt32Enum : uint { Value1, Value2 }
         public enum UInt64Enum : ulong { Value1, Value2 }
-
-        private static void NonGenericMethod(int i) { }
-        public delegate void NonGenericDelegate(int i);
 
         public class FakeSafeHandle : SafeHandle
         {

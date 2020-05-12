@@ -28,7 +28,7 @@ namespace System.Text.RegularExpressions
                 throw new PlatformNotSupportedException();
             }
 
-            _assembly = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run); // TODO https://github.com/dotnet/corefx/issues/39227: AssemblyBuilderAccess.Save
+            _assembly = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run); // TODO https://github.com/dotnet/runtime/issues/30153: AssemblyBuilderAccess.Save
             _module = _assembly.DefineDynamicModule(an.Name + ".dll");
             if (attribs != null)
             {
@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions
             _strings = code.Strings;
             _leadingCharClasses = code.LeadingCharClasses;
             _boyerMoorePrefix = code.BoyerMoorePrefix;
-            _anchors = code.Anchors;
+            _leadingAnchor = code.LeadingAnchor;
             _trackcount = code.TrackCount;
 
             // Pick a name for the class.
@@ -237,7 +237,7 @@ namespace System.Text.RegularExpressions
             // Save the assembly to the current directory.
             string fileName = _assembly.GetName().Name + ".dll";
 
-            // TODO https://github.com/dotnet/corefx/issues/39227: _assembly.Save(fileName)
+            // TODO https://github.com/dotnet/runtime/issues/30153: _assembly.Save(fileName)
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
         }
 

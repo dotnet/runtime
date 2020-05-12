@@ -401,7 +401,7 @@ namespace System.Security.AccessControl
 
             throw new ArgumentException(
                 SR.ArgumentException_InvalidAclBinaryForm,
-nameof(binaryForm));
+                nameof(binaryForm));
         }
 
         #endregion
@@ -1950,7 +1950,7 @@ nameof(binaryForm));
                 accessType != AccessControlType.Deny)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(accessType),
+                    nameof(accessType),
                     SR.ArgumentOutOfRange_Enum);
             }
         }
@@ -1968,20 +1968,20 @@ nameof(accessType),
                 {
                     throw new ArgumentException(
                         SR.Argument_InvalidAnyFlag,
-nameof(propagationFlags));
+                        nameof(propagationFlags));
                 }
             }
             else if (inheritanceFlags != InheritanceFlags.None)
             {
                 throw new ArgumentException(
                     SR.Argument_InvalidAnyFlag,
-nameof(inheritanceFlags));
+                    nameof(inheritanceFlags));
             }
             else if (propagationFlags != PropagationFlags.None)
             {
                 throw new ArgumentException(
                     SR.Argument_InvalidAnyFlag,
-nameof(propagationFlags));
+                    nameof(propagationFlags));
             }
 
             return;
@@ -2007,14 +2007,14 @@ nameof(propagationFlags));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(flags));
+                    nameof(flags));
             }
 
             if (accessMask == 0)
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-nameof(accessMask));
+                    nameof(accessMask));
             }
 
             GenericAce newAce;
@@ -2086,14 +2086,14 @@ nameof(accessMask));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(flags));
+                    nameof(flags));
             }
 
             if (accessMask == 0)
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-nameof(accessMask));
+                    nameof(accessMask));
             }
 
             ThrowIfNotCanonical();
@@ -2191,7 +2191,7 @@ nameof(accessMask));
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-nameof(accessMask));
+                    nameof(accessMask));
             }
 
             if (qualifier == AceQualifier.SystemAudit &&
@@ -2199,7 +2199,7 @@ nameof(accessMask));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(flags));
+                    nameof(flags));
             }
 
             if (sid == null)
@@ -2634,7 +2634,7 @@ nameof(flags));
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-nameof(accessMask));
+                    nameof(accessMask));
             }
 
             if (qualifier == AceQualifier.SystemAudit &&
@@ -2642,7 +2642,7 @@ nameof(accessMask));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(flags));
+                    nameof(flags));
             }
 
             if (sid == null)

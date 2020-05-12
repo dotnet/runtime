@@ -15,6 +15,7 @@
 #include "typedesc.h"
 #include "compile.h"
 #include "sigbuilder.h"
+#include "nativeimage.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -625,34 +626,42 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     CONTRACTL_END;
 
     Assembly *pAssembly = NULL;
+    NativeImage *nativeImage = fromModule->GetCompositeNativeImage();
+    uint32_t assemblyRefMax = (nativeImage != NULL ? 0 : fromModule->GetAssemblyRefMax());
 
-    if (index == 0)
+    if (index < assemblyRefMax)
     {
-        pAssembly = fromModule->GetAssembly();
-    }
-    else
-    {
-        if (index < fromModule->GetAssemblyRefMax())
+        if (index == 0)
         {
-            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
+            pAssembly = fromModule->GetAssembly();
         }
         else
         {
-            index -= fromModule->GetAssemblyRefMax();
+            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
+        }
+    }
+    else
+    {
+        index -= assemblyRefMax;
 
-            pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
+        pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
-            if(pAssembly == NULL)
+        if(pAssembly == NULL)
+        {
+            if (nativeImage != NULL)
+            {
+                pAssembly = nativeImage->LoadComponentAssembly(index);
+            }
+            else
             {
                 AssemblySpec spec;
                 spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
-                                    fromModule->GetNativeAssemblyImport(),
-                                    NULL);
-
+                                fromModule->GetNativeAssemblyImport(),
+                                NULL);
+                spec.SetParentAssembly(fromModule->GetDomainAssembly());
                 pAssembly = spec.LoadAssembly(FILE_LOADED);
-
-                fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);
             }
+            fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);
         }
     }
 
@@ -673,86 +682,91 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     Assembly *pAssembly = NULL;
     mdAssemblyRef tkAssemblyRef;
 
-    if (index == 0)
-        pAssembly = fromModule->GetAssembly();
-    else
+    NativeImage *nativeImage = fromModule->GetCompositeNativeImage();
+    uint32_t assemblyRefMax = (nativeImage != NULL ? 0 : fromModule->GetAssemblyRefMax());
+
+    if (index < assemblyRefMax)
     {
-        if (index < fromModule->GetAssemblyRefMax())
+        if (index == 0)
         {
-            tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
-            pAssembly = fromModule->GetAssemblyIfLoaded(tkAssemblyRef);
+            pAssembly = fromModule->GetAssembly();
         }
         else
         {
-            index -= fromModule->GetAssemblyRefMax();
-            tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
-            IMDInternalImport *  pMDImportOverride = fromModule->GetNativeAssemblyImport(FALSE);
-            if (pMDImportOverride != NULL)
+            pAssembly = fromModule->GetAssemblyIfLoaded(RidToToken(index, mdtAssemblyRef));
+        }
+    }
+    else
+    {
+        index -= assemblyRefMax;
+        tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
+        IMDInternalImport *  pMDImportOverride = (nativeImage != NULL
+            ? nativeImage->GetManifestMetadata() : fromModule->GetNativeAssemblyImport(FALSE));
+        if (pMDImportOverride != NULL)
+        {
+            CHAR   szFullName[MAX_CLASS_NAME + 1];
+            LPCSTR szWinRtNamespace = NULL;
+            LPCSTR szWinRtClassName = NULL;
+
+            BOOL fValidAssemblyRef = TRUE;
+            LPCSTR pAssemblyName;
+            DWORD  dwFlags;
+            if (FAILED(pMDImportOverride->GetAssemblyRefProps(tkAssemblyRef,
+                    NULL,
+                    NULL,
+                    &pAssemblyName,
+                    NULL,
+                    NULL,
+                    NULL,
+                    &dwFlags)))
+            {   // Unexpected failure reading MetaData
+                fValidAssemblyRef = FALSE;
+            }
+
+            if (fValidAssemblyRef && IsAfContentType_WindowsRuntime(dwFlags))
             {
-                CHAR   szFullName[MAX_CLASS_NAME + 1];
-                LPCSTR szWinRtNamespace = NULL;
-                LPCSTR szWinRtClassName = NULL;
+                // Find the encoded type name
+                LPCSTR pTypeName = NULL;
+                if (pAssemblyName != NULL)
+                    pTypeName = strchr(pAssemblyName, '!');
 
-                BOOL fValidAssemblyRef = TRUE;
-                LPCSTR pAssemblyName;
-                DWORD  dwFlags;
-                if (FAILED(pMDImportOverride->GetAssemblyRefProps(tkAssemblyRef,
-                        NULL,
-                        NULL,
-                        &pAssemblyName,
-                        NULL,
-                        NULL,
-                        NULL,
-                        &dwFlags)))
-                {   // Unexpected failure reading MetaData
-                    fValidAssemblyRef = FALSE;
-                }
-
-                if (fValidAssemblyRef && IsAfContentType_WindowsRuntime(dwFlags))
+                if (pTypeName != NULL)
                 {
-                    // Find the encoded type name
-                    LPCSTR pTypeName = NULL;
-                    if (pAssemblyName != NULL)
-                        pTypeName = strchr(pAssemblyName, '!');
+                    pTypeName++;
+                    // pTypeName now contains the full type name (namespace + name)
 
-                    if (pTypeName != NULL)
+                    strcpy_s(szFullName, _countof(szFullName), pTypeName);
+                    LPSTR pszName = strrchr(szFullName, '.');
+
+                    // WinRT types must have a namespace
+                    if (pszName != NULL)
                     {
-                        pTypeName++;
-                        // pTypeName now contains the full type name (namespace + name)
+                        // Replace . between namespace and name with null terminator.
+                        // This breaks the string into a namespace and name pair.
+                        *pszName = '\0';
+                        pszName++;
 
-                        strcpy_s(szFullName, _countof(szFullName), pTypeName);
-                        LPSTR pszName = strrchr(szFullName, '.');
-
-                        // WinRT types must have a namespace
-                        if (pszName != NULL)
-                        {
-                            // Replace . between namespace and name with null terminator.
-                            // This breaks the string into a namespace and name pair.
-                            *pszName = '\0';
-                            pszName++;
-
-                            szWinRtNamespace = szFullName;
-                            szWinRtClassName = pszName;
-                        }
-                        else
-                        {   // Namespace '.' separator not found - invalid type name (namespace has to be always present)
-                            fValidAssemblyRef = FALSE;
-                        }
+                        szWinRtNamespace = szFullName;
+                        szWinRtClassName = pszName;
                     }
                     else
-                    {   // Type name separator in assembly name '!' not found
+                    {   // Namespace '.' separator not found - invalid type name (namespace has to be always present)
                         fValidAssemblyRef = FALSE;
                     }
                 }
-
-                if (fValidAssemblyRef)
-                {
-                    pAssembly = fromModule->GetAssemblyIfLoaded(
-                            tkAssemblyRef,
-                            szWinRtNamespace,
-                            szWinRtClassName,
-                            pMDImportOverride);
+                else
+                {   // Type name separator in assembly name '!' not found
+                    fValidAssemblyRef = FALSE;
                 }
+            }
+
+            if (fValidAssemblyRef)
+            {
+                pAssembly = fromModule->GetAssemblyIfLoaded(
+                        tkAssemblyRef,
+                        szWinRtNamespace,
+                        szWinRtClassName,
+                        pMDImportOverride);
             }
         }
     }

@@ -14,28 +14,34 @@ namespace System.Tests
             var attribute = new ObsoleteAttribute();
             Assert.Null(attribute.Message);
             Assert.False(attribute.IsError);
+            Assert.Null(attribute.DiagnosticId);
+            Assert.Null(attribute.UrlFormat);
         }
 
         [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("message")]
-        public void Ctor_String(string message)
+        [InlineData(null, null)]
+        [InlineData("", "BCL0006")]
+        [InlineData("message", "")]
+        public void Ctor_String_Id(string message, string id)
         {
-            var attribute = new ObsoleteAttribute(message);
+            var attribute = new ObsoleteAttribute(message) { DiagnosticId = id };
             Assert.Equal(message, attribute.Message);
             Assert.False(attribute.IsError);
+            Assert.Equal(id, attribute.DiagnosticId);
+            Assert.Null(attribute.UrlFormat);
         }
 
         [Theory]
-        [InlineData(null, true)]
-        [InlineData("", false)]
-        [InlineData("message", true)]
-        public void Ctor_String_Bool(string message, bool error)
+        [InlineData(null, true, "")]
+        [InlineData("", false, null)]
+        [InlineData("message", true, "https://aka.ms/obsolete/{0}")]
+        public void Ctor_String_Bool_Url(string message, bool error, string url)
         {
-            var attribute = new ObsoleteAttribute(message, error);
+            var attribute = new ObsoleteAttribute(message, error) { UrlFormat = url };
             Assert.Equal(message, attribute.Message);
             Assert.Equal(error, attribute.IsError);
+            Assert.Null(attribute.DiagnosticId);
+            Assert.Equal(url, attribute.UrlFormat);
         }
     }
 }

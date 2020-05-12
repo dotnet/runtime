@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma once
+
 #include <stdlib.h>
 
-#include "pal_compiler.h"
 #include "pal_locale.h"
+#include "pal_compiler.h"
 #include "pal_errors.h"
 
 /*
@@ -68,25 +70,25 @@ typedef enum
 // the function pointer definition for the callback used in EnumCalendarInfo
 typedef void (*EnumCalendarInfoCallback)(const UChar*, const void*);
 
-DLLEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
                                                    CalendarId* calendars,
                                                    int32_t calendarsCapacity);
 
-DLLEXPORT ResultCode GlobalizationNative_GetCalendarInfo(const UChar* localeName,
+PALEXPORT ResultCode GlobalizationNative_GetCalendarInfo(const UChar* localeName,
                                                          CalendarId calendarId,
                                                          CalendarDataType dataType,
                                                          UChar* result,
                                                          int32_t resultCapacity);
 
-DLLEXPORT int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
+PALEXPORT int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
                                                        const UChar* localeName,
                                                        CalendarId calendarId,
                                                        CalendarDataType dataType,
                                                        const void* context);
 
-DLLEXPORT int32_t GlobalizationNative_GetLatestJapaneseEra(void);
+PALEXPORT int32_t GlobalizationNative_GetLatestJapaneseEra(void);
 
-DLLEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
+PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
                                                               int32_t* startYear,
                                                               int32_t* startMonth,
                                                               int32_t* startDay);

@@ -333,7 +333,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<int> CompareGreaterThan(Vector128<int> left, Vector128<int> right) => CompareGreaterThan(left, right);
         /// <summary>
         /// __m128d _mm_cmpgt_pd (__m128d a,  __m128d b)
-        ///   CMPPD xmm, xmm/m128, imm8(6)
+        ///   CMPPD xmm, xmm/m128, imm8(1) with swapped operands
         /// </summary>
         public static Vector128<double> CompareGreaterThan(Vector128<double> left, Vector128<double> right) => CompareGreaterThan(left, right);
 
@@ -351,13 +351,13 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_cmpgt_sd (__m128d a,  __m128d b)
-        ///   CMPSD xmm, xmm/m64, imm8(6)
+        ///   CMPSD xmm, xmm/m64, imm8(1) with swapped operands
         /// </summary>
         public static Vector128<double> CompareScalarGreaterThan(Vector128<double> left, Vector128<double> right) => CompareScalarGreaterThan(left, right);
 
         /// <summary>
         /// __m128d _mm_cmpge_pd (__m128d a,  __m128d b)
-        ///   CMPPD xmm, xmm/m128, imm8(5)
+        ///   CMPPD xmm, xmm/m128, imm8(2) with swapped operands
         /// </summary>
         public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareGreaterThanOrEqual(left, right);
 
@@ -375,7 +375,7 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_cmpge_sd (__m128d a,  __m128d b)
-        ///   CMPSD xmm, xmm/m64, imm8(5)
+        ///   CMPSD xmm, xmm/m64, imm8(2) with swapped operands
         /// </summary>
         public static Vector128<double> CompareScalarGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareScalarGreaterThanOrEqual(left, right);
 
@@ -468,25 +468,25 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_cmpngt_pd (__m128d a,  __m128d b)
-        ///   CMPPD xmm, xmm/m128, imm8(2)
+        ///   CMPPD xmm, xmm/m128, imm8(5) with swapped operands
         /// </summary>
         public static Vector128<double> CompareNotGreaterThan(Vector128<double> left, Vector128<double> right) => CompareNotGreaterThan(left, right);
 
         /// <summary>
         /// __m128d _mm_cmpngt_sd (__m128d a,  __m128d b)
-        ///   CMPSD xmm, xmm/m64, imm8(2)
+        ///   CMPSD xmm, xmm/m64, imm8(5) with swapped operands
         /// </summary>
         public static Vector128<double> CompareScalarNotGreaterThan(Vector128<double> left, Vector128<double> right) => CompareScalarNotGreaterThan(left, right);
 
         /// <summary>
         /// __m128d _mm_cmpnge_pd (__m128d a,  __m128d b)
-        ///   CMPPD xmm, xmm/m128, imm8(1)
+        ///   CMPPD xmm, xmm/m128, imm8(6) with swapped operands
         /// </summary>
         public static Vector128<double> CompareNotGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareNotGreaterThanOrEqual(left, right);
 
         /// <summary>
         /// __m128d _mm_cmpnge_sd (__m128d a,  __m128d b)
-        ///   CMPSD xmm, xmm/m64, imm8(1)
+        ///   CMPSD xmm, xmm/m64, imm8(6) with swapped operands
         /// </summary>
         public static Vector128<double> CompareScalarNotGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareScalarNotGreaterThanOrEqual(left, right);
 
@@ -778,15 +778,13 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<double> LoadLow(Vector128<double> upper, double* address) => LoadLow(upper, address);
 
         /// <summary>
-        /// __m128i _mm_loadl_epi32 (__m128i const* mem_addr)
+        /// __m128i _mm_loadu_si32 (void const* mem_addr)
         ///   MOVD xmm, reg/m32
-        /// The above native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
         public static unsafe Vector128<int> LoadScalarVector128(int* address) => LoadScalarVector128(address);
         /// <summary>
-        /// __m128i _mm_loadl_epi32 (__m128i const* mem_addr)
+        /// __m128i _mm_loadu_si32 (void const* mem_addr)
         ///   MOVD xmm, reg/m32
-        /// The above native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
         public static unsafe Vector128<uint> LoadScalarVector128(uint* address) => LoadScalarVector128(address);
         /// <summary>
@@ -1299,10 +1297,20 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static unsafe void StoreScalar(double* address, Vector128<double> source) => StoreScalar(address, source);
         /// <summary>
+        /// void _mm_storeu_si32 (void* mem_addr, __m128i a)
+        ///   MOVD m32, xmm
+        /// </summary>
+        public static unsafe void StoreScalar(int* address, Vector128<int> source) => StoreScalar(address, source);
+        /// <summary>
         /// void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
         ///   MOVQ m64, xmm
         /// </summary>
         public static unsafe void StoreScalar(long* address, Vector128<long> source) => StoreScalar(address, source);
+        /// <summary>
+        /// void _mm_storeu_si32 (void* mem_addr, __m128i a)
+        ///   MOVD m32, xmm
+        /// </summary>
+        public static unsafe void StoreScalar(uint* address, Vector128<uint> source) => StoreScalar(address, source);
         /// <summary>
         /// void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
         ///   MOVQ m64, xmm

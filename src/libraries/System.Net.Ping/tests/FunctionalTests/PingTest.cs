@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -46,14 +47,16 @@ namespace System.Net.NetworkInformation.Tests
 
         private void PingResultValidator(PingReply pingReply, IPAddress localIpAddress)
         {
-            PingResultValidator(pingReply, new IPAddress[] { localIpAddress });
+            PingResultValidator(pingReply, new IPAddress[] { localIpAddress },  _output);
         }
 
-        private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses)
+        private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses)  =>  PingResultValidator(pingReply, localIpAddresses, null);
+
+        private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper output)
         {
             if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSX)
             {
-                // Workaround OSX ping6 bug, see https://github.com/dotnet/corefx/issues/15018
+                // Workaround OSX ping6 bug, see https://github.com/dotnet/runtime/issues/19861
                 return;
             }
 
@@ -65,10 +68,13 @@ namespace System.Net.NetworkInformation.Tests
             }
             // We did not find response address in given list.
             // Test is going to fail. Collect some more info.
-            _output.WriteLine($"Reply address {pingReply.Address} is not expected local address.");
-            foreach (IPAddress address in localIpAddresses)
+            if (output != null)
             {
-                _output.WriteLine($"Local address {address}");
+                output.WriteLine($"Reply address {pingReply.Address} is not expected local address.");
+                foreach (IPAddress address in localIpAddresses)
+                {
+                    output.WriteLine($"Local address {address}");
+                }
             }
 
             Assert.Contains(pingReply.Address, localIpAddresses); ///, "Reply address {pingReply.Address} is not expected local address.");
@@ -134,7 +140,7 @@ namespace System.Net.NetworkInformation.Tests
             }
 
             SendBatchPing(
-                (ping) => ping.Send(localIpAddress),
+                (ping) => ping.Send(localIpAddress, TestSettings.PingTimeout),
                 (pingReply) =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -879,6 +885,36 @@ namespace System.Net.NetworkInformation.Tests
             var sender = new Ping();
             PingReply reply = await sender.SendPingAsync(TestSettings.UnreachableAddress);
             Assert.Equal(IPStatus.TimedOut, reply.Status);
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Theory]
+        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        [OuterLoop] // Depends on sudo
+        public void SendPingWithIPAddressAndTimeoutAndBufferAndPingOptions_ElevatedUnix(AddressFamily addressFamily)
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
+            if (localIpAddress == null)
+            {
+                // No local address for given address family.
+                return;
+            }
+
+            _output.WriteLine($"pinging '{localIpAddress}'");
+
+            RemoteExecutor.Invoke(address  =>
+            {
+                byte[] buffer = TestSettings.PayloadAsBytes;
+                SendBatchPing(
+                    (ping) => ping.Send(address, TestSettings.PingTimeout, buffer, new PingOptions()),
+                    (pingReply) =>
+                    {
+                        PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
+                        Assert.Equal(buffer, pingReply.Buffer);
+                    });
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
     }
 }

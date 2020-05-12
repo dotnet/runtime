@@ -37,6 +37,7 @@ namespace System.ComponentModel.Composition
         // Silverlight doesn't support strongly typed metadata
         [Fact]
         [Trait("Type", "Integration")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32295", TestRuntimes.Mono)]
         public void StronglyTypedStructureTest()
         {
             var container = ContainerFactory.Create();
@@ -56,6 +57,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32030", TestRuntimes.Mono)]
         [Trait("Type", "Integration")]
         public void StronglyTypedStructureTestWithTransparentViews()
         {

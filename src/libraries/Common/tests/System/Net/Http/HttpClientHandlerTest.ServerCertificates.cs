@@ -13,6 +13,7 @@ using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -30,9 +31,15 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
+        [ConditionalFact]
         public void Ctor_ExpectedDefaultValues()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion > HttpVersion.Version11)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Null(handler.ServerCertificateCustomValidationCallback);
@@ -40,9 +47,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void ServerCertificateCustomValidationCallback_SetGet_Roundtrips()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion > HttpVersion.Version11)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Null(handler.ServerCertificateCustomValidationCallback);
@@ -84,7 +98,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler && PlatformDetection.IsWindows7)
             {
-                // Issue https://github.com/dotnet/corefx/issues/27612
+                // Issue https://github.com/dotnet/runtime/issues/25268
                 return;
             }
 
@@ -201,7 +215,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(request);
 
                     X509ChainStatusFlags flags = chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (cur, status) => cur | status.Status);
-                    bool ignoreErrors = // https://github.com/dotnet/corefx/issues/21922#issuecomment-315555237
+                    bool ignoreErrors = // https://github.com/dotnet/runtime/issues/22644#issuecomment-315555237
                         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
                         checkRevocation &&
                         errors == SslPolicyErrors.RemoteCertificateChainErrors &&
@@ -350,7 +364,7 @@ namespace System.Net.Http.Functional.Tests
                 e.InnerException.HResult == SEC_E_BUFFER_TOO_SMALL &&
                 !PlatformDetection.IsWindows10Version1607OrGreater)
             {
-                // Testing on old Windows versions can hit https://github.com/dotnet/corefx/issues/7812
+                // Testing on old Windows versions can hit https://github.com/dotnet/runtime/issues/17005
                 // Ignore SEC_E_BUFFER_TOO_SMALL error on such cases.
             }
         }
@@ -396,7 +410,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void HttpClientUsesSslCertEnvironmentVariables()
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.

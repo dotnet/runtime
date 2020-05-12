@@ -373,28 +373,43 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             {
                 if (pWrappedMD->IsSharedByGenericMethodInstantiations())
                 {
+                    // Note that it is possible for the dictionary layout to be expanded in size by other threads while we're still
+                    // creating this method. In other words: this method will have a smaller dictionary that its layout. This is not a
+                    // problem however because whenever we need to load a value from the dictionary of this method beyond its size, we
+                    // will expand the dictionary at that point.
                     pDL = pWrappedMD->AsInstantiatedMethodDesc()->GetDictLayoutRaw();
                 }
             }
             else if (getWrappedCode)
             {
-                // 4 seems like a good number
-                pDL = DictionaryLayout::Allocate(4, pAllocator, &amt);
-#ifdef _DEBUG
+                pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
+#ifdef _DEBUG 
                 {
                     SString name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
                     LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of size %d for %S\n",
-                         DictionaryLayout::GetFirstDictionaryBucketSize(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL), name.GetUnicode()));
+                        DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL), name.GetUnicode()));
                 }
 #endif // _DEBUG
             }
 
             // Allocate space for the instantiation and dictionary
-            infoSize = DictionaryLayout::GetFirstDictionaryBucketSize(methodInst.GetNumArgs(), pDL);
-            pInstOrPerInstInfo = (TypeHandle *) (void*) amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(infoSize)));
+            infoSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInst.GetNumArgs(), pDL);
+            pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(infoSize)));
             for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
                 pInstOrPerInstInfo[i] = methodInst[i];
+
+            if (pDL != NULL)
+            {
+                _ASSERTE(pDL->GetMaxSlots() > 0);
+
+                // Has to be at least larger than the first slots containing the instantiation arguments,
+                // and the slot with size information. Otherwise, we shouldn't really have a size slot
+                _ASSERTE(infoSize > sizeof(TypeHandle*) * (methodInst.GetNumArgs() + 1));
+
+                DWORD* pDictSizeSlot = (DWORD*)(pInstOrPerInstInfo + methodInst.GetNumArgs());
+                *pDictSizeSlot = infoSize;
+            }
         }
 
         BOOL forComInterop = FALSE;
@@ -482,8 +497,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 const char* verb = "Created";
                 if (pWrappedMD)
                     LOG((LF_CLASSLOADER, LL_INFO1000,
-                         "GENERICS: %s instantiating-stub method desc %s with dictionary size %d\n",
-                         verb, pDebugNameUTF8, infoSize));
+                        "GENERICS: %s instantiating-stub method desc %s with dictionary size %d\n",
+                        verb, pDebugNameUTF8, infoSize));
                 else
                     LOG((LF_CLASSLOADER, LL_INFO1000,
                          "GENERICS: %s instantiated method desc %s\n",
@@ -1661,6 +1676,7 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
     //NB: according to the constructor's signature, thParent should be the declaring type,
     // but the code appears to admit derived types too.
     SigTypeContext typeContext(this,thParent);
+    InstantiationContext instContext(&typeContext, NULL);
 
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
@@ -1673,7 +1689,8 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
 
         tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical method?
 
-        if (!tyvar->SatisfiesConstraints(&typeContext,thArg))
+        // Pass in the InstatiationContext so contraints can be correctly evaluated
+        if (!tyvar->SatisfiesConstraints(&typeContext,thArg, &instContext))
         {
             if (fThrowIfNotSatisfied)
             {

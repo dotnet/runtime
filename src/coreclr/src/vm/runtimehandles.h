@@ -236,6 +236,9 @@ public:
     static
     PVOID QCALLTYPE GetGCHandle(QCall::TypeHandle pTypeHandle, INT32 handleType);
 
+    static
+    void QCALLTYPE FreeGCHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle);
+
     static FCDECL1(INT32, GetCorElementType, PTR_ReflectClassBaseObject pType);
     static FCDECL1(ReflectClassBaseObject*, GetElementType, ReflectClassBaseObject* pType);
 
@@ -258,6 +261,9 @@ public:
 
     static
     FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
+
+    static
+    PVOID QCALLTYPE AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size);
 };
 
 class RuntimeMethodHandle {

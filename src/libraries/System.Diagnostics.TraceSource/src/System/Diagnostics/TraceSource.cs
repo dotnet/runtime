@@ -15,12 +15,12 @@ namespace System.Diagnostics
         private static readonly List<WeakReference> s_tracesources = new List<WeakReference>();
         private static int s_LastCollectionCount;
 
-        private volatile SourceSwitch _internalSwitch;
-        private volatile TraceListenerCollection _listeners;
+        private volatile SourceSwitch? _internalSwitch;
+        private volatile TraceListenerCollection? _listeners;
         private readonly SourceLevels _switchLevel;
         private readonly string _sourceName;
         internal volatile bool _initCalled = false;   // Whether we've called Initialize already.
-        private StringDictionary _attributes;
+        private StringDictionary? _attributes;
 
         public TraceSource(string name)
             : this(name, SourceLevels.Off)
@@ -54,7 +54,7 @@ namespace System.Diagnostics
                     List<WeakReference> buffer = new List<WeakReference>(s_tracesources.Count);
                     for (int i = 0; i < s_tracesources.Count; i++)
                     {
-                        TraceSource tracesource = ((TraceSource)s_tracesources[i].Target);
+                        TraceSource? tracesource = ((TraceSource?)s_tracesources[i].Target);
                         if (tracesource != null)
                         {
                             buffer.Add(s_tracesources[i]);
@@ -102,9 +102,9 @@ namespace System.Diagnostics
                 // Use global lock
                 lock (TraceInternal.critSec)
                 {
-                    foreach (TraceListener listener in _listeners)
+                    foreach (TraceListener? listener in _listeners)
                     {
-                        listener.Close();
+                        listener!.Close();
                     }
                 }
             }
@@ -119,17 +119,17 @@ namespace System.Diagnostics
                 {
                     lock (TraceInternal.critSec)
                     {
-                        foreach (TraceListener listener in _listeners)
+                        foreach (TraceListener? listener in _listeners)
                         {
-                            listener.Flush();
+                            listener!.Flush();
                         }
                     }
                 }
                 else
                 {
-                    foreach (TraceListener listener in _listeners)
+                    foreach (TraceListener? listener in _listeners)
                     {
-                        if (!listener.IsThreadSafe)
+                        if (!listener!.IsThreadSafe)
                         {
                             lock (listener)
                             {
@@ -145,7 +145,7 @@ namespace System.Diagnostics
             }
         }
 
-        protected internal virtual string[] GetSupportedAttributes() => null;
+        protected internal virtual string[]? GetSupportedAttributes() => null;
 
         internal static void RefreshAll()
         {
@@ -154,7 +154,7 @@ namespace System.Diagnostics
                 _pruneCachedTraceSources();
                 for (int i = 0; i < s_tracesources.Count; i++)
                 {
-                    TraceSource tracesource = ((TraceSource)s_tracesources[i].Target);
+                    TraceSource? tracesource = ((TraceSource?)s_tracesources[i].Target);
                     if (tracesource != null)
                     {
                         tracesource.Refresh();
@@ -177,7 +177,7 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -218,11 +218,11 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceEvent(TraceEventType eventType, int id, string message)
+        public void TraceEvent(TraceEventType eventType, int id, string? message)
         {
             Initialize();
 
-            if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -263,11 +263,11 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceEvent(TraceEventType eventType, int id, string format, params object[] args)
+        public void TraceEvent(TraceEventType eventType, int id, string format, params object?[]? args)
         {
             Initialize();
 
-            if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -308,11 +308,11 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceData(TraceEventType eventType, int id, object data)
+        public void TraceData(TraceEventType eventType, int id, object? data)
         {
             Initialize();
 
-            if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -353,11 +353,11 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceData(TraceEventType eventType, int id, params object[] data)
+        public void TraceData(TraceEventType eventType, int id, params object?[]? data)
         {
             Initialize();
 
-            if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -405,21 +405,21 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceInformation(string format, params object[] args)
+        public void TraceInformation(string format, params object?[]? args)
         {
             // No need to call Initialize()
             TraceEvent(TraceEventType.Information, 0, format, args);
         }
 
         [Conditional("TRACE")]
-        public void TraceTransfer(int id, string message, Guid relatedActivityId)
+        public void TraceTransfer(int id, string? message, Guid relatedActivityId)
         {
             // Ensure that config is loaded
             Initialize();
 
             TraceEventCache manager = new TraceEventCache();
 
-            if (_internalSwitch.ShouldTrace(TraceEventType.Transfer) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(TraceEventType.Transfer) && _listeners != null)
             {
                 if (TraceInternal.UseGlobalLock)
                 {
@@ -496,7 +496,7 @@ namespace System.Diagnostics
             {
                 Initialize();
 
-                return _listeners;
+                return _listeners!;
             }
         }
 
@@ -507,7 +507,7 @@ namespace System.Diagnostics
             {
                 Initialize();
 
-                return _internalSwitch;
+                return _internalSwitch!;
             }
             set
             {

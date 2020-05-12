@@ -442,11 +442,11 @@ namespace System.Resources
                 {
                     throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dataPos));
                 }
-                ResourceTypeCode junk;
+
                 if (_version == 1)
                     return LoadObjectV1(dataPos);
                 else
-                    return LoadObjectV2(dataPos, out junk);
+                    return LoadObjectV2(dataPos, out _);
             }
         }
 
@@ -1044,8 +1044,7 @@ namespace System.Resources
                         lock (_reader._resCache)
                         {
                             key = _reader.AllocateStringForNameIndex(_currentName, out _dataPosition); // AllocateStringForNameIndex could lock on _reader
-                            ResourceLocator locator;
-                            if (_reader._resCache.TryGetValue(key, out locator))
+                            if (_reader._resCache.TryGetValue(key, out ResourceLocator locator))
                             {
                                 value = locator.Value;
                             }

@@ -200,6 +200,7 @@ create_exception_two_strings (MonoClass *klass, MonoStringHandle a1, MonoStringH
 		method = m;
 		break;
 	}
+	g_assert (method);
 
 	gpointer args [ ] = { MONO_HANDLE_RAW (a1), MONO_HANDLE_RAW (a2) };
 
@@ -1161,7 +1162,7 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc)
 	domain = mono_domain_get ();
 	len = mono_array_handle_length (arr);
 	text = g_string_new_len (NULL, len * 20);
-	uint32_t gchandle;
+	MonoGCHandle gchandle;
 	gpointer *addr = MONO_ARRAY_HANDLE_PIN (arr, gpointer, 0, &gchandle);
 	MONO_ENTER_GC_SAFE;
 	messages = backtrace_symbols (addr, len);
@@ -1486,7 +1487,7 @@ void
 mono_error_set_simple_file_not_found (MonoError *error, const char *file_name, gboolean refection_only)
 {
 	if (refection_only)
-		mono_error_set_file_not_found (error, file_name, "Cannot resolve dependency to assembly because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.");
+		mono_error_set_file_not_found (error, file_name, "Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.", file_name);
 	else
 		mono_error_set_file_not_found (error, file_name, "Could not load file or assembly '%s' or one of its dependencies.", file_name);
 }

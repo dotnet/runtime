@@ -1052,12 +1052,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
-        [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
-        [InlineData(double.NaN, double.NaN, double.NaN)]
-        [InlineData(-0.0, 0.0, 0.0)]
-        [InlineData(2.0, -3.0, 2.0)]
-        [InlineData(3.0, -2.0, 3.0)]
-        [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
+        [InlineData(double.MinValue,         double.MaxValue,         double.MaxValue)]
+        [InlineData(double.MaxValue,         double.MinValue,         double.MaxValue)]
+        [InlineData(double.NaN,              double.NaN,              double.NaN)]
+        [InlineData(double.NaN,              1.0,                     double.NaN)]
+        [InlineData(1.0,                     double.NaN,              double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NaN,              double.NaN)]
+        [InlineData(double.NegativeInfinity, double.NaN,              double.NaN)]
+        [InlineData(double.NaN,              double.PositiveInfinity, double.NaN)]
+        [InlineData(double.NaN,              double.NegativeInfinity, double.NaN)]
+        [InlineData(-0.0,                    0.0,                     0.0)]
+        [InlineData( 0.0,                   -0.0,                     0.0)]
+        [InlineData( 2.0,                   -3.0,                     2.0)]
+        [InlineData(-3.0,                    2.0,                     2.0)]
+        [InlineData( 3.0,                   -2.0,                     3.0)]
+        [InlineData(-2.0,                    3.0,                     3.0)]
         public static void Max_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.Max(x, y), 0.0);
@@ -1093,12 +1103,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
-        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(-0.0f, 0.0f, 0.0f)]
-        [InlineData(2.0f, -3.0f, 2.0f)]
-        [InlineData(3.0f, -2.0f, 3.0f)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue,         float.MaxValue,         float.MaxValue)]
+        [InlineData(float.MaxValue,         float.MinValue,         float.MaxValue)]
+        [InlineData(float.NaN,              float.NaN,              float.NaN)]
+        [InlineData(float.NaN,              1.0,                    float.NaN)]
+        [InlineData(1.0,                    float.NaN,              float.NaN)]
+        [InlineData(float.PositiveInfinity, float.NaN,              float.NaN)]
+        [InlineData(float.NegativeInfinity, float.NaN,              float.NaN)]
+        [InlineData(float.NaN,              float.PositiveInfinity, float.NaN)]
+        [InlineData(float.NaN,              float.NegativeInfinity, float.NaN)]
+        [InlineData(-0.0,                   0.0,                    0.0)]
+        [InlineData( 0.0,                  -0.0,                    0.0)]
+        [InlineData( 2.0,                  -3.0,                    2.0)]
+        [InlineData(-3.0,                   2.0,                    2.0)]
+        [InlineData( 3.0,                  -2.0,                    3.0)]
+        [InlineData(-2.0,                   3.0,                    3.0)]
         public static void Max_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, Math.Max(x, y), 0.0f);
@@ -1141,12 +1161,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
-        [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
-        [InlineData(double.NaN, double.NaN, double.NaN)]
-        [InlineData(-0.0, 0.0, -0.0)]
-        [InlineData(2.0, -3.0, -3.0)]
-        [InlineData(3.0, -2.0, -2.0)]
-        [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(double.MinValue,         double.MaxValue,         double.MinValue)]
+        [InlineData(double.MaxValue,         double.MinValue,         double.MinValue)]
+        [InlineData(double.NaN,              double.NaN,              double.NaN)]
+        [InlineData(double.NaN,              1.0,                     double.NaN)]
+        [InlineData(1.0,                     double.NaN,              double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NaN,              double.NaN)]
+        [InlineData(double.NegativeInfinity, double.NaN,              double.NaN)]
+        [InlineData(double.NaN,              double.PositiveInfinity, double.NaN)]
+        [InlineData(double.NaN,              double.NegativeInfinity, double.NaN)]
+        [InlineData(-0.0,                    0.0,                     -0.0)]
+        [InlineData( 0.0,                   -0.0,                     -0.0)]
+        [InlineData( 2.0,                   -3.0,                     -3.0)]
+        [InlineData(-3.0,                    2.0,                     -3.0)]
+        [InlineData( 3.0,                   -2.0,                     -2.0)]
+        [InlineData(-2.0,                    3.0,                     -2.0)]
         public static void Min_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.Min(x, y), 0.0);
@@ -1182,12 +1212,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
-        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(-0.0f, 0.0f, -0.0f)]
-        [InlineData(2.0f, -3.0f, -3.0f)]
-        [InlineData(3.0f, -2.0f, -2.0f)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue,         float.MaxValue,         float.MinValue)]
+        [InlineData(float.MaxValue,         float.MinValue,         float.MinValue)]
+        [InlineData(float.NaN,              float.NaN,              float.NaN)]
+        [InlineData(float.NaN,              1.0,                    float.NaN)]
+        [InlineData(1.0,                    float.NaN,              float.NaN)]
+        [InlineData(float.PositiveInfinity, float.NaN,              float.NaN)]
+        [InlineData(float.NegativeInfinity, float.NaN,              float.NaN)]
+        [InlineData(float.NaN,              float.PositiveInfinity, float.NaN)]
+        [InlineData(float.NaN,              float.NegativeInfinity, float.NaN)]
+        [InlineData(-0.0,                   0.0,                    -0.0)]
+        [InlineData( 0.0,                  -0.0,                    -0.0)]
+        [InlineData( 2.0,                  -3.0,                    -3.0)]
+        [InlineData(-3.0,                   2.0,                    -3.0)]
+        [InlineData( 3.0,                  -2.0,                    -2.0)]
+        [InlineData(-2.0,                   3.0,                    -2.0)]
         public static void Min_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, Math.Min(x, y), 0.0f);
@@ -1397,14 +1437,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Round_Decimal_Digits()
-        {
-            Assert.Equal(3.422m, Math.Round(3.42156m, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(-3.422m, Math.Round(-3.42156m, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(decimal.Zero, Math.Round(decimal.Zero, 3, MidpointRounding.AwayFromZero));
-        }
-
-        [Fact]
         public static void Round_Double()
         {
             Assert.Equal(0.0, Math.Round(0.0));
@@ -1418,7 +1450,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Round_Double_Digits()
+        public static void Round_Double_Digits_SpecificCases()
         {
             Assert.Equal(3.422, Math.Round(3.42156, 3, MidpointRounding.AwayFromZero), 10);
             Assert.Equal(-3.422, Math.Round(-3.42156, 3, MidpointRounding.AwayFromZero), 10);
@@ -2431,7 +2463,7 @@ namespace System.Tests
         [InlineData(MidpointRounding.ToZero)]
         [InlineData(MidpointRounding.ToNegativeInfinity)]
         [InlineData(MidpointRounding.ToPositiveInfinity)]
-        public static void Round_Double_Digits(MidpointRounding mode)
+        public static void Round_Double_Digits_ByMidpointRounding(MidpointRounding mode)
         {
             Assert.Equal(double.NaN, Math.Round(double.NaN, 3, mode));
             Assert.Equal(double.PositiveInfinity, Math.Round(double.PositiveInfinity, 3, mode));
@@ -2458,7 +2490,7 @@ namespace System.Tests
         [InlineData(MidpointRounding.ToZero)]
         [InlineData(MidpointRounding.ToNegativeInfinity)]
         [InlineData(MidpointRounding.ToPositiveInfinity)]
-        public static void Round_Decimal_Digits(MidpointRounding mode)
+        public static void Round_Decimal_Digits_ByMidpointRounding(MidpointRounding mode)
         {
             Assert.Equal(decimal.Zero, Math.Round(decimal.Zero, 3, mode));
         }

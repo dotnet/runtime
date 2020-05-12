@@ -42,7 +42,7 @@ namespace System.ServiceProcess.Tests
 
         // [Fact]
         // To cleanup lingering Test Services uncomment the Fact attribute, make it public and run the following command
-        //   msbuild /t:rebuildandtest /p:XunitMethodName=System.ServiceProcess.Tests.ServiceBaseTests.Cleanup /p:OuterLoop=true
+        // dotnet build /t:test /p:XunitMethodName=System.ServiceProcess.Tests.ServiceBaseTests.Cleanup /p:OuterLoop=true
         // Remember to comment out the Fact again before running tests otherwise it will cleanup tests running in parallel
         // and cause them to fail.
         private void Cleanup()
@@ -93,10 +93,9 @@ namespace System.ServiceProcess.Tests
             controller.Start(new string[] { "StartWithArguments", "a", "b", "c" });
             _testService.Client = null;
             _testService.Client.Connect();
+            Assert.Equal((int)(PipeMessageByteCode.Connected), _testService.GetByte());
 
-            // There is no definite order between start and connected when tests are running on multiple threads.
-            // In this case we dont care much about the order, so we are just checking whether the appropiate bytes have been sent.
-            Assert.Equal((int)(PipeMessageByteCode.Connected | PipeMessageByteCode.Start), _testService.GetByte() | _testService.GetByte());
+            Assert.Equal((int)(PipeMessageByteCode.Start), _testService.GetByte());           
             controller.WaitForStatus(ServiceControllerStatus.Running);
 
             controller.Stop();
@@ -136,7 +135,6 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1724")]
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnExecuteCustomCommand()
         {
@@ -176,9 +174,8 @@ namespace System.ServiceProcess.Tests
         public void LogWritten()
         {
             string serviceName = Guid.NewGuid().ToString();
-            // The default username for installing the service is NT AUTHORITY\\LocalService which does not have access to EventLog.
             // If the username is null, then the service is created under LocalSystem Account which have access to EventLog.
-            var testService = new TestServiceProvider(serviceName, userName: null);
+            var testService = new TestServiceProvider(serviceName);
             Assert.True(EventLog.SourceExists(serviceName));
             testService.DeleteTestServices();
         }

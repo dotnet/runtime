@@ -665,14 +665,14 @@ void __stdcall GarbageCollectionStartedCallback(int generation, BOOL induced)
     // Notify the profiler of start of the collection
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackGC() || CORProfilerTrackBasicGC());
-        BOOL generationCollected[COR_PRF_GC_LARGE_OBJECT_HEAP+1];
+        BOOL generationCollected[COR_PRF_GC_PINNED_OBJECT_HEAP+1];
         if (generation == COR_PRF_GC_GEN_2)
-            generation = COR_PRF_GC_LARGE_OBJECT_HEAP;
-        for (int gen = 0; gen <= COR_PRF_GC_LARGE_OBJECT_HEAP; gen++)
+            generation = COR_PRF_GC_PINNED_OBJECT_HEAP;
+        for (int gen = 0; gen <= COR_PRF_GC_PINNED_OBJECT_HEAP; gen++)
             generationCollected[gen] = gen <= generation;
 
         g_profControlBlock.pProfInterface->GarbageCollectionStarted(
-            COR_PRF_GC_LARGE_OBJECT_HEAP+1,
+            COR_PRF_GC_PINNED_OBJECT_HEAP+1,
             generationCollected,
             induced ? COR_PRF_GC_INDUCED : COR_PRF_GC_OTHER);
         END_PIN_PROFILER();
@@ -726,7 +726,7 @@ struct GenerationTable
 {
     ULONG count;
     ULONG capacity;
-    static const ULONG defaultCapacity = 4; // that's the minimum for 3 generation plus the large object heap
+    static const ULONG defaultCapacity = 5; // that's the minimum for Gen0-2 + LOH + POH
     GenerationTable *prev;
     GenerationDesc *genDescTable;
 #ifdef  _DEBUG
@@ -765,7 +765,7 @@ static void GenWalkFunc(void * context,
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
         PRECONDITION(CheckPointer(context));
-        PRECONDITION(0 <= generation && generation <= 3);
+        PRECONDITION(0 <= generation && generation <= 4);
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
@@ -2513,7 +2513,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
             PCODE pCodeStart = NULL;
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
-                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
 
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
 
@@ -3141,6 +3141,12 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
     // If this class is not fully restored, that is all the information we can get at this time.
     //
     if (!typeHandle.IsRestored())
+    {
+        return CORPROF_E_DATAINCOMPLETE;
+    }
+
+    if (typeHandle.GetModule()->GetLoaderAllocator() == NULL ||
+        typeHandle.GetModule()->GetLoaderAllocator()->GetExposedObject() == NULL)
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -4988,7 +4994,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
-                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
 
                 pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -6527,7 +6533,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
         ILCodeVersion ilCodeVersion = NULL;
         {
-            CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
 
             ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -7062,14 +7068,14 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
     EX_CATCH_HRESULT(hr);
 
     return hr;
-#elif // FEATURE_PERFTRACING
+#else // FEATURE_PERFTRACING
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     EVENTPIPE_PROVIDER provHandle,
-    const WCHAR *szName, 
+    const WCHAR *szName,
     UINT32 eventID,
     UINT64 keywords,
     UINT32 eventVersion,
@@ -7112,7 +7118,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
                       && sizeof(EventPipeParameterDesc) == sizeof(COR_PRF_EVENTPIPE_PARAM_DESC),
             "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
         EventPipeParameterDesc *params = reinterpret_cast<EventPipeParameterDesc *>(pParamDescs);
-        
+
         size_t metadataLength;
         NewArrayHolder<BYTE> pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
             eventID,
@@ -7139,7 +7145,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     EX_CATCH_HRESULT(hr);
 
     return hr;
-#elif // FEATURE_PERFTRACING
+#else // FEATURE_PERFTRACING
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
 }
@@ -7174,14 +7180,14 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
 
     static_assert(offsetof(EventData, Ptr) == offsetof(COR_PRF_EVENT_DATA, ptr)
                     && offsetof(EventData, Size) == offsetof(COR_PRF_EVENT_DATA, size)
-                    && sizeof(EventData) == sizeof(COR_PRF_EVENT_DATA), 
+                    && sizeof(EventData) == sizeof(COR_PRF_EVENT_DATA),
         "Layouts of EventData type and COR_PRF_EVENT_DATA type do not match!");
 
     EventData *pEventData = reinterpret_cast<EventData *>(data);
     EventPipe::WriteEvent(*pEvent, pEventData, cData, pActivityId, pRelatedActivityId);
 
     return S_OK;
-#elif // FEATURE_PERFTRACING
+#else // FEATURE_PERFTRACING
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
 }
@@ -7741,7 +7747,7 @@ HRESULT ProfToEEInterfaceImpl::ProfilerEbpWalker(
 
     // Remember that we're walking the stack.  This holder will reinstate the original
     // value of the stackwalker flag (from the thread type mask) in its destructor.
-    ClrFlsValueSwitch _threadStackWalking(TlsIdx_StackWalkerWalkingThread, pThreadToSnapshot);
+    StackWalkerWalkingThreadHolder threadStackWalking(pThreadToSnapshot);
 
     // This flag remembers if we reported a managed frame since the last unmanaged block
     // we reported. It's used to avoid reporting two unmanaged blocks in a row.
@@ -9211,30 +9217,44 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
 
     if (pcchVersionString != NULL)
     {
-        HRESULT hr = GetCORVersionInternal(szVersionString, (DWORD)cchVersionString, (DWORD *)pcchVersionString);
-        if (FAILED(hr))
-            return hr;
+        PCWSTR pczVersionString = CLR_PRODUCT_VERSION_L;
+
+        // Get the module file name
+        ULONG trueLen = (ULONG)(wcslen(pczVersionString) + 1);
+
+        // Return name of module as required.
+        if (szVersionString && cchVersionString > 0)
+        {
+            ULONG copyLen = trueLen;
+
+            if (copyLen >= cchVersionString)
+            {
+                copyLen = cchVersionString - 1;
+            }
+
+            wcsncpy_s(szVersionString, cchVersionString, pczVersionString, copyLen);
+        }
+
+        *pcchVersionString = trueLen;
     }
 
     if (pClrInstanceId != NULL)
         *pClrInstanceId = static_cast<USHORT>(GetClrInstanceId());
 
     if (pRuntimeType != NULL)
-    {
         *pRuntimeType = COR_PRF_CORE_CLR;
-    }
 
     if (pMajorVersion != NULL)
-        *pMajorVersion = CLR_MAJOR_VERSION;
+        *pMajorVersion = RuntimeProductMajorVersion;
 
     if (pMinorVersion != NULL)
-        *pMinorVersion = CLR_MINOR_VERSION;
+        *pMinorVersion = RuntimeProductMinorVersion;
 
     if (pBuildNumber != NULL)
-        *pBuildNumber = CLR_BUILD_VERSION;
+        *pBuildNumber = RuntimeProductPatchVersion;
 
     if (pQFEVersion != NULL)
-        *pQFEVersion = CLR_BUILD_VERSION_QFE;
+        *pQFEVersion = 0;
 
     return S_OK;
 }
@@ -9870,18 +9890,9 @@ HRESULT ProfToEEInterfaceImpl::InitializeCurrentThread()
             LL_INFO10,
             "**PROF: InitializeCurrentThread.\n"));
 
-    HRESULT hr = S_OK;
+    SetupTLSForThread(GetThread());
 
-    EX_TRY
-    {
-        CExecutionEngine::SetupTLSForThread(GetThread());
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr))
-        return hr;
-
-     return S_OK;
+    return S_OK;
 }
 
 struct InternalProfilerModuleEnum : public ProfilerModuleEnum

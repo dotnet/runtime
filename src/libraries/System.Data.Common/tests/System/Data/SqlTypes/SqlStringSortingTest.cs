@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Data.SqlTypes.Tests
@@ -37,12 +38,8 @@ namespace System.Data.SqlTypes.Tests
 
         private static readonly UnicodeEncoding s_unicodeEncoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/12518", TestPlatforms.AnyUnix)] // TODO: Add this to the theory below when the issue is addressed on Unix
-        [Theory]
+        [ConditionalTheory]
         [InlineData("ja-JP", 0x0411)] // Japanese - Japan
-        public static void SqlStringValidComparisonTest_Windows(string cultureName, int localeId) => SqlStringValidComparisonTest(cultureName, localeId);
-
-        [Theory]
         [InlineData("ar-SA", 0x0401)] // Arabic - Saudi Arabia
         [InlineData("de-DE", 0x0407)] // German - Germany
         [InlineData("hi-IN", 0x0439)] // Hindi - India
@@ -56,6 +53,12 @@ namespace System.Data.SqlTypes.Tests
         [InlineData("en-US", 0x0409)] // English - United States
         public static void SqlStringValidComparisonTest(string cultureName, int localeId)
         {
+            if (PlatformDetection.IsIcuGlobalization && cultureName == "ja-JP" && localeId == 0x0411)
+            {
+                // TODO: Remove this once: https://github.com/dotnet/runtime/issues/18912 is fixed on ICU.
+                throw new SkipTestException($"PlatformDetection.IsIcuGlobalization and cultureName == ja-JP");
+            }
+
             var culture = new CultureInfo(cultureName);
 
             const SqlCompareOptions DefaultCompareOption = SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth;

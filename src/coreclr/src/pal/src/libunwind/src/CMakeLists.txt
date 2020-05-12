@@ -18,12 +18,13 @@ add_definitions(-D_GNU_SOURCE)
 add_definitions("-Ddwarf_search_unwind_table_int=UNW_OBJ(dwarf_search_unwind_table_int)")
 
 # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
-add_compile_options(-Wno-format)
+add_compile_options(-Wno-format -Wno-format-security)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-header-guard)
-elseif()
+else()
   add_compile_options(-Wno-unused-value)
+  add_compile_options(-Wno-unused-result)
 endif()
 
 if(CLR_CMAKE_HOST_ARCH_ARM)

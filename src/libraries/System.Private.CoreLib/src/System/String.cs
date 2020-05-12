@@ -49,20 +49,22 @@ namespace System
         [PreserveDependency("Ctor(System.Char[])", "System.String")]
         public extern String(char[]? value);
 
+        private
 #if !CORECLR
         static
 #endif
-        private string Ctor(char[]? value)
+        string Ctor(char[]? value)
         {
             if (value == null || value.Length == 0)
                 return Empty;
 
             string result = FastAllocateString(value.Length);
-            unsafe
-            {
-                fixed (char* dest = &result._firstChar, source = value)
-                    wstrcpy(dest, source, value.Length);
-            }
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref MemoryMarshal.GetArrayDataReference(value));
+
             return result;
         }
 
@@ -70,10 +72,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char[],System.Int32,System.Int32)", "System.String")]
         public extern String(char[] value, int startIndex, int length);
 
+        private
 #if !CORECLR
         static
 #endif
-        private string Ctor(char[] value, int startIndex, int length)
+        string Ctor(char[] value, int startIndex, int length)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -91,11 +94,12 @@ namespace System
                 return Empty;
 
             string result = FastAllocateString(length);
-            unsafe
-            {
-                fixed (char* dest = &result._firstChar, source = value)
-                    wstrcpy(dest, source + startIndex, length);
-            }
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(value), startIndex));
+
             return result;
         }
 
@@ -104,10 +108,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char*)", "System.String")]
         public extern unsafe String(char* value);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(char* ptr)
+        unsafe string Ctor(char* ptr)
         {
             if (ptr == null)
                 return Empty;
@@ -117,8 +122,12 @@ namespace System
                 return Empty;
 
             string result = FastAllocateString(count);
-            fixed (char* dest = &result._firstChar)
-                wstrcpy(dest, ptr, count);
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref *ptr);
+
             return result;
         }
 
@@ -127,10 +136,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char*,System.Int32,System.Int32)", "System.String")]
         public extern unsafe String(char* value, int startIndex, int length);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(char* ptr, int startIndex, int length)
+        unsafe string Ctor(char* ptr, int startIndex, int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
@@ -151,8 +161,12 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(ptr), SR.ArgumentOutOfRange_PartialWCHAR);
 
             string result = FastAllocateString(length);
-            fixed (char* dest = &result._firstChar)
-                wstrcpy(dest, pStart, length);
+
+            Buffer.Memmove(
+               elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+               destination: ref result._firstChar,
+               source: ref *pStart);
+
             return result;
         }
 
@@ -161,10 +175,11 @@ namespace System
         [PreserveDependency("Ctor(System.SByte*)", "System.String")]
         public extern unsafe String(sbyte* value);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(sbyte* value)
+        unsafe string Ctor(sbyte* value)
         {
             byte* pb = (byte*)value;
             if (pb == null)
@@ -180,10 +195,11 @@ namespace System
         [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32)", "System.String")]
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(sbyte* value, int startIndex, int length)
+        unsafe string Ctor(sbyte* value, int startIndex, int length)
         {
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -240,10 +256,11 @@ namespace System
         [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)", "System.String")]
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
+        unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
         {
             if (enc == null)
                 return new string(value, startIndex, length);
@@ -275,10 +292,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char,System.Int32)", "System.String")]
         public extern String(char c, int count);
 
+        private
 #if !CORECLR
         static
 #endif
-        private string Ctor(char c, int count)
+        string Ctor(char c, int count)
         {
             if (count <= 0)
             {
@@ -325,10 +343,11 @@ namespace System
         [PreserveDependency("Ctor(System.ReadOnlySpan`1<System.Char>)", "System.String")]
         public extern String(ReadOnlySpan<char> value);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(ReadOnlySpan<char> value)
+        unsafe string Ctor(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)
                 return Empty;
@@ -359,6 +378,28 @@ namespace System
         public static implicit operator ReadOnlySpan<char>(string? value) =>
             value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryGetSpan(int startIndex, int count, out ReadOnlySpan<char> slice)
+        {
+#if TARGET_64BIT
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)startIndex + (ulong)(uint)count > (ulong)(uint)Length)
+            {
+                slice = default;
+                return false;
+            }
+#else
+            if ((uint)startIndex > (uint)Length || (uint)count > (uint)(Length - startIndex))
+            {
+                slice = default;
+                return false;
+            }
+#endif
+
+            slice = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count);
+            return true;
+        }
+
         public object Clone()
         {
             return this;
@@ -370,8 +411,12 @@ namespace System
                 throw new ArgumentNullException(nameof(str));
 
             string result = FastAllocateString(str.Length);
-            fixed (char* dest = &result._firstChar, src = &str._firstChar)
-                wstrcpy(dest, src, str.Length);
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref str._firstChar);
+
             return result;
         }
 
@@ -393,25 +438,31 @@ namespace System
             if (destinationIndex > destination.Length - count || destinationIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_IndexCount);
 
-            fixed (char* src = &_firstChar, dest = destination)
-                wstrcpy(dest + destinationIndex, src + sourceIndex, count);
+            Buffer.Memmove(
+                destination: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destination), destinationIndex),
+                source: ref Unsafe.Add(ref _firstChar, sourceIndex),
+                elementCount: (uint)count);
         }
 
         // Returns the entire string as an array of characters.
-        public unsafe char[] ToCharArray()
+        public char[] ToCharArray()
         {
             if (Length == 0)
                 return Array.Empty<char>();
 
             char[] chars = new char[Length];
-            fixed (char* src = &_firstChar, dest = &chars[0])
-                wstrcpy(dest, src, Length);
+
+            Buffer.Memmove(
+                destination: ref MemoryMarshal.GetArrayDataReference(chars),
+                source: ref _firstChar,
+                elementCount: (uint)Length);
+
             return chars;
         }
 
         // Returns a substring of this string as an array of characters.
         //
-        public unsafe char[] ToCharArray(int startIndex, int length)
+        public char[] ToCharArray(int startIndex, int length)
         {
             // Range check everything.
             if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
@@ -425,8 +476,12 @@ namespace System
             }
 
             char[] chars = new char[length];
-            fixed (char* src = &_firstChar, dest = &chars[0])
-                wstrcpy(dest, src + startIndex, length);
+
+            Buffer.Memmove(
+               destination: ref MemoryMarshal.GetArrayDataReference(chars),
+               source: ref Unsafe.Add(ref _firstChar, startIndex),
+               elementCount: (uint)length);
+
             return chars;
         }
 
@@ -438,7 +493,7 @@ namespace System
             // the first char: value[0] if that is performed following the test
             // for the same test cost.
             // Ternary operator returning true/false prevents redundant asm generation:
-            // https://github.com/dotnet/coreclr/issues/914
+            // https://github.com/dotnet/runtime/issues/4207
             return (value == null || 0u >= (uint)value.Length) ? true : false;
         }
 

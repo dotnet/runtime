@@ -15,7 +15,8 @@ win_files  = \
 
 unix_files = \
 	gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c	\
-	gmodule-unix.c gtimer-unix.c gmodule-aix.c
+	gmodule-unix.c gtimer-unix.c gmodule-aix.c \
+	gspawn.c
 
 if HOST_WIN32
 os_files = $(win_files)
@@ -44,7 +45,6 @@ libeglib_la_SOURCES = \
 	gqueue.c	\
 	gpath.c		\
 	gshell.c	\
-	gspawn.c	\
 	gfile.c		\
 	gfile-posix.c	\
 	gpattern.c	\

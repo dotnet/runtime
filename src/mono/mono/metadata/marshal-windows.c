@@ -107,7 +107,7 @@ mono_string_to_utf8str_impl (MonoStringHandle s, MonoError *error)
 
 	// FIXME pass g_utf16_to_utf8 an allocator to avoid double alloc/copy.
 
-	uint32_t gchandle = 0;
+	MonoGCHandle gchandle = NULL;
 	tmp = g_utf16_to_utf8 (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s), NULL, &len, &gerror);
 	mono_gchandle_free_internal (gchandle);
 	if (gerror) {

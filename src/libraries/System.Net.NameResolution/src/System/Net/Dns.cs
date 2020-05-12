@@ -57,7 +57,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
-            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress address))
+            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
                 {
@@ -158,7 +158,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPAddress[] addresses;
-            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress address))
+            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
                 {
@@ -210,7 +210,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(hostName));
             }
 
-            if (IPAddress.TryParse(hostName, out IPAddress address))
+            if (IPAddress.TryParse(hostName, out IPAddress? address))
             {
                 return CreateHostEntryForAddress(address);
             }
@@ -287,7 +287,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
-            if (IPAddress.TryParse(hostName, out IPAddress address) &&
+            if (IPAddress.TryParse(hostName, out IPAddress? address) &&
                 (address.AddressFamily != AddressFamily.InterNetworkV6 || SocketProtocolSupportPal.OSSupportsIPv6))
             {
                 try
@@ -441,7 +441,7 @@ namespace System.Net
             }
 
             // See if it's an IP Address.
-            if (IPAddress.TryParse(hostName, out IPAddress ipAddress))
+            if (IPAddress.TryParse(hostName, out IPAddress? ipAddress))
             {
                 if (throwOnIIPAny && (ipAddress.Equals(IPAddress.Any) || ipAddress.Equals(IPAddress.IPv6Any)))
                 {

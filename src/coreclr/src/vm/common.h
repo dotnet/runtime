@@ -98,13 +98,11 @@
 
 #define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:I64(0xCCCCCCCCCCCCCCCC)))
 
-#include "ndpversion.h"
 #include "switches.h"
 #include "holder.h"
 #include "classnames.h"
 #include "util.hpp"
 #include "corpriv.h"
-//#include "WarningControl.h"
 
 #include <daccess.h>
 
@@ -187,7 +185,7 @@ typedef DPTR(OBJECTREF) PTR_OBJECTREF;
 typedef DPTR(PTR_OBJECTREF) PTR_PTR_OBJECTREF;
 
 EXTERN_C Thread* STDCALL GetThread();
-BOOL SetThread(Thread*);
+void SetThread(Thread*);
 
 // This is a mechanism by which macros can make the Thread pointer available to inner scopes
 // that is robust to code changes.  If the outer Thread no longer is available for some reason
@@ -287,6 +285,7 @@ namespace Loader
 #include "log.h"
 #include "loaderheap.h"
 #include "fixuppointer.h"
+#include "stgpool.h"
 
 // src/vm
 #include "gcenv.interlocked.h"

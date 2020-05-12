@@ -755,6 +755,12 @@ fi
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
+# for perf jit dump support
+AC_CHECK_HEADERS(sys/mman.h)
+if test "x$host_linux" = "xyes" -a x$ac_cv_header_sys_mman_h = xyes -a  x$ac_cv_header_elf_h = xyes -a x$ac_cv_header_sys_syscall_h = xyes; then
+   AC_DEFINE(ENABLE_JIT_DUMP, 1, [Enable jit dump support on Linux])
+fi
+
 # for support
 AC_CHECK_HEADERS(poll.h)
 AC_CHECK_HEADERS(sys/poll.h)
@@ -1383,7 +1389,9 @@ if test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_gac='yes'
    mono_feature_disable_perfcounters='yes'
    mono_feature_disable_attach='yes'
-   mono_feature_disable_dllmap='yes'
+   if test "x$enable_monodroid" = "x" -a "x$enable_monotouch" = "x"; then
+     mono_feature_disable_dllmap='yes' # FIXME: the mobile products use this
+   fi
    disable_mono_native=yes
    support_boehm=no
 elif test x$with_runtime_preset = xnet_4_x; then
@@ -2369,14 +2377,6 @@ if test x$host_win32 = xno; then
 	dnl *** Checks for libsocket  ***
 	dnl *****************************
 	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket")
-
-	case "$host" in
-		*-*-*freebsd*)
-			dnl *****************************
-			dnl *** Checks for libinotify ***
-			dnl *****************************
-			AC_CHECK_LIB(inotify, inotify_init, LIBS="$LIBS -linotify")
-	esac
 
 	dnl *****************************
 	dnl *** Checks for IPPROTO_IP ***
@@ -3646,6 +3646,35 @@ if test x$host_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 
+	case "$host" in
+		*-*-*freebsd*)
+			dnl *****************************
+			dnl *** Checks for libinotify ***
+			dnl *****************************
+			AC_CHECK_LIB(inotify, inotify_init, LIBS="$LIBS -linotify")
+			if test "x$ac_cv_lib_inotify_inotify_init" = "xyes" ; then
+				AC_DEFINE(HAVE_LIBINOTIFY, 1, [FreeBSD libinotify kqueue shim])
+				dnl Needs to be done this way to avoid collision with various 
+				dnl ports including glib and llvm*
+				METADATA_CFLAGS="-I/usr/local/include"
+				AC_SUBST(METADATA_CFLAGS)
+			fi
+			dnl Workaround due to inotify_rm_watch check failing without -I
+			AC_MSG_CHECKING(for inotify_rm_watch with unsigned wd in libinotify)
+			AC_TRY_LINK([
+				#include </usr/local/include/sys/inotify.h>
+			], [
+				intptr_t fd;
+				uint32_t wd;
+				int result = inotify_rm_watch(fd, wd);
+			],[
+			   AC_MSG_RESULT(yes)
+			   AC_DEFINE(INOTIFY_RM_WATCH_WD_UNSIGNED, 1, [inotify_rm_watch with unsigned wd])
+			], [
+				AC_MSG_RESULT(no)
+			])
+	esac
+
 	CFLAGS="$ORIG_CFLAGS"
 
 	AC_MSG_CHECKING(for shm_open that works well enough with mmap)
@@ -4215,6 +4244,11 @@ if test "x$enable_llvm" = "xdefault"; then
    enable_llvm=$enable_llvm_default
 fi
 
+if test "x$enable_loadedllvm" = "xyes"; then
+   AC_MSG_WARN("Loadable LLVM is no longer supported. Enabling default LLVM support instead.")
+   enable_llvm=yes
+fi
+
 enable_llvm_msvc_only="no"
 if test "x$enable_llvm" = "xyes"; then
 	if test "x$host_win32" = "xyes"; then
@@ -4228,10 +4262,6 @@ if test "x$enable_llvm" = "xyes"; then
 				AC_MSG_ERROR("LLVM for host=Windows and target=Windows is only supported for x64 builds.")
 				;;
 			esac
-		fi
-		if test "x$enable_loadedllvm" = "xyes"; then
-			AC_MSG_WARN("Loadable LLVM currently not supported on Windows. Disabling feature.")
-			enable_loadedllvm=no
 		fi
 	fi
 fi
@@ -4301,13 +4331,6 @@ if test "x$enable_llvm_asserts" != "xno"; then
 fi
 
 AM_CONDITIONAL(ENABLE_LLVM, [test x$enable_llvm = xyes && test x$enable_llvm_msvc_only != xyes])
-
-AM_CONDITIONAL(LOADED_LLVM, [test x$enable_loadedllvm = xyes && test x$enable_llvm_msvc_only != xyes])
-if test "x$enable_loadedllvm" = "xyes"; then
-	if test "x$enable_llvm_msvc_only" != "xyes"; then
-		AC_DEFINE(MONO_LLVM_LOADED, 1, [The LLVM back end is dynamically loaded])
-	fi
-fi
 
 if test "x$enable_llvm" = "xyes"; then
 	enable_llvm_runtime=yes
@@ -6569,7 +6592,7 @@ elif case $host_os in freebsd*) true;; *) false;; esac; then
 	MONO_NATIVE_CXX=$CXX
 	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
-	MONO_NATIVE_CFLAGS=$CFLAGS
+	MONO_NATIVE_CFLAGS="$CFLAGS -I/usr/local/include"
 	MONO_NATIVE_LDFLAGS=$LDFLAGS
 
 	mono_native=yes
@@ -6742,6 +6765,18 @@ if test x"$GCC" = xyes; then
 	CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
 	# jay has a lot of implicit declarations
 	JAY_CFLAGS="-Wno-implicit-function-declaration"
+
+	ORIG_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -Wsometimes-uninitialized -Werror"
+	AC_MSG_CHECKING(for -Wsometimes-uninitialized option to gcc)
+	AC_TRY_COMPILE([],[
+	], [
+		AC_MSG_RESULT(yes)
+		CFLAGS="$ORIG_CFLAGS -Werror=sometimes-uninitialized"
+	], [
+		AC_MSG_RESULT(no)
+		CFLAGS=$ORIG_CFLAGS
+	])
 fi
 
 # zlib/configure checks if this program compiles and if so
@@ -7030,7 +7065,7 @@ echo "
 	Engine:        $jit_status
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
-	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm, built in-tree: $internal_llvm, assertions: $enable_llvm_asserts, msvc only: $enable_llvm_msvc_only)
+	LLVM Back End: $enable_llvm (built in-tree: $internal_llvm, assertions: $enable_llvm_asserts, msvc only: $enable_llvm_msvc_only)
 	Spectre:       $spectre_mitigation_status
 	Mono.Native:   $mono_native_text
 

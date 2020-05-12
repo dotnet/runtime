@@ -576,6 +576,13 @@ namespace System.Xml
             _lastTask = task;
             return task;
         }
+
+        protected override ValueTask DisposeAsyncCore()
+        {
+            CheckAsync();
+            return _coreWriter.DisposeAsync();
+        }
+
         #endregion
     }
 }

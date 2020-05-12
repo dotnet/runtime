@@ -13,7 +13,7 @@ namespace System.Net.Http.Headers
     {
         public static AltSvcHeaderValue Clear { get; } = new AltSvcHeaderValue("clear", host: null, port: 0, maxAge: TimeSpan.Zero, persist: false);
 
-        public AltSvcHeaderValue(string alpnProtocolName, string host, int port, TimeSpan maxAge, bool persist)
+        public AltSvcHeaderValue(string alpnProtocolName, string? host, int port, TimeSpan maxAge, bool persist)
         {
             AlpnProtocolName = alpnProtocolName;
             Host = host;
@@ -28,7 +28,7 @@ namespace System.Net.Http.Headers
         /// The name of the host serving this alternate service.
         /// If null, the alternate service is on the same host this header was received from.
         /// </summary>
-        public string Host { get; }
+        public string? Host { get; }
 
         public int Port { get; }
 

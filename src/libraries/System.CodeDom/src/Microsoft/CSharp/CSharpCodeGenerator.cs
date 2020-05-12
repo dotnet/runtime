@@ -2257,8 +2257,6 @@ namespace Microsoft.CSharp
             for (int i = 0; i < typeParameters.Count; i++)
             {
                 // generating something like: "where KeyType: IComparable, IEnumerable"
-
-                Output.WriteLine();
                 Indent++;
 
                 bool first = true;
@@ -2268,6 +2266,7 @@ namespace Microsoft.CSharp
                     {
                         if (first)
                         {
+                            Output.WriteLine();
                             Output.Write("where ");
                             Output.Write(typeParameters[i].Name);
                             Output.Write(" : ");
@@ -2285,6 +2284,7 @@ namespace Microsoft.CSharp
                 {
                     if (first)
                     {
+                        Output.WriteLine();
                         Output.Write("where ");
                         Output.Write(typeParameters[i].Name);
                         Output.Write(" : new()");

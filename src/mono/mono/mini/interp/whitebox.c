@@ -143,10 +143,8 @@ determine_verbose_level (TransformData *td)
 		mono_method_desc_free (desc);
 		if (match)
 			return 4;
-	} else {
-		if (strcmp (method->name, name) == 0)
-			return 4;
-	}
+	} else if (!strcmp (method->name, name))
+		return 4;
 
 	return 0;
 }
@@ -223,7 +221,7 @@ main (int argc, char* argv[])
 		g_print ("test \"%s\": %d\n", ti->test_name, result);
 		free (td);
 
-		if (!!result)
+		if (result)
 			test_failed++;
 		else
 			test_success++;

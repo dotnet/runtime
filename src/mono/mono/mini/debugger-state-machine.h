@@ -14,7 +14,6 @@
 
 #include <glib.h>
 #include <mono/metadata/metadata.h>
-#include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/json.h>
 #include "debugger-agent.h"
 

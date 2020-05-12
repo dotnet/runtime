@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Runtime.Tests
@@ -26,10 +27,15 @@ namespace System.Runtime.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sizeInMegabytes", () => new MemoryFailPoint(sizeInMegabytes));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] //https://github.com/dotnet/coreclr/issues/7807
+        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.Windows)] //https://github.com/dotnet/runtime/issues/6879
         public void Ctor_LargeSizeInMegabytes_ThrowsInsufficientMemoryException()
         {
+            if (PlatformDetection.IsArmProcess)
+            {
+                throw new SkipTestException("[ActiveIssue: https://github.com/dotnet/runtime/issues/35805]");
+            }
+
             Assert.Throws<InsufficientMemoryException>(() => new MemoryFailPoint(int.MaxValue));
         }
     }

@@ -143,8 +143,10 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureEip == offsetof(LazyMachState, captur
 #define VASigCookie__StubOffset 4
 ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
 
+#ifndef UNIX_X86_ABI
 #define SIZEOF_TailCallFrame 32
 ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
+#endif // !UNIX_X86_ABI
 
 #define SIZEOF_GSCookie 4
 
@@ -189,11 +191,6 @@ ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 #endif // CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
-#define Thread_m_dwLockCount 0x14
-ASMCONSTANTS_C_ASSERT(Thread_m_dwLockCount == offsetof(Thread, m_dwLockCount))
-
-#define Thread_m_ThreadId 0x18
-ASMCONSTANTS_C_ASSERT(Thread_m_ThreadId == offsetof(Thread, m_ThreadId))
 
 #ifdef FEATURE_HIJACK
 #define TS_Hijacked_ASM 0x80

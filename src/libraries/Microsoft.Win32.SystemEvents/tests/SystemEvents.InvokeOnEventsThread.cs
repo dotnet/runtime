@@ -14,7 +14,7 @@ namespace Microsoft.Win32.SystemEventsTests
 {
     public class InvokeOnEventsThreadTests : SystemEventsTest
     {
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/38661", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29941", TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void InvokeOnEventsThreadRunsAsynchronously()
         {

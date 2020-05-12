@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 
 using Microsoft.Win32.SafeHandles;
@@ -14,10 +15,10 @@ namespace Internal.Cryptography.Pal
         /// <summary>
         /// Does not throw on api error. Returns default(bool?) and sets "exception" instead.
         /// </summary>
-        bool? Verify(X509VerificationFlags flags, out Exception exception);
+        bool? Verify(X509VerificationFlags flags, out Exception? exception);
 
-        X509ChainElement[] ChainElements { get; }
-        X509ChainStatus[] ChainStatus { get; }
-        SafeX509ChainHandle SafeHandle { get; }
+        X509ChainElement[]? ChainElements { get; }
+        X509ChainStatus[]? ChainStatus { get; }
+        SafeX509ChainHandle? SafeHandle { get; }
     }
 }

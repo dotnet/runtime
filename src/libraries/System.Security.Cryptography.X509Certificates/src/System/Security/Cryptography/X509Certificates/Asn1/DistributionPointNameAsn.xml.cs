@@ -9,13 +9,12 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
-#nullable enable
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct DistributionPointNameAsn
     {
-        internal System.Security.Cryptography.Asn1.GeneralNameAsn[] FullName;
+        internal System.Security.Cryptography.Asn1.GeneralNameAsn[]? FullName;
         internal ReadOnlyMemory<byte>? NameRelativeToCRLIssuer;
 
 #if DEBUG

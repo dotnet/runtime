@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -194,7 +195,8 @@ namespace System.Windows.Forms
         /// </summary>
         /// <param name="logicalImage">The image to scale from logical units to device units</param>
         /// <param name="targetImageSize">The size to scale image to</param>
-        public static Bitmap CreateResizedBitmap(Bitmap logicalImage, Size targetImageSize)
+        [return: NotNullIfNotNull("logicalImage")]
+        public static Bitmap? CreateResizedBitmap(Bitmap? logicalImage, Size targetImageSize)
         {
             if (logicalImage == null)
             {
@@ -210,7 +212,7 @@ namespace System.Windows.Forms
         /// Note: this method should be called only inside an if (DpiHelper.IsScalingRequired) clause
         /// </summary>
         /// <param name="logicalBitmap">The image to scale from logical units to device units</param>
-        public static void ScaleBitmapLogicalToDevice(ref Bitmap logicalBitmap)
+        public static void ScaleBitmapLogicalToDevice([NotNullIfNotNull("logicalBitmap")]ref Bitmap? logicalBitmap)
         {
             if (logicalBitmap == null)
             {

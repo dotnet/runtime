@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Converters
                     break;
 
                 // When utf8reader/writer will support all primitive types we should remove custom bound checks
-                // https://github.com/dotnet/corefx/issues/36125
+                // https://github.com/dotnet/runtime/issues/29000
                 case TypeCode.SByte:
                     if (reader.TryGetInt32(out int byte8) && JsonHelpers.IsInRangeInclusive(byte8, sbyte.MinValue, sbyte.MaxValue))
                     {

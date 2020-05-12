@@ -13,6 +13,7 @@ namespace System.ComponentModel.Composition
     public class DynamicMetadata : IDisposable
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SimpleAttachment()
         {
             MetadataStore.Container = new CompositionContainer();
@@ -34,6 +35,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void LocalContainer()
         {
             var container1 = new CompositionContainer();
@@ -60,6 +62,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void DualContainers()
         {
             var container1 = new CompositionContainer();

@@ -29,7 +29,7 @@ namespace Internal.Cryptography.Pal
         private const ulong X509_R_CERT_ALREADY_IN_HASH_TABLE = 0x0B07D065;
 
         [ThreadStatic]
-        private static HashAlgorithm ts_urlHash;
+        private static HashAlgorithm? ts_urlHash;
 
         public static void AddCrlForCertificate(
             SafeX509Handle cert,
@@ -45,7 +45,7 @@ namespace Internal.Cryptography.Pal
                 verificationTime = DateTime.MinValue;
             }
 
-            string url = GetCdpUrl(cert);
+            string? url = GetCdpUrl(cert);
 
             if (url == null)
             {
@@ -138,7 +138,7 @@ namespace Internal.Cryptography.Pal
         {
             // X509_STORE_add_crl will increase the refcount on the CRL object, so we should still
             // dispose our copy.
-            using (SafeX509CrlHandle crl = CertificateAssetDownloader.DownloadCrl(url, ref remainingDownloadTime))
+            using (SafeX509CrlHandle? crl = CertificateAssetDownloader.DownloadCrl(url, ref remainingDownloadTime))
             {
                 // null is a valid return (e.g. no remainingDownloadTime)
                 if (crl != null && !crl.IsInvalid)
@@ -232,7 +232,7 @@ namespace Internal.Cryptography.Pal
             return Path.Combine(s_crlDir, localFileName);
         }
 
-        private static string GetCdpUrl(SafeX509Handle cert)
+        private static string? GetCdpUrl(SafeX509Handle cert)
         {
             ArraySegment<byte> crlDistributionPoints =
                 OpenSslX509CertificateReader.FindFirstExtension(cert, Oids.CrlDistributionPoints);
@@ -260,7 +260,7 @@ namespace Internal.Cryptography.Pal
                         foreach (GeneralNameAsn name in distributionPoint.DistributionPoint.Value.FullName)
                         {
                             if (name.Uri != null &&
-                                Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
+                                Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri? uri) &&
                                 uri.Scheme == "http")
                             {
                                 return name.Uri;

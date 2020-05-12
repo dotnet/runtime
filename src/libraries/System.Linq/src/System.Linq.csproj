@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ContractProject Include="..\ref\System.Linq.csproj">
-      <TargetGroup>$(NetCoreAppCurrent)</TargetGroup>
+      <BuildTargetFramework>$(NetCoreAppCurrent)</BuildTargetFramework>
     </ContractProject>
   </ItemGroup>
   <ItemGroup> <!-- Optimize for speed -->
@@ -29,26 +29,20 @@
     <Compile Include="System\Linq\Take.SpeedOpt.cs" />
     <Compile Include="System\Linq\Union.SpeedOpt.cs" />
     <Compile Include="System\Linq\Where.SpeedOpt.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs">
-      <Link>System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
+             Link="System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
-      <Link>System\Collections\Generic\ArrayBuilder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs">
-      <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.Linq.cs">
-      <Link>System\Collections\Generic\EnumerableHelpers.Linq.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.cs">
-      <Link>System\Collections\Generic\LargeArrayBuilder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Collections\Generic\SparseArrayBuilder.cs">
-      <Link>System\Collections\Generic\SparseArrayBuilder.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
+             Link="System\Collections\Generic\ArrayBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
+             Link="System\Collections\Generic\EnumerableHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.Linq.cs"
+             Link="System\Collections\Generic\EnumerableHelpers.Linq.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.cs"
+             Link="System\Collections\Generic\LargeArrayBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\SparseArrayBuilder.cs"
+             Link="System\Collections\Generic\SparseArrayBuilder.cs" />
     <Compile Include="System\Linq\Aggregate.cs" />
     <Compile Include="System\Linq\AnyAll.cs" />
     <Compile Include="System\Linq\AppendPrepend.cs" />
