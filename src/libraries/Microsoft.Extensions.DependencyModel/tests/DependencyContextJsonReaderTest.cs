@@ -667,6 +667,48 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void ReadsRuntimePackLibrary()
+        {
+            var context = Read(
+@"{
+    ""runtimeTarget"": {
+        ""name"": "".NETCoreApp,Version=v5.0/win-x86"",
+        ""signature"": """"
+    },
+    ""targets"": {
+        "".NETCoreApp,Version=v5.0/win-x86"": {
+            ""runtimepack.Microsoft.NETCore.App.Runtime.win-x86/5.0.0-preview.5.20251.1"": {
+                ""runtime"": {
+                    ""System.Private.CoreLib.dll"": {
+                        ""assemblyVersion"": ""5.0.0.0"",
+                        ""fileVersion"": ""5.0.20.25101""
+                    }
+                },
+                ""native"": {
+                    ""coreclr.dll"": {
+                        ""fileVersion"": ""5.0.20.25101""
+                    }
+                }
+            }
+        }
+    },
+    ""libraries"": {
+        ""runtimepack.Microsoft.NETCore.App.Runtime.win-x86/5.0.0-preview.5.20251.1"": {
+            ""type"": ""runtimepack"",
+            ""serviceable"": false,
+            ""sha512"": """",
+            ""frameworkName"": ""Microsoft.NETCore.App""
+        }
+    }
+}");
+
+            var runtimeLibrary = context.RuntimeLibraries.Should().ContainSingle().Subject;
+            runtimeLibrary.Type.Should().Be("runtimepack");
+            runtimeLibrary.Serviceable.Should().Be(false);
+            runtimeLibrary.FrameworkName.Should().Be("Microsoft.NETCore.App");
+        }
+
+        [Fact]
         public void ReadsCompilationOptions()
         {
             var context = Read(
