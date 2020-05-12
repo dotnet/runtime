@@ -25,7 +25,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteSingle(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -41,7 +41,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteDouble(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = "f6".HexToByteArray();
             var writer = new CborWriter();
             writer.WriteNull();
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -61,7 +61,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteBoolean(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -77,7 +77,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteSimpleValue(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
     }
 }

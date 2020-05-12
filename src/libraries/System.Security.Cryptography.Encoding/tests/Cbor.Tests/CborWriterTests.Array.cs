@@ -27,7 +27,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter();
             Helpers.WriteArray(writer, values);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -40,7 +40,7 @@ namespace System.Formats.Cbor.Tests
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var writer = new CborWriter();
             Helpers.WriteArray(writer, values);
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -59,7 +59,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
 
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -74,7 +74,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
 
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
 
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
@@ -108,7 +108,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
 
-            byte[] actualEncoding = writer.GetEncoding();
+            byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 

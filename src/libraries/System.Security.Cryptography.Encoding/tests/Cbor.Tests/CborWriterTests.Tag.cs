@@ -32,7 +32,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             writer.WriteTag((CborTag)tag);
             Helpers.WriteValue(writer, value);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -50,7 +50,7 @@ namespace System.Formats.Cbor.Tests
                 writer.WriteTag((CborTag)tag);
             }
             Helpers.WriteValue(writer, value);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -65,7 +65,7 @@ namespace System.Formats.Cbor.Tests
                 writer.WriteTag((CborTag)tag);
             }
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.Encode());
 
             Assert.Equal("Buffer contains incomplete CBOR document.", exn.Message);
         }
@@ -90,7 +90,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             writer.WriteDateTimeOffset(value);
 
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -105,7 +105,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
 
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -122,7 +122,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
 
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -155,7 +155,7 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             writer.WriteBigInteger(value);
 
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -175,7 +175,7 @@ namespace System.Formats.Cbor.Tests
             decimal value = decimal.Parse(stringValue, Globalization.CultureInfo.InvariantCulture);
             var writer = new CborWriter();
             writer.WriteDecimal(value);
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
