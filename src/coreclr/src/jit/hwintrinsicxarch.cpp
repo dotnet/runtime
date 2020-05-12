@@ -535,15 +535,13 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     unsigned  simdSize = 0;
-
-    assert(!sig->hasThis());
-    assert(varTypeIsArithmetic(baseType));
+    var_types sigRetType = JITtype2varType(sig->retType);
 
     if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
     {
         getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
     }
-    else if (retType == TYP_STRUCT)
+    else if (sigRetType == TYP_STRUCT)
     {
         getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
     }
