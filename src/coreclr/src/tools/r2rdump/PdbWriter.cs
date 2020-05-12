@@ -102,6 +102,34 @@ namespace ILCompiler.PdbWriter
         UIntPtr _pdbMod;
         ISymNGenWriter2 _ngenWriter;
 
+        private const string DiaSymReaderModuleName32 = "Microsoft.DiaSymReader.Native.x86.dll";
+        private const string DiaSymReaderModuleName64 = "Microsoft.DiaSymReader.Native.amd64.dll";
+
+        private const string CreateNGenPdbWriterFactoryName = "CreateNGenPdbWriter";
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
+        [DllImport(DiaSymReaderModuleName32, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriter32([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
+        [DllImport(DiaSymReaderModuleName64, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriter64([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
+
+        private static ISymNGenWriter2 CreateNGenWriter(string ngenImagePath, string pdbPath)
+        {
+            object instance;
+
+            if (IntPtr.Size == 4)
+            {
+                CreateNGenPdbWriter32(ngenImagePath, pdbPath, out instance);
+            }
+            else
+            {
+                CreateNGenPdbWriter64(ngenImagePath, pdbPath, out instance);
+            }
+            return (ISymNGenWriter2)instance;
+        }
+
         public PdbWriter(string pdbPath, PDBExtraData pdbExtraData, string managedPDBSearchPath)
         {
             SymDocument unknownDocument = new SymDocument();
@@ -194,7 +222,7 @@ namespace ILCompiler.PdbWriter
                 dllPath = _tempSourceDllName;
             }
 
-            _ngenWriter = SymUnmanagedFactory.CreateNGenWriter(dllPath, _pdbPath);
+            _ngenWriter = CreateNGenWriter(dllPath, _pdbPath + "\\");
 
             {
                 // PDB file is now created.  Get its path and initialize _pdbFilePath so the PDB file
@@ -211,6 +239,7 @@ namespace ILCompiler.PdbWriter
             WriteFileChecksums();
 
             ushort? iCodeSection = null;
+            uint rvaOfTextSection = 0;
             using (var peReader = new PEReader(new FileStream(dllPath, FileMode.Open), PEStreamOptions.Default))
             {
                 var sections = peReader.PEHeaders.SectionHeaders;
@@ -223,6 +252,7 @@ namespace ILCompiler.PdbWriter
                     if (sections[i].Name == ".text")
                     {
                         iCodeSection = pdbSectionNumber;
+                        rvaOfTextSection = (uint)sections[i].VirtualAddress;
                     }
                     _ngenWriter.ModAddSecContribEx(_pdbMod, pdbSectionNumber, 0, sections[i].SizeOfRawData, (uint)sections[i].SectionCharacteristics, 0, 0);
                 }
@@ -237,18 +267,18 @@ namespace ILCompiler.PdbWriter
 
             foreach (var method in methods)
             {
-                WriteMethodPDBData(iCodeSection.Value, method, Path.GetFileNameWithoutExtension(originalDllPath), isILPDBProvided);
+                WriteMethodPDBData(iCodeSection.Value, method, Path.GetFileNameWithoutExtension(originalDllPath), rvaOfTextSection, isILPDBProvided);
             }
         }
 
-        void WriteMethodPDBData(ushort iCodeSection, MethodInfo method, string assemblyName, bool isILPDBProvided)
+        void WriteMethodPDBData(ushort iCodeSection, MethodInfo method, string assemblyName, uint textSectionOffset, bool isILPDBProvided)
         {
-            string nameSuffix = $"$#{(assemblyName != method.AssemblyName ? method.AssemblyName : String.Empty)}#{method.MethodToken.ToString("X")}";
+            string nameSuffix = $"{method.Name}$#{(assemblyName != method.AssemblyName ? method.AssemblyName : String.Empty)}#{method.MethodToken.ToString("X")}";
 
-            _ngenWriter.AddSymbol($"{method.Name}{nameSuffix}", iCodeSection, method.HotRVA);
+            _ngenWriter.AddSymbol(nameSuffix, iCodeSection, method.HotRVA - textSectionOffset);
             if (method.ColdRVA != 0)
             {
-                _ngenWriter.AddSymbol($"[COLD] {method.Name}{nameSuffix}", iCodeSection, method.HotRVA);
+                _ngenWriter.AddSymbol($"[COLD] {nameSuffix}", iCodeSection, method.ColdRVA);
             }
 
             if (isILPDBProvided)
@@ -298,7 +328,7 @@ namespace ILCompiler.PdbWriter
 
                 long offset = writer.BaseStream.Position;
                 _stringTableToOffsetMapping.Add(str, checked((int)(offset - startOfStringTableOffset)));
-                writer.Write(str);
+                writer.Write(str.AsSpan());
                 writer.Write((byte)0); // Null terminate all strings
             }
 
@@ -340,6 +370,7 @@ namespace ILCompiler.PdbWriter
                     checksumType = SymChecksumType.None;
                     checksum = Array.Empty<byte>();
                 }
+                writer.Write(_stringTableToOffsetMapping[document.Name]);
                 writer.Write((byte)checksum.Length);
                 writer.Write((byte)checksumType);
                 writer.Write(checksum);

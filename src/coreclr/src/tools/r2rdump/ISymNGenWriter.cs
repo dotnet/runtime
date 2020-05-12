@@ -61,13 +61,13 @@ namespace Microsoft.DiaSymReader
                         int offset,
                         int cb);
 
-        void OpenModW(string wszModule,
-                      string wszObjFile,
+        void OpenModW([MarshalAs(UnmanagedType.LPWStr)] string wszModule,
+                      [MarshalAs(UnmanagedType.LPWStr)] string wszObjFile,
                       out UIntPtr ppmod);
 
         void CloseMod(UIntPtr pmod);
 
-        void ModAddSymbols(UIntPtr pmod, byte[] pbSym, int cb);
+        void ModAddSymbols(UIntPtr pmod, [MarshalAs(UnmanagedType.LPArray)] byte[] pbSym, int cb);
 
         void ModAddSecContribEx(
             UIntPtr pmod,
@@ -79,7 +79,7 @@ namespace Microsoft.DiaSymReader
             uint dwRelocCrc);
 
         void QueryPDBNameExW(
-            StringBuilder pdb,
+            [MarshalAs(UnmanagedType.LPWStr)] StringBuilder pdb,
             IntPtr cchMax);
     }
 }
