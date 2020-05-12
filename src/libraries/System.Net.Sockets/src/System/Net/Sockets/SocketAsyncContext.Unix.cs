@@ -1234,18 +1234,12 @@ namespace System.Net.Sockets
                             _state = QueueState.Processing;
                             nextOperation = _tail.Next;
 
-                            while (batchedCount < ioControlBlocks.Length && nextOperation.TryBatch(context, batchedCount, ref ioControlBlocks[batchedCount]))
+                            if (batchedCount < ioControlBlocks.Length && nextOperation.TryBatch(context, batchedCount, ref ioControlBlocks[batchedCount]))
                             {
                                 batchedOperations[batchedCount++] = nextOperation;
-                                _batchedOperationsCount++;
 
-                                if (nextOperation == nextOperation.Next)
-                                {
-                                    // we have batched some operations and reached the end of the queue
-                                    return;
-                                }
-
-                                nextOperation = nextOperation.Next;
+                                // we have batched one operation and we are done!
+                                return;
                             }
                             break;
 
@@ -1415,8 +1409,6 @@ namespace System.Net.Sockets
             {
                 using (Lock())
                 {
-                    _batchedOperationsCount--;
-
                     if (_state == QueueState.Stopped)
                     {
                         Debug.Assert(_tail == null);
