@@ -896,7 +896,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrin.id)
     {
+        case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+        case NI_AdvSimd_DuplicateSelectedScalarToVector128:
         case NI_AdvSimd_Extract:
+        case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             if (intrin.op2->IsCnsIntOrI())
             {
                 MakeSrcContained(node, intrin.op2);
@@ -934,6 +937,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_Create:
         case NI_Vector64_CreateScalarUnsafe:
         case NI_Vector128_CreateScalarUnsafe:
+        case NI_AdvSimd_DuplicateToVector64:
+        case NI_AdvSimd_DuplicateToVector128:
+        case NI_AdvSimd_Arm64_DuplicateToVector128:
             if (intrin.op1->IsCnsIntOrI())
             {
                 const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
@@ -955,6 +961,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
             break;
+
         default:
             unreached();
     }
