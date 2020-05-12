@@ -944,9 +944,16 @@
              Targets="Restore;Build" />
   </Target>
 
+  <!-- Need to publish this since it references System.Reflection.MetadataLoadContext -->
+  <Target Name="BuildWasmAppBuilder">
+    <MSBuild Projects="$(MonoProjectRoot)msbuild\WasmAppBuilder\WasmAppBuilder.csproj"
+             Properties="Configuration=$(Configuration);"
+             Targets="Restore;Build;Publish"/>
+  </Target>
+
   <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildAppleAppBuilder;BuildAndroidAppBuilder">
+  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildAppleAppBuilder;BuildAndroidAppBuilder;BuildWasmAppBuilder">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
@@ -981,6 +988,18 @@
         <Destination>$(BinDir)cross\opt</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ee-interp.a">
+        <Destination>$(BinDir)libmono-ee-interp.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-icall-table.a">
+        <Destination>$(BinDir)libmono-icall-table.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ilgen.a">
+        <Destination>$(BinDir)libmono-ilgen.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
+        <Destination>$(BinDir)libmono-profiler-aot.a</Destination>
+      </_MonoRuntimeArtifacts>
     </ItemGroup>
 
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"

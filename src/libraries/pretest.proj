@@ -72,6 +72,14 @@
                                          TargetRuntimeIdentifier="$(PackageRID)" />
   </Target>
 
+  <!-- Wasm runtimes depend on the mono runtime and libs to be built, so they can only be built here -->
+  <Target Name="BuildWasmPackageDependency"
+          Condition="'$(TargetOS)' == 'Browser'"
+          AfterTargets="RestoreTestHost">
+    <MSBuild Projects="$(MonoProjectRoot)\wasm\wasm.proj"
+             Properties="Configuration=$(Configuration);TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)"/>
+  </Target>
+
   <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
   <Target Name="GenerateFrameworkListFile"
           Condition="'$(BinPlaceTestRuntimePack)' == 'true'"
