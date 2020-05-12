@@ -350,7 +350,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
         case GT_CNS_INT:
             if (op2->AsIntConCommon()->IconValue() < 0)
             {
-                JITDUMP("Not monotonically increasing because of encountered negative constant");
+                JITDUMP("Not monotonically increasing because of encountered negative constant\n");
                 return false;
             }
 

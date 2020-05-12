@@ -1796,7 +1796,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    // Cases where op1 holds the ulhs of the condition and op2 holds the bound arithmatic.
+    // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmatic.
     // Loop condition like: "i < bnd +/-k"
     // Assertion: "i < bnd +/- k != 0"
     else if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
