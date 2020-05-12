@@ -1407,6 +1407,7 @@ namespace System.Net.Sockets
 
             public void ProcessBatchedOperation(TOperation op)
             {
+                AsyncOperation? nextOp = null;
                 using (Lock())
                 {
                     if (_state == QueueState.Stopped)
@@ -1414,35 +1415,44 @@ namespace System.Net.Sockets
                         Debug.Assert(_tail == null);
                         return;
                     }
-
-                    if (op.IsWaiting)
+                    else if (op.IsWaiting)
                     {
                         _state = QueueState.Waiting;
-                    }
-                    else if (op == _tail)
-                    {
-                        // No more operations to process
-                        _tail = null;
-                        _state = QueueState.Ready;
-                        _sequenceNumber++;
-                    }
-                    else if (_tail?.Next == op)
-                    {
-                        // Pop current operation and advance to next
-                        _tail.Next = op.Next;
+                        return;
                     }
                     else
                     {
-                        throw new Exception($"Something went wrong");
+                        Debug.Assert(op.IsCompleted, "Op must be completed at this point of time");
+                        Debug.Assert(_tail != null, "Unexpected empty queue while processing I/O");
+                        Debug.Assert(_tail.Next == op, "Queue modified while processing queue");
+
+                        if (!op.IsCompleted) throw new Exception("Unexpected not completed operation");
+                        if (_tail == null) throw new Exception("Unexpected empty queue while processing I/O");
+                        if (_tail.Next != op) throw new Exception("Queue modified while processing queue");
+
+                        if (op == _tail)
+                        {
+                            // No more operations to process
+                            _tail = null;
+                            _isNextOperationSynchronous = false;
+                            _state = QueueState.Ready;
+                            _sequenceNumber++;
+                        }
+                        else
+                        {
+                            // Pop current operation and advance to next
+                            nextOp = _tail.Next = op.Next;
+                            _isNextOperationSynchronous = nextOp.Event != null;
+                        }
                     }
                 }
 
-                // todo: probably this is not the best place to call this stuff
-                if (op.IsCompleted)
-                {
-                    ThreadPool.UnsafeQueueUserWorkItem(op, preferLocal: false);
-                }
+                // schedule the continuation
+                op.Schedule();
+                // dispatch next operation (if there was any)
+                nextOp?.Dispatch();
             }
+
             public void CancelAndContinueProcessing(TOperation op)
             {
                 // Note, only sync operations use this method.

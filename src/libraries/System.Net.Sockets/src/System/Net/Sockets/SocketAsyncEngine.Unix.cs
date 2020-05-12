@@ -178,7 +178,7 @@ namespace System.Net.Sockets
         //
         private bool IsFull { get { return _nextHandle == MaxHandles; } }
 
-        private bool IsAio => _aioContext.Ring != null;
+        private bool IsAio { get; }
 
         //
         // Allocates a new {SocketAsyncEngine, handle} pair.
@@ -313,6 +313,7 @@ namespace System.Net.Sockets
                     }
 
                     _aioContext = aioContext;
+                    IsAio = true;
                 }
                 else
                 {
@@ -520,15 +521,9 @@ namespace System.Net.Sockets
             {
                 while (currentBatchSize < batchSegmentSize && eventQueue.TryDequeue(out SocketIOEvent socketEvent))
                 {
-                    if ((socketEvent.Events & Interop.Sys.SocketEvents.Error) != 0)
-                    {
-                        // there was an error, we use the non-buffered execution path (this should be very rare)
-                        socketEvent.Context.HandleEvents(socketEvent.Events);
-                    }
-                    else
-                    {
-                        socketEvent.Context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocksSegment, batchedOperations, ref currentBatchSize);
-                    }
+                    Debug.Assert((socketEvent.Events & Interop.Sys.SocketEvents.Error) == 0, "HandleSyncEventsSpeculatively wipes out informatio about error");
+
+                    socketEvent.Context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocksSegment, batchedOperations, ref currentBatchSize);
                 }
 
                 if (currentBatchSize == 0)
@@ -536,7 +531,7 @@ namespace System.Net.Sockets
                     break;
                 }
 
-                // there might be more work to parallelize
+                // there might be more work to parallelize, we schedule before starting a time consuming IO operation
                 ScheduleToProcessEvents();
 
                 int result = Interop.Sys.IoSubmit(aioContext.Ring, currentBatchSize, aioBlocksPointersSegment);
