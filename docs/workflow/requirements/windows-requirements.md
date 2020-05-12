@@ -47,7 +47,7 @@ The dotnet/runtime repository requires at least CMake 3.15.5.
 ## Python
 
 - Install [Python](https://www.python.org/downloads/) for Windows.
-- Add its location (e.g. C:\Python*\) to the PATH environment variable.
+- Add its location (e.g. C:\Python\) to the PATH environment variable.
   The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
 The dotnet/runtime repository requires at least Python 3.7.4.
