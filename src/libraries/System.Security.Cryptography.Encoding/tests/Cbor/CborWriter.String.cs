@@ -138,9 +138,8 @@ namespace System.Formats.Cbor
             tempSpan.CopyTo(_buffer.AsSpan(_offset, definiteLength));
             _offset += definiteLength;
 
-            // zero out excess bytes & other cleanups
-            _buffer.AsSpan(_offset, currentOffset - _offset).Fill(0);
-            s_bufferPool.Return(tempBuffer, clearArray: true);
+            // clean up
+            s_bufferPool.Return(tempBuffer);
             _currentIndefiniteLengthStringRanges.Clear();
         }
     }

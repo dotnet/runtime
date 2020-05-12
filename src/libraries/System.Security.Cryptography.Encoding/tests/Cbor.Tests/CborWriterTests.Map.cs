@@ -26,7 +26,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             Helpers.WriteMap(writer, values);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -39,7 +39,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             Helpers.WriteMap(writer, values);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -53,7 +53,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_NoPatching_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -66,7 +66,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_NoPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -80,7 +80,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_WithPatching_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_WithPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -107,7 +107,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_WithPatching_Ctap2Sorting_HappyPath(object[] values, string expectedHexEncoding)
     {
         byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-        using var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
+        var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
         Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
         byte[] actualEncoding = writer.GetEncoding();
         AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -121,7 +121,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_NestedListValues_HappyPath(object value, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             Helpers.WriteValue(writer, value);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -150,7 +150,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_SimpleValues_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter(level);
+            var writer = new CborWriter(level);
             Helpers.WriteValue(writer, value);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -165,7 +165,7 @@ namespace System.Formats.Cbor.Tests
         {
             object[] value = new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 };
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter(level);
+            var writer = new CborWriter(level);
             Helpers.WriteValue(writer, value);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -176,7 +176,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_DuplicateKeys_ShouldSucceed(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             Helpers.WriteMap(writer, values);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -194,7 +194,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
         public static void WriteMap_DuplicateKeys_StrictConformance_ShouldFail(CborConformanceLevel level, object dupeKey)
         {
-            using var writer = new CborWriter(level);
+            var writer = new CborWriter(level);
             writer.WriteStartMap(2);
             Helpers.WriteValue(writer, dupeKey);
             writer.WriteInt32(0);
@@ -219,7 +219,7 @@ namespace System.Formats.Cbor.Tests
 
             byte[] PerformWrite(bool attemptDuplicateWrite)
             {
-                using var writer = new CborWriter(level);
+                var writer = new CborWriter(level);
                 writer.WriteStartMap(2);
                 Helpers.WriteValue(writer, dupeKey);
                 writer.WriteInt32(0);
@@ -245,7 +245,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(10)]
         public static void WriteMap_DefiniteLengthExceeded_ShouldThrowInvalidOperationException(int definiteLength)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartMap(definiteLength);
             for (int i = 0; i < definiteLength; i++)
             {
@@ -263,7 +263,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(10)]
         public static void WriteMap_DefiniteLengthExceeded_WithNestedData_ShouldThrowInvalidOperationException(int definiteLength)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartMap(definiteLength);
             for (int i = 0; i < definiteLength; i++)
             {
@@ -283,7 +283,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(10)]
         public static void EndWriteMap_DefiniteLengthNotMet_ShouldThrowInvalidOperationException(int definiteLength)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartMap(definiteLength);
             for (int i = 1; i < definiteLength; i++)
             {
@@ -300,7 +300,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(10)]
         public static void EndWriteMap_DefiniteLengthNotMet_WithNestedData_ShouldThrowInvalidOperationException(int definiteLength)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartMap(definiteLength);
             for (int i = 1; i < definiteLength; i++)
             {
@@ -320,7 +320,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(10)]
         public static void EndWriteMap_IndefiniteLength_OddItems_ShouldThrowInvalidOperationException(int length)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartMap();
 
             for (int i = 1; i < length; i++)
@@ -337,7 +337,7 @@ namespace System.Formats.Cbor.Tests
         [Fact]
         public static void EndWriteMap_ImbalancedCall_ShouldThrowInvalidOperationException()
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndMap());
         }
 
@@ -347,7 +347,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(3)]
         public static void WriteEndMap_ImbalancedCall_ShouldThrowInvalidOperationException(int depth)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             for (int i = 0; i < depth; i++)
             {
                 writer.WriteStartArray(1);
@@ -362,7 +362,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(3)]
         public static void WriteEndMap_AfterStartArray_ShouldThrowInvalidOperationException(int depth)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
 
             for (int i = 0; i < depth; i++)
             {

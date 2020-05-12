@@ -56,7 +56,7 @@ namespace System.Formats.Cbor.Tests
 #endif
         public static void Roundtrip_Int64(long input)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteInt64(input);
             byte[] encoding = writer.GetEncoding();
 
@@ -90,7 +90,7 @@ namespace System.Formats.Cbor.Tests
 #endif
         public static void Roundtrip_UInt64(ulong input)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteUInt64(input);
             byte[] encoding = writer.GetEncoding();
 
@@ -113,7 +113,7 @@ namespace System.Formats.Cbor.Tests
         {
             byte[]? input = hexInput?.HexToByteArray();
 #endif
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteByteString(input);
             byte[] encoding = writer.GetEncoding();
 
@@ -137,7 +137,7 @@ namespace System.Formats.Cbor.Tests
 #endif
         public static void Roundtrip_TextString(string? input)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteTextString(input);
             byte[] encoding = writer.GetEncoding();
 
@@ -160,7 +160,7 @@ namespace System.Formats.Cbor.Tests
         {
             byte[]? input = hexInput?.HexToByteArray();
 #endif
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteByteString(input);
             byte[] encoding = writer.GetEncoding();
 
