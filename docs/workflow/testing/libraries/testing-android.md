@@ -30,7 +30,7 @@ export AndroidOpenSslLib="$GOOGLE_OPENSSL/ssl/libs/android.x86_64/libssl.so"
 
 Now we're ready to build everything for Android:
 ```
-./build.sh -os Android -arch x64 -subset Mono+Libs
+./build.sh mono+libs -os Android -arch x64
 ```
 and even run tests one by one for each test suite:
 ```
