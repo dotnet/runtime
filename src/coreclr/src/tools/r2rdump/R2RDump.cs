@@ -49,7 +49,6 @@ namespace R2RDump
 
         public bool CreatePDB { get; set; }
         public string PdbPath { get; set; }
-        public string ManagedPdbPath { get; set; }
 
         public FileInfo[] Reference { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
@@ -390,13 +389,7 @@ namespace R2RDump
                     {
                         pdbPath = Path.GetDirectoryName(r2r.Filename);
                     }
-                    string managedPdbPath = _options.ManagedPdbPath;
-                    if (String.IsNullOrEmpty(managedPdbPath))
-                    {
-                        managedPdbPath = pdbPath;
-                    }
-
-                    var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None, managedPdbPath);
+                    var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None);
                     pdbWriter.WritePDBData(r2r.Filename, ProducePdbWriterMethods(r2r));
                 }
 

@@ -90,7 +90,6 @@ namespace ILCompiler.PdbWriter
     {
         string _pdbPath;
         PDBExtraData _pdbExtraData;
-        string _managedPDBSearchPath;
 
         string _pdbFilePath;
         string _tempSourceDllName;
@@ -130,7 +129,7 @@ namespace ILCompiler.PdbWriter
             return (ISymNGenWriter2)instance;
         }
 
-        public PdbWriter(string pdbPath, PDBExtraData pdbExtraData, string managedPDBSearchPath)
+        public PdbWriter(string pdbPath, PDBExtraData pdbExtraData)
         {
             SymDocument unknownDocument = new SymDocument();
             unknownDocument.Name = "unknown";
@@ -140,7 +139,6 @@ namespace ILCompiler.PdbWriter
             _symDocuments.Add(unknownDocument);
             _pdbPath = pdbPath;
             _pdbExtraData = pdbExtraData;
-            _managedPDBSearchPath = managedPDBSearchPath;
         }
 
         public void WritePDBData(string dllPath, IEnumerable<MethodInfo> methods)
