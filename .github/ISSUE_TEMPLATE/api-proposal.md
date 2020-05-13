@@ -24,7 +24,7 @@ namespace System.Collections.Generic
 
 # Usage Examples
 
-Please provide code examples that highlight how the proposed API changes are meant to be consumed.
+Please provide code examples that highlight how the proposed API additions are meant to be consumed.
 
 # Risks
 
