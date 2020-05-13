@@ -712,8 +712,13 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
                 BlockRange().Remove(list->Current());
             }
 
+            assert(sizeof(constArgValues) == 16);
+
+            UNATIVE_OFFSET cnsSize  = sizeof(constArgValues);
+            UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+
             CORINFO_FIELD_HANDLE hnd =
-                comp->GetEmitter()->emitAnyConst(constArgValues, sizeof(constArgValues), emitDataAlignment::Required);
+                comp->GetEmitter()->emitAnyConst(constArgValues, cnsSize, cnsAlign);
             GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
@@ -1196,7 +1201,12 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, simdSize, emitDataAlignment::Required);
+        assert((simdSize == 16) || (simdSize == 32));
+
+        UNATIVE_OFFSET cnsSize  = simdSize;
+        UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+
+        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
         GenTree* clsVarAddr      = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
         BlockRange().InsertBefore(node, clsVarAddr);
 
