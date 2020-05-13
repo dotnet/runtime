@@ -394,7 +394,7 @@ namespace BINDER_SPACE
         // At run-time, System.Private.CoreLib.dll is expected to be the NI image.
         // System.Private.CoreLib.dll is expected to be found at one of the following locations:
         //   * Non-single-file app: In systemDirectory, beside coreclr.dll
-        //   * Framework-dependent single-file app: In system directory, beside coreclr.dll
+        //   * Framework-dependent single-file app: In systemDirectory, beside coreclr.dll
         //   * Self-contained single-file app: Within the single-file bundle.
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
             TRUE /* fIsInGAC */,

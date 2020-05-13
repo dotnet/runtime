@@ -973,7 +973,10 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
 
 #if !defined(TARGET_UNIX)
-        bIsFlatLayoutSuitable = IsInBundle() || !bIsMappedLayoutSuitable;
+        if (!IsInBundle() && bIsMappedLayoutSuitable)
+        {
+            bIsFlatLayoutSuitable = FALSE;
+        }
 #endif // !TARGET_UNIX
 
         _ASSERTE(bIsMappedLayoutSuitable || bIsFlatLayoutSuitable);

@@ -282,7 +282,7 @@ void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& 
  *   -- When a deps json based probe is performed, the deps entry's package name and version must match.
  *   -- When looking into a published dir, for rid specific assets lookup rid split folders; for non-rid assets lookup the layout dir.
  * The path to the resolved file is returned in candidate out parameter
- * If the candidate is embedded within the single-file bundle (rather than an actual file on disk), found_in_bundle will be set to true.
+ * If the candidate is embedded within the single-file bundle (rather than an actual file on disk), loaded_from_bundle will be set to true.
  */
 bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level, pal::string_t* candidate, bool & loaded_from_bundle)
 {
