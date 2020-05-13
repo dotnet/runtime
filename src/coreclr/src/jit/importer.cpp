@@ -4501,6 +4501,23 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         // We go down this path even when FEATURE_HW_INTRINSICS isn't enabled
         // so we can specially handle IsSupported and recursive calls.
 
+        // This is required to appropriately handle the intrinsics on platforms
+        // which don't support them. On such a platform methods like Vector64.Create
+        // will be seen as `Intrinsic` and `mustExpand` due to having a code path
+        // which is recursive. When such a path is hit we expect it to be handled by
+        // the importer and we fire an assert if it wasn't and in previous versions
+        // of the JIT would fail fast. This was changed to throw a PNSE instead but
+        // we still assert as most intrinsics should have been recognized/handled.
+
+        // In order to avoid the assert, we specially handle the IsSupported checks
+        // (to better allow dead-code optimizations) and we explicitly throw a PNSE
+        // as we know that is the desired behavior for the HWIntrinsics when not
+        // supported. For cases like Vector64.Create, this is fine because it will
+        // be behind a relevant IsSupported check and will never be hit and the
+        // software fallback will be executed instead.
+
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef FEATURE_HW_INTRINSICS
         namespaceName += 25;
         const char* platformNamespaceName;
