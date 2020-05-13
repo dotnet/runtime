@@ -2058,6 +2058,8 @@ namespace System.Net.Sockets
         // Called on ThreadPool thread.
         public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
         {
+            Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0);
+
             AsyncOperation? receiveOperation =
                 (events & Interop.Sys.SocketEvents.Read) != 0 ? _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this) : null;
             AsyncOperation? sendOperation =
