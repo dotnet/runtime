@@ -252,7 +252,7 @@ namespace System.Xml
                 // Encoding
                 if (_encoding != null)
                 {
-                    RawText("\" _encoding=\"");
+                    RawText("\" encoding=\"");
                     RawText(_encoding.WebName);
                 }
 
