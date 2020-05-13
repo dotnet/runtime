@@ -41,9 +41,9 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
 
-    <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly/iOS/Android we need to let
-         the build system to use webassembly/ios/android as the RuntimeOS for produced package RIDs. -->
-    <RuntimeOS Condition="'$(TargetOS)' == 'Browser' or '$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
+    <!-- RuntimeOS is calculated based on the build system OS, however if building for Browser/iOS/Android we need to let
+         the build system to use browser/ios/android as the RuntimeOS for produced package RIDs. -->
+    <RuntimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>

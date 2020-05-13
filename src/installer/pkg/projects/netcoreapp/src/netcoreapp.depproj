@@ -71,7 +71,7 @@
         Include="@(MonoCrossFiles)">
         <TargetPath>runtimes/$(PackageRID)/native/cross</TargetPath>
       </RuntimeFiles>
-      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true'"
+      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="@(MonoIncludeFiles)">
         <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>

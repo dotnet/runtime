@@ -38,7 +38,7 @@
 
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+installer</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'">mono+libs+installer</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+installer</DefaultSubsets>
   </PropertyGroup>
 
   <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
@@ -48,7 +48,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
   </PropertyGroup>
