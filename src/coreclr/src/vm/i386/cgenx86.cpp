@@ -838,6 +838,7 @@ void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     RETURN;
 }
 
+#ifndef UNIX_X86_ABI
 void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
     CONTRACT_VOID
@@ -883,6 +884,7 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     RETURN;
 }
+#endif // !UNIX_X86_ABI
 
 #ifdef FEATURE_READYTORUN
 void DynamicHelperFrame::UpdateRegDisplay(const PREGDISPLAY pRD)

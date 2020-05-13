@@ -16,7 +16,7 @@ namespace System.Net.Security.Tests
     internal static class TestConfiguration
     {
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
-        public const int FailingTestTimeoutMiliseconds = 250;
+        public const int FailingTestTimeoutMiliseconds = 500;
 
         public const string Realm = "TEST.COREFX.NET";
         public const string KerberosUser = "krb_user";
@@ -32,9 +32,7 @@ namespace System.Net.Security.Tests
 
         public static bool SupportsHandshakeAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.Windows); } }
 
-        public static bool SupportsAlpnAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)  && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,1,0)) >= 0); } }
-
-        public static bool SupportsVersionAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Linux)  && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,1,0)) >= 0; } }
+        public static bool SupportsAlpnAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,0,2)) >= 0); } }
 
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks)
             => tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);

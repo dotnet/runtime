@@ -74,7 +74,7 @@ namespace System.Xml
 
         // Writes out the DOCTYPE declaration with the specified name and optional attributes.
 
-        public abstract void WriteDocType(string name, string? pubid, string? sysid, string subset);
+        public abstract void WriteDocType(string name, string? pubid, string? sysid, string? subset);
 
         // Writes out the specified start tag and associates it with the given namespace.
         public void WriteStartElement(string localName, string? ns)
@@ -146,7 +146,7 @@ namespace System.Xml
 
         // Writes out a <![CDATA[...]]>; block containing the specified text.
 
-        public abstract void WriteCData(string text);
+        public abstract void WriteCData(string? text);
 
         // Writes out a comment <!--...-->; containing the specified text.
 
@@ -170,7 +170,7 @@ namespace System.Xml
 
         // Writes out the specified text content.
 
-        public abstract void WriteString(string text);
+        public abstract void WriteString(string? text);
 
         // Write out the given surrogate pair as an entity reference.
 
@@ -221,7 +221,7 @@ namespace System.Xml
         }
 
         // Gets the current xml:lang scope.
-        public virtual string XmlLang
+        public virtual string? XmlLang
         {
             get
             {
@@ -282,6 +282,7 @@ namespace System.Xml
             {
                 return;
             }
+
             WriteString(value);
         }
 

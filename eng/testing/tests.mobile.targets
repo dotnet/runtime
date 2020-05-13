@@ -1,0 +1,112 @@
+<Project>
+  <PropertyGroup>
+    <!-- OutDir is not set early enough to set this property in .props file. -->
+    <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+  </PropertyGroup>
+
+  <!-- Generate a self-contained app bundle for Android with tests. -->
+  <UsingTask TaskName="AndroidAppBuilderTask" 
+             AssemblyFile="$(AndroidAppBuilderDir)AndroidAppBuilder.dll" />
+  <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
+    <PropertyGroup>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(TargetArchitecture)</AndroidAbi>
+    </PropertyGroup>
+    <ItemGroup>
+      <AndroidTestRunnerBinaries Include="$(AndroidTestRunnerDir)*.*" />
+    </ItemGroup>
+
+    <Error Condition="'@(AndroidTestRunnerBinaries)' == ''" Text="Could not find AndroidTestRunner in $(AndroidTestRunnerDir)" />
+    <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
+
+    <RemoveDir Directories="$(BundleDir)" />
+    <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true"/>
+
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
+    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
+          SourceFiles="$(AndroidOpenSslCryptoLib)"
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
+          SourceFiles="$(AndroidOpenSslLib)"
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
+
+    <AndroidAppBuilderTask 
+        Abi="$(AndroidAbi)"
+        ProjectName="$(AssemblyName)"
+        MonoRuntimeHeaders="$(RuntimePackNativeDir)\include\mono-2.0"
+        MainLibraryFileName="AndroidTestRunner.dll"
+        OutputDir="$(BundleDir)"
+        SourceDir="$(PublishDir)">
+        <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
+        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+    </AndroidAppBuilderTask>
+    <Message Importance="High" Text="PackageId:       $(ApkPackageId)"/>
+    <Message Importance="High" Text="Instrumentation: net.dot.MonoRunner"/>
+    <Message Importance="High" Text="Apk:             $(ApkBundlePath)"/>
+  </Target>
+
+  <!-- Generate a self-contained app bundle for iOS with tests. -->
+  <UsingTask TaskName="AppleAppBuilderTask" 
+             AssemblyFile="$(AppleAppBuilderDir)AppleAppBuilder.dll" />
+  <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp">
+    <ItemGroup>
+      <AppleTestRunnerBinaries Include="$(AppleTestRunnerDir)*.*" />
+    </ItemGroup>
+
+    <Error Condition="'@(AppleTestRunnerBinaries)' == ''" Text="Could not find AppleTestRunner in $(AppleTestRunnerDir) doesn't exist" />
+    <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
+
+    <RemoveDir Directories="$(BundleDir)" />
+    <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true"/>
+
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
+    <!-- Run App bundler, it should AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
+         and produce an app bundle (with xcode project) -->
+    <AppleAppBuilderTask 
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AssemblyName)"
+        MonoRuntimeHeaders="$(RuntimePackNativeDir)\include\mono-2.0"
+        CrossCompiler="$(RuntimePackNativeDir)\cross\mono-aot-cross"
+        MainLibraryFileName="AppleTestRunner.dll"
+        UseConsoleUITemplate="True"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        Optimized="True"
+        UseLlvm="$(MonoEnableLLVM)"
+        LlvmPath="$(RuntimePackNativeDir)\cross"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(BundleDir)"
+        AppDir="$(PublishDir)">
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App: $(AppBundlePath)"/>
+    <Error Condition="$(TargetArchitecture.StartsWith('arm')) and '$(DevTeamProvisioning)' == ''" 
+           Text="'DevTeamProvisioning' shouldn't be empty for arm64" />
+    <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
+  </Target>
+
+  <Target Name="AddFrameworkReference">
+    <ItemGroup>
+      <FrameworkReference Include="$(SharedFrameworkName)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="UpdateRuntimePack"
+          DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishTestAsSelfContained"
+          Condition="'$(IsCrossTargetingBuild)' != 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp" />
+</Project>

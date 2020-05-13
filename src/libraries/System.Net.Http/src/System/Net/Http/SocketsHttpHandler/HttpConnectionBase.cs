@@ -101,41 +101,27 @@ namespace System.Net.Http
         /// <summary>Awaits a task, ignoring any resulting exceptions.</summary>
         internal static void IgnoreExceptions(ValueTask<int> task)
         {
-            _ = IgnoreExceptionsAsync(task);
-
-            static async Task IgnoreExceptionsAsync(ValueTask<int> task)
+            // Avoid TaskScheduler.UnobservedTaskException firing for any exceptions.
+            if (task.IsCompleted)
             {
-                try { await task.ConfigureAwait(false); } catch { }
+                if (task.IsFaulted)
+                {
+                    _ = task.AsTask().Exception;
+                }
             }
-        }
-
-        /// <summary>Awaits a task, ignoring any resulting exceptions.</summary>
-        internal static void IgnoreExceptions(Task task)
-        {
-            _ = IgnoreExceptionsAsync(task);
-
-            static async Task IgnoreExceptionsAsync(Task task)
+            else
             {
-                try { await task.ConfigureAwait(false); } catch { }
+                task.AsTask().ContinueWith(t => _ = t.Exception,
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
             }
         }
 
         /// <summary>Awaits a task, logging any resulting exceptions (which are otherwise ignored).</summary>
-        internal void LogExceptions(Task task)
-        {
-            _ = LogExceptionsAsync(task);
-
-            async Task LogExceptionsAsync(Task task)
+        internal void LogExceptions(Task task) =>
+            task.ContinueWith(t =>
             {
-                try
-                {
-                    await task.ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    if (NetEventSource.IsEnabled) Trace($"Exception from asynchronous processing: {e}");
-                }
-            }
-        }
+                Exception? e = t.Exception?.InnerException; // Access Exception even if not tracing, to avoid TaskScheduler.UnobservedTaskException firing
+                if (NetEventSource.IsEnabled) Trace($"Exception from asynchronous processing: {e}");
+            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
     }
 }

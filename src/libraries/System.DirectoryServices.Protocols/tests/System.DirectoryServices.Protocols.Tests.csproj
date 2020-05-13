@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BerConverterTests.cs" />
@@ -47,6 +47,7 @@
     <Compile Include="AsqRequestControlTests.cs" />
     <Compile Include="AddRequestTests.cs" />
     <Compile Include="DirectoryServicesProtocolsTests.cs" />
+    <Compile Include="DirectoryServicesTestHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs"
              Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>

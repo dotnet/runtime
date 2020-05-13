@@ -340,7 +340,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonConverter<T> converter = (JsonConverter<T>)options.GetConverter(typeof(T));
             Assert.Equal(converterName, converter.GetType().Name);
-            
+
             ReadOnlySpan<byte> data = Encoding.UTF8.GetBytes(stringValue);
             Utf8JsonReader reader = new Utf8JsonReader(data);
             reader.Read();
@@ -406,7 +406,6 @@ namespace System.Text.Json.Serialization.Tests
             GenericConverterTestHelper<Guid>("GuidConverter", testGuid, $"\"{testGuid.ToString()}\"", options);
             GenericConverterTestHelper<KeyValuePair<string, string>>("KeyValuePairConverter`2", new KeyValuePair<string, string>("key", "value"), @"{""Key"":""key"",""Value"":""value""}", options);
             GenericConverterTestHelper<Uri>("UriConverter", new Uri("http://test.com"), "\"http://test.com\"", options);
-            
         }
 
         [Fact]
@@ -537,6 +536,32 @@ namespace System.Text.Json.Serialization.Tests
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions(null));
             Assert.Contains("options", ex.ToString());
+        }
+
+        [Fact]
+        public static void DefaultSerializerOptions_General()
+        {
+            var options = new JsonSerializerOptions();
+            var newOptions = new JsonSerializerOptions(JsonSerializerDefaults.General);
+            VerifyOptionsEqual(options, newOptions);
+        }
+
+        [Fact]
+        public static void PredefinedSerializerOptions_Web()
+        {
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            JsonNamingPolicy policy = options.PropertyNamingPolicy;
+            Assert.True(options.PropertyNameCaseInsensitive);
+            Assert.Same(JsonNamingPolicy.CamelCase, policy);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2)]
+        public static void PredefinedSerializerOptions_UnhandledDefaults(int enumValue)
+        {
+            var outOfRangeSerializerDefaults = (JsonSerializerDefaults)enumValue;
+            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonSerializerOptions(outOfRangeSerializerDefaults));
         }
 
         private static JsonSerializerOptions CreateOptionsInstance()

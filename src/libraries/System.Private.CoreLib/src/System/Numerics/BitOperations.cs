@@ -4,6 +4,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
@@ -243,6 +244,19 @@ namespace System.Numerics
                 return (int)Popcnt.PopCount(value);
             }
 
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // PopCount works on vector so convert input value to vector first.
+
+                // Vector64.CreateScalar(uint) generates suboptimal code by storing and
+                // loading the result to memory.
+                // See https://github.com/dotnet/runtime/issues/35976 for details.
+                // Hence use Vector64.Create(ulong) to create Vector64<ulong> and operate on that.
+                Vector64<ulong> input = Vector64.Create((ulong)value);
+                Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
+                return AdvSimd.Extract(aggregated, 0);
+            }
+
             return SoftwareFallback(value);
 
             static int SoftwareFallback(uint value)
@@ -272,6 +286,14 @@ namespace System.Numerics
             if (Popcnt.X64.IsSupported)
             {
                 return (int)Popcnt.X64.PopCount(value);
+            }
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // PopCount works on vector so convert input value to vector first.
+                Vector64<ulong> input = Vector64.Create(value);
+                Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
+                return AdvSimd.Extract(aggregated, 0);
             }
 
 #if TARGET_32BIT

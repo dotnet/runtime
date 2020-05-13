@@ -43,13 +43,6 @@ ThreadExceptionState::ThreadExceptionState()
     // Init the UE Watson BucketTracker
     m_UEWatsonBucketTracker.Init();
 #endif // !TARGET_UNIX
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Initialize the default exception severity to NotCorrupting
-    m_LastActiveExceptionCorruptionSeverity = NotSet;
-    m_fCanReflectionTargetHandleException = FALSE;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 }
 
 ThreadExceptionState::~ThreadExceptionState()

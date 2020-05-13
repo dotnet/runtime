@@ -15,7 +15,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegEnumValueW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegEnumValueW", ExactSpelling = true)]
         internal static extern unsafe int RegEnumValue(
             SafeRegistryHandle hKey,
             int dwIndex,

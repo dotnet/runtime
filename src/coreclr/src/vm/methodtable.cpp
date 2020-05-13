@@ -3123,39 +3123,6 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         // a subclass of Error</TODO>
         *pThrowable = GET_THROWABLE();
         _ASSERTE(fRet == FALSE);
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // If active thread state does not have a CorruptionSeverity set for the exception,
-        // then set one up based upon the current exception code and/or the throwable.
-        //
-        // When can we be here and current exception tracker may not have corruption severity set?
-        // Incase of SO in managed code, SO is never seen by CLR's exception handler for managed code
-        // and if this happens in cctor, we can end up here without the corruption severity set.
-        Thread *pThread = GetThread();
-        _ASSERTE(pThread != NULL);
-        ThreadExceptionState *pCurTES = pThread->GetExceptionState();
-        _ASSERTE(pCurTES != NULL);
-        if (pCurTES->GetLastActiveExceptionCorruptionSeverity() == NotSet)
-        {
-            if (CEHelper::IsProcessCorruptedStateException(GetCurrentExceptionCode()) ||
-                CEHelper::IsProcessCorruptedStateException(*pThrowable))
-            {
-                // Process Corrupting
-                pCurTES->SetLastActiveExceptionCorruptionSeverity(ProcessCorrupting);
-                LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception treated as ProcessCorrupting.\n"));
-            }
-            else
-            {
-                // Not Corrupting
-                pCurTES->SetLastActiveExceptionCorruptionSeverity(NotCorrupting);
-                LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception treated as non-corrupting.\n"));
-            }
-        }
-        else
-        {
-            LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception already has corruption severity set.\n"));
-        }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
     EX_END_CATCH(SwallowAllExceptions)
 
@@ -3289,17 +3256,7 @@ void MethodTable::DoRunClassInitThrowing()
             ((EXCEPTIONREF)(gc.pThrowable))->ClearStackTraceForThrow();
         }
 
-        // <FEATURE_CORRUPTING_EXCEPTIONS>
-        // Specify the corruption severity to be used to raise this exception in COMPlusThrow below.
-        // This will ensure that when the exception is seen by the managed code personality routine,
-        // it will setup the correct corruption severity in the exception tracker.
-        // </FEATURE_CORRUPTING_EXCEPTIONS>
-
-        COMPlusThrow(gc.pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-            , pEntry->m_CorruptionSeverity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-            );
+        COMPlusThrow(gc.pThrowable);
     }
 
     description = ".cctor lock";
@@ -3389,21 +3346,7 @@ void MethodTable::DoRunClassInitThrowing()
                             pEntry->m_hrResultCode = E_FAIL;
                             SetClassInitError();
 
-    #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                            // Save the corruption severity of the exception so that if the type system
-                            // attempts to pick it up from its cache list and throw again, it should
-                            // treat the exception as corrupting, if applicable.
-                            pEntry->m_CorruptionSeverity = pThread->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
-
-                            // We should be having a valid corruption severity at this point
-                            _ASSERTE(pEntry->m_CorruptionSeverity != NotSet);
-    #endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-                            COMPlusThrow(gc.pThrowable
-    #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                , pEntry->m_CorruptionSeverity
-    #endif // FEATURE_CORRUPTING_EXCEPTIONS
-                                );
+                            COMPlusThrow(gc.pThrowable);
                         }
 
                         GCPROTECT_END();
@@ -8674,7 +8617,7 @@ MethodDesc *MethodTable::MethodDataInterfaceImpl::GetImplMethodDesc(UINT32 slotN
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
         return NULL;
     }
-    return m_pImpl->GetImplMethodDesc(MapToImplSlotNumber(slotNumber));
+    return m_pImpl->GetImplMethodDesc(implSlotNumber);
 }
 
 //==========================================================================================
@@ -8685,7 +8628,7 @@ void MethodTable::MethodDataInterfaceImpl::InvalidateCachedVirtualSlot(UINT32 sl
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
         return;
     }
-    return m_pImpl->InvalidateCachedVirtualSlot(MapToImplSlotNumber(slotNumber));
+    return m_pImpl->InvalidateCachedVirtualSlot(implSlotNumber);
 }
 
 //==========================================================================================

@@ -7,6 +7,7 @@ trigger:
   branches:
     include:
     - master
+    - dev/infrastructure
     - release/*.*
   paths:
     include:
@@ -27,6 +28,7 @@ pr:
   branches:
     include:
     - master
+    - dev/infrastructure
     - release/*.*
   paths:
     include:
@@ -421,7 +423,7 @@ jobs:
     - Android_x64
     - Android_arm
     - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -513,7 +515,7 @@ jobs:
 
 - template: /eng/pipelines/installer/installer-matrix.yml
   parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     platforms:
       - OSX_x64
       - Linux_x64
@@ -527,13 +529,13 @@ jobs:
 
 - template: /eng/pipelines/installer/installer-matrix.yml
   parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     runtimeFlavor: mono
     platforms:
     - Android_x64
     - Android_arm
     - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -691,6 +693,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -711,6 +714,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
+    - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

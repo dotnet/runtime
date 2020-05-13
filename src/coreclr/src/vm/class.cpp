@@ -1195,10 +1195,6 @@ int MethodTable::GetVectorSize()
         {
             vectorSize = 16;
         }
-        else if (strcmp(className, "Vector256`1") == 0)
-        {
-            vectorSize = 32;
-        }
         else if (strcmp(className, "Vector64`1") == 0)
         {
             vectorSize = 8;
