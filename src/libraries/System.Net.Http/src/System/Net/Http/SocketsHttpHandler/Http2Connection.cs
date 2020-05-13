@@ -892,51 +892,6 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask AcquireWriteLockAsync(CancellationToken cancellationToken)
-        {
-            ValueTask acquireLockTask = _writerLock.EnterAsync(cancellationToken);
-            if (acquireLockTask.IsCompletedSuccessfully)
-            {
-                acquireLockTask.GetAwaiter().GetResult(); // to enable the value task sources to be pooled
-            }
-            else
-            {
-                Interlocked.Increment(ref _pendingWriters);
-
-                try
-                {
-                    await acquireLockTask.ConfigureAwait(false);
-                }
-                catch
-                {
-                    if (Interlocked.Decrement(ref _pendingWriters) == 0)
-                    {
-                        // If a pending waiter is canceled, we may end up in a situation where a previously written frame
-                        // saw that there were pending writers and as such deferred its flush to them, but if/when that pending
-                        // writer is canceled, nothing may end up flushing the deferred work (at least not promptly).  To compensate,
-                        // if a pending writer does end up being canceled, we flush asynchronously.  We can't check whether there's such
-                        // a pending operation because we failed to acquire the lock that protects that state.  But we can at least only
-                        // do the flush if our decrement caused the pending count to reach 0: if it's still higher than zero, then there's
-                        // at least one other pending writer who can handle the flush.  Worst case, we pay for a flush that ends up being
-                        // a nop.  Note: we explicitly do not pass in the cancellationToken; if we're here, it's almost certainly because
-                        // cancellation was requested, and it's because of that cancellation that we need to flush.
-                        LogExceptions(FlushAsync(cancellationToken: default));
-                    }
-
-                    throw;
-                }
-
-                Interlocked.Decrement(ref _pendingWriters);
-            }
-
-            // If the connection has been aborted, then fail now instead of trying to send more data.
-            if (_abortException != null)
-            {
-                _writerLock.Exit();
-                ThrowRequestAborted(_abortException);
-            }
-        }
-
         private async Task SendSettingsAckAsync()
         {
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size).ConfigureAwait(false);
