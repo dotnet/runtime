@@ -188,15 +188,15 @@ namespace System.Formats.Cbor.Tests
         [InlineData("a501020326200121582065eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d2258201e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c",
                     "65eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d",
                     "1e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c",
-                    "SHA256", "nistP256")]
+                    "SHA256", "ECDSA_P256")]
         [InlineData("a501020338222002215830ed57d8608c5734a5ed5d22026bad8700636823e45297306479beb61a5bd6b04688c34a2f0de51d91064355eef7548bdd22583024376b4fee60ba65db61de54234575eec5d37e1184fbafa1f49d71e1795bba6bda9cbe2ebb815f9b49b371486b38fa1b",
                     "ed57d8608c5734a5ed5d22026bad8700636823e45297306479beb61a5bd6b04688c34a2f0de51d91064355eef7548bdd",
                     "24376b4fee60ba65db61de54234575eec5d37e1184fbafa1f49d71e1795bba6bda9cbe2ebb815f9b49b371486b38fa1b",
-                    "SHA384", "nistP384")]
+                    "SHA384", "ECDSA_P384")]
         [InlineData("a50102033823200321584200b03811bef65e330bb974224ec3ab0a5469f038c92177b4171f6f66f91244d4476e016ee77cf7e155a4f73567627b5d72eaf0cb4a6036c6509a6432d7cd6a3b325c2258420114b597b6c271d8435cfa02e890608c93f5bc118ca7f47bf191e9f9e49a22f8a15962315f0729781e1d78b302970c832db2fa8f7f782a33f8e1514950dc7499035f",
                     "00b03811bef65e330bb974224ec3ab0a5469f038c92177b4171f6f66f91244d4476e016ee77cf7e155a4f73567627b5d72eaf0cb4a6036c6509a6432d7cd6a3b325c",
                     "0114b597b6c271d8435cfa02e890608c93f5bc118ca7f47bf191e9f9e49a22f8a15962315f0729781e1d78b302970c832db2fa8f7f782a33f8e1514950dc7499035f",
-                    "SHA512", "nistP521")]
+                    "SHA512", "ECDSA_P521")]
         public static void CoseKeyHelpers_ECDsaParseCosePublicKey_HappyPath(string hexEncoding, string hexExpectedQx, string hexExpectedQy, string expectedHashAlgorithmName, string curveFriendlyName)
         {
             ECPoint q = new ECPoint() { X = hexExpectedQx.HexToByteArray(), Y = hexExpectedQy.HexToByteArray() };
@@ -204,26 +204,21 @@ namespace System.Formats.Cbor.Tests
 
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
 
-            string? expectedCurveFriendlyName = CreateCurveFromFriendlyNameXPlat(curveFriendlyName).Oid.FriendlyName;
+            string? expectedCurveFriendlyName = NormalizeCurveForPlatform(curveFriendlyName).Oid.FriendlyName;
 
             Assert.True(ecParams.Curve.IsNamed);
             Assert.Equal(expectedCurveFriendlyName, ecParams.Curve.Oid.FriendlyName);
             Assert.Equal(q.X, ecParams.Q.X);
             Assert.Equal(q.Y, ecParams.Q.Y);
             Assert.Equal(expectedHashAlgorithmName, name.Name);
-        }
 
-        public static ECCurve CreateCurveFromFriendlyNameXPlat(string friendlyName)
-        {
-            // Different platforms use different friendly names,
-            // so we hardcode a mapping using test input identifiers.
-            return friendlyName switch
+            static ECCurve NormalizeCurveForPlatform(string friendlyName)
             {
-                "nistP256" => ECCurve.NamedCurves.nistP256,
-                "nistP384" => ECCurve.NamedCurves.nistP384,
-                "nistP521" => ECCurve.NamedCurves.nistP521,
-                _ => throw new ArgumentException(),
-            };
+                ECCurve namedCurve = ECCurve.CreateFromFriendlyName(friendlyName);
+                ECDsa ecDsa = ECDsa.Create(namedCurve);
+                ECParameters platformParams = ecDsa.ExportParameters(includePrivateParameters: false);
+                return platformParams.Curve;
+            }
         }
     }
 }
