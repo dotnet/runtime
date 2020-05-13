@@ -7561,6 +7561,7 @@ void emitter::emitIns_R_C(
                 assert(isValidGeneralDatasize(size));
             }
             break;
+
         default:
             unreached();
     }

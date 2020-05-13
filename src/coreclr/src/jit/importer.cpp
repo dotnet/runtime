@@ -3478,29 +3478,34 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             ni = lookupNamedIntrinsic(method);
 
-#ifdef FEATURE_HW_INTRINSICS
+            // We specially support the following on all platforms to allow for dead
+            // code optimization and to more generally support recursive intrinsics.
+
             if (ni == NI_IsSupported_True)
             {
+                assert(sig->numArgs == 0);
                 return gtNewIconNode(true);
             }
 
             if (ni == NI_IsSupported_False)
             {
+                assert(sig->numArgs == 0);
                 return gtNewIconNode(false);
             }
 
             if (ni == NI_Throw_PlatformNotSupportedException)
             {
-                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
             }
 
+#ifdef FEATURE_HW_INTRINSICS
             if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
             {
                 GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
                 if (mustExpand && (hwintrinsic == nullptr))
                 {
-                    return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
+                    return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
                 }
 
                 return hwintrinsic;
@@ -4273,14 +4278,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if (mustExpand && (retNode == nullptr))
     {
         assert(!"Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
-
-        for (unsigned i = 0; i < sig->numArgs; i++)
-        {
-            impPopStack();
-        }
-
-        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, JITtype2varType(sig->retType),
-                                       sig->retTypeClass);
+        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 
     // Optionally report if this intrinsic is special
@@ -4497,8 +4495,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
     }
+#endif // FEATURE_HW_INTRINSICS
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
+        // We go down this path even when FEATURE_HW_INTRINSICS isn't enabled
+        // so we can specially handle IsSupported and recursive calls.
+
+#ifdef FEATURE_HW_INTRINSICS
         namespaceName += 25;
         const char* platformNamespaceName;
 
@@ -4517,27 +4520,89 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
             result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
         }
+#endif // FEATURE_HW_INTRINSICS
 
         if (result == NI_Illegal)
         {
             if (strcmp(methodName, "get_IsSupported") == 0)
             {
-                return NI_IsSupported_False;
+                // This allows the relevant code paths to be dropped as dead code even
+                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+
+                result = NI_IsSupported_False;
             }
-            return gtIsRecursiveCall(method) ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
+            else if (gtIsRecursiveCall(method))
+            {
+                // For the framework itself, any recursive intrinsics will either be
+                // only supported on a single platform or will be guarded by a relevant
+                // IsSupported check so the throw PNSE will be valid or dropped.
+
+                result = NI_Throw_PlatformNotSupportedException;
+            }
         }
     }
-#endif // FEATURE_HW_INTRINSICS
 
     if (result == NI_Illegal)
     {
         JITDUMP("Not recognized\n");
+    }
+    else if (result == NI_IsSupported_False)
+    {
+        JITDUMP("Unsupported - return false");
+    }
+    else if (result == NI_Throw_PlatformNotSupportedException)
+    {
+        JITDUMP("Unsupported - throw PlatformNotSupportedException");
     }
     else
     {
         JITDUMP("Recognized\n");
     }
     return result;
+}
+
+//------------------------------------------------------------------------
+// impUnsupportedNamedIntrinsic: Throws an exception for an unsupported named intrinsic
+//
+// Arguments:
+//    helper     - JIT helper ID for the exception to be thrown
+//    method     - method handle of the intrinsic function.
+//    sig        - signature of the intrinsic call
+//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
+//
+// Return Value:
+//    a gtNewMustThrowException if mustExpand is true; otherwise, nullptr
+//
+GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
+                                                CORINFO_METHOD_HANDLE method,
+                                                CORINFO_SIG_INFO*     sig,
+                                                bool                  mustExpand)
+{
+    // We've hit some error case and may need to return a node for the given error.
+    //
+    // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
+    // scenario, we need to return `nullptr` so that a GT_CALL to the intrinsic is emitted instead. This is to
+    // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
+    // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
+    // match that).
+    //
+    // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
+    // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
+    // `nullptr` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
+
+    if (mustExpand)
+    {
+        for (unsigned i = 0; i < sig->numArgs; i++)
+        {
+            impPopStack();
+        }
+
+        return gtNewMustThrowException(helper, JITtype2varType(sig->retType), sig->retTypeClass);
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 /*****************************************************************************/

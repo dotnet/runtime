@@ -3714,6 +3714,10 @@ protected:
                               CorInfoIntrinsics     intrinsicID,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
+                                          CORINFO_METHOD_HANDLE method,
+                                          CORINFO_SIG_INFO*     sig,
+                                          bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
@@ -3721,10 +3725,6 @@ protected:
                             CORINFO_METHOD_HANDLE method,
                             CORINFO_SIG_INFO*     sig,
                             bool                  mustExpand);
-    GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
-                                       CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
-                                       bool                  mustExpand);
     GenTree* impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
