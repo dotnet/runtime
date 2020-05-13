@@ -5,7 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- Since this is referenced by test projects that are restored for NetFrameworkCurrent, we need to suppor it for restored
-  at runtime this is a no-op as tests can't run in NetFrameworkCurrent on Android so we will never build this for that tfm. -->
+  at runtime this is a no-op as tests can't run in NetFrameworkCurrent on iOS so we will never build this for that tfm. -->
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="AppleTestRunner.cs" />
     <PackageReference Include="Microsoft.DotNet.XHarness.Tests.Runners" Version="$(MicrosoftDotNetXHarnessTestsRunnersVersion)" />
