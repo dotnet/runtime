@@ -1912,4 +1912,899 @@
 	</ExcludeList>
     </ItemGroup>
 
+    <!-- The following tests are marked with CLRTestTargetUnsupported
+
+         These used to not be built for specific targets.
+
+         To support building on all targets,  These are now built in CI, but should be excluded from
+         running on specific targets.
+
+         The CLRTestTargetUnsupported property was intended to conditionally disable running the tests,
+         but the implementation is incomplete.
+
+         Each test is disabled to make the new CI systme of building all tests for all target on OSX
+         work properly.
+
+         Some of these may be duplicates of above.
+    -->
+
+    <!-- Do not run on Arm64 -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64')">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/CopyConstructorMarshaler/CopyConstructorMarshaler/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/FixupCallsHostWhenLoaded/FixupCallsHostWhenLoaded/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/LoadIjwFromModuleHandle/LoadIjwFromModuleHandle/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/ManagedCallingNative/ManagedCallingNative/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeCallingManaged/NativeCallingManaged/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeVarargs/NativeVarargsTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/NETClients/Bindings/NETClientBindings/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_i8_i/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/R2RDumpTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Only run on arm -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' != 'arm' and '$(AltJitArch)' != 'arm')">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/1/arglist_Target_ARM/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/2/arglist_Target_ARM/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/arglist_Target_ARM/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Do not run on arm -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeVarargs/NativeVarargsTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/NETClients/Bindings/NETClientBindings/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/1/arglist_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/2/arglist_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/arglist_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/R2RDumpTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Only run on x64 and arm64 -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' != 'arm64' and '$(AltJitArch)' != 'arm64' and '$(TargetArchitecture)' != 'x64')">
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/crossgen2/crossgen2smoke/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Do not run on x64 -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetArchitecture)' == 'x64'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_i8_i/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Only run on x64 -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(AltJitArch)' != '' or '$(TargetArchitecture)' != 'x64')">
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/determinism/crossgen2determinism/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Only run on 32-bit targets -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64' or '$(TargetArchitecture)' == 'x64')">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/1/arglist_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/1/arglist_Target_ARM/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/2/arglist_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/2/arglist_Target_ARM/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/arglist_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/arglist_Target_ARM/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgi_array_merge_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgsizeof_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgu_array_merge_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_reli_array_merge_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_relsizeof_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_relu_array_merge_Target_32BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_dbgsizeof32_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_dbgsizeof_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof32_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof64_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_278523/DevDiv_278523_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_32Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Only run on 64-bit targets -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' != 'arm64' and '$(AltJitArch)' != 'arm64' and '$(TargetArchitecture)' != 'x64')">
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/1/arglist_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/2/arglist_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/arglist_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgi_array_merge_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgsizeof_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgu_array_merge_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_reli_array_merge_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_relsizeof_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_relu_array_merge_Target_64BIT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_dbgsizeof32_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_dbgsizeof_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof32_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof64_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_278523/DevDiv_278523_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Only run on non Windows -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true'">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/WindowsEventLog/WindowsEventLog_TargetUnix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Only run on Windows -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true'">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/WindowsEventLog/WindowsEventLog_TargetWindows/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/commitstackonlyasneeded/DefaultStackCommit/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexneg1/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexneg2/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexneg3/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexneg4/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexneg5/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexneg6/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexneg7/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexneg8/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexpos1/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexpos2/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexpos3/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexpos4/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/whidbey_m3/200176/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphorector2/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphorector3/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphorector4/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphorector5/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphoreopenneg1/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphoreopenneg2/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphoreopenneg3/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphoreopenneg4/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphoreopenneg5/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphoreopenneg6/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/ctoropen/semaphoreopenneg7/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/semaphore/unit/semtest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandle1/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid3/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid4/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid5/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid6/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/system/reflection/emit/DynMethodJumpStubTests/DynMethodJumpStubTests/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/smalloom/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/**/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetUnix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetWindows/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/**/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/IUnknown/IUnknownTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/IUnknown/IUnknownTestInALC/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetWindows/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Attributes/LCID/LCIDTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFF_PFF/AFF_PFF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFF_PFT/AFF_PFT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFF_PTF/AFF_PTF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFF_PTT/AFF_PTT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFT_PFF/AFT_PFF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFT_PFT/AFT_PFT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFT_PTF/AFT_PTF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFT_PTT/AFT_PTT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Assembly_False_False/Assembly_False_False/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Assembly_False_True/Assembly_False_True/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Assembly_True_False/Assembly_True_False/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Assembly_True_True/Assembly_True_True/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/ATF_PFF/ATF_PFF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/ATF_PFT/ATF_PFT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/ATF_PTF/ATF_PTF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/ATF_PTT/ATF_PTT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/ATT_PFF/ATT_PFF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/ATT_PFT/ATT_PFT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/ATT_PTF/ATT_PTF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/ATT_PTT/ATT_PTT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Pinvoke_False_False/Pinvoke_False_False/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Pinvoke_False_True/Pinvoke_False_True/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Pinvoke_True_False/Pinvoke_True_False/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Pinvoke_True_True/Pinvoke_True_True/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFF_PFF/AFF_PFF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFF_PFT/AFF_PFT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFF_PTF/AFF_PTF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFF_PTT/AFF_PTT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFT_PFF/AFT_PFF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFT_PFT/AFT_PFT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFT_PTF/AFT_PTF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFT_PTT/AFT_PTT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Assembly_False_False/Assembly_False_False/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Assembly_False_True/Assembly_False_True/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Assembly_True_False/Assembly_True_False/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Assembly_True_True/Assembly_True_True/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/ATF_PFF/ATF_PFF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/ATF_PFT/ATF_PFT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/ATF_PTF/ATF_PTF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/ATF_PTT/ATF_PTT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/ATT_PFF/ATT_PFF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/ATT_PFT/ATT_PFT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/ATT_PTF/ATT_PTF/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/ATT_PTT/ATT_PTT/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Pinvoke_False_False/Pinvoke_False_False/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Pinvoke_False_True/Pinvoke_False_True/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Pinvoke_True_False/Pinvoke_True_False/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Pinvoke_True_True/Pinvoke_True_True/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CustomMarshalers/CustomMarshalersTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/IEnumerator/IEnumeratorTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/NativeCallManagedComVisible/AssemblyTrue/AssemblyTrueTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/NativeCallManagedComVisible/AssemblyWithoutComVisible/AssemblyWithoutComVisibleTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/NativeCallManagedComVisible/Default/DefaultTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/NativeCallManagedComVisible/Default/DefaultTestInALC/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Varargs/VarargsTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Variant/VariantTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/SizeConst/SizeConstTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/DelegatePInvoke/DelegatePInvokeTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/ReversePInvokeManaged/ReversePInvokeTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/NETClients/Bindings/NETClientBindings/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/NETClients/Primitives/NETClientPrimitives/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetUnix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetWindows/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/oldtests/callipinvoke/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/oldtests/Desktop/callipinvoke_il_d/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/oldtests/Desktop/callipinvoke_il_r/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/PInvokeTail/PInvokeTail/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/PInvokeTail/TailWinApi/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/calli_excep/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/jump/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/pinvoke-bug/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/pinvoke-examples/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/preemptive_cooperative/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/sin/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/sysinfo_cs/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/sysinfo_il/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/UnrollLoop/loop2_cs_d/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/UnrollLoop/loop2_cs_do/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/UnrollLoop/loop2_cs_r/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/UnrollLoop/loop2_cs_ro/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/Fields/getclassfrommethodparam/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/pinvoke/instance01/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/pinvoke/instance02/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/pinvoke/instance03/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/pinvoke/static01/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/pinvoke/static02/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/gc/misc/funclet/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i01/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i02/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i03/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i04/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i05/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i06/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i07/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i10/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i11/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i12/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i13/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i14/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i15/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i16/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i17/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i30/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i31/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i32/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i33/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i34/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i35/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i36/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i37/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i50/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i51/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i52/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i53/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i54/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i55/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i56/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i57/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i60/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i61/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i62/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i63/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i64/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i65/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i66/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i67/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i70/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i71/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i72/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i73/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i74/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i75/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i76/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i77/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i80/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i81/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i82/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i83/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i84/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i85/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i86/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i87/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/286991/test/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Tailcall/TailcallVerifyWithPrefix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/clr-x64-JIT/v2.1/b173569/b173569/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/clr-x64-JIT/v4.0/devdiv374539/DevDiv_374539/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324a/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324b/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30838/b30838/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30864/b30864/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b35784/b35784/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b36472/b36472/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b37598/b37598/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b46867/b46867/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b31745/b31745/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b79250/b79250/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_22583/GitHub_22583/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/V2.0-RTM/b286991/b286991/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/managed/Compilation/Compilation/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/R2RDumpTest/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventsource/eventpipeandetw/eventpipeandetw/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/regress/GitHub_22247/GitHub_22247/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+    </ItemGroup>
 </Project>
