@@ -76,7 +76,7 @@ namespace System.Net.Http.Functional.Tests
             new[]
             {
                 true,
-#if NETCORE
+#if NETCOREAPP
                 false
 #endif
             };
