@@ -8582,10 +8582,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		case OP_SSE41_MUL: {
+#if LLVM_API_VERSION < 900
 			// NOTE: LLVM 7 and later use shifts here
 			// however, pmuldq is still available so I guess it's fine to keep using it
 			LLVMValueRef args [] = { lhs, rhs };
 			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PMULDQ, args, dname);
+#else
+			// FIXME:
+			NOT_IMPLEMENTED;
+#endif
 			break;	
 		}
 
