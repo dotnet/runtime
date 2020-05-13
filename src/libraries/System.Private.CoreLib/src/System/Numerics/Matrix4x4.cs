@@ -1315,6 +1315,9 @@ namespace System.Numerics
         {
             if (Sse.IsSupported)
             {
+                // This implementation is based on the DirectX Math Library XMMInverse method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 // Load the matrix values into rows
                 Vector128<float> row1 = Sse.LoadVector128(&matrix.M11);
                 Vector128<float> row2 = Sse.LoadVector128(&matrix.M21);
@@ -1445,7 +1448,7 @@ namespace System.Numerics
                 vTemp = Sse.Add(vTemp, vTemp2);
                 vTemp = Sse.Shuffle(vTemp, vTemp, 0xAA);
 
-                // Check determinate is not zero
+                // Check determinant is not zero
                 if (MathF.Abs(vTemp.GetElement<float>(0)) < float.Epsilon)
                 {
                     result = new Matrix4x4(float.NaN, float.NaN, float.NaN, float.NaN,
