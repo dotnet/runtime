@@ -2163,6 +2163,74 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/WindowsEventLog/WindowsEventLog_TargetUnix/*">
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportAttribute/DllImportPath/DllImportPathTest_TargetUnix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetUnix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetUnix/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
+        <!-- Regressions apparently caused by building all tests on OSX/Linux
+             Initial triage seem to be related to test reporting
+               + file not found issues
+               + The syntax of the command is incorrect
+        -->
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/tests/mainv**/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/GlobalInstance/GlobalInstanceMarshallingTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM\ComWrappers/GlobalInstance/GlobalInstanceTrackerSupportTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/DefaultInterfaces/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Dispatch/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Events/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Licensing/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/ConsumeNETServer/ConsumeNETServer/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/CopyConstructorMarshaler/CopyConstructorMarshaler/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/FixupCallsHostWhenLoaded/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/LoadIjwFromModuleHandle/LoadIjwFromModuleHandle/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/ManagedCallingNative/ManagedCallingNative/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeCallingManaged/NativeCallingManaged/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeVarargs/NativeVarargsTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop//*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop//*">
+            <Issue>https://github.com/dotnet/runtime/issues/36404</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Only run on Windows -->
@@ -2281,7 +2349,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/**/*">
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetUnix/*">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportAttribute/DllImportPath/DllImportPathTest_TargetWindows/*">
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetWindows/*">
@@ -2294,9 +2362,6 @@
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/IUnknown/IUnknownTestInALC/*">
-            <Issue>CLRTestTargetUnsupported</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/*">
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetWindows/*">
@@ -2489,9 +2554,6 @@
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/NETClients/Primitives/NETClientPrimitives/*">
-            <Issue>CLRTestTargetUnsupported</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetUnix/*">
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetWindows/*">

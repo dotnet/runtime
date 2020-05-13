@@ -13,7 +13,7 @@ class Test
     private const string PathEnvSubdirectoryName = "Subdirectory";
     private const string PathEnvFileName = "MovedNativeLib";
 
-#if TARGET_WINDOWS
+#if WINDOWS
     private const string RelativePath1 = @".\RelativeNative\..\DllImportPath_Relative";
     private const string RelativePath3 = @"..\DllImportPathTest\DllImportPath_Relative";
 #else
