@@ -94,7 +94,7 @@ namespace Internal.Cryptography
         }
 
         /// <summary>Expected size of <see cref="s_friendlyNameToOid"/>.</summary>
-        private const int FriendlyNameToOidCount = 103;
+        private const int FriendlyNameToOidCount = 110;
 
         /// <summary>Expected size of <see cref="s_oidToFriendlyName"/>.</summary>
         private const int OidToFriendlyNameCount = 103;
@@ -204,9 +204,9 @@ namespace Internal.Cryptography
             AddEntry("1.3.133.16.840.63.0.2", "ECDH_STD_SHA1_KDF");
             AddEntry("1.3.132.1.11.1", "ECDH_STD_SHA256_KDF");
             AddEntry("1.3.132.1.11.2", "ECDH_STD_SHA384_KDF");
-            AddEntry("1.2.840.10045.3.1.7", "ECDSA_P256");
-            AddEntry("1.3.132.0.34", "ECDSA_P384");
-            AddEntry("1.3.132.0.35", "ECDSA_P521");
+            AddEntry("1.2.840.10045.3.1.7", "ECDSA_P256", new[] { "nistP256", "secP256r1", "x962P256v1" } );
+            AddEntry("1.3.132.0.34", "ECDSA_P384", new[] { "nistP384", "secP384r1" });
+            AddEntry("1.3.132.0.35", "ECDSA_P521", new[] { "nistP521", "secP521r1" });
             AddEntry("1.2.840.113549.1.9.16.3.5", "ESDH");
             AddEntry("2.5.4.42", "G");
             AddEntry("2.5.4.43", "I");
