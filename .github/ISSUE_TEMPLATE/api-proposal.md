@@ -13,7 +13,7 @@ Please provide a thorough explanation of what necessitates the additional API.
 
 # Proposed API
 
-Please provide the precise public API signature diff that you are proposing. If modifying existing API signatures this should be expressed using diff blocks, for example
+Please provide the precise public API signature diff that you are proposing. If augmenting existing API signatures this should be expressed using diff blocks, for example
 ```diff
 namespace System.Collections.Generic
 {
