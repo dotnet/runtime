@@ -2266,6 +2266,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid6/*">
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/**/*">
+            <Issue>CLRTestTargetUnsupported</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/system/reflection/emit/DynMethodJumpStubTests/DynMethodJumpStubTests/*">
             <Issue>CLRTestTargetUnsupported</Issue>
         </ExcludeList>
