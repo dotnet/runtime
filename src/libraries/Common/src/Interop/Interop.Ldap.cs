@@ -9,6 +9,8 @@ internal static partial class Interop
     public const int SEC_WINNT_AUTH_IDENTITY_UNICODE = 0x2;
     public const int SEC_WINNT_AUTH_IDENTITY_VERSION = 0x200;
     public const string MICROSOFT_KERBEROS_NAME_W = "Kerberos";
+    public const uint LDAP_SASL_QUIET = 2;
+    public const string KerberosDefaultMechanism = "GSSAPI";
 }
 
 namespace System.DirectoryServices.Protocols
@@ -94,7 +96,10 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_SASL_METHOD = 0x97,
         LDAP_OPT_AREC_EXCLUSIVE = 0x98, // Not Supported in Linux
         LDAP_OPT_SECURITY_CONTEXT = 0x99,
-        LDAP_OPT_ROOTDSE_CACHE = 0x9a // Not Supported in Linux
+        LDAP_OPT_ROOTDSE_CACHE = 0x9a, // Not Supported in Linux
+        LDAP_OPT_X_SASL_REALM = 0x6101,
+        LDAP_OPT_X_SASL_AUTHCID = 0x6102,
+        LDAP_OPT_X_SASL_AUTHZID = 0x6103
     }
 
     internal enum ResultAll
