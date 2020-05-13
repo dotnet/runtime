@@ -99,7 +99,7 @@ namespace Mono.Linker
 
 		public string ToMSBuildString ()
 		{
-			const string originApp = "illinker";
+			const string originApp = "ILlinker";
 			string origin = Origin?.ToString () ?? originApp;
 
 			StringBuilder sb = new StringBuilder ();

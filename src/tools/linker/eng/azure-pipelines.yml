@@ -126,13 +126,7 @@ stages:
       steps:
       - checkout: self
         submodules: true
-      - task: DotNetCoreCLI@2
-        displayName: 'Restore dotnet tools'
-        inputs:
-          command: 'custom'
-          custom: 'tool'
-          arguments: 'restore'
-      - script: ./lint.sh --dry-run
+      - script: ./lint.sh --dry-run --check
 
   - ${{ if eq(variables.officialBuild, 'false') }}:
     - job: Linux_Mono

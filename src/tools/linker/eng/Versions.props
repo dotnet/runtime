@@ -13,14 +13,14 @@
   <PropertyGroup>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <!-- ilasm -->
-    <MicrosoftNETSdkILPackageVersion>5.0.0-preview.5.20253.7</MicrosoftNETSdkILPackageVersion>
+    <MicrosoftNETSdkILPackageVersion>5.0.0-preview.5.20260.5</MicrosoftNETSdkILPackageVersion>
     <!-- see https://github.com/dotnet/runtime/issues/1338 -->
     <MicrosoftNETCoreILAsmVersion>$(MicrosoftNETSdkILPackageVersion)</MicrosoftNETCoreILAsmVersion>
     <!-- These should match the SDK version at https://github.com/dotnet/sdk/blob/master/eng/Versions.props -->
     <SystemReflectionMetadataVersion>1.5.0</SystemReflectionMetadataVersion>
     <MicrosoftBuildFrameworkVersion>15.4.8</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>15.4.8</MicrosoftBuildUtilitiesCoreVersion>
-    <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20228.4</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20256.5</MicrosoftDotNetApiCompatVersion>
     <!-- We depend on (and redistribute) the official Mono.Cecil NuGet package built from https://github.com/jbevain/cecil -->
     <MonoCecilVersion>0.11.2</MonoCecilVersion>
   </PropertyGroup>

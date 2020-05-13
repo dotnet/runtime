@@ -230,7 +230,7 @@ are applied.
 <linker>
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
-      <field name="MyNumericField">
+      <field name="MyTypeField">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
           <argument>DefaultConstructor</argument>
         </attribute>
@@ -240,13 +240,13 @@ are applied.
 </linker>
 ```
 
-### Custom attribute on property field
+### Custom attribute on property
 
 ```xml
 <linker>
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
-      <property name="MyNumericField">
+      <property name="MyTypeProperty">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
           <argument>DefaultConstructor</argument>
         </attribute>
@@ -256,20 +256,20 @@ are applied.
 </linker>
 ```
 
-### Custom attribute on method
+### Custom attribute on method parameter
 
 ```xml
 <linker>
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
-      <method signature="System.Void Method1(System.Boolean)">
-        <parameter name="boolParameter">
+      <method signature="System.Void Method1(System.Type)">
+        <parameter name="typeParameter">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
             <argument>DefaultConstructor</argument>
           </attribute>
         </parameter>
       </method>
-      <method signature="System.Boolean Method2()">
+      <method signature="System.Type Method2()">
         <return>
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
             <argument>PublicConstructors</argument>
@@ -288,6 +288,38 @@ are applied.
 </linker>
 ```
 
+### Custom attribute in multiple method parameters
+
+When writing custom attribute for multiple method parameters you need to write the xml elements
+in an order dependent form. That is, the first xml parameter element corresponds to the first 
+method parameter, second xml parameter element correspond to the second method parameter and so on.
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <method signature="System.Void Method1(System.Type, System.Type, System.Type)">
+        <parameter name="typeParameter1">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+        <parameter name="typeParameter2">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+        <parameter name="typeParameter3">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>PublicConstructors</argument>
+          </attribute>
+        </parameter>
+      </method>
+    </type>
+  </assembly>
+</linker>
+```
+
 ### Custom attribute on nested type
 
 ```xml
@@ -295,7 +327,7 @@ are applied.
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
       <type name="NestedType">
-        <property name="MyNumericField">
+        <property name="MyTypeField">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
             <argument>DefaultConstructor</argument>
           </attribute>

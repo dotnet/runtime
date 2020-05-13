@@ -23,20 +23,11 @@ namespace Mono.Linker.Dataflow
 		readonly string _xmlDocumentLocation;
 		readonly LinkContext _context;
 
-		public class XmlResolutionException : Exception
-		{
-			public XmlResolutionException (string message, Exception innerException)
-				: base (message, innerException)
-			{
-			}
-		}
-
 		public XmlFlowAnnotationSource (LinkContext context, string document)
 		{
 			_xmlDocumentLocation = document;
 			_document = new XPathDocument (_xmlDocumentLocation);
 			_context = context;
-			Initialize ();
 		}
 
 		public DynamicallyAccessedMemberTypes GetFieldAnnotation (FieldDefinition field)
@@ -70,7 +61,6 @@ namespace Mono.Linker.Dataflow
 		public DynamicallyAccessedMemberTypes GetThisParameterAnnotation (MethodDefinition method)
 		{
 			if (_methods.TryGetValue (method, out var ann) && ann.ParameterAnnotations != null) {
-
 				foreach (var (ParamName, Annotation) in ann.ParameterAnnotations)
 					if (ParamName == "this")
 						return Annotation;
@@ -83,21 +73,28 @@ namespace Mono.Linker.Dataflow
 		{
 			foreach (var attribute in attributes.ToArray ()) {
 				if (attribute.attributeName == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers" && attribute.arguments.Count == 1) {
-					foreach (var argument in attribute.arguments.ToArray ()) {
-						if (argument == string.Empty)
-							break;
-						try {
-							return (DynamicallyAccessedMemberTypes) Enum.Parse (typeof (DynamicallyAccessedMemberTypes), argument);
-						} catch (ArgumentException) {
-							_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not parse argument '{argument}' specified in '{_xmlDocumentLocation}' as a DynamicallyAccessedMemberTypes", 2020));
+					if (attribute.arguments.Count == 0) {
+						_context.LogMessage (MessageContainer.CreateWarningMessage ($"DynamicallyAccessedMembers attribute was specified but no argument was proportioned", 2020));
+					} else if (attribute.arguments.Count == 1) {
+						DynamicallyAccessedMemberTypes result;
+						foreach (var argument in attribute.arguments.ToArray ()) {
+							if (argument == string.Empty)
+								break;
+							if (Enum.TryParse (argument, false, out result)) {
+								return result;
+							} else {
+								_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not parse argument '{argument}' specified in '{_xmlDocumentLocation}' as a DynamicallyAccessedMemberTypes", 2021));
+							}
 						}
+					} else {
+						_context.LogMessage (MessageContainer.CreateWarningMessage ($"DynamicallyAccessedMembers attribute was specified but there is more than one argument", 2022));
 					}
 				}
 			}
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		void Initialize ()
+		public void ParseXml ()
 		{
 			XPathNavigator nav = _document.CreateNavigator ();
 
@@ -106,44 +103,42 @@ namespace Mono.Linker.Dataflow
 
 			try {
 				ProcessAssemblies (_context, nav.SelectChildren ("assembly", string.Empty));
-			} catch (Exception ex) when (!(ex is XmlResolutionException)) {
-				throw new XmlResolutionException (string.Format ("Failed to process XML description: {0}", _document), ex);
+			} catch (Exception ex) when (!(ex is LinkerFatalErrorException)) {
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Error processing '{_xmlDocumentLocation}'", 1013), ex);
 			}
 		}
 
 		private void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
+				if (!ShouldProcessElement (iterator.Current)) {
+					return;
+				}
+
 				AssemblyDefinition assembly = GetAssembly (context, GetAssemblyName (iterator.Current));
 
 				if (assembly == null) {
 					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007));
 					continue;
 				}
-
-				if (!ShouldProcessSubstitutions (iterator.Current)) {
-					return;
-				}
-
 				ProcessTypes (assembly, iterator.Current.SelectChildren ("type", string.Empty));
 			}
 		}
 
 		ArrayBuilder<Attribute> ProcessAttributes (XPathNodeIterator iterator)
 		{
+			iterator = iterator.Current.SelectChildren ("attribute", string.Empty);
 			var attributes = new ArrayBuilder<Attribute> ();
 			while (iterator.MoveNext ()) {
 				string attributeName = GetFullName (iterator.Current);
-				ArrayBuilder<string> arguments = GetAttributeChilds (iterator.Current.SelectChildren ("argument", string.Empty));
-				ArrayBuilder<string> fields = GetAttributeChilds (iterator.Current.SelectChildren ("field", string.Empty));
-				ArrayBuilder<string> properties = GetAttributeChilds (iterator.Current.SelectChildren ("property", string.Empty));
+				ArrayBuilder<string> arguments = GetAttributeChildren (iterator.Current.SelectChildren ("argument", string.Empty));
 
-				attributes.Add (new Attribute (attributeName, arguments, fields, properties));
+				attributes.Add (new Attribute (attributeName, arguments));
 			}
 			return attributes;
 		}
 
-		ArrayBuilder<string> GetAttributeChilds (XPathNodeIterator iterator)
+		ArrayBuilder<string> GetAttributeChildren (XPathNodeIterator iterator)
 		{
 			ArrayBuilder<string> childs = new ArrayBuilder<string> ();
 			while (iterator.MoveNext ()) {
@@ -157,12 +152,12 @@ namespace Mono.Linker.Dataflow
 			while (iterator.MoveNext ()) {
 				XPathNavigator nav = iterator.Current;
 
-				if (!ShouldProcessSubstitutions (nav))
+				if (!ShouldProcessElement (nav))
 					continue;
 
 				string fullname = GetFullName (nav);
 
-				if (IsTypePattern (fullname)) {
+				if (fullname.IndexOf ("*") != -1) {
 					ProcessTypePattern (fullname, assembly, nav);
 					continue;
 				}
@@ -190,16 +185,6 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		static bool IsTypePattern (string fullname)
-		{
-			return fullname.IndexOf ("*") != -1;
-		}
-
-		static Regex CreateRegexFromPattern (string pattern)
-		{
-			return new Regex (pattern.Replace (".", @"\.").Replace ("*", "(.*)"));
-		}
-
 		void MatchType (TypeDefinition type, Regex regex, XPathNavigator nav)
 		{
 			if (regex.Match (type.FullName).Success)
@@ -212,19 +197,9 @@ namespace Mono.Linker.Dataflow
 				MatchType (nt, regex, nav);
 		}
 
-		void MatchExportedType (ExportedType exportedType, ModuleDefinition module, Regex regex, XPathNavigator nav)
-		{
-			if (regex.Match (exportedType.FullName).Success) {
-				TypeDefinition type = exportedType.Resolve ();
-				if (type != null) {
-					ProcessType (type, nav);
-				}
-			}
-		}
-
 		void ProcessTypePattern (string fullname, AssemblyDefinition assembly, XPathNavigator nav)
 		{
-			Regex regex = CreateRegexFromPattern (fullname);
+			Regex regex = new Regex (fullname.Replace (".", @"\.").Replace ("*", "(.*)"));
 
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
 				MatchType (type, regex, nav);
@@ -232,14 +207,19 @@ namespace Mono.Linker.Dataflow
 
 			if (assembly.MainModule.HasExportedTypes) {
 				foreach (var exported in assembly.MainModule.ExportedTypes) {
-					MatchExportedType (exported, assembly.MainModule, regex, nav);
+					if (regex.Match (exported.FullName).Success) {
+						TypeDefinition type = exported.Resolve ();
+						if (type != null) {
+							ProcessType (type, nav);
+						}
+					}
 				}
 			}
 		}
 
 		void ProcessType (TypeDefinition type, XPathNavigator nav)
 		{
-			if (!ShouldProcessSubstitutions (nav)) {
+			if (!ShouldProcessElement (nav)) {
 				return;
 			}
 
@@ -248,9 +228,9 @@ namespace Mono.Linker.Dataflow
 			if (!type.HasNestedTypes)
 				return;
 
-			foreach (TypeDefinition nested in type.NestedTypes) {
-				var iterator = nav.SelectChildren ("type", string.Empty);
-				while (iterator.MoveNext ()) {
+			var iterator = nav.SelectChildren ("type", string.Empty);
+			while (iterator.MoveNext ()) {
+				foreach (TypeDefinition nested in type.NestedTypes) {
 					if (nested.Name == GetAttribute (iterator.Current, "name"))
 						ProcessTypeChildren (nested, iterator.Current);
 				}
@@ -273,7 +253,7 @@ namespace Mono.Linker.Dataflow
 				return;
 
 			while (fields.MoveNext ()) {
-				if (!ShouldProcessSubstitutions (fields.Current)) {
+				if (!ShouldProcessElement (fields.Current)) {
 					return;
 				}
 				string value = GetSignature (fields.Current);
@@ -293,7 +273,7 @@ namespace Mono.Linker.Dataflow
 				return;
 
 			while (methods.MoveNext ()) {
-				if (!ShouldProcessSubstitutions (methods.Current)) {
+				if (!ShouldProcessElement (methods.Current)) {
 					return;
 				}
 
@@ -313,7 +293,7 @@ namespace Mono.Linker.Dataflow
 			if (properties.Count == 0)
 				return;
 			while (properties.MoveNext ()) {
-				if (!ShouldProcessSubstitutions (properties.Current)) {
+				if (!ShouldProcessElement (properties.Current)) {
 					return;
 				}
 
@@ -334,7 +314,7 @@ namespace Mono.Linker.Dataflow
 				_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find field '{signature}' in type '{type.FullName}' specified in { _xmlDocumentLocation}", 2016));
 				return;
 			}
-			ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+			ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator);
 			DynamicallyAccessedMemberTypes fieldAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (attributes, _context, _xmlDocumentLocation);
 			if (fieldAnnotation != DynamicallyAccessedMemberTypes.None)
 				_fields[field] = fieldAnnotation;
@@ -347,7 +327,7 @@ namespace Mono.Linker.Dataflow
 
 			foreach (FieldDefinition field in type.Fields) {
 				if (field.Name == name) {
-					ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+					ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator);
 					DynamicallyAccessedMemberTypes fieldAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (attributes, _context, _xmlDocumentLocation);
 					if (fieldAnnotation != DynamicallyAccessedMemberTypes.None)
 						_fields[field] = fieldAnnotation;
@@ -379,7 +359,7 @@ namespace Mono.Linker.Dataflow
 
 		void ProcessMethodChildren (TypeDefinition type, MethodDefinition method, XPathNodeIterator iterator)
 		{
-			ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+			ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator);
 			ArrayBuilder<(string, ArrayBuilder<Attribute>)> parameterAnnotations = ProcessParameters (type,
 				method, iterator.Current.SelectChildren ("parameter", string.Empty));
 			ArrayBuilder<ArrayBuilder<Attribute>> returnParameterAnnotations = ProcessReturnParameters (type,
@@ -402,6 +382,8 @@ namespace Mono.Linker.Dataflow
 					if (returnparamAnnotation != 0)
 						returnAnnotation = returnparamAnnotation;
 				}
+			} else {
+				_context.LogMessage (MessageContainer.CreateWarningMessage ($"There is more than one return parameter specified for '{method.Name}' in '{_xmlDocumentLocation}'", 2023));
 			}
 			if (returnAnnotation != 0 || parameterAnnotation.Count > 0)
 				_methods[method] = new AnnotatedMethod (returnAnnotation, parameterAnnotation.ToArray ());
@@ -413,7 +395,7 @@ namespace Mono.Linker.Dataflow
 		{
 			var methodParameters = new ArrayBuilder<(string, ArrayBuilder<Attribute>)> ();
 			while (iterator.MoveNext ()) {
-				methodParameters.Add ((GetAttribute (iterator.Current, "name"), ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty))));
+				methodParameters.Add ((GetAttribute (iterator.Current, "name"), ProcessAttributes (iterator)));
 			}
 			return methodParameters;
 		}
@@ -424,7 +406,7 @@ namespace Mono.Linker.Dataflow
 			var methodParameters = new ArrayBuilder<ArrayBuilder<Attribute>> ();
 
 			while (iterator.MoveNext ()) {
-				methodParameters.Add (ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty)));
+				methodParameters.Add (ProcessAttributes (iterator));
 			}
 			return methodParameters;
 		}
@@ -483,7 +465,7 @@ namespace Mono.Linker.Dataflow
 		{
 			PropertyDefinition property = GetProperty (type, signature);
 			if (property != null) {
-				ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+				ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator);
 				DynamicallyAccessedMemberTypes propertyAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (attributes, _context, _xmlDocumentLocation);
 				if (propertyAnnotation != DynamicallyAccessedMemberTypes.None)
 					_properties[property] = propertyAnnotation;
@@ -497,7 +479,7 @@ namespace Mono.Linker.Dataflow
 
 			foreach (PropertyDefinition property in type.Properties) {
 				if (property.Name == name) {
-					ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator.Current.SelectChildren ("attribute", string.Empty));
+					ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator);
 					DynamicallyAccessedMemberTypes propertyAnnotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (attributes, _context, _xmlDocumentLocation);
 					if (propertyAnnotation != DynamicallyAccessedMemberTypes.None)
 						_properties[property] = propertyAnnotation;
@@ -558,18 +540,14 @@ namespace Mono.Linker.Dataflow
 		{
 			public string attributeName { get; set; }
 			public ArrayBuilder<string> arguments { get; set; }
-			public ArrayBuilder<string> fields { get; set; }
-			public ArrayBuilder<string> properties { get; set; }
 
-			public Attribute (string _attributeName, ArrayBuilder<string> _arguments, ArrayBuilder<string> _fields, ArrayBuilder<string> _properties)
+			public Attribute (string _attributeName, ArrayBuilder<string> _arguments)
 			{
 				attributeName = _attributeName;
 				arguments = _arguments;
-				fields = _fields;
-				properties = _properties;
 			}
 		}
-		bool ShouldProcessSubstitutions (XPathNavigator nav)
+		bool ShouldProcessElement (XPathNavigator nav)
 		{
 			var feature = GetAttribute (nav, "feature");
 			if (string.IsNullOrEmpty (feature))

@@ -32,7 +32,6 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Xml.XPath;
-
 using Mono.Linker.Steps;
 
 namespace Mono.Linker
@@ -674,6 +673,15 @@ namespace Mono.Linker
 
 			try {
 				p.Process (context);
+			} catch (Exception ex) {
+				if (ex is LinkerFatalErrorException lex) {
+					context.LogMessage (lex.MessageContainer);
+					Console.Error.WriteLine (ex.ToString ());
+				} else {
+					context.LogMessage (MessageContainer.CreateErrorMessage ($"IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues \n{ex}", 1012));
+				}
+
+				return false;
 			} finally {
 				context.Tracer.Finish ();
 			}
