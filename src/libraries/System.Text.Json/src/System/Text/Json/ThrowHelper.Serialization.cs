@@ -169,6 +169,13 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_KeyValuePairPropertyNameInvalid(JsonNamingPolicy namingPolicy)
+        {
+            throw new InvalidOperationException(SR.Format(SR.KeyValuePairPropertyNameInvalid, namingPolicy.GetType()));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(Type converterType)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerConverterFactoryReturnsNull, converterType));

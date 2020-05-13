@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Text.Encodings.Web;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -278,6 +279,176 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(value.KvpWStrKvpVal.Value.Value);
             Assert.Null(value.KvpWObjKvpVal.Value.Value);
             Assert.Null(value.KvpWClassKvpVal.Value.Value);
+        }
+
+        [Fact]
+        public static void HonorNamingPolicy()
+        {
+            var kvp = new KeyValuePair<string, int>("Hello, World!", 1);
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = new LeadingUnderscorePolicy()
+            };
+
+            string serialized = JsonSerializer.Serialize(kvp, options);
+            // We know serializer writes the key first.
+            Assert.Equal(@"{""_Key"":""Hello, World!"",""_Value"":1}", serialized);
+
+            kvp = JsonSerializer.Deserialize<KeyValuePair<string, int>>(serialized, options);
+            Assert.Equal("Hello, World!", kvp.Key);
+            Assert.Equal(1, kvp.Value);
+        }
+
+        [Fact]
+        public static void HonorNamingPolicy_CaseInsensitive()
+        {
+            const string json = @"{""key"":""Hello, World!"",""value"":1}";
+
+            // Baseline - with case-sensitive matching, the payload doesn't have mapping properties.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(json));
+
+            // Test - with case-insensitivity on, we have property matches.
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            KeyValuePair<string, int> kvp = JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options);
+            Assert.Equal("Hello, World!", kvp.Key);
+            Assert.Equal(1, kvp.Value);
+        }
+
+        [Fact]
+        public static void HonorCLRProperties()
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = new LeadingUnderscorePolicy() // Key -> _Key, Value -> _Value
+            };
+
+            // Although policy won't produce this JSON string, the serializer parses the properties
+            // as "Key" and "Value" are special cased to accomodate content serialized with previous
+            // versions of the serializer (.NET Core 3.x/System.Text.Json 4.7.x).
+            string json = @"{""Key"":""Hello, World!"",""Value"":1}";
+            KeyValuePair<string, int> kvp = JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options);
+            Assert.Equal("Hello, World!", kvp.Key);
+            Assert.Equal(1, kvp.Value);
+
+            // "Key" and "Value" matching is case sensitive.
+            json = @"{""key"":""Hello, World!"",""value"":1}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options));
+
+            // "Key" and "Value" matching is case sensitive, even when case sensitivity is on.
+            // Case sensitivity only applies to the result of converting the CLR property names
+            // (Key -> _Key, Value -> _Value) with the naming policy.
+            options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = new LeadingUnderscorePolicy(),
+                PropertyNameCaseInsensitive = true
+            };
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options));
+        }
+
+        private class LeadingUnderscorePolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => "_" + name;
+        }
+
+        [Fact]
+        public static void HonorCustomEncoder()
+        {
+            var kvp = new KeyValuePair<int, int>(1, 2);
+
+            JsonNamingPolicy namingPolicy = new TrailingAngleBracketPolicy();
+
+            // Baseline - properties serialized with default encoder if none specified.
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = namingPolicy,
+            };
+
+            Assert.Equal(@"{""Key\u003C"":1,""Value\u003C"":2}", JsonSerializer.Serialize(kvp, options));
+
+            // Test - serializer honors custom encoder.
+            options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = namingPolicy,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
+            Assert.Equal(@"{""Key<"":1,""Value<"":2}", JsonSerializer.Serialize(kvp, options));
+        }
+
+        private class TrailingAngleBracketPolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => name + "<";
+        }
+
+        [Theory]
+        [InlineData(typeof(KeyNameNullPolicy))]
+        [InlineData(typeof(ValueNameNullPolicy))]
+        [InlineData(typeof(KeyNameMapsToValuePolicy))]
+        [InlineData(typeof(ValueNameMapsToKeyPolicy))]
+        public static void InvalidPropertyNameFail(Type policyType)
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = (JsonNamingPolicy)Activator.CreateInstance(policyType)
+            };
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>>("", options));
+            string exAsStr = ex.ToString();
+
+            Assert.Contains(policyType.ToString(), exAsStr);
+            Assert.Contains("'Key'", exAsStr);
+            Assert.Contains("'Value'", exAsStr);
+            Assert.Contains("'KeyValuePair'", exAsStr);
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new KeyValuePair<string, string>("", ""), options));
+        }
+
+        private class KeyNameNullPolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => name == "Key" ? null : name;
+        }
+
+        private class ValueNameNullPolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => name == "Value" ? null : name;
+        }
+
+        private class KeyNameMapsToValuePolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => name == "Key" ? "Value" : name;
+        }
+
+        private class ValueNameMapsToKeyPolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => name == "Value" ? "k\u0045y" : name; // kEy
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("1")]
+        [InlineData("[")]
+        [InlineData("}")]
+        [InlineData("{")]
+        [InlineData("{}")]
+        [InlineData("{Key")]
+        [InlineData("{0")]
+        [InlineData(@"{""Random"":")]
+        [InlineData(@"{""Value"":1}")]
+        [InlineData(@"{""Value"":1,2")]
+        [InlineData(@"{""Value"":1,""Random"":")]
+        [InlineData(@"{""Key"":1,""Key"":1}")]
+        [InlineData(@"{""Key"":1,""Key"":2}")]
+        [InlineData(@"{""Value"":1,""Value"":1}")]
+        [InlineData(@"{""Value"":1,""Value"":2}")]
+        public static void InvalidJsonFail(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
         }
     }
 }
