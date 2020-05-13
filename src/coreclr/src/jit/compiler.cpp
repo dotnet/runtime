@@ -5547,7 +5547,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         return param.result;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA) || defined(JIT_ADHOC_PROFILE)
+#if defined(DEBUG)
 unsigned Compiler::Info::compMethodHash() const
 {
     if (compMethodHashPrivate == 0)
@@ -5561,7 +5561,16 @@ unsigned Compiler::Info::compMethodHash() const
     }
     return compMethodHashPrivate;
 }
-#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(JIT_ADHOC_PROFILE)
+#elif defined(INLINE_DATA) || defined(JIT_ADHOC_PROFILE)
+unsigned Compiler::Info::compMethodHash() const
+{
+    if (compMethodHashPrivate == 0)
+    {
+        compMethodHashPrivate = compCompHnd->getMethodHash(compMethodHnd);
+    }
+    return compMethodHashPrivate;
+}
+#endif
 
 void Compiler::compCompileFinish()
 {
