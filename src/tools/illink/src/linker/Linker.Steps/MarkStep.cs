@@ -370,8 +370,10 @@ namespace Mono.Linker.Steps
 				(MethodDefinition method, DependencyInfo reason) = _methods.Dequeue ();
 				try {
 					ProcessMethod (method, reason);
-				} catch (Exception e) {
-					throw new MarkException (string.Format ("Error processing method: '{0}' in assembly: '{1}'", method.FullName, method.Module.Name), e, method);
+				} catch (Exception e) when (!(e is LinkerFatalErrorException)) {
+					throw new LinkerFatalErrorException (
+						MessageContainer.CreateErrorMessage ($"Error processing method '{method.FullName}' in assembly '{method.Module.Name}'", 1005,
+						origin: MessageOrigin.TryGetOrigin (method, 0)), e);
 				}
 			}
 		}
@@ -2262,7 +2264,8 @@ namespace Mono.Linker.Steps
 
 				var baseType = method.DeclaringType.BaseType.Resolve ();
 				if (!MarkDefaultConstructor (baseType, new DependencyInfo (DependencyKind.BaseDefaultCtorForStubbedMethod, method)))
-					throw new NotSupportedException ($"Cannot stub constructor on '{method.DeclaringType}' when base type does not have default constructor");
+					throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Cannot stub constructor on '{method.DeclaringType}' when base type does not have default constructor",
+						1006, origin: MessageOrigin.TryGetOrigin (method, 0)));
 
 				break;
 
@@ -2279,12 +2282,13 @@ namespace Mono.Linker.Steps
 
 			var nse = BCL.FindPredefinedType ("System", "NotSupportedException", _context);
 			if (nse == null)
-				throw new NotSupportedException ("Missing predefined 'System.NotSupportedException' type");
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ("Missing predefined 'System.NotSupportedException' type", 1007));
 
 			MarkType (nse, reason);
 
 			var nseCtor = MarkMethodIf (nse.Methods, KnownMembers.IsNotSupportedExceptionCtorString, reason);
-			_context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor ?? throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
+			_context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor ??
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Could not find constructor on '{nse.FullName}'", 1008));
 
 			var objectType = BCL.FindPredefinedType ("System", "Object", _context);
 			if (objectType == null)
@@ -2293,7 +2297,8 @@ namespace Mono.Linker.Steps
 			MarkType (objectType, reason);
 
 			var objectCtor = MarkMethodIf (objectType.Methods, MethodDefinitionExtensions.IsDefaultConstructor, reason);
-			_context.MarkedKnownMembers.ObjectCtor = objectCtor ?? throw new MarkException ($"Could not find constructor on '{objectType.FullName}'");
+			_context.MarkedKnownMembers.ObjectCtor = objectCtor ??
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Could not find constructor on '{objectType.FullName}'", 1008));
 		}
 
 		bool MarkDisablePrivateReflectionAttribute ()
@@ -2303,12 +2308,14 @@ namespace Mono.Linker.Steps
 
 			var disablePrivateReflection = BCL.FindPredefinedType ("System.Runtime.CompilerServices", "DisablePrivateReflectionAttribute", _context);
 			if (disablePrivateReflection == null)
-				throw new NotSupportedException ("Missing predefined 'System.Runtime.CompilerServices.DisablePrivateReflectionAttribute' type");
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ("Missing predefined 'System.Runtime.CompilerServices.DisablePrivateReflectionAttribute' type", 1007));
 
 			MarkType (disablePrivateReflection, DependencyInfo.DisablePrivateReflectionRequirement);
 
 			var ctor = MarkMethodIf (disablePrivateReflection.Methods, MethodDefinitionExtensions.IsDefaultConstructor, new DependencyInfo (DependencyKind.DisablePrivateReflectionRequirement, disablePrivateReflection));
-			_context.MarkedKnownMembers.DisablePrivateReflectionAttributeCtor = ctor ?? throw new MarkException ($"Could not find constructor on '{disablePrivateReflection.FullName}'");
+			_context.MarkedKnownMembers.DisablePrivateReflectionAttributeCtor = ctor ??
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Could not find constructor on '{disablePrivateReflection.FullName}'", 1010));
+
 			return true;
 		}
 
