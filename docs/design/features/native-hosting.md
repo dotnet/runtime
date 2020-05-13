@@ -300,7 +300,7 @@ Starts the runtime and returns a function pointer to specified functionality of 
   * `hdt_load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. See below for details (Loading managed components)
   * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/COM-activation.md) for more details.
   * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/IJW-activation.md) for more details.
-  * `hdt_winrt_activation` - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/WinRT-activation.md) for more details.
+  * `hdt_winrt_activation` - removed WinRT activation entry-point. This delegate is not supported for .NET 5 or newer.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 Initially the function will only work if `hostfxr_initialize_for_runtime_config` was used to initialize the host context. Later on this could be relaxed to allow being used in combination with `hostfxr_initialize_for_dotnet_command_line`.

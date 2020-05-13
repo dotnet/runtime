@@ -5,7 +5,6 @@
   <Target Name="GetCorePackagePaths"
           DependsOnTargets="ResolveReferences">
     <PropertyGroup>
-      <_winmdPackageDir>$(NuGetPackageRoot)$(MicrosoftTargetingPackPrivateWinRTPackage.ToLowerInvariant())/$(MicrosoftTargetingPackPrivateWinRTVersion)/</_winmdPackageDir>
       <_diaSymReaderPackageDir>$(NuGetPackageRoot)microsoft.diasymreader.native/$(MicrosoftDiaSymReaderNativeVersion)/</_diaSymReaderPackageDir>
     </PropertyGroup>
 
@@ -35,7 +34,6 @@
           DependsOnTargets="GetCorePackagePaths">
     <ItemGroup>
       <!-- Find crossgen tool assets in package cache to allow ExcludeAssets=All. -->
-      <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
       <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
     </ItemGroup>
 
@@ -51,10 +49,6 @@
 
     <PropertyGroup>
       <_jitPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'))</_jitPath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'@(_windowsWinMD)' != ''">
-      <_windowsWinMDDirectory>%(_windowsWinMD.RootDir)%(_windowsWinMD.Directory)</_windowsWinMDDirectory>
     </PropertyGroup>
 
     <PropertyGroup Condition="'@(_diaSymReaderAssembly)' != ''">

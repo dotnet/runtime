@@ -67,7 +67,6 @@
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/hostpolicy.dll" />
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/dotnet.exe" />
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/ijwhost.dll" />
-    <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/winrthost.dll" />
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/nethost.dll" />
 
     <!-- Sign managed libraries in installer subset. -->

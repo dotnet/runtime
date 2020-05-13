@@ -67,7 +67,7 @@ Each host component will include English resource strings by default. If the res
 
 `apphost` will have a single localized message. All languages will be included in the executable itself. The message will direct the user to a URL that will contain localized content.
 
-`ijwhost`, `winrthost`, and `nethost` intentionally do not show messages by default. They will not be localized.
+`ijwhost`, and `nethost` intentionally do not show messages by default. They will not be localized.
 
 `comhost` also intentionally does not show messages, but it does populate an `IErrorInfo` with an error string, allowing consumers to access any error messages. This can take the same approach as `apphost`, but would be a lower priority for localization.
 
@@ -75,7 +75,7 @@ Each host component will include English resource strings by default. If the res
 
 `dotnet`, `hostfxr`, and `hostpolicy` are all included as part of a .NET Core install. They can each carry their own separate resources in a known path relative next to their current install locations.
 
-The other entry-point hosts (`apphost`, `comhost`, `ijwhost`, `winrthost`, `nethost`) add some complication as they represent and ship as part of the developer's application or component. They are also the most impactful in terms of file size, as they are not shared across applications the way that other components can be.
+The other entry-point hosts (`apphost`, `comhost`, `ijwhost`, `nethost`) add some complication as they represent and ship as part of the developer's application or component. They are also the most impactful in terms of file size, as they are not shared across applications the way that other components can be.
 
 The messaging coming from the hosts themselves is a small portion of the host messaging. They are mostly around:
 - Failure to find `hostfxr` (all hosts)
@@ -119,9 +119,9 @@ Possible options for hosts:
     2. Option: Shared resource for all hosts (except `dotnet`)
         - Compatibility requirement for resource shared between hosts
 
-`comhost`, `ijwhost`, `winrthost`, and `nethost` are designed to be consumed by a component that .NET Core does not own and intentionally do not show messages to the user. As such, they sit at a low priority for localization support.
+`comhost`, `ijwhost`, and `nethost` are designed to be consumed by a component that .NET Core does not own and intentionally do not show messages to the user. As such, they sit at a low priority for localization support.
 
-`apphost` is the end-user-facing host. The amount of logic and messaging in `apphost` is intentionally limited. The most important message it contains for an end-user is for the missing .NET runtime scenario, so it should not rely on resources installed via the .NET runtime. 
+`apphost` is the end-user-facing host. The amount of logic and messaging in `apphost` is intentionally limited. The most important message it contains for an end-user is for the missing .NET runtime scenario, so it should not rely on resources installed via the .NET runtime.
 
 Embedding resources in the `apphost` would make for the most stream-lined user experience (particularly around deployment). Since the `apphost` is sensitive to size, the number of messages will be pared down to one generic localized message which directs the user to a URL.
 
