@@ -3,16 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Security.Cryptography;
 
 namespace System.Formats.Cbor.Tests
 {
     public static class CborCoseKeyHelpers
     {
-        public static byte[] ExportCosePublicKey(ECDsa ecDsa, HashAlgorithmName hashAlgName)
+        public static byte[] ExportECDsaPublicKey(ECDsa ecDsa, HashAlgorithmName hashAlgName)
         {
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
             using var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
@@ -20,14 +18,14 @@ namespace System.Formats.Cbor.Tests
             return writer.GetEncoding();
         }
 
-        public static (ECDsa ecDsa, HashAlgorithmName hashAlgName) ParseCosePublicKey(byte[] coseKey)
+        public static (ECDsa ecDsa, HashAlgorithmName hashAlgName) ParseECDsaPublicKey(byte[] coseKey)
         {
             var reader = new CborReader(coseKey, CborConformanceLevel.Ctap2Canonical);
             (ECParameters ecParams, HashAlgorithmName hashAlgName) = ReadECParametersAsCosePublicKey(reader);
             return (ECDsa.Create(ecParams), hashAlgName);
         }
 
-        public static void WriteECParametersAsCosePublicKey(CborWriter writer, ECParameters ecParams, HashAlgorithmName algorithmName)
+        private static void WriteECParametersAsCosePublicKey(CborWriter writer, ECParameters ecParams, HashAlgorithmName algorithmName)
         {
             Debug.Assert(writer.ConformanceLevel == CborConformanceLevel.Ctap2Canonical);
 
@@ -60,11 +58,11 @@ namespace System.Formats.Cbor.Tests
 
             writer.WriteEndMap();
 
-            static (CoseKeyType kty, CoseCrvId crv) MapECCurveToCoseKtyAndCrv(ECCurve curve)
+            static (CoseKeyType, CoseCrvId) MapECCurveToCoseKtyAndCrv(ECCurve curve)
             {
                 if (!curve.IsNamed)
                 {
-                    throw new ArgumentException("Only named curves supported in EC COSE keys.", nameof(curve));
+                    throw new ArgumentException("EC COSE keys only support named curves.", nameof(curve));
                 }
 
                 if (MatchesOid(ECCurve.NamedCurves.nistP256))
@@ -110,7 +108,7 @@ namespace System.Formats.Cbor.Tests
             }
         }
 
-        public static (ECParameters, HashAlgorithmName) ReadECParametersAsCosePublicKey(CborReader reader)
+        private static (ECParameters, HashAlgorithmName) ReadECParametersAsCosePublicKey(CborReader reader)
         {
             Debug.Assert(reader.ConformanceLevel == CborConformanceLevel.Ctap2Canonical);
 
@@ -204,7 +202,7 @@ namespace System.Formats.Cbor.Tests
         private static CoseKeyLabel ReadCoseKeyLabel(CborReader reader, CoseKeyLabel? expectedLabel = null)
         {
             var label = (CoseKeyLabel)reader.ReadInt32();
-            if (label != expectedLabel)
+            if (expectedLabel != null && label != expectedLabel)
             {
                 throw new FormatException("Unexpected COSE key label.");
             }

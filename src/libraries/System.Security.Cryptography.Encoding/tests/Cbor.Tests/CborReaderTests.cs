@@ -197,10 +197,10 @@ namespace System.Formats.Cbor.Tests
                     "00b03811bef65e330bb974224ec3ab0a5469f038c92177b4171f6f66f91244d4476e016ee77cf7e155a4f73567627b5d72eaf0cb4a6036c6509a6432d7cd6a3b325c",
                     "0114b597b6c271d8435cfa02e890608c93f5bc118ca7f47bf191e9f9e49a22f8a15962315f0729781e1d78b302970c832db2fa8f7f782a33f8e1514950dc7499035f",
                     "SHA512", "nistP521")]
-        public static void CoseKeyReader_HappyPath(string hexEncoding, string hexExpectedQx, string hexExpectedQy, string expectedHashAlgorithmName, string curveFriendlyName)
+        public static void CoseKeyHelpers_ECDsaParseCosePublicKey_HappyPath(string hexEncoding, string hexExpectedQx, string hexExpectedQy, string expectedHashAlgorithmName, string curveFriendlyName)
         {
             ECPoint q = new ECPoint() { X = hexExpectedQx.HexToByteArray(), Y = hexExpectedQy.HexToByteArray() };
-            (ECDsa ecDsa, HashAlgorithmName name) = CborCoseKeyHelpers.ParseCosePublicKey(hexEncoding.HexToByteArray());
+            (ECDsa ecDsa, HashAlgorithmName name) = CborCoseKeyHelpers.ParseECDsaPublicKey(hexEncoding.HexToByteArray());
 
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
 

@@ -268,7 +268,7 @@ namespace System.Formats.Cbor.Tests
                     "00b03811bef65e330bb974224ec3ab0a5469f038c92177b4171f6f66f91244d4476e016ee77cf7e155a4f73567627b5d72eaf0cb4a6036c6509a6432d7cd6a3b325c",
                     "0114b597b6c271d8435cfa02e890608c93f5bc118ca7f47bf191e9f9e49a22f8a15962315f0729781e1d78b302970c832db2fa8f7f782a33f8e1514950dc7499035f",
                     "SHA512", "nistP521")]
-        public static void CoseKeyWriter_HappyPath(string expectedHexEncoding, string hexQx, string hexQy, string hashAlgorithmName, string curveFriendlyName)
+        public static void CoseKeyHelpers_ECDsaExportCosePublicKey_HappyPath(string expectedHexEncoding, string hexQx, string hexQy, string hashAlgorithmName, string curveFriendlyName)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             var hashAlgName = new HashAlgorithmName(hashAlgorithmName);
@@ -280,7 +280,7 @@ namespace System.Formats.Cbor.Tests
 
             ECDsa ecDsa = ECDsa.Create(ecParameters);
 
-            byte[] coseKeyEncoding = CborCoseKeyHelpers.ExportCosePublicKey(ecDsa, hashAlgName);
+            byte[] coseKeyEncoding = CborCoseKeyHelpers.ExportECDsaPublicKey(ecDsa, hashAlgName);
             AssertHelper.HexEqual(expectedEncoding, coseKeyEncoding);
         }
     }
