@@ -56,6 +56,29 @@ namespace System.Formats.Cbor
         // Returns true iff a complete CBOR document has been written to buffer
         public bool IsWriteCompleted => _currentMajorType is null && _itemsWritten > 0;
 
+        public void Reset(bool clearBuffer = false)
+        {
+            _offset = 0;
+
+            _nestedDataItems?.Clear();
+            _currentMajorType = null;
+            _definiteLength = null;
+            _itemsWritten = 0;
+            _frameOffset = 0;
+            _isTagContext = false;
+
+            _currentKeyOffset = null;
+            _currentValueOffset = null;
+            _keysRequireSorting = false;
+            _keyValueEncodingRanges?.Clear();
+            _keyEncodingRanges?.Clear();
+
+            if (clearBuffer && _buffer != null)
+            {
+                Array.Clear(_buffer, 0, _buffer.Length);
+            }
+        }
+
         public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)
         {
             ValidateEncoding(encodedValue, ConformanceLevel);
