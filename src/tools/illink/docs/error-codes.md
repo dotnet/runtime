@@ -147,6 +147,10 @@ error and warning codes.
 
 - The XML descriptor has more than one argument for a single DynamicallyAccessedMembers attribute, there can only be one argument in order to parse it
 
-#### `IL2023`: There is more than one return parameter specified for 'method' in '_xmlDocumentLocation'
+#### `IL2023`: There is more than one return parameter specified for 'method' in 'XML document location'
 
 - The XML descriptor has more than one return parameter for a single method, there can only be one return parameter
+
+#### `IL2024`: There are duplicate parameter names for 'parameter name' inside 'method' in 'XML document location'
+
+- The XML descriptor has more than method parameters with the same name, there can only be one return parameter

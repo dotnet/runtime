@@ -37,15 +37,24 @@ namespace Mono.Linker.Dataflow
 
 		public DynamicallyAccessedMemberTypes GetParameterAnnotation (MethodDefinition method, int index)
 		{
+			DynamicallyAccessedMemberTypes parameterAnnotation = DynamicallyAccessedMemberTypes.None;
+
 			if (_methods.TryGetValue (method, out var ann) && ann.ParameterAnnotations != null) {
 				string paramName = method.Parameters[index].Name;
 
-				foreach (var (ParamName, Annotation) in ann.ParameterAnnotations)
-					if (ParamName == paramName)
-						return Annotation;
+				bool firstAppearance = true;
+				foreach (var (ParamName, Annotation) in ann.ParameterAnnotations) { 
+					if (ParamName == paramName && firstAppearance) {
+						firstAppearance = false;
+						parameterAnnotation = Annotation;
+					}
+					else if(ParamName == paramName && !firstAppearance) {
+						_context.LogMessage (MessageContainer.CreateWarningMessage ($"There are duplicate parameter names for '{paramName}' inside '{method.Name}' in '{_xmlDocumentLocation}'", 2024));
+					}
+				}
 			}
 
-			return DynamicallyAccessedMemberTypes.None;
+			return parameterAnnotation;
 		}
 
 		public DynamicallyAccessedMemberTypes GetPropertyAnnotation (PropertyDefinition property)
