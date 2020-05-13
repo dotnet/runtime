@@ -291,10 +291,7 @@ namespace System.Net.Security
                         {
                             TlsFrameHelper.TlsFrameHandshakeInfo info = default;
                             TlsFrameHelper.TryGetHandshakeInfo(message.Payload, ref info);
-                            if (info.HandshakeType == TlsHandshakeType.ClientHello || info.HandshakeType == TlsHandshakeType.ServerHello)
-                            {
-                                NetEventSource.Log.SentFrame(this, info.ToString());
-                            }
+                            NetEventSource.Log.SentFrame(this, info.ToString());
                         }
                     }
 
@@ -399,33 +396,36 @@ namespace System.Net.Security
             if (_lastFrame.Header.Type == TlsContentType.Alert)
             {
                 TlsAlertLevel level = 0;
-                if (TlsFrameHelper.TryGetAlertInfo(_handshakeBuffer.ActiveReadOnlySpan, ref level, ref _lastAlertDescription))
+                if (!TlsFrameHelper.TryGetAlertInfo(_handshakeBuffer.ActiveReadOnlySpan, ref level, ref _lastAlertDescription))
                 {
-                    if (NetEventSource.IsEnabled && _lastAlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Fail(this, $"Received TLS alert {_lastAlertDescription}");
+                    if (NetEventSource.IsEnabled && _lastAlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastAlertDescription}");
                 }
             }
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
-                TlsFrameHelper.ProcessingOptions options = NetEventSource.IsEnabled ?
-                    TlsFrameHelper.ProcessingOptions.ServerName : TlsFrameHelper.ProcessingOptions.All;
-
                 if (NetEventSource.IsEnabled ||
-                    _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null)
+                    (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null))
                 {
+                    TlsFrameHelper.ProcessingOptions options = NetEventSource.IsEnabled ?
+                                                                TlsFrameHelper.ProcessingOptions.All :
+                                                                TlsFrameHelper.ProcessingOptions.ServerName;
+
                     // Process SNI from Client Hello message
-                    TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options);
+                    if (!TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options))
+                    {
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Failed to parse TLS hello.");
+                    }
+
                     if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
                     {
+                        // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
                         _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
                     }
 
                     if (NetEventSource.IsEnabled)
                     {
-                        if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello || _lastFrame.HandshakeType == TlsHandshakeType.ServerHello)
-                        {
-                            NetEventSource.Log.ReceivedFrame(this, _lastFrame.ToString());
-                        }
+                        NetEventSource.Log.ReceivedFrame(this, _lastFrame.ToString());
                     }
                 }
             }

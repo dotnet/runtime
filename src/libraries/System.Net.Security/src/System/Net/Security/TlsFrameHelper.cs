@@ -90,10 +90,7 @@ namespace System.Net.Security
         public SslProtocols Version;
         public int Length;
 
-        public override string ToString()
-        {
-            return $"{Version}:{Type}[{Length}]";
-        }
+        public override string ToString() => $"{Version}:{Type}[{Length}]";
     }
 
     internal class TlsFrameHelper
@@ -104,9 +101,9 @@ namespace System.Net.Security
         public enum ProcessingOptions
         {
             All = 0,
-            ServerName = 1,
-            ApplicationProtocol = 2,
-            Versions = 4,
+            ServerName = 0x1,
+            ApplicationProtocol = 0x2,
+            Versions = 0x4,
         }
 
         [Flags]
@@ -129,7 +126,18 @@ namespace System.Net.Security
 
             public override string ToString()
             {
-                return $"{Header.Version}:{HandshakeType}[{Header.Length}] TargetName='{TargetName}' SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}'";
+                if (HandshakeType == TlsHandshakeType.ClientHello)
+                {
+                    return $"{Header.Version}:{HandshakeType}[{Header.Length}] TargetName='{TargetName}' SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}'";
+                }
+                else if (HandshakeType == TlsHandshakeType.ServerHello)
+                {
+                    return $"{Header.Version}:{HandshakeType}[{Header.Length}] SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}'";
+                }
+                else
+                {
+                    return $"{Header.Version}:{HandshakeType}[{Header.Length}] SupportedVersion='{SupportedVersions}'";
+                }
             }
         }
 
@@ -148,8 +156,9 @@ namespace System.Net.Security
         private const int ProtocolVersionSize = 2;
         private const int ProtocolVersionTlsMajorValue = 3;
 
-        private static readonly IdnMapping s_idnMapping = CreateIdnMapping();
-        private static readonly Encoding s_encoding = CreateEncoding();
+        // Per spec "AllowUnassigned flag MUST be set". See comment above DecodeString() for more details.
+        private static readonly IdnMapping s_idnMapping = new IdnMapping() { AllowUnassigned = true };
+        private static readonly Encoding s_encoding = Encoding.GetEncoding("utf-8", new EncoderExceptionFallback(), new DecoderExceptionFallback());
 
         public static bool TryGetFrameHeader(ReadOnlySpan<byte> frame, ref TlsFrameHeader header)
         {
@@ -367,7 +376,7 @@ namespace System.Net.Security
             p = SkipOpaqueType1(p);
 
             // Skip cipher suites (max size 2^16-1 => size fits in 2 bytes)
-            p = SkipOpaqueType2(p, out _);
+            p = SkipOpaqueType2(p);
 
             // Skip compression methods (max size 2^8-1 => size fits in 1 byte)
             p = SkipOpaqueType1(p);
@@ -644,7 +653,6 @@ namespace System.Net.Security
                     if (protocol.SequenceEqual(SslApplicationProtocol.Http2.Protocol.Span))
                     {
                         alpn |= ApplicationProtocolInfo.Http2;
-
                     }
                     else if (protocol.SequenceEqual(SslApplicationProtocol.Http3.Protocol.Span))
                     {
@@ -754,41 +762,18 @@ namespace System.Net.Security
             return SkipBytes(bytes, totalBytes);
         }
 
-        private static ReadOnlySpan<byte> SkipOpaqueType2(ReadOnlySpan<byte> bytes, out bool invalid)
+        private static ReadOnlySpan<byte> SkipOpaqueType2(ReadOnlySpan<byte> bytes)
         {
             const int OpaqueTypeLengthSize = sizeof(ushort);
             if (bytes.Length < OpaqueTypeLengthSize)
             {
-                invalid = true;
                 return ReadOnlySpan<byte>.Empty;
             }
 
             ushort length = BinaryPrimitives.ReadUInt16BigEndian(bytes);
             int totalBytes = OpaqueTypeLengthSize + length;
 
-            invalid = bytes.Length < totalBytes;
-            if (invalid)
-            {
-                return ReadOnlySpan<byte>.Empty;
-            }
-            else
-            {
-                return bytes.Slice(totalBytes);
-            }
-        }
-
-        private static IdnMapping CreateIdnMapping()
-        {
-            return new IdnMapping()
-            {
-                // Per spec "AllowUnassigned flag MUST be set". See comment above GetSniFromServerNameList for more details.
-                AllowUnassigned = true
-            };
-        }
-
-        private static Encoding CreateEncoding()
-        {
-            return Encoding.GetEncoding("utf-8", new EncoderExceptionFallback(), new DecoderExceptionFallback());
+            return SkipBytes(bytes, totalBytes);
         }
 
         private enum NameType : byte
