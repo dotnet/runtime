@@ -19,18 +19,18 @@ namespace System
         private static bool _resourceManagerInited;
 
         // Needed for debugger integration
-        internal static string? GetResourceString(string resourceKey)
+        internal static string GetResourceString(string resourceKey)
         {
             return GetResourceString(resourceKey, string.Empty);
         }
 
         [PreserveDependency(".cctor()", "System.Resources.ResourceManager")]
-        private static string? InternalGetResourceString(string key)
+        private static string InternalGetResourceString(string key)
         {
-            if (string.IsNullOrEmpty(key))
+            if (key.Length == 0)
             {
-                Debug.Fail("SR::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
-                return key!;
+                Debug.Fail("SR::GetResourceString with empty resourceKey.  Bug in caller, or weird recursive loading problem?");
+                return key;
             }
 
             // We have a somewhat common potential for infinite
