@@ -224,22 +224,198 @@ are applied.
 
 ## Custom Attributes Annotations Format
 
-```json
-{
-  "[assembly-name]": {
-    "[namespace-name]": {
-      "[type-name]": {
-        "[field-or-property-name]": {
-          "[attribute-name]": "[attribute-value]"
-        },
+### Custom attribute on assembly
 
-        "[method-name]([method-signature])": {
-          "[parameter-name]": {
-            "[attribute-name]": "[attribute-value]"
-          }
-        }
-      }
-    }
-  }
-}
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <attribute fullname="CustomAttributeName">
+      <argument>Argument</argument>
+    </attribute>
+  </assembly>
+</linker>
+```
+
+###Custom attribute on type
+
+This allows to add a custom attribute to a class, interface, delegate, struct or enum 
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <attribute fullname="CustomAttributeName">
+        <argument>Argument</argument>
+      </attribute>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on type field
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <field name="MyTypeField">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <argument>DefaultConstructor</argument>
+        </attribute>
+      </field>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on property
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <property name="MyTypeProperty">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <argument>DefaultConstructor</argument>
+        </attribute>
+      </property>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on event
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <event name="MyTypeEvent">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <argument>DefaultConstructor</argument>
+        </attribute>
+      </event>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on method parameter
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <method signature="System.Void Method1(System.Type)">
+        <parameter name="typeParameter">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+      </method>
+      <method signature="System.Type Method2()">
+        <return>
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>PublicConstructors</argument>
+          </attribute>
+        </return>
+      </method>
+      <method signature="Method3&lt;T&gt;(T)">
+        <parameter name="genericParameter">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+      </method>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute in multiple method parameters
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <method signature="System.Void Method1(System.Type, System.Type, System.Type)">
+        <parameter name="typeParameter1">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+        <parameter name="typeParameter2">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </parameter>
+        <parameter name="typeParameter3">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>PublicConstructors</argument>
+          </attribute>
+        </parameter>
+      </method>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on nested type
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <type name="NestedType">
+        <property name="MyTypeField">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>DefaultConstructor</argument>
+          </attribute>
+        </property>
+      </type>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Conditional custom attributes
+
+The `feature` and `featurevalue` attributes are optional, but must be used together when used.
+They can be applied to any element to specify conditions under which the contained custom 
+attributes are applied.
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <!-- The substitution will apply only if "--feature EnableOptionalFeature false" are also used -->
+    <type fullname="Assembly.A" feature="EnableOptionalFeature" featurevalue="false">
+      <method signature="System.String TestMethod()">
+        <return>
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+            <argument>PublicConstructors</argument>
+          </attribute>
+        </return>
+      </method>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attributes elements
+
+Inside an attribute element in the xml you can define argument, field and property elements. 
+An attribute could have several arguments, several fields or several properties. When writing 
+custom attribute with multiple arguments you need to write the xml elements in an order dependent 
+form. That is, the first xml argument element corresponds to the first custom attribute argument, 
+second xml argument element correspond to the second custom attribute argument and so on.
+For fields and properties, you need to include the name since they are not order dependent.
+
+```xml
+<attribute fullname="SomeCustomAttribute">
+  <argument>Argument1</argument>
+  <argument>Argument2</argument>
+  <argument>Argument3</argument>
+  <field name="fieldName">SomeValue</field>
+  <property name="propertyName">SomeValue</property>
+</attribute>
 ```

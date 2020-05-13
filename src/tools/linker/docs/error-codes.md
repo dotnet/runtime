@@ -51,6 +51,11 @@ error and warning codes.
 
 - There was an unexpected error while linking. An exception with more details is printed to the MSBuild log. Please share this stack trace with the IL Linker team to further investigate the cause and possible solution.
 
+#### `IL1013`: Error processing 'XML document location': 'XmlException'
+
+- There was an error processing 'XML document location' xml file. The most likely reason for this is that the descriptor file has syntactical errors.
+
+
 ----
 ## Warning Codes
 
@@ -78,17 +83,17 @@ error and warning codes.
 
 - The linker found an unrecognized reflection access pattern. The most likely reason for this is that the linker could not resolve a member that is being accessed dynamicallly. To fix this, use the `DynamicallyAccessedMemberAttribute` and specify the member kinds you're trying to access.
 
-#### `IL2007`: Could not match assembly 'assembly' for substitution
+#### `IL2007`: Could not resolve assembly 'assembly' specified in the 'XML document location'
 
-- The assembly 'assembly' in the substitution XML could not be resolved.
+- The assembly 'assembly' in the XML could not be resolved.
 
-#### `IL2008`: Could not resolve type 'type' for substitution
+#### `IL2008`: Could not resolve type 'type' specified in the 'XML document location'
 
-- The type 'type' in the substitution XML could not be resolved.
+- The type 'type' in the XML could not be resolved.
 
-#### `IL2009`: Could not find method 'method' for substitution
+#### `IL2009`: Could not find method 'method' in type 'type' specified in 'XML document location'
 
-- The method 'method' in the substitution XML could not be resolved.
+- The 'XML document location' defined a method 'method' on type 'type', but the method was not found.
 
 #### `IL2010`: Invalid value for 'signature' stub
 
@@ -98,9 +103,9 @@ error and warning codes.
 
 - The value 'action' of the body attribute used in the substitution XML is invalid (the only supported options are `remove` and `stub`).
 
-#### `IL2012`: Could not find field 'field' for substitution
+#### `IL2012`: Could not find field 'field' in type 'type' specified in 'XML document location'
 
-- The field 'field' specified in the substitution XML was not found.
+- The 'XML document location' defined a field 'field' on type 'type', but the field was not found.
 
 #### `IL2013`: Substituted field 'field' needs to be static field
 
@@ -114,26 +119,38 @@ error and warning codes.
 
 - The value 'value' used in the substitution XML for field 'field' is not a built-in type, or does not match the type of 'field'.
 
-#### `IL2016`: Could not find field 'field' in type 'type' specified in 'XML document location'
+#### `IL2016`: Could not find event 'event' in type 'type' specified in 'XML document location'
 
-- The XML descriptor preserves field 'field' on type 'type', but the field was not found.
+- The 'XML document location' defined a event 'event' on type 'type', but the event was not found.
 
-#### `IL2017`: Could not find method 'method' in type 'type' specified in 'XML document location'
+#### `IL2017`: Could not find property 'property' in type 'type' specified in 'XML document location'
 
-- The XML descriptor preserves method 'method' on type 'type', but the method was not found.
+- The 'XML document location' defined a property 'property' on type 'type', but the property was not found.
 
-#### `IL2018`: Could not find event 'event' in type 'type' specified in 'XML document location'
+#### `IL2018`: Could not find the get accessor of property 'property' in type 'type' specified in 'XML document location'
 
-- The XML descriptor preserves event 'event' on type 'type', but the event was not found.
+- The 'XML document location' defined the get accessor of property 'property' on type 'type', but the accessor was not found.
 
-#### `IL2019`: Could not find property 'property' in type 'type' specified in 'XML document location'
+#### `IL2019`: Could not find the set accessor of property 'property' in type 'type' specified in 'XML document location'
 
-- The XML descriptor preserves property 'property' on type 'type', but the property was not found.
+- The 'XML document location' defined the set accessor of property 'property' on type 'type', but the accessor was not found.
 
-#### `IL2020`: Could not find the get accessor of property 'property' in type 'type' specified in 'XML document location'
+#### `IL2020`: DynamicallyAccessedMembers attribute was specified but no argument was proportioned 
 
-- The XML descriptor preserves the get accessor of property 'property' on type 'type', but the accessor was not found.
+- The XML descriptor has a DynamicallyAccessedMembers attribute but the argument 'argument' does not match any of the existing DynamicallyAccessedMemberTypes 
 
-#### `IL2021`: Could not find the set accessor of property 'property' in type 'type' specified in 'XML document location'
+#### `IL2021`: Could not parse argument 'argument' specified in 'XML document location' as a DynamicallyAccessedMemberTypes
 
-- The XML descriptor preserves the set accessor of property 'property' on type 'type', but the accessor was not found.
+- The XML descriptor has a DynamicallyAccessedMembers attribute but the argument 'argument' does not match any of the existing DynamicallyAccessedMemberTypes 
+
+#### `IL2022`: DynamicallyAccessedMembers attribute was specified but there is more than one argument
+
+- The XML descriptor has more than one argument for a single DynamicallyAccessedMembers attribute, there can only be one argument in order to parse it
+
+#### `IL2023`: There is more than one return parameter specified for 'method' in 'XML document location'
+
+- The XML descriptor has more than one return parameter for a single method, there can only be one return parameter
+
+#### `IL2024`: There are duplicate parameter names for 'parameter name' inside 'method' in 'XML document location'
+
+- The XML descriptor has more than method parameters with the same name, there can only be one return parameter
