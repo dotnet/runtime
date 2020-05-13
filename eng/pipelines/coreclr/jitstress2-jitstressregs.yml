@@ -30,6 +30,7 @@ jobs:
     - Windows_NT_x86
     - Windows_NT_arm
     - Windows_NT_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: jitstress2-jitstressregs
 
@@ -38,7 +39,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: checked
 

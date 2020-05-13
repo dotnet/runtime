@@ -23,7 +23,7 @@ jobs:
     platforms:
     - Linux_x64
     - Windows_NT_x64
-    - OSX_x64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: jit-experimental
 
@@ -32,7 +32,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: jit-experimental
 
