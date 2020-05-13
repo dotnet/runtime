@@ -114,7 +114,7 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(11, writer.Depth);
             Assert.True(writer.BytesWritten > 11, "must have written a nontrivial number of bytes to the buffer");
 
-            writer.Reset(clearBuffer: true);
+            writer.Reset();
 
             Assert.Equal(0, writer.Depth);
             Assert.Equal(0, writer.BytesWritten);
