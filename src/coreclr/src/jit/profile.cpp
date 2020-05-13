@@ -33,7 +33,7 @@ void Profile::allocateProfileData(unsigned maxIndex)
     }
 
     ICorJitInfo::BlockCounts* const profileBuffer =
-        (ICorJitInfo::BlockCounts*)calloc(maxIndex, sizeof(ICorJitInfo::BlockCounts));
+        new (HostAllocator::getHostAllocator()) ICorJitInfo::BlockCounts[maxIndex];
 
     if (profileBuffer == nullptr)
     {
@@ -81,7 +81,7 @@ ICorJitInfo::BlockCounts* Profile::allocateMethodData(unsigned recordCount)
             return nullptr;
         }
 
-        const unsigned updatedIndex = InterlockedCompareExchange(&s_ProfileIndex, newIndex, oldIndex);
+        const unsigned updatedIndex = InterlockedCompareExchangeT(&s_ProfileIndex, newIndex, oldIndex);
 
         if (updatedIndex == oldIndex)
         {

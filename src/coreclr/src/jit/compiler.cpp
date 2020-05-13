@@ -4399,9 +4399,17 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
 #if defined(JIT_ADHOC_PROFILE)
-    else if ((JitConfig.JitWriteProfileData() != nullptr) ||
-             (JitConfig.JitTieredPGO() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0)))
+    else if (JitConfig.JitTieredPGO() > 0)
     {
+        // Only instrument tier0 methods
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+        {
+            fgInstrumentMethodJitProfile();
+        }
+    }
+    else if (JitConfig.JitWriteProfileData() != nullptr)
+    {
+        // Instrument all jitted methods
         fgInstrumentMethodJitProfile();
     }
 #endif // defined(JIT_ADHOC_PROBES)

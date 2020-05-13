@@ -472,7 +472,8 @@ void Compiler::fgInstrumentMethodJitProfile()
         // Each Record is (IL offset, count).
         // IL offset is static so we write it now.
         //
-        blockBuffer[count].ILOffset = block->bbCodeOffs;
+        blockBuffer[count].ILOffset       = block->bbCodeOffs;
+        blockBuffer[count].ExecutionCount = 0;
 
         // Add code to increment the count at runtime.
         //
