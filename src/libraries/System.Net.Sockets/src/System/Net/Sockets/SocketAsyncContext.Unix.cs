@@ -761,7 +761,7 @@ namespace System.Net.Sockets
             {
                 Trace(context, $"Enter");
 
-                if (!context._registered)
+                if (!context.IsRegistered)
                 {
                     context.Register();
                 }
@@ -1176,7 +1176,7 @@ namespace System.Net.Sockets
         private OperationQueue<ReadOperation> _receiveQueue;
         private OperationQueue<WriteOperation> _sendQueue;
         private SocketAsyncEngine? _asyncEngine;
-        private bool _registered;
+        private bool IsRegistered => _asyncEngine != null;
         private bool _nonBlockingSet;
 
         private readonly object _registerLock = new object();
@@ -1194,14 +1194,16 @@ namespace System.Net.Sockets
             Debug.Assert(_nonBlockingSet);
             lock (_registerLock)
             {
-                if (!_registered)
+                if (_asyncEngine == null)
                 {
                     bool addedRef = false;
                     try
                     {
                         _socket.DangerousAddRef(ref addedRef);
                         IntPtr handle = _socket.DangerousGetHandle();
-                        _asyncEngine = SocketAsyncEngine.RegisterSocket(handle, this);
+                        Volatile.Write(ref _asyncEngine, SocketAsyncEngine.RegisterSocket(handle, this));
+
+                        Trace("Registered");
                     }
                     finally
                     {
@@ -1210,10 +1212,6 @@ namespace System.Net.Sockets
                             _socket.DangerousRelease();
                         }
                     }
-
-                    _registered = true;
-
-                    Trace("Registered");
                 }
             }
         }
