@@ -183,7 +183,6 @@ namespace ABI
 // ManagedObjectWrapper_QueryInterface needs to be visible outside of this compilation unit
 // to support the DAC. See code:ClrDataAccess::DACTryGetComWrappersObjectFromCCW for the
 // usage in the DAC (look for the GetEEFuncEntryPoint call).
-
 HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
     _In_ ABI::ComInterfaceDispatch* disp,
     /* [in] */ REFIID riid,
@@ -195,7 +194,6 @@ HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
 
 namespace
 {
-
     ULONG STDMETHODCALLTYPE ManagedObjectWrapper_AddRef(_In_ ABI::ComInterfaceDispatch* disp)
     {
         ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
