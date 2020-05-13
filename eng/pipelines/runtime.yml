@@ -489,6 +489,7 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
+    - Android_x86
     - Android_arm64
     - tvOS_x64
     - iOS_arm64
