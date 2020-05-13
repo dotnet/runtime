@@ -1,5 +1,5 @@
 param (
-    $darcVersion = "1.1.0-beta.20255.1",
+    $darcVersion = $null,
     $versionEndpoint = 'https://maestro-prod.westus2.cloudapp.azure.com/api/assets/darc-version?api-version=2019-01-16',
     $verbosity = 'minimal',
     $toolpath = $null

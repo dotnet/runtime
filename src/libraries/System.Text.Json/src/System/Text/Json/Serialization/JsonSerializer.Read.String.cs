@@ -43,7 +43,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(json));
             }
 
-            return Deserialize<TValue>(json, typeof(TValue), options)!;
+            return Deserialize<TValue>(json, typeof(TValue), options);
         }
 
         /// <summary>
@@ -85,6 +85,7 @@ namespace System.Text.Json
             return value;
         }
 
+        [return: MaybeNull]
         private static TValue Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
         {
             const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;

@@ -12,18 +12,18 @@ build.cmd/sh -subset libs.tests
 
 - The following builds and runs all tests in release configuration:
 ```
-build.cmd/sh -subset libs -test -c Release
+build.cmd/sh -subset libs.tests -test -c Release
 ```
 
 - The following example shows how to pass extra msbuild properties to ignore tests ignored in CI:
 ```
-build.cmd/sh -subset libs -test /p:WithoutCategories=IgnoreForCI
+build.cmd/sh -subset libs.tests -test /p:WithoutCategories=IgnoreForCI
 ```
 
 Unless you specifiy `-testnobuild`, test assemblies are implicitly built when invoking the `Test` action.
 - The following shows how to only test the libraries without building them
 ```
-build.cmd/sh -subset libs -test -testnobuild
+build.cmd/sh -subset libs.tests -test -testnobuild
 ```
 
 ## Running tests on the command line
@@ -38,7 +38,7 @@ dotnet build /t:Test
 
 It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g.:
 ```cmd
-dotnet build /t:Test "/p:XUnitOptions=-class Test.ClassUnderTests"
+dotnet build /t:Test /p:XUnitOptions="-class Test.ClassUnderTests"
 ```
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
@@ -63,13 +63,3 @@ Each test project can potentially have multiple target frameworks. There are som
 ```cmd
 dotnet build src\libraries\System.Runtime\tests\System.Runtime.Tests.csproj /p:BuildTargetFramework=net472
 ```
-
-## Running tests from Visual Studio
-
-**Test Explorer** will be able to discover the tests only if the solution is opened with `build -vs` command, e.g.:
-```cmd
-build -vs System.Net.Http
-```
-If running the tests from **Test Explorer** does nothing, it probably tries to use x86 dotnet installation instead of the x64 one. It can be fixed by setting the x64 architecture manually in the test settings.
-
-It is also possible to execute the tests by simply debugging the test project once it's been built. It will underneath call the same command as `dotnet build /t:Test` does.

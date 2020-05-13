@@ -96,7 +96,6 @@ namespace ILCompiler
                 {
                     8 => ValueTypeShapeCharacteristics.Vector64Aggregate,
                     16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
-                    32 => ValueTypeShapeCharacteristics.Vector256Aggregate,
                     _ => ValueTypeShapeCharacteristics.None
                 };
             }
@@ -107,9 +106,7 @@ namespace ILCompiler
         {
             return type.IsIntrinsic &&
                 type.Namespace == "System.Runtime.Intrinsics" &&
-                (type.Name == "Vector64`1" ||
-                type.Name == "Vector128`1" ||
-                type.Name == "Vector256`1") &&
+                ((type.Name == "Vector64`1") || (type.Name == "Vector128`1")) &&
                 type.Instantiation[0].IsPrimitive;
         }
     }

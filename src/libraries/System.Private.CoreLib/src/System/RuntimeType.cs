@@ -237,6 +237,9 @@ namespace System
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
+            if (!IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
             // Check if both of them are of the same type
             RuntimeType valueType = (RuntimeType)value.GetType();
 
