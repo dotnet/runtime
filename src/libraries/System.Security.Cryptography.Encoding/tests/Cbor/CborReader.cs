@@ -300,7 +300,7 @@ namespace System.Formats.Cbor
 
             if (result.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
             {
-                throw new InvalidOperationException(SR.Cbor_Reader_NotAtEndOfIndefiniteLengthDataItem);
+                throw new InvalidOperationException(SR.Cbor_NotAtEndOfIndefiniteLengthDataItem);
             }
         }
 
@@ -341,12 +341,12 @@ namespace System.Formats.Cbor
 
             if (expectedType != _currentMajorType)
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypePopMismatch, _currentMajorType.Value));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, _currentMajorType.Value));
             }
 
             if (_remainingDataItems > 0)
             {
-                throw new InvalidOperationException(SR.Cbor_Reader_NotAtEndOfDefiniteLengthDataItem);
+                throw new InvalidOperationException(SR.Cbor_NotAtEndOfDefiniteLengthDataItem);
             }
 
             if (_isTagContext)

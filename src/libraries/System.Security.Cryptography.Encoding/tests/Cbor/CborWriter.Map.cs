@@ -38,7 +38,7 @@ namespace System.Formats.Cbor
         {
             if (_itemsWritten % 2 == 1)
             {
-                throw new InvalidOperationException("CBOR Map types require an even number of key/value combinations");
+                throw new InvalidOperationException(SR.Cbor_Writer_MapIncompleteKeyValuePair);
             }
 
             PopDataItem(CborMajorType.Map);
@@ -65,7 +65,7 @@ namespace System.Formats.Cbor
                     _buffer.AsSpan(currentKey.Offset, _offset).Fill(0);
                     _offset = currentKey.Offset;
 
-                    throw new InvalidOperationException("Duplicate key encoding in CBOR map.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
                 }
             }
 

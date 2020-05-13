@@ -24,7 +24,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_RequiresDefiniteLengthItems, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_RequiresDefiniteLengthItems, ConformanceLevel));
                 }
 
                 AdvanceBuffer(1);
@@ -121,12 +121,12 @@ namespace System.Formats.Cbor
                 if (cmp > 0)
                 {
                     ResetBuffer(currentKeyRange.Offset);
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_KeysNotInSortedOrder, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_KeysNotInSortedOrder, ConformanceLevel));
                 }
                 else if (cmp == 0 && CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
                 {
                     ResetBuffer(currentKeyRange.Offset);
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
                 }
             }
 
@@ -142,7 +142,7 @@ namespace System.Formats.Cbor
             if (!previousKeys.Add(currentKeyRange))
             {
                 ResetBuffer(currentKeyRange.Offset);
-                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
             }
         }
 

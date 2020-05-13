@@ -39,7 +39,7 @@ namespace System.Formats.Cbor
 
             if (encodeIndefiniteLengths && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(conformanceLevel))
             {
-                throw new ArgumentException($"Conformance level {conformanceLevel} does not allow indefinite length encodings.", nameof(encodeIndefiniteLengths));
+                throw new ArgumentException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, conformanceLevel), nameof(encodeIndefiniteLengths));
             }
 
             ConformanceLevel = conformanceLevel;
@@ -89,12 +89,12 @@ namespace System.Formats.Cbor
                 }
                 catch (FormatException e)
                 {
-                    throw new ArgumentException("Payload is not a valid CBOR value.", e);
+                    throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor, e);
                 }
 
                 if (reader.BytesRemaining != 0)
                 {
-                    throw new ArgumentException("Payload is not a valid CBOR value.");
+                    throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor);
                 }
             }
         }
@@ -120,7 +120,7 @@ namespace System.Formats.Cbor
         {
             if (!IsWriteCompleted)
             {
-                throw new InvalidOperationException("Buffer contains incomplete CBOR document.");
+                throw new InvalidOperationException(SR.Cbor_Writer_IncompleteCborDocument);
             }
 
             return new ReadOnlySpan<byte>(_buffer, 0, _offset);
@@ -176,19 +176,19 @@ namespace System.Formats.Cbor
 
             if (expectedType != _currentMajorType)
             {
-                throw new InvalidOperationException("Unexpected major type in nested CBOR data item.");
+                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, _currentMajorType));
             }
 
             Debug.Assert(_nestedDataItems?.Count > 0);
 
             if (_isTagContext)
             {
-                throw new InvalidOperationException("Tagged CBOR value context is incomplete.");
+                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, CborMajorType.Tag));
             }
 
             if (_definiteLength - _itemsWritten > 0)
             {
-                throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
+                throw new InvalidOperationException(SR.Cbor_NotAtEndOfDefiniteLengthDataItem);
             }
 
             // Perform encoding fixups that require the current context and must be done before popping
@@ -239,7 +239,7 @@ namespace System.Formats.Cbor
         {
             if (_definiteLength - _itemsWritten == 0)
             {
-                throw new InvalidOperationException("Adding a CBOR data item to the current context exceeds its definite length.");
+                throw new InvalidOperationException(SR.Cbor_Writer_DefiniteLengthExceeded);
             }
 
             if (_currentMajorType != null)
@@ -255,7 +255,7 @@ namespace System.Formats.Cbor
                             break;
                         }
 
-                        throw new InvalidOperationException("Cannot nest data items in indefinite-length CBOR string contexts.");
+                        throw new InvalidOperationException(SR.Cbor_Writer_CannotNestDataItemsInIndefiniteLengthStrings);
                 }
             }
 
@@ -290,7 +290,7 @@ namespace System.Formats.Cbor
                         break;
                     default:
                         Debug.Fail("Invalid CBOR major type pushed to stack.");
-                        throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                        throw new Exception();
                 }
             }
         }

@@ -13,7 +13,7 @@ namespace System.Formats.Cbor
         {
             if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
             {
-                throw new InvalidOperationException("Tagged items are not permitted under the current conformance level.");
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
             }
 
             WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
@@ -45,7 +45,7 @@ namespace System.Formats.Cbor
         {
             if (double.IsInfinity(seconds) || double.IsNaN(seconds))
             {
-                throw new ArgumentException("Value cannot be infinite or NaN.", nameof(seconds));
+                throw new ArgumentOutOfRangeException(SR.Cbor_Writer_ValueCannotBeInfiniteOrNaN, nameof(seconds));
             }
 
             WriteTag(CborTag.UnixTimeSeconds);
@@ -131,12 +131,12 @@ namespace System.Formats.Cbor
             }
             else if (exponent > ExponentUpperBound)
             {
-                throw new OverflowException("Value was either too large or too small for a Decimal.");
+                throw new OverflowException(SR.Cbor_Writer_DecimalOverflow);
             }
             else if (exponent >= 0)
             {
-                // for positive exponents attempt to compute its decimal representation,
-                // with risk of throwing OverflowException
+                // for positive exponents attempt to compute a decimal
+                // representation, with risk of throwing OverflowException
                 for (; exponent >= 5; exponent -= 5)
                 {
                     mantissa *= 100_000m;
@@ -151,7 +151,7 @@ namespace System.Formats.Cbor
                     case 4: return mantissa * 10000m;
                     default:
                         Debug.Fail("Unreachable code in decimal exponentiation logic");
-                        throw new Exception("Unreachable code in decimal exponentiation logic");
+                        throw new Exception();
                 }
             }
             else if (exponent >= -ExponentUpperBound)
@@ -161,7 +161,7 @@ namespace System.Formats.Cbor
             }
             else
             {
-                throw new OverflowException("Value was either too large or too small for a Decimal.");
+                throw new OverflowException(SR.Cbor_Writer_DecimalOverflow);
             }
         }
     }
