@@ -19,14 +19,12 @@ namespace Mono.Linker.Dataflow
 		readonly Dictionary<PropertyDefinition, DynamicallyAccessedMemberTypes> _properties = new Dictionary<PropertyDefinition, DynamicallyAccessedMemberTypes> ();
 		readonly Dictionary<FieldDefinition, DynamicallyAccessedMemberTypes> _fields = new Dictionary<FieldDefinition, DynamicallyAccessedMemberTypes> ();
 
-		readonly XPathDocument _document;
-		readonly string _xmlDocumentLocation;
 		readonly LinkContext _context;
+		XPathDocument _document;
+		string _xmlDocumentLocation;
 
-		public XmlFlowAnnotationSource (LinkContext context, string document)
+		public XmlFlowAnnotationSource (LinkContext context)
 		{
-			_xmlDocumentLocation = document;
-			_document = new XPathDocument (_xmlDocumentLocation);
 			_context = context;
 		}
 
@@ -102,8 +100,11 @@ namespace Mono.Linker.Dataflow
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		public void ParseXml ()
+		public void ParseXml (string document)
 		{
+			_xmlDocumentLocation = document;
+			_document = new XPathDocument (_xmlDocumentLocation);
+
 			XPathNavigator nav = _document.CreateNavigator ();
 
 			if (!nav.MoveToChild ("linker", string.Empty))
@@ -227,10 +228,6 @@ namespace Mono.Linker.Dataflow
 
 		void ProcessType (TypeDefinition type, XPathNavigator nav)
 		{
-			if (!ShouldProcessElement (nav)) {
-				return;
-			}
-
 			ProcessTypeChildren (type, nav);
 
 			if (!type.HasNestedTypes)
@@ -239,7 +236,7 @@ namespace Mono.Linker.Dataflow
 			var iterator = nav.SelectChildren ("type", string.Empty);
 			while (iterator.MoveNext ()) {
 				foreach (TypeDefinition nested in type.NestedTypes) {
-					if (nested.Name == GetAttribute (iterator.Current, "name"))
+					if (nested.Name == GetAttribute (iterator.Current, "name") && ShouldProcessElement (iterator.Current))
 						ProcessTypeChildren (nested, iterator.Current);
 				}
 			}
