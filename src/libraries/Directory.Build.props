@@ -323,6 +323,9 @@
 
   <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
+    
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
+    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">

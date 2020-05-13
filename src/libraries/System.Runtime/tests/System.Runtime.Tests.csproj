@@ -70,7 +70,7 @@
     <Compile Include="System\EntryPointNotFoundExceptionTests.cs" />
     <Compile Include="System\EnumTests.cs" />
     <Compile Include="System\ExceptionTests.cs" />
-    <Compile Include="System\Exceptions.Utility.cs" />
+    <Compile Include="System\Exception.Helpers.cs" />
     <Compile Include="System\ExecutionEngineExceptionTests.cs" />
     <Compile Include="System\ExternalExceptionTests.cs" />
     <Compile Include="System\EventArgsTests.cs" />

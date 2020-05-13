@@ -23,9 +23,7 @@
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
     <MobileHelpersDirSuffix>$(NetCoreAppCurrent)-$(MonoConfiguration)</MobileHelpersDirSuffix>
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelpersDirSuffix)'))</AppleAppBuilderDir>
-    <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileHelpersDirSuffix)'))</AppleTestRunnerDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(MobileHelpersDirSuffix)'))</AndroidAppBuilderDir>
-    <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileHelpersDirSuffix)'))</AndroidTestRunnerDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(MobileHelpersDirSuffix)'))</MonoAOTCompilerDir>
 
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
