@@ -202,6 +202,8 @@ namespace System.Formats.Cbor.Tests
             ECPoint q = new ECPoint() { X = hexExpectedQx.HexToByteArray(), Y = hexExpectedQy.HexToByteArray() };
             (ECDsa ecDsa, HashAlgorithmName name) = CborCoseKeyHelpers.ParseECDsaPublicKey(hexEncoding.HexToByteArray());
 
+            using ECDsa _ = ecDsa;
+
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
 
             string? expectedCurveFriendlyName = NormalizeCurveForPlatform(curveFriendlyName).Oid.FriendlyName;
