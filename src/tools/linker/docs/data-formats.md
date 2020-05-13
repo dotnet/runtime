@@ -224,6 +224,34 @@ are applied.
 
 ## Custom Attributes Annotations Format
 
+### Custom attribute on assembly
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <attribute fullname="CustomAttributeName">
+      <argument>Argument</argument>
+    </attribute>
+  </assembly>
+</linker>
+```
+
+###Custom attribute on type
+
+This allows to add a custom attribute to a class, interface, delegate, struct or enum 
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <attribute fullname="CustomAttributeName">
+        <argument>Argument</argument>
+      </attribute>
+    </type>
+  </assembly>
+</linker>
+```
+
 ### Custom attribute on type field
 
 ```xml
@@ -251,6 +279,22 @@ are applied.
           <argument>DefaultConstructor</argument>
         </attribute>
       </property>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on event
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <event name="MyTypeEvent">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <argument>DefaultConstructor</argument>
+        </attribute>
+      </event>
     </type>
   </assembly>
 </linker>
@@ -289,10 +333,6 @@ are applied.
 ```
 
 ### Custom attribute in multiple method parameters
-
-When writing custom attribute for multiple method parameters you need to write the xml elements
-in an order dependent form. That is, the first xml parameter element corresponds to the first 
-method parameter, second xml parameter element correspond to the second method parameter and so on.
 
 ```xml
 <linker>
@@ -359,4 +399,23 @@ attributes are applied.
     </type>
   </assembly>
 </linker>
+```
+
+### Custom attributes elements
+
+Inside an attribute element in the xml you can define argument, field and property elements. 
+An attribute could have several arguments, several fields or several properties. When writing 
+custom attribute with multiple arguments you need to write the xml elements in an order dependent 
+form. That is, the first xml argument element corresponds to the first custom attribute argument, 
+second xml argument element correspond to the second custom attribute argument and so on.
+For fields and properties, you need to include the name since they are not order dependent.
+
+```xml
+<attribute fullname="SomeCustomAttribute">
+  <argument>Argument1</argument>
+  <argument>Argument2</argument>
+  <argument>Argument3</argument>
+  <field name="fieldName">SomeValue</field>
+  <property name="propertyName">SomeValue</property>
+</attribute>
 ```
