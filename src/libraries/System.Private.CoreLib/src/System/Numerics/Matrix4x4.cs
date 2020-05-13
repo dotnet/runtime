@@ -1311,8 +1311,180 @@ namespace System.Numerics
         /// <param name="matrix">The source matrix to invert.</param>
         /// <param name="result">If successful, contains the inverted matrix.</param>
         /// <returns>True if the source matrix could be inverted; False otherwise.</returns>
-        public static bool Invert(Matrix4x4 matrix, out Matrix4x4 result)
+        public static unsafe bool Invert(Matrix4x4 matrix, out Matrix4x4 result)
         {
+            if (Sse.IsSupported)
+            {
+                // Load the matrix values into rows
+                Vector128<float> row1 = Sse.LoadVector128(&matrix.M11);
+                Vector128<float> row2 = Sse.LoadVector128(&matrix.M21);
+                Vector128<float> row3 = Sse.LoadVector128(&matrix.M31);
+                Vector128<float> row4 = Sse.LoadVector128(&matrix.M41);
+
+                // Transpose the matrix
+                Vector128<float> vTemp1 = Sse.Shuffle(row1, row2, 0x44);
+                Vector128<float> vTemp3 = Sse.Shuffle(row1, row2, 0xEE);
+                Vector128<float> vTemp2 = Sse.Shuffle(row3, row4, 0x44);
+                Vector128<float> vTemp4 = Sse.Shuffle(row3, row4, 0xEE);
+
+                row1 = Sse.Shuffle(vTemp1, vTemp2, 0x88);
+                row2 = Sse.Shuffle(vTemp1, vTemp2, 0xDD);
+                row3 = Sse.Shuffle(vTemp3, vTemp4, 0x88);
+                row4 = Sse.Shuffle(vTemp3, vTemp4, 0xDD);
+
+                Vector128<float> V00 = Sse.Shuffle(row3, row3, 0x50);
+                Vector128<float> V10 = Sse.Shuffle(row4, row4, 0xEE);
+                Vector128<float> V01 = Sse.Shuffle(row1, row1, 0x50);
+                Vector128<float> V11 = Sse.Shuffle(row2, row2, 0xEE);
+                Vector128<float> V02 = Sse.Shuffle(row3, row1, 0x88);
+                Vector128<float> V12 = Sse.Shuffle(row4, row2, 0xDD);
+
+                Vector128<float> D0 = Sse.Multiply(V00, V10);
+                Vector128<float> D1 = Sse.Multiply(V01, V11);
+                Vector128<float> D2 = Sse.Multiply(V02, V12);
+
+                V00 = Sse.Shuffle(row3, row3, 0xEE);
+                V10 = Sse.Shuffle(row4, row4, 0x50);
+                V01 = Sse.Shuffle(row1, row1, 0xEE);
+                V11 = Sse.Shuffle(row2, row2, 0x50);
+                V02 = Sse.Shuffle(row3, row1, 0xDD);
+                V12 = Sse.Shuffle(row4, row2, 0x88);
+
+                D0 = Sse.Subtract(D0, Sse.Multiply(V00, V10));
+                D1 = Sse.Subtract(D1, Sse.Multiply(V01, V11));
+                D2 = Sse.Subtract(D2, Sse.Multiply(V02, V12));
+
+                // V11 = D0Y,D0W,D2Y,D2Y
+                V11 = Sse.Shuffle(D0, D2, 0x5D);
+                V00 = Sse.Shuffle(row2, row2, 0x49);
+                V10 = Sse.Shuffle(V11, D0, 0x32);
+                V01 = Sse.Shuffle(row1, row1, 0x12);
+                V11 = Sse.Shuffle(V11, D0, 0x99);
+
+                // V13 = D1Y,D1W,D2W,D2W
+                Vector128<float> V13 = Sse.Shuffle(D1, D2, 0xFD);
+                V02 = Sse.Shuffle(row4, row4, 0x49);
+                V12 = Sse.Shuffle(V13, D1, 0x32);
+                Vector128<float> V03 = Sse.Shuffle(row3, row3, 0x12);
+                V13 = Sse.Shuffle(V13, D1, 0x99);
+
+                Vector128<float> C0 = Sse.Multiply(V00, V10);
+                Vector128<float> C2 = Sse.Multiply(V01, V11);
+                Vector128<float> C4 = Sse.Multiply(V02, V12);
+                Vector128<float> C6 = Sse.Multiply(V03, V13);
+
+                // V11 = D0X,D0Y,D2X,D2X
+                V11 = Sse.Shuffle(D0, D2, 0x4);
+                V00 = Sse.Shuffle(row2, row2, 0x9e);
+                V10 = Sse.Shuffle(D0, V11, 0x93);
+                V01 = Sse.Shuffle(row1, row1, 0x7b);
+                V11 = Sse.Shuffle(D0, V11, 0x26);
+
+                // V13 = D1X,D1Y,D2Z,D2Z
+                V13 = Sse.Shuffle(D1, D2, 0xa4);
+                V02 = Sse.Shuffle(row4, row4, 0x9e);
+                V12 = Sse.Shuffle(D1, V13, 0x93);
+                V03 = Sse.Shuffle(row3, row3, 0x7b);
+                V13 = Sse.Shuffle(D1, V13, 0x26);
+
+                C0 = Sse.Subtract(C0, Sse.Multiply(V00, V10));
+                C2 = Sse.Subtract(C2, Sse.Multiply(V01, V11));
+                C4 = Sse.Subtract(C4, Sse.Multiply(V02, V12));
+                C6 = Sse.Subtract(C6, Sse.Multiply(V03, V13));
+                V00 = Sse.Shuffle(row2, row2, 0x33);
+
+                // V10 = D0Z,D0Z,D2X,D2Y
+                V10 = Sse.Shuffle(D0, D2, 0x4A);
+                V10 = Sse.Shuffle(V10, V10, 0x2C);
+                V01 = Sse.Shuffle(row1, row1, 0x8D);
+
+                // V11 = D0X,D0W,D2X,D2Y
+                V11 = Sse.Shuffle(D0, D2, 0x4C);
+                V11 = Sse.Shuffle(V11, V11, 0x93);
+                V02 = Sse.Shuffle(row4, row4, 0x33);
+
+                // V12 = D1Z,D1Z,D2Z,D2W
+                V12 = Sse.Shuffle(D1, D2, 0xEA);
+                V12 = Sse.Shuffle(V12, V12, 0x2C);
+                V03 = Sse.Shuffle(row3, row3, 0x8D);
+
+                // V13 = D1X,D1W,D2Z,D2W
+                V13 = Sse.Shuffle(D1, D2, 0xEC);
+                V13 = Sse.Shuffle(V13, V13, 0x93);
+
+                V00 = Sse.Multiply(V00, V10);
+                V01 = Sse.Multiply(V01, V11);
+                V02 = Sse.Multiply(V02, V12);
+                V03 = Sse.Multiply(V03, V13);
+
+                Vector128<float> C1 = Sse.Subtract(C0, V00);
+                C0 = Sse.Add(C0, V00);
+                Vector128<float> C3 = Sse.Add(C2, V01);
+                C2 = Sse.Subtract(C2, V01);
+                Vector128<float> C5 = Sse.Subtract(C4, V02);
+                C4 = Sse.Add(C4, V02);
+                Vector128<float> C7 = Sse.Add(C6, V03);
+                C6 = Sse.Subtract(C6, V03);
+
+                C0 = Sse.Shuffle(C0, C1, 0xD8);
+                C2 = Sse.Shuffle(C2, C3, 0xD8);
+                C4 = Sse.Shuffle(C4, C5, 0xD8);
+                C6 = Sse.Shuffle(C6, C7, 0xD8);
+
+                C0 = Sse.Shuffle(C0, C0, 0xD8);
+                C2 = Sse.Shuffle(C2, C2, 0xD8);
+                C4 = Sse.Shuffle(C4, C4, 0xD8);
+                C6 = Sse.Shuffle(C6, C6, 0xD8);
+
+                // Get the determinant
+                vTemp2 = row1;
+                Vector128<float> vTemp = Sse.Multiply(C0, vTemp2);
+                vTemp2 = Sse.Shuffle(vTemp2, vTemp, 0x40);
+                vTemp2 = Sse.Add(vTemp2, vTemp);
+                vTemp = Sse.Shuffle(vTemp, vTemp2, 0x30);
+                vTemp = Sse.Add(vTemp, vTemp2);
+                vTemp = Sse.Shuffle(vTemp, vTemp, 0xAA);
+
+                // Check determinate is not zero
+                if (MathF.Abs(vTemp.GetElement<float>(0)) < float.Epsilon)
+                {
+                    result = new Matrix4x4(float.NaN, float.NaN, float.NaN, float.NaN,
+                                float.NaN, float.NaN, float.NaN, float.NaN,
+                                float.NaN, float.NaN, float.NaN, float.NaN,
+                                float.NaN, float.NaN, float.NaN, float.NaN);
+                    return false;
+                }
+
+                Vector128<float> ones = Vector128.Create(1.0f, 1.0f, 1.0f, 1.0f);
+
+                vTemp = Sse.Divide(ones, vTemp);
+
+                row1 = Sse.Multiply(C0, vTemp);
+                row2 = Sse.Multiply(C2, vTemp);
+                row3 = Sse.Multiply(C4, vTemp);
+                row4 = Sse.Multiply(C6, vTemp);
+
+                result.M11 = row1.GetElement<float>(0);
+                result.M12 = row1.GetElement<float>(1);
+                result.M13 = row1.GetElement<float>(2);
+                result.M14 = row1.GetElement<float>(3);
+
+                result.M21 = row2.GetElement<float>(0);
+                result.M22 = row2.GetElement<float>(1);
+                result.M23 = row2.GetElement<float>(2);
+                result.M24 = row2.GetElement<float>(3);
+
+                result.M31 = row3.GetElement<float>(0);
+                result.M32 = row3.GetElement<float>(1);
+                result.M33 = row3.GetElement<float>(2);
+                result.M34 = row3.GetElement<float>(3);
+
+                result.M41 = row4.GetElement<float>(0);
+                result.M42 = row4.GetElement<float>(1);
+                result.M43 = row4.GetElement<float>(2);
+                result.M44 = row4.GetElement<float>(3);
+            }
+
             //                                       -1
             // If you have matrix M, inverse Matrix M   can compute
             //
