@@ -1247,7 +1247,8 @@ NamedMutexProcessData::NamedMutexProcessData(
     m_sharedLockFileDescriptor(sharedLockFileDescriptor),
 #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     m_lockOwnerThread(nullptr),
-    m_nextInThreadOwnedNamedMutexList(nullptr)
+    m_nextInThreadOwnedNamedMutexList(nullptr),
+    m_hasRefFromLockOwnerThread(false)
 {
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
     _ASSERTE(processDataHeader != nullptr);
@@ -1263,6 +1264,39 @@ NamedMutexProcessData::NamedMutexProcessData(
 #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
 }
 
+bool NamedMutexProcessData::CanClose() const
+{
+    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
+
+    // When using a pthread robust mutex, the mutex may only be unlocked and destroyed by the thread that owns the lock. When
+    // using file locks, even though any thread could release that lock, the behavior is kept consistent to the more
+    // conservative case. If the last handle to the mutex is closed when a different thread owns the lock, the mutex cannot be
+    // closed. Due to these limitations, the behavior in this corner case is necessarily different from Windows. The caller will
+    // extend the lifetime of the mutex and will call OnLifetimeExtendedDueToCannotClose() shortly.
+    return m_lockOwnerThread == nullptr || m_lockOwnerThread == GetCurrentPalThread();
+}
+
+bool NamedMutexProcessData::HasImplicitRef() const
+{
+    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
+    return m_hasRefFromLockOwnerThread;
+}
+
+void NamedMutexProcessData::SetHasImplicitRef(bool value)
+{
+    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
+    _ASSERTE(m_hasRefFromLockOwnerThread != value);
+    _ASSERTE(!value || !CanClose());
+
+    // If value == true:
+    //   The mutex could not be closed and the caller extended the lifetime of the mutex. Record that the lock owner thread
+    //   should release the ref when the lock is released on that thread.
+    // Else:
+    //   The mutex has an implicit ref and got the first explicit reference from this process. Remove the implicit ref from the
+    //   lock owner thread.
+    m_hasRefFromLockOwnerThread = value;
+}
+
 void NamedMutexProcessData::Close(bool isAbruptShutdown, bool releaseSharedData)
 {
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
@@ -1272,20 +1306,23 @@ void NamedMutexProcessData::Close(bool isAbruptShutdown, bool releaseSharedData)
     // active references to the mutex. So when shutting down abruptly, don't clean up any object or global process-local state.
     if (!isAbruptShutdown)
     {
+        _ASSERTE(CanClose());
+        _ASSERTE(!m_hasRefFromLockOwnerThread);
+
         CPalThread *lockOwnerThread = m_lockOwnerThread;
-        if (lockOwnerThread != nullptr)
+        if (lockOwnerThread == GetCurrentPalThread())
         {
-            // The mutex was not released before it was closed. If the lock is owned by the current thread, abandon the mutex.
-            // In both cases, clean up the owner thread's list of owned mutexes.
+            // The mutex was not released before the last handle to it from this process was closed on the lock-owning thread.
+            // Another process may still have a handle to the mutex, but since it appears as though this process would not be
+            // releasing the mutex, abandon the mutex. The only way for this process to otherwise release the mutex is to open
+            // another handle to it and release the lock on the same thread, which would be incorrect-looking code. The behavior
+            // in this corner case is different from Windows.
             lockOwnerThread->synchronizationInfo.RemoveOwnedNamedMutex(this);
-            if (lockOwnerThread == GetCurrentPalThread())
-            {
-                Abandon();
-            }
-            else
-            {
-                m_lockOwnerThread = nullptr;
-            }
+            Abandon();
+        }
+        else
+        {
+            _ASSERTE(lockOwnerThread == nullptr);
         }
 
         if (releaseSharedData)
@@ -1337,18 +1374,20 @@ NamedMutexSharedData *NamedMutexProcessData::GetSharedData() const
 void NamedMutexProcessData::SetLockOwnerThread(CorUnix::CPalThread *lockOwnerThread)
 {
     _ASSERTE(lockOwnerThread == nullptr || lockOwnerThread == GetCurrentPalThread());
-    _ASSERTE(GetSharedData()->IsLockOwnedByCurrentThread());
+    _ASSERTE(IsLockOwnedByCurrentThread());
 
     m_lockOwnerThread = lockOwnerThread;
 }
 
 NamedMutexProcessData *NamedMutexProcessData::GetNextInThreadOwnedNamedMutexList() const
 {
+    _ASSERTE(IsLockOwnedByCurrentThread());
     return m_nextInThreadOwnedNamedMutexList;
 }
 
 void NamedMutexProcessData::SetNextInThreadOwnedNamedMutexList(NamedMutexProcessData *next)
 {
+    _ASSERTE(IsLockOwnedByCurrentThread());
     m_nextInThreadOwnedNamedMutexList = next;
 }
 
@@ -1367,7 +1406,7 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMil
     // at the appropriate time, see ReleaseLock().
     if (m_lockCount != 0)
     {
-        _ASSERTE(sharedData->IsLockOwnedByCurrentThread()); // otherwise, this thread would not have acquired the lock
+        _ASSERTE(IsLockOwnedByCurrentThread()); // otherwise, this thread would not have acquired the lock
         _ASSERTE(GetCurrentPalThread()->synchronizationInfo.OwnsNamedMutex(this));
 
         if (m_lockCount + 1 < m_lockCount)
@@ -1442,7 +1481,7 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMil
     // Check if it's a recursive lock attempt
     if (m_lockCount != 0)
     {
-        _ASSERTE(sharedData->IsLockOwnedByCurrentThread()); // otherwise, this thread would not have acquired the process lock
+        _ASSERTE(IsLockOwnedByCurrentThread()); // otherwise, this thread would not have acquired the process lock
         _ASSERTE(GetCurrentPalThread()->synchronizationInfo.OwnsNamedMutex(this));
 
         if (m_lockCount + 1 < m_lockCount)
@@ -1565,12 +1604,13 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMil
 
 void NamedMutexProcessData::ReleaseLock()
 {
-    if (!GetSharedData()->IsLockOwnedByCurrentThread())
+    if (!IsLockOwnedByCurrentThread())
     {
         throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::ThreadHasNotAcquiredMutex));
     }
 
     _ASSERTE(GetCurrentPalThread()->synchronizationInfo.OwnsNamedMutex(this));
+    _ASSERTE(!m_hasRefFromLockOwnerThread);
 
     _ASSERTE(m_lockCount != 0);
     --m_lockCount;
@@ -1586,23 +1626,31 @@ void NamedMutexProcessData::ReleaseLock()
 
 void NamedMutexProcessData::Abandon()
 {
+    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
+
     NamedMutexSharedData *sharedData = GetSharedData();
-    _ASSERTE(sharedData->IsLockOwnedByCurrentThread());
+    _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(m_lockCount != 0);
 
     sharedData->SetIsAbandoned(true);
     m_lockCount = 0;
     SetLockOwnerThread(nullptr);
     ActuallyReleaseLock();
+
+    if (m_hasRefFromLockOwnerThread)
+    {
+        m_hasRefFromLockOwnerThread = false;
+        m_processDataHeader->DecRefCount();
+    }
 }
 
 void NamedMutexProcessData::ActuallyReleaseLock()
 {
-    NamedMutexSharedData *sharedData = GetSharedData();
-    _ASSERTE(sharedData->IsLockOwnedByCurrentThread());
+    _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(!GetCurrentPalThread()->synchronizationInfo.OwnsNamedMutex(this));
     _ASSERTE(m_lockCount == 0);
 
+    NamedMutexSharedData *sharedData = GetSharedData();
     sharedData->ClearLockOwner();
 
 #if NAMED_MUTEX_USE_PTHREAD_MUTEX

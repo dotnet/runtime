@@ -398,8 +398,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_MEMORYBARRIER:
-            instGen_MemoryBarrier();
+        {
+            CodeGen::BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+
+            instGen_MemoryBarrier(barrierKind);
             break;
+        }
 
 #ifdef TARGET_ARM64
         case GT_XCHG:
@@ -475,7 +480,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LABEL:
             genPendingCallLabel = genCreateTempLabel();
+#if defined(TARGET_ARM)
+            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
+#else
             emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#endif
             break;
 
         case GT_STORE_OBJ:
@@ -1940,11 +1949,9 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (emitBarrier)
     {
-#ifdef TARGET_ARM64
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
-#else
-        instGen_MemoryBarrier();
-#endif
+        // when INS_ldar* could not be used for a volatile load,
+        // we use an ordinary load followed by a load barrier.
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
     }
 
     genProduceReg(tree);
@@ -1976,13 +1983,8 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 
     if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
-#ifdef TARGET_ARM64
-        // issue a INS_BARRIER_ISHLD after a volatile CpBlk operation
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
-#else
-        // issue a full memory barrier after a volatile CpBlk operation
-        instGen_MemoryBarrier();
-#endif // TARGET_ARM64
+        // issue a load barrier after a volatile CpBlk operation
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
     }
 }
 
@@ -2203,6 +2205,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (node->IsVolatile())
     {
+        // issue a full memory barrier before a volatile CpBlk operation
         instGen_MemoryBarrier();
     }
 
@@ -2300,11 +2303,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (node->IsVolatile())
     {
-#ifdef TARGET_ARM64
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
-#else
-        instGen_MemoryBarrier();
-#endif
+        // issue a load barrier after a volatile CpBlk operation
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
     }
 }
 
@@ -2727,7 +2727,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // if it was a pinvoke we may have needed to get the address of a label
     if (genPendingCallLabel)
     {
-        assert(call->IsUnmanaged());
         genDefineInlineTempLabel(genPendingCallLabel);
         genPendingCallLabel = nullptr;
     }

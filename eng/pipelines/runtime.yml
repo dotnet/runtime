@@ -7,6 +7,7 @@ trigger:
   branches:
     include:
     - master
+    - dev/infrastructure
     - release/*.*
   paths:
     include:
@@ -27,6 +28,7 @@ pr:
   branches:
     include:
     - master
+    - dev/infrastructure
     - release/*.*
   paths:
     include:
@@ -101,6 +103,10 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
+    - subset: runtimetests
+      include:
+      - /src/coreclr/tests/*
+      - /src/coreclr/build-test.sh
     - subset: installer
       include:
       - docs/manpages/*
@@ -278,7 +284,6 @@ jobs:
     - iOS_x64
     - iOS_arm
     - iOS_arm64
-    - OSX_x64
     - Linux_x64
     - Linux_arm
     - Linux_arm64
@@ -295,6 +300,27 @@ jobs:
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono release
+# Only when libraries, mono, or the runtime tests changed
+# Currently only these architectures are needed for the runtime tests.
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+    - OSX_x64
+    jobParameters:
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+
 
 #
 # Build Mono LLVM debug
@@ -397,7 +423,7 @@ jobs:
     - Android_x64
     - Android_arm
     - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -489,7 +515,7 @@ jobs:
 
 - template: /eng/pipelines/installer/installer-matrix.yml
   parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     platforms:
       - OSX_x64
       - Linux_x64
@@ -503,13 +529,13 @@ jobs:
 
 - template: /eng/pipelines/installer/installer-matrix.yml
   parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     runtimeFlavor: mono
     platforms:
     - Android_x64
     - Android_arm
     - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -667,6 +693,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -674,6 +701,30 @@ jobs:
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Mono CoreCLR runtime Test executions using live libraries
+# Only when Mono is changed
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - OSX_x64
+    - Linux_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      liveRuntimeBuildConfig: release
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -692,6 +743,8 @@ jobs:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       liveRuntimeBuildConfig: release
+      runtimeMode: 'interpreter'
+      runtimeModeDisplayName: 'Interpreter'
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
@@ -735,6 +788,9 @@ jobs:
     buildConfig: Release
     platforms:
     - Windows_NT_x86
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - Windows_NT_arm
+      - Windows_NT_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false

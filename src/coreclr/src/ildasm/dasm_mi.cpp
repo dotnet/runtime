@@ -4,5 +4,8 @@
 
 #include "ildasmpch.h"
 
+#include "mdfileformat.h"
+
+
 #include "../tools/metainfo/mdinfo.cpp"
 #include "../tools/metainfo/mdobj.cpp"

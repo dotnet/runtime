@@ -212,32 +212,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         regGSCheck     = REG_EAX;
         regMaskGSCheck = RBM_EAX;
 #else  // !TARGET_X86
-        // Tail calls from methods that need GS check:  We need to preserve registers while
-        // emitting GS cookie check for a tail prefixed call or a jmp. To emit GS cookie
-        // check, we might need a register. This won't be an issue for jmp calls for the
-        // reason mentioned below (see comment starting with "Jmp Calls:").
-        //
-        // The following are the possible solutions in case of tail prefixed calls:
-        // 1) Use R11 - ignore tail prefix on calls that need to pass a param in R11 when
-        //    present in methods that require GS cookie check.  Rest of the tail calls that
-        //    do not require R11 will be honored.
-        // 2) Internal register - GT_CALL node reserves an internal register and emits GS
-        //    cookie check as part of tail call codegen. GenExitCode() needs to special case
-        //    fast tail calls implemented as epilog+jmp or such tail calls should always get
-        //    dispatched via helper.
-        // 3) Materialize GS cookie check as a separate node hanging off GT_CALL node in
-        //    right execution order during rationalization.
-        //
-        // There are two calls that use R11: VSD and calli pinvokes with cookie param. Tail
-        // prefix on pinvokes is ignored.  That is, options 2 and 3 will allow tail prefixed
-        // VSD calls from methods that need GS check.
-        //
-        // Tail prefixed calls: Right now for Jit64 compat, method requiring GS cookie check
-        // ignores tail prefix.  In future, if we intend to support tail calls from such a method,
-        // consider one of the options mentioned above.  For now adding an assert that we don't
-        // expect to see a tail call in a method that requires GS check.
-        noway_assert(!compiler->compTailCallUsed);
-
         // Jmp calls: specify method handle using which JIT queries VM for its entry point
         // address and hence it can neither be a VSD call nor PInvoke calli with cookie
         // parameter.  Therefore, in case of jmp calls it is safe to use R11.
@@ -1888,8 +1862,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_MEMORYBARRIER:
-            instGen_MemoryBarrier();
+        {
+            CodeGen::BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+
+            instGen_MemoryBarrier(barrierKind);
             break;
+        }
 
         case GT_CMPXCHG:
             genCodeForCmpXchg(treeNode->AsCmpXchg());
@@ -4344,16 +4323,32 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (shiftBy->isContainedIntOrIImmed())
     {
-        // First, move the operand to the destination register and
-        // later on perform the shift in-place.
-        // (LSRA will try to avoid this situation through preferencing.)
-        if (tree->GetRegNum() != operandReg)
+        // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
+        if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
         {
-            inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
+            emitAttr size = emitTypeSize(tree);
+            if (tree->GetRegNum() == operandReg)
+            {
+                GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
+            }
         }
+        else
+        {
+            // First, move the operand to the destination register and
+            // later on perform the shift in-place.
+            // (LSRA will try to avoid this situation through preferencing.)
+            if (tree->GetRegNum() != operandReg)
+            {
+                inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
+            }
 
-        int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-        inst_RV_SH(ins, emitTypeSize(tree), tree->GetRegNum(), shiftByValue);
+            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+            inst_RV_SH(ins, emitTypeSize(tree), tree->GetRegNum(), shiftByValue);
+        }
     }
     else
     {
@@ -4679,17 +4674,6 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         if (targetType == TYP_SIMD12)
         {
             genStoreLclTypeSIMD12(tree);
-            return;
-        }
-
-        // TODO-CQ: It would be better to simply contain the zero, rather than
-        // generating zero into a register.
-        if (varTypeIsSIMD(targetType) && (targetReg != REG_NA) && op1->IsCnsIntOrI())
-        {
-            // This is only possible for a zero-init.
-            noway_assert(op1->IsIntegralConst(0));
-            genSIMDZero(targetType, varDsc->lvBaseType, targetReg);
-            genProduceReg(tree);
             return;
         }
 #endif // FEATURE_SIMD
@@ -5334,7 +5318,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
 
     // Insert a GS check if necessary
-    if (call->IsTailCallViaHelper())
+    if (call->IsTailCallViaJitHelper())
     {
         if (compiler->getNeedsGSSecurityCookie())
         {
@@ -5555,20 +5539,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #if defined(TARGET_X86)
     bool fCallerPop = call->CallerPop();
 
-#ifdef UNIX_X86_ABI
-    if (!call->IsUnmanaged())
-    {
-        CorInfoCallConv callConv = CORINFO_CALLCONV_DEFAULT;
-
-        if ((callType != CT_HELPER) && call->callSig)
-        {
-            callConv = call->callSig->callConv;
-        }
-
-        fCallerPop |= IsCallerPop(callConv);
-    }
-#endif // UNIX_X86_ABI
-
     // If the callee pops the arguments, we pass a positive value as the argSize, and the emitter will
     // adjust its stack level accordingly.
     // If the caller needs to explicitly pop its arguments, we must pass a negative value, and then do the
@@ -5747,10 +5717,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // clang-format on
     }
 
-    // if it was a pinvoke we may have needed to get the address of a label
+    // if it was a pinvoke or intrinsic we may have needed to get the address of a label
     if (genPendingCallLabel)
     {
-        assert(call->IsUnmanaged());
         genDefineInlineTempLabel(genPendingCallLabel);
         genPendingCallLabel = nullptr;
     }

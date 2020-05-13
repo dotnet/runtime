@@ -29,10 +29,15 @@ struct MonoLMF {
 	gdouble     fregs[16];
 };
 
+/**
+ * Platform-specific compile control information
+ */
 typedef struct MonoCompileArch {
-	int         bkchain_reg;
-	uint32_t    used_fp_regs;
-	int	    fpSize;
+	int         bkchain_reg;	/** Register being used as stack backchain */
+	uint32_t    used_fp_regs;	/** Floating point register use mask */
+	int	    fpSize;		/** Size of floating point save area */
+	MonoInst    *ss_tramp_var;	/** Single-step variable */
+	MonoInst    *bp_tramp_var;	/** Breakpoint variable */
 } MonoCompileArch;
 
 typedef struct
@@ -43,7 +48,13 @@ typedef struct
 	void *return_address;
 } MonoS390StackFrame;
 
-// #define MONO_ARCH_SIGSEGV_ON_ALTSTACK		1
+/* Structure used by the sequence points */
+struct SeqPointInfo {
+	gpointer ss_tramp_addr;
+	gpointer bp_addrs [MONO_ZERO_LEN_ARRAY];
+};
+
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK			1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 		1
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS		1
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS		1
@@ -65,6 +76,10 @@ typedef struct
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK		1
 #define MONO_ARCH_HAVE_TRACK_FPREGS			1
 #define MONO_ARCH_HAVE_OPTIMIZED_DIV			1
+#define MONO_ARCH_HAVE_OP_TAILCALL_MEMBASE		1
+#define MONO_ARCH_HAVE_OP_TAILCALL_REG			1
+#define MONO_ARCH_HAVE_SDB_TRAMPOLINES			1
+#define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX	1
 
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2
@@ -127,7 +142,7 @@ typedef struct
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
-#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0 // FIXME?
+#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1 // FIXME?
 
 /*-----------------------------------------------*/
 /* Macros used to generate instructions          */

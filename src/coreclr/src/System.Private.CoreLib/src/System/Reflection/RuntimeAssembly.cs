@@ -327,7 +327,7 @@ namespace System.Reflection
                          throwOnFileNotFound,
                          ObjectHandleOnStack.Create(ref assemblyLoadContext),
                          ObjectHandleOnStack.Create(ref retAssembly));
-            return retAssembly;
+            return retAssembly!;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]

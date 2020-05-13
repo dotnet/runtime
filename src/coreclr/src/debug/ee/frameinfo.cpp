@@ -1559,20 +1559,27 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     }
     else
 #endif // FEATURE_EH_FUNCLETS
-    // We should ignore IL stubs with no frames in our stackwalking.
-    // The only exception is dynamic methods.  We want to report them when SIS is turned on.
+    // We ignore most IL stubs with no frames in our stackwalking. As exceptions
+    // we will always report multicast stubs and the tailcall call target stubs
+    // since we treat them specially in the debugger.
     if ((md != NULL) && md->IsILStub() && pCF->IsFrameless())
     {
+        _ASSERTE(md->IsDynamicMethod());
+        DynamicMethodDesc* dMD = md->AsDynamicMethodDesc();
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
-        if(md->AsDynamicMethodDesc()->IsMulticastStub())
+        use |= dMD->IsMulticastStub();
+#endif
+        use |= dMD->GetILStubResolver()->GetStubType() == ILStubResolver::TailCallCallTargetStub;
+
+        if (use)
         {
-            use = true;
             d->info.managed = true;
             d->info.internal = false;
         }
-#endif
-        // We do nothing here.
-        LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless IL stub.\n"));
+        else
+        {
+            LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless IL stub.\n"));
+        }
     }
     else
     // For frames w/o method data, send them as an internal stub frame.

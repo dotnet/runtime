@@ -119,13 +119,10 @@ generate_layout()
 
     mkdir -p "$CORE_ROOT"
 
-    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
-
     chmod +x "$__BinDir"/corerun
     chmod +x "$__CrossgenExe"
 
-    # Make sure to copy over the pulled down packages
-    cp -r "$__BinDir"/* "$CORE_ROOT/" > /dev/null
+    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" ]]; then
         nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
@@ -184,7 +181,7 @@ precompile_coreroot_fx()
     local totalPrecompiled=0
     local failedToPrecompile=0
     local compositeCommandLine="$overlayDir/corerun"
-    compositeCommandLine+=" $overlayDir/crossgen2/crossgen2.dll"
+    compositeCommandLine+=" ${__BinDir}/crossgen2/crossgen2.dll"
     compositeCommandLine+=" --composite"
     compositeCommandLine+=" -O"
     compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"

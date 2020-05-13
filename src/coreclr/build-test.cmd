@@ -157,6 +157,9 @@ set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType
 set "__TestRootDir=%__RootBinDir%\tests\coreclr"
 set "__TestBinDir=%__TestRootDir%\%__TargetOS%.%__BuildArch%.%__BuildType%"
 
+if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%\
+set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
+
 REM We have different managed and native intermediate dirs because the managed bits will include
 REM the configuration information deeper in the intermediates path.
 REM These variables are used by the msbuild project files.
@@ -289,9 +292,6 @@ REM ============================================================================
 if "%__SkipRestorePackages%" == "1" goto SkipRestoreProduct
 
 echo %__MsgPrefix%Restoring CoreCLR product from packages
-
-if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%\
-set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
 
 set __BuildLogRootName=Restore_Product
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
@@ -437,12 +437,8 @@ REM Remove any lock folder used for synchronization from previous runs.
 powershell -NoProfile "Get-ChildItem -path %__TestBinDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
 
 set CORE_ROOT=%__TestBinDir%\Tests\Core_Root
-set CORE_ROOT_STAGE=%__TestBinDir%\Tests\Core_Root_Stage
 if exist "%CORE_ROOT%" rd /s /q "%CORE_ROOT%"
-if exist "%CORE_ROOT_STAGE%" rd /s /q "%CORE_ROOT_STAGE%"
 md "%CORE_ROOT%"
-md "%CORE_ROOT_STAGE%"
-xcopy /s "%__BinDir%" "%CORE_ROOT_STAGE%"
 
 REM =========================================================================================
 REM ===
@@ -480,8 +476,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-xcopy /s /y /i "%CORE_ROOT_STAGE%" "%CORE_ROOT%"
-
 REM =========================================================================================
 REM ===
 REM === Create test wrappers.
@@ -507,8 +501,7 @@ set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 if %%__Mono%%==1 (
   set RuntimeFlavor="mono"
-)
-else (
+) else (
   set RuntimeFlavor="coreclr"
 )
 
@@ -565,8 +558,6 @@ if defined __DoCrossgen2 (
 )
 
 :SkipCrossgen
-
-rd /s /q "%CORE_ROOT_STAGE%"
 
 REM =========================================================================================
 REM ===
@@ -687,13 +678,13 @@ REM Compile the managed assemblies in Core_ROOT before running the tests
 set AssemblyPath=%1
 set AssemblyName=%2
 
-set __CrossgenExe="%CORE_ROOT%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT%\x64\crossgen.exe" )
+set __CrossgenExe="%__BinDir%\crossgen.exe"
+if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%__BinDir%\x86\crossgen.exe" )
+if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%__BinDir%\x64\crossgen.exe" )
 set __CrossgenExe=%__CrossgenExe%
 
 if defined __DoCrossgen2 (
-    set __CrossgenExe="%CORE_ROOT%\corerun" "%CORE_ROOT%\crossgen2\crossgen2.dll"
+    set __CrossgenExe="%CORE_ROOT%\corerun" "%__BinDir%\crossgen2\crossgen2.dll"
 )
 
 REM Intentionally avoid using the .dll extension to prevent

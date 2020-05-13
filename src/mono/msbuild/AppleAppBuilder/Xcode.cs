@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,7 @@ internal class Xcode
     public static string GenerateXCode(
         string projectName,
         string entryPointLib,
+        IEnumerable<string> asmFiles,
         string workspace,
         string binDir,
         string monoInclude,
@@ -66,17 +68,23 @@ internal class Xcode
                 toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
             }
         }
-        foreach (string lib in Directory.GetFiles(binDir, "*.dll.o"))
+
+        string aotSources = "";
+        foreach (string asm in asmFiles)
         {
             // these libraries are linked via modules.m
-            toLink += $"    \"{lib}\"{Environment.NewLine}";
+            var name = Path.GetFileNameWithoutExtension(asm);
+            aotSources += $"add_library({name} OBJECT {asm}){Environment.NewLine}";
+            toLink += $"    {name}{Environment.NewLine}";
         }
+
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
+        cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);
 
-        File.WriteAllText(Path.Combine(binDir, "Info.plist.in"), plist);
+        File.WriteAllText(Path.Combine(binDir, "Info.plist"), plist);
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
         var cmakeArgs = new StringBuilder();

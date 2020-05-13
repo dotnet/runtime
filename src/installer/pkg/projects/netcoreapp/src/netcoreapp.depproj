@@ -76,6 +76,11 @@
         <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
+      <RuntimeFiles Condition="'$(TargetsBrowser)' == 'true'"
+        Include="@(WasmDistFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/wasm/runtimes/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
+
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
         <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
       </CoreCLRCrossTargetFiles>

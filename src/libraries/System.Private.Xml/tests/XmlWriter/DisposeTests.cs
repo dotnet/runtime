@@ -4,6 +4,8 @@
 
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Xml.Tests
@@ -120,6 +122,172 @@ namespace System.Xml.Tests
             Assert.False(mywriter.IsDisposed);
             mywriter.Dispose();
             Assert.True(mywriter.IsDisposed);
+        }
+
+        [Fact]
+        public static async Task AsyncWriter_DisposeAsync_ShouldCall_FlushAsyncWriteAsyncOnly_StreamWriter()
+        {
+            using (var stream = new AsyncOnlyStream())
+            await using (var writer = XmlWriter.Create(stream, new XmlWriterSettings() { Async = true }))
+            {
+                await writer.WriteStartDocumentAsync();
+                await writer.WriteStartElementAsync(string.Empty, "root", null);
+                await writer.WriteStartElementAsync(null, "test", null);
+                await writer.WriteAttributeStringAsync(string.Empty, "abc", string.Empty, "1");
+                await writer.WriteEndElementAsync();
+                await writer.WriteEndElementAsync();
+            }
+        }
+
+        [Fact]
+        public static async Task XmlWriter_AsyncSyncResult_ShouldBeSame_AfterDispose_StreamWriter()
+        {
+            var settings = new XmlWriterSettings() { Async = true, Encoding = new UTF8Encoding(false) };
+            using (var stream1 = new MemoryStream())
+            using (var stream2 = new MemoryStream())
+            using (var stream3 = new MemoryStream())
+            {
+                using (var asyncWriter = XmlWriter.Create(stream1, settings))
+                {
+                    await asyncWriter.WriteStartDocumentAsync();
+                    await asyncWriter.WriteStartElementAsync(string.Empty, "root", null);
+                    await asyncWriter.WriteStartElementAsync(null, "test", null);
+                    await asyncWriter.WriteAttributeStringAsync(string.Empty, "abc", string.Empty, "1");
+                    await asyncWriter.WriteEndElementAsync();
+                    await asyncWriter.WriteEndElementAsync();
+                }
+
+                await using (var asyncWriter = XmlWriter.Create(stream2, settings))
+                {
+                    await asyncWriter.WriteStartDocumentAsync();
+                    await asyncWriter.WriteStartElementAsync(string.Empty, "root", null);
+                    await asyncWriter.WriteStartElementAsync(null, "test", null);
+                    await asyncWriter.WriteAttributeStringAsync(string.Empty, "abc", string.Empty, "1");
+                    await asyncWriter.WriteEndElementAsync();
+                    await asyncWriter.WriteEndElementAsync();
+                }
+
+                settings.Async = false;
+                using (var syncWriter = XmlWriter.Create(stream3, settings))
+                {
+                    syncWriter.WriteStartDocument();
+                    syncWriter.WriteStartElement(string.Empty, "root", null);
+                    syncWriter.WriteStartElement(null, "test", null);
+                    syncWriter.WriteAttributeString(string.Empty, "abc", string.Empty, "1");
+                    syncWriter.WriteEndElement();
+                    syncWriter.WriteEndElement();
+                }
+
+                Assert.Equal(stream1.GetBuffer(), stream2.GetBuffer());
+                Assert.Equal(stream2.GetBuffer(), stream3.GetBuffer());
+
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream1.GetBuffer(), stream1.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream2.GetBuffer(), stream2.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream3.GetBuffer(), stream3.Length));
+            }
+        }
+
+        private static string ReadAsString(byte[] bytes, long length) => Encoding.UTF8.GetString(bytes, 0, (int)length);
+
+        [Fact]
+        public static async Task AsyncWriterDispose_ShouldCall_FlushAsyncWriteAsyncOnly_TextWriter()
+        {
+            using (var sw = new AsyncOnlyWriter())
+            await using (var writer = XmlWriter.Create(sw, new XmlWriterSettings() { Async = true }))
+            {
+                await writer.WriteStartElementAsync(null, "book", null);
+                await writer.WriteElementStringAsync(null, "price", null, "19.95");
+                await writer.WriteEndElementAsync();
+            }
+        }
+
+        [Fact]
+        public static async Task XmlWriter_AsyncSyncResult_ShouldBeSame_AfterDispose_TextWriter()
+        {
+            using (var sw1 = new StringWriter())
+            using (var sw2 = new StringWriter())
+            using (var sw3 = new StringWriter())
+            {
+                using (var asyncWriter = XmlWriter.Create(sw1, new XmlWriterSettings() { Async = true }))
+                {
+                    await asyncWriter.WriteStartElementAsync(null, "book", null);
+                    await asyncWriter.WriteElementStringAsync(null, "price", null, "19.95");
+                    await asyncWriter.WriteEndElementAsync();
+                }
+
+                await using (var asyncWriter = XmlWriter.Create(sw2, new XmlWriterSettings() { Async = true }))
+                {
+                    await asyncWriter.WriteStartElementAsync(null, "book", null);
+                    await asyncWriter.WriteElementStringAsync(null, "price", null, "19.95");
+                    await asyncWriter.WriteEndElementAsync();
+                }
+
+                using (var syncWriter = XmlWriter.Create(sw3, new XmlWriterSettings() { Async = false }))
+                {
+                    syncWriter.WriteStartElement(null, "book", null);
+                    syncWriter.WriteElementString(null, "price", null, "19.95");
+                    syncWriter.WriteEndElement();
+                }
+
+                Assert.Equal(sw1.ToString(), sw2.ToString());
+                Assert.Equal(sw1.ToString(), sw3.ToString());
+            }
+        }
+
+        internal class AsyncOnlyWriter : StringWriter
+        {
+            public override void Flush()
+            {
+                throw new InvalidOperationException("Sync operations are not allowed.");
+            }
+
+            public override Task FlushAsync()
+            {
+                return Task.CompletedTask;
+            }
+
+            public override void Write(char[] buffer, int offset, int count)
+            {
+                throw new InvalidOperationException("Sync operations are not allowed.");
+            }
+
+            public override Task WriteAsync(char[] buffer, int offset, int count)
+            {
+                return Task.CompletedTask;
+            }
+
+            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+            {
+                return Task.CompletedTask;
+            }
+        }
+
+        internal class AsyncOnlyStream : MemoryStream
+        {
+            public override void Flush()
+            {
+                throw new InvalidOperationException("Sync operations are not allowed.");
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                return Task.CompletedTask;
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new InvalidOperationException("Sync operations are not allowed.");
+            }
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return Task.CompletedTask;
+            }
+
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            {
+                return default;
+            }
         }
     }
 }

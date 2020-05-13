@@ -453,6 +453,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_StubHelpers_GetStubContext,
         CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
         CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
+        CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
         CORINFO_INTRINSIC_InterlockedAdd32,
         CORINFO_INTRINSIC_InterlockedAdd64,
         CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -462,6 +463,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_InterlockedCmpXchg32,
         CORINFO_INTRINSIC_InterlockedCmpXchg64,
         CORINFO_INTRINSIC_MemoryBarrier,
+        CORINFO_INTRINSIC_MemoryBarrierLoad,
         CORINFO_INTRINSIC_GetCurrentManagedThread,
         CORINFO_INTRINSIC_GetManagedThreadId,
         CORINFO_INTRINSIC_ByReference_Ctor,
@@ -755,14 +757,6 @@ namespace Internal.JitInterface
         public void* pArg5;
     }
 
-    // When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-    // calling convention/argument passing/handling details to the helper
-    public enum CorInfoHelperTailCallSpecialHandling
-    {
-        CORINFO_TAILCALL_NORMAL = 0x00000000,
-        CORINFO_TAILCALL_STUB_DISPATCH_ARG = 0x00000001,
-    }
-
     /*****************************************************************************/
     // These are flags passed to ICorJitInfo::allocMem
     // to guide the memory allocation for the code, readonly data, and read-write data
@@ -900,6 +894,30 @@ namespace Internal.JitInterface
 
         public CORINFO_OS osType;
     }
+
+    // Flags passed from JIT to runtime.
+    public enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
+    {
+        // The callsite is a callvirt instruction.
+        CORINFO_TAILCALL_IS_CALLVIRT = 0x00000001,
+    }
+
+    // Flags passed from runtime to JIT.
+    public enum CORINFO_TAILCALL_HELPERS_FLAGS
+    {
+        // The StoreArgs stub needs to be passed the target function pointer as the
+        // first argument.
+        CORINFO_TAILCALL_STORE_TARGET = 0x00000001,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct CORINFO_TAILCALL_HELPERS
+    {
+        CORINFO_TAILCALL_HELPERS_FLAGS flags;
+        CORINFO_METHOD_STRUCT_*        hStoreArgs;
+        CORINFO_METHOD_STRUCT_*        hCallTarget;
+        CORINFO_METHOD_STRUCT_*        hDispatcher;
+    };
 
     public enum CORINFO_THIS_TRANSFORM
     {

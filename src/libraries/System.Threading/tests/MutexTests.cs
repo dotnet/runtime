@@ -394,46 +394,60 @@ namespace System.Threading.Tests
 
         public static IEnumerable<object[]> CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData()
         {
-            var nameGuidStr = Guid.NewGuid().ToString("N");
             foreach (var namePrefix in GetNamePrefixes())
             {
-                yield return new object[] { namePrefix + nameGuidStr };
+                yield return new object[] { namePrefix };
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28449")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36307", TestRuntimes.Mono)]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
         {
-            ThreadTestHelpers.RunTestInBackgroundThread(() =>
+            string fileName = GetTestFilePath();
+            try
             {
-                string mutexName = prefix + Guid.NewGuid().ToString("N");
-                string fileName = GetTestFilePath();
-
-                Action<string, string> otherProcess = (m, f) =>
+                ThreadTestHelpers.RunTestInBackgroundThread(() =>
                 {
-                    using (var mutex = Mutex.OpenExisting(m))
+                    string mutexName = prefix + Guid.NewGuid().ToString("N");
+
+                    Action<string, string> otherProcess = (m, f) =>
                     {
-                        mutex.CheckedWait();
-                        try
-                        { File.WriteAllText(f, "0"); }
-                        finally { mutex.ReleaseMutex(); }
+                        using (var mutex = Mutex.OpenExisting(m))
+                        {
+                            mutex.CheckedWait();
+                            try
+                            { File.WriteAllText(f, "0"); }
+                            finally { mutex.ReleaseMutex(); }
 
-                        IncrementValueInFileNTimes(mutex, f, 10);
+                            IncrementValueInFileNTimes(mutex, f, 10);
+                        }
+                    };
+
+                    using (var mutex = new Mutex(false, mutexName))
+                    using (var remote = RemoteExecutor.Invoke(otherProcess, mutexName, fileName))
+                    {
+                        SpinWait.SpinUntil(
+                            () =>
+                            {
+                                mutex.CheckedWait();
+                                try
+                                { return File.Exists(fileName) && int.TryParse(File.ReadAllText(fileName), out _); }
+                                finally { mutex.ReleaseMutex(); }
+                            },
+                            ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+
+                        IncrementValueInFileNTimes(mutex, fileName, 10);
                     }
-                };
 
-                using (var mutex = new Mutex(false, mutexName))
-                using (var remote = RemoteExecutor.Invoke(otherProcess, mutexName, fileName))
-                {
-                    SpinWait.SpinUntil(() => File.Exists(fileName), ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
-
-                    IncrementValueInFileNTimes(mutex, fileName, 10);
-                }
-
-                Assert.Equal(20, int.Parse(File.ReadAllText(fileName)));
-            });
+                    Assert.Equal(20, int.Parse(File.ReadAllText(fileName)));
+                });
+            }
+            catch (Exception ex) when (File.Exists(fileName))
+            {
+                throw new AggregateException($"File contents: {File.ReadAllText(fileName)}", ex);
+            }
         }
 
         private static void IncrementValueInFileNTimes(Mutex mutex, string fileName, int n)
@@ -448,6 +462,103 @@ namespace System.Threading.Tests
                     File.WriteAllText(fileName, (current + 1).ToString());
                 }
                 finally { mutex.ReleaseMutex(); }
+            }
+        }
+
+        [Fact]
+        public void NamedMutex_ThreadExitDisposeRaceTest()
+        {
+            var mutexName = Guid.NewGuid().ToString("N");
+
+            for (int i = 0; i < 1000; ++i)
+            {
+                var m = new Mutex(false, mutexName);
+                var startParallelTest = new ManualResetEvent(false);
+
+                var t0Ready = new AutoResetEvent(false);
+                Thread t0 = ThreadTestHelpers.CreateGuardedThread(out Action waitForT0, () =>
+                {
+                    m.CheckedWait();
+                    t0Ready.Set();
+                    startParallelTest.CheckedWait(); // after this, exit T0
+                });
+                t0.IsBackground = true;
+
+                var t1Ready = new AutoResetEvent(false);
+                Thread t1 = ThreadTestHelpers.CreateGuardedThread(out Action waitForT1, () =>
+                {
+                    using (var m2 = Mutex.OpenExisting(mutexName))
+                    {
+                        m.Dispose();
+                        t1Ready.Set();
+                        startParallelTest.CheckedWait(); // after this, close last handle to named mutex, exit T1
+                    }
+                });
+                t1.IsBackground = true;
+
+                t0.Start();
+                t0Ready.CheckedWait(); // wait for T0 to acquire the mutex
+                t1.Start();
+                t1Ready.CheckedWait(); // wait for T1 to open the existing mutex in a new mutex object and dispose one of the two
+
+                // Release both threads at the same time. T0 will be exiting the thread, perhaps trying to abandon the mutex
+                // that is still locked by it. In parallel, T1 will be disposing the last mutex instance, which would try to
+                // destroy the mutex.
+                startParallelTest.Set();
+                waitForT0();
+                waitForT1();
+
+                // Create a new mutex object with the same name and acquire it. There can be a delay between Thread.Join() above
+                // returning and for T0 to abandon its mutex, keep trying to also verify that the mutex object is actually
+                // destroyed and created new again.
+                SpinWait.SpinUntil(() =>
+                {
+                    using (m = new Mutex(true, mutexName, out bool createdNew))
+                    {
+                        if (createdNew)
+                        {
+                            m.ReleaseMutex();
+                        }
+                        return createdNew;
+                    }
+                });
+            }
+        }
+
+        [Fact]
+        public void NamedMutex_DisposeWhenLockedRaceTest()
+        {
+            var mutexName = Guid.NewGuid().ToString("N");
+            var mutex2Name = mutexName + "_2";
+
+            var waitsForThread = new Action[Environment.ProcessorCount];
+            for (int i = 0; i < waitsForThread.Length; ++i)
+            {
+                var t = ThreadTestHelpers.CreateGuardedThread(out waitsForThread[i], () =>
+                {
+                    for (int i = 0; i < 1000; ++i)
+                    {
+                        // Create or open two mutexes with different names, acquire the lock if created, and dispose without
+                        // releasing the lock. What may occasionally happen is, one thread T0 will acquire the lock, another
+                        // thread T1 will open the same mutex, T0 will dispose its mutex while the lock is held, and T1 will
+                        // then release the last reference to the mutex. On some implementations T1 may not be able to destroy
+                        // the mutex when it is still locked by T0, or there may be potential for races in the sequence. This
+                        // test only looks for errors from race conditions.
+                        using (var mutex = new Mutex(true, mutexName))
+                        {
+                        }
+                        using (var mutex = new Mutex(true, mutex2Name))
+                        {
+                        }
+                    }
+                });
+                t.IsBackground = true;
+                t.Start();
+            }
+
+            foreach (var waitForThread in waitsForThread)
+            {
+                waitForThread();
             }
         }
 

@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class QuotaControlTests
     {
         [Fact]
@@ -20,7 +21,8 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1852", control.Type);
 
-            Assert.Equal(new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 }, control.GetValue());
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } : new byte[] { 48, 2, 4, 0 };
+            Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_QuerySid_TestData()
@@ -30,6 +32,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] //Security Identifiers only work on Windows
         [MemberData(nameof(Ctor_QuerySid_TestData))]
         public void Ctor_QuerySid_Test(SecurityIdentifier querySid, byte[] expectedValue)
         {

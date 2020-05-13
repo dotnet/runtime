@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Net.Sockets</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -236,6 +236,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.GetBytesAvailable.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainSocketSizes.cs"
              Link="Common\Interop\Unix\Interop.GetDomainSocketSizes.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetMaximumAddressSize.cs"
+             Link="Common\Interop\Unix\Interop.GetMaximumAddressSize.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerName.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetPeerName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetSocketErrorOption.cs"
@@ -309,5 +311,8 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

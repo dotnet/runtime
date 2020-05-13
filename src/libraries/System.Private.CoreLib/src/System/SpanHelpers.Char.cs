@@ -10,15 +10,6 @@ using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-using nint = System.Int64;
-#else
-using nuint = System.UInt32;
-using nint = System.Int32;
-#endif
-
 namespace System
 {
     internal static partial class SpanHelpers // .Char
@@ -54,7 +45,7 @@ namespace System
                 if (SequenceEqual(
                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + 1)),
                     ref Unsafe.As<char, byte>(ref valueTail),
-                    (nuint)valueTailLength * 2))
+                    (nuint)(uint)valueTailLength * 2))
                 {
                     return index;  // The tail matched. Return a successful find.
                 }
@@ -76,51 +67,51 @@ namespace System
             if (Unsafe.AreSame(ref first, ref second))
                 goto Equal;
 
-            IntPtr minLength = (IntPtr)((firstLength < secondLength) ? firstLength : secondLength);
-            IntPtr i = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nuint minLength = (nuint)(((uint)firstLength < (uint)secondLength) ? (uint)firstLength : (uint)secondLength);
+            nuint i = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if ((byte*)minLength >= (byte*)(sizeof(UIntPtr) / sizeof(char)))
+            if (minLength >= (nuint)(sizeof(nuint) / sizeof(char)))
             {
-                if (Vector.IsHardwareAccelerated && (byte*)minLength >= (byte*)Vector<ushort>.Count)
+                if (Vector.IsHardwareAccelerated && minLength >= (nuint)Vector<ushort>.Count)
                 {
-                    IntPtr nLength = minLength - Vector<ushort>.Count;
+                    nuint nLength = minLength - (nuint)Vector<ushort>.Count;
                     do
                     {
-                        if (Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) !=
-                            Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                        if (Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
+                            Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                         {
                             break;
                         }
-                        i += Vector<ushort>.Count;
+                        i += (nuint)Vector<ushort>.Count;
                     }
-                    while ((byte*)nLength >= (byte*)i);
+                    while (nLength >= i);
                 }
 
-                while ((byte*)minLength >= (byte*)(i + sizeof(UIntPtr) / sizeof(char)))
+                while (minLength >= (i + (nuint)(sizeof(nuint) / sizeof(char))))
                 {
-                    if (Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) !=
-                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                    if (Unsafe.ReadUnaligned<nuint> (ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
+                        Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                     {
                         break;
                     }
-                    i += sizeof(UIntPtr) / sizeof(char);
+                    i += (nuint)(sizeof(nuint) / sizeof(char));
                 }
             }
 
 #if TARGET_64BIT
-            if ((byte*)minLength >= (byte*)(i + sizeof(int) / sizeof(char)))
+            if (minLength >= (i + sizeof(int) / sizeof(char)))
             {
-                if (Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) ==
-                    Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                if (Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) ==
+                    Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                 {
                     i += sizeof(int) / sizeof(char);
                 }
             }
 #endif
 
-            while ((byte*)i < (byte*)minLength)
+            while (i < minLength)
             {
-                int result = Unsafe.Add(ref first, i).CompareTo(Unsafe.Add(ref second, i));
+                int result = Unsafe.Add(ref first, (nint)i).CompareTo(Unsafe.Add(ref second, (nint)i));
                 if (result != 0)
                     return result;
                 i += 1;
@@ -287,7 +278,7 @@ namespace System
                 if (offset < length)
                 {
                     Debug.Assert(length - offset >= Vector128<ushort>.Count);
-                    if (((nint)Unsafe.AsPointer(ref Unsafe.Add(ref searchSpace, (IntPtr)offset)) & (nint)(Vector256<byte>.Count - 1)) != 0)
+                    if (((nint)Unsafe.AsPointer(ref Unsafe.Add(ref searchSpace, (nint)offset)) & (nint)(Vector256<byte>.Count - 1)) != 0)
                     {
                         // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
                         // with no upper bound e.g. String.wcslen. Start with a check on Vector128 to align to Vector256,
@@ -1034,23 +1025,23 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector<ushort> LoadVector(ref char start, nint offset)
-            => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (IntPtr)offset)));
+        private static Vector<ushort> LoadVector(ref char start, nint offset)
+            => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector128<ushort> LoadVector128(ref char start, nint offset)
-            => Unsafe.ReadUnaligned<Vector128<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (IntPtr)offset)));
+        private static Vector128<ushort> LoadVector128(ref char start, nint offset)
+            => Unsafe.ReadUnaligned<Vector128<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector256<ushort> LoadVector256(ref char start, nint offset)
-            => Unsafe.ReadUnaligned<Vector256<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (IntPtr)offset)));
+        private static Vector256<ushort> LoadVector256(ref char start, nint offset)
+            => Unsafe.ReadUnaligned<Vector256<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint GetCharVectorSpanLength(nint offset, nint length)
+        private static nint GetCharVectorSpanLength(nint offset, nint length)
             => (length - offset) & ~(Vector<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint GetCharVector128SpanLength(nint offset, nint length)
+        private static nint GetCharVector128SpanLength(nint offset, nint length)
             => (length - offset) & ~(Vector128<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -44,13 +45,13 @@ namespace System.Xml
     public abstract partial class XmlWriter : IDisposable
     {
         // Helper buffer for WriteNode(XmlReader, bool)
-        private char[] _writeNodeBuffer;
+        private char[]? _writeNodeBuffer;
 
         // Constants
         private const int WriteNodeBufferSize = 1024;
 
         // Returns the settings describing the features of the writer. Returns null for V1 XmlWriters (XmlTextWriter).
-        public virtual XmlWriterSettings Settings
+        public virtual XmlWriterSettings? Settings
         {
             get
             {
@@ -73,22 +74,22 @@ namespace System.Xml
 
         // Writes out the DOCTYPE declaration with the specified name and optional attributes.
 
-        public abstract void WriteDocType(string name, string pubid, string sysid, string subset);
+        public abstract void WriteDocType(string name, string? pubid, string? sysid, string? subset);
 
         // Writes out the specified start tag and associates it with the given namespace.
-        public void WriteStartElement(string localName, string ns)
+        public void WriteStartElement(string localName, string? ns)
         {
             WriteStartElement(null, localName, ns);
         }
 
         // Writes out the specified start tag and associates it with the given namespace and prefix.
 
-        public abstract void WriteStartElement(string prefix, string localName, string ns);
+        public abstract void WriteStartElement(string? prefix, string localName, string? ns);
 
         // Writes out a start tag with the specified local name with no namespace.
         public void WriteStartElement(string localName)
         {
-            WriteStartElement(null, localName, (string)null);
+            WriteStartElement(null, localName, (string?)null);
         }
 
         // Closes one element and pops the corresponding namespace scope.
@@ -100,7 +101,7 @@ namespace System.Xml
         public abstract void WriteFullEndElement();
 
         // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
-        public void WriteAttributeString(string localName, string ns, string value)
+        public void WriteAttributeString(string localName, string? ns, string value)
         {
             WriteStartAttribute(null, localName, ns);
             WriteString(value);
@@ -110,13 +111,13 @@ namespace System.Xml
         // Writes out the attribute with the specified LocalName and value.
         public void WriteAttributeString(string localName, string value)
         {
-            WriteStartAttribute(null, localName, (string)null);
+            WriteStartAttribute(null, localName, (string?)null);
             WriteString(value);
             WriteEndAttribute();
         }
 
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public void WriteAttributeString(string prefix, string localName, string ns, string value)
+        public void WriteAttributeString(string? prefix, string localName, string? ns, string value)
         {
             WriteStartAttribute(prefix, localName, ns);
             WriteString(value);
@@ -124,19 +125,19 @@ namespace System.Xml
         }
 
         // Writes the start of an attribute.
-        public void WriteStartAttribute(string localName, string ns)
+        public void WriteStartAttribute(string localName, string? ns)
         {
             WriteStartAttribute(null, localName, ns);
         }
 
         // Writes the start of an attribute.
 
-        public abstract void WriteStartAttribute(string prefix, string localName, string ns);
+        public abstract void WriteStartAttribute(string? prefix, string localName, string? ns);
 
         // Writes the start of an attribute.
         public void WriteStartAttribute(string localName)
         {
-            WriteStartAttribute(null, localName, (string)null);
+            WriteStartAttribute(null, localName, (string?)null);
         }
 
         // Closes the attribute opened by WriteStartAttribute call.
@@ -145,7 +146,7 @@ namespace System.Xml
 
         // Writes out a <![CDATA[...]]>; block containing the specified text.
 
-        public abstract void WriteCData(string text);
+        public abstract void WriteCData(string? text);
 
         // Writes out a comment <!--...-->; containing the specified text.
 
@@ -169,7 +170,7 @@ namespace System.Xml
 
         // Writes out the specified text content.
 
-        public abstract void WriteString(string text);
+        public abstract void WriteString(string? text);
 
         // Write out the given surrogate pair as an entity reference.
 
@@ -208,7 +209,7 @@ namespace System.Xml
         public abstract void Flush();
 
         // Returns the closest prefix defined in the current namespace scope for the specified namespace URI.
-        public abstract string LookupPrefix(string ns);
+        public abstract string? LookupPrefix(string ns);
 
         // Gets an XmlSpace representing the current xml:space scope.
         public virtual XmlSpace XmlSpace
@@ -220,7 +221,7 @@ namespace System.Xml
         }
 
         // Gets the current xml:lang scope.
-        public virtual string XmlLang
+        public virtual string? XmlLang
         {
             get
             {
@@ -249,11 +250,11 @@ namespace System.Xml
         }
 
         // Writes out the specified namespace-qualified name by looking up the prefix that is in scope for the given namespace.
-        public virtual void WriteQualifiedName(string localName, string ns)
+        public virtual void WriteQualifiedName(string localName, string? ns)
         {
             if (ns != null && ns.Length > 0)
             {
-                string prefix = LookupPrefix(ns);
+                string? prefix = LookupPrefix(ns);
                 if (prefix == null)
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
@@ -275,12 +276,13 @@ namespace System.Xml
         }
 
         // Writes out the specified value.
-        public virtual void WriteValue(string value)
+        public virtual void WriteValue(string? value)
         {
             if (value == null)
             {
                 return;
             }
+
             WriteString(value);
         }
 
@@ -590,30 +592,32 @@ namespace System.Xml
         // Element Helper Methods
 
         // Writes out an element with the specified name containing the specified string value.
-        public void WriteElementString(string localName, string value)
+        public void WriteElementString(string localName, string? value)
         {
             WriteElementString(localName, null, value);
         }
 
         // Writes out an attribute with the specified name, namespace URI and string value.
-        public void WriteElementString(string localName, string ns, string value)
+        public void WriteElementString(string localName, string? ns, string? value)
         {
             WriteStartElement(localName, ns);
             if (null != value && 0 != value.Length)
             {
                 WriteString(value);
             }
+
             WriteEndElement();
         }
 
         // Writes out an attribute with the specified name, namespace URI, and string value.
-        public void WriteElementString(string prefix, string localName, string ns, string value)
+        public void WriteElementString(string? prefix, string localName, string? ns, string? value)
         {
             WriteStartElement(prefix, localName, ns);
             if (null != value && 0 != value.Length)
             {
                 WriteString(value);
             }
+
             WriteEndElement();
         }
 
@@ -681,7 +685,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided file with the specified settings.
-        public static XmlWriter Create(string outputFileName, XmlWriterSettings settings)
+        public static XmlWriter Create(string outputFileName, XmlWriterSettings? settings)
         {
             settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(outputFileName);
@@ -703,7 +707,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided stream with the specified settings.
-        public static XmlWriter Create(Stream output, XmlWriterSettings settings)
+        public static XmlWriter Create(Stream output, XmlWriterSettings? settings)
         {
             settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(output);
@@ -725,7 +729,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided TextWriter with the specified settings.
-        public static XmlWriter Create(TextWriter output, XmlWriterSettings settings)
+        public static XmlWriter Create(TextWriter output, XmlWriterSettings? settings)
         {
             settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(output);
@@ -745,7 +749,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided StringBuilder with the specified settings.
-        public static XmlWriter Create(StringBuilder output, XmlWriterSettings settings)
+        public static XmlWriter Create(StringBuilder output, XmlWriterSettings? settings)
         {
             if (output == null)
             {
@@ -763,7 +767,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter wrapped around the provided XmlWriter with the specified settings.
-        public static XmlWriter Create(XmlWriter output, XmlWriterSettings settings)
+        public static XmlWriter Create(XmlWriter output, XmlWriterSettings? settings)
         {
             settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(output);

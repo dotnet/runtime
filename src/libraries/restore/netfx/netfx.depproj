@@ -23,13 +23,6 @@
    <_ShortFrameworkIdentifier>$(TargetFramework.TrimEnd('.0123456789'))</_ShortFrameworkIdentifier>
    <_ShortFrameworkVersion>$(TargetFramework.Substring($(_ShortFrameworkIdentifier.Length)))</_ShortFrameworkVersion>
   </PropertyGroup>
-  
-  <!-- Map short name to long name. See earlier comment for example of how to work with identifiers that are not recognized here. -->
-  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == ''">
-    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'netstandard'">.NETStandard</TargetFrameworkIdentifier>
-    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'netcoreapp'">.NETCoreApp</TargetFrameworkIdentifier>
-    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'net'">.NETFramework</TargetFrameworkIdentifier>
-  </PropertyGroup>
 
   <!-- Versions with dots are taken as is and just given leading 'v'. -->
   <PropertyGroup Condition="'$(TargetFrameworkVersion)' == '' and '$(_ShortFrameworkVersion)' != '' and $(_ShortFrameworkVersion.Contains('.'))">
@@ -43,18 +36,32 @@
     <TargetFrameworkVersion Condition="$(_ShortFrameworkVersion.Length) == 3">v$(_ShortFrameworkVersion[0]).$(_ShortFrameworkVersion[1]).$(_ShortFrameworkVersion[2])</TargetFrameworkVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <!-- Map short name to long name. See earlier comment for example of how to work with identifiers that are not recognized here. -->
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == ''">
+    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'netstandard'">.NETStandard</TargetFrameworkIdentifier>
+    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'netcoreapp'">.NETCoreApp</TargetFrameworkIdentifier>
+
+    <!-- The meaning of "net" as a short framework name depends on the version.  If it's 4.x or less, it means .NETFramework.
+         If the version is 5.0 or higher, then "net" means .NET 5.0 and on, which is the evolution of .NET Core, and uses
+         the .NETCoreApp TargetFrameworkIdentifier. -->
+    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'net' And
+                                          $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0'))">.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'net' And
+                                          $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '5.0'))">.NETCoreApp</TargetFrameworkIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.$(TargetFrameworkVersion)</TargetingPackNugetPackageId>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- For things not .NETFramework binplace to the NETFX ref path -->
-    <BinPlaceTargetFrameworks Condition="'$(TargetsNetFx)' != 'true'" Include="$(TargetFramework)">
+    <BinPlaceTargetFrameworks Condition="!$(TargetFramework.StartsWith('net4'))" Include="$(TargetFramework)">
       <RefPath>$(NetFxRefPath)</RefPath>
     </BinPlaceTargetFrameworks>
 
     <!-- For things .NETFramework binplace to refpath -->
-    <BinPlaceTargetFrameworks Condition="'$(TargetsNetFx)' == 'true'" Include="$(TargetFramework)">
+    <BinPlaceTargetFrameworks Condition="$(TargetFramework.StartsWith('net4'))" Include="$(TargetFramework)">
       <RefPath>$(RefPath)</RefPath>
     </BinPlaceTargetFrameworks>
   </ItemGroup>

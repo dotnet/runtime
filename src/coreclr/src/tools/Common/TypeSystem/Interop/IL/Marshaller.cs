@@ -909,7 +909,7 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitMarshalArgumentNativeToManaged()
         {
-            if (Out)
+            if (Out && !IsNativeByRef)
             {
                 base.EmitMarshalArgumentNativeToManaged();
             }

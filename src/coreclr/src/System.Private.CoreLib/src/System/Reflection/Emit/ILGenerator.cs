@@ -40,20 +40,20 @@ namespace System.Reflection.Emit
         private int m_length;
         private byte[] m_ILStream;
 
-        private int[] m_labelList;
+        private int[]? m_labelList;
         private int m_labelCount;
 
-        private __FixupData[] m_fixupData;
+        private __FixupData[]? m_fixupData;
 
         private int m_fixupCount;
 
-        private int[] m_RelocFixupList;
+        private int[]? m_RelocFixupList;
         private int m_RelocFixupCount;
 
         private int m_exceptionCount;
         private int m_currExcStackCount;
-        private __ExceptionInfo[] m_exceptions;           // This is the list of all of the exceptions in this ILStream.
-        private __ExceptionInfo[] m_currExcStack;         // This is the stack of exceptions which we're currently in.
+        private __ExceptionInfo[]? m_exceptions;           // This is the list of all of the exceptions in this ILStream.
+        private __ExceptionInfo[]? m_currExcStack;         // This is the stack of exceptions which we're currently in.
 
         internal ScopeTree m_ScopeTree;            // this variable tracks all debugging scope information
         internal LineNumberInfo m_LineNumberInfo;       // this variable tracks all line number information
@@ -69,7 +69,7 @@ namespace System.Reflection.Emit
 
         internal int CurrExcStackCount => m_currExcStackCount;
 
-        internal __ExceptionInfo[] CurrExcStack => m_currExcStack;
+        internal __ExceptionInfo[]? CurrExcStack => m_currExcStack;
 
         #endregion
 
@@ -87,29 +87,12 @@ namespace System.Reflection.Emit
 
             m_ILStream = new byte[Math.Max(size, DefaultSize)];
 
-            m_length = 0;
-
-            m_labelCount = 0;
-            m_fixupCount = 0;
-            m_labelList = null!;
-
-            m_fixupData = null!;
-
-            m_exceptions = null!;
-            m_exceptionCount = 0;
-            m_currExcStack = null!;
-            m_currExcStackCount = 0;
-
-            m_RelocFixupList = null!;
-            m_RelocFixupCount = 0;
-
             // initialize the scope tree
             m_ScopeTree = new ScopeTree();
             m_LineNumberInfo = new LineNumberInfo();
             m_methodBuilder = methodBuilder;
 
             // initialize local signature
-            m_localCount = 0;
             MethodBuilder? mb = m_methodBuilder as MethodBuilder;
             m_localSignature = SignatureHelper.GetLocalVarSigHelper(mb?.GetTypeBuilder().Module);
         }
@@ -215,7 +198,7 @@ namespace System.Reflection.Emit
             // replacing them with their proper values.
             for (int i = 0; i < m_fixupCount; i++)
             {
-                __FixupData fixupData = m_fixupData[i];
+                __FixupData fixupData = m_fixupData![i];
                 int updateAddr = GetLabelPos(fixupData.m_fixupLabel) - (fixupData.m_fixupPos + fixupData.m_fixupInstSize);
 
                 // Handle single byte instructions
@@ -253,7 +236,7 @@ namespace System.Reflection.Emit
             }
 
             var temp = new __ExceptionInfo[m_exceptionCount];
-            Array.Copy(m_exceptions, temp, m_exceptionCount);
+            Array.Copy(m_exceptions!, temp, m_exceptionCount);
             SortExceptions(temp);
             return temp;
         }
@@ -288,7 +271,7 @@ namespace System.Reflection.Emit
 
             int index = lbl.GetLabelValue();
 
-            if (index < 0 || index >= m_labelCount)
+            if (index < 0 || index >= m_labelCount || m_labelList is null)
                 throw new ArgumentException(SR.Argument_BadLabel);
 
             if (m_labelList[index] < 0)
@@ -355,7 +338,7 @@ namespace System.Reflection.Emit
             }
 
             int[] narrowTokens = new int[m_RelocFixupCount];
-            Array.Copy(m_RelocFixupList, narrowTokens, m_RelocFixupCount);
+            Array.Copy(m_RelocFixupList!, narrowTokens, m_RelocFixupCount);
             return narrowTokens;
         }
         #endregion
@@ -964,7 +947,7 @@ namespace System.Reflection.Emit
             }
 
             // Pop the current exception block
-            __ExceptionInfo current = m_currExcStack[m_currExcStackCount - 1];
+            __ExceptionInfo current = m_currExcStack![m_currExcStackCount - 1];
             m_currExcStack[--m_currExcStackCount] = null!;
 
             Label endLabel = current.GetEndLabel();
@@ -988,7 +971,7 @@ namespace System.Reflection.Emit
             // Check if we've already set this label.
             // The only reason why we might have set this is if we have a finally block.
 
-            Label label = m_labelList[endLabel.GetLabelValue()] != -1
+            Label label = m_labelList![endLabel.GetLabelValue()] != -1
                 ? current.m_finallyEndLabel
                 : endLabel;
 
@@ -1004,7 +987,7 @@ namespace System.Reflection.Emit
             if (m_currExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
-            __ExceptionInfo current = m_currExcStack[m_currExcStackCount - 1];
+            __ExceptionInfo current = m_currExcStack![m_currExcStackCount - 1];
 
             Emit(OpCodes.Leave, current.GetEndLabel());
 
@@ -1019,7 +1002,7 @@ namespace System.Reflection.Emit
             {
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             }
-            __ExceptionInfo current = m_currExcStack[m_currExcStackCount - 1];
+            __ExceptionInfo current = m_currExcStack![m_currExcStackCount - 1];
 
             if (current.GetCurrentState() == __ExceptionInfo.State_Filter)
             {
@@ -1050,7 +1033,7 @@ namespace System.Reflection.Emit
             {
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             }
-            __ExceptionInfo current = m_currExcStack[m_currExcStackCount - 1];
+            __ExceptionInfo current = m_currExcStack![m_currExcStackCount - 1];
 
             // emit the leave for the clause before this one.
             Emit(OpCodes.Leave, current.GetEndLabel());
@@ -1064,7 +1047,7 @@ namespace System.Reflection.Emit
             {
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             }
-            __ExceptionInfo current = m_currExcStack[m_currExcStackCount - 1];
+            __ExceptionInfo current = m_currExcStack![m_currExcStackCount - 1];
             int state = current.GetCurrentState();
             Label endLabel = current.GetEndLabel();
             int catchEndAddr = 0;
@@ -1114,8 +1097,8 @@ namespace System.Reflection.Emit
 
             int labelIndex = loc.GetLabelValue();
 
-            // This should never happen.
-            if (labelIndex < 0 || labelIndex >= m_labelList.Length)
+            // This should only happen if a label from another generator is used with this one.
+            if (m_labelList is null || labelIndex < 0 || labelIndex >= m_labelList.Length)
             {
                 throw new ArgumentException(SR.Argument_InvalidLabel);
             }

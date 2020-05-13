@@ -745,7 +745,7 @@ public:
 
 #define GTF_UNSIGNED    0x00008000 // With GT_CAST:   the source operand is an unsigned type
                                    // With operators: the specified node is an unsigned operator
-                                   // 
+                                   //
 #define GTF_LATE_ARG    0x00010000 // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
 #define GTF_SPILL       0x00020000 // Needs to be spilled here
 
@@ -813,6 +813,8 @@ public:
 #define GTF_CALL_NULLCHECK          0x08000000 // GT_CALL -- must check instance pointer for null
 #define GTF_CALL_POP_ARGS           0x04000000 // GT_CALL -- caller pop arguments?
 #define GTF_CALL_HOISTABLE          0x02000000 // GT_CALL -- call is hoistable
+
+#define GTF_MEMORYBARRIER_LOAD      0x40000000 // GT_MEMORYBARRIER -- Load barrier
 
 #define GTF_NOP_DEATH               0x40000000 // GT_NOP -- operand dies here
 
@@ -912,6 +914,9 @@ public:
 
 #define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
                                                //            even if they have been retyped as SIMD16.
+
+#define GTF_SIMDASHW_OP             0x80000000 // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
+                                               //                   rarther than from gtGetStructHandleForHWSIMD.
 
 //---------------------------------------------------------------------
 //
@@ -1641,6 +1646,7 @@ public:
     inline bool IsFPZero();
     inline bool IsIntegralConst(ssize_t constVal);
     inline bool IsIntegralConstVector(ssize_t constVal);
+    inline bool IsSIMDZero();
 
     inline bool IsBoxedValue();
 
@@ -3712,6 +3718,66 @@ public:
     regMaskTP GetABIReturnRegs();
 };
 
+class TailCallSiteInfo
+{
+    bool                   m_isCallvirt : 1;
+    bool                   m_isCalli : 1;
+    CORINFO_SIG_INFO       m_sig;
+    CORINFO_RESOLVED_TOKEN m_token;
+
+public:
+    // Is the tailcall a callvirt instruction?
+    bool IsCallvirt()
+    {
+        return m_isCallvirt;
+    }
+
+    // Is the tailcall a calli instruction?
+    bool IsCalli()
+    {
+        return m_isCalli;
+    }
+
+    // Get the token of the callee
+    CORINFO_RESOLVED_TOKEN* GetToken()
+    {
+        assert(!IsCalli());
+        return &m_token;
+    }
+
+    // Get the signature of the callee
+    CORINFO_SIG_INFO* GetSig()
+    {
+        return &m_sig;
+    }
+
+    // Mark the tailcall as a calli with the given signature
+    void SetCalli(CORINFO_SIG_INFO* sig)
+    {
+        m_isCallvirt = false;
+        m_isCalli    = true;
+        m_sig        = *sig;
+    }
+
+    // Mark the tailcall as a callvirt with the given signature and token
+    void SetCallvirt(CORINFO_SIG_INFO* sig, CORINFO_RESOLVED_TOKEN* token)
+    {
+        m_isCallvirt = true;
+        m_isCalli    = false;
+        m_sig        = *sig;
+        m_token      = *token;
+    }
+
+    // Mark the tailcall as a call with the given signature and token
+    void SetCall(CORINFO_SIG_INFO* sig, CORINFO_RESOLVED_TOKEN* token)
+    {
+        m_isCallvirt = false;
+        m_isCalli    = false;
+        m_sig        = *sig;
+        m_token      = *token;
+    }
+};
+
 class fgArgInfo;
 
 struct GenTreeCall final : public GenTree
@@ -3843,9 +3909,12 @@ struct GenTreeCall final : public GenTree
     regList regArgList;
 #endif
 
-    // TODO-Throughput: Revisit this (this used to be only defined if
-    // FEATURE_FIXED_OUT_ARGS was enabled, so this makes GenTreeCall 4 bytes bigger on x86).
-    CORINFO_SIG_INFO* callSig; // Used by tail calls and to register callsites with the EE
+#ifdef DEBUG
+    // Used to register callsites with the EE
+    CORINFO_SIG_INFO* callSig;
+#endif
+
+    TailCallSiteInfo* tailCallInfo;
 
 #if FEATURE_MULTIREG_RET
 
@@ -4049,7 +4118,7 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_NONVIRT_SAME_THIS       0x00000080 // GT_CALL -- callee "this" pointer is
                                                       // equal to caller this pointer (only for GTF_CALL_NONVIRT)
 #define GTF_CALL_M_FRAME_VAR_DEATH         0x00000100 // GT_CALL -- the compLvFrameListRoot variable dies here (last use)
-#define GTF_CALL_M_TAILCALL_VIA_HELPER     0x00000200 // GT_CALL -- call is a tail call dispatched via tail call JIT helper.
+#define GTF_CALL_M_TAILCALL_VIA_JIT_HELPER 0x00000200 // GT_CALL -- call is a tail call dispatched via tail call JIT helper.
 
 #if FEATURE_TAILCALL_OPT
 #define GTF_CALL_M_IMPLICIT_TAILCALL       0x00000400 // GT_CALL -- call is an opportunistic
@@ -4194,15 +4263,26 @@ struct GenTreeCall final : public GenTree
         return IsTailPrefixedCall() || IsImplicitTailCall();
     }
 
-    bool IsTailCallViaHelper() const
+    // Check whether this is a tailcall dispatched via JIT helper. We only use
+    // this mechanism on x86 as it is faster than our other more general
+    // tailcall mechanism.
+    bool IsTailCallViaJitHelper() const
     {
-        return IsTailCall() && (gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER);
+#ifdef TARGET_X86
+        return IsTailCall() && (gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER);
+#else
+        return false;
+#endif
     }
 
 #if FEATURE_FASTTAILCALL
     bool IsFastTailCall() const
     {
-        return IsTailCall() && !(gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER);
+#ifdef TARGET_X86
+        return IsTailCall() && !(gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER);
+#else
+        return IsTailCall();
+#endif
     }
 #else  // !FEATURE_FASTTAILCALL
     bool IsFastTailCall() const
@@ -4552,6 +4632,10 @@ struct GenTreeFptrVal : public GenTree
 
     GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth)
     {
+#ifdef FEATURE_READYTORUN_COMPILER
+        gtEntryPoint.addr       = nullptr;
+        gtEntryPoint.accessType = IAT_VALUE;
+#endif
     }
 #if DEBUGGABLE_GENTREE
     GenTreeFptrVal() : GenTree()
@@ -6681,6 +6765,25 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
         assert(varTypeIsIntegral(AsSIMD()->gtSIMDBaseType));
         assert(gtGetOp2IfPresent() == nullptr);
         return true;
+    }
+#endif
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsSIMDZero: returns true if this this is a SIMD vector
+// with all its elements equal to zero.
+//
+// Returns:
+//     True if this represents an integral const SIMD vector.
+//
+inline bool GenTree::IsSIMDZero()
+{
+#ifdef FEATURE_SIMD
+    if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit))
+    {
+        return (gtGetOp1()->IsIntegralConst(0) || gtGetOp1()->IsFPZero());
     }
 #endif
 

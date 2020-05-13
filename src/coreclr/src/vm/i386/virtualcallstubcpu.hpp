@@ -350,8 +350,11 @@ struct ResolveHolder
 
     void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
-                     void * cacheAddr, INT32 * counterAddr,
-                     size_t stackArgumentsSize);
+                     void * cacheAddr, INT32 * counterAddr
+#ifndef UNIX_X86_ABI
+                     , size_t stackArgumentsSize
+#endif
+                     );
 
     ResolveStub* stub()      { LIMITED_METHOD_CONTRACT;  return &_stub; }
 
@@ -693,11 +696,16 @@ extern "C" void STDCALL JIT_TailCallReturnFromVSD();
 PCODE StubCallSite::GetCallerAddress()
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef UNIX_X86_ABI
+    return m_returnAddr;
+#else // UNIX_X86_ABI
     if (m_returnAddr != (PCODE)JIT_TailCallReturnFromVSD)
         return m_returnAddr;
 
     // Find the tailcallframe in the frame chain and get the actual caller from the first TailCallFrame
     return TailCallFrame::FindTailCallFrame(GetThread()->GetFrame())->GetCallerAddress();
+#endif // UNIX_X86_ABI
 }
 
 #ifdef STUB_LOGGING
@@ -938,8 +946,11 @@ void ResolveHolder::InitializeStatic()
 
 void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
-                                void * cacheAddr, INT32 * counterAddr,
-                                size_t stackArgumentsSize)
+                                void * cacheAddr, INT32 * counterAddr
+#ifndef UNIX_X86_ABI
+                                , size_t stackArgumentsSize
+#endif
+                                )
 {
     _stub = resolveInit;
 

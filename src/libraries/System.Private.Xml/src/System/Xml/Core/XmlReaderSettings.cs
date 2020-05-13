@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.IO;
 using System.Diagnostics;
 using System.Globalization;
@@ -23,10 +24,10 @@ namespace System.Xml
 
 
         // Nametable
-        private XmlNameTable _nameTable;
+        private XmlNameTable? _nameTable;
 
         // XmlResolver
-        private XmlResolver _xmlResolver = null;
+        private XmlResolver? _xmlResolver = null;
 
         // Text settings
         private int _lineNumberOffset;
@@ -50,8 +51,8 @@ namespace System.Xml
         //Validation settings
         private ValidationType _validationType;
         private XmlSchemaValidationFlags _validationFlags;
-        private XmlSchemaSet _schemas;
-        private ValidationEventHandler _valEventHandler;
+        private XmlSchemaSet? _schemas;
+        private ValidationEventHandler? _valEventHandler;
 
         // other settings
         private bool _closeInput;
@@ -62,8 +63,8 @@ namespace System.Xml
         // Creation of validating readers is hidden behind a delegate which is only initialized if the ValidationType
         // property is set. This is for AOT builds where the tree shaker can reduce the validating readers away
         // if nobody calls the ValidationType setter. Might also help with non-AOT build when ILLinker is used.
-        private delegate XmlReader AddValidationFunc(XmlReader reader, XmlResolver resolver, bool addConformanceWrapper);
-        private AddValidationFunc _addValidationFunc;
+        private delegate XmlReader AddValidationFunc(XmlReader reader, XmlResolver? resolver, bool addConformanceWrapper);
+        private AddValidationFunc? _addValidationFunc;
 
         //
         // Constructor
@@ -91,7 +92,7 @@ namespace System.Xml
         }
 
         // Nametable
-        public XmlNameTable NameTable
+        public XmlNameTable? NameTable
         {
             get
             {
@@ -111,7 +112,7 @@ namespace System.Xml
             set; // keep set internal as we need to call it from the schema validation code
         }
 
-        public XmlResolver XmlResolver
+        public XmlResolver? XmlResolver
         {
             set
             {
@@ -121,7 +122,7 @@ namespace System.Xml
             }
         }
 
-        internal XmlResolver GetXmlResolver()
+        internal XmlResolver? GetXmlResolver()
         {
             return _xmlResolver;
         }
@@ -129,7 +130,7 @@ namespace System.Xml
         //This is used by get XmlResolver in Xsd.
         //Check if the config set to prohibit default resovler
         //notice we must keep GetXmlResolver() to avoid dead lock when init System.Config.ConfigurationManager
-        internal XmlResolver GetXmlResolver_CheckConfig()
+        internal XmlResolver? GetXmlResolver_CheckConfig()
         {
             if (!LocalAppContextSwitches.AllowDefaultResolver && !IsXmlResolverSet)
                 return null;
@@ -401,7 +402,7 @@ namespace System.Xml
 
         public XmlReaderSettings Clone()
         {
-            XmlReaderSettings clonedSettings = this.MemberwiseClone() as XmlReaderSettings;
+            XmlReaderSettings clonedSettings = (this.MemberwiseClone() as XmlReaderSettings)!;
             clonedSettings.ReadOnly = false;
             return clonedSettings;
         }
@@ -409,12 +410,12 @@ namespace System.Xml
         //
         // Internal methods
         //
-        internal ValidationEventHandler GetEventHandler()
+        internal ValidationEventHandler? GetEventHandler()
         {
             return _valEventHandler;
         }
 
-        internal XmlReader CreateReader(string inputUri, XmlParserContext inputContext)
+        internal XmlReader CreateReader(string inputUri, XmlParserContext? inputContext)
         {
             if (inputUri == null)
             {
@@ -445,12 +446,13 @@ namespace System.Xml
             return reader;
         }
 
-        internal XmlReader CreateReader(Stream input, Uri baseUri, string baseUriString, XmlParserContext inputContext)
+        internal XmlReader CreateReader(Stream input, Uri? baseUri, string? baseUriString, XmlParserContext? inputContext)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
+
             if (baseUriString == null)
             {
                 if (baseUri == null)
@@ -480,12 +482,13 @@ namespace System.Xml
             return reader;
         }
 
-        internal XmlReader CreateReader(TextReader input, string baseUriString, XmlParserContext inputContext)
+        internal XmlReader CreateReader(TextReader input, string? baseUriString, XmlParserContext? inputContext)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
+
             if (baseUriString == null)
             {
                 baseUriString = string.Empty;
@@ -514,6 +517,7 @@ namespace System.Xml
             {
                 throw new ArgumentNullException(nameof(reader));
             }
+
             return AddValidationAndConformanceWrapper(reader);
         }
 
@@ -545,7 +549,7 @@ namespace System.Xml
             Initialize(null);
         }
 
-        private void Initialize(XmlResolver resolver)
+        private void Initialize(XmlResolver? resolver)
         {
             _nameTable = null;
             _xmlResolver = resolver;
@@ -579,7 +583,7 @@ namespace System.Xml
 
         internal XmlReader AddValidation(XmlReader reader)
         {
-            XmlResolver resolver = null;
+            XmlResolver? resolver = null;
             if (_validationType == ValidationType.Schema)
             {
                 resolver = GetXmlResolver_CheckConfig();
@@ -596,7 +600,7 @@ namespace System.Xml
 
         private XmlReader AddValidationAndConformanceWrapper(XmlReader reader)
         {
-            XmlResolver resolver = null;
+            XmlResolver? resolver = null;
             if (_validationType == ValidationType.Schema)
             {
                 resolver = GetXmlResolver_CheckConfig();
@@ -605,7 +609,7 @@ namespace System.Xml
             return AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: true);
         }
 
-        private XmlReader AddValidationAndConformanceInternal(XmlReader reader, XmlResolver resolver, bool addConformanceWrapper)
+        private XmlReader AddValidationAndConformanceInternal(XmlReader reader, XmlResolver? resolver, bool addConformanceWrapper)
         {
             // We have to avoid calling the _addValidationFunc delegate if there's no validation to setup
             // since it would not be initialized (to allow AOT compilers to reduce it away).
@@ -621,13 +625,14 @@ namespace System.Xml
             }
             else
             {
+                Debug.Assert(_addValidationFunc != null);
                 reader = _addValidationFunc(reader, resolver, addConformanceWrapper);
             }
 
             return reader;
         }
 
-        private XmlReader AddValidationInternal(XmlReader reader, XmlResolver resolver, bool addConformanceWrapper)
+        private XmlReader AddValidationInternal(XmlReader reader, XmlResolver? resolver, bool addConformanceWrapper)
         {
             // wrap with DTD validating reader
             if (_validationType == ValidationType.DTD)
@@ -646,6 +651,7 @@ namespace System.Xml
             {
                 reader = new XsdValidatingReader(reader, GetXmlResolver_CheckConfig(), this);
             }
+
             return reader;
         }
 
@@ -656,7 +662,7 @@ namespace System.Xml
 
         internal XmlReader AddConformanceWrapper(XmlReader baseReader)
         {
-            XmlReaderSettings baseReaderSettings = baseReader.Settings;
+            XmlReaderSettings? baseReaderSettings = baseReader.Settings;
             bool checkChars = false;
             bool noWhitespace = false;
             bool noComments = false;
@@ -674,10 +680,10 @@ namespace System.Xml
                 }
 
                 // get the V1 XmlTextReader ref
-                XmlTextReader v1XmlTextReader = baseReader as XmlTextReader;
+                XmlTextReader? v1XmlTextReader = baseReader as XmlTextReader;
                 if (v1XmlTextReader == null)
                 {
-                    XmlValidatingReader vr = baseReader as XmlValidatingReader;
+                    XmlValidatingReader? vr = baseReader as XmlValidatingReader;
                     if (vr != null)
                     {
                         v1XmlTextReader = (XmlTextReader)vr.Reader;
@@ -762,7 +768,7 @@ namespace System.Xml
 
             if (needWrap)
             {
-                IXmlNamespaceResolver readerAsNSResolver = baseReader as IXmlNamespaceResolver;
+                IXmlNamespaceResolver? readerAsNSResolver = baseReader as IXmlNamespaceResolver;
                 if (readerAsNSResolver != null)
                 {
                     return new XmlCharCheckingReaderWithNS(baseReader, readerAsNSResolver, checkChars, noWhitespace, noComments, noPIs, dtdProc);

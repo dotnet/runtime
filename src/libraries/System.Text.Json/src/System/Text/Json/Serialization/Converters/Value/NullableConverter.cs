@@ -17,6 +17,8 @@ namespace System.Text.Json.Serialization
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            // We do not check _converter.HandleNull, as the underlying struct cannot be null.
+            // A custom converter for some type T? can handle null.
             if (reader.TokenType == JsonTokenType.Null)
             {
                 return null;
@@ -30,6 +32,8 @@ namespace System.Text.Json.Serialization
         {
             if (!value.HasValue)
             {
+                // We do not check _converter.HandleNull, as the underlying struct cannot be null.
+                // A custom converter for some type T? can handle null.
                 writer.WriteNullValue();
             }
             else

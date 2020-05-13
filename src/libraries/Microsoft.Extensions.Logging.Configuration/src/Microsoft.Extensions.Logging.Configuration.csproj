@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
@@ -10,7 +10,7 @@
              Link="Common\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.Runtime" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.14.5)
 
 project(%ProjectName%)
+enable_language(OBJC ASM)
 
 set(APP_RESOURCES
 %AppResources%
@@ -15,11 +16,13 @@ add_executable(
     ${APP_RESOURCES}
 )
 
+%AotSources%
+
 include_directories("%MonoInclude%")
 
 set_target_properties(%ProjectName% PROPERTIES
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
     XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
     XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING "NO"
     RESOURCE "${APP_RESOURCES}"

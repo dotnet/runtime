@@ -22,4 +22,8 @@
 #include <htmlhelp.h>
 #include <conio.h>
 
+#ifndef Debug_ReportError
+#define Debug_ReportError(strMessage)
+#endif
+
 #endif

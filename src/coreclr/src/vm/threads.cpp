@@ -54,6 +54,65 @@
 #include "eventpipebuffermanager.h"
 #endif // FEATURE_PERFTRACING
 
+static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
+
+TailCallTls::TailCallTls()
+    // A new frame will always be allocated before the frame is modified,
+    // so casting away const is ok here.
+    : m_frame(const_cast<PortableTailCallFrame*>(&g_sentinelTailCallFrame))
+    , m_argBuffer(NULL)
+    , m_argBufferSize(0)
+    , m_argBufferGCDesc(NULL)
+{
+}
+
+void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    _ASSERTE(m_argBuffer == NULL);
+
+    if (size > sizeof(m_argBufferInline))
+    {
+        m_argBuffer = new (nothrow) char[size];
+        if (m_argBuffer == NULL)
+            return NULL;
+    }
+    else
+        m_argBuffer = m_argBufferInline;
+
+    if (gcDesc != NULL)
+    {
+        memset(m_argBuffer, 0, size);
+        m_argBufferGCDesc = gcDesc;
+    }
+
+    m_argBufferSize = size;
+
+    return m_argBuffer;
+}
+
+void TailCallTls::FreeArgBuffer()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    if (m_argBufferSize > sizeof(m_argBufferInline))
+        delete[] m_argBuffer;
+
+    m_argBufferGCDesc = NULL;
+    m_argBuffer = NULL;
+}
+
 #if defined (_DEBUG_IMPL) || defined(_PREFAST_)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
@@ -4441,17 +4500,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
         // Syncup the LastThrownObject on the managed thread
         SafeUpdateLastThrownObject();
     }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Since the catch clause has successfully executed and we are exiting it, reset the corruption severity
-    // in the ThreadExceptionState for the last active exception. This will ensure that when the next exception
-    // gets thrown/raised, EH tracker wont pick up an invalid value.
-    if (!fIsDebuggerThread)
-    {
-        CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler(this);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 }
 
 void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
@@ -7337,8 +7385,7 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
         // For Whidbey, by default only swallow certain exceptions.  If reverting back to Everett's
         // behavior (swallowing all unhandled exception), then swallow all unhandled exception.
         //
-        if (SwallowUnhandledExceptions() ||
-            IsExceptionOfType(kThreadAbortException, pException))
+        if (IsExceptionOfType(kThreadAbortException, pException))
         {
             // Do nothing to swallow the exception
         }

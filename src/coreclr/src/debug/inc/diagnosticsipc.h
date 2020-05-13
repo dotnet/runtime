@@ -59,7 +59,7 @@ public:
         };
 
         // Poll
-        // Paramters:
+        // Parameters:
         // - IpcPollHandle * rgpIpcPollHandles: Array of IpcPollHandles to poll
         // - uint32_t nHandles: The number of handles to poll
         // - int32_t timeoutMs: The timeout in milliseconds for the poll (-1 == infinite)
@@ -89,8 +89,9 @@ public:
         // Connect to a server and returns a connected stream
         IpcStream *Connect(ErrorCallback callback = nullptr);
 
-        //!Closes an open IPC.
-        void Close(ErrorCallback callback = nullptr);
+        // Closes an open IPC.
+        // Only attempts minimal cleanup if isShutdown==true, i.e., unlinks Unix Domain Socket on Linux, no-op on Windows
+        void Close(bool isShutdown = false, ErrorCallback callback = nullptr);
 
     private:
 
