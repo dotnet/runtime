@@ -222,6 +222,7 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
+
         [PreserveDependency("RuntimeResolve", "System.Reflection.Emit.ModuleBuilder")]
         internal AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
         {
@@ -528,13 +529,42 @@ namespace System.Reflection.Emit
             return AssemblyName.Create(_mono_assembly, null);
         }
 
-        // FIXME: "This always returns an empty array"
         public override AssemblyName[] GetReferencedAssemblies()
         {
-            throw new NotImplementedException();
-#if FALSE
-			return GetReferencedAssemblies (this);
-#endif
+            //copied from RuntimeAssembly.cs
+             using (var nativeNames = new Mono.SafeGPtrArrayHandle(RuntimeAssembly.InternalGetReferencedAssemblies(this)))
+            {
+                int numAssemblies = nativeNames.Length;
+                try
+                {
+                    AssemblyName[] result = new AssemblyName[numAssemblies];
+                    const bool addVersion = true;
+                    const bool addPublicKey = false;
+                    const bool defaultToken = true;
+                    for (int i = 0; i < numAssemblies; i++)
+                    {
+                        AssemblyName name = new AssemblyName();
+                        unsafe
+                        {
+                            Mono.MonoAssemblyName* nativeName = (Mono.MonoAssemblyName*)nativeNames[i];
+                            name.FillName(nativeName, null, addVersion, addPublicKey, defaultToken);
+                            result[i] = name;
+                        }
+                    }
+                    return result;
+                }
+                finally
+                {
+                    for (int i = 0; i < numAssemblies; i++)
+                    {
+                        unsafe
+                        {
+                            Mono.MonoAssemblyName* nativeName = (Mono.MonoAssemblyName*)nativeNames[i];
+                            Mono.RuntimeMarshal.FreeAssemblyName(ref *nativeName, true);
+                        }
+                    }
+                }
+            }
         }
 
         public override Module[] GetLoadedModules(bool getResourceModules)
