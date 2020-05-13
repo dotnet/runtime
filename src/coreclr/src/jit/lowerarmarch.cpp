@@ -857,10 +857,12 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     }
 #endif // FEATURE_SIMD
 
-    GenTree* addr          = indirNode->Addr();
-    bool     makeContained = true;
+    GenTree* addr = indirNode->Addr();
+
     if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
     {
+        bool makeContained = true;
+
 #ifdef TARGET_ARM
         // ARM floating-point load/store doesn't support a form similar to integer
         // ldr Rdst, [Rbase + Roffset] with offset in a register. The only supported
@@ -884,12 +886,23 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
                 }
             }
         }
-#endif
+#endif // TARGET_ARM
+
         if (makeContained)
         {
             MakeSrcContained(indirNode, addr);
         }
     }
+#ifdef TARGET_ARM64
+    else if (addr->OperGet() == GT_CLS_VAR_ADDR)
+    {
+        // These nodes go into an addr mode:
+        // - GT_CLS_VAR_ADDR turns into a constant.
+
+        // make this contained, it turns into a constant that goes into an addr mode
+        MakeSrcContained(indirNode, addr);
+    }
+#endif // TARGET_ARM64
 }
 
 //------------------------------------------------------------------------

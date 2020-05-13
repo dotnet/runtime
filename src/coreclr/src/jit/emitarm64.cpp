@@ -12718,7 +12718,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA);
+        assert(addr->OperGet() == GT_CLS_VAR_ADDR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA);
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -12795,7 +12795,13 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         }
         else // no Index register
         {
-            if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
+            if (addr->OperGet() == GT_CLS_VAR_ADDR)
+            {
+                // Get a temp integer register to compute long address.
+                regNumber addrReg = indir->GetSingleTempReg();
+                emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
+            }
+            else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
                 // Then load/store dataReg from/to [memBase + offset]
                 emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);
