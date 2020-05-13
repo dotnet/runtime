@@ -197,10 +197,14 @@ namespace System.Formats.Cbor.Tests
                     "00b03811bef65e330bb974224ec3ab0a5469f038c92177b4171f6f66f91244d4476e016ee77cf7e155a4f73567627b5d72eaf0cb4a6036c6509a6432d7cd6a3b325c",
                     "0114b597b6c271d8435cfa02e890608c93f5bc118ca7f47bf191e9f9e49a22f8a15962315f0729781e1d78b302970c832db2fa8f7f782a33f8e1514950dc7499035f",
                     "SHA512", "ECDSA_P521")]
-        public static void CoseKeyHelpers_ECDsaParseCosePublicKey_HappyPath(string hexEncoding, string hexExpectedQx, string hexExpectedQy, string expectedHashAlgorithmName, string curveFriendlyName)
+        [InlineData("a40102200121582065eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d2258201e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c",
+                    "65eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d",
+                    "1e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c",
+                    null, "ECDSA_P256")]
+        public static void CoseKeyHelpers_ECDsaParseCosePublicKey_HappyPath(string hexEncoding, string hexExpectedQx, string hexExpectedQy, string? expectedHashAlgorithmName, string curveFriendlyName)
         {
             ECPoint q = new ECPoint() { X = hexExpectedQx.HexToByteArray(), Y = hexExpectedQy.HexToByteArray() };
-            (ECDsa ecDsa, HashAlgorithmName name) = CborCoseKeyHelpers.ParseECDsaPublicKey(hexEncoding.HexToByteArray());
+            (ECDsa ecDsa, HashAlgorithmName? name) = CborCoseKeyHelpers.ParseECDsaPublicKey(hexEncoding.HexToByteArray());
 
             using ECDsa _ = ecDsa;
 
@@ -212,7 +216,7 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(expectedCurveFriendlyName, ecParams.Curve.Oid.FriendlyName);
             Assert.Equal(q.X, ecParams.Q.X);
             Assert.Equal(q.Y, ecParams.Q.Y);
-            Assert.Equal(expectedHashAlgorithmName, name.Name);
+            Assert.Equal(expectedHashAlgorithmName, name?.Name);
 
             static ECCurve NormalizeCurveForPlatform(string friendlyName)
             {

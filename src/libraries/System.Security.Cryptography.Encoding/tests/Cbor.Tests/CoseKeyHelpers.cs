@@ -6,11 +6,14 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 
+// Provides a reference implementation for serializing ECDsa public keys to the COSE_Key format
+// according to https://tools.ietf.org/html/rfc8152#section-8.1
+
 namespace System.Formats.Cbor.Tests
 {
     public static class CborCoseKeyHelpers
     {
-        public static byte[] ExportECDsaPublicKey(ECDsa ecDsa, HashAlgorithmName hashAlgName)
+        public static byte[] ExportECDsaPublicKey(ECDsa ecDsa, HashAlgorithmName? hashAlgName)
         {
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
             using var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
@@ -18,14 +21,14 @@ namespace System.Formats.Cbor.Tests
             return writer.GetEncoding();
         }
 
-        public static (ECDsa ecDsa, HashAlgorithmName hashAlgName) ParseECDsaPublicKey(byte[] coseKey)
+        public static (ECDsa ecDsa, HashAlgorithmName? hashAlgName) ParseECDsaPublicKey(byte[] coseKey)
         {
             var reader = new CborReader(coseKey, CborConformanceLevel.Ctap2Canonical);
-            (ECParameters ecParams, HashAlgorithmName hashAlgName) = ReadECParametersAsCosePublicKey(reader);
+            (ECParameters ecParams, HashAlgorithmName? hashAlgName) = ReadECParametersAsCosePublicKey(reader);
             return (ECDsa.Create(ecParams), hashAlgName);
         }
 
-        private static void WriteECParametersAsCosePublicKey(CborWriter writer, ECParameters ecParams, HashAlgorithmName algorithmName)
+        private static void WriteECParametersAsCosePublicKey(CborWriter writer, ECParameters ecParams, HashAlgorithmName? algorithmName)
         {
             Debug.Assert(writer.ConformanceLevel == CborConformanceLevel.Ctap2Canonical);
 
@@ -36,16 +39,23 @@ namespace System.Formats.Cbor.Tests
 
             // run these first to perform necessary validation
             (CoseKeyType kty, CoseCrvId crv) = MapECCurveToCoseKtyAndCrv(ecParams.Curve);
-            CoseKeyAlgorithm alg = MapHashAlgorithmNameToCoseKeyAlg(algorithmName);
+            CoseKeyAlgorithm? alg = (algorithmName != null) ? MapHashAlgorithmNameToCoseKeyAlg(algorithmName.Value) : (CoseKeyAlgorithm?)null;
 
-            // begin writing CBOR object
+            // Begin writing a CBOR object
             writer.WriteStartMap();
+
+            // NB labels should be sorted according to CTAP2 canonical encoding rules.
+            // While the CborWriter will attempt to sort the encodings on its own,
+            // it is generally more efficient if keys are written in sorted order to begin with.
 
             WriteCoseKeyLabel(writer, CoseKeyLabel.Kty);
             writer.WriteInt32((int)kty);
 
-            WriteCoseKeyLabel(writer, CoseKeyLabel.Alg);
-            writer.WriteInt32((int)alg);
+            if (alg != null)
+            {
+                WriteCoseKeyLabel(writer, CoseKeyLabel.Alg);
+                writer.WriteInt32((int)alg);
+            }
 
             WriteCoseKeyLabel(writer, CoseKeyLabel.EcCrv);
             writer.WriteInt32((int)crv);
@@ -106,46 +116,75 @@ namespace System.Formats.Cbor.Tests
 
                 bool MatchesName(HashAlgorithmName candidate) => name.Name == candidate.Name;
             }
+
+            static void WriteCoseKeyLabel(CborWriter writer, CoseKeyLabel label)
+            {
+                writer.WriteInt32((int)label);
+            }
         }
 
-        private static (ECParameters, HashAlgorithmName) ReadECParametersAsCosePublicKey(CborReader reader)
+        private static (ECParameters, HashAlgorithmName?) ReadECParametersAsCosePublicKey(CborReader reader)
         {
             Debug.Assert(reader.ConformanceLevel == CborConformanceLevel.Ctap2Canonical);
 
-            var ecParams = new ECParameters();
+            // CTAP2 conformance mode requires that fields are sorted by key encoding.
+            // We take advantage of this by reading keys in that order.
+            // NB1. COSE labels are not sorted according to canonical integer ordering,
+            //      negative labels must always follow positive labels. 
+            // NB2. Any unrecognized keys will result in the reader failing.
+            // NB3. in order to support optional fields, we need to store the latest read label.
+            CoseKeyLabel? latestReadLabel = null;
 
-            int? length = reader.ReadStartMap();
-            if (length != 5)
-            {
-                throw new FormatException("Unexpected number of elements in the CBOR cose key.");
-            }
-
-            // CTAP2 guarantees order of fields
+            int? remainingKeys = reader.ReadStartMap();
+            Debug.Assert(remainingKeys != null); // guaranteed by CTAP2 conformance
 
             try
             {
-                ReadCoseKeyLabel(reader, CoseKeyLabel.Kty);
+                var ecParams = new ECParameters();
+
+                ReadCoseKeyLabel(CoseKeyLabel.Kty);
                 CoseKeyType kty = (CoseKeyType)reader.ReadInt32();
 
-                ReadCoseKeyLabel(reader, CoseKeyLabel.Alg);
-                CoseKeyAlgorithm alg = (CoseKeyAlgorithm)reader.ReadInt32();
-                HashAlgorithmName algName = MapCoseKeyAlgToHashAlgorithmName(alg);
+                HashAlgorithmName? algName = null;
+                if (TryReadCoseKeyLabel(CoseKeyLabel.Alg))
+                {
+                    CoseKeyAlgorithm alg = (CoseKeyAlgorithm)reader.ReadInt32();
+                    algName = MapCoseKeyAlgToHashAlgorithmName(alg);
+                }
 
-                ReadCoseKeyLabel(reader, CoseKeyLabel.EcCrv);
+                if (TryReadCoseKeyLabel(CoseKeyLabel.KeyOps))
+                {
+                    // No-op, simply tolerate potential key_ops labels
+                    reader.SkipValue(validateConformance: true);
+                }
+
+                ReadCoseKeyLabel(CoseKeyLabel.EcCrv);
                 CoseCrvId crv = (CoseCrvId)reader.ReadInt32();
 
-                if (!IsValidKtyCrvCombination(kty, crv))
+                if (IsValidKtyCrvCombination(kty, crv))
+                {
+                    ecParams.Curve = MapCoseCrvToECCurve(crv);
+                }
+                else
                 {
                     throw new FormatException("Invalid kty/crv combination in COSE key.");
                 }
 
-                ecParams.Curve = MapCoseCrvToECCurve(crv);
-
-                ReadCoseKeyLabel(reader, CoseKeyLabel.EcX);
+                ReadCoseKeyLabel(CoseKeyLabel.EcX);
                 ecParams.Q.X = reader.ReadByteString();
 
-                ReadCoseKeyLabel(reader, CoseKeyLabel.EcY);
+                ReadCoseKeyLabel(CoseKeyLabel.EcY);
                 ecParams.Q.Y = reader.ReadByteString();
+
+                if (TryReadCoseKeyLabel(CoseKeyLabel.EcD))
+                {
+                    throw new FormatException("COSE key encodes a private key.");
+                }
+
+                if (remainingKeys > 0)
+                {
+                    throw new FormatException("COSE_key contains unrecognized trailing data.");
+                }
 
                 reader.ReadEndMap();
 
@@ -192,22 +231,43 @@ namespace System.Formats.Cbor.Tests
                     _ => throw new FormatException("Unrecognized COSE alg value."),
                 };
             }
-        }
 
-        private static void WriteCoseKeyLabel(CborWriter writer, CoseKeyLabel label)
-        {
-            writer.WriteInt32((int)label);
-        }
-
-        private static CoseKeyLabel ReadCoseKeyLabel(CborReader reader, CoseKeyLabel? expectedLabel = null)
-        {
-            var label = (CoseKeyLabel)reader.ReadInt32();
-            if (expectedLabel != null && label != expectedLabel)
+            // Handles optional labels
+            bool TryReadCoseKeyLabel(CoseKeyLabel expectedLabel)
             {
-                throw new FormatException("Unexpected COSE key label.");
+                // The `currentLabel` parameter can hold a label that
+                // was read when handling a previous optional field.
+                // We only need to read the next label if uninhabited.
+                if (latestReadLabel == null)
+                {
+                    // check that we have not reached the end of the COSE key object
+                    if (remainingKeys == 0)
+                    {
+                        return false;
+                    }
+
+                    latestReadLabel = (CoseKeyLabel)reader.ReadInt32();
+                }
+
+                if (expectedLabel != latestReadLabel.Value)
+                {
+                    return false;
+                }
+
+                // read was successful, vacate the `currentLabel` parameter to advance reads.
+                latestReadLabel = null;
+                remainingKeys--;
+                return true;
             }
 
-            return label;
+            // Handles required labels
+            void ReadCoseKeyLabel(CoseKeyLabel expectedLabel)
+            {
+                if (!TryReadCoseKeyLabel(expectedLabel))
+                {
+                    throw new FormatException("Unexpected COSE key label.");
+                }
+            }
         }
 
         private enum CoseKeyLabel : int
