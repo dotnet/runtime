@@ -555,4 +555,7 @@
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
   </data>
+  <data name="net_http_missing_sync_implementation" xml:space="preserve">
+    <value>The synchronous API is not supported by '{0}'. If you're using custom '{1}' and wish to use synchronous HTTP APIs, you must override '{2}' virtual method.</value>
+  </data>
 </root>

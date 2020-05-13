@@ -19,11 +19,10 @@ namespace System.Net.Http
 
         // We cannot add abstract member to a public class in order to not to break already established contract of this class.
         // So we add virtual method, override it everywhere internally and provide proper implementation.
-        // Unfortunately we cannot force everyone to implement so in such case we have no other option that to do sync-over-async.
+        // Unfortunately we cannot force everyone to implement so in such case we throw NSE.
         protected internal virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Doing sync-over-async due to lack of {nameof(Send)} override");
-            return SendAsync(request, cancellationToken).GetAwaiter().GetResult();
+            throw new NotSupportedException(SR.Format(SR.net_http_missing_sync_implementation, typeof(HttpMessageHandler), GetType(), nameof(Send)));
         }
 
         protected internal abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);

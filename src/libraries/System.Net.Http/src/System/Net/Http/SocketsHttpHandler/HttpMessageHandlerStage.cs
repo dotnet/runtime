@@ -9,10 +9,14 @@ namespace System.Net.Http
         protected internal sealed override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            if (request.Version.Major >= 2)
+            {
+                throw new NotSupportedException();
+            }
+
             ValueTask<HttpResponseMessage> sendTask = SendAsync(request, async:false, cancellationToken);
-            // At least for HTTP 1.1 we must support fully sync Send
-            Debug.Assert(request.Version.Major >= 2 || sendTask.IsCompleted);
-            return sendTask.IsCompleted ? sendTask.GetAwaiter().GetResult() : sendTask.AsTask().GetAwaiter().GetResult();
+            Debug.Assert(sendTask.IsCompleted);
+            return sendTask.GetAwaiter().GetResult();
         }
 
         protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,

@@ -316,15 +316,12 @@ namespace System.Net.Http
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext? context);
 
+        // We cannot add abstract member to a public class in order to not to break already established contract of this class.
+        // So we add virtual method, override it everywhere internally and provide proper implementation.
+        // Unfortunately we cannot force everyone to implement so in such case we throw NSE.
         protected virtual void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            // No choice but to do sync-over-async. Derived types should override this whenever possible.
-            // Thankfully most CreateContentReadStreamAsync implementations actually complete synchronously.
-            Stream source = CreateContentReadStreamAsync(cancellationToken).GetAwaiter().GetResult();
-
-            // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
-            cancellationToken.ThrowIfCancellationRequested();
-            source.CopyTo(stream);
+            throw new NotSupportedException(SR.Format(SR.net_http_missing_sync_implementation, typeof(HttpContent), GetType(), nameof(SerializeToStream)));
         }
 
         protected virtual Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
