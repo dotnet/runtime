@@ -233,7 +233,7 @@ if (CLR_CMAKE_HOST_UNIX)
     message("Detected NetBSD amd64")
   elseif(CLR_CMAKE_HOST_SUNOS)
     message("Detected SunOS amd64")
-  endif(CLR_CMAKE_HOST_SUNOS)
+  endif(CLR_CMAKE_HOST_OSX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_HOST_WIN32)
