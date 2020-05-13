@@ -4,7 +4,7 @@
       <Rule Id="CA1001" Action="None" />             <!-- Types that own disposable fields should be disposable -->
       <Rule Id="CA1003" Action="None" />             <!-- Use generic event handler instances -->
       <Rule Id="CA1008" Action="None" />             <!-- Enums should have zero value -->
-      <Rule Id="CA1010" Action="None" />             <!-- Collections should implement generic interface -->
+      <Rule Id="CA1010" Action="None" />             <!-- Generic interface should also be implemented -->
       <Rule Id="CA1012" Action="None" />             <!-- Abstract types should not have constructors -->
       <Rule Id="CA1014" Action="None" />             <!-- Mark assemblies with CLSCompliant -->
       <Rule Id="CA1016" Action="None" />             <!-- Mark assemblies with assembly version -->
@@ -210,6 +210,7 @@
       <Rule Id="CA5401" Action="None" />             <!-- Do not use CreateEncryptor with non-default IV -->
       <Rule Id="CA5402" Action="None" />             <!-- Use CreateEncryptor with the default IV  -->
       <Rule Id="CA5403" Action="None" />             <!-- Do not hard-code certificate -->
+      <Rule Id="CA9999" Action="Warning" />          <!-- Analyzer version mismatch -->
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" /> <!-- Analyzer threw an exception -->
