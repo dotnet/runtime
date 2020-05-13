@@ -7,9 +7,49 @@ error and warning codes.
 
 ## Error Codes
 
-#### `IL1001`: TBA
+#### `IL1001`: Failed to process XML substitution: 'XML document location'. Feature 'feature' does not specify a "featurevalue" attribute
 
-- The explaination of the first error code.
+- The substitution in 'XML document location' with feature value 'feature' does not use the `featurevalue` attribute. These attributes have to be used together.
+
+#### `IL1002`: Failed to process XML substitution: 'XML document location'. Unsupported non-boolean feature definition 'feature'
+
+- The substitution in 'XML document location' with feature value 'feature' sets the attribute `featurevalue` to a non-boolean value. Only boolean values are supported for this attribute.
+
+#### `IL1003`: Error processing 'XML document name': 'XmlException'
+
+- There was an error processing a resource linker descriptor, embedded resource linker descriptor or external substitution XML (`ILLink.Substitutions.xml`). The most likely reason for this is that the descriptor file has syntactical errors.
+
+#### `IL1004`: Failed to process description file 'XML document location': 'XmlException'
+
+- There was an error processing an XML descriptor. The most likely reason for this is that the descriptor file has syntactical errors.
+
+#### `IL1005`: Error processing method 'method' in assembly 'assembly'
+
+- There was an error processing method 'method'. An exception with more details is printed.
+
+#### `IL1006`: Cannot stub constructor on 'type' when base type does not have default constructor
+
+- There was an error trying to create a new instance of type 'type'. Its construtor was marked for substitution in a substitution XML, but the base type of 'type' doesn't have a default constructor. Constructors of derived types marked for substitution require to have a default constructor in its base type.
+
+#### `IL1007`: Missing predefined 'type' type
+
+#### `IL1008`: Could not find constructor on 'type'
+
+#### `IL1009`: Assembly 'assembly' reference 'reference' could not be resolved
+
+- There was en error resolving the reference assembly 'reference'. An exception with more details is printed.
+
+#### `IL1010`: Assembly 'assembly' cannot be loaded due to failure in processing 'reference' reference
+
+- The assembly 'assembly' could not be loaded due to an error processing the reference assembly 'reference'. An exception with more details is printed.
+
+#### `IL1011`: Failed to write 'output'
+
+- There was an error writing the linked assembly 'output'. An exception with more details is printed.
+
+#### `IL1012`: IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues
+
+- There was an unexpected error while linking. An exception with more details is printed to the MSBuild log. Please share this stack trace with the IL Linker team to further investigate the cause and possible solution.
 
 ----
 ## Warning Codes

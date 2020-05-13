@@ -37,11 +37,7 @@ namespace Mono.Linker.Steps
 			if (!string.IsNullOrEmpty (_resourceName) && Context.IgnoreSubstitutions)
 				return;
 
-			try {
-				ReadSubstitutions (_document);
-			} catch (Exception ex) when (!(ex is XmlResolutionException)) {
-				throw new XmlResolutionException ($"Failed to process XML substitution: '{_xmlDocumentLocation}'", ex);
-			}
+			ReadSubstitutions (_document);
 		}
 
 		bool ShouldProcessSubstitutions (XPathNavigator nav)
@@ -52,12 +48,12 @@ namespace Mono.Linker.Steps
 
 			var value = GetAttribute (nav, "featurevalue");
 			if (string.IsNullOrEmpty (value)) {
-				Context.LogMessage (MessageContainer.CreateErrorMessage ($"Feature {feature} does not specify a \"featurevalue\" attribute", 1001));
+				Context.LogMessage (MessageContainer.CreateErrorMessage ($"Failed to process XML substitution: '{_xmlDocumentLocation}'. Feature {feature} does not specify a 'featurevalue' attribute", 1001));
 				return false;
 			}
 
 			if (!bool.TryParse (value, out bool bValue)) {
-				Context.LogMessage (MessageContainer.CreateErrorMessage ($"Unsupported non-boolean feature definition {feature}", 1002));
+				Context.LogMessage (MessageContainer.CreateErrorMessage ($"Failed to process XML substitution: '{_xmlDocumentLocation}'. Unsupported non-boolean feature definition {feature}", 1002));
 				return false;
 			}
 
