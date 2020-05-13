@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32, SetLastError = true, EntryPoint = "LoadStringW", CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.User32, SetLastError = true, EntryPoint = "LoadStringW", CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern unsafe int LoadString(IntPtr hInstance, uint uID, char* lpBuffer, int cchBufferMax);
     }
 }
