@@ -9,7 +9,7 @@ assignees: ''
 
 # Background and Motivation
 
-Please provide a thorough explanation of what might necessitate a change to the current APIs.
+Please provide a thorough explanation of what necessitates the additional API.
 
 # Proposed API
 
