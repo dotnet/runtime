@@ -43,12 +43,11 @@ namespace Mono.Linker.Dataflow
 				string paramName = method.Parameters[index].Name;
 
 				bool firstAppearance = true;
-				foreach (var (ParamName, Annotation) in ann.ParameterAnnotations) { 
+				foreach (var (ParamName, Annotation) in ann.ParameterAnnotations) {
 					if (ParamName == paramName && firstAppearance) {
 						firstAppearance = false;
 						parameterAnnotation = Annotation;
-					}
-					else if(ParamName == paramName && !firstAppearance) {
+					} else if (ParamName == paramName && !firstAppearance) {
 						_context.LogMessage (MessageContainer.CreateWarningMessage ($"There are duplicate parameter names for '{paramName}' inside '{method.Name}' in '{_xmlDocumentLocation}'", 2024));
 					}
 				}
