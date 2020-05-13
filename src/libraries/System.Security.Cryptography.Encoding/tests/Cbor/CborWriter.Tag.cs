@@ -45,7 +45,7 @@ namespace System.Formats.Cbor
         {
             if (double.IsInfinity(seconds) || double.IsNaN(seconds))
             {
-                throw new ArgumentOutOfRangeException(SR.Cbor_Writer_ValueCannotBeInfiniteOrNaN, nameof(seconds));
+                throw new ArgumentException(SR.Cbor_Writer_ValueCannotBeInfiniteOrNaN, nameof(seconds));
             }
 
             WriteTag(CborTag.UnixTimeSeconds);

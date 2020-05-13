@@ -65,9 +65,7 @@ namespace System.Formats.Cbor.Tests
                 writer.WriteTag((CborTag)tag);
             }
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.Encode());
-
-            Assert.Equal("Buffer contains incomplete CBOR document.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => writer.Encode());
         }
 
         [Fact]
