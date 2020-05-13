@@ -7548,7 +7548,7 @@ void emitter::emitIns_R_C(
             fmt = IF_LARGELDC;
             if (isVectorRegister(reg))
             {
-                assert(isValidScalarDatasize(size));
+                assert(isValidVectorLSDatasize(size));
                 // For vector (float/double) register, we should have an integer address reg to
                 // compute long address which consists of page address and page offset.
                 // For integer constant, this is not needed since the dest reg can be used to
