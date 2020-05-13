@@ -482,9 +482,7 @@ namespace Mono.Linker.Dataflow
 							break;
 
 						default:
-							Debug.Fail ("Unsupported member type");
-							reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
-							break;
+							throw new InternalErrorException ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
 						}
 
 						if (memberKind == null)
@@ -512,7 +510,7 @@ namespace Mono.Linker.Dataflow
 											reflectionContext.RecordHandledPattern ();
 											break;
 										default:
-											throw new MarkException (string.Format ("Error processing reflection call: '{0}' inside {1}. Unexpected member kind.", calledMethod.FullName, callingMethodBody.Method.FullName));
+											throw new InternalErrorException ($"Error processing reflection call '{calledMethod.FullName}' inside {callingMethodBody.Method.FullName}. Unexpected member kind.");
 										}
 									} else {
 										RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberTypes) memberKind, value, calledMethod.Parameters[0]);

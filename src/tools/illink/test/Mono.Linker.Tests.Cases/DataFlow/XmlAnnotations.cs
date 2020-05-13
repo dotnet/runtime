@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[SetupLinkerAttributeDefinitionsFile ("XmlAnnotations.xml")]
-	[LogContains ("illinker: warning IL2020: Could not parse argument 'NonValidArgument' specified in *", true)]
+	[LogContains ("ILlinker: warning IL2021: Could not parse argument 'NonValidArgument' specified in *", true)]
 	class XmlAnnotations
 	{
 		public static void Main ()

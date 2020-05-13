@@ -126,7 +126,7 @@ namespace Mono.Linker.Steps
 			try {
 				assembly.Write (outputName, writerParameters);
 			} catch (Exception e) {
-				throw new OutputException ($"Failed to write '{outputName}", e);
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Failed to write '{outputName}", 1011), e);
 			}
 		}
 

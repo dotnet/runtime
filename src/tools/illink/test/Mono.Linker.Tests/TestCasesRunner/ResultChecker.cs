@@ -42,27 +42,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void Check (LinkedTestCaseResult linkResult)
 		{
-			Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
-
 			InitializeResolvers (linkResult);
 
 			try {
 				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
-				var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
+				if (!HasAttribute (original, nameof (NoLinkedOutputAttribute))) {
+					Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
+					var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
-				InitialChecking (linkResult, original, linked);
+					InitialChecking (linkResult, original, linked);
 
-				PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
-				PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
+					PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
+					PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-				if (!original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName).CustomAttributes
-					.Any (attr => attr.AttributeType.Name == nameof (SkipKeptItemsValidationAttribute))) {
-					CreateAssemblyChecker (original, linked).Verify ();
+					if (!HasAttribute (original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName), nameof (SkipKeptItemsValidationAttribute))) {
+						CreateAssemblyChecker (original, linked).Verify ();
+					}
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
-
-				AdditionalChecking (linkResult, original, linked);
+				AdditionalChecking (linkResult, original);
 			} finally {
 				_originalsResolver.Dispose ();
 				_linkedResolver.Dispose ();
@@ -162,7 +161,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
+		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			VerifyLoggedMessages (original, linkResult.Logger);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
@@ -903,6 +902,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		bool IsTypeInOtherAssemblyAssertion (CustomAttribute attr)
 		{
 			return attr.AttributeType.Resolve ().DerivesFrom (nameof (BaseInAssemblyAttribute));
+		}
+
+		bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
+		{
+			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
+				return assembly.EntryPoint.DeclaringType.CustomAttributes
+					.Any (attr => attr.AttributeType.Name == attributeName);
+
+			if (caProvider is TypeDefinition type)
+				return type.CustomAttributes.Any (attr => attr.AttributeType.Name == attributeName);
+
+			return false;
 		}
 	}
 }
