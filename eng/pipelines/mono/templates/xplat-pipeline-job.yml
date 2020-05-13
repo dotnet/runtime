@@ -48,7 +48,10 @@ jobs:
 
     variables:
     - name: coreClrProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_${{ parameters.liveRuntimeBuildConfig }}'
+      ${{ if eq(parameters.runtimeVariant, 'interpreter') }}:
+        value: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_$(archType)_${{ parameters.liveRuntimeBuildConfig }}'
+      ${{ if ne(parameters.runtimeVariant, 'interpreter') }}:
+        value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_${{ parameters.liveRuntimeBuildConfig }}'
 
     - name: coreClrProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(liveRuntimeBuildConfigUpper)'
