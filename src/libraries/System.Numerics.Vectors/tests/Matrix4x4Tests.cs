@@ -219,6 +219,20 @@ namespace System.Numerics.Tests
             Assert.True(MathHelper.Equal(i, Matrix4x4.Identity));
         }
 
+        // A test for Invert (Matrix4x4)
+        [Fact]
+        public void Matrix4x4InvertRank3()
+        {
+            // A 4x4 Matrix having a rank of 3
+            Matrix4x4 mtx = new Matrix4x4(1, 2, 3, 0, 5, 1, 6, 0, 8, 9, 1, 0, 11, 12, 13, 0);
+
+            Matrix4x4 actual;
+            Assert.False(Matrix4x4SSE.Invert(mtx, out actual));
+
+            Matrix4x4 i = mtx * actual;
+            Assert.False(MathHelper.Equal(i, Matrix4x4.Identity));
+        }
+
         void DecomposeTest(float yaw, float pitch, float roll, Vector3 expectedTranslation, Vector3 expectedScales)
         {
             Quaternion expectedRotation = Quaternion.CreateFromYawPitchRoll(MathHelper.ToRadians(yaw),
