@@ -29,7 +29,12 @@ namespace System
             string? resourceString = null;
             try
             {
-                resourceString = InternalGetResourceString(resourceKey);
+                resourceString =
+#if SYSTEM_PRIVATE_CORELIB
+                    InternalGetResourceString(resourceKey);
+#else
+                    ResourceManager.GetString(resourceKey);
+#endif
             }
             catch (MissingManifestResourceException) { }
 
@@ -40,10 +45,6 @@ namespace System
 
             return resourceString!; // only null if missing resources
         }
-
-#if !SYSTEM_PRIVATE_CORELIB
-        private static string? InternalGetResourceString(string resourceKey) => ResourceManager.GetString(resourceKey);
-#endif
 
         internal static string Format(string resourceFormat, object? p1)
         {
