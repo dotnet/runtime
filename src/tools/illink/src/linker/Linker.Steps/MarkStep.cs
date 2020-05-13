@@ -165,9 +165,9 @@ namespace Mono.Linker.Steps
 			IFlowAnnotationSource annotationSource = new AttributeFlowAnnotationSource ();
 			if (_context.AttributeDefinitions != null && _context.AttributeDefinitions.Count > 0) {
 				annotationSource = new AggregateFlowAnnotationSource (
-					_context.AttributeDefinitions.Select (s => {
-						var xmlAnnotations = new XmlFlowAnnotationSource (_context, s);
-						xmlAnnotations.ParseXml ();
+					_context.AttributeDefinitions.Select (xmlStringPath => {
+						var xmlAnnotations = new XmlFlowAnnotationSource (_context);
+						xmlAnnotations.ParseXml (xmlStringPath);
 						return xmlAnnotations;
 					})
 					.Append (annotationSource));
