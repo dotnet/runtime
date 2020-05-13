@@ -217,7 +217,7 @@ namespace System.Formats.Cbor.Tests
             static ECCurve NormalizeCurveForPlatform(string friendlyName)
             {
                 ECCurve namedCurve = ECCurve.CreateFromFriendlyName(friendlyName);
-                ECDsa ecDsa = ECDsa.Create(namedCurve);
+                using ECDsa ecDsa = ECDsa.Create(namedCurve);
                 ECParameters platformParams = ecDsa.ExportParameters(includePrivateParameters: false);
                 return platformParams.Curve;
             }
