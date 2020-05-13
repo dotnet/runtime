@@ -357,6 +357,47 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
         }
+
+        case NI_Vector64_Create:
+        case NI_Vector128_Create:
+        {
+            // We shouldn't handle this as an intrinsic if the
+            // respective ISAs have been disabled by the user.
+
+            if (!compExactlyDependsOn(InstructionSet_AdvSimd))
+            {
+                break;
+            }
+
+            if (sig->numArgs == 1)
+            {
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            else if (sig->numArgs == 2)
+            {
+                op2     = impPopStack().val;
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
+            }
+            else
+            {
+                assert(sig->numArgs >= 3);
+
+                GenTreeArgList* tmp = nullptr;
+
+                for (unsigned i = 0; i < sig->numArgs; i++)
+                {
+                    tmp        = gtNewArgList(impPopStack().val);
+                    tmp->gtOp2 = op1;
+                    op1        = tmp;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
         case NI_Vector64_get_Count:
         case NI_Vector128_get_Count:
         {
