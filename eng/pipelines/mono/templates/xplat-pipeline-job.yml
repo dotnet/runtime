@@ -54,7 +54,10 @@ jobs:
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(liveRuntimeBuildConfigUpper)'
 
     - name: buildProductArtifactName
-      value: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      ${{ if eq(parameters.runtimeVariant, 'interpreter') }}:
+        value: 'MonoProduct__$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      ${{ if ne(parameters.runtimeVariant, 'interpreter') }}:
+        value: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
