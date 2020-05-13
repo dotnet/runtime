@@ -1456,6 +1456,10 @@ private:
     PTR_IUnknown DACGetCOMIPFromCCW(PTR_ComCallWrapper pCCW, int vtableIndex);
 #endif
 
+#ifdef FEATURE_COMWRAPPERS
+    HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
+#endif
+
     static LONG s_procInit;
 
 public:

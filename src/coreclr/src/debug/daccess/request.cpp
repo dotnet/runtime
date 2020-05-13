@@ -20,6 +20,8 @@
 #include <comcallablewrapper.h>
 #endif // FEATURE_COMINTEROP
 
+#include <interoplibabi.h>
+
 #ifndef TARGET_UNIX
 // It is unfortunate having to include this header just to get the definition of GenericModeBlock
 #include <msodw.h>
@@ -4065,6 +4067,75 @@ PTR_IUnknown ClrDataAccess::DACGetCOMIPFromCCW(PTR_ComCallWrapper pCCW, int vtab
 }
 #endif
 
+#ifdef FEATURE_COMWRAPPERS
+HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+{
+    if (ccwPtr == 0 || objRef == NULL)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+
+    // Read CCWs QI address and compare it to the managed object wrapper's implementation.
+    ULONG32 bytesRead = 0;
+    CLRDATA_ADDRESS vTableAddress = NULL;
+    IfFailGo(m_pTarget->ReadVirtual(ccwPtr, (PBYTE)&vTableAddress, sizeof(CLRDATA_ADDRESS), &bytesRead));
+    if (bytesRead != sizeof(CLRDATA_ADDRESS)
+        || vTableAddress == NULL)
+    {
+        hr = S_FALSE;
+        goto ErrExit;
+    }
+
+    TADDR qiAddress = NULL;
+    IfFailGo(m_pTarget->ReadVirtual(vTableAddress, (PBYTE)&qiAddress, sizeof(TADDR), &bytesRead));
+    if (bytesRead != sizeof(TADDR)
+        || qiAddress == NULL)
+    {
+        hr = S_FALSE;
+        goto ErrExit;
+    }
+
+
+#ifdef TARGET_ARM
+    // clear the THUMB bit on qiAddress before comparing with known vtable entry
+    qiAddress &= ~THUMB_CODE;
+#endif
+
+    if (qiAddress != GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface))
+    {
+        hr = S_FALSE;
+        goto ErrExit;
+    }
+
+    // Mask the "dispatch pointer" to get a double pointer to the ManagedObjectWrapper
+    CLRDATA_ADDRESS managedObjectWrapperPtrPtr = ccwPtr & InteropLib::ABI::DispatchThisPtrMask;
+
+    // Return ManagedObjectWrapper as an OBJECTHANDLE. (The OBJECTHANDLE is guaranteed to live at offset 0).
+    CLRDATA_ADDRESS managedObjectWrapperPtr;
+    IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtrPtr, (PBYTE)&managedObjectWrapperPtr, sizeof(CLRDATA_ADDRESS), &bytesRead));
+    if (bytesRead != sizeof(CLRDATA_ADDRESS))
+    {
+        hr = S_FALSE;
+        goto ErrExit;
+    }
+
+    OBJECTHANDLE handle;
+    IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtr, (PBYTE)&handle, sizeof(OBJECTHANDLE), &bytesRead));
+    if (bytesRead != sizeof(OBJECTHANDLE))
+    {
+        hr = S_FALSE;
+        goto ErrExit;
+    }
+
+    *objRef = ObjectFromHandle(handle);
+
+    SOSDacLeave();
+
+    return S_OK;
+
+ErrExit: return hr;
+}
+#endif
 
 HRESULT ClrDataAccess::GetCCWData(CLRDATA_ADDRESS ccw, struct DacpCCWData *ccwData)
 {
