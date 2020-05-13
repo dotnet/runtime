@@ -96,6 +96,28 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
+        private static unsafe int Receive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, out Interop.Error errno)
+        {
+            int received = 0;
+
+            fixed (byte* b = &MemoryMarshal.GetReference(buffer))
+            {
+                errno = Interop.Sys.Receive(
+                    socket,
+                    b,
+                    buffer.Length,
+                    flags,
+                    &received);
+            }
+
+            if (errno != Interop.Error.SUCCESS)
+            {
+                return -1;
+            }
+
+            return received;
+        }
+
         private static unsafe int Receive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null || socketAddressLen == 0, $"Unexpected values: socketAddress={socketAddress}, socketAddressLen={socketAddressLen}");
@@ -137,7 +159,33 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int Send(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[]? socketAddress, int socketAddressLen, out Interop.Error errno)
+        private static unsafe int Send(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
+        {
+            int sent;
+            fixed (byte* b = &MemoryMarshal.GetReference(buffer))
+            {
+                int bytesSent = 0;
+                errno = Interop.Sys.Send(
+                    socket,
+                    &b[offset],
+                    count,
+                    flags,
+                    &bytesSent);
+
+                sent = bytesSent;
+            }
+
+            if (errno != Interop.Error.SUCCESS)
+            {
+                return -1;
+            }
+
+            offset += sent;
+            count -= sent;
+            return sent;
+        }
+
+        private static unsafe int Send(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
             int sent;
             fixed (byte* sockAddr = socketAddress)
@@ -617,6 +665,60 @@ namespace System.Net.Sockets
         public static bool TryCompleteReceiveFrom(SafeSocketHandle socket, IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode) =>
             TryCompleteReceiveFrom(socket, default(Span<byte>), buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
 
+        public static unsafe bool TryCompleteReceive(SafeSocketHandle socket, Span<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketError errorCode)
+        {
+            try
+            {
+                Interop.Error errno;
+                int received;
+
+                if (buffer.Length == 0)
+                {
+                    // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
+                    // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
+                    // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
+                    // synchronously. As such, we treat 0 specially, and perform a 1-byte peek.
+                    byte oneBytePeekBuffer;
+                    received = Receive(socket, flags | SocketFlags.Peek, new Span<byte>(&oneBytePeekBuffer, 1), out errno);
+                    if (received > 0)
+                    {
+                        // Peeked for 1-byte, but the actual request was for 0.
+                        received = 0;
+                    }
+                }
+                else
+                {
+                    // Receive > 0 bytes into a single buffer
+                    received = Receive(socket, flags, buffer, out errno);
+                }
+
+                if (received != -1)
+                {
+                    bytesReceived = received;
+                    errorCode = SocketError.Success;
+                    return true;
+                }
+
+                bytesReceived = 0;
+
+                if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
+                {
+                    errorCode = GetSocketErrorForErrorCode(errno);
+                    return true;
+                }
+
+                errorCode = SocketError.Success;
+                return false;
+            }
+            catch (ObjectDisposedException)
+            {
+                // The socket was closed, or is closing.
+                bytesReceived = 0;
+                errorCode = SocketError.OperationAborted;
+                return true;
+            }
+        }
+
         public static unsafe bool TryCompleteReceiveFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode)
         {
             try
@@ -747,7 +849,8 @@ namespace System.Net.Sockets
                 {
                     sent = buffers != null ?
                         Send(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno) :
-                        Send(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
+                        socketAddress == null ? Send(socket, flags, buffer, ref offset, ref count, out errno) :
+                                                Send(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
                 }
                 catch (ObjectDisposedException)
                 {
