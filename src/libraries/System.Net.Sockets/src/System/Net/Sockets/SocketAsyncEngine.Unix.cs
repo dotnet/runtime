@@ -103,6 +103,7 @@ namespace System.Net.Sockets
         private static int s_allocateFromEngine = 0;
 
         private readonly IntPtr _port;
+        private readonly SocketAsyncContext.AsyncOperation[] _aioBatchedOperations;
         private readonly Interop.Sys.SocketEvent* _buffer;
         private readonly Interop.Sys.AioContext _aioContext;
         private readonly Interop.Sys.IoEvent* _aioEvents;
@@ -294,6 +295,7 @@ namespace System.Net.Sockets
                 int aioEventBufferCount = EventBufferCount * s_batchSegmentSize;
                 if (Interop.Sys.IsAioSupported() && Interop.Sys.IoSetup((uint)aioEventBufferCount, &aioContext) == 0)
                 {
+                    _aioBatchedOperations = new SocketAsyncContext.AsyncOperation[aioEventBufferCount];
                     _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * aioEventBufferCount);
                     _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * aioEventBufferCount);
                     _aioBlocksPointers = (Interop.Sys.IoControlBlock**)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock*) * aioEventBufferCount);
@@ -318,6 +320,7 @@ namespace System.Net.Sockets
                 else
                 {
                     Debug.Assert(Interop.Sys.IsAioSupported() == false, "When AIO is supported IoSetup should always succeed");
+                    _aioBatchedOperations = Array.Empty<SocketAsyncContext.AsyncOperation>();
                 }
 
                 bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
@@ -514,7 +517,7 @@ namespace System.Net.Sockets
             Span<Interop.Sys.IoControlBlock> ioControlBlocksSegment = new Span<Interop.Sys.IoControlBlock>(_aioBlocks + currentBatchIndex, batchSegmentSize);
 
             Interop.Sys.AioContext aioContext = _aioContext;
-            System.Span<SocketAsyncContext.AsyncOperation> batchedOperations = new SocketAsyncContext.AsyncOperation[batchSegmentSize]; // TODO: profile this allocation
+            System.Span<SocketAsyncContext.AsyncOperation> batchedOperations = new System.Span<SocketAsyncContext.AsyncOperation>(_aioBatchedOperations, currentBatchIndex, batchSegmentSize);
             int currentBatchSize = 0;
 
             while (true)
@@ -523,7 +526,7 @@ namespace System.Net.Sockets
                 {
                     Debug.Assert((socketEvent.Events & Interop.Sys.SocketEvents.Error) == 0, "HandleSyncEventsSpeculatively wipes out informatio about error");
 
-                    socketEvent.Context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocksSegment, batchedOperations, ref currentBatchSize);
+                    socketEvent.Context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocksSegment, batchedOperations, currentBatchIndex, ref currentBatchSize);
                 }
 
                 if (currentBatchSize == 0)
@@ -552,7 +555,7 @@ namespace System.Net.Sockets
                 ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(aioEventsSegment, currentBatchSize);
                 for (int i = 0; i < events.Length; i++)
                 {
-                    batchedOperations[(int)events[i].Data].HandleBatchEvent(in events[i]);
+                    batchedOperations[(int)events[i].Data - currentBatchIndex].HandleBatchEvent(in events[i]);
                 }
 
                 ioControlBlocksSegment.Clear();

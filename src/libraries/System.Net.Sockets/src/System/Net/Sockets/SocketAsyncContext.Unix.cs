@@ -1217,7 +1217,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            internal void BatchOrDispatch(SocketAsyncContext context, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, ref int batchedCount)
+            internal void BatchOrDispatch(SocketAsyncContext context, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, int batchIndex, ref int batchSize)
             {
                 AsyncOperation nextOperation;
                 using (Lock())
@@ -1234,9 +1234,9 @@ namespace System.Net.Sockets
                             _state = QueueState.Processing;
                             nextOperation = _tail.Next;
 
-                            if (batchedCount < ioControlBlocks.Length && nextOperation.TryBatch(context, batchedCount, ref ioControlBlocks[batchedCount]))
+                            if (batchSize < ioControlBlocks.Length && nextOperation.TryBatch(context, batchIndex + batchSize, ref ioControlBlocks[batchSize]))
                             {
-                                batchedOperations[batchedCount++] = nextOperation;
+                                batchedOperations[batchSize++] = nextOperation;
 
                                 // we have batched one operation and we are done!
                                 return;
@@ -2463,18 +2463,18 @@ namespace System.Net.Sockets
             }
         }
 
-        public void AddWaitingOperationsToBatch(Interop.Sys.SocketEvents events, in Span<Interop.Sys.IoControlBlock> ioControlBlocks, in Span<AsyncOperation> batchedOperations, ref int batchedCount)
+        public void AddWaitingOperationsToBatch(Interop.Sys.SocketEvents events, in Span<Interop.Sys.IoControlBlock> ioControlBlocks, in Span<AsyncOperation> batchedOperations, int batchIndex, ref int batchSize)
         {
             Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0, "This method must not be used for handling errors!");
 
             if ((events & Interop.Sys.SocketEvents.Read) != 0)
             {
-                _receiveQueue.BatchOrDispatch(this, ioControlBlocks, batchedOperations, ref batchedCount);
+                _receiveQueue.BatchOrDispatch(this, ioControlBlocks, batchedOperations, batchIndex, ref batchSize);
             }
 
             if ((events & Interop.Sys.SocketEvents.Write) != 0)
             {
-                _sendQueue.BatchOrDispatch(this, ioControlBlocks, batchedOperations, ref batchedCount);
+                _sendQueue.BatchOrDispatch(this, ioControlBlocks, batchedOperations, batchIndex, ref batchSize);
             }
         }
 
