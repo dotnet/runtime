@@ -207,56 +207,59 @@
   <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
     <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
   </data>
-  <data name="Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported" xml:space="preserve">
+  <data name="Cbor_PopMajorTypeMismatch" xml:space="preserve">
+    <value>Cannot perform the requested operation, the current context is '{0}'.</value>
+  </data>
+  <data name="Cbor_NotAtEndOfDefiniteLengthDataItem" xml:space="preserve">
+    <value>Not at end of the definite-length data item.</value>
+  </data>
+  <data name="Cbor_NotAtEndOfIndefiniteLengthDataItem" xml:space="preserve">
+    <value>Not at end of the indefinite-length data item.</value>
+  </data>
+  <data name="Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported" xml:space="preserve">
     <value>CBOR Conformance level '{0}' does not support indefinite-length data items.</value>
+  </data>
+  <data name="Cbor_ConformanceLevel_NonCanonicalIntegerRepresentation" xml:space="preserve">
+    <value>CBOR Conformance level '{0}' does not support non-canonical integer representations.</value>
+  </data>
+  <data name="Cbor_ConformanceLevel_RequiresDefiniteLengthItems" xml:space="preserve">
+    <value>CBOR Conformance level '{0}' does not support indefinite-length items.</value>
+  </data>
+  <data name="Cbor_ConformanceLevel_ContainsDuplicateKeys" xml:space="preserve">
+    <value>CBOR Conformance level '{0}' does not support duplicate keys.</value>
+  </data>
+  <data name="Cbor_ConformanceLevel_KeysNotInSortedOrder" xml:space="preserve">
+    <value>CBOR keys not sorted in accordance with conformance level '{0}'.</value>
+  </data>
+  <data name="Cbor_ConformanceLevel_TagsNotSupported" xml:space="preserve">
+    <value>CBOR Conformance level '{0}' does not support tagged values.</value>
   </data>
   <data name="Cbor_Reader_DefiniteLengthExceedsBufferSize" xml:space="preserve">
     <value>Declared definite length of CBOR data item exceeds available buffer size.</value>
-  </data>
-  <data name="Cbor_Reader_NotAtEndOfIndefiniteLengthDataItem" xml:space="preserve">
-    <value>Not at end of the indefinite-length data item.</value>
   </data>
   <data name="Cbor_Reader_NoMoreDataItemsToRead" xml:space="preserve">
     <value>No more CBOR data items to read in the current context.</value>
   </data>
   <data name="Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer" xml:space="preserve">
-    <value>Invalid CBOR encoding: unexpected end of data.</value>
+    <value>Unexpected end of CBOR encoding data.</value>
   </data>
   <data name="Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem" xml:space="preserve">
     <value>Indefinite-length CBOR string nests an invalid data item of major type {0}.</value>
   </data>
   <data name="Cbor_Reader_MajorTypeMismatch" xml:space="preserve">
-    <value>CBOR data item is of major type {0}, which does not match the current operation.</value>
+    <value>Cannot perform the requested operation, the next CBOR data item is of major type '{0}'.</value>
   </data>
   <data name="Cbor_Reader_IsAtRootContext" xml:space="preserve">
     <value>CBOR reader is already at the root data item context.</value>
-  </data>
-  <data name="Cbor_Reader_MajorTypePopMismatch" xml:space="preserve">
-    <value>CBOR reader is in a {0} context, which does not match the current operation.</value>
-  </data>
-  <data name="Cbor_Reader_NotAtEndOfDefiniteLengthDataItem" xml:space="preserve">
-    <value>Not at end of the definite-length data item.</value>
   </data>
   <data name="Cbor_Reader_InvalidCbor_TagNotFollowedByValue" xml:space="preserve">
     <value>A CBOR tag should always be followed by a data item.</value>
   </data>
   <data name="Cbor_Reader_InvalidCbor_InvalidIntegerEncoding" xml:space="preserve">
-    <value>Initial byte contains invalid integer encoding</value>
-  </data>
-  <data name="Cbor_Reader_ConformanceLevel_NonCanonicalIntegerRepresentation" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support non-canonical integer representations.</value>
-  </data>
-  <data name="Cbor_Reader_ConformanceLevel_RequiresDefiniteLengthItems" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support indefinite-length items.</value>
+    <value>CBOR initial byte contains invalid integer encoding</value>
   </data>
   <data name="Cbor_Reader_InvalidCbor_KeyMissingValue" xml:space="preserve">
-    <value>Latest key in current CBOR map misses accompanying value.</value>
-  </data>
-  <data name="Cbor_Reader_ConformanceLevel_ContainsDuplicateKeys" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support duplicate keys.</value>
-  </data>
-  <data name="Cbor_Reader_ConformanceLevel_KeysNotInSortedOrder" xml:space="preserve">
-    <value>CBOR keys not sorted in accordance with conformance level '{0}'.</value>
+    <value>The current CBOR map contains an incomplete key/value pair.</value>
   </data>
   <data name="Cbor_Reader_NotAFloatEncoding" xml:space="preserve">
     <value>Data item does not encode a floating point number.</value>
@@ -280,16 +283,13 @@
     <value>CBOR definite-length data items contains unexpected break byte.</value>
   </data>
   <data name="Cbor_Reader_Skip_InvalidState" xml:space="preserve">
-    <value>Reader state '{0}' is not at start of a data item.</value>
+    <value>Reader state '{0}' is not at the start of a data item.</value>
   </data>
   <data name="Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding" xml:space="preserve">
-    <value>CBOR text string payload is not valid UTF-8.</value>
+    <value>CBOR text string payload is not valid a UTF-8 encoding.</value>
   </data>
   <data name="Cbor_Reader_NotIndefiniteLengthString" xml:space="preserve">
     <value>CBOR string is not of indefinite length.</value>
-  </data>
-  <data name="Cbor_Reader_ConformanceLevel_TagsNotSupported" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support tagged values.</value>
   </data>
   <data name="Cbor_Reader_TagMismatch" xml:space="preserve">
     <value>CBOR tag does not match expected value.</value>
@@ -304,6 +304,30 @@
     <value>Not a valid tagged bignum encoding.</value>
   </data>
   <data name="Cbor_Reader_InvalidDecimalEncoding" xml:space="preserve">
-    <value>Not a valid tagged decimal fraction encoding.</value>
+    <value>Not a valid tagged decimal encoding.</value>
+  </data>
+  <data name="Cbor_Writer_PayloadIsNotValidCbor" xml:space="preserve">
+    <value>Not a valid CBOR value encoding.</value>
+  </data>
+  <data name="Cbor_Writer_IncompleteCborDocument" xml:space="preserve">
+    <value>Writer contains an incomplete CBOR document.</value>
+  </data>
+  <data name="Cbor_Writer_DefiniteLengthExceeded" xml:space="preserve">
+    <value>Adding a CBOR data item to the current context exceeds its definite length.</value>
+  </data>
+  <data name="Cbor_Writer_CannotNestDataItemsInIndefiniteLengthStrings" xml:space="preserve">
+    <value>Cannot nest data items in indefinite-length CBOR string contexts.</value>
+  </data>
+  <data name="Cbor_Writer_MapIncompleteKeyValuePair" xml:space="preserve">
+    <value>CBOR map incomplete; each key must be followed by a corresponding value.</value>
+  </data>
+  <data name="Cbor_Writer_InvalidUtf8String" xml:space="preserve">
+    <value>Not a valid UTF-8 encoding.</value>
+  </data>
+  <data name="Cbor_Writer_ValueCannotBeInfiniteOrNaN" xml:space="preserve">
+    <value>Value cannot be infinite or NaN.</value>
+  </data>
+  <data name="Cbor_Writer_DecimalOverflow" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal.</value>
   </data>
 </root>

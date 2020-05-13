@@ -16,7 +16,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 AdvanceBuffer(1);

@@ -26,7 +26,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 return ReadChunkedByteStringConcatenated();
@@ -49,7 +49,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 return TryReadChunkedByteStringConcatenated(destination, out bytesWritten);
@@ -81,7 +81,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 return ReadChunkedTextStringConcatenated();
@@ -114,7 +114,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 return TryReadChunkedTextStringConcatenated(destination, out charsWritten);
@@ -151,7 +151,7 @@ namespace System.Formats.Cbor
 
             if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
-                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
             }
 
             AdvanceBuffer(1);
@@ -177,7 +177,7 @@ namespace System.Formats.Cbor
 
             if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
-                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
             }
 
             AdvanceBuffer(1);

@@ -159,7 +159,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresCanonicalIntegerRepresentation(ConformanceLevel))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_NonCanonicalIntegerRepresentation, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_NonCanonicalIntegerRepresentation, ConformanceLevel));
                 }
             }
         }

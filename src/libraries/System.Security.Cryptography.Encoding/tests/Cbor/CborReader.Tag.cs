@@ -15,7 +15,7 @@ namespace System.Formats.Cbor
 
             if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
             {
-                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_TagsNotSupported, ConformanceLevel));
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
             }
 
             AdvanceBuffer(1 + additionalBytes);
@@ -29,7 +29,7 @@ namespace System.Formats.Cbor
 
             if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
             {
-                throw new FormatException(SR.Format(SR.Cbor_Reader_ConformanceLevel_TagsNotSupported, ConformanceLevel));
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
             }
 
             if (expectedTag != tag)

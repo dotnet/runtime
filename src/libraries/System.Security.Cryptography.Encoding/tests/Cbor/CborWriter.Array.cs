@@ -13,7 +13,7 @@ namespace System.Formats.Cbor
         {
             if (definiteLength < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(definiteLength), "must be non-negative integer.");
+                throw new ArgumentOutOfRangeException(nameof(definiteLength));
             }
 
             WriteUnsignedInteger(CborMajorType.Array, (ulong)definiteLength);

@@ -46,7 +46,7 @@ namespace System.Formats.Cbor
             }
             catch (EncoderFallbackException e)
             {
-                throw new ArgumentException("Provided text string is not valid UTF8.", e);
+                throw new ArgumentException(SR.Cbor_Writer_InvalidUtf8String, e);
             }
 
             WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
