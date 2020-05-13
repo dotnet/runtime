@@ -31,7 +31,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public DebugDirectoryNode(EcmaModule sourceModule, string outputFileName)
         {
             _module = sourceModule;
-            _nativeEntry = new NativeDebugDirectoryEntryNode(Path.GetFileNameWithoutExtension(outputFileName) + ".ni.pdb");
+            string pdbNameRoot = Path.GetFileNameWithoutExtension(outputFileName);
+            if (sourceModule != null)
+            {
+                pdbNameRoot = sourceModule.Assembly.GetName().Name;
+            }
+            _nativeEntry = new NativeDebugDirectoryEntryNode(pdbNameRoot + ".ni.pdb");
         }
 
         public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
