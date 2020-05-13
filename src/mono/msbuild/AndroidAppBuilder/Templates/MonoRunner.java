@@ -57,7 +57,7 @@ public class MonoRunner extends Instrumentation
                 result.putInt("return-code", retcode);
                 // Xharness cli expects "test-results-path" with test results
                 result.putString("test-results-path", docsDir + "/testResults.xml");
-                finish(0, result);
+                finish(retcode, result);
             }
         });
     }
