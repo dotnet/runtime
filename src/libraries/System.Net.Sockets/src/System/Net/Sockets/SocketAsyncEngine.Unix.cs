@@ -96,22 +96,32 @@ namespace System.Net.Sockets
 
         private void RegisterCore(IntPtr socketHandle, SocketAsyncContext context)
         {
-            bool added = _handleToContextMap.TryAdd(socketHandle, new SocketAsyncContextWrapper(context));
-            Debug.Assert(added, "Add should always succeed");
+            try
+            {
+                bool added = _handleToContextMap.TryAdd(socketHandle, new SocketAsyncContextWrapper(context));
+                Debug.Assert(added, "Add should always succeed");
 
-            Interop.Error error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
-                Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socketHandle);
-            if (error == Interop.Error.SUCCESS)
-            {
-                return;
+                Interop.Error error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
+                    Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socketHandle);
+                if (error == Interop.Error.SUCCESS)
+                {
+                    return;
+                }
+                _handleToContextMap.TryRemove(socketHandle, out _);
+                if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
+                {
+                    throw new OutOfMemoryException();
+                }
+                else
+                {
+                    throw new InternalException(error);
+                }
             }
-            if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
+            catch
             {
-                throw new OutOfMemoryException();
-            }
-            else
-            {
-                throw new InternalException(error);
+                _handleToContextMap.TryRemove(socketHandle, out _);
+
+                throw;
             }
         }
 
