@@ -131,7 +131,7 @@ void Profile::writeProfileData()
         // Sanity checks -- note asserting here leads to hangs at runtime.
         if ((header->recordCount < MIN_RECORD_COUNT) || (header->recordCount > MAX_RECORD_COUNT))
         {
-            fprintf(profileDataFile, "Unreasonable record count %u at index %u\n", header[0], index);
+            fprintf(profileDataFile, "Unreasonable record count %u at index %u\n", header->recordCount, index);
             break;
         }
 
