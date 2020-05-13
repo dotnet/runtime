@@ -111,7 +111,7 @@ namespace System.Formats.Cbor
             Debug.Assert(type == CborMajorType.ByteString || type == CborMajorType.TextString);
             Debug.Assert(_currentIndefiniteLengthStringRanges != null);
 
-            int currentOffset = _offset;
+            int initialOffset = _offset;
 
             // calculate the definite length of the concatenated string
             int definiteLength = 0;
@@ -120,6 +120,8 @@ namespace System.Formats.Cbor
                 definiteLength += length;
             }
 
+            Span<byte> buffer = _buffer.AsSpan();
+
             // copy chunks to a temporary buffer
             byte[] tempBuffer = s_bufferPool.Rent(definiteLength);
             Span<byte> tempSpan = tempBuffer.AsSpan(0, definiteLength);
@@ -127,7 +129,7 @@ namespace System.Formats.Cbor
             Span<byte> s = tempSpan;
             foreach ((int offset, int length) in _currentIndefiniteLengthStringRanges)
             {
-                _buffer.AsSpan(offset, length).CopyTo(s);
+                buffer.Slice(offset, length).CopyTo(s);
                 s = s.Slice(length);
             }
             Debug.Assert(s.IsEmpty);
@@ -135,12 +137,13 @@ namespace System.Formats.Cbor
             // write back to the original buffer
             _offset = _frameOffset - 1;
             WriteUnsignedInteger(type, (ulong)definiteLength);
-            tempSpan.CopyTo(_buffer.AsSpan(_offset, definiteLength));
+            tempSpan.CopyTo(buffer.Slice(_offset, definiteLength));
             _offset += definiteLength;
 
             // clean up
             s_bufferPool.Return(tempBuffer);
             _currentIndefiniteLengthStringRanges.Clear();
+            buffer.Slice(_offset, initialOffset - _offset).Fill(0x0);
         }
     }
 }
