@@ -82,6 +82,50 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
+        public static void Reset_NonTrivialWriter_HappyPath()
+        {
+            // Set up: build a nontrivial writer state.
+            // Favor maps and Ctap2 canonicalization since
+            // since that utilizes most of the moving parts.
+            var writer = new CborWriter(conformanceLevel: CborConformanceLevel.Ctap2Canonical);
+
+            for (int i = 0; i < 10; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    writer.WriteStartMap(100);
+                }
+                else
+                {
+                    writer.WriteStartArray(100);
+                }
+            }
+
+            writer.WriteStartMap(3);
+
+            writer.WriteInt32(1); // key
+            writer.WriteInt32(2); // value
+
+            writer.WriteInt32(-1); // key
+            writer.WriteInt32(1); // value
+
+            // End set up
+
+            Assert.Equal(11, writer.Depth);
+            Assert.True(writer.BytesWritten > 11, "must have written a nontrivial number of bytes to the buffer");
+
+            writer.Reset(clearBuffer: true);
+
+            Assert.Equal(0, writer.Depth);
+            Assert.Equal(0, writer.BytesWritten);
+
+            // Write an object from scratch and validate that it is correct
+
+            writer.WriteInt32(42);
+            Assert.Equal(new byte[] { 0x18, 0x2a }, writer.Encode());
+        }
+
+        [Fact]
         public static void ConformanceLevel_DefaultValue_ShouldEqualLax()
         {
             var writer = new CborWriter();
