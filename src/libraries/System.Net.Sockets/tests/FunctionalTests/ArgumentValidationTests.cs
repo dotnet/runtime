@@ -694,7 +694,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SendToAsync_NullRemoteEndPoint_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().SendToAsync(s_eventArgs));
+            Assert.Throws<ArgumentException>(() => GetSocket().SendToAsync(s_eventArgs));
         }
 
         [Theory]
