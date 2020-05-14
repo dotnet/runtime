@@ -289,7 +289,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData(CborConformanceLevel.Canonical)]
         [InlineData(CborConformanceLevel.Ctap2Canonical)]
         public static void EncodeIndefiniteLengths_UnsupportedConformanceLevel_ShouldThrowArgumentException(CborConformanceLevel level)
         {

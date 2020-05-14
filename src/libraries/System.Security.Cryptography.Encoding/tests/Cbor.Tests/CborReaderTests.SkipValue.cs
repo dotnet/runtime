@@ -129,12 +129,12 @@ namespace System.Formats.Cbor.Tests
             new (CborConformanceLevel Level, string Encoding)[]
             {
                 (CborConformanceLevel.Ctap2Canonical, "1801"), // non-canonical integer representation
-                (CborConformanceLevel.Rfc7049Canonical, "5fff"), // indefinite-length byte string
-                (CborConformanceLevel.Rfc7049Canonical, "7fff"), // indefinite-length text string
-                (CborConformanceLevel.Rfc7049Canonical, "9fff"), // indefinite-length array
-                (CborConformanceLevel.Rfc7049Canonical, "bfff"), // indefinite-length map
+                (CborConformanceLevel.Canonical, "5fff"), // indefinite-length byte string
+                (CborConformanceLevel.Canonical, "7fff"), // indefinite-length text string
+                (CborConformanceLevel.Canonical, "9fff"), // indefinite-length array
+                (CborConformanceLevel.Canonical, "bfff"), // indefinite-length map
                 (CborConformanceLevel.Strict, "a201020103"), // duplicate keys in map
-                (CborConformanceLevel.Rfc7049Canonical, "a201020103"), // duplicate keys in map
+                (CborConformanceLevel.Canonical, "a201020103"), // duplicate keys in map
                 (CborConformanceLevel.Ctap2Canonical, "a202020101"), // unsorted keys in map
                 (CborConformanceLevel.Ctap2Canonical, "c001"), // tagged value
             }.Select(l => new object[] { l.Level, l.Encoding });

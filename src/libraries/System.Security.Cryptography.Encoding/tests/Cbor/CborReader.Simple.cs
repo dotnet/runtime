@@ -79,8 +79,8 @@ namespace System.Formats.Cbor
 
             bool result = header.AdditionalInfo switch
             {
-                CborAdditionalInfo.SimpleValueFalse => false,
-                CborAdditionalInfo.SimpleValueTrue => true,
+                (CborAdditionalInfo)CborSimpleValue.False => false,
+                (CborAdditionalInfo)CborSimpleValue.True => true,
                 _ => throw new InvalidOperationException(SR.Cbor_Reader_NotABooleanEncoding),
             };
 
@@ -95,7 +95,7 @@ namespace System.Formats.Cbor
 
             switch (header.AdditionalInfo)
             {
-                case CborAdditionalInfo.SimpleValueNull:
+                case (CborAdditionalInfo)CborSimpleValue.Null:
                     AdvanceBuffer(1);
                     AdvanceDataItemCounters();
                     return;
