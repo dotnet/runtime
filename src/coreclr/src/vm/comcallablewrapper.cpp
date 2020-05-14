@@ -2022,8 +2022,8 @@ void ComCallWrapper::Cleanup()
     LONGLONG llRefCount = m_pSimpleWrapper->GetRealRefCount();
 
     LOG((LF_INTEROP, LL_INFO100,
-        "Calling ComCallWrapper::Cleanup on CCW 0x%p. cbRef = 0x%x, cbJupiterRef = 0x%x, IsPegged = %d\n",
-        this, GET_COM_REF(llRefCount), GET_JUPITER_REF(llRefCount), IsPegged()));
+        "Calling ComCallWrapper::Cleanup on CCW 0x%p. cbRef = 0x%x\n",
+        this, GET_COM_REF(llRefCount)));
 
     if (GET_COM_REF(llRefCount) != 0)
     {
@@ -2033,30 +2033,6 @@ void ComCallWrapper::Cleanup()
         // so let us just forget about cleaning now
         // when the ref-count reaches 0, we will
         // do the cleanup anyway
-        return;
-    }
-
-    // If COMRef == 0 && JupiterRef > 0 && !Neutered
-    if ((GET_JUPITER_REF(llRefCount)) != 0 &&
-        (llRefCount & SimpleComCallWrapper::CLEANUP_SENTINEL) == 0)
-    {
-        LOG((LF_INTEROP, LL_INFO100, "Neutering ComCallWrapper 0x%p: COM Ref = 0 but Jupiter Ref > 0\n", this));
-
-        //
-        // AppX ONLY:
-        //
-        // Skip cleaning up the handle on the CCW to avoid QueryInterface_ICCW crashing when
-        // accessing the handle, otherwise we could run into a race where the CCW is being neutered
-        // and has set m_ppThis to NULL before it sets the 'neutered' bit.
-        //
-        // It is only safe to do so under AppX because there are no AppDomains in AppX so there is
-        // no need to cleanup the handle immediately
-        //
-        // We'll clean up the handle later when Jupiter release the final ref
-        //
-        bool fSkipHandleCleanup = AppX::IsAppXProcess();
-        m_pSimpleWrapper->Neuter(fSkipHandleCleanup);
-
         return;
     }
 
@@ -2953,7 +2929,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     if (IsIErrorInfo(riid) && AppX::IsAppXProcess())
     {
         // Don't let the user override the default IErrorInfo implementation in AppX because
-        // Jupiter uses it for WER. See code:GetExceptionDescription for details.
+        // the AppX app model uses it for WER. See code:GetExceptionDescription for details.
         SimpleComCallWrapper* pSimpleWrap = pWrap->GetSimpleWrapper();
         RETURN pSimpleWrap->QIStandardInterface(enum_IErrorInfo);
     }

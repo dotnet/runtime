@@ -8159,6 +8159,12 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 {
     SUPPORTS_DAC;
 
+    if (pJupiterRefCount)
+        *pJupiterRefCount = 0;
+
+    if (pIsPegged)
+        *pIsPegged = FALSE;
+
 #ifdef FEATURE_COMINTEROP
     if (uType == HNDTYPE_REFCOUNTED)
     {
@@ -8168,12 +8174,6 @@ void DacHandleWalker::GetRefCountedHandleInfo(
         {
             if (pRefCount)
                 *pRefCount = (unsigned int)pWrap->GetRefCount();
-
-            if (pJupiterRefCount)
-                *pJupiterRefCount = (unsigned int)pWrap->GetJupiterRefCount();
-
-            if (pIsPegged)
-                *pIsPegged = pWrap->IsConsideredPegged();
 
             if (pIsStrong)
                 *pIsStrong = pWrap->IsWrapperActive();
@@ -8185,12 +8185,6 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 
     if (pRefCount)
         *pRefCount = 0;
-
-    if (pJupiterRefCount)
-        *pJupiterRefCount = 0;
-
-    if (pIsPegged)
-        *pIsPegged = FALSE;
 
     if (pIsStrong)
         *pIsStrong = FALSE;

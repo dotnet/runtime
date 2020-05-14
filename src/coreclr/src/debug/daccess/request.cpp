@@ -4079,9 +4079,6 @@ HRESULT ClrDataAccess::GetCCWData(CLRDATA_ADDRESS ccw, struct DacpCCWData *ccwDa
     ccwData->isNeutered    = pSimpleCCW->IsNeutered();
     ccwData->ccwAddress    = TO_CDADDR(dac_cast<TADDR>(pCCW));
 
-    ccwData->jupiterRefCount = pSimpleCCW->GetJupiterRefCount();
-    ccwData->isPegged = pSimpleCCW->IsPegged();
-    ccwData->isGlobalPegged = false;
     ccwData->hasStrongRef = pCCW->IsWrapperActive();
     ccwData->handle = pCCW->GetObjectHandle();
     ccwData->isExtendsCOMObject = pCCW->GetSimpleWrapper()->IsExtendsCOMObject();

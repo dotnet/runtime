@@ -185,7 +185,7 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
 
 // Helper to release all of the RCWs in the specified context, across all caches.
 // If context is null, release all RCWs, otherwise release RCWs created in the
-// given context, including Jupiter RCWs
+// given context.
 void ReleaseRCWsInCaches(LPVOID pCtxCookie);
 
 // A wrapper that catches all exceptions - used in the OnThreadTerminate case.

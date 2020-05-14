@@ -4634,8 +4634,7 @@ HRESULT ProfToEEInterfaceImpl::ForceGC()
 
 #ifdef FEATURE_EVENT_TRACE
     // This helper, used by ETW and profAPI ensures a managed thread gets created for
-    // this thread before forcing the GC (to work around Jupiter issues where it's
-    // expected this thread is already managed before starting the GC).
+    // this thread before forcing the GC.
     HRESULT hr = ETW::GCLog::ForceGCForDiagnostics();
 #else // !FEATURE_EVENT_TRACE
     HRESULT hr = E_FAIL;

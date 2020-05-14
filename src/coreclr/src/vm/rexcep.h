@@ -79,30 +79,6 @@
 
 #include "namespace.h"
 
-
-// Temporary workaround - adding some HRESULTs that the Jupiter team will define and
-// add to one of their header files for errors.  Once these have been RI'ed into
-// windows and are in a file adjacent to winerror.h, we can remove these constants.
-// Given integration time, remove this by August 2011 at the very latest.
-#ifndef E_XAMLPARSEFAILED
-#define E_XAMLPARSEFAILED _HRESULT_TYPEDEF_(0x802B000AL)
-#endif
-#ifndef E_LAYOUTCYCLE
-#define E_LAYOUTCYCLE _HRESULT_TYPEDEF_(0x802B0014L)
-#endif
-#ifndef E_ELEMENTNOTENABLED
-#define E_ELEMENTNOTENABLED _HRESULT_TYPEDEF_(0x802B001EL)
-#endif
-#ifndef E_ELEMENTNOTAVAILABLE
-#define E_ELEMENTNOTAVAILABLE _HRESULT_TYPEDEF_(0x802B001FL)
-#endif
-#ifndef RO_E_CLOSED
-#define RO_E_CLOSED _HRESULT_TYPEDEF_(0x80000013L)
-#endif
-#ifndef APPMODEL_ERROR_NO_PACKAGE
-#define APPMODEL_ERROR_NO_PACKAGE        15700L
-#endif
-
 //
 // Actual definition of the exceptions and their matching HRESULT's.
 // HRESULTs are expected to be defined in CorError.h, and must also be

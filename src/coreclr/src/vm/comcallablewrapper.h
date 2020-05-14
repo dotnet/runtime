@@ -165,9 +165,7 @@ public:
     {
         enum
         {
-            // There is a small number of types that the class is castable to via variance and QI'ed for
-            // (typically just IFoo<object> where the class implements IFoo<IBar> and IFoo is covariant).
-            // There is also some number of IIDs QI'ed for by external code (e.g. Jupiter) that we won't
+            // There is also some number of IIDs QI'ed for by external code that we won't
             // recognize - this number is potentially unbounded so even if this was a different data
             // structure, we would want to limit its size. Simple sequentially searched array seems to
             // work the best both in terms of memory footprint and lookup performance.
@@ -1097,24 +1095,6 @@ public:
     // Release for a Wrapper object
     inline ULONG Release();
 
-    // Get Jupiter RefCount
-    inline ULONG GetJupiterRefCount();
-
-    // AddRef Jupiter Ref Count
-    // Jupiter Ref count becomes strong ref if pegged, otherwise weak ref
-    inline ULONG AddJupiterRef();
-
-    // Release Jupiter Ref Count
-    // Jupiter Ref count becomes strong ref if pegged, otherwise weak ref
-    inline ULONG ReleaseJupiterRef();
-
-    // Return whether this CCW is pegged or not by Jupiter
-    inline BOOL IsPegged();
-
-    // Return whether this CCW is pegged or not (either by Jupiter, or globally)
-    // We globally peg every Jupiter CCW outside Gen 2 GCs
-    inline BOOL IsConsideredPegged();
-
     // Initialize the simple wrapper.
     static void InitSimpleWrapper(ComCallWrapper* pWrap, SimpleComCallWrapper* pSimpleWrap);
 
@@ -1250,7 +1230,7 @@ private:
         enum_IsHandleWeak                      = 0x4,
         enum_IsComActivated                    = 0x8,
         // unused                              = 0x10,
-        enum_IsPegged                          = 0x80,
+        // unused                              = 0x80,
         // unused                              = 0x100,
         enum_CustomQIRespondsToIMarshal        = 0x200,
         enum_CustomQIRespondsToIMarshal_Inited = 0x400,
@@ -1261,14 +1241,10 @@ public :
     {
         CLEANUP_SENTINEL        = 0x0000000080000000,       // Sentinel -> 1 bit
         COM_REFCOUNT_MASK       = 0x000000007FFFFFFF,       // COM -> 31 bits
-        JUPITER_REFCOUNT_MASK   = 0xFFFFFFFF00000000,       // Jupiter -> 32 bits
-        JUPITER_REFCOUNT_SHIFT  = 32,
-        JUPITER_REFCOUNT_INC    = 0x0000000100000000,
         EXT_COM_REFCOUNT_MASK   = 0x00000000FFFFFFFF,       // For back-compat, preserve the higher-bit so that outside can observe it
         ALL_REFCOUNT_MASK       = 0xFFFFFFFF7FFFFFFF,
     };
 
-    #define GET_JUPITER_REF(x)  ((ULONG)(((x) & SimpleComCallWrapper::JUPITER_REFCOUNT_MASK) >> SimpleComCallWrapper::JUPITER_REFCOUNT_SHIFT))
     #define GET_COM_REF(x)      ((ULONG)((x) & SimpleComCallWrapper::COM_REFCOUNT_MASK))
     #define GET_EXT_COM_REF(x)  ((ULONG)((x) & SimpleComCallWrapper::EXT_COM_REFCOUNT_MASK))
 
@@ -1442,27 +1418,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         FastInterlockOr((ULONG*)&m_flags, enum_IsComActivated);
-    }
-
-    inline BOOL IsPegged()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_flags & enum_IsPegged;
-    }
-
-    inline void MarkPegged()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        FastInterlockOr((ULONG*)&m_flags, enum_IsPegged);
-    }
-
-    inline void UnMarkPegged()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        FastInterlockAnd((ULONG*)&m_flags, ~enum_IsPegged);
     }
 
     // Used for the creation and deletion of simple wrappers
@@ -1689,7 +1644,7 @@ public:
         // point unless newRefCount equals CLEANUP_SENTINEL (it's the only case when we know that Neuter
         // or another Release could not swoop in and destroy our data structures).
 
-        // If we hit the sentinel value in COM ref count and jupiter ref count == 0, it's our responsibility to clean up.
+        // If we hit the sentinel value in COM ref count == 0, it's our responsibility to clean up.
         if (newRefCount == CLEANUP_SENTINEL)
         {
             ReleaseImplCleanup();
@@ -1699,56 +1654,7 @@ public:
         return GET_EXT_COM_REF(newRefCount);
     }
 
-    inline ULONG AddJupiterRef()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        LONGLONG llOldRefCount;
-        LONGLONG llNewRefCount;
-
-        do {
-            llOldRefCount = m_llRefCount;
-            llNewRefCount = llOldRefCount + JUPITER_REFCOUNT_INC;
-        } while (InterlockedCompareExchange64(&m_llRefCount, llNewRefCount, llOldRefCount) != llOldRefCount);
-
-        LOG((LF_INTEROP, LL_INFO1000,
-            "SimpleComCallWrapper::AddJupiterRef() called on SimpleComCallWrapper 0x%p, cbRef = 0x%x, cbJupiterRef = 0x%x\n", this, GET_COM_REF(llNewRefCount), GET_JUPITER_REF(llNewRefCount)));
-
-        return GET_JUPITER_REF(llNewRefCount);
-    }
-
-    inline ULONG ReleaseJupiterRef()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        LONGLONG llOldRefCount;
-        LONGLONG llNewRefCount;
-
-        do {
-            llOldRefCount = m_llRefCount;
-            llNewRefCount = llOldRefCount - JUPITER_REFCOUNT_INC;
-        } while (InterlockedCompareExchange64(&m_llRefCount, llNewRefCount, llOldRefCount) != llOldRefCount);
-
-        LOG((LF_INTEROP, LL_INFO1000,
-            "SimpleComCallWrapper::ReleaseJupiterRef() called on SimpleComCallWrapper 0x%p, cbRef = 0x%x, cbJupiterRef = 0x%x\n", this, GET_COM_REF(llNewRefCount), GET_JUPITER_REF(llNewRefCount)));
-
-        if (llNewRefCount == CLEANUP_SENTINEL)
-        {
-            // If we hit the sentinel value, it's our responsibility to clean up.
-            m_pWrap->Cleanup();
-        }
-
-        return GET_JUPITER_REF(llNewRefCount);
-    }
-
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-
-    inline ULONG GetJupiterRefCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GET_JUPITER_REF(READ_REF(m_llRefCount));
-    }
 
     MethodTable* GetMethodTable()
     {
@@ -1855,7 +1761,7 @@ private:
 
     DWORD                           m_flags;
 
-    // This maintains both COM ref and Jupiter ref in 64-bit
+    // This maintains both COM ref in 64-bit
     LONGLONG                        m_llRefCount;
  };
 
@@ -1954,35 +1860,6 @@ inline ULONG ComCallWrapper::Release()
     return m_pSimpleWrapper->Release();
 }
 
-inline ULONG ComCallWrapper::AddJupiterRef()
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
-    return m_pSimpleWrapper->AddJupiterRef();
-}
-
-inline ULONG ComCallWrapper::ReleaseJupiterRef()
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(m_pSimpleWrapper));
-    }
-    CONTRACTL_END;
-
-    return m_pSimpleWrapper->ReleaseJupiterRef();
-}
-
 inline void ComCallWrapper::InitSimpleWrapper(ComCallWrapper* pWrap, SimpleComCallWrapper* pSimpleWrap)
 {
     CONTRACTL
@@ -2024,41 +1901,6 @@ inline void ComCallWrapper::ClearSimpleWrapper(ComCallWrapper* pWrap)
     }
 }
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
-
-inline BOOL ComCallWrapper::IsPegged()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
-    return m_pSimpleWrapper->IsPegged();
-}
-
-inline BOOL ComCallWrapper::IsConsideredPegged()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return m_pSimpleWrapper->IsPegged();
-}
-
-inline ULONG ComCallWrapper::GetJupiterRefCount()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
-    return m_pSimpleWrapper->GetJupiterRefCount();
-}
 
 inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
 {
@@ -2137,21 +1979,15 @@ inline BOOL ComCallWrapper::IsWrapperActive()
 
     LONGLONG llRefCount = m_pSimpleWrapper->GetRealRefCount();
     ULONG cbRef = GET_COM_REF(llRefCount);
-    ULONG cbJupiterRef = GET_JUPITER_REF(llRefCount);
 
-    // We only consider jupiter ref count to be a "strong" ref count if it is pegged and it is alive
-    // Note that there is no concern for resurrecting this CCW in the next Gen0/1 GC
-    // because this CCW will be promoted to Gen 2 very quickly
-    BOOL bHasJupiterStrongRefCount = (cbJupiterRef > 0 && IsConsideredPegged());
-
-    BOOL bHasStrongCOMRefCount = ((cbRef > 0) || bHasJupiterStrongRefCount);
+    BOOL bHasStrongCOMRefCount = ((cbRef > 0));
 
     BOOL bIsWrapperActive = (bHasStrongCOMRefCount && !m_pSimpleWrapper->IsHandleWeak());
 
     LOG((LF_INTEROP, LL_INFO1000,
-         "CCW 0x%p: cbRef = 0x%x, cbJupiterRef = 0x%x, IsPegged = %d, IsHandleWeak = %d\n",
+         "CCW 0x%p: cbRef = 0x%x, IsHandleWeak = %d\n",
          this,
-         cbRef, cbJupiterRef, m_pSimpleWrapper->IsPegged(), m_pSimpleWrapper->IsHandleWeak()));
+         cbRef, m_pSimpleWrapper->IsHandleWeak()));
     LOG((LF_INTEROP, LL_INFO1000, "CCW 0x%p: IsWrapperActive returned %d\n", this, bIsWrapperActive));
 
     return bIsWrapperActive;

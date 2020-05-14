@@ -1018,7 +1018,7 @@ BOOL RCWCache::FindOrInsertWrapper_NoLock(IUnknown* pIdentity, RCWHolder* pRCW, 
 //--------------------------------------------------------------------------------
 // ULONG RCWCache::ReleaseWrappers()
 // Helper to release the complus wrappers in the cache that lives in the specified
-// context (including Jupiter RCWs) or all the wrappers in the cache if the pCtxCookie is null.
+// context or all the wrappers in the cache if the pCtxCookie is null.
 void RCWCache::ReleaseWrappersWorker(LPVOID pCtxCookie)
 {
     CONTRACTL
@@ -1057,7 +1057,7 @@ void RCWCache::ReleaseWrappersWorker(LPVOID pCtxCookie)
                 _ASSERTE(pWrap != NULL);
 
                 // If a context cookie was specified, then only clean up wrappers that
-                // are in that context, including non-FTM regular RCWs, and FTM Jupiter objects
+                // are in that context, including non-FTM regular RCWs
                 // Otherwise clean up all the wrappers.
                 // Ignore RCWs that aggregate the FTM if we are cleaning up context
                 // specific RCWs
