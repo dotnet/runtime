@@ -18,7 +18,7 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private sealed class Http2Stream : IValueTaskSource, IHttpTrace, IHttpHeadersHandler
+        private sealed class Http2Stream : IValueTaskSource, IHttpHeadersHandler, IHttpTrace
         {
             private const int InitialStreamBufferSize =
 #if DEBUG
