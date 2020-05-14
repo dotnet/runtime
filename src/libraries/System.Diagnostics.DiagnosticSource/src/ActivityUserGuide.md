@@ -3,7 +3,7 @@
 This document describes Activity, a class that allows storing and accessing diagnostics context and consuming it with logging system.
 
 This document provides Activity architecture [overview](#overview) and [usage](#activity-usage).
-
+ change
 # Overview
 When application starts processing an operation e.g. HTTP request or task from queue, it creates an `Activity` to track it through the system as the request is processed. Examples of context stored in `Activity` could be HTTP request path, method, user-agent, or correlation id: all the details important to be logged along with every trace. 
 When application calls external dependency to complete an operation, it may need to pass some of the context (e.g. correlation id) along with dependency call to be able to correlate logs from multiple services.

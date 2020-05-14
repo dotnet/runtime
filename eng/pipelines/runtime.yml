@@ -37,13 +37,9 @@ pr:
     exclude:
     - eng/Version.Details.xml
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
+    - eng/pipelines/runtime.yml
+    - *.md
+    - /*.TXT
 
 variables:
   - template: /eng/pipelines/common/variables.yml
