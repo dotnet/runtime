@@ -9,8 +9,8 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        public void SkipValue(bool validateConformance = false) => SkipToAncestor(0, validateConformance);
-        public void SkipToParent(bool validateConformance = false)
+        public void SkipValue(bool validateConformance = true) => SkipToAncestor(0, validateConformance);
+        public void SkipToParent(bool validateConformance = true)
         {
             if (_currentMajorType is null)
             {

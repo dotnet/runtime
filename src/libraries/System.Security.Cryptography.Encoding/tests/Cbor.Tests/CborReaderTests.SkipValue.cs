@@ -95,7 +95,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = "62f090".HexToByteArray();
             var reader = new CborReader(encoding, conformanceLevel);
 
-            reader.SkipValue(validateConformance: true);
+            reader.SkipValue();
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
@@ -108,7 +108,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = "62f090".HexToByteArray();
             var reader = new CborReader(encoding, conformanceLevel);
 
-            FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue(validateConformance: true));
+            FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue());
             Assert.NotNull(exn.InnerException);
             Assert.IsType<DecoderFallbackException>(exn.InnerException);
 
@@ -117,12 +117,12 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [MemberData(nameof(NonConformingSkipValueEncodings))]
-        public static void SkipValue_NonConformingValues_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void SkipValue_ValidationDisabled_NonConformingValues_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
 
-            reader.SkipValue();
+            reader.SkipValue(validateConformance: false);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
@@ -133,7 +133,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
 
-            Assert.Throws<FormatException>(() => reader.SkipValue(validateConformance: true));
+            Assert.Throws<FormatException>(() => reader.SkipValue());
         }
 
         public static IEnumerable<object[]> NonConformingSkipValueEncodings =>
@@ -157,7 +157,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding, CborConformanceLevel.Ctap2Canonical);
 
             reader.ReadStartArray();
-            reader.SkipValue();
+            reader.SkipValue(validateConformance: false);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
         }
 

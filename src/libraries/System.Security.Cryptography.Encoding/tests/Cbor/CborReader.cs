@@ -233,7 +233,7 @@ namespace System.Formats.Cbor
             int initialBytesRead = _bytesRead;
 
             // call skip to read and validate the next value
-            SkipValue();
+            SkipValue(validateConformance: true);
 
             // return the slice corresponding to the consumed value
             return initialBuffer.Slice(0, _bytesRead - initialBytesRead);
