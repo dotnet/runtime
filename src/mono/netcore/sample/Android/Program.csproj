@@ -7,7 +7,7 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
-    <AndroidAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder'))</AndroidAppBuilder>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(NetCoreAppCurrent)-$(Configuration)'))</AndroidAppBuilderDir>
   </PropertyGroup>
 
   <Target Name="RebuildAndroidAppBuilder">
@@ -15,8 +15,8 @@
              Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
   </Target>
 
-  <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(AndroidAppBuilder)\$(NetCoreAppCurrent)-$(Configuration)\AndroidAppBuilder.dll" />
+  <UsingTask TaskName="AndroidAppBuilderTask"
+             AssemblyFile="$(AndroidAppBuilderDir)\AndroidAppBuilder.dll" />
 
   <Target Name="BuildAppBundle" DependsOnTargets="RebuildAndroidAppBuilder">
     <PropertyGroup>

@@ -45,4 +45,8 @@ dotnet xharness ios test --app="$APP_BUNDLE" \
     --targets=$TARGET \
     --output-directory=$XHARNESS_OUT
 
+_exitCode=$?
+
 echo "Xharness artifacts: $XHARNESS_OUT"
+
+exit $_exitCode

@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Linq;
 using System.Text;
@@ -24,11 +28,18 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
             Console.WriteLine($"Test libs were not found (*.Tests.dll was not found in {Environment.CurrentDirectory})");
             return -1;
         }
+        int exitCode = 0;
         s_MainTestName = Path.GetFileNameWithoutExtension(s_testLibs[0]);
         var simpleTestRunner = new SimpleAndroidTestRunner(true);
+        simpleTestRunner.TestsCompleted += (e, result) => 
+        {
+            if (result.FailedTests > 0)
+                exitCode = 1;
+        };
+
         await simpleTestRunner.RunAsync();
         Console.WriteLine("----- Done -----");
-        return 0;
+        return exitCode;
     }
 
     public SimpleAndroidTestRunner(bool verbose)

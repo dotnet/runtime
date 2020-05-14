@@ -89,50 +89,6 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
     return baseType;
 }
 
-//------------------------------------------------------------------------
-// impUnsupportedHWIntrinsic: returns a node for an unsupported HWIntrinsic
-//
-// Arguments:
-//    helper     - JIT helper ID for the exception to be thrown
-//    method     - method handle of the intrinsic function.
-//    sig        - signature of the intrinsic call
-//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
-//
-// Return Value:
-//    a gtNewMustThrowException if mustExpand is true; otherwise, nullptr
-//
-GenTree* Compiler::impUnsupportedHWIntrinsic(unsigned              helper,
-                                             CORINFO_METHOD_HANDLE method,
-                                             CORINFO_SIG_INFO*     sig,
-                                             bool                  mustExpand)
-{
-    // We've hit some error case and may need to return a node for the given error.
-    //
-    // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
-    // scenario, we need to return `nullptr` so that a GT_CALL to the intrinsic is emitted instead. This is to
-    // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
-    // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
-    // match that).
-    //
-    // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
-    // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
-    // `nullptr` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
-
-    if (mustExpand)
-    {
-        for (unsigned i = 0; i < sig->numArgs; i++)
-        {
-            impPopStack();
-        }
-
-        return gtNewMustThrowException(helper, JITtype2varType(sig->retType), sig->retTypeClass);
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType)
 {
     if (simdType == TYP_SIMD16)

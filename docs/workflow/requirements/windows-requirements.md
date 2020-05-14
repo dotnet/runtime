@@ -26,11 +26,11 @@ Visual Studio 2019 installation process:
   - .NET Desktop Development with all default components.
   - Desktop Development with C++ with all default components.
 - To build for Arm32 or Arm64, make sure that you have the right architecture specific compilers installed:
-  - In addition, ensure you install the ARM tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM build tools (v14.23)".
-  - Also, ensure you install the ARM64 tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23)".
+  - In addition, ensure you install the ARM tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM build tools" (v14.23 or newer).
+  - Also, ensure you install the ARM64 tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23 or newer)".
 - To build the tests, you will need some additional components:
   - Windows 10 SDK component version 10.0.18362 or newer. This component is installed by default as a part of 'Desktop Development with C++' workload.
-  - C++/CLI support for v142 build tools (14.23)
+  - C++/CLI support for v142 build tools (v14.23 or newer)
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.
 
@@ -67,9 +67,9 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 
 ## .NET SDK
 
-While not strictly needed to build or test this repository, having the .NET SDK installed lets you use the dotnet.exe command to run .NET applications in the 'normal' way.
+While not strictly needed to build or test this repository, having the .NET SDK installed lets you browse solution files in this repository with Visual Studio and use the dotnet.exe command to run .NET applications in the 'normal' way.
 We use this in the [Using Your Build](../testing/using-your-build.md) instructions.
-Visual Studio should have installed the .NET SDK, but in case it did not you can get it from the [Installing the .NET SDK](https://dotnet.microsoft.com/download) page.
+The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/master/global.json#L3). [You can find the installers and binaries for nightly builds of .NET SDK here](https://github.com/dotnet/installer#installers-and-binaries).
 
 ## Adding to the default PATH variable
 
