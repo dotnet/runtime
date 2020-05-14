@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml
 {
     using System;
@@ -24,9 +25,9 @@ namespace System.Xml
     {
         private readonly XmlRawWriter _wrapped;
         private bool _inCDataSection;
-        private readonly Dictionary<XmlQualifiedName, int> _lookupCDataElems;
-        private readonly BitStack _bitsCData;
-        private readonly XmlQualifiedName _qnameCData;
+        private readonly Dictionary<XmlQualifiedName, int>? _lookupCDataElems;
+        private readonly BitStack? _bitsCData;
+        private readonly XmlQualifiedName? _qnameCData;
         private bool _outputDocType;
         private readonly bool _checkWellFormedDoc;
         private bool _hasDocElem;
@@ -86,7 +87,7 @@ namespace System.Xml
         /// <summary>
         /// Get and set the namespace resolver that's used by this RawWriter to resolve prefixes.
         /// </summary>
-        internal override IXmlNamespaceResolver NamespaceResolver
+        internal override IXmlNamespaceResolver? NamespaceResolver
         {
             get
             {
@@ -119,7 +120,7 @@ namespace System.Xml
         {
             get
             {
-                XmlWriterSettings settings = _wrapped.Settings;
+                XmlWriterSettings settings = _wrapped.Settings!;
 
                 settings.ReadOnly = false;
                 settings.DocTypeSystem = _systemId;
@@ -133,7 +134,7 @@ namespace System.Xml
         /// <summary>
         /// Suppress this explicit call to WriteDocType if information was provided by XmlWriterSettings.
         /// </summary>
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             if (_publicId == null && _systemId == null)
             {
@@ -146,7 +147,7 @@ namespace System.Xml
         /// Check well-formedness, possibly output doc-type-decl, and determine whether this element is a
         /// CData section element.
         /// </summary>
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             EndCDataSection();
 
@@ -164,7 +165,7 @@ namespace System.Xml
             if (_outputDocType)
             {
                 _wrapped.WriteDocType(
-                        prefix.Length != 0 ? prefix + ":" + localName : localName,
+                        string.IsNullOrEmpty(prefix) ? localName : prefix + ":" + localName,
                         _publicId,
                         _systemId,
                         null);
@@ -177,8 +178,8 @@ namespace System.Xml
             if (_lookupCDataElems != null)
             {
                 // Determine whether this element is a CData section element
-                _qnameCData.Init(localName, ns);
-                _bitsCData.PushBit(_lookupCDataElems.ContainsKey(_qnameCData));
+                _qnameCData!.Init(localName, ns);
+                _bitsCData!.PushBit(_lookupCDataElems.ContainsKey(_qnameCData));
             }
         }
 
@@ -192,7 +193,7 @@ namespace System.Xml
                 _depth--;
 
             if (_lookupCDataElems != null)
-                _bitsCData.PopBit();
+                _bitsCData!.PopBit();
         }
 
         internal override void WriteFullEndElement(string prefix, string localName, string ns)
@@ -205,7 +206,7 @@ namespace System.Xml
                 _depth--;
 
             if (_lookupCDataElems != null)
-                _bitsCData.PopBit();
+                _bitsCData!.PopBit();
         }
 
         internal override void StartElementContent()
@@ -213,7 +214,7 @@ namespace System.Xml
             _wrapped.StartElementContent();
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             _inAttr = true;
             _wrapped.WriteStartAttribute(prefix, localName, ns);
@@ -248,7 +249,7 @@ namespace System.Xml
             _wrapped.WriteEndNamespaceDeclaration();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             _wrapped.WriteCData(text);
         }
@@ -273,7 +274,7 @@ namespace System.Xml
                 _wrapped.WriteWhitespace(ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             if (!_inAttr && (_inCDataSection || StartCDataSection()))
                 _wrapped.WriteCData(text);
@@ -351,7 +352,7 @@ namespace System.Xml
         private bool StartCDataSection()
         {
             Debug.Assert(!_inCDataSection);
-            if (_lookupCDataElems != null && _bitsCData.PeekBit())
+            if (_lookupCDataElems != null && _bitsCData!.PeekBit())
             {
                 _inCDataSection = true;
                 return true;

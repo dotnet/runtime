@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Secur32
     {
-        [DllImport(Libraries.Secur32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Secur32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         internal static extern BOOLEAN GetUserNameExW(int NameFormat, ref char lpNameBuffer, ref uint lpnSize);
 
         internal const int NameSamCompatible = 2;

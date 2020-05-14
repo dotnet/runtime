@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
     {
         private void* _ptr;
 
-        internal StringHandleOnStack([NotNull] ref string? s)
+        internal StringHandleOnStack(ref string? s)
         {
             _ptr = Unsafe.AsPointer(ref s);
         }
@@ -31,7 +31,7 @@ namespace System.Runtime.CompilerServices
             _ptr = pObject;
         }
 
-        internal static ObjectHandleOnStack Create<T>([NotNull] ref T o) where T : class?
+        internal static ObjectHandleOnStack Create<T>(ref T o) where T : class?
         {
             return new ObjectHandleOnStack(Unsafe.AsPointer(ref o));
         }

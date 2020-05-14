@@ -26,13 +26,13 @@ namespace System.Net.Security
             //     opaque fragment[SSLPlaintext.length];
             // } SSLPlaintext;
             const int ContentTypeOffset = 0;
-            const int ProtocolVersionOffset = ContentTypeOffset + sizeof(ContentType);
+            const int ProtocolVersionOffset = ContentTypeOffset + sizeof(TlsContentType);
             const int LengthOffset = ProtocolVersionOffset + ProtocolVersionSize;
             const int HandshakeOffset = LengthOffset + sizeof(ushort);
 
             // SSL v2's ContentType has 0x80 bit set.
             // We do not care about SSL v2 here because it does not support client hello extensions
-            if (sslPlainText.Length < HandshakeOffset || (ContentType)sslPlainText[ContentTypeOffset] != ContentType.Handshake)
+            if (sslPlainText.Length < HandshakeOffset || (TlsContentType)sslPlainText[ContentTypeOffset] != TlsContentType.Handshake)
             {
                 return null;
             }
@@ -62,10 +62,10 @@ namespace System.Net.Security
             //     } body;
             // } Handshake;
             const int HandshakeTypeOffset = 0;
-            const int ClientHelloLengthOffset = HandshakeTypeOffset + sizeof(HandshakeType);
+            const int ClientHelloLengthOffset = HandshakeTypeOffset + sizeof(TlsHandshakeType);
             const int ClientHelloOffset = ClientHelloLengthOffset + UInt24Size;
 
-            if (sslHandshake.Length < ClientHelloOffset || (HandshakeType)sslHandshake[HandshakeTypeOffset] != HandshakeType.ClientHello)
+            if (sslHandshake.Length < ClientHelloOffset || (TlsHandshakeType)sslHandshake[HandshakeTypeOffset] != TlsHandshakeType.ClientHello)
             {
                 return null;
             }
@@ -361,16 +361,6 @@ namespace System.Net.Security
         private static Encoding CreateEncoding()
         {
             return Encoding.GetEncoding("utf-8", new EncoderExceptionFallback(), new DecoderExceptionFallback());
-        }
-
-        private enum ContentType : byte
-        {
-            Handshake = 0x16
-        }
-
-        private enum HandshakeType : byte
-        {
-            ClientHello = 0x01
         }
 
         private enum ExtensionType : ushort

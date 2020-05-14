@@ -14,7 +14,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new OutOfMemoryException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OUTOFMEMORY, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OUTOFMEMORY, validateMessage: false);
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace System.Tests
         {
             string message = "out of memory";
             var exception = new OutOfMemoryException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OUTOFMEMORY, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OUTOFMEMORY, message: message);
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace System.Tests
             string message = "out of memory";
             var innerException = new Exception("Inner exception");
             var exception = new OutOfMemoryException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OUTOFMEMORY, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OUTOFMEMORY, innerException: innerException, message: message);
         }
     }
 }

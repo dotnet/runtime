@@ -5,10 +5,6 @@
     <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly' or '$(RuntimeOS)' == 'ios' or '$(RuntimeOS)' == 'android'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
-    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
-    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
@@ -45,6 +41,8 @@
     <PropertyGroup>
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
       <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' == 'true'">hostpolicy</HostPolicyFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' != 'true'">libhostpolicy</HostPolicyFileName>
 
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
@@ -53,6 +51,7 @@
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
+      <HostPolicyFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostPolicyFileName)'" />
       <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
     </ItemGroup>
 
@@ -71,6 +70,12 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
+    <Copy Condition="'$(RuntimeFlavor)' == 'Mono'"
+          SourceFiles="@(HostPolicyFile)"
+          DestinationFolder="$(TestHostRootPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
@@ -84,6 +89,9 @@
       </NativeBinPlaceItem>
       <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
+      </NativeBinPlaceItem>
+      <NativeBinPlaceItem Include="@(WasmDistFiles)">
+        <DestinationSubDirectory>wasm/%(RecursiveDir)</DestinationSubDirectory>
       </NativeBinPlaceItem>
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">

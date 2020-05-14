@@ -430,6 +430,35 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;
 
+            case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+            case NI_AdvSimd_DuplicateSelectedScalarToVector128:
+            case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+            {
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                // Prior to codegen, the emitSize is based on node->gtSIMDSize which
+                // tracks the size of the first operand and is used to tell if the index
+                // is in range. However, when actually emitting it needs to be the size
+                // of the return and the size of the operand is interpreted based on the
+                // index value.
+
+                assert(
+                    GetEmitter()->isValidVectorIndex(emitSize, GetEmitter()->optGetElemsize(opt), helper.ImmValue()));
+
+                emitSize = emitActualTypeSize(node->gtType);
+                opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    assert(opt != INS_OPTS_NONE);
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, elementIndex, opt);
+                }
+
+                break;
+            }
+
             case NI_AdvSimd_Extract:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
@@ -516,11 +545,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (varTypeIsFloating(intrin.baseType))
                 {
-                    if (targetReg != op1Reg)
-                    {
-                        // fmov reg1, reg2
-                        GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, INS_OPTS_NONE);
-                    }
+                    // fmov reg1, reg2
+                    GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, INS_OPTS_NONE);
                 }
                 else
                 {
@@ -556,6 +582,40 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector128_get_AllBitsSet:
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
                 break;
+
+            case NI_AdvSimd_DuplicateToVector64:
+            case NI_AdvSimd_DuplicateToVector128:
+            case NI_AdvSimd_Arm64_DuplicateToVector64:
+            case NI_AdvSimd_Arm64_DuplicateToVector128:
+            {
+                if (varTypeIsFloating(intrin.baseType))
+                {
+                    if (intrin.op1->isContainedFltOrDblImmed())
+                    {
+                        const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                        GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
+                    }
+                    else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
+                    {
+                        assert(intrin.baseType == TYP_DOUBLE);
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 0, opt);
+                    }
+                }
+                else if (intrin.op1->isContainedIntOrIImmed())
+                {
+                    const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+            }
+            break;
 
             default:
                 unreached();

@@ -4185,23 +4185,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         }
     }
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    if (!g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        // Within the VM, we could have thrown and caught a managed exception. This is done by
-        // RaiseTheException that will flag that exception's corruption severity to be used
-        // incase it leaks out to managed code.
-        //
-        // If it does not leak out, but ends up calling into managed code that throws,
-        // we will come here. In such a case, simply reset the corruption-severity
-        // since we want the exception being thrown to have its correct severity set
-        // when CLR's managed code exception handler sets it.
-
-        ThreadExceptionState *pExState = GetThread()->GetExceptionState();
-        pExState->SetLastActiveExceptionCorruptionSeverity(NotSet);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
     RaiseTheExceptionInternalOnly(oref, FALSE);
 
     HELPER_METHOD_FRAME_END();

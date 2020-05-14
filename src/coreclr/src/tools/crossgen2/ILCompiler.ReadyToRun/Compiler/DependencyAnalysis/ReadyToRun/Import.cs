@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -17,12 +18,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal readonly SignatureEmbeddedPointerIndirectionNode ImportSignature;
 
-        internal readonly string CallSite;
+        internal readonly MethodDesc CallingMethod;
 
-        public Import(ImportSectionNode tableNode, Signature importSignature, string callSite = null)
+        public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null)
         {
             Table = tableNode;
-            CallSite = callSite;
+            CallingMethod = callingMethod;
             ImportSignature = new SignatureEmbeddedPointerIndirectionNode(this, importSignature);
         }
 
@@ -66,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             Import otherNode = (Import)other;
-            int result = string.Compare(CallSite, otherNode.CallSite);
+            int result = comparer.Compare(CallingMethod, otherNode.CallingMethod);
             if (result != 0)
                 return result;
 

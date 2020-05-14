@@ -70,19 +70,13 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-        - ${{ if eq(parameters.osGroup, 'OSX') }}:
-          - script: |
-              brew install pkgconfig icu4c openssl
-              brew link --force icu4c
-              ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
-              ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
-              ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
-            displayName: Install Build Dependencies
-
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+          - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+            displayName: Install Build Dependencies
+
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h

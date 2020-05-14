@@ -5,9 +5,7 @@
   <ItemGroup>
     <Compile Include="BoundedChannelTests.cs" />
     <Compile Include="ChannelClosedExceptionTests.cs" />
-    <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="ChannelTestBase.cs" />
-    <Compile Include="ChannelTestBase.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="ChannelTests.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="UnboundedChannelTests.cs" />
@@ -15,5 +13,9 @@
     <Compile Include="DebugAttributeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
              Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs" />
+    <Compile Include="ChannelTestBase.netcoreapp.cs" />
   </ItemGroup>
 </Project>

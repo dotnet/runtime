@@ -12,7 +12,7 @@ program:
 
 bundle: clean program
 	$(DOTNET) msbuild /t:BuildAppBundle /p:Configuration=$(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLlvm=$(USE_LLVM)
+	/p:UseLLVM=$(USE_LLVM)
 
 deploy-sim:
 	$(DOTNET) msbuild /t:IosDeployToSimulator /p:Configuration=$(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH)

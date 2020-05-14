@@ -44,7 +44,7 @@ namespace System.IO.Tests
             Assert.NotNull(fileLoadException);
 
             // Don't validate the message.  Currently .NET Native does not produce HR-specific messages
-            ExceptionUtility.ValidateExceptionProperties(fileLoadException, hResult: hr, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(fileLoadException, hResult: hr, validateMessage: false);
             Assert.Null(fileLoadException.FileName);
         }
     }

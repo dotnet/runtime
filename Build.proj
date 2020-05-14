@@ -5,10 +5,7 @@
     Reference the projects for traversal build. Ordering matters here.
   -->
   <ItemGroup>
-    <ProjectReference Include="@(CoreClrProject)" />
-    <ProjectReference Include="@(MonoProject)" />
-    <ProjectReference Include="@(LibrariesProject)" />
-    <ProjectReference Include="@(InstallerProject)" />
+    <ProjectReference Include="@(ProjectToBuild)" />
   </ItemGroup>
 
   <!--

@@ -4,9 +4,9 @@
 
 using System.Buffers.Binary;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         public float ReadSingle()
         {

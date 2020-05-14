@@ -5,9 +5,9 @@
 using System.Globalization;
 using System.Numerics;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
         public CborTag ReadTag()
         {
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     _ => throw new InvalidOperationException("CBOR tag is not a recognized Bignum value."),
                 };
 
-                switch(PeekState())
+                switch (PeekState())
                 {
                     case CborReaderState.ByteString:
                     case CborReaderState.StartByteString:
@@ -202,7 +202,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         break;
 
                     case CborReaderState.Tag:
-                        switch(PeekTag())
+                        switch (PeekTag())
                         {
                             case CborTag.UnsignedBigNum:
                             case CborTag.NegativeBigNum:

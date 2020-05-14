@@ -2,19 +2,21 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
+    <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
-    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(NetCoreAppCurrent)-$(Configuration)'))</AndroidAppBuilderDir>
   </PropertyGroup>
 
   <Target Name="RebuildAndroidAppBuilder">
-    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\AndroidAppBuilder\AndroidAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)" Targets="Restore;Build" />
+    <MSBuild Projects="$(AndroidAppBuilderProjDirectory)\AndroidAppBuilder.csproj"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
   </Target>
 
-  <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AndroidAppBuilder\$(TargetArchitecture)\$(Configuration)\AndroidAppBuilder.dll" />
+  <UsingTask TaskName="AndroidAppBuilderTask"
+             AssemblyFile="$(AndroidAppBuilderDir)\AndroidAppBuilder.dll" />
 
   <Target Name="BuildAppBundle" DependsOnTargets="RebuildAndroidAppBuilder">
     <PropertyGroup>
@@ -34,6 +36,15 @@
     <RemoveDir Directories="$(BundleDir)" />
     <Copy SourceFiles="@(AppBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
+    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
+          SourceFiles="$(AndroidOpenSslCryptoLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
+          SourceFiles="$(AndroidOpenSslLib)"
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+
     <AndroidAppBuilderTask 
         Abi="$(AndroidAbi)"
         ProjectName="HelloAndroid"

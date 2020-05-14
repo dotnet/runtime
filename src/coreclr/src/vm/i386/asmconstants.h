@@ -143,8 +143,10 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureEip == offsetof(LazyMachState, captur
 #define VASigCookie__StubOffset 4
 ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
 
+#ifndef UNIX_X86_ABI
 #define SIZEOF_TailCallFrame 32
 ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
+#endif // !UNIX_X86_ABI
 
 #define SIZEOF_GSCookie 4
 

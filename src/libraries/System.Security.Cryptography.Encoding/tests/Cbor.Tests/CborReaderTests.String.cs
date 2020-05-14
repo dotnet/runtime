@@ -9,7 +9,7 @@ using System.Text;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
@@ -304,7 +304,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, "590000")]
         [InlineData(CborConformanceLevel.Strict, "5a00000000")]
         [InlineData(CborConformanceLevel.Strict, "5b0000000000000000")]
-        internal static void ReadByteString_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadByteString_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -322,7 +322,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Ctap2Canonical, "590000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "5a00000000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "5b0000000000000000")]
-        internal static void ReadByteString_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void ReadByteString_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -339,7 +339,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, "790000")]
         [InlineData(CborConformanceLevel.Strict, "7a00000000")]
         [InlineData(CborConformanceLevel.Strict, "7b0000000000000000")]
-        internal static void ReadTextString_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadTextString_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -357,7 +357,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Ctap2Canonical, "790000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "7a00000000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "7b0000000000000000")]
-        internal static void ReadTextString_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void ReadTextString_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -368,7 +368,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Lax, "5f40ff")]
         [InlineData(CborConformanceLevel.Strict, "5f40ff")]
-        internal static void ReadByteString_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadByteString_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -380,7 +380,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Lax, "5f40ff")]
         [InlineData(CborConformanceLevel.Strict, "5f40ff")]
-        internal static void ReadByteString_IndefiniteLength_AsSingleItem_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadByteString_IndefiniteLength_AsSingleItem_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -390,7 +390,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, "5f40ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "5f40ff")]
-        internal static void ReadByteString_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatExceptoin(CborConformanceLevel level, string hexEncoding)
+        public static void ReadByteString_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatExceptoin(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, "5f40ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "5f40ff")]
-        internal static void ReadByteString_IndefiniteLength_AsSingleItem_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void ReadByteString_IndefiniteLength_AsSingleItem_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -412,7 +412,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Lax, "7f60ff")]
         [InlineData(CborConformanceLevel.Strict, "7f60ff")]
-        internal static void ReadTextString_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadTextString_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -424,7 +424,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Lax, "7f60ff")]
         [InlineData(CborConformanceLevel.Strict, "7f60ff")]
-        internal static void ReadTextString_IndefiniteLength_AsSingleItem_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void ReadTextString_IndefiniteLength_AsSingleItem_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -434,7 +434,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, "7f60ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "7f60ff")]
-        internal static void ReadTextString_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatExceptoin(CborConformanceLevel level, string hexEncoding)
+        public static void ReadTextString_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatExceptoin(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
@@ -445,7 +445,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, "7f60ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "7f60ff")]
-        internal static void ReadTextString_IndefiniteLength_AsSingleItem_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void ReadTextString_IndefiniteLength_AsSingleItem_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);

@@ -906,7 +906,6 @@ namespace Internal.TypeSystem
                         ValueTypeShapeCharacteristics.Float64Aggregate => 8,
                         ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
                         ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
-                        ValueTypeShapeCharacteristics.Vector256Aggregate => 32,
                         _ => throw new ArgumentOutOfRangeException()
                     };
 

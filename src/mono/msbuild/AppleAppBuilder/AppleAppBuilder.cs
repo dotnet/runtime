@@ -6,18 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
 public class AppleAppBuilderTask : Task
 {
-    /// <summary>
-    /// Path to arm64 AOT cross-compiler (mono-aot-cross)
-    /// It's not used for x64 (Simulator)
-    /// </summary>
-    public string? CrossCompiler { get; set; }
-
     /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name
     /// </summary>
@@ -43,20 +38,20 @@ public class AppleAppBuilderTask : Task
     public string MainLibraryFileName { get; set; } = ""!;
 
     /// <summary>
+    /// List of paths to assemblies to be included in the app. For AOT builds the 'ObjectFile' metadata key needs to point to the object file.
+    /// </summary>
+    [Required]
+    public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Path to store build artifacts
     /// </summary>
     public string? OutputDirectory { get; set; }
 
     /// <summary>
-    /// Produce optimized binaries (e.g. use -O2 in AOT)
-    /// and use 'Release' config in xcode
+    /// Produce optimized binaries and use 'Release' config in xcode
     /// </summary>
     public bool Optimized { get; set; }
-
-    /// <summary>
-    /// Disable parallel AOT compilation
-    /// </summary>
-    public bool DisableParallelAot { get; set; }
 
     /// <summary>
     /// Target arch, can be "arm64" (device) or "x64" (simulator) at the moment
@@ -97,18 +92,6 @@ public class AppleAppBuilderTask : Task
     public bool UseConsoleUITemplate { get; set; }
 
     /// <summary>
-    /// Use LLVM for FullAOT
-    /// The cross-compiler must be built with LLVM support
-    /// </summary>
-    public bool UseLlvm { get; set; }
-
-    /// <summary>
-    /// Path to LLVM binaries (opt and llc)
-    /// It's required if UseLlvm is set
-    /// </summary>
-    public string? LlvmPath { get; set; }
-
-    /// <summary>
     /// Path to *.app bundle
     /// </summary>
     [Output]
@@ -124,10 +107,6 @@ public class AppleAppBuilderTask : Task
     {
         Utils.Logger = Log;
         bool isDevice = Arch.Equals("arm64", StringComparison.InvariantCultureIgnoreCase);
-        if (isDevice && string.IsNullOrEmpty(CrossCompiler))
-        {
-            throw new ArgumentException("arm64 arch requires CrossCompiler");
-        }
 
         if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
         {
@@ -139,12 +118,6 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }
 
-        if (UseLlvm && string.IsNullOrEmpty(LlvmPath))
-        {
-            // otherwise we might accidentally use some random llc/opt from PATH (installed with clang)
-            throw new ArgumentException($"LlvmPath shoun't be empty when UseLlvm is set");
-        }
-
         string[] excludes = new string[0];
         if (ExcludeFromAppDir != null)
         {
@@ -153,9 +126,6 @@ public class AppleAppBuilderTask : Task
                 .Select(i => i.ItemSpec)
                 .ToArray();
         }
-        string[] libsToAot = Directory.GetFiles(AppDir, "*.dll")
-            .Where(f => !excludes.Contains(Path.GetFileName(f)))
-            .ToArray();
 
         string binDir = Path.Combine(AppDir, $"bin-{ProjectName}-{Arch}");
         if (!string.IsNullOrEmpty(OutputDirectory))
@@ -164,25 +134,30 @@ public class AppleAppBuilderTask : Task
         }
         Directory.CreateDirectory(binDir);
 
-        // run AOT compilation only for devices
-        if (isDevice)
+        var assemblerFiles = new List<string>();
+        foreach (ITaskItem file in Assemblies)
         {
-            if (string.IsNullOrEmpty(CrossCompiler))
-                throw new InvalidOperationException("cross-compiler is not set");
+            // use AOT files if available
+            var obj = file.GetMetadata("AssemblerFile");
+            if (!String.IsNullOrEmpty(obj))
+            {
+                assemblerFiles.Add(obj);
+            }
+        }
 
-            AotCompiler.PrecompileLibraries(CrossCompiler, Arch, !DisableParallelAot, binDir, libsToAot,
-                new Dictionary<string, string> { {"MONO_PATH", AppDir} },
-                Optimized, UseLlvm, LlvmPath);
+        if (isDevice && !assemblerFiles.Any())
+        {
+            throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
         // generate modules.m
-        AotCompiler.GenerateLinkAllFile(
-            Directory.GetFiles(binDir, "*.dll.o"),
+        GenerateLinkAllFile(
+            assemblerFiles,
             Path.Combine(binDir, "modules.m"));
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, 
+            XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, NativeMainSource);
 
             if (BuildAppBundle)
@@ -202,5 +177,58 @@ public class AppleAppBuilderTask : Task
         }
 
         return true;
+    }
+
+    static void GenerateLinkAllFile(IEnumerable<string> asmFiles, string outputFile)
+    {
+        //  Generates 'modules.m' in order to register all managed libraries
+        //
+        //
+        // extern void *mono_aot_module_Lib1_info;
+        // extern void *mono_aot_module_Lib2_info;
+        // ...
+        //
+        // void mono_ios_register_modules (void)
+        // {
+        //     mono_aot_register_module (mono_aot_module_Lib1_info);
+        //     mono_aot_register_module (mono_aot_module_Lib2_info);
+        //     ...
+        // }
+
+        Utils.LogInfo("Generating 'modules.m'...");
+
+        var lsDecl = new StringBuilder();
+        lsDecl
+            .AppendLine("#include <mono/jit/jit.h>")
+            .AppendLine("#include <TargetConditionals.h>")
+            .AppendLine()
+            .AppendLine("#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR")
+            .AppendLine();
+
+        var lsUsage = new StringBuilder();
+        lsUsage
+            .AppendLine("void mono_ios_register_modules (void)")
+            .AppendLine("{");
+        foreach (string asmFile in asmFiles)
+        {
+            string symbol = "mono_aot_module_" +
+                            Path.GetFileName(asmFile)
+                                .Replace(".dll.s", "")
+                                .Replace(".", "_")
+                                .Replace("-", "_") + "_info";
+
+            lsDecl.Append("extern void *").Append(symbol).Append(';').AppendLine();
+            lsUsage.Append("\tmono_aot_register_module (").Append(symbol).Append(");").AppendLine();
+        }
+        lsDecl
+            .AppendLine()
+            .Append(lsUsage)
+            .AppendLine("}")
+            .AppendLine()
+            .AppendLine("#endif")
+            .AppendLine();
+
+        File.WriteAllText(outputFile, lsDecl.ToString());
+        Utils.LogInfo($"Saved to {outputFile}.");
     }
 }
