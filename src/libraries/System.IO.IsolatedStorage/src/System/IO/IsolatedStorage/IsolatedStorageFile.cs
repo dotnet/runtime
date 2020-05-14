@@ -284,7 +284,7 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path.Length)
+            if (path.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }

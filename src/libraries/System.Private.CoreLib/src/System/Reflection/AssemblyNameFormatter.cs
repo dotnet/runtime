@@ -15,7 +15,7 @@ namespace System.Reflection
         {
             const int PUBLIC_KEY_TOKEN_LEN = 8;
 
-            if (name.Length == 0)
+            if (name?.Length == 0)
                 throw new FileLoadException();
 
             StringBuilder sb = new StringBuilder();
