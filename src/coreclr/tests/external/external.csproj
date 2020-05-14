@@ -26,6 +26,14 @@
     <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>
 
+  <!-- XUnit.Console targets netcoreapp2.1; override with rollForwardOnNoCandidateFx=2
+       so it runs on 5.0 repo-local runtime. -->
+  <ItemGroup>
+    <Content Include="xunit.console.runtimeconfig.dev.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <!-- Some out-of-band packages like System.ComponentModel.Primitives
        conflict with the versions in other test dependencies files. We
        don't want to overwrite these versions when creating the
