@@ -6711,11 +6711,6 @@ bool GenTreeOp::usesMagicNumberDivision(Compiler* comp)
     }
 #endif
 
-    if (!divisor->IsCnsIntOrI())
-    {
-        return false;
-    }
-
     if (dividend->IsCnsIntOrI())
     {
         // We shouldn't see a divmod with constant operands here but if we do then it's likely
@@ -6724,12 +6719,26 @@ bool GenTreeOp::usesMagicNumberDivision(Compiler* comp)
         return false;
     }
 
+    ssize_t divisorValue;
+    if (divisor->IsCnsIntOrI())
+    {
+        divisorValue = static_cast<ssize_t>(divisor->AsIntCon()->IconValue());
+    }
+    else
+    {
+        ValueNum vn = divisor->gtVNPair.GetLiberal();
+        if (comp->vnStore->IsVNConstant(vn))
+        {
+            divisorValue = comp->vnStore->CoercedConstantValue<ssize_t>(vn);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     const var_types divType = TypeGet();
-    assert((divType == TYP_INT) || (divType == TYP_I_IMPL));
-
-    ssize_t divisorValue = static_cast<size_t>(divisor->AsIntCon()->IconValue());
-
-    if (divType == TYP_INT)
+    if ((divType == TYP_INT) && !isSignedDivide)
     {
         // Clear up the upper 32 bits of the value, they may be set to 1 because constants
         // are treated as signed and stored in ssize_t which is 64 bit in size on 64 bit targets.
@@ -6796,7 +6805,6 @@ void GenTreeOp::checkMagicNumberDivision(Compiler* comp)
 
         // Now set DONT_CSE on the GT_CNS_INT divisor
         GenTree* divisor = gtGetOp2();
-        assert(divisor->IsCnsIntOrI());
         divisor->gtFlags |= GTF_DONT_CSE;
     }
 }
