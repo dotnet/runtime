@@ -197,148 +197,148 @@ INST5(orr,         "orr",          0,      IF_EN5C,   0x2A000000,  0x2A000000,  
                                    //  orr     Vd,Vn,Vm             DV_3C  0Q001110101mmmmm 000111nnnnnddddd   0EA0 1C00   Vd,Vn,Vm
                                    //  orr     Vd,imm8              DV_1B  0Q00111100000iii ---101iiiiiddddd   0F00 1400   Vd imm8  (immediate vector)
 
-//    enum     name     FP LD/ST            LS_2A        LS_2B        LS_2C        LS_3A
-INST4(ldrb,    "ldrb",   0,LD, IF_EN4A,   0x39400000,  0x39400000,  0x38400000,  0x38600800)
+//    enum         name            LD/ST              LS_2A        LS_2B        LS_2C        LS_3A
+INST4(ldrb,        "ldrb",         LD,     IF_EN4A,   0x39400000,  0x39400000,  0x38400000,  0x38600800)
                                    //  ldrb    Rt,[Xn]              LS_2A  0011100101000000 000000nnnnnttttt   3940 0000
                                    //  ldrb    Rt,[Xn+pimm12]       LS_2B  0011100101iiiiii iiiiiinnnnnttttt   3940 0000   imm(0-4095)
                                    //  ldrb    Rt,[Xn+simm9]        LS_2C  00111000010iiiii iiiiPPnnnnnttttt   3840 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  ldrb    Rt,[Xn,(Rm,ext,shl)] LS_3A  00111000011mmmmm oooS10nnnnnttttt   3860 0800   [Xn, ext(Rm)]
 
-INST4(ldrh,    "ldrh",   0,LD, IF_EN4A,   0x79400000,  0x79400000,  0x78400000,  0x78600800)
+INST4(ldrh,        "ldrh",         LD,     IF_EN4A,   0x79400000,  0x79400000,  0x78400000,  0x78600800)
                                    //  ldrh    Rt,[Xn]              LS_2A  0111100101000000 000000nnnnnttttt   7940 0000
                                    //  ldrh    Rt,[Xn+pimm12]       LS_2B  0111100101iiiiii iiiiiinnnnnttttt   7940 0000   imm(0-4095<<1)
                                    //  ldrh    Rt,[Xn+simm9]        LS_2C  01111000010iiiii iiiiPPnnnnnttttt   7840 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  ldrh    Rt,[Xn,(Rm,ext,shl)] LS_3A  01111000011mmmmm oooS10nnnnnttttt   7860 0800   [Xn, ext(Rm) LSL {0,1}]
 
-INST4(ldrsb,   "ldrsb",  0,LD, IF_EN4A,   0x39800000,  0x39800000,  0x38800000,  0x38A00800)
+INST4(ldrsb,       "ldrsb",        LD,     IF_EN4A,   0x39800000,  0x39800000,  0x38800000,  0x38A00800)
                                    //  ldrsb   Rt,[Xn]              LS_2A  001110011X000000 000000nnnnnttttt   3980 0000
                                    //  ldrsb   Rt,[Xn+pimm12]       LS_2B  001110011Xiiiiii iiiiiinnnnnttttt   3980 0000   imm(0-4095)
                                    //  ldrsb   Rt,[Xn+simm9]        LS_2C  001110001X0iiiii iiii01nnnnnttttt   3880 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  ldrsb   Rt,[Xn,(Rm,ext,shl)] LS_3A  001110001X1mmmmm oooS10nnnnnttttt   38A0 0800   [Xn, ext(Rm)]
 
-INST4(ldrsh,   "ldrsh",  0,LD, IF_EN4A,   0x79800000,  0x79800000,  0x78800000,  0x78A00800)
+INST4(ldrsh,       "ldrsh",        LD,     IF_EN4A,   0x79800000,  0x79800000,  0x78800000,  0x78A00800)
                                    //  ldrsh   Rt,[Xn]              LS_2A  011110011X000000 000000nnnnnttttt   7980 0000
                                    //  ldrsh   Rt,[Xn+pimm12]       LS_2B  011110011Xiiiiii iiiiiinnnnnttttt   7980 0000   imm(0-4095<<1)
                                    //  ldrsh   Rt,[Xn+simm9]        LS_2C  011110001X0iiiii iiiiPPnnnnnttttt   7880 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  ldrsh   Rt,[Xn,(Rm,ext,shl)] LS_3A  011110001X1mmmmm oooS10nnnnnttttt   78A0 0800   [Xn, ext(Rm) LSL {0,1}]
 
-INST4(str,     "str",    0,ST, IF_EN4A,   0xB9000000,  0xB9000000,  0xB8000000,  0xB8200800)
+INST4(str,         "str",          ST,     IF_EN4A,   0xB9000000,  0xB9000000,  0xB8000000,  0xB8200800)
                                    //  str     Rt,[Xn]              LS_2A  1X11100100000000 000000nnnnnttttt   B900 0000
                                    //  str     Rt,[Xn+pimm12]       LS_2B  1X11100100iiiiii iiiiiinnnnnttttt   B900 0000   imm(0-4095<<{2,3})
                                    //  str     Rt,[Xn+simm9]        LS_2C  1X111000000iiiii iiiiPPnnnnnttttt   B800 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  str     Rt,[Xn,(Rm,ext,shl)] LS_3A  1X111000001mmmmm oooS10nnnnnttttt   B820 0800   [Xn, ext(Rm)]
 
-INST4(strb,    "strb",   0,ST, IF_EN4A,   0x39000000,  0x39000000,  0x38000000,  0x38200800)
+INST4(strb,        "strb",         ST,     IF_EN4A,   0x39000000,  0x39000000,  0x38000000,  0x38200800)
                                    //  strb    Rt,[Xn]              LS_2A  0011100100000000 000000nnnnnttttt   3900 0000
                                    //  strb    Rt,[Xn+pimm12]       LS_2B  0011100100iiiiii iiiiiinnnnnttttt   3900 0000   imm(0-4095)
                                    //  strb    Rt,[Xn+simm9]        LS_2C  00111000000iiiii iiiiPPnnnnnttttt   3800 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  strb    Rt,[Xn,(Rm,ext,shl)] LS_3A  00111000001mmmmm oooS10nnnnnttttt   3820 0800   [Xn, ext(Rm)]
 
-INST4(strh,    "strh",   0,ST, IF_EN4A,   0x79000000,  0x79000000,  0x78000000,  0x78200800)
+INST4(strh,        "strh",         ST,     IF_EN4A,   0x79000000,  0x79000000,  0x78000000,  0x78200800)
                                    //  strh    Rt,[Xn]              LS_2A  0111100100000000 000000nnnnnttttt   7900 0000
                                    //  strh    Rt,[Xn+pimm12]       LS_2B  0111100100iiiiii iiiiiinnnnnttttt   7900 0000   imm(0-4095<<1)
                                    //  strh    Rt,[Xn+simm9]        LS_2C  01111000000iiiii iiiiPPnnnnnttttt   7800 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  strh    Rt,[Xn,(Rm,ext,shl)] LS_3A  01111000001mmmmm oooS10nnnnnttttt   7820 0800   [Xn, ext(Rm)]
 
-//    enum     name     FP LD/ST            DR_3A        DR_3B        DR_3C        DI_2A
-INST4(adds,    "adds",   0, 0, IF_EN4B,   0x2B000000,  0x2B000000,  0x2B200000,  0x31000000)
+//    enum         name            LD/ST              DR_3A        DR_3B        DR_3C        DI_2A
+INST4(adds,        "adds",         0,      IF_EN4B,   0x2B000000,  0x2B000000,  0x2B200000,  0x31000000)
                                    //  adds    Rd,Rn,Rm             DR_3A  X0101011000mmmmm 000000nnnnnddddd   2B00 0000
                                    //  adds    Rd,Rn,(Rm,shk,imm)   DR_3B  X0101011sh0mmmmm ssssssnnnnnddddd   2B00 0000   Rm {LSL,LSR,ASR} imm(0-63)
                                    //  adds    Rd,Rn,(Rm,ext,shl)   DR_3C  X0101011001mmmmm ooosssnnnnnddddd   2B20 0000   ext(Rm) LSL imm(0-4)
                                    //  adds    Rd,Rn,i12            DI_2A  X0110001shiiiiii iiiiiinnnnnddddd   3100 0000   imm(i12,sh)
 
-INST4(subs,    "subs",   0, 0, IF_EN4B,   0x6B000000,  0x6B000000,  0x6B200000,  0x71000000)
+INST4(subs,        "subs",         0,      IF_EN4B,   0x6B000000,  0x6B000000,  0x6B200000,  0x71000000)
                                    //  subs    Rd,Rn,Rm             DR_3A  X1101011000mmmmm 000000nnnnnddddd   6B00 0000
                                    //  subs    Rd,Rn,(Rm,shk,imm)   DR_3B  X1101011sh0mmmmm ssssssnnnnnddddd   6B00 0000   Rm {LSL,LSR,ASR} imm(0-63)
                                    //  subs    Rd,Rn,(Rm,ext,shl)   DR_3C  X1101011001mmmmm ooosssnnnnnddddd   6B20 0000   ext(Rm) LSL imm(0-4)
                                    //  subs    Rd,Rn,i12            DI_2A  X1110001shiiiiii iiiiiinnnnnddddd   7100 0000   imm(i12,sh)
 
-//    enum     name     FP LD/ST            DR_2A        DR_2B        DR_2C        DI_1A
-INST4(cmp,     "cmp",    0,CMP,IF_EN4C,   0x6B00001F,  0x6B00001F,  0x6B20001F,  0x7100001F)
+//    enum         name            LD/ST              DR_2A        DR_2B        DR_2C        DI_1A
+INST4(cmp,         "cmp",          CMP,    IF_EN4C,   0x6B00001F,  0x6B00001F,  0x6B20001F,  0x7100001F)
                                    //  cmp     Rn,Rm                DR_2A  X1101011000mmmmm 000000nnnnn11111   6B00 001F
                                    //  cmp     Rn,(Rm,shk,imm)      DR_2B  X1101011sh0mmmmm ssssssnnnnn11111   6B00 001F   Rm {LSL,LSR,ASR} imm(0-63)
                                    //  cmp     Rn,(Rm,ext,shl)      DR_2C  X1101011001mmmmm ooosssnnnnn11111   6B20 001F   ext(Rm) LSL imm(0-4)
                                    //  cmp     Rn,i12               DI_1A  X111000100iiiiii iiiiiinnnnn11111   7100 001F   imm(i12,sh)
 
-INST4(cmn,     "cmn",    0,CMP,IF_EN4C,   0x2B00001F,  0x2B00001F,  0x2B20001F,  0x3100001F)
+INST4(cmn,         "cmn",          CMP,    IF_EN4C,   0x2B00001F,  0x2B00001F,  0x2B20001F,  0x3100001F)
                                    //  cmn     Rn,Rm                DR_2A  X0101011000mmmmm 000000nnnnn11111   2B00 001F
                                    //  cmn     Rn,(Rm,shk,imm)      DR_2B  X0101011sh0mmmmm ssssssnnnnn11111   2B00 001F   Rm {LSL,LSR,ASR} imm(0-63)
                                    //  cmn     Rn,(Rm,ext,shl)      DR_2C  X0101011001mmmmm ooosssnnnnn11111   2B20 001F   ext(Rm) LSL imm(0-4)
                                    //  cmn     Rn,i12               DI_1A  X0110001shiiiiii iiiiiinnnnn11111   3100 001F   imm(0-4095)
 
-//    enum     name     FP LD/ST            DV_3B        DV_3D        DV_3BI       DV_3DI
-INST4(fmul,    "fmul",   0, 0, IF_EN4D,   0x2E20DC00,  0x1E200800,  0x0F809000,  0x5F809000)
+//    enum         name            LD/ST              DV_3B        DV_3D        DV_3BI       DV_3DI
+INST4(fmul,        "fmul",         0,      IF_EN4D,   0x2E20DC00,  0x1E200800,  0x0F809000,  0x5F809000)
                                    //  fmul    Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 110111nnnnnddddd   2E20 DC00   Vd,Vn,Vm   (vector)
                                    //  fmul    Vd,Vn,Vm             DV_3D  000111100X1mmmmm 000010nnnnnddddd   1E20 0800   Vd,Vn,Vm   (scalar)
                                    //  fmul    Vd,Vn,Vm[]           DV_3BI 0Q0011111XLmmmmm 1001H0nnnnnddddd   0F80 9000   Vd,Vn,Vm[] (vector by elem)
                                    //  fmul    Vd,Vn,Vm[]           DV_3DI 010111111XLmmmmm 1001H0nnnnnddddd   5F80 9000   Vd,Vn,Vm[] (scalar by elem)
 
-INST4(fmulx,   "fmulx",  0, 0, IF_EN4D,   0x0E20DC00,  0x5E20DC00,  0x2F809000,  0x7F809000)
+INST4(fmulx,       "fmulx",        0,      IF_EN4D,   0x0E20DC00,  0x5E20DC00,  0x2F809000,  0x7F809000)
                                    //  fmulx   Vd,Vn,Vm             DV_3B  0Q0011100X1mmmmm 110111nnnnnddddd   0E20 DC00   Vd,Vn,Vm   (vector)
                                    //  fmulx   Vd,Vn,Vm             DV_3D  010111100X1mmmmm 110111nnnnnddddd   5E20 DC00   Vd,Vn,Vm   (scalar)
                                    //  fmulx   Vd,Vn,Vm[]           DV_3BI 0Q1011111XLmmmmm 1001H0nnnnnddddd   2F80 9000   Vd,Vn,Vm[] (vector by elem)
                                    //  fmulx   Vd,Vn,Vm[]           DV_3DI 011111111XLmmmmm 1001H0nnnnnddddd   7F80 9000   Vd,Vn,Vm[] (scalar by elem)
 
-//    enum     name     FP LD/ST            DR_3A        DR_3B        DI_2C        DV_3C
-INST4(and,     "and",    0, 0, IF_EN4E,   0x0A000000,  0x0A000000,  0x12000000,  0x0E201C00)
+//    enum         name            LD/ST              DR_3A        DR_3B        DI_2C        DV_3C
+INST4(and,         "and",          0,      IF_EN4E,   0x0A000000,  0x0A000000,  0x12000000,  0x0E201C00)
                                    //  and     Rd,Rn,Rm             DR_3A  X0001010000mmmmm 000000nnnnnddddd   0A00 0000
                                    //  and     Rd,Rn,(Rm,shk,imm)   DR_3B  X0001010sh0mmmmm iiiiiinnnnnddddd   0A00 0000   Rm {LSL,LSR,ASR,ROR} imm(0-63)
                                    //  and     Rd,Rn,imm(N,r,s)     DI_2C  X00100100Nrrrrrr ssssssnnnnnddddd   1200 0000   imm(N,r,s)
                                    //  and     Vd,Vn,Vm             DV_3C  0Q001110001mmmmm 000111nnnnnddddd   0E20 1C00   Vd,Vn,Vm
 
-INST4(eor,     "eor",    0, 0, IF_EN4E,   0x4A000000,  0x4A000000,  0x52000000,  0x2E201C00)
+INST4(eor,         "eor",          0,      IF_EN4E,   0x4A000000,  0x4A000000,  0x52000000,  0x2E201C00)
                                    //  eor     Rd,Rn,Rm             DR_3A  X1001010000mmmmm 000000nnnnnddddd   4A00 0000
                                    //  eor     Rd,Rn,(Rm,shk,imm)   DR_3B  X1001010sh0mmmmm iiiiiinnnnnddddd   4A00 0000   Rm {LSL,LSR,ASR,ROR} imm(0-63)
                                    //  eor     Rd,Rn,imm(N,r,s)     DI_2C  X10100100Nrrrrrr ssssssnnnnnddddd   5200 0000   imm(N,r,s)
                                    //  eor     Vd,Vn,Vm             DV_3C  0Q101110001mmmmm 000111nnnnnddddd   2E20 1C00   Vd,Vn,Vm
 
-//    enum     name     FP LD/ST            DR_3A        DR_3B        DV_3C        DV_1B
-INST4(bic,     "bic",    0, 0, IF_EN4F,   0x0A200000,  0x0A200000,  0x0E601C00,  0x2F001400)
+//    enum         name            LD/ST              DR_3A        DR_3B        DV_3C        DV_1B
+INST4(bic,         "bic",          0,      IF_EN4F,   0x0A200000,  0x0A200000,  0x0E601C00,  0x2F001400)
                                    //  bic     Rd,Rn,Rm             DR_3A  X0001010001mmmmm 000000nnnnnddddd   0A20 0000
                                    //  bic     Rd,Rn,(Rm,shk,imm)   DR_3B  X0001010sh1mmmmm iiiiiinnnnnddddd   0A20 0000   Rm {LSL,LSR,ASR,ROR} imm(0-63)
                                    //  bic     Vd,Vn,Vm             DV_3C  0Q001110011mmmmm 000111nnnnnddddd   0E60 1C00   Vd,Vn,Vm
                                    //  bic     Vd,imm8              DV_1B  0Q10111100000iii ---101iiiiiddddd   2F00 1400   Vd imm8  (immediate vector)
 
-//    enum     name     FP LD/ST            DR_2E        DR_2F        DV_2M        DV_2L
-INST4(neg,     "neg",    0, 0, IF_EN4G,   0x4B0003E0,  0x4B0003E0,  0x2E20B800,  0x7E20B800)
+//    enum         name            LD/ST              DR_2E        DR_2F        DV_2M        DV_2L
+INST4(neg,         "neg",          0,      IF_EN4G,   0x4B0003E0,  0x4B0003E0,  0x2E20B800,  0x7E20B800)
                                    //  neg     Rd,Rm                DR_2E  X1001011000mmmmm 00000011111ddddd   4B00 03E0
                                    //  neg     Rd,(Rm,shk,imm)      DR_2F  X1001011sh0mmmmm ssssss11111ddddd   4B00 03E0   Rm {LSL,LSR,ASR} imm(0-63)
                                    //  neg     Vd,Vn                DV_2M  0Q101110XX100000 101110nnnnnddddd   2E20 B800   Vd,Vn    (vector)
                                    //  neg     Vd,Vn                DV_2L  01111110XX100000 101110nnnnnddddd   7E20 B800   Vd,Vn    (scalar)
 
-//    enum     name     FP LD/ST            DV_3E        DV_3A      DV_2L        DV_2M
-INST4(cmeq,    "cmeq",  0, 0, IF_EN4H,   0x7EE08C00,  0x2E208C00,  0x5E209800,  0x0E209800)
+//    enum         name            LD/ST              DV_3E        DV_3A      DV_2L        DV_2M
+INST4(cmeq,        "cmeq",         0,      IF_EN4H,   0x7EE08C00,  0x2E208C00,  0x5E209800,  0x0E209800)
                                    //  cmeq    Vd,Vn,Vm             DV_3E  01111110111mmmmm 100011nnnnnddddd   7EE0 8C00   Vd,Vn,Vm   (scalar)
                                    //  cmeq    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 100011nnnnnddddd   2E20 8C00   Vd,Vn,Vm   (vector)
                                    //  cmeq    Vd,Vn                DV_2L  01011110XX100000 100110nnnnnddddd   5E20 9800   Vd,Vn      (scalar)
                                    //  cmeq    Vd,Vn                DV_2M  0Q001110XX100000 100110nnnnnddddd   0E20 9800   Vd,Vn      (vector)
 
-INST4(cmge,    "cmge",  0, 0, IF_EN4H,   0x5EE03C00,  0x0E203C00,  0x7E208800,  0x2E208800)
+INST4(cmge,        "cmge",         0,      IF_EN4H,   0x5EE03C00,  0x0E203C00,  0x7E208800,  0x2E208800)
                                    //  cmge    Vd,Vn,Vm             DV_3E  01011110111mmmmm 001111nnnnnddddd   5EE0 3C00   Vd,Vn,Vm   (scalar)
                                    //  cmge    Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 001111nnnnnddddd   0E20 3C00   Vd,Vn,Vm   (vector)
                                    //  cmge    Vd,Vn                DV_2L  01111110XX100000 100010nnnnnddddd   5E20 8800   Vd,Vn      (scalar)
                                    //  cmge    Vd,Vn                DV_2M  0Q101110XX100000 100010nnnnnddddd   2E20 8800   Vd,Vn      (vector)
 
-INST4(cmgt,    "cmgt",  0, 0, IF_EN4H,   0x5EE03400,  0x0E203400,  0x5E208800,  0x0E208800)
+INST4(cmgt,        "cmgt",         0,      IF_EN4H,   0x5EE03400,  0x0E203400,  0x5E208800,  0x0E208800)
                                    //  cmgt    Vd,Vn,Vm             DV_3E  01011110111mmmmm 001101nnnnnddddd   5EE0 3400   Vd,Vn,Vm   (scalar)
                                    //  cmgt    Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 001101nnnnnddddd   0E20 3400   Vd,Vn,Vm   (vector)
                                    //  cmgt    Vd,Vn                DV_2L  01011110XX100000 100010nnnnnddddd   5E20 8800   Vd,Vn      (scalar)
                                    //  cmgt    Vd,Vn                DV_2M  0Q001110XX100000 101110nnnnnddddd   0E20 8800   Vd,Vn      (vector)
 
-//    enum     name     FP LD/ST            DV_3D        DV_3B      DV_2G        DV_2A
-INST4(fcmeq,   "fcmeq", 0, 0, IF_EN4I,   0x5E20E400,  0x0E20E400,  0x5EA0D800,  0x0EA0D800)
+//    enum         name            LD/ST              DV_3D        DV_3B        DV_2G        DV_2A
+INST4(fcmeq,       "fcmeq",        0,      IF_EN4I,   0x5E20E400,  0x0E20E400,  0x5EA0D800,  0x0EA0D800)
                                    //  fcmeq   Vd,Vn,Vm             DV_3D  010111100X1mmmmm 111001nnnnnddddd   5E20 E400   Vd Vn Vm   (scalar)
                                    //  fcmeq   Vd,Vn,Vm             DV_3B  0Q0011100X1mmmmm 111001nnnnnddddd   0E20 E400   Vd,Vn,Vm   (vector)
                                    //  fcmeq   Vd,Vn                DV_2G  010111101X100000 110110nnnnnddddd   5EA0 D800   Vd Vn      (scalar)
                                    //  fcmeq   Vd,Vn                DV_2A  0Q0011101X100000 110110nnnnnddddd   0EA0 D800   Vd Vn      (vector)
 
-INST4(fcmge,   "fcmge", 0, 0, IF_EN4I,   0x7E20E400,  0x2E20E400,  0x7EA0C800,  0x2EA0C800)
+INST4(fcmge,       "fcmge",        0,      IF_EN4I,   0x7E20E400,  0x2E20E400,  0x7EA0C800,  0x2EA0C800)
                                    //  fcmge   Vd,Vn,Vm             DV_3D  011111100X1mmmmm 111001nnnnnddddd   7E20 E400   Vd Vn Vm   (scalar)
                                    //  fcmge   Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 111001nnnnnddddd   2E20 E400   Vd,Vn,Vm   (vector)
                                    //  fcmge   Vd,Vn                DV_2G  011111101X100000 110010nnnnnddddd   7EA0 E800   Vd Vn      (scalar)
                                    //  fcmge   Vd,Vn                DV_2A  0Q1011101X100000 110010nnnnnddddd   2EA0 C800   Vd Vn      (vector)
 
-INST4(fcmgt,   "fcmgt", 0, 0, IF_EN4I,   0x7EA0E400,  0x2EA0E400,  0x5EA0C800,  0x0EA0C800)
+INST4(fcmgt,       "fcmgt",        0,      IF_EN4I,   0x7EA0E400,  0x2EA0E400,  0x5EA0C800,  0x0EA0C800)
                                    //  fcmgt   Vd,Vn,Vm             DV_3D  011111101X1mmmmm 111001nnnnnddddd   7EA0 E400   Vd Vn Vm   (scalar)
                                    //  fcmgt   Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 111001nnnnnddddd   2EA0 E400   Vd,Vn,Vm   (vector)
                                    //  fcmgt   Vd,Vn                DV_2G  010111101X100000 110010nnnnnddddd   5EA0 E800   Vd Vn      (scalar)
