@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System;
 using System.Linq;
 using Test.Cryptography;
 using Xunit;
@@ -99,12 +98,27 @@ namespace System.Formats.Cbor.Tests
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
-        [Fact]
-        public static void WriteTextString_InvalidUnicodeString_ShouldThrowArgumentException()
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax)]
+        public static void WriteTextString_InvalidUnicodeString_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
+        {
+            string invalidUnicodeString = "\ud800";
+            byte[] expectedEncoding = { 0x63, 0xef, 0xbf, 0xbd };
+
+            var writer = new CborWriter(conformanceLevel);
+            writer.WriteTextString(invalidUnicodeString);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict)]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void WriteTextString_InvalidUnicodeString_StrictConformance_ShouldThrowArgumentException(CborConformanceLevel conformanceLevel)
         {
             // NB Xunit's InlineDataAttribute will corrupt string literals containing invalid unicode
             string invalidUnicodeString = "\ud800";
-            var writer = new CborWriter();
+            var writer = new CborWriter(conformanceLevel);
             ArgumentException exn = Assert.Throws<ArgumentException>(() => writer.WriteTextString(invalidUnicodeString));
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.EncoderFallbackException>(exn.InnerException);

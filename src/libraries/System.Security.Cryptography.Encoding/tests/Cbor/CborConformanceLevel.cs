@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Formats.Cbor
 {
@@ -53,6 +54,9 @@ namespace System.Formats.Cbor
 
     internal static class CborConformanceLevelHelpers
     {
+        private static readonly UTF8Encoding s_utf8EncodingLax    = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
+        private static readonly UTF8Encoding s_utf8EncodingStrict = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
         public static void Validate(CborConformanceLevel conformanceLevel)
         {
             if (conformanceLevel < CborConformanceLevel.Lax ||
@@ -77,6 +81,28 @@ namespace System.Formats.Cbor
                 default:
                     throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
             };
+        }
+
+        public static bool RequiresUtf8Validation(CborConformanceLevel conformanceLevel)
+        {
+            switch (conformanceLevel)
+            {
+                case CborConformanceLevel.Lax:
+                    return false;
+
+                case CborConformanceLevel.Strict:
+                case CborConformanceLevel.Canonical:
+                case CborConformanceLevel.Ctap2Canonical:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            };
+        }
+
+        public static Encoding GetUtf8Encoding(CborConformanceLevel conformanceLevel)
+        {
+            return conformanceLevel == CborConformanceLevel.Lax ? s_utf8EncodingLax : s_utf8EncodingStrict;
         }
 
         public static bool RequiresDefiniteLengthItems(CborConformanceLevel conformanceLevel)
