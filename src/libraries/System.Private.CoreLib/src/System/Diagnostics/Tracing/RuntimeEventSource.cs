@@ -36,7 +36,7 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _gen2SizeCounter;
         private PollingCounter? _lohSizeCounter;
         private PollingCounter? _assemblyCounter;
-        private PollingCounter? _totalJittedBytesCounter;
+        private PollingCounter? _ILBytesJittedCounter;
         private PollingCounter? _totalMethodsJittedCounter;
 #endif
 
@@ -70,7 +70,6 @@ namespace System.Diagnostics.Tracing
                 _completedItemsCounter ??= new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _allocRateCounter ??= new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayUnits = "B", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _timerCounter ??= new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
-
 #if !MONO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
@@ -79,8 +78,8 @@ namespace System.Diagnostics.Tracing
                 _gen2SizeCounter ??= new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size", DisplayUnits = "B" };
                 _lohSizeCounter ??= new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits = "B" };
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
-                _totalJittedBytesCounter ??= new PollingCounter("jitted-bytes-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetILBytesJitted()) { DisplayName = "IL Bytes Jitted" };
-                _totalMethodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetMethodsJittedCount()) { DisplayName = "# of Methods Jitted" };
+                _ILBytesJittedCounter ??= new IncrementingPollingCounter("il-bytes-jitted-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetILBytesJitted()) { DisplayName = "IL Bytes Jitted", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+                _totalMethodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetMethodsJittedCount()) { DisplayName = "Number of Methods Jitted" };
 #endif
             }
 
