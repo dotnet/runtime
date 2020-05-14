@@ -39,10 +39,6 @@ COMInterfaceMarshaler::COMInterfaceMarshaler()
 
     m_pUnknown = NULL;
     m_pIdentity = NULL;
-
-    m_fIReference = false;
-    m_fIReferenceArray = false;
-    m_fNonRCWType = false;
     m_flags = RCW::CF_None;
     m_pCallback = NULL;
     m_pThread = NULL;
@@ -108,30 +104,26 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
     }
     CONTRACTL_END;
 
-    if (!DontResolveClass())
+    // If we are not in an APPX process, and an object could have a strongly typed RCW as a COM CoClass,
+    // we prefer that to the WinRT class.This preserves compatibility for exisitng code.
+    // If we are in an APPX process we do not check for IProvideClassInfo.
+    if (m_typeHandle.IsNull() && !AppX::IsAppXProcess())
     {
-
-        // If we are not in an APPX process, and an object could have a strongly typed RCW as a COM CoClass,
-        // we prefer that to the WinRT class.This preserves compatibility for exisitng code.
-        // If we are in an APPX process we do not check for IProvideClassInfo.
-        if (m_typeHandle.IsNull() && !AppX::IsAppXProcess())
+        EX_TRY
         {
-            EX_TRY
-            {
-                m_typeHandle = GetClassFromIProvideClassInfo(m_pUnknown);
+            m_typeHandle = GetClassFromIProvideClassInfo(m_pUnknown);
 
-                if (!m_typeHandle.IsNull() && !m_typeHandle.IsComObjectType())
-                {
-                    m_typeHandle = TypeHandle();  // Clear the existing one.
-                }
-            }
-            EX_CATCH
+            if (!m_typeHandle.IsNull() && !m_typeHandle.IsComObjectType())
             {
+                m_typeHandle = TypeHandle();  // Clear the existing one.
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
-            if(!m_typeHandle.IsNull())
-                return;
         }
+        EX_CATCH
+        {
+        }
+        EX_END_CATCH(RethrowTerminalExceptions);
+        if(!m_typeHandle.IsNull())
+            return;
     }
 
     if (m_typeHandle.IsNull())
@@ -352,92 +344,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
 #endif
 }
 
-
-// OBJECTREF COMInterfaceMarshaler::IReferenceUnbox()
-//--------------------------------------------------------------------------------
-
-void COMInterfaceMarshaler::IReferenceUnbox(IUnknown **ppIncomingIP, OBJECTREF *poref, bool bIncomingIPAddRefed)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(m_fIReference);
-        PRECONDITION(m_pThread == GetThread());
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(false);
-}
-
-// void COMInterfaceMarshaler::IReferenceOrIReferenceArrayUnboxWorker()
-//--------------------------------------------------------------------------------
-
-// static
-void COMInterfaceMarshaler::IReferenceOrIReferenceArrayUnboxWorker(OBJECTREF oref, TypeHandle thT, BOOL fIsIReferenceArray, OBJECTREF *porefResult)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(false);
-}
-
-// void COMInterfaceMarshaler::IKeyValuePairUnboxWorker()
-//--------------------------------------------------------------------------------
-
-// static
-void COMInterfaceMarshaler::IKeyValuePairUnboxWorker(OBJECTREF oref, OBJECTREF *porefResult)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(false);
-}
-
-// OBJECTREF COMInterfaceMarshaler::IReferenceArrayUnbox()
-//--------------------------------------------------------------------------------
-
-void COMInterfaceMarshaler::IReferenceArrayUnbox(IUnknown **ppIncomingIP, OBJECTREF *poref, bool bIncomingIPAddRefed)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(m_fIReferenceArray);
-        PRECONDITION(m_pThread == GetThread());
-    }
-    CONTRACTL_END;
-
-
-    _ASSERTE(false);
-}
-
-void COMInterfaceMarshaler::MarshalToNonRCWType(OBJECTREF *poref)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(m_fNonRCWType);
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(false);
-}
-
 //--------------------------------------------------------------------------------
 // OBJECTREF COMInterfaceMarshaler::FindOrCreateObjectRef()
 // Find the wrapper for this COM IP, might have to create one if not found.
@@ -445,10 +351,8 @@ void COMInterfaceMarshaler::MarshalToNonRCWType(OBJECTREF *poref)
 // an IP that is disguised as an unmanaged object, sitting on top of a
 // managed object.
 //
-// The ppIncomingIP parameter serves two purposes - it lets COMInterfaceMarshaler call methods on the
-// interface pointer that came in from unmanaged code (pUnk could be the result of QI'ing such an IP for IUnknown),
-// and it also implements the CF_SuppressAddRef flag in a reliable way by assigning NULL to *ppIncomingIP if and
-// only if COMInterfaceMarshaler ended up creating a new RCW which took ownership of the interface pointer.
+// The ppIncomingIP parameter lets COMInterfaceMarshaler call methods on the
+// interface pointer that came in from unmanaged code (pUnk could be the result of QI'ing such an IP for IUnknown).
 //
 // If pIncomingItfMT is not NULL, we'll cache ppIncomingIP into the created RCW, so that
 // 1) RCW variance would work if we can't load the right type from RuntimeClassName, but the method returns a interface
@@ -539,14 +443,7 @@ OBJECTREF COMInterfaceMarshaler::FindOrCreateObjectRefInternal(IUnknown **ppInco
 
     GCPROTECT_BEGIN_THREAD(m_pThread, oref)
     {
-        if (m_fIReference)
-            IReferenceUnbox(ppIncomingIP, &oref, bIncomingIPAddRefed);
-        else if (m_fIReferenceArray)
-            IReferenceArrayUnbox(ppIncomingIP, &oref, bIncomingIPAddRefed);
-        else if (m_fNonRCWType)
-            MarshalToNonRCWType(&oref);
-        else
-            CreateObjectRef(NeedUniqueObject(), &oref, ppIncomingIP, pIncomingItfMT, bIncomingIPAddRefed);
+        CreateObjectRef(NeedUniqueObject(), &oref, ppIncomingIP, pIncomingItfMT, bIncomingIPAddRefed);
     }
     GCPROTECT_END();
 
@@ -631,18 +528,6 @@ VOID COMInterfaceMarshaler::EnsureCOMInterfacesSupported(OBJECTREF oref, MethodT
     }
 
     GCPROTECT_END();
-}
-
-bool COMInterfaceMarshaler::SupportsIInspectable()
-{
-    LIMITED_METHOD_CONTRACT;
-    return (m_flags & RCW::CF_SupportsIInspectable) != 0;
-}
-
-bool COMInterfaceMarshaler::DontResolveClass()
-{
-    LIMITED_METHOD_CONTRACT;
-    return (m_flags & RCW::CF_DontResolveClass) != 0;
 }
 
 bool COMInterfaceMarshaler::NeedUniqueObject()

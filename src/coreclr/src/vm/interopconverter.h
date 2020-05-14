@@ -13,12 +13,12 @@ struct ItfMarshalInfo
 {
     enum ItfMarshalFlags
     {
-        ITF_MARSHAL_INSP_ITF        = 0x01,  // IInspectable-based interface
-        ITF_MARSHAL_SUPPRESS_ADDREF = 0x02,
+        // unused                   = 0x01,
+        // unused                   = 0x02,
         ITF_MARSHAL_CLASS_IS_HINT   = 0x04,
         ITF_MARSHAL_DISP_ITF        = 0x08,
         ITF_MARSHAL_USE_BASIC_ITF   = 0x10,
-        ITF_MARSHAL_WINRT_SCENARIO  = 0x20,  // WinRT scenario only
+        // unused                   = 0x20,
     };
 
     TypeHandle      thClass;
@@ -31,25 +31,20 @@ struct ItfMarshalInfo
     enum CreationFlags  // member of RCW struct
     {
         CF_None                 = 0x00,
-        CF_SupportsIInspectable = 0x01, // the underlying object supports IInspectable
-        CF_SuppressAddRef       = 0x02, // do not AddRef the underlying interface pointer
-        CF_IsWeakReference      = 0x04, // mark the RCW as "weak"
+        // unused               = 0x01,
+        // unused               = 0x02,
+        // unused               = 0x04,
         CF_NeedUniqueObject     = 0x08, // always create a new RCW/object even if we have one cached already
-        CF_DontResolveClass     = 0x10, // don't attempt to create a strongly typed RCW
+        // unused               = 0x10,
     };
 */
 
 
 /*
-01 REQUIRE_IINSPECTABLE         01 ITF_MARSHAL_INSP_ITF         01 CF_SupportsIInspectable
-02 SUPPRESS_ADDREF              02 ITF_MARSHAL_SUPPRESS_ADDREF
-                                                                04 CF_IsWeakReference
 04 CLASS_IS_HINT                04 ITF_MARSHAL_CLASS_IS_HINT
 08 UNIQUE_OBJECT                                                08 CF_NeedUniqueObject
                                 08 ITF_MARSHAL_DISP_ITF
-10 IGNORE_WINRT_AND_SKIP_UNBOXING                               10 CF_DontResolveClass
                                 10 ITF_MARSHAL_USE_BASIC_ITF
-                                20 ITF_MARSHAL_WINRT_SCENARIO
 */
 
 struct ObjFromComIP
@@ -57,23 +52,19 @@ struct ObjFromComIP
     enum flags
     {
         NONE                            = 0x00,
-        REQUIRE_IINSPECTABLE            = 0x01, // ITF_MARSHAL_INSP_ITF        = 0x01   // CF_SupportsIInspectable  = 0x01
-        SUPPRESS_ADDREF                 = 0x02, // ITF_MARSHAL_SUPPRESS_ADDREF = 0x02   // CF_SuppressAddRef        = 0x02
+        // unused                       = 0x01,
+        // unused                       = 0x02,
         CLASS_IS_HINT                   = 0x04, // ITF_MARSHAL_CLASS_IS_HINT   = 0x04
         UNIQUE_OBJECT                   = 0x08,                                         // CF_NeedUniqueObject      = 0x04
-        IGNORE_WINRT_AND_SKIP_UNBOXING  = 0x10,                                         // CF_DontResolveClass      = 0x10
+        // unused                       = 0x10,
     };
 
     static flags FromItfMarshalInfoFlags(DWORD dwFlags)
     {
         static_assert_no_msg(((DWORD)CLASS_IS_HINT)         == ((DWORD)ItfMarshalInfo::ITF_MARSHAL_CLASS_IS_HINT));
-        static_assert_no_msg(((DWORD)REQUIRE_IINSPECTABLE)  == ((DWORD)ItfMarshalInfo::ITF_MARSHAL_INSP_ITF));
-        static_assert_no_msg(((DWORD)SUPPRESS_ADDREF)       == ((DWORD)ItfMarshalInfo::ITF_MARSHAL_SUPPRESS_ADDREF));
 
         DWORD dwResult = (dwFlags &
-                            (ItfMarshalInfo::ITF_MARSHAL_CLASS_IS_HINT|
-                             ItfMarshalInfo::ITF_MARSHAL_INSP_ITF|
-                             ItfMarshalInfo::ITF_MARSHAL_SUPPRESS_ADDREF));
+                            (ItfMarshalInfo::ITF_MARSHAL_CLASS_IS_HINT));
         return (flags)dwResult;
     }
 };
@@ -106,7 +97,6 @@ enum ComIpType
     ComIpType_Dispatch      = 0x2,
     ComIpType_Both          = 0x3,
     ComIpType_OuterUnknown  = 0x5,
-    ComIpType_Inspectable   = 0x8,
 };
 
 

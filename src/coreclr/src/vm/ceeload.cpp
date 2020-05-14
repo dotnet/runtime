@@ -4471,7 +4471,6 @@ Module::GetAssemblyIfLoaded(
 
     // Don't do a lookup if an override IMDInternalImport is provided, since the lookup is for the
     // standard IMDInternalImport and might result in an incorrect result.
-    // WinRT references also do not update RID map, so don't try to look it up
     if (fCanUseRidMap)
     {
         pAssembly = LookupAssemblyRef(kAssemblyRef);

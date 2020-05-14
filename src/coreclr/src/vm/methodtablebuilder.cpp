@@ -6408,20 +6408,6 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
         pDecl->GetSlotIndex(),
         pImpl);
 
-#ifdef FEATURE_PREJIT
-    if (IsCompilationProcess())
-    {
-        //
-        // Mark this interface as overridable. It is used to skip generation of
-        // CCWs stubs during NGen (see code:MethodNeedsReverseComStub)
-        //
-        if (!IsMdFinal(pImpl->GetDeclAttrs()))
-        {
-            pDeclMT->GetWriteableDataForWrite()->SetIsOverridingInterface();
-        }
-    }
-#endif
-
 #ifdef _DEBUG
     if (bmtInterface->dbg_fShouldInjectInterfaceDuplicates)
     {   // We injected interface duplicates

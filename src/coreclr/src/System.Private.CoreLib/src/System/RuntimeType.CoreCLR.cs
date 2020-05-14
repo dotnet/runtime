@@ -3122,9 +3122,7 @@ namespace System
 
 #if FEATURE_COMINTEROP
         internal override bool IsWindowsRuntimeObjectImpl() => false;
-#if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
         internal override bool IsExportedToWindowsRuntimeImpl() => false;
-#endif // FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 
         internal bool IsDelegate() => GetBaseType() == typeof(MulticastDelegate);

@@ -396,7 +396,6 @@ set(VM_SOURCES_WKS
     stubhelpers.cpp
     syncclean.cpp
     synch.cpp
-    synchronizationcontextnative.cpp
     tailcallhelp.cpp
     threaddebugblockinginfo.cpp
     threadsuspend.cpp
@@ -514,7 +513,6 @@ set(VM_HEADERS_WKS
     stubhelpers.h
     syncclean.hpp
     synch.h
-    synchronizationcontextnative.h
     tailcallhelp.h
     tieredcompilation.h
     threaddebugblockinginfo.h

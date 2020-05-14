@@ -280,11 +280,11 @@ struct RCW
     enum CreationFlags
     {
         CF_None                 = 0x00,
-        CF_SupportsIInspectable = 0x01, // the underlying object supports IInspectable
+        // unused               = 0x01,
         CF_QueryForIdentity     = 0x02, // Need to QI for the real identity IUnknown during creating RCW
-        CF_IsWeakReference      = 0x04, // mark the RCW as "weak"
+        // unused               = 0x04,
         CF_NeedUniqueObject     = 0x08, // always create a new RCW/object even if we have one cached already
-        CF_DontResolveClass     = 0x10, // don't attempt to create a strongly typed RCW
+        // unused               = 0x10,
         CF_DetectDCOMProxy      = 0x20, // attempt to determine if the RCW is for a DCOM proxy
     };
 
@@ -511,14 +511,13 @@ struct RCW
     // use the cache /update the cache
     IUnknown* GetComIPForMethodTableFromCache(MethodTable * pMT);
 
-    // helpers to get to IUnknown, IDispatch, and IInspectable interfaces
+    // helpers to get to IUnknown, IDispatch interfaces
     // Returns an addref'd pointer - caller must Release
     IUnknown*  GetWellKnownInterface(REFIID riid);
 
     IUnknown*  GetIUnknown();
     IUnknown*  GetIUnknown_NoAddRef();
     IDispatch* GetIDispatch();
-    IInspectable* GetIInspectable();
 
     ULONG GetRefCount()
     {
@@ -639,12 +638,6 @@ struct RCW
         return m_Flags.m_fURTContained == 1;
     }
 
-    BOOL SupportsIInspectable()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_Flags.m_fSupportsIInspectable == 1;
-    }
-
     //
     // This COM object aggregates FTM?
     //
@@ -759,43 +752,6 @@ struct RCW
     // interop mechanisms.
     bool SupportsMngStdInterface(MethodTable *pItfMT);
 
-    //---------------------------------------------------------------------
-    // Determines whether a call through the given interface should use new
-    // WinRT interop (as opposed to classic COM). pItfMT should be a non-generic
-    // redirected interface such as IEnumerable whose interop behavior is
-    // ambiguous. This is a NoGC variant, if it returns TypeHandle::MaybeCast,
-    // SupportsWinRTInteropInterface should be called.
-    TypeHandle::CastResult SupportsWinRTInteropInterfaceNoGC(MethodTable *pItfMT);
-
-    //---------------------------------------------------------------------
-    // This is a GC-triggering variant of code:SupportsWinRTInteropInterfaceNoGC.
-    bool SupportsWinRTInteropInterface(MethodTable *pItfMT);
-
-    //---------------------------------------------------------------------
-    // True if the object supports legacy (not WinRT) IEnumerable marshaling.
-    bool SupportsLegacyEnumerableInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(SupportsWinRTInteropInterfaceNoGC(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE)) == TypeHandle::CannotCast);
-        return m_Flags.m_RedirectionBehavior_IEnumerable_LegacySupported;
-    }
-
-    enum RedirectionBehavior
-    {
-        RedirectionBehaviorComputed = 1, // the second bit is valid
-        RedirectionBehaviorEnabled  = 2  // if RedirectionBehaviorComputed is set, true means the interface is redirected on this RCW
-    };
-
-    enum InterfaceVarianceBehavior
-    {
-        IEnumerableSupported                            = 1,  // IEnumerable<T> is supported on this RCW
-        IEnumerableSupportedViaStringInstantiation      = 2,  // the object failed QI for IEnumerable<T> but succeeded QI for IEnumerable<string>
-
-        IReadOnlyListSupported                          = 4,  // IReadOnlyList<T> is supported on this RCW
-        IReadOnlyListSupportedViaStringInstantiation    = 8,  // the object failed QI for IReadOnlyList<T> but succeeded QI for IReadOnlyList<string>
-    };
-
 #ifdef _DEBUG
     // Does not throw if m_UnkEntry.m_pUnknown is no longer valid, debug only.
     IUnknown *GetRawIUnknown_NoAddRef_NoThrow()
@@ -854,10 +810,6 @@ struct RCW
 
 private:
     //---------------------------------------------------------------------
-    // Computes the result of code:SupportsWinRTInteropInterface.
-    RedirectionBehavior ComputeRedirectionBehavior(MethodTable *pItfMT, bool *pfLegacySupported);
-
-    //---------------------------------------------------------------------
     // Callback called to release the interfaces in the auxiliary cache.
     static HRESULT __stdcall ReleaseAuxInterfacesCallBack(LPVOID pData);
 
@@ -906,22 +858,10 @@ public:
             DWORD       m_fURTAggregated:1;        // this RCW represents a COM object aggregated by a managed object
             DWORD       m_fURTContained:1;         // this RCW represents a COM object contained by a managed object
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
-            DWORD       m_fSupportsIInspectable:1; // the underlying COM object is known to support IInspectable
             DWORD       m_fIsJupiterObject:1;      // this RCW represents a COM object from Jupiter
 
             static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
             DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
-
-            // RedirectionBehavior of non-generic redirected interfaces:
-            DWORD       m_RedirectionBehavior_IEnumerable:2;
-            DWORD       m_RedirectionBehavior_IEnumerable_LegacySupported:1; // one extra bit for IEnumerable
-
-            DWORD       m_RedirectionBehavior_ICollection:2;
-            DWORD       m_RedirectionBehavior_IList:2;
-            DWORD       m_RedirectionBehavior_INotifyCollectionChanged:2;
-            DWORD       m_RedirectionBehavior_INotifyPropertyChanged:2;
-            DWORD       m_RedirectionBehavior_ICommand:2;
-            DWORD       m_RedirectionBehavior_IDisposable:2;
 
             // Reserve 2 bits for marshaling behavior
             DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
@@ -1012,32 +952,18 @@ inline RCW::CreationFlags operator|=(RCW::CreationFlags & lhs, RCW::CreationFlag
 // can absorb the cost of one stack slot and one instruction to improve debuggability.
 #define RCW_VTABLEPTR(pRCW) Volatile<LPVOID> __vtablePtr = (pRCW)->m_vtablePtr
 
-
-// 01 REQUIRE_IINSPECTABLE            01 ITF_MARSHAL_INSP_ITF         01 CF_SupportsIInspectable
-// 02 SUPPRESS_ADDREF                 02 ITF_MARSHAL_SUPPRESS_ADDREF  02 CF_SuppressAddRef
-//                                                                    04 CF_IsWeakReference
 // 04 CLASS_IS_HINT                   04 ITF_MARSHAL_CLASS_IS_HINT
 // 08 UNIQUE_OBJECT                                                   08 CF_NeedUniqueObject
 //                                    08 ITF_MARSHAL_DISP_ITF
-// 10 IGNORE_WINRT_AND_SKIP_UNBOXING                                  10 CF_DontResolveClass
 //                                    10 ITF_MARSHAL_USE_BASIC_ITF
-//                                    20 ITF_MARSHAL_WINRT_SCENARIO
 inline RCW::CreationFlags RCW::CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags dwFlags)
 {
     LIMITED_METHOD_CONTRACT;
 
     static_assert_no_msg(CF_NeedUniqueObject     == ObjFromComIP::UNIQUE_OBJECT);
-    static_assert_no_msg(CF_SupportsIInspectable == ObjFromComIP::REQUIRE_IINSPECTABLE);
-    static_assert_no_msg(CF_DontResolveClass     == ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING);
 
     RCW::CreationFlags result = (RCW::CreationFlags)(dwFlags &
-                                        (ObjFromComIP::UNIQUE_OBJECT
-                                       | ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING));
-    if ((dwFlags & (ObjFromComIP::REQUIRE_IINSPECTABLE|ObjFromComIP::CLASS_IS_HINT))
-        == (ObjFromComIP::REQUIRE_IINSPECTABLE|ObjFromComIP::CLASS_IS_HINT))
-    {
-        result |= CF_SupportsIInspectable;
-    }
+                                        (ObjFromComIP::UNIQUE_OBJECT));
     return result;
 }
 

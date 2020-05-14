@@ -32,7 +32,6 @@ namespace R2RTest
         {
             new FrameworkExclusion(ExclusionType.Ignore, "CommandLine", "Not a framework assembly"),
             new FrameworkExclusion(ExclusionType.Ignore, "R2RDump", "Not a framework assembly"),
-            new FrameworkExclusion(ExclusionType.Ignore, "System.Runtime.WindowsRuntime", "WinRT is currently not supported"),
             new FrameworkExclusion(ExclusionType.Ignore, "xunit.performance.api", "Not a framework assembly"),
 
             // TODO (DavidWr): IBC-related failures

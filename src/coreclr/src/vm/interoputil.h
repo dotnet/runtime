@@ -419,10 +419,6 @@ HRESULT GetCLSIDFromProgID(__in_z WCHAR *strProgId, GUID *pGuid);
 // out the class from there
 MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk);
 
-//--------------------------------------------------------------------------------
-// Try to get the class from IInspectable.
-TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable, bool *pfSupportsIReference, bool *pfSupportsIReferenceArray);
-
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
 

@@ -894,12 +894,6 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
 FCFuncEnd()
 
-FCFuncStart(gContextSynchronizationFuncs)
-#ifdef FEATURE_APPX
-    QCFuncElement("GetWinRTDispatcherForCurrentThread", SynchronizationContextNative::GetWinRTDispatcherForCurrentThread)
-#endif
-FCFuncEnd()
-
 FCFuncStart(gMngdFixedArrayMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdFixedArrayMarshaler::CreateMarshaler)
     FCFuncElement("ConvertSpaceToNative", MngdFixedArrayMarshaler::ConvertSpaceToNative)
@@ -930,7 +924,6 @@ FCFuncStart(gInterfaceMarshalerFuncs)
     FCFuncElement("ConvertToNative", StubHelpers::InterfaceMarshaler__ConvertToNative)
     FCFuncElement("ConvertToManaged", StubHelpers::InterfaceMarshaler__ConvertToManaged)
     QCFuncElement("ClearNative", StubHelpers::InterfaceMarshaler__ClearNative)
-    FCFuncElement("ConvertToManagedWithoutUnboxing", StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxing)
 FCFuncEnd()
 
 FCFuncStart(gMngdSafeArrayMarshalerFuncs)
@@ -1233,7 +1226,6 @@ FCClassElement("StackTrace", "System.Diagnostics", gDiagnosticsStackTrace)
 FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
-FCClassElement("SynchronizationContext", "System.Threading", gContextSynchronizationFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("TimerQueue", "System.Threading", gTimerFuncs)

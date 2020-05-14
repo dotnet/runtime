@@ -80,22 +80,8 @@ const SLOT * const g_rgStdVtables[] =
     (SLOT*)&g_IConnectionPointContainer.m_vtable,
     (SLOT*)&g_IObjectSafety.m_vtable,
     (SLOT*)&g_IDispatchEx.m_vtable,
-    (SLOT*)&g_IWeakReferenceSource.m_vtable,
-    (SLOT*)&g_ICustomPropertyProvider.m_vtable,
     (SLOT*)&g_ICCW.m_vtable,
-    (SLOT*)&g_IAgileObject.m_vtable,
-    (SLOT*)&g_IStringable.m_vtable
 };
-
-
-const IID IID_IWeakReferenceSource = __uuidof(IWeakReferenceSource);
-const IID IID_IWeakReference = __uuidof(IWeakReference);
-
-// {7C925755-3E48-42B4-8677-76372267033F}
-const IID IID_ICustomPropertyProvider = {0x7C925755,0x3E48,0x42B4,{0x86, 0x77, 0x76, 0x37, 0x22, 0x67, 0x03, 0x3F}};
-
-const IID IID_IStringable = {0x96369f54,0x8eb6,0x48f0, {0xab,0xce,0xc1,0xb2,0x11,0xe6,0x27,0xc3}};
-
 
 //------------------------------------------------------------------------------------------
 //      IUnknown methods for CLR objects
@@ -2189,141 +2175,6 @@ HRESULT __stdcall   DispatchEx_InvokeEx (
     return hr;
 }
 
-HRESULT __stdcall Inspectable_GetIIDs (
-                                    IInspectable *pInsp,
-                                    ULONG *iidCount,
-                                    IID **iids)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pInsp));
-        PRECONDITION(IsInProcCCWTearOff(pInsp));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    if (iidCount == NULL || iids == NULL)
-        return E_POINTER;
-
-    *iidCount = 0;
-    *iids = NULL;
-
-    // Either it is ICustomPropertyProvider or IWeakReferenceSource
-    ComCallWrapper *pWrap = MapIUnknownToWrapper(pInsp);
-
-    ComCallWrapperTemplate *pTemplate = pWrap->GetComCallWrapperTemplate();
-
-    ULONG numInterfaces = pTemplate->GetNumInterfaces();
-
-    // determine the number of IIDs to return
-    // Always add IID_ICustomPropertyProvider and skip any managed WinRT interface that is IID_ICustomPropertyProvider
-    ULONG numInspectables = 1;
-    for (ULONG i = 0; i < numInterfaces; i++)
-    {
-        ComMethodTable *pComMT = pTemplate->GetComMTForIndex(i);
-
-        // Skip any managed WinRT interface that is IID_ICustomPropertyProvider
-        if (pComMT != NULL && pComMT->GetInterfaceType() == ifInspectable &&
-            !IsEqualGUID(pComMT->GetIID(), IID_ICustomPropertyProvider))
-        {
-            numInspectables++;
-        }
-    }
-
-
-    // we shouldn't ever come here if the CCW does not support IInspectable
-    _ASSERTE(numInspectables > 0);
-
-    // as per the spec, make sure *iidCount is set even if the allocation fails
-    *iidCount = numInspectables;
-
-    S_UINT32 cbAlloc = S_UINT32(numInspectables) * S_UINT32(sizeof(IID));
-    if (cbAlloc.IsOverflow())
-        return E_OUTOFMEMORY;
-
-    NewArrayHolder<IID> result = (IID *)CoTaskMemAlloc(cbAlloc.Value());
-    if (result == NULL)
-        return E_OUTOFMEMORY;
-
-    // now fill out the output array with IIDs
-    result[0] = IID_ICustomPropertyProvider;
-
-    ULONG index = 1;
-    for (ULONG i = 0; i < numInterfaces; i++)
-    {
-        ComMethodTable *pComMT = pTemplate->GetComMTForIndex(i);
-
-        // Skip any managed WinRT interface that is IID_ICustomPropertyProvider
-        if (pComMT != NULL && pComMT->GetInterfaceType() == ifInspectable &&
-            !IsEqualGUID(pComMT->GetIID(), IID_ICustomPropertyProvider))
-        {
-            result[index] = pComMT->GetIID();
-            index++;
-        }
-    }
-    _ASSERTE(index == numInspectables);
-
-    *iids = result.Extract();
-    return hr;
-}
-
-
-HRESULT __stdcall Inspectable_GetRuntimeClassName(IInspectable *pInsp, HSTRING *className)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pInsp));
-        PRECONDITION(IsInProcCCWTearOff(pInsp));
-    }
-    CONTRACTL_END;
-
-    if (className == NULL)
-        return E_POINTER;
-
-    return E_NOTIMPL;
-}
-
-HRESULT __stdcall WeakReferenceSource_GetWeakReference (
-                                    IWeakReferenceSource *pRefSrc,
-                                    IWeakReference **weakReference)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pRefSrc));
-        PRECONDITION(IsInProcCCWTearOff(pRefSrc));
-    }
-    CONTRACTL_END;
-
-    if (weakReference == NULL)
-        return E_INVALIDARG;
-
-    *weakReference = NULL;
-
-    HRESULT hr = S_OK;
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        SimpleComCallWrapper *pWrap = SimpleComCallWrapper::GetWrapperFromIP(pRefSrc);
-
-        // Creates a new WeakReferenceImpl that tracks the object lifetime in the current domain
-        // Note that this WeakReferenceImpl is not bound to a specific CCW
-        *weakReference = pWrap->CreateWeakReference(GET_THREAD());
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return hr;
-}
-
-
 // Helper to setup IMarshal
 HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap, ULONG dwDestContext, IMarshal **ppMarshalRet)
 {
@@ -2662,38 +2513,6 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
 
     return S_OK;
 }
-
-HRESULT __stdcall ICustomPropertyProvider_GetProperty(IUnknown *pPropertyProvider, HSTRING hstrName, IUnknown **ppProperty)
-{
-    return E_NOTIMPL;
-}
-
-HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pPropertyProvider,
-                                                             HSTRING hstrName,
-                                                             TypeNameNative indexedParamType,
-                                                             /* [out, retval] */ IUnknown **ppProperty)
-{
-    return E_NOTIMPL;
-}
-
-HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation(IUnknown *pPropertyProvider,
-                                                                  /* [out, retval] */ HSTRING *phstrStringRepresentation)
-{
-    return E_NOTIMPL;
-}
-
-HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider,
-                                                  /* [out, retval] */ TypeNameNative *pTypeIdentifier)
-{
-    return E_NOTIMPL;
-}
-
-HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
-                                               /* [out, retval] */ HSTRING* pResult)
-{
-    return E_NOTIMPL;
-}
-
 
 ULONG __stdcall
 ICCW_AddRefFromJupiter(IUnknown* pUnk)

@@ -3902,9 +3902,6 @@ HRESULT ClrDataAccess::GetRCWData(CLRDATA_ADDRESS addr, struct DacpRCWData *rcwD
     rcwData->creatorThread   = TO_CDADDR(pRCW->m_pCreatorThread);
     rcwData->ctxCookie       = TO_CDADDR(pRCW->GetWrapperCtxCookie());
     rcwData->refCount        = pRCW->m_cbRefCount;
-
-    rcwData->isJupiterObject = pRCW->IsJupiterObject();
-    rcwData->supportsIInspectable = pRCW->SupportsIInspectable();
     rcwData->isAggregated = pRCW->IsURTAggregated();
     rcwData->isContained = pRCW->IsURTContained();
     rcwData->jupiterObject = TO_CDADDR(pRCW->GetJupiterObject());

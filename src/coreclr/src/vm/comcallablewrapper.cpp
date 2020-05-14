@@ -491,14 +491,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                             {
                                 MethodDesc* pTargetMD = pCMD->GetMethodDesc();
                                 MetaSig::EnsureSigValueTypesLoaded(pTargetMD);
-
-                                if (pCMD->IsWinRTCtor() || pCMD->IsWinRTStatic())
-                                {
-                                    // Activation, static method invocation, may be the first
-                                    // managed code that runs in the module. Fully load it here so we don't have to call EnsureInstanceActive
-                                    // on every activation/static call.
-                                    pTargetMD->GetMethodTable()->EnsureInstanceActive();
-                                }
                             }
                             EX_CATCH
                             {
@@ -661,214 +653,6 @@ public:
         Wrapper<CPArray*, CPListDoNothing, CPListRelease, NULL>::operator=(p);
     }
 };
-
-
-WeakReferenceImpl::WeakReferenceImpl(SimpleComCallWrapper *pSimpleWrapper, Thread *pCurrentThread)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(pCurrentThread == GetThread());
-    }
-    CONTRACTL_END;
-
-    //
-    // Create a short weak handle in the current domain and use it to track the lifetime of the object in this domain
-    // It is a short weak handle so that we can avoid client calling into a object that will be/is being/has been finalized
-    // We DONOT use the appdomain of the CCW because the object could be domain-agile and could bleed through
-    // appdomain boundary. In that case, the object becomes a different object from user's perspective, and the fact
-    // that it is the same object is just an optimization. Therefore, we always create a new WeakReferenceImpl
-    // instance based on the current domain, as if we were deaing with a copy of the object.
-    //
-    AppDomain *pDomain = pCurrentThread->GetDomain();
-
-    {
-        GCX_COOP_THREAD_EXISTS(pCurrentThread);
-        m_ppObject = pDomain->CreateShortWeakHandle(pSimpleWrapper->GetObjectRef());
-    }
-
-    // Start with ref count = 1
-    AddRef();
-}
-
-WeakReferenceImpl::~WeakReferenceImpl()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Ignore the HR. Cleanup must return HR though (due to BEGIN_EXTERNAL_ENTRYPOINT)
-    Cleanup();
-}
-
-HRESULT WeakReferenceImpl::Cleanup()
-{
-    SetupForComCallHR();
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        //
-        // Destroy the handle if the AppDomain is still there
-        // The AppDomain is the domain where this WeakReferenceImpl is created
-        //
-        GCX_COOP_THREAD_EXISTS(GET_THREAD());
-
-        DestroyShortWeakHandle(m_ppObject);
-
-        m_ppObject = NULL;
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return S_OK;
-}
-
-struct WeakReferenceResolveCallbackArgs
-{
-    WeakReferenceImpl   *pThis;
-    Thread              *pThread;
-    GUID                iid;
-    IInspectable        **ppvObject;
-    HRESULT             *pHR;
-};
-
-HRESULT STDMETHODCALLTYPE WeakReferenceImpl::Resolve(REFIID riid, IInspectable **ppvObject)
-{
-    SetupForComCallHR();
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (ppvObject == NULL)
-        return E_INVALIDARG;
-
-    *ppvObject = NULL;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        Thread *pThread = GET_THREAD();
-
-        WeakReferenceResolveCallbackArgs args = { this, pThread, riid, ppvObject, &hr };
-
-        Resolve_Callback(&args);
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return hr;
-}
-
-void WeakReferenceImpl::Resolve_Callback(LPVOID lpData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(lpData));
-    }
-    CONTRACTL_END;
-
-    WeakReferenceResolveCallbackArgs *lpArgs = reinterpret_cast<WeakReferenceResolveCallbackArgs *>(lpData);
-
-    *(lpArgs->pHR) = lpArgs->pThis->ResolveInternal(lpArgs->pThread, lpArgs->iid, lpArgs->ppvObject);
-}
-
-void WeakReferenceImpl::Resolve_Callback_SwitchToPreemp(LPVOID lpData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(lpData));
-    }
-    CONTRACTL_END;
-
-    WeakReferenceResolveCallbackArgs *lpArgs = reinterpret_cast<WeakReferenceResolveCallbackArgs *>(lpData);
-
-    GCX_PREEMP_THREAD_EXISTS(lpArgs->pThread);
-
-    Resolve_Callback(lpData);
-}
-
-//
-// Resolving WeakReference into a IInspectable*
-// Must be called in the right domain where this WeakReference is created
-//
-HRESULT WeakReferenceImpl::ResolveInternal(Thread *pThread, REFIID riid, IInspectable **ppvObject)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(ppvObject));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    SafeComHolder<IUnknown> pUnk;
-
-    {
-        GCX_COOP_THREAD_EXISTS(pThread);
-
-        OBJECTREF refTarget = NULL;
-        GCPROTECT_BEGIN_THREAD(pThread, refTarget);
-        refTarget = ObjectFromHandle(m_ppObject);
-        if (refTarget != NULL)
-        {
-            //
-            // Retrieve the wrapper
-            //
-            // NOTE: Even though the object is alive, the old CCW (where you create the weakreference)
-            // could be gone if :
-            // 1. the object is domain-agile (for example, string), and
-            // 2. the domain A where the object used to live is unloaded, and
-            // 3. the domain B where we create WeakReferenceImpl is a in a different domain
-            //
-            // In the above case, the object is alive, and the CCW in domain A is neutered,
-            // and InlineGetWrapper creates a new CCW
-            // This means, you might get a different IUnknown* identity with Resolve in this case,
-            // but this has always been the case since whidbey. If we were to fix the identity
-            // problem, we need to make sure:
-            // 1. We hand out different CCW for each domain (instead of having "agile" CCWs), and
-            // 2. per-Domain SyncBlockInfo on SyncBlock
-            //
-            CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&refTarget);
-
-            //
-            // Retrieve the pUnk pointer and AddRef
-            //
-            pUnk = pWrap->GetBasicIP();
-        }
-        GCPROTECT_END();
-    }
-
-    if (pUnk != NULL)
-    {
-        hr = Unknown_QueryInterface(pUnk, riid, (void **)ppvObject);
-    }
-
-    return hr;
-
-}
 
 NOINLINE void LogCCWRefCountChange_BREAKPOINT(ComCallWrapper *pCCW)
 {
@@ -1209,9 +993,6 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     if (IsExtendsCOMObject())
         m_rgpVtable[enum_IProvideClassInfo] = NULL;
 
-    // IStringable is valid only on classes that are exposed to WinRT.
-    m_rgpVtable[enum_IStringable] = NULL;
-
     // IErrorInfo is valid only for exception classes
     m_rgpVtable[enum_IErrorInfo] = NULL;
 
@@ -1461,31 +1242,6 @@ BOOL SimpleComCallWrapper::SupportsExceptions(MethodTable *pClass)
 }
 
 //--------------------------------------------------------------------------
-// Returns TRUE if the pClass represents a class and is exposed to WinRT.
-//--------------------------------------------------------------------------
-BOOL SimpleComCallWrapper::SupportsIStringable(MethodTable *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pClass, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    // Support IStringable if the Methodtable represents a class.
-    if (pClass != NULL
-        && IsTdClass(pClass->GetAttrClass())
-        )
-    {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-//--------------------------------------------------------------------------
 // Returns TRUE if the COM+ object that this wrapper represents implements
 // IExpando.
 //--------------------------------------------------------------------------
@@ -1635,19 +1391,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
             pIntf = (IUnknown*)&m_rgpVtable[enum_IErrorInfo];
         }
     }
-    else if(index == enum_IStringable)
-    {
-        if(SupportsIStringable(m_pMT))
-        {
-            // Set up the vtable pointer so that next time we don't have to determine
-            // that the IStringable is provided by the managed class.
-            m_rgpVtable[enum_IStringable] = g_rgStdVtables[enum_IStringable];
-
-            // Return the interface pointer to the standard IStringable interface.
-            pIntf = (IUnknown*)&m_rgpVtable[enum_IStringable];
-        }
-    }
-
     else if (index == enum_IDispatchEx)
     {
         if (AppX::IsAppXProcess())
@@ -1716,11 +1459,6 @@ inline bool IsIUnknown(REFIID riid)
     IS_KNOWN_INTERFACE_CONTRACT(IID_IUnknown);
     RETURN IS_EQUAL_GUID(riid, 0x00000000,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46);
 }
-inline bool IsIInspectable(REFIID riid)
-{
-    IS_KNOWN_INTERFACE_CONTRACT(IID_IInspectable);
-    RETURN IS_EQUAL_GUID(riid, 0xAF86E2E0,0xB12D,0x4c6a,0x9C,0x5A,0xD7,0xAA,0x65,0x10,0x1E,0x90);
-}
 inline bool IsIDispatch(REFIID riid)
 {
     IS_KNOWN_INTERFACE_CONTRACT(IID_IDispatch);
@@ -1730,11 +1468,6 @@ inline bool IsGUID_NULL(REFIID riid)
 {
     IS_KNOWN_INTERFACE_CONTRACT(GUID_NULL);
     RETURN IS_EQUAL_GUID(riid, 0x00000000,0x0000,0x0000,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
-}
-inline bool IsIAgileObject(REFIID riid)
-{
-    IS_KNOWN_INTERFACE_CONTRACT(IID_IAgileObject);
-    RETURN IS_EQUAL_GUID(riid, 0x94ea2b94,0xe9cc,0x49e0,0xc0,0xff,0xee,0x64,0xca,0x8f,0x5b,0x90);
 }
 inline bool IsIErrorInfo(REFIID riid)
 {
@@ -1756,17 +1489,13 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
     CONTRACT_END;
 
     // IID_IMarshal                    00000003-0000-0000-C000-000000000046
-    // IID_IWeakReferenceSource        00000038-0000-0000-C000-000000000046
     // IID_IErrorInfo                  1CF2B120-547D-101B-8E65-08002B2BD119
     // IID_ICCW                        64BD43F8-BFEE-4EC4-B7EB-2935158DAE21
-    // IID_ICustomPropertyProvider     7C925755-3E48-42B4-8677-76372267033F
-    // IID_IAgileObject                94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90
     // IID_IDispatchEx                 A6EF9860-C720-11d0-9337-00A0C90DCAA9
     // IID_IProvideClassInfo           B196B283-BAB4-101A-B69C-00AA00341D07
     // IID_IConnectionPointContainer   B196B284-BAB4-101A-B69C-00AA00341D07
     // IID_IObjectSafety               CB5BDC81-93C1-11cf-8F20-00805F2CD064
     // IID_ISupportErrorInfo           DF0B3D60-548F-101B-8E65-08002B2BD119
-    // IID_IStringable.................96369F54-8EB6-48f0-ABCE-C1B211E627C3
 
     // Switch on the first DWORD since they're all (currently) unique.
     switch (riid.Data1)
@@ -1774,48 +1503,10 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
     HANDLE_IID_INLINE(enum_IMarshal                 ,0x00000003,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46);
     HANDLE_IID_INLINE(enum_IErrorInfo               ,0x1CF2B120,0x547D,0x101B,0x8E,0x65,0x08,0x00,0x2B,0x2B,0xD1,0x19);
     HANDLE_IID_INLINE(enum_ICCW                     ,0x64BD43F8,0xBFEE,0x4EC4,0xB7,0xEB,0x29,0x35,0x15,0x8D,0xAE,0x21);
-    HANDLE_IID_INLINE(enum_ICustomPropertyProvider  ,0x7C925755,0x3E48,0x42B4,0x86,0x77,0x76,0x37,0x22,0x67,0x03,0x3F); // hit1, above
     HANDLE_IID_INLINE(enum_IDispatchEx              ,0xA6EF9860,0xC720,0x11d0,0x93,0x37,0x00,0xA0,0xC9,0x0D,0xCA,0xA9); // hit3, !=
     HANDLE_IID_INLINE(enum_ISupportsErrorInfo       ,0xDF0B3D60,0x548F,0x101B,0x8E,0x65,0x08,0x00,0x2B,0x2B,0xD1,0x19);
-    HANDLE_IID_INLINE(enum_IStringable              ,0x96369f54,0x8eb6,0x48f0,0xab,0xce,0xc1,0xb2,0x11,0xe6,0x27,0xc3);
-
-    CASE_IID_INLINE(  enum_IProvideClassInfo        ,0xB196B283,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07)  // hit4, !=
-        {
-            RETURN QIStandardInterface(enum_IProvideClassInfo);
-        }
-        break;
-
-    CASE_IID_INLINE(  enum_IConnectionPointContainer,0xB196B284,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07)  // b196b284 101abab4 aa009cb6 071d3400
-        {
-            RETURN QIStandardInterface(enum_IConnectionPointContainer);
-        }
-        break;
-
-    CASE_IID_INLINE(  enum_IWeakReferenceSource     ,0x00000038,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46)
-        {
-            // respond only if this type implements a WinRT interface
-            if (m_pTemplate->SupportsIInspectable())
-                RETURN QIStandardInterface(enum_IWeakReferenceSource);
-        }
-        break;
-
-    CASE_IID_INLINE(  enum_IAgileObject            ,0x94ea2b94,0xe9cc,0x49e0,0xc0,0xff,0xee,0x64,0xca,0x8f,0x5b,0x90)
-        {
-            // Don't implement IAgileObject if we are aggregated, if the object explicitly implements IMarshal, or if its ICustomQI returns
-            // Failed or Handled for IID_IMarshal (compat).
-            if (!IsAggregated())
-            {
-                ComCallWrapperTemplate *pTemplate = GetComCallWrapperTemplate();
-                if (!pTemplate->ImplementsIMarshal())
-                {
-                    if (!pTemplate->SupportsICustomQueryInterface() || !CustomQIRespondsToIMarshal())
-                    {
-                        RETURN QIStandardInterface(enum_IAgileObject);
-                    }
-                }
-            }
-        }
-        break;
+    HANDLE_IID_INLINE(enum_IProvideClassInfo        ,0xB196B283,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07);  // hit4, !=
+    HANDLE_IID_INLINE(enum_IConnectionPointContainer,0xB196B284,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07);  // b196b284 101abab4 aa009cb6 071d3400
     }
 
     RETURN NULL;
@@ -3134,8 +2825,8 @@ static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodT
     // class method table
     if (pMT->CanCastToClass(pIntfMT))
     {
-        // Make sure we're not trying to pass out a generic-based class interface (except for WinRT delegates)
-        if (pMT->HasInstantiation() && !pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged))
+        // Make sure we're not trying to pass out a generic-based class interface
+        if (pMT->HasInstantiation())
         {
             COMPlusThrow(kInvalidOperationException, IDS_EE_ATTEMPT_TO_CREATE_GENERIC_CCW);
         }
@@ -3280,12 +2971,6 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
             RETURN pUnkCustomQIResult;
     }
 
-    if (IsIInspectable(riid))
-    {
-        // ICustomPropertyProvider will be the cannonical IInspectable for every managed object
-        SimpleComCallWrapper* pSimpleWrap = pWrap->GetSimpleWrapper();
-        RETURN pSimpleWrap->QIStandardInterface(enum_ICustomPropertyProvider);
-    }
     if (IsIDispatch(riid))
     {
         if (AppX::IsAppXProcess())
@@ -3351,9 +3036,9 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     unsigned intfIndex = imapIndex;
     if (imapIndex != -1)
     {
-        // We don't support QI calls for non-WinRT interfaces that have generic arguments.
+        // We don't support QI calls for interfaces that have generic arguments.
         _ASSERTE(pIntfMT != NULL);
-        if (pIntfMT->HasInstantiation() && !pIntfMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, MethodTable::modeProjected))
+        if (pIntfMT->HasInstantiation())
         {
             COMPlusThrow(kInvalidOperationException, IDS_EE_ATTEMPT_TO_CREATE_GENERIC_CCW);
         }
@@ -3369,10 +3054,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     }
 
     // COM plus objects that extend from COM objects are special
-    // If we're being asked for just an IInspectable, we don't need to do this (we may be in the process
-    // of activating our aggregated object so can't use the RCW yet) - this is analagous to how IUnkown is handled
-    // specially with GetBasicIP at the top of this function.
-    if (pWrap->IsExtendsCOMObject() && !IsEqualGUID(riid, IID_IInspectable))
+    if (pWrap->IsExtendsCOMObject())
     {
         IUnknown * pIntf = GetComIPFromCCW_HandleExtendsCOMObject(pWrap, riid, pIntfMT,
                                 pTemplate, imapIndex, intfIndex);
@@ -3444,7 +3126,6 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
     MethodTable*          pMT         = pSimpleWrap->GetMethodTable();
 
     // Retrieve the type of the default interface for the class.
-    // WinRT types always has DefaultInterfaceType_IUnknown and therefore won't support IDispatch
     TypeHandle hndDefItfClass;
     DefaultInterfaceType DefItfType = GetDefaultInterfaceForClassWrapper(TypeHandle(pMT), &hndDefItfClass);
 
@@ -4230,15 +3911,6 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
             pDispVtable->m_Invoke           = (SLOT)Dispatch_Invoke_Wrapper;
         }
     }
-    else if (ItfType == ifInspectable)
-    {
-        // Setup the IInspectable vtable.
-        IInspectableVtable *pInspVtable = (IInspectableVtable *)pUnkVtable;
-
-        pInspVtable->m_GetIIDs              = (SLOT)Inspectable_GetIIDs_Wrapper;
-        pInspVtable->m_GetRuntimeClassName  = (SLOT)Inspectable_GetRuntimeClassName_Wrapper;
-        pInspVtable->m_GetTrustLevel        = (SLOT)Inspectable_GetTrustLevel_Wrapper;
-    }
 
     ArrayList NewCOMMethodDescs;
     ComCallMethodDescArrayHolder NewCOMMethodDescsHolder(&NewCOMMethodDescs);
@@ -4406,12 +4078,6 @@ void ComMethodTable::LayOutBasicMethodTable()
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), this));
 }
-
-//--------------------------------------------------------------------------
-// Lay out a ComMethodTable that represents a WinRT delegate interface.
-//--------------------------------------------------------------------------
-void ComMethodTable::LayOutDelegateMethodTable()
-{}
 
 //--------------------------------------------------------------------------
 // Retrieves the DispatchInfo associated with the COM method table. If
@@ -5415,10 +5081,6 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
     {
         m_flags |= enum_ImplementsICustomQueryInterface;
     }
-    else if (pItfMT->GetComInterfaceType() == ifInspectable)
-    {
-        m_flags |= enum_SupportsIInspectable;
-    }
     else if (InlineIsEqualGUID(pItfComMT->GetIID(), IID_IMarshal))
     {
         // detect IMarshal so we can handle IAgileObject in a backward compatible way
@@ -5501,7 +5163,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         pTemplate->m_pClassComMT = NULL;        // Defer setting this up.
         pTemplate->m_pBasicComMT = NULL;
         pTemplate->m_pDefaultItf = NULL;
-        pTemplate->m_pWinRTRuntimeClass = NULL;
         pTemplate->m_pICustomQueryInterfaceGetInterfaceMD = NULL;
         pTemplate->m_pIIDToInterfaceTemplateCache = NULL;
         pTemplate->m_flags = 0;

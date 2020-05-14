@@ -142,12 +142,6 @@ inline BOOL TypeHandle::IsTypicalTypeDefinition() const
     return !HasInstantiation() || IsGenericTypeDefinition();
 }
 
-inline BOOL TypeHandle::SupportsGenericInterop(InteropKind interopKind) const
-{
-    LIMITED_METHOD_CONTRACT;
-    return (!IsTypeDesc() && AsMethodTable()->SupportsGenericInterop(interopKind));
-}
-
 inline BOOL TypeHandle::HasTypeEquivalence() const
 {
     LIMITED_METHOD_CONTRACT;

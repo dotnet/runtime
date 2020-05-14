@@ -1716,16 +1716,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
         {
             TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
 
-            // Disallow marshaling generic types except for WinRT interfaces.
+            // Disallow marshaling generic types.
             if (sigTH.HasInstantiation())
             {
-#ifdef FEATURE_COMINTEROP
-                if (!sigTH.SupportsGenericInterop(TypeHandle::Interop_NativeToManaged))
-#endif // FEATURE_COMINTEROP
-                {
-                    m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
-                    IfFailGoto(E_FAIL, lFail);
-                }
+                m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
+                IfFailGoto(E_FAIL, lFail);
             }
 
             m_pMT = sigTH.GetMethodTable();
@@ -2059,8 +2054,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             break;
 
                         case NATIVE_TYPE_IINSPECTABLE:
-                            m_fInspItf = TRUE;
-                            m_type = MARSHAL_TYPE_INTERFACE;
+                            m_resID = IDS_EE_NO_IINSPECTABLE;
                             break;
 #else
                         case NATIVE_TYPE_DEFAULT:
@@ -3261,8 +3255,7 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
                             break;
 
                         case ifInspectable:
-                            pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_INSP_ITF;
-                            break;
+                            COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
                     }
                     break;
                 }
@@ -3296,7 +3289,7 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
         }
         else
         {
-            // The type will be marshalled as an IUnknown, IInspectable, or IDispatch pointer depending
+            // The type will be marshalled as an IUnknown or IDispatch pointer depending
             // on the value of fDispItf and fInspItf
             if (fDispItf)
             {
@@ -3304,7 +3297,7 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
             }
             else if (fInspItf)
             {
-                pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_INSP_ITF;
+                COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
             }
 
             pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_USE_BASIC_ITF;
@@ -3312,9 +3305,7 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
     }
     else if (fInspItf)
     {
-        // IInspectable-based interfaces are simple
-        pInfo->thItf = th;
-        pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_INSP_ITF;
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
     }
     else
     {
@@ -3324,7 +3315,7 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
         else
             pInfo->thItf = th;
 
-        // Determine if we are dealing with an IDispatch, IInspectable, or IUnknown based interface.
+        // Determine if we are dealing with an IDispatch or IUnknown based interface.
         switch (pInfo->thItf.GetComInterfaceType())
         {
             case ifDispatch:
@@ -3333,7 +3324,7 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
                 break;
 
             case ifInspectable:
-                pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_INSP_ITF;
+                COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
                 break;
         }
 
@@ -3821,10 +3812,6 @@ VOID MarshalInfo::MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpeci
             {
                 strMarshalType.SetLiteral(W("IDispatch "));
             }
-            else if (!!(itfInfo.dwFlags & ItfMarshalInfo::ITF_MARSHAL_INSP_ITF))
-            {
-                strMarshalType.SetLiteral(W("IInspectable"));
-            }
             else
             {
                 strMarshalType.SetLiteral(W("IUnknown "));
@@ -3842,8 +3829,6 @@ VOID MarshalInfo::MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpeci
         {
             if (!!(itfInfo.dwFlags & ItfMarshalInfo::ITF_MARSHAL_DISP_ITF))
                 strRetVal = W("IDispatch");
-            else if (!!(itfInfo.dwFlags & ItfMarshalInfo::ITF_MARSHAL_INSP_ITF))
-                strRetVal = W("IInspectable");
             else
                 strRetVal = W("IUnknown");
         }

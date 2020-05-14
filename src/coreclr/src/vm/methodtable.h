@@ -420,26 +420,6 @@ public:
         m_dwFlags |= enum_flag_NGEN_IsNeedsRestoreCached;
         if (fNeedsRestore) m_dwFlags |= enum_flag_NGEN_CachedNeedsRestore;
     }
-
-    inline void SetIsOverridingInterface()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        if ((m_dwFlags & enum_flag_NGEN_OverridingInterface) != 0) return;
-        FastInterlockOr((ULONG *) &m_dwFlags, enum_flag_NGEN_OverridingInterface);
-    }
-
-    inline BOOL IsOverridingInterface() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwFlags & enum_flag_NGEN_OverridingInterface);
-    }
 #endif // FEATURE_PREJIT
 
 
@@ -1067,18 +1047,6 @@ public:
             || (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
-    inline BOOL IsSkipWinRTOverride()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_SkipWinRTOverride);
-    }
-
-    inline void SetSkipWinRTOverride()
-    {
-        WRAPPER_NO_CONTRACT;
-        FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_SkipWinRTOverride);
-    }
-
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1323,16 +1291,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return !HasInstantiation() || IsGenericTypeDefinition();
     }
-
-    typedef enum
-    {
-        modeProjected = 0x1,
-        modeRedirected = 0x2,
-        modeAll = modeProjected|modeRedirected
-    } Mode;
-
-    // Is this a generic interface/delegate that can be used for COM interop?
-    inline BOOL SupportsGenericInterop(TypeHandle::InteropKind interopKind, Mode = modeAll);
 
     BOOL HasSameTypeDefAs(MethodTable *pMT);
     BOOL HasSameTypeDefAs_NoLogging(MethodTable *pMT);

@@ -56,7 +56,6 @@
 #include "runtimehandles.h"
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"
-#include "synchronizationcontextnative.h"
 #include "typestring.h"
 #include "comdependenthandle.h"
 #include "weakreferencenative.h"

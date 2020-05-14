@@ -610,9 +610,6 @@ namespace System.StubHelpers
 
         [DllImport(RuntimeHelpers.QCall)]
         internal static extern void ClearNative(IntPtr pUnk);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManagedWithoutUnboxing(IntPtr pNative);
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 

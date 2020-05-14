@@ -322,15 +322,6 @@ inline DWORD MethodTable::GetAttrClass()
 }
 
 //==========================================================================================
-inline BOOL MethodTable::SupportsGenericInterop(TypeHandle::InteropKind interopKind,
-                        MethodTable::Mode mode /*= modeAll*/)
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-
-//==========================================================================================
 inline BOOL MethodTable::IsNotTightlyPacked()
 {
     WRAPPER_NO_CONTRACT;

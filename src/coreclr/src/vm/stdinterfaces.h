@@ -67,11 +67,7 @@ enum Enum_StdInterfaces
     enum_IConnectionPointContainer,
     enum_IObjectSafety,
     enum_IDispatchEx,
-    enum_IWeakReferenceSource,
-    enum_ICustomPropertyProvider,
     enum_ICCW,
-    enum_IAgileObject,
-    enum_IStringable,
     // add your favorite std interface here
     enum_LastStdVtable,
 
@@ -120,11 +116,7 @@ extern const StdInterfaceDesc<8>  g_IErrorInfo;
 extern const StdInterfaceDesc<5>  g_IConnectionPointContainer;
 extern const StdInterfaceDesc<5>  g_IObjectSafety;
 extern const StdInterfaceDesc<15> g_IDispatchEx;
-extern const StdInterfaceDesc<4>  g_IWeakReferenceSource;
-extern const StdInterfaceDesc<10> g_ICustomPropertyProvider;
 extern const StdInterfaceDesc<7>  g_ICCW;
-extern const StdInterfaceDesc<3>  g_IAgileObject;
-extern const StdInterfaceDesc<7>  g_IStringable;
 
 // enum class types
 enum ComClassType
@@ -327,32 +319,6 @@ HRESULT __stdcall   DispatchEx_InvokeEx_Wrapper (
                                     IServiceProvider *pspCaller);
 
 //------------------------------------------------------------------------------------------
-//      IInspectable methods for managed objects
-
-// IInspectable::GetIIDs
-HRESULT __stdcall Inspectable_GetIIDs_Wrapper (
-                                    IInspectable *pInsp,
-                                    ULONG *iidCount,
-                                    IID **iids);
-
-// IInspectable::GetRuntimeClassName
-HRESULT __stdcall Inspectable_GetRuntimeClassName_Wrapper (
-                                    IInspectable *pInsp,
-                                    HSTRING *className);
-
-// IInspectable::GetTrustLevel
-HRESULT __stdcall Inspectable_GetTrustLevel_Wrapper (
-                                    IInspectable *pInsp,
-                                    TrustLevel *trustLevel);
-
-//------------------------------------------------------------------------------------------
-//      IWeakReferenceSource methods for managed objects
-
-HRESULT __stdcall WeakReferenceSource_GetWeakReference_Wrapper (
-                                    IWeakReferenceSource *pRefSrc,
-                                    IWeakReference **weakReference);
-
-//------------------------------------------------------------------------------------------
 //      IMarshal methods for COM+ objects
 
 HRESULT __stdcall Marshal_GetUnmarshalClass_Wrapper (
@@ -410,34 +376,6 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk,
                                                          REFIID riid,
                                                          DWORD dwOptionSetMask,
                                                          DWORD dwEnabledOptions);
-
-
-//------------------------------------------------------------------------------------------
-//      ICustomPropertyProvider methods for Jupiter
-HRESULT __stdcall ICustomPropertyProvider_GetProperty_Wrapper(IUnknown *pPropertyProvider,
-                                                              HSTRING hstrName,
-                                                              /* [out] */ IUnknown **ppProperty);
-
-// Windows.UI.DirectUI.Xaml.TypeNameNative
-struct TypeNameNative
-{
-    HSTRING     typeName;
-    int         typeKind;
-};
-
-HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty_Wrapper(IUnknown *pPropertyProvider,
-                                                                     HSTRING hstrName,
-                                                                     TypeNameNative indexedParamType,
-                                                                     /* [out, retval] */ IUnknown **ppProperty);
-
-HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation_Wrapper(IUnknown *pPropertyProvider,
-                                                                          /* [out, retval] */ HSTRING *phstrStringRepresentation);
-
-HRESULT __stdcall ICustomPropertyProvider_GetType_Wrapper(IUnknown *pPropertyProvider,
-                                                          /* [out, retval] */ TypeNameNative *pTypeIdentifier);
-
-HRESULT __stdcall IStringable_ToString_Wrapper(IUnknown* pStringable,
-                                               /* [out, retval] */ HSTRING* result);
 
 //------------------------------------------------------------------------------------------
 //      ICCW methods for Jupiter

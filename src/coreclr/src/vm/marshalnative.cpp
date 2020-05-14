@@ -879,14 +879,11 @@ FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
 
     TypeHandle th = refClass->GetType();
 
-    if (!th.SupportsGenericInterop(TypeHandle::Interop_NativeToManaged))
-    {
-        if (th.HasInstantiation())
-            COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
+    if (th.HasInstantiation())
+        COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
 
-        if (oref->GetMethodTable()->HasInstantiation())
-            COMPlusThrowArgumentException(W("o"), W("Argument_NeedNonGenericObject"));
-    }
+    if (oref->GetMethodTable()->HasInstantiation())
+        COMPlusThrowArgumentException(W("o"), W("Argument_NeedNonGenericObject"));
 
     // If the IID being asked for does not represent an interface then
     // throw an argument exception.
@@ -973,7 +970,7 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownWithoutUnboxing, IUnkn
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT | ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING);
+    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT);
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(oref);

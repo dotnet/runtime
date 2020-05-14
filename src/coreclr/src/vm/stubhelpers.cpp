@@ -497,41 +497,6 @@ void QCALLTYPE StubHelpers::InterfaceMarshaler__ClearNative(IUnknown * pUnk)
 }
 #include <optdefault.h>
 
-// A helper to convert an IP to object using special flags.
-FCIMPL1(Object *, StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxing, IUnknown *pNative)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF oref = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    //
-    // Get a wrapper for pNative
-    // Note that we need to skip WinRT unboxing at this point because
-    // 1. We never know whether GetObjectRefFromComIP went through unboxing path.
-    // For example, user could just pass a IUnknown * to T and we'll happily convert that to T
-    // 2. If for some reason we end up getting something that does not implement IReference<T>,
-    // we'll get a nice message later when we do the cast in CLRIReferenceImpl.UnboxHelper
-    //
-    GetObjectRefFromComIP(
-        &oref,
-        pNative,                                        // pUnk
-        g_pBaseCOMObject,                               // Use __ComObject
-        NULL,                                           // pItfMT
-        ObjFromComIP::CLASS_IS_HINT |                   // No cast check - we'll do cast later
-        ObjFromComIP::UNIQUE_OBJECT |                   // Do not cache the object - To ensure that the unboxing code is called on this object always
-                                                        // and the object is not retrieved from the cache as an __ComObject.
-                                                        // Don't call GetRuntimeClassName - I just want a RCW of __ComObject
-        ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING    // Skip unboxing
-        );
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(oref);
-}
-FCIMPLEND
-
 #endif // FEATURE_COMINTEROP
 
 FCIMPL0(void, StubHelpers::SetLastError)
@@ -715,8 +680,6 @@ public :
     virtual bool ShouldUseThisRCW(RCW *pRCW)
     {
         LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(pRCW->SupportsIInspectable());
 
         // Is this a free threaded RCW or a context-bound RCW created in the same context
         if (pRCW->IsFreeThreaded() ||

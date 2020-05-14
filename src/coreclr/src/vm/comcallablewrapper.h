@@ -245,9 +245,7 @@ public:
         void InsertInterfaceTemplate(REFIID riid, ComCallWrapperTemplate *pTemplate);
     };
 
-    // Iterates COM-exposed interfaces of a class. Handles arrays which support IIterable<T>,
-    // IVector<T>, and IVectorView<T>, as well as WinRT class factories which support factory
-    // and static interfaces.
+    // Iterates COM-exposed interfaces of a class.
     class CCWInterfaceMapIterator
     {
     private:
@@ -343,12 +341,6 @@ public:
         return (m_flags & enum_ImplementsICustomQueryInterface);
     }
 
-    BOOL SupportsIInspectable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_SupportsIInspectable);
-    }
-
     BOOL RepresentsVariantInterface()
     {
         LIMITED_METHOD_CONTRACT;
@@ -430,7 +422,7 @@ private:
 
         enum_InvisibleParent                  = 0x20,
         enum_ImplementsICustomQueryInterface  = 0x40,
-        enum_SupportsIInspectable             = 0x80,
+        // enum_Unused                        = 0x80,
         enum_SupportsIClassX                  = 0x100,
 
         enum_RepresentsVariantInterface       = 0x400, // this is a template for an interface with variance
@@ -483,13 +475,6 @@ struct IDispatchVtable : IUnkVtable
     SLOT        m_Invoke;
 };
 
-struct IInspectableVtable : IUnkVtable
-{
-    SLOT        m_GetIIDs;
-    SLOT        m_GetRuntimeClassName;
-    SLOT        m_GetTrustLevel;
-};
-
 enum Masks
 {
     enum_InterfaceTypeMask              = 0x00000003,
@@ -523,7 +508,6 @@ struct ComMethodTable
     void LayOutClassMethodTable();
     BOOL LayOutInterfaceMethodTable(MethodTable* pClsMT);
     void LayOutBasicMethodTable();
-    void LayOutDelegateMethodTable();
 
     // Accessor for the IDispatch information.
     DispatchInfo* GetDispatchInfo();
@@ -660,7 +644,6 @@ struct ComMethodTable
         switch (ItfType)
         {
             case ifVtable:      return (sizeof(IUnkVtable) / sizeof(SLOT));
-            case ifInspectable: return (sizeof(IInspectableVtable) / sizeof(SLOT));
             default:            return (sizeof(IDispatchVtable) / sizeof(SLOT));
         }
     }
@@ -1221,33 +1204,6 @@ public:
         Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, NULL>::operator=(p);
     }
 };
-
-typedef DPTR(class WeakReferenceImpl) PTR_WeakReferenceImpl;
-
-//
-// Represents a domain-bound weak reference to the object (not the CCW)
-//
-class WeakReferenceImpl : public IUnknownCommon<IWeakReference, IID_IWeakReference>
-{
-private:
-    OBJECTHANDLE        m_ppObject;             // Short weak global handle points back to the object,
-
-public:
-    WeakReferenceImpl(SimpleComCallWrapper *pSimpleWrapper, Thread *pCurrentThread);
-    virtual ~WeakReferenceImpl();
-
-    // IWeakReference methods
-    virtual HRESULT STDMETHODCALLTYPE Resolve(REFIID riid, IInspectable **ppvObject);
-
-private :
-    static void Resolve_Callback(LPVOID lpData);
-    static void Resolve_Callback_SwitchToPreemp(LPVOID lpData);
-
-    HRESULT ResolveInternal(Thread *pThread, REFIID riid, IInspectable **ppvObject);
-
-    HRESULT Cleanup();
-};
-
 //
 // Uncommonly used data on Simple CCW
 // Created on-demand
@@ -1258,7 +1214,6 @@ private :
 struct SimpleCCWAuxData
 {
     VolatilePtr<DispatchExInfo>     m_pDispatchExInfo;  // Information required by the IDispatchEx standard interface
-                                                        // Not available on WinRT types
 
     SimpleCCWAuxData()
     {
@@ -1288,7 +1243,6 @@ struct SimpleComCallWrapper
 private:
     friend class ComCallWrapper;
     friend class ClrDataAccess;
-    friend class WeakReferenceImpl;
 
     enum SimpleComCallWrapperFlags
     {
@@ -1517,7 +1471,6 @@ public:
 
     // Determines if the type associated with the ComCallWrapper supports exceptions.
     static BOOL SupportsExceptions(MethodTable *pMT);
-    static BOOL SupportsIStringable(MethodTable *pMT);
 
     // Determines if the type supports IReflect / IExpando.
     static BOOL SupportsIReflect(MethodTable *pMT);
@@ -1838,25 +1791,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pTemplate;
-    }
-
-    // Creates new AddRef-ed IWeakReference*
-    IWeakReference *CreateWeakReference(Thread *pCurrentThread)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
-            PRECONDITION(pCurrentThread == GetThread());
-        }
-        CONTRACTL_END;
-
-        // Create a WeakReferenceImpl with RefCount = 1
-        // No need to call AddRef
-        WeakReferenceImpl *pWeakRef = new WeakReferenceImpl(this, pCurrentThread);
-
-        return pWeakRef;
     }
 
     // Returns TRUE if the ICustomQI implementation returns Handled or Failed for IID_IMarshal.

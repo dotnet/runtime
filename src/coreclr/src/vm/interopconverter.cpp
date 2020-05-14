@@ -153,7 +153,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION((ReqIpType & (ComIpType_Dispatch | ComIpType_Unknown | ComIpType_Inspectable)) != 0);
+        PRECONDITION((ReqIpType & (ComIpType_Dispatch | ComIpType_Unknown)) != 0);
         PRECONDITION(CheckPointer(poref));
         PRECONDITION(ReqIpType != 0);
         POSTCONDITION((*poref) != NULL ? CheckPointer(RETVAL) : CheckPointer(RETVAL, NULL_OK));
@@ -180,11 +180,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         if (ReqIpType & ComIpType_Dispatch)
         {
             hr = pUnk->QueryInterface(IID_IDispatch, &pvObj);
-        }
-        else if (ReqIpType & ComIpType_Inspectable)
-        {
-            SafeComHolder<IInspectable> pvObj;
-            hr = pUnk->QueryInterface(IID_IInspectable, &pvObj);
         }
 
         if (FAILED(hr))
@@ -214,14 +209,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
                 FetchedIpType = ComIpType_Dispatch;
         }
 
-        if (ReqIpType & ComIpType_Inspectable)
-        {
-            pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_IInspectable, /* pIntfMT = */ NULL);
-
-            if (pUnk)
-                FetchedIpType = ComIpType_Inspectable;
-        }
-
         // If the ObjectRef doesn't support IDispatch and the caller also accepts
         // an IUnknown pointer, then check for IUnknown.
         if (!pUnk && (ReqIpType & ComIpType_Unknown))
@@ -248,7 +235,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         RCWHolder pRCW(GetThread());
 
         // This code is hot, use a simple RCWHolder check (i.e. don't increment the use count on the RCW).
-        // @TODO: Cache IInspectable & IDispatch so we don't have to QI every time we come here.
+        // @TODO: Cache IDispatch so we don't have to QI every time we come here.
         pRCW.InitFastCheck(pBlock);
 
         // If the user requested IDispatch, then check for IDispatch first.
@@ -257,13 +244,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
             pUnk = pRCW->GetIDispatch();
             if (pUnk)
                 FetchedIpType = ComIpType_Dispatch;
-        }
-
-        if (ReqIpType & ComIpType_Inspectable)
-        {
-            pUnk = pRCW->GetIInspectable();
-            if (pUnk)
-                FetchedIpType = ComIpType_Inspectable;
         }
 
         // If the ObjectRef doesn't support IDispatch and the caller also accepts
@@ -446,17 +426,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
             COMInterfaceMarshaler marshaler;
 
             marshaler.Init(pOuter, pComClassMT, pThread, flags);
-
-            if (flags & ObjFromComIP::SUPPRESS_ADDREF)
-            {
-                // We can swallow the reference in ppUnk
-                // This only happens in WinRT
-                *pObjOut = marshaler.FindOrCreateObjectRef(ppUnk, pItfMT);
-            }
-            else
-            {
-                *pObjOut = marshaler.FindOrCreateObjectRef(pUnk, pItfMT);
-            }
+            *pObjOut = marshaler.FindOrCreateObjectRef(pUnk, pItfMT);
         }
     }
 
@@ -467,14 +437,6 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         if (pMTClass != NULL)
         {
             EnsureObjectRefIsValidForSpecifiedClass(pObjOut, dwFlags, pMTClass);
-        }
-        else if (dwFlags & ObjFromComIP::REQUIRE_IINSPECTABLE)
-        {
-            MethodTable *pMT = (*pObjOut)->GetMethodTable();
-            // Just call GetComIPFromObjectRef. We could be more efficient here but the code would get complicated
-            // which doesn't seem to be worth it. The function throws an exception if the QI/cast fails.
-            SafeComHolder<IUnknown> pInsp = GetComIPFromObjectRef(pObjOut, ComIpType_Inspectable, NULL);
-            _ASSERTE(pInsp != NULL);
         }
     }
 }

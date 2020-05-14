@@ -2887,12 +2887,9 @@ BOOL IsTypeVisibleFromCom(TypeHandle hndType)
     }
     CONTRACTL_END;
 
-    if (!hndType.SupportsGenericInterop(TypeHandle::Interop_NativeToManaged))
-    {
-        // If the type is a generic type, then it is not visible from COM.
-        if (hndType.HasInstantiation() || hndType.IsGenericVariable())
-            return FALSE;
-    }
+    // If the type is a generic type, then it is not visible from COM.
+    if (hndType.HasInstantiation() || hndType.IsGenericVariable())
+        return FALSE;
 
     return SpecialIsGenericTypeVisibleFromCom(hndType);
 }
@@ -2912,7 +2909,7 @@ BOOL MethodNeedsForwardComStub(MethodDesc *pMD, DataImage *pImage)
 
     MethodTable *pMT = pMD->GetMethodTable();
 
-    if (pMT->HasInstantiation() && !pMT->SupportsGenericInterop(TypeHandle::Interop_ManagedToNative))
+    if (pMT->HasInstantiation())
     {
         // method is declared on an unsupported generic type -> stub not needed
         return FALSE;
@@ -2952,7 +2949,7 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD)
         if (!pMT->IsComImport() && !IsTypeVisibleFromCom(TypeHandle(pMT)))
             return FALSE;
 
-        if (pMT->HasInstantiation() && !pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged))
+        if (pMT->HasInstantiation())
             return FALSE;
 
         // declaring interface must be InterfaceIsIUnknown or InterfaceIsDual
@@ -4514,12 +4511,10 @@ IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, Met
     // When an interface method table is specified, fDispIntf must be consistent with the
     // interface type.
     BOOL bDispatch = (dwFlags & ItfMarshalInfo::ITF_MARSHAL_DISP_ITF);
-    BOOL bInspectable = (dwFlags & ItfMarshalInfo::ITF_MARSHAL_INSP_ITF);
     BOOL bUseBasicItf = (dwFlags & ItfMarshalInfo::ITF_MARSHAL_USE_BASIC_ITF);
 
     _ASSERTE(!pItfMT || (!pItfMT->IsInterface() && bDispatch) ||
-             (!!bDispatch == IsDispatchBasedItf(pItfMT->GetComInterfaceType())) ||
-             (!!bInspectable == (pItfMT->GetComInterfaceType() == ifInspectable)));
+             (!!bDispatch == IsDispatchBasedItf(pItfMT->GetComInterfaceType())));
 
     if (pItfMT)
     {
@@ -4531,7 +4526,7 @@ IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, Met
     }
     else
     {
-        ComIpType ReqIpType = bDispatch ? ComIpType_Dispatch : (bInspectable ? ComIpType_Inspectable : ComIpType_Unknown);
+        ComIpType ReqIpType = bDispatch ? ComIpType_Dispatch : ComIpType_Unknown;
         return GetComIPFromObjectRef(ppObject, ReqIpType, NULL);
     }
 }
@@ -4565,15 +4560,12 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
 
     if (fIsInterface)
     {
-        if ((dwFlags & ItfMarshalInfo::ITF_MARSHAL_WINRT_SCENARIO) == 0)
+        // We only verify that the object supports the interface for non-WinRT scenarios because we
+        // believe that the likelihood of improperly constructed programs is significantly lower
+        // with WinRT and the Object::SupportsInterface check is very expensive.
+        if (!Object::SupportsInterface(*ppObjectDest, pItfMT))
         {
-            // We only verify that the object supports the interface for non-WinRT scenarios because we
-            // believe that the likelihood of improperly constructed programs is significantly lower
-            // with WinRT and the Object::SupportsInterface check is very expensive.
-            if (!Object::SupportsInterface(*ppObjectDest, pItfMT))
-            {
-                COMPlusThrowInvalidCastException(ppObjectDest, TypeHandle(pItfMT));
-            }
+            COMPlusThrowInvalidCastException(ppObjectDest, TypeHandle(pItfMT));
         }
     }
 }
@@ -4637,36 +4629,6 @@ MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk)
 }
 
 #endif // FEATURE_CLASSIC_COMINTEROP
-
-
-enum IInspectableQueryResults {
-    IInspectableQueryResults_SupportsIReference      = 0x1,
-    IInspectableQueryResults_SupportsIReferenceArray = 0x2,
-};
-
-//--------------------------------------------------------------------------------
-// Try to get the class from IInspectable. If *pfSupportsIInspectable is true, pUnk
-// is assumed to be an IInspectable-derived interface. Otherwise, this function will
-// QI for IInspectable and set *pfSupportsIInspectable accordingly.
-
-TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable, bool *pfSupportsIReference, bool *pfSupportsIReferenceArray)
-{
-    CONTRACT (TypeHandle)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(CheckPointer(pfSupportsIInspectable));
-        PRECONDITION(CheckPointer(pfSupportsIReference));
-        PRECONDITION(CheckPointer(pfSupportsIReferenceArray));
-    }
-    CONTRACT_END;
-
-    _ASSERTE(!"Getting a class from an IInspectable to create a WinRT RCW is unsupported.");
-
-    RETURN TypeHandle();
-}
 
 static void DECLSPEC_NORETURN ThrowTypeLoadExceptionWithInner(MethodTable *pClassMT, LPCWSTR pwzName, HRESULT hr, unsigned resID)
 {

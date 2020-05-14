@@ -315,14 +315,6 @@ public:
     //Equivalent to (!HasInstantiation() || IsGenericTypeDefinition());
     inline BOOL IsTypicalTypeDefinition() const;
 
-    enum InteropKind
-    {
-        Interop_ManagedToNative, // use for RCW-related queries
-        Interop_NativeToManaged, // use for CCW-related queries
-    };
-
-    inline BOOL SupportsGenericInterop(InteropKind interopKind) const;
-
     BOOL IsSharedByGenericInstantiations() const;
 
     // Recursively search the type arguments and if

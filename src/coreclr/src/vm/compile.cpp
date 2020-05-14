@@ -5446,36 +5446,6 @@ void CEEPreloader::ExpandTypeDependencies(TypeHandle th)
         TriageTypeForZap(pMT->GetCanonicalMethodTable(), TRUE);
     }
 
-    if (pMT->SupportsGenericInterop(TypeHandle::Interop_ManagedToNative))
-    {
-        MethodTable::IntroducedMethodIterator itr(pMT->GetCanonicalMethodTable());
-        for (/**/; itr.IsValid(); itr.Next())
-        {
-            MethodDesc *pMD = itr.GetMethodDesc();
-
-            if (!pMD->HasMethodInstantiation())
-            {
-                if (pMT->IsInterface() || !pMD->IsSharedByGenericInstantiations())
-                {
-                    pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                        pMD,
-                        pMT,
-                        FALSE,              // forceBoxedEntryPoint
-                        Instantiation(),    // methodInst
-                        FALSE,              // allowInstParam
-                        TRUE);              // forceRemotableMethod
-                }
-                else
-                {
-                    _ASSERTE(pMT->IsDelegate());
-                    pMD = InstantiatedMethodDesc::FindOrCreateExactClassMethod(pMT, pMD);
-                }
-
-                AddToUncompiledMethods(pMD, TRUE);
-            }
-        }
-    }
-
     // Make sure parent type is saved
     TriageTypeForZap(pMT->GetParentMethodTable(), TRUE);
 

@@ -1727,8 +1727,7 @@ void RCW::FlushStandbyList()
     }
 }
 //--------------------------------------------------------------------------------
-// The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper unless
-// the CF_SuppressAddRef flag is set.
+// The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
 RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT)
 {
     CONTRACT (RCW*)
@@ -1805,24 +1804,11 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     // Log the creation
     LogRCWCreate(pWrap, pUnk);
 
-    // Remember that the object is known to support IInspectable
-    pWrap->m_Flags.m_fSupportsIInspectable = !!(flags & CF_SupportsIInspectable);
-
     // Initialize wrapper
     pWrap->Initialize(pUnk, dwSyncBlockIndex, pClassMT);
 
-    if (flags & CF_SupportsIInspectable)
-    {
-        // WinRT objects always apply some GC pressure
-        GCPressureSize pressureSize = GCPressureSize_WinRT_Base;
-
-        pWrap->AddMemoryPressure(pressureSize);
-    }
-
-    // Check to see if this is a DCOM proxy if either we've been explicitly asked to, or if
-    // we're talking to a non-WinRT object and we need to add memory pressure
-    const bool checkForDCOMProxy =  (flags & CF_DetectDCOMProxy) ||
-                                   !(flags & CF_SupportsIInspectable);
+    // Check to see if this is a DCOM proxy
+    const bool checkForDCOMProxy =  (flags & CF_DetectDCOMProxy);
 
     if (checkForDCOMProxy)
     {
@@ -1844,23 +1830,20 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
                 }
 
                 // Only add memory pressure for proxies for non-WinRT objects
-                if (!(flags & CF_SupportsIInspectable))
+                switch(dwValue)
                 {
-                    switch(dwValue)
-                    {
-                        case SERVER_LOCALITY_PROCESS_LOCAL:
-                            pressureSize = GCPressureSize_ProcessLocal;
-                            break;
-                        case SERVER_LOCALITY_MACHINE_LOCAL:
-                            pressureSize = GCPressureSize_MachineLocal;
-                            break;
-                        case SERVER_LOCALITY_REMOTE:
-                            pressureSize = GCPressureSize_Remote;
-                            break;
-                        default:
-                            pressureSize = GCPressureSize_None;
-                            break;
-                    }
+                    case SERVER_LOCALITY_PROCESS_LOCAL:
+                        pressureSize = GCPressureSize_ProcessLocal;
+                        break;
+                    case SERVER_LOCALITY_MACHINE_LOCAL:
+                        pressureSize = GCPressureSize_MachineLocal;
+                        break;
+                    case SERVER_LOCALITY_REMOTE:
+                        pressureSize = GCPressureSize_Remote;
+                        break;
+                    default:
+                        pressureSize = GCPressureSize_None;
+                        break;
                 }
             }
         }
@@ -1947,36 +1930,6 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
 
     // Check if this object is a Jupiter object (only for WinRT scenarios)
     _ASSERTE(m_Flags.m_fIsJupiterObject == 0);
-    if (SupportsIInspectable())
-    {
-        SafeComHolderPreemp<IJupiterObject> pJupiterObject = NULL;
-        HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_IJupiterObject, (IUnknown **)&pJupiterObject);
-        LogInteropQI(pUnk, IID_IJupiterObject, hr, "QI for IJupiterObject");
-
-        if (SUCCEEDED(hr))
-        {
-            // A Jupiter object that is not free threaded is not allowed
-            if (!IsFreeThreaded())
-            {
-                StackSString ssObjClsName;
-                StackSString ssDestClsName;
-
-                pClassMT->_GetFullyQualifiedNameForClass(ssObjClsName);
-
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
-                             ssObjClsName.GetUnicode(), W("IAgileObject"));
-            }
-
-            RCWWalker::OnJupiterRCWCreated(this, pJupiterObject);
-
-            SetJupiterObject(pJupiterObject);
-
-            if (!IsURTAggregated())
-            {
-                pJupiterObject.SuppressRelease();
-            }
-        }
-    }
 
     // Log the wrapper initialization.
     LOG((LF_INTEROP, LL_INFO100, "Initializing RCW %p with SyncBlock index %d\n", this, dwSyncBlockIndex));
@@ -2408,8 +2361,6 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
         pAutoUnk = GetIUnknown();
 
         DWORD flags = 0;
-        if (SupportsIInspectable())
-            flags |= CF_SupportsIInspectable;
 
         // make sure we "pin" the syncblock before switching to preemptive mode
         SyncBlock *pSB = NewWrapperObj->GetSyncBlock();
@@ -2581,14 +2532,6 @@ IDispatch *RCW::GetIDispatch()
 
     WRAPPER_NO_CONTRACT;
     return (IDispatch *)GetWellKnownInterface(IID_IDispatch);
-}
-
-//-----------------------------------------------------------------
-// Get the IInspectable pointer for the wrapper
-IInspectable *RCW::GetIInspectable()
-{
-    WRAPPER_NO_CONTRACT;
-    return (IInspectable *)GetWellKnownInterface(IID_IInspectable);
 }
 
 //-----------------------------------------------
@@ -3496,52 +3439,6 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
     }
 
     return false;
-}
-
-//---------------------------------------------------------------------
-// Determines whether a call through the given interface should use new
-// WinRT interop (as opposed to classic COM).
-TypeHandle::CastResult RCW::SupportsWinRTInteropInterfaceNoGC(MethodTable *pItfMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return TypeHandle::CannotCast;
-}
-
-//---------------------------------------------------------------------
-// This is a GC-triggering variant of code:SupportsWinRTInteropInterfaceNoGC.
-bool RCW::SupportsWinRTInteropInterface(MethodTable *pItfMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    return false;
-}
-
-//---------------------------------------------------------------------
-// Computes the result of code:SupportsWinRTInteropInterface.
-RCW::RedirectionBehavior RCW::ComputeRedirectionBehavior(MethodTable *pItfMT, bool *pfLegacySupported)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    return (RCW::RedirectionBehavior)0;
 }
 
 //--------------------------------------------------------------------------------

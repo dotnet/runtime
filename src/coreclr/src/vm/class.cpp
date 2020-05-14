@@ -2242,7 +2242,7 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
     if (HasGenericClassInstantiationInHierarchy())
         return clsIfNone;
 
-    // If the class does not support IClassX because it derives from or implements WinRT types,
+    // If the class does not support IClassX,
     // then it is considered ClassInterfaceType.None unless explicitly overriden by the CA
     if (!ClassSupportsIClassX(this))
         return clsIfNone;
