@@ -230,7 +230,7 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance, ULONGLONG captu
 
         EventPipeEventInstance* pMetadataInstance = EventPipe::BuildEventMetadataEvent(instance, metadataId);
 
-        WriteEventToBlock(*pMetadataInstance, 0);
+        WriteEventToBlock(*pMetadataInstance, 0);  // metadataId=0 breaks recursion and represents the metadata event.
 
         SaveMetadataId(*instance.GetEvent(), metadataId);
 
