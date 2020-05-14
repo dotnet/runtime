@@ -1245,7 +1245,7 @@ namespace System.Net.Http
                 {
                     // Allocate the next available stream ID. Note that if we fail before sending the headers,
                     // we'll just skip this stream ID, which is fine.
-                    int streamId;
+                    Http2Stream http2Stream;
                     lock (SyncObject)
                     {
                         if (_nextStream == MaxStreamId || _disposed || _lastStreamId != -1)
@@ -1256,20 +1256,25 @@ namespace System.Net.Http
                             ThrowShutdownException();
                         }
 
-                        streamId = _nextStream;
-
                         // Client-initiated streams are always odd-numbered, so increase by 2.
+                        int streamId = _nextStream;
                         _nextStream += 2;
+
+                        // We're about to flush the HEADERS frame, so add the stream to the dictionary now.
+                        // The lifetime of the stream is now controlled by the stream itself and the connection.
+                        // This can fail if the connection is shutting down, in which case we will cancel sending this frame.
+                        http2Stream = new Http2Stream(request, this, streamId, _initialWindowSize);
+                        _httpStreams.Add(streamId, http2Stream);
                     }
 
-                    if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(totalSize)}={totalSize}");
+                    if (NetEventSource.IsEnabled) Trace(http2Stream.StreamId, $"Started writing. {nameof(totalSize)}={totalSize}");
 
                     // Copy the HEADERS frame.
-                    FrameHeader.WriteTo(writeBuffer.Span, current.Length, FrameType.Headers, flags, streamId);
+                    FrameHeader.WriteTo(writeBuffer.Span, current.Length, FrameType.Headers, flags, http2Stream.StreamId);
                     writeBuffer = writeBuffer.Slice(FrameHeader.Size);
                     current.CopyTo(writeBuffer);
                     writeBuffer = writeBuffer.Slice(current.Length);
-                    if (NetEventSource.IsEnabled) Trace(streamId, $"Wrote HEADERS frame. Length={current.Length}, flags={flags}");
+                    if (NetEventSource.IsEnabled) Trace(http2Stream.StreamId, $"Wrote HEADERS frame. Length={current.Length}, flags={flags}");
 
                     // Copy CONTINUATION frames, if any.
                     while (remaining.Length > 0)
@@ -1277,19 +1282,14 @@ namespace System.Net.Http
                         (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
                         flags = remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None;
 
-                        FrameHeader.WriteTo(writeBuffer.Span, current.Length, FrameType.Continuation, flags, streamId);
+                        FrameHeader.WriteTo(writeBuffer.Span, current.Length, FrameType.Continuation, flags, http2Stream.StreamId);
                         writeBuffer = writeBuffer.Slice(FrameHeader.Size);
                         current.CopyTo(writeBuffer);
                         writeBuffer = writeBuffer.Slice(current.Length);
-                        if (NetEventSource.IsEnabled) Trace(streamId, $"Wrote CONTINUATION frame. Length={current.Length}, flags={flags}");
+                        if (NetEventSource.IsEnabled) Trace(http2Stream.StreamId, $"Wrote CONTINUATION frame. Length={current.Length}, flags={flags}");
                     }
 
                     Debug.Assert(writeBuffer.Length == 0);
-
-                    // We're about to flush the HEADERS frame, so add the stream to the dictionary now.
-                    // The lifetime of the stream is now controlled by the stream itself and the connection.
-                    // This can fail if the connection is shutting down, in which case we will cancel sending this frame.
-                    Http2Stream http2Stream = AddStream(streamId, request);
 
                     FinishWrite(mustFlush || (flags & FrameFlags.EndStream) != 0 ? FlushTiming.AfterPendingWrites : FlushTiming.Eventually);
                     return http2Stream;
@@ -1760,26 +1760,6 @@ namespace System.Net.Http
                 }
 
                 throw;
-            }
-        }
-
-        private Http2Stream AddStream(int streamId, HttpRequestMessage request)
-        {
-            lock (SyncObject)
-            {
-                if (_disposed || _lastStreamId != -1)
-                {
-                    // The connection is shutting down.
-                    // Throw a retryable request exception. This will cause retry logic to kick in
-                    // and perform another connection attempt. The user should never see this exception.
-                    ThrowShutdownException();
-                }
-
-                var http2Stream = new Http2Stream(request, this, streamId, _initialWindowSize);
-
-                _httpStreams.Add(streamId, http2Stream);
-
-                return http2Stream;
             }
         }
 
