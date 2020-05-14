@@ -1237,6 +1237,11 @@ namespace System.Net.Http
                     (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None) |
                     (request.Content == null ? FrameFlags.EndStream : FrameFlags.None);
 
+                // Construct and initialize the new Http2Stream instance.  It's stream ID must be set below
+                // before the instance is used and stored into the dictionary.  However, we construct it here
+                // so as to avoid the allocation and initialization expense while holding multiple locks.
+                var http2Stream = new Http2Stream(request, this, _initialWindowSize);
+
                 // Start the write.  This serializes access to write to the connection, and ensures that HEADERS
                 // and CONTINUATION frames stay together, as they must do. We use the lock as well to ensure new
                 // streams are created and started in order.
@@ -1245,7 +1250,6 @@ namespace System.Net.Http
                 {
                     // Allocate the next available stream ID. Note that if we fail before sending the headers,
                     // we'll just skip this stream ID, which is fine.
-                    Http2Stream http2Stream;
                     lock (SyncObject)
                     {
                         if (_nextStream == MaxStreamId || _disposed || _lastStreamId != -1)
@@ -1257,14 +1261,13 @@ namespace System.Net.Http
                         }
 
                         // Client-initiated streams are always odd-numbered, so increase by 2.
-                        int streamId = _nextStream;
+                        http2Stream.StreamId = _nextStream;
                         _nextStream += 2;
 
                         // We're about to flush the HEADERS frame, so add the stream to the dictionary now.
                         // The lifetime of the stream is now controlled by the stream itself and the connection.
                         // This can fail if the connection is shutting down, in which case we will cancel sending this frame.
-                        http2Stream = new Http2Stream(request, this, streamId, _initialWindowSize);
-                        _httpStreams.Add(streamId, http2Stream);
+                        _httpStreams.Add(http2Stream.StreamId, http2Stream);
                     }
 
                     if (NetEventSource.IsEnabled) Trace(http2Stream.StreamId, $"Started writing. {nameof(totalSize)}={totalSize}");

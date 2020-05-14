@@ -30,7 +30,6 @@ namespace System.Net.Http
             private static ReadOnlySpan<byte> StatusHeaderName => new byte[] { (byte)':', (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
 
             private readonly Http2Connection _connection;
-            private readonly int _streamId;
             private readonly HttpRequestMessage _request;
             private HttpResponseMessage? _response;
             /// <summary>Stores any trailers received after returning the response content to the caller.</summary>
@@ -90,11 +89,10 @@ namespace System.Net.Http
             // See comment on ConnectionWindowThreshold.
             private const int StreamWindowThreshold = StreamWindowSize / 8;
 
-            public Http2Stream(HttpRequestMessage request, Http2Connection connection, int streamId, int initialWindowSize)
+            public Http2Stream(HttpRequestMessage request, Http2Connection connection, int initialWindowSize)
             {
                 _request = request;
                 _connection = connection;
-                _streamId = streamId;
 
                 _requestCompletionState = StreamCompletionState.InProgress;
                 _responseCompletionState = StreamCompletionState.InProgress;
@@ -136,7 +134,7 @@ namespace System.Net.Http
 
             private object SyncObject => this; // this isn't handed out to code that may lock on it
 
-            public int StreamId => _streamId;
+            public int StreamId { get; set; }
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -270,7 +268,7 @@ namespace System.Net.Http
                     {
                         // Send EndStream asynchronously and without cancellation.
                         // If this fails, it means that the connection is aborting and we will be reset.
-                        _connection.LogExceptions(_connection.SendEndStreamAsync(_streamId));
+                        _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
                     }
                 }
             }
@@ -321,7 +319,7 @@ namespace System.Net.Http
                 // Don't send a RST_STREAM if we've already received one from the server.
                 if (_resetException == null)
                 {
-                    _connection.LogExceptions(_connection.SendRstStreamAsync(_streamId, Http2ProtocolErrorCode.Cancel));
+                    _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
                 }
             }
 
@@ -892,7 +890,7 @@ namespace System.Net.Http
                 int windowUpdateSize = _pendingWindowUpdate;
                 _pendingWindowUpdate = 0;
 
-                _connection.LogExceptions(_connection.SendWindowUpdateAsync(_streamId, windowUpdateSize));
+                _connection.LogExceptions(_connection.SendWindowUpdateAsync(StreamId, windowUpdateSize));
             }
 
             private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer, bool partOfSyncRead = false)
@@ -1113,7 +1111,7 @@ namespace System.Net.Http
                         ReadOnlyMemory<byte> current;
                         (current, buffer) = SplitBuffer(buffer, sendSize);
 
-                        await _connection.SendStreamDataAsync(_streamId, current, _requestBodyCancellationSource.Token).ConfigureAwait(false);
+                        await _connection.SendStreamDataAsync(StreamId, current, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                     }
                 }
                 finally
@@ -1219,7 +1217,7 @@ namespace System.Net.Http
             }
 
             public void Trace(string message, [CallerMemberName] string? memberName = null) =>
-                _connection.Trace(_streamId, message, memberName);
+                _connection.Trace(StreamId, message, memberName);
 
             private enum ResponseProtocolState : byte
             {
