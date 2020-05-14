@@ -1376,13 +1376,13 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     // clang-format off
     const static insFormat insFormats[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                ) fmt,
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) fmt,
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) fmt,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) fmt,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) fmt,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) fmt,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) fmt,
+        #define INST1(id, nm, ldst, fmt, e1                                ) fmt,
+        #define INST2(id, nm, ldst, fmt, e1, e2                            ) fmt,
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        ) fmt,
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    ) fmt,
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) fmt,
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) fmt,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) fmt,
         #include "instrs.h"
     };
     // clang-format on
@@ -1393,7 +1393,6 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     return insFormats[ins];
 }
 
-// INST_FP is 1
 #define LD 2
 #define ST 4
 #define CMP 8
@@ -1401,13 +1400,13 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
-    #define INST1(id, nm, fp, ldst, fmt, e1                                ) ldst | INST_FP*fp,
-    #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) ldst | INST_FP*fp,
-    #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) ldst | INST_FP*fp,
-    #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) ldst | INST_FP*fp,
-    #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) ldst | INST_FP*fp,
-    #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) ldst | INST_FP*fp,
-    #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) ldst | INST_FP*fp,
+    #define INST1(id, nm, ldst, fmt, e1                                ) ldst,
+    #define INST2(id, nm, ldst, fmt, e1, e2                            ) ldst,
+    #define INST3(id, nm, ldst, fmt, e1, e2, e3                        ) ldst,
+    #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    ) ldst,
+    #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) ldst,
+    #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) ldst,
+    #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) ldst,
     #include "instrs.h"
 };
 // clang-format on
@@ -1481,101 +1480,101 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     // clang-format off
     const static code_t insCodes1[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                ) e1,
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) e1,
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) e1,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) e1,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e1,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e1,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e1,
+        #define INST1(id, nm, ldst, fmt, e1                                ) e1,
+        #define INST2(id, nm, ldst, fmt, e1, e2                            ) e1,
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        ) e1,
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    ) e1,
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) e1,
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e1,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e1,
         #include "instrs.h"
     };
     const static code_t insCodes2[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) e2,
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) e2,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) e2,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e2,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e2,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e2,
+        #define INST1(id, nm, ldst, fmt, e1                                )
+        #define INST2(id, nm, ldst, fmt, e1, e2                            ) e2,
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        ) e2,
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    ) e2,
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) e2,
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e2,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e2,
         #include "instrs.h"
     };
     const static code_t insCodes3[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) e3,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) e3,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e3,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e3,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e3,
+        #define INST1(id, nm, ldst, fmt, e1                                )
+        #define INST2(id, nm, ldst, fmt, e1, e2                            )
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        ) e3,
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    ) e3,
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) e3,
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e3,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e3,
         #include "instrs.h"
     };
     const static code_t insCodes4[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) e4,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e4,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e4,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e4,
+        #define INST1(id, nm, ldst, fmt, e1                                )
+        #define INST2(id, nm, ldst, fmt, e1, e2                            )
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    ) e4,
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) e4,
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e4,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e4,
         #include "instrs.h"
     };
     const static code_t insCodes5[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e5,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e5,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e5,
+        #define INST1(id, nm, ldst, fmt, e1                                )
+        #define INST2(id, nm, ldst, fmt, e1, e2                            )
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) e5,
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e5,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e5,
         #include "instrs.h"
     };
     const static code_t insCodes6[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e6,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e6,
+        #define INST1(id, nm, ldst, fmt, e1                                )
+        #define INST2(id, nm, ldst, fmt, e1, e2                            )
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                )
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e6,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e6,
         #include "instrs.h"
     };
     const static code_t insCodes7[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e7,
+        #define INST1(id, nm, ldst, fmt, e1                                )
+        #define INST2(id, nm, ldst, fmt, e1, e2                            )
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                )
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            )
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e7,
         #include "instrs.h"
     };
     const static code_t insCodes8[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e8,
+        #define INST1(id, nm, ldst, fmt, e1                                )
+        #define INST2(id, nm, ldst, fmt, e1, e2                            )
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                )
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            )
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e8,
         #include "instrs.h"
     };
     const static code_t insCodes9[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e9,
+        #define INST1(id, nm, ldst, fmt, e1                                )
+        #define INST2(id, nm, ldst, fmt, e1, e2                            )
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                )
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            )
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e9,
         #include "instrs.h"
     };
     // clang-format on
