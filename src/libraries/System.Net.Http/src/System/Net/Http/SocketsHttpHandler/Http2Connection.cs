@@ -1773,27 +1773,25 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream? removed))
+                if (!_httpStreams.Remove(http2Stream.StreamId))
                 {
                     Debug.Fail($"Stream {http2Stream.StreamId} not found in dictionary during RemoveStream???");
                     return;
                 }
 
-                _concurrentStreams.AdjustCredit(1);
-
-                Debug.Assert(removed == http2Stream, "_httpStreams.TryRemove returned unexpected stream");
-
                 if (_httpStreams.Count == 0)
                 {
                     // If this was last pending request, get timestamp so we can monitor idle time.
                     _idleSinceTickCount = Environment.TickCount64;
-                }
 
-                if (_disposed || _lastStreamId != -1)
-                {
-                    CheckForShutdown();
+                    if (_disposed || _lastStreamId != -1)
+                    {
+                        CheckForShutdown();
+                    }
                 }
             }
+
+            _concurrentStreams.AdjustCredit(1);
         }
 
         public sealed override string ToString() => $"{nameof(Http2Connection)}({_pool})"; // Description for diagnostic purposes
