@@ -314,10 +314,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "5800")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "590000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "5a00000000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "5b0000000000000000")]
+        [InlineData(CborConformanceLevel.Canonical, "5800")]
+        [InlineData(CborConformanceLevel.Canonical, "590000")]
+        [InlineData(CborConformanceLevel.Canonical, "5a00000000")]
+        [InlineData(CborConformanceLevel.Canonical, "5b0000000000000000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "5800")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "590000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "5a00000000")]
@@ -349,10 +349,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "7800")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "790000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "7a00000000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "7b0000000000000000")]
+        [InlineData(CborConformanceLevel.Canonical, "7800")]
+        [InlineData(CborConformanceLevel.Canonical, "790000")]
+        [InlineData(CborConformanceLevel.Canonical, "7a00000000")]
+        [InlineData(CborConformanceLevel.Canonical, "7b0000000000000000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "7800")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "790000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "7a00000000")]
@@ -388,7 +388,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "5f40ff")]
+        [InlineData(CborConformanceLevel.Canonical, "5f40ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "5f40ff")]
         public static void ReadByteString_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatExceptoin(CborConformanceLevel level, string hexEncoding)
         {
@@ -399,7 +399,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "5f40ff")]
+        [InlineData(CborConformanceLevel.Canonical, "5f40ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "5f40ff")]
         public static void ReadByteString_IndefiniteLength_AsSingleItem_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
@@ -432,7 +432,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "7f60ff")]
+        [InlineData(CborConformanceLevel.Canonical, "7f60ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "7f60ff")]
         public static void ReadTextString_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatExceptoin(CborConformanceLevel level, string hexEncoding)
         {
@@ -443,7 +443,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "7f60ff")]
+        [InlineData(CborConformanceLevel.Canonical, "7f60ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "7f60ff")]
         public static void ReadTextString_IndefiniteLength_AsSingleItem_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {

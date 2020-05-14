@@ -209,10 +209,10 @@ namespace System.Formats.Cbor
 
                 switch (value)
                 {
-                    case CborAdditionalInfo.SimpleValueNull:
+                    case (CborAdditionalInfo)CborSimpleValue.Null:
                         return CborReaderState.Null;
-                    case CborAdditionalInfo.SimpleValueFalse:
-                    case CborAdditionalInfo.SimpleValueTrue:
+                    case (CborAdditionalInfo)CborSimpleValue.True:
+                    case (CborAdditionalInfo)CborSimpleValue.False:
                         return CborReaderState.Boolean;
                     case CborAdditionalInfo.Additional16BitData:
                         return CborReaderState.HalfPrecisionFloat;

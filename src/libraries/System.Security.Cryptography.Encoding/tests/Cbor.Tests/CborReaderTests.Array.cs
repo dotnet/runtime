@@ -77,10 +77,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9800")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "990000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9a00000000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9b0000000000000000")]
+        [InlineData(CborConformanceLevel.Canonical, "9800")]
+        [InlineData(CborConformanceLevel.Canonical, "990000")]
+        [InlineData(CborConformanceLevel.Canonical, "9a00000000")]
+        [InlineData(CborConformanceLevel.Canonical, "9b0000000000000000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "9800")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "990000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "9a00000000")]
@@ -105,7 +105,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9fff")]
+        [InlineData(CborConformanceLevel.Canonical, "9fff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "9fff")]
         public static void ReadArray_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {

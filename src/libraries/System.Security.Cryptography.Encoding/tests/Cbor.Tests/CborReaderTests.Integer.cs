@@ -179,11 +179,11 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1817")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1900ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1a0000ffff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1b00000000ffffffff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1b0000000000000001")]
+        [InlineData(CborConformanceLevel.Canonical, "1817")]
+        [InlineData(CborConformanceLevel.Canonical, "1900ff")]
+        [InlineData(CborConformanceLevel.Canonical, "1a0000ffff")]
+        [InlineData(CborConformanceLevel.Canonical, "1b00000000ffffffff")]
+        [InlineData(CborConformanceLevel.Canonical, "1b0000000000000001")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "1817")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "1900ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "1a0000ffff")]
@@ -218,11 +218,11 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3817")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3900ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3a0000ffff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3b00000000ffffffff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3b0000000000000001")]
+        [InlineData(CborConformanceLevel.Canonical, "3817")]
+        [InlineData(CborConformanceLevel.Canonical, "3900ff")]
+        [InlineData(CborConformanceLevel.Canonical, "3a0000ffff")]
+        [InlineData(CborConformanceLevel.Canonical, "3b00000000ffffffff")]
+        [InlineData(CborConformanceLevel.Canonical, "3b0000000000000001")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "3817")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "3900ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "3a0000ffff")]
