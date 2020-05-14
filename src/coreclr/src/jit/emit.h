@@ -1222,9 +1222,11 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ILLEGAL -1024.0f
 
-#define PERFSCORE_THROUGHPUT_4X 0.25f         // Fastest - Quad issue
-#define PERFSCORE_THROUGHPUT_3X (1.0f / 3.0f) // Faster - Three issue
-#define PERFSCORE_THROUGHPUT_2X 0.5f          // Faster - Dual issue
+#define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
+#define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
+#define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
+#define PERFSCORE_THROUGHPUT_3X (1.0f / 3.0f) // Three issue
+#define PERFSCORE_THROUGHPUT_2X 0.5f          // Dual issue
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
@@ -1336,7 +1338,7 @@ protected:
 
     insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc* id);
 
-    void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* result);
+    void perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* result);
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 

@@ -268,5 +268,157 @@ namespace System.Text.Encodings.Tests
             Assert.Equal('\u0000', fallbackBuffer.GetNextChar());
             Assert.False(fallbackBuffer.MovePrevious(), "Expected we cannot move back on the replacement buffer as we are rest the buffer");
         }
+
+        [Fact]
+        public void EncoderConvertSplitAcrossInvalidSurrogateTests()
+        {
+            // Input = [ D800 0058 0059 005A ]
+            // Expected output = [ EF BF BD 58 59 5A ]
+
+            Encoder encoder = Encoding.UTF8.GetEncoder();
+            byte[] destBuffer = new byte[100];
+            
+            int charsConsumed, bytesWritten;
+            bool completed;
+
+            encoder.Convert(new char[] { '\uD800' }, destBuffer, flush: false, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(1, charsConsumed);
+            Assert.Equal(0, bytesWritten); // waiting for second half of surrogate pair
+            Assert.True(completed);
+
+            encoder.Convert(new char[] { 'X' }, destBuffer, flush: false, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(1, charsConsumed);
+            Assert.Equal(4, bytesWritten); // U+FFFD bytes + ASCII 'X'
+            Assert.True(completed); // no internal state
+            Assert.Equal(new byte[] { 0xEF, 0xBF, 0xBD, (byte)'X' }, destBuffer[0..4]);
+
+            encoder.Convert(new char[] { 'Y' }, destBuffer, flush: false, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(1, charsConsumed);
+            Assert.Equal(1, bytesWritten); // ASCII 'Y'
+            Assert.True(completed); // no internal state
+            Assert.Equal((byte)'Y', destBuffer[0]);
+
+            encoder.Convert(new char[] { 'Z' }, destBuffer, flush: true, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(1, charsConsumed);
+            Assert.Equal(1, bytesWritten); // ASCII 'Z'
+            Assert.True(completed); // no internal state
+            Assert.Equal((byte)'Z', destBuffer[0]);
+        }
+
+        [Fact]
+        public void EncoderConvertSplitAcrossUnencodableSurrogatePairTests()
+        {
+            // Input = [ D83C DF32 0058 0059 005A ]
+            // Expected output = "[1F332]XYZ" (as ASCII bytes)
+
+            Encoder encoder = Encoding.GetEncoding(
+                "ascii",
+                new CustomEncoderReplacementFallback(),
+                DecoderFallback.ExceptionFallback).GetEncoder();
+            byte[] destBuffer = new byte[100];
+
+            int charsConsumed, bytesWritten;
+            bool completed;
+
+            encoder.Convert(new char[] { '\uD83C' }, destBuffer, flush: false, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(1, charsConsumed);
+            Assert.Equal(0, bytesWritten); // waiting for second half of surrogate pair
+            Assert.True(completed);
+
+            encoder.Convert(new char[] { '\uDF32', 'X' }, destBuffer, flush: false, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(2, charsConsumed);
+            Assert.Equal(8, bytesWritten); // ASCII "[1F332]X"
+            Assert.True(completed); // no internal state
+            Assert.Equal(Encoding.ASCII.GetBytes("[1F332]X"), destBuffer[0..8]);
+
+            encoder.Convert(new char[] { 'Y' }, destBuffer, flush: false, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(1, charsConsumed);
+            Assert.Equal(1, bytesWritten); // ASCII 'Y'
+            Assert.True(completed); // no internal state
+            Assert.Equal((byte)'Y', destBuffer[0]);
+
+            encoder.Convert(new char[] { 'Z' }, destBuffer, flush: true, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(1, charsConsumed);
+            Assert.Equal(1, bytesWritten); // ASCII 'Z'
+            Assert.True(completed); // no internal state
+            Assert.Equal((byte)'Z', destBuffer[0]);
+        }
+
+        [Fact]
+        public void EncoderGetBytesSplitAcrossInvalidSurrogateTests()
+        {
+            // Input = [ D800 0058 0059 005A ]
+            // Expected output = [ EF BF BD 58 59 5A ]
+
+            Encoder encoder = Encoding.UTF8.GetEncoder();
+            byte[] destBuffer = new byte[100];
+
+            int byteCount = encoder.GetByteCount(new char[] { '\uD800' }, flush: false);
+            Assert.Equal(0, byteCount); // waiting for second half of surrogate pair
+
+            byteCount = encoder.GetBytes(new char[] { '\uD800' }, destBuffer, flush: false);
+            Assert.Equal(0, byteCount);
+
+            byteCount = encoder.GetByteCount(new char[] { 'X' }, flush: false);
+            Assert.Equal(4, byteCount); // U+FFFD bytes + ASCII 'X'
+
+            byteCount = encoder.GetBytes(new char[] { 'X' }, destBuffer, flush: false);
+            Assert.Equal(4, byteCount);
+            Assert.Equal(new byte[] { 0xEF, 0xBF, 0xBD, (byte)'X' }, destBuffer[0..4]);
+
+            byteCount = encoder.GetBytes(new char[] { 'Y' }, destBuffer, flush: false);
+            Assert.Equal(1, byteCount); // ASCII 'Y'
+
+            byteCount = encoder.GetBytes(new char[] { 'Y' }, destBuffer, flush: false);
+            Assert.Equal(1, byteCount);
+            Assert.Equal((byte)'Y', destBuffer[0]);
+
+            byteCount = encoder.GetBytes(new char[] { 'Z' }, destBuffer, flush: true);
+            Assert.Equal(1, byteCount); // ASCII 'Z'
+
+            byteCount = encoder.GetBytes(new char[] { 'Z' }, destBuffer, flush: true);
+            Assert.Equal(1, byteCount);
+            Assert.Equal((byte)'Z', destBuffer[0]);
+        }
+
+        [Fact]
+        public void EncoderGetBytesSplitAcrossUnencodableSurrogatePairTests()
+        {
+            // Input = [ D83C DF32 0058 0059 005A ]
+            // Expected output = "[1F332]XYZ" (as ASCII bytes)
+
+            Encoder encoder = Encoding.GetEncoding(
+                "ascii",
+                new CustomEncoderReplacementFallback(),
+                DecoderFallback.ExceptionFallback).GetEncoder();
+            byte[] destBuffer = new byte[100];
+
+            int byteCount = encoder.GetByteCount(new char[] { '\uD83C' }, flush: false);
+            Assert.Equal(0, byteCount); // waiting for second half of surrogate pair
+
+            byteCount = encoder.GetBytes(new char[] { '\uD83C' }, destBuffer, flush: false);
+            Assert.Equal(0, byteCount);
+
+            byteCount = encoder.GetByteCount(new char[] { '\uDF32', 'X' }, flush: false);
+            Assert.Equal(8, byteCount); // ASCII "[1F332]X"
+
+            byteCount = encoder.GetBytes(new char[] { '\uDF32', 'X' }, destBuffer, flush: false);
+            Assert.Equal(8, byteCount);
+            Assert.Equal(Encoding.ASCII.GetBytes("[1F332]X"), destBuffer[0..8]);
+
+            byteCount = encoder.GetBytes(new char[] { 'Y' }, destBuffer, flush: false);
+            Assert.Equal(1, byteCount); // ASCII 'Y'
+
+            byteCount = encoder.GetBytes(new char[] { 'Y' }, destBuffer, flush: false);
+            Assert.Equal(1, byteCount);
+            Assert.Equal((byte)'Y', destBuffer[0]);
+
+            byteCount = encoder.GetBytes(new char[] { 'Z' }, destBuffer, flush: true);
+            Assert.Equal(1, byteCount); // ASCII 'Z'
+
+            byteCount = encoder.GetBytes(new char[] { 'Z' }, destBuffer, flush: true);
+            Assert.Equal(1, byteCount);
+            Assert.Equal((byte)'Z', destBuffer[0]);
+        }
     }
 }

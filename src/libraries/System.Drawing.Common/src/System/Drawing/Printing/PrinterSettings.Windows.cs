@@ -517,7 +517,12 @@ namespace System.Drawing.Printing
         {
             get
             {
-                return GetDeviceCaps(Interop.Gdi32.DeviceCapability.BITSPIXEL, 1) > 1;
+                // If the printer supports color printing, the return value is 1; otherwise, the return value is zero.
+                // The pointerToBuffer parameter is not used.
+                return DeviceCapabilities(
+                    capability: SafeNativeMethods.DC_COLORDEVICE,
+                    pointerToBuffer: IntPtr.Zero,
+                    defaultValue: 0) == 1;
             }
         }
 

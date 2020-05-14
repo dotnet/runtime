@@ -475,9 +475,7 @@ namespace System.Data
         [TypeConverter(typeof(ColumnTypeConverter))]
         public Type DataType
         {
-            [PreserveDependency(".ctor", "System.Data.ColumnTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             get { return _dataType; }
-            [PreserveDependency(".ctor", "System.Data.ColumnTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             set
             {
                 if (_dataType != value)
@@ -641,7 +639,6 @@ namespace System.Data
         [TypeConverter(typeof(DefaultValueTypeConverter))]
         public object DefaultValue
         {
-            [PreserveDependency(".ctor", "System.Data.DefaultValueTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             get
             {
                 Debug.Assert(_defaultValue != null, "It should not have been set to null.");
@@ -668,7 +665,6 @@ namespace System.Data
 
                 return _defaultValue;
             }
-            [PreserveDependency(".ctor", "System.Data.DefaultValueTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_DefaultValue|API> {0}", ObjectID);

@@ -137,7 +137,7 @@ initDistroRidGlobal()
     initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
 
     if [ "$buildArch" = "wasm" ]; then
-        __DistroRid=WebAssembly-wasm
+        __DistroRid=browser-wasm
         export __DistroRid
     fi
 
@@ -165,6 +165,8 @@ initDistroRidGlobal()
                 distroRid="ios-$buildArch"
             elif [ "$targetOs" = "Android" ]; then
                 distroRid="android-$buildArch"
+            elif [ "$targetOs" = "Browser" ]; then
+                distroRid="browser-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
             elif [ "$targetOs" = "SunOS" ]; then

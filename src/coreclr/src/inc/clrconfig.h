@@ -46,10 +46,6 @@ public:
         IgnoreHKLM = 0x4,
         // If set, don't look in HKCU in the registry.
         IgnoreHKCU = 0x8,
-        // If set, don't look in any config files
-        IgnoreConfigFiles = 0x10,
-        // If set, look in config file(s) before looking in env/registry.
-        FavorConfigFile = 0x20,
         // If set, look only in the system config file, ignoring other config files.
         // (This option does not affect environment variable and registry lookups)
         ConfigFile_SystemOnly = 0x40,
@@ -60,8 +56,6 @@ public:
         // *string* configuration values.)
         TrimWhiteSpaceFromStringValue = 0x100,
 
-        // Legacy REGUTIL-style lookup.
-        REGUTIL_default = IgnoreConfigFiles,
         // Legacy EEConfig-style lookup.
         EEConfig_default = 0,
     };

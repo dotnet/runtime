@@ -149,7 +149,6 @@ namespace System
             public string? Query;
             public string? Fragment;
             public string? AbsoluteUri;
-            public int Hash;
             public string? RemoteUrl;
         };
 
@@ -1505,39 +1504,26 @@ namespace System
             (uint)(digit - 'a') <= 'f' - 'a' ? digit - 'a' + 10 :
             throw new ArgumentException(nameof(digit));
 
-        //
-        // GetHashCode
-        //
-        //  Overrides default function (in Object class)
-        //
-        //
         public override int GetHashCode()
         {
             if (IsNotAbsoluteUri)
             {
-                return CalculateCaseInsensitiveHashCode(OriginalString);
+                return OriginalString.GetHashCode();
             }
+            else
+            {
+                MoreInfo moreInfo = EnsureUriInfo().MoreInfo ??= new MoreInfo();
+                string remoteUrl = moreInfo.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
 
-            // Consider moving hash code storage from m_Info.MoreInfo to m_Info
-            UriInfo info = EnsureUriInfo();
-            if ((object?)info.MoreInfo == null)
-            {
-                info.MoreInfo = new MoreInfo();
-            }
-            int tempHash = info.MoreInfo.Hash;
-            if (tempHash == 0)
-            {
-                string? chkString = info.MoreInfo.RemoteUrl;
-                if ((object?)chkString == null)
-                    chkString = GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
-                tempHash = CalculateCaseInsensitiveHashCode(chkString);
-                if (tempHash == 0)
+                if (IsUncOrDosPath)
                 {
-                    tempHash = 0x1000000;   //making it not zero still large enough to be mapped to zero by a hashtable
+                    return remoteUrl.GetHashCode(StringComparison.OrdinalIgnoreCase);
                 }
-                info.MoreInfo.Hash = tempHash;
+                else
+                {
+                    return remoteUrl.GetHashCode();
+                }
             }
-            return tempHash;
         }
 
         //
@@ -4932,11 +4918,6 @@ namespace System
                 }
             }
             return dest;
-        }
-
-        internal static int CalculateCaseInsensitiveHashCode(string text)
-        {
-            return text.ToLowerInvariant().GetHashCode();
         }
 
         //

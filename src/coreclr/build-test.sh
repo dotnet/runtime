@@ -6,9 +6,9 @@ build_test_wrappers()
         echo "${__MsgPrefix}Creating test wrappers..."
 
         if [[ $__Mono -eq 1 ]]; then
-            export RuntimeFlavor="mono"
+            __RuntimeFlavor="mono"
         else
-            export RuntimeFlavor="coreclr"
+            __RuntimeFlavor="coreclr"
         fi
 
         __Exclude="${__ProjectDir}/tests/issues.targets"
@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\""
         eval $nextCommand
 
         local exitCode="$?"
@@ -119,13 +119,10 @@ generate_layout()
 
     mkdir -p "$CORE_ROOT"
 
-    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
-
     chmod +x "$__BinDir"/corerun
     chmod +x "$__CrossgenExe"
 
-    # Make sure to copy over the pulled down packages
-    cp -r "$__BinDir"/* "$CORE_ROOT/" > /dev/null
+    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" ]]; then
         nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
@@ -183,12 +180,22 @@ precompile_coreroot_fx()
 
     local totalPrecompiled=0
     local failedToPrecompile=0
+    local compositeCommandLine="$overlayDir/corerun"
+    compositeCommandLine+=" ${__BinDir}/crossgen2/crossgen2.dll"
+    compositeCommandLine+=" --composite"
+    compositeCommandLine+=" -O"
+    compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
     declare -a failedAssemblies
 
-    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -type f)
+    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
     for fileToPrecompile in ${filesToPrecompile}; do
         local filename="$fileToPrecompile"
         if is_skip_crossgen_test "$(basename $filename)"; then
+            continue
+        fi
+
+        if [[ "$__CompositeBuildMode" != 0 ]]; then
+            compositeCommandLine+=" $filename"
             continue
         fi
 
@@ -223,6 +230,17 @@ precompile_coreroot_fx()
         totalPrecompiled=$((totalPrecompiled+1))
         echo "Processed: $totalPrecompiled, failed $failedToPrecompile"
     done
+
+    if [[ "$__CompositeBuildMode" != 0 ]]; then
+        # Compile the entire framework in composite build mode
+        echo "Compiling composite R2R framework: $compositeCommandLine"
+        $compositeCommandLine
+        local exitCode="$?"
+        if [[ "$exitCode" != 0 ]]; then
+            echo Unable to precompile composite framework, exit code is "$exitCode".
+            exit 1
+        fi
+    fi
 
     if [[ "$__DoCrossgen2" != 0 ]]; then
         # Copy the Crossgen-compiled assemblies back to CORE_ROOT
@@ -536,6 +554,12 @@ handle_arguments_local() {
             __TestBuildMode=crossgen2
             ;;
 
+        composite|-composite)
+            __CompositeBuildMode=1
+            __DoCrossgen2=1
+            __TestBuildMode=crossgen2
+            ;;
+
         generatetesthostonly|-generatetesthostonly)
             __GenerateTestHostOnly=1
             ;;
@@ -603,6 +627,7 @@ __CrossBuild=0
 __DistroRid=""
 __DoCrossgen=0
 __DoCrossgen2=0
+__CompositeBuildMode=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __GenerateTestHostOnly=

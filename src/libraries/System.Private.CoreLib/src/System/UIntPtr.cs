@@ -4,8 +4,10 @@
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
@@ -18,8 +20,9 @@ namespace System
 {
     [Serializable]
     [CLSCompliant(false)]
+    [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct UIntPtr : IEquatable<UIntPtr>, ISerializable
+    public readonly struct UIntPtr : IEquatable<UIntPtr>, IComparable, IComparable<UIntPtr>, IFormattable, ISerializable
     {
         private readonly unsafe void* _value; // Do not rename (binary serialization)
 
@@ -74,9 +77,6 @@ namespace System
             }
             return false;
         }
-
-        unsafe bool IEquatable<UIntPtr>.Equals(UIntPtr other) =>
-            _value == other._value;
 
         public override unsafe int GetHashCode()
         {
@@ -162,7 +162,60 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        public override unsafe string ToString() =>
-            ((nuint)_value).ToString(CultureInfo.InvariantCulture);
+        public static UIntPtr MaxValue
+        {
+            [NonVersionable]
+            get => (UIntPtr)nuint.MaxValue;
+        }
+
+        public static UIntPtr MinValue
+        {
+            [NonVersionable]
+            get => (UIntPtr)nuint.MinValue;
+        }
+
+        public unsafe int CompareTo(object? value)
+        {
+            if (value is null)
+            {
+                return 1;
+            }
+            if (value is UIntPtr o)
+            {
+                nuint i = (nuint)o;
+                if ((nuint)_value < i) return -1;
+                if ((nuint)_value > i) return 1;
+                return 0;
+            }
+
+            throw new ArgumentException(SR.Arg_MustBeUIntPtr);
+        }
+
+        public unsafe int CompareTo(UIntPtr value) => ((nuint)_value).CompareTo((nuint)value);
+
+        [NonVersionable]
+        public unsafe bool Equals(UIntPtr other) => (nuint)_value == (nuint)other;
+
+        public unsafe override string ToString() => ((nuint)_value).ToString();
+        public unsafe string ToString(string? format) => ((nuint)_value).ToString(format);
+        public unsafe string ToString(IFormatProvider? provider) => ((nuint)_value).ToString(provider);
+        public unsafe string ToString(string? format, IFormatProvider? provider) => ((nuint)_value).ToString(format, provider);
+
+        public static UIntPtr Parse(string s) => (UIntPtr)nuint.Parse(s);
+        public static UIntPtr Parse(string s, NumberStyles style) => (UIntPtr)nuint.Parse(s, style);
+        public static UIntPtr Parse(string s, IFormatProvider? provider) => (UIntPtr)nuint.Parse(s, provider);
+        public static UIntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (UIntPtr)nuint.Parse(s, style, provider);
+
+        public static bool TryParse(string? s, out UIntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nuint.TryParse(s, out Unsafe.As<UIntPtr, nuint>(ref result));
+        }
+
+        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out UIntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nuint.TryParse(s, style, provider, out Unsafe.As<UIntPtr, nuint>(ref result));
+        }
     }
 }

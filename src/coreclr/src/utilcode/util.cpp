@@ -19,6 +19,7 @@
 #include "cor.h"
 #include "corinfo.h"
 #include "volatile.h"
+#include "mdfileformat.h"
 
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;

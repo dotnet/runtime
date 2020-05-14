@@ -39,6 +39,10 @@ namespace System.Net.Sockets
 
                 return socketAddress.GetIPEndPoint();
             }
+            else if (family == AddressFamily.Unknown)
+            {
+                return thisObj;
+            }
 
             System.Net.SocketAddress address = GetNetSocketAddress(socketAddress);
             return thisObj.Create(address);

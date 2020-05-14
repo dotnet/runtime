@@ -467,10 +467,6 @@ EXTERN HINSTANCE            g_pDebuggerDll;
 EXTERN int g_IGCconcurrent;
 extern int g_IGCHoardVM;
 
-#ifdef GCTRIMCOMMIT
-extern int g_IGCTrimCommit;
-#endif
-
 // Returns a BOOL to indicate if the runtime is active or not
 BOOL IsRuntimeActive();
 

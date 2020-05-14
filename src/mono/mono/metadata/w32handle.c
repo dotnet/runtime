@@ -597,7 +597,6 @@ again:
 		if (!handles_data [i])
 			continue;
 		if (!mono_w32handle_trylock (handles_data [i])) {
-			/* Bummer */
 
 			for (j = i - 1; j >= 0; j--) {
 				if (!handles_data [j])

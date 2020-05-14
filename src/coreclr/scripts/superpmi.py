@@ -589,6 +589,7 @@ class SuperPMICollect:
             env_copy["SuperPMIShimPath"] = self.jit_path
             env_copy["COMPlus_AltJit"] = "*"
             env_copy["COMPlus_AltJitName"] = self.collection_shim_name
+            env_copy["COMPlus_EnableExtraSuperPmiQueries"] = "1"
 
             if self.coreclr_args.use_zapdisable:
                 env_copy["COMPlus_ZapDisable"] = "1"

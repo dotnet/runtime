@@ -74,8 +74,7 @@ namespace System.Text.Json.Serialization
         // Provide a default implementation for value converters.
         internal virtual bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            // TODO: https://github.com/dotnet/runtime/issues/32523
-            Write(writer, value!, options);
+            Write(writer, value, options);
             return true;
         }
 
@@ -254,8 +253,7 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                // TODO: https://github.com/dotnet/runtime/issues/32523
-                Write(writer, value!, options);
+                Write(writer, value, options);
                 VerifyWrite(originalPropertyDepth, writer);
 
                 return true;
@@ -285,7 +283,16 @@ namespace System.Text.Json.Serialization
 
         internal bool TryWriteDataExtensionProperty(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
+            Debug.Assert(value != null);
+
+            if (!IsInternalConverter)
+            {
+                return TryWrite(writer, value, options, ref state);
+            }
+
             Debug.Assert(this is JsonDictionaryConverter<T>);
+
+            state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
@@ -400,6 +407,6 @@ namespace System.Text.Json.Serialization
         /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
-        public abstract void Write(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options);
+        public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
     }
 }

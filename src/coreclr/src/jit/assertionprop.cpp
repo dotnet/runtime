@@ -2108,7 +2108,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 //  Retrieve the 'this' arg
                 GenTree* thisArg = gtGetThisArg(tree->AsCall());
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
                 if (thisArg == nullptr)
                 {
                     // For tail calls we lose the this pointer in the argument list but that's OK because a null check
@@ -2116,8 +2115,6 @@ void Compiler::optAssertionGen(GenTree* tree)
                     noway_assert(tree->AsCall()->IsTailCall());
                     break;
                 }
-#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM
-                noway_assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, OAK_NOT_EQUAL);
             }
             break;

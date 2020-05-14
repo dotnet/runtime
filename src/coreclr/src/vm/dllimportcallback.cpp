@@ -848,8 +848,9 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     RETURN pThunk;
 }
 
-// FailFast if a native callable method invoked directly from managed code.
-// UMThunkStub.asm check the mode and call this function to failfast.
+// FailFast if a method marked UnmanagedCallersOnlyAttribute is
+// invoked directly from managed code. UMThunkStub.asm check the
+// mode and call this function to failfast.
 extern "C" VOID STDCALL ReversePInvokeBadTransition()
 {
     STATIC_CONTRACT_THROWS;
@@ -857,7 +858,7 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
     // Fail
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
                                              COR_E_EXECUTIONENGINE,
-                                             W("Invalid Program: attempted to call a NativeCallable method from managed code.")
+                                             W("Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.")
                                             );
 }
 

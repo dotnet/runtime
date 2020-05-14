@@ -31,9 +31,9 @@ else(CLR_CMAKE_HOST_WIN32)
     # Add dependency on export file
     add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
     if(CLR_CMAKE_HOST_LINUX)
 
@@ -95,6 +95,11 @@ if(CLR_CMAKE_HOST_OSX)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_OSX)
+
+if(CLR_CMAKE_HOST_SUNOS)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+endif(CLR_CMAKE_HOST_SUNOS)
 
 # Create object library to enable creation of proper dependency of mscordaccore.exp on mscordac.obj and
 # mscordaccore on both the mscordaccore.exp and mscordac.obj.
@@ -190,24 +195,7 @@ target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 # Create the DAC module index header file containing the DAC build id
 # for xplat and the timestamp/size on Windows.
 if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    set(
-        DAC_MODULE_INDEX_FILE 
-        ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h
-    )
-    add_custom_command(
-        OUTPUT ${DAC_MODULE_INDEX_FILE}
-        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordaccore> ${DAC_MODULE_INDEX_FILE}
-        DEPENDS mscordaccore
-        COMMENT "Generating DAC module index file -> ${DAC_MODULE_INDEX_FILE}"
-    )
-    set_source_files_properties(
-        ${DAC_MODULE_INDEX_FILE} 
-        PROPERTIES GENERATED TRUE
-    )
-    add_custom_target(
-        dac_module_index_header
-        DEPENDS ${DAC_MODULE_INDEX_FILE} 
-    )
+    generate_module_index(mscordaccore ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets

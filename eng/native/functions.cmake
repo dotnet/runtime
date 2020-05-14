@@ -268,13 +268,20 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
+      string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
+      if (LOWERCASE_CMAKE_BUILD_TYPE STREQUAL release)
+        set(strip_command ${STRIP} -S ${strip_source_file})
+      else ()
+        set(strip_command)
+      endif ()
+
       add_custom_command(
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
         COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
-        COMMAND ${STRIP} -S ${strip_source_file}
-        COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        COMMAND ${strip_command}
+        COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
     else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
       set(strip_destination_file ${strip_source_file}.dbg)
@@ -286,7 +293,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
         COMMAND ${CMAKE_OBJCOPY} --strip-debug ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
-        COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
     endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
 
@@ -338,7 +345,7 @@ function(install_clr)
     if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
         strip_symbols(${targetName} symbol_file)
 
-        foreach(destination in ${destinations})
+        foreach(destination ${destinations})
           # We don't need to install the export libraries for our DLLs
           # since they won't be directly linked against.
           install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination})
@@ -415,3 +422,28 @@ endfunction()
 function(add_executable_clr)
     _add_executable(${ARGV})
 endfunction()
+
+function(generate_module_index Target ModuleIndexFile)
+    if(CLR_CMAKE_HOST_WIN32)
+        set(scriptExt ".cmd")
+    else()
+        set(scriptExt ".sh")
+    endif()
+
+    add_custom_command(
+        OUTPUT ${ModuleIndexFile}
+        COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
+        DEPENDS ${Target}
+        COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
+    )
+
+    set_source_files_properties(
+        ${ModuleIndexFile}
+        PROPERTIES GENERATED TRUE
+    )
+
+    add_custom_target(
+        ${Target}_module_index_header
+        DEPENDS ${ModuleIndexFile}
+    )
+endfunction(generate_module_index)

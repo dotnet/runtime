@@ -2897,7 +2897,7 @@ interp_emit_memory_barrier (TransformData *td, int kind)
 	} while (0)
 
 static void
-interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header)
+interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header, MonoError *error)
 {
 	int i, offset, size, align;
 
@@ -2908,6 +2908,12 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	offset = 0;
 	for (i = 0; i < header->num_locals; ++i) {
 		size = mono_type_size (header->locals [i], &align);
+		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
+			if (mono_class_has_failure (header->locals [i]->data.klass)) {
+				mono_error_set_for_class_failure (error, header->locals [i]->data.klass);
+				return;
+			}
+		}
 		offset += align - 1;
 		offset &= ~(align - 1);
 		imethod->local_offsets [i] = offset;
@@ -2935,7 +2941,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 void
 mono_test_interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header)
 {
-	interp_method_compute_offsets (td, imethod, signature, header);
+	ERROR_DECL (error);
+	interp_method_compute_offsets (td, imethod, signature, header, error);
 }
 
 /* Return false is failure to init basic blocks due to being in inline method */
@@ -7215,6 +7222,10 @@ retry:
 					}
 
 					if (sp->ins) {
+						// If the top of stack is not pushed by a ldloc, we are introducing a
+						// new dependency on the src_local since we are adding a movloc from it.
+						if (!MINT_IS_LDLOC (sp->ins->opcode))
+							local_ref_count [src_local]++;
 						interp_clear_ins (td, sp->ins);
 						interp_clear_ins (td, ins);
 
@@ -7596,7 +7607,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	if (td->prof_coverage)
 		td->coverage_info = mono_profiler_coverage_alloc (method, header->code_size);
 
-	interp_method_compute_offsets (td, rtm, mono_method_signature_internal (method), header);
+	interp_method_compute_offsets (td, rtm, mono_method_signature_internal (method), header, error);
+	goto_if_nok (error, exit);
 
 	if (verbose_method_name) {
 		const char *name = verbose_method_name;
@@ -7630,7 +7642,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	generate_compacted_code (td);
 
 	if (td->verbose_level) {
-		g_print ("Runtime method: %s %p, VT stack size: %d\n", mono_method_full_name (method, TRUE), rtm, td->max_vt_sp);
+		g_print ("Runtime method: %s %p\n", mono_method_full_name (method, TRUE), rtm);
+		g_print ("Locals size %d, VT stack size: %d\n", td->total_locals_size, td->max_vt_sp);
 		g_print ("Calculated stack size: %d, stated size: %d\n", td->max_stack_height, header->max_stack);
 		dump_mint_code (td->new_code, td->new_code_end);
 	}

@@ -10,6 +10,7 @@ using System.Threading;
 
 namespace System.Runtime.Loader
 {
+    [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyLoadContext
     {
         internal IntPtr NativeALC
@@ -116,7 +117,13 @@ namespace System.Runtime.Loader
         // success.
         private static Assembly? MonoResolveUsingResolvingEvent(IntPtr gchALC, string assemblyName)
         {
-            return ResolveUsingResolvingEvent(gchALC, new AssemblyName(assemblyName));
+            AssemblyLoadContext context;
+            // This check exists because the function can be called early in startup, before the default ALC is initialized
+            if (gchALC == IntPtr.Zero)
+                context = Default;
+            else
+                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            return context.ResolveUsingEvent(new AssemblyName(assemblyName));
         }
 
         // Invoked by Mono to resolve requests to load satellite assemblies.

@@ -22,14 +22,8 @@ class Thread;
 #include <excepcpu.h>
 #include "interoputil.h"
 
-#if defined(TARGET_ARM) || defined(TARGET_X86)
-#define VSD_STUB_CAN_THROW_AV
-#endif // TARGET_ARM || TARGET_X86
-
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
-#ifdef VSD_STUB_CAN_THROW_AV
 BOOL IsIPinVirtualStub(PCODE f_IP);
-#endif // VSD_STUB_CAN_THROW_AV
 bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
 
 BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
@@ -41,26 +35,6 @@ bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
 
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
-
-//******************************************************************************
-//
-//  SwallowUnhandledExceptions
-//
-//   Consult the EE policy and the app config to determine if the runtime should "swallow" unhandled exceptions.
-//   Swallow if: the EEPolicy->UnhandledExceptionPolicy is "eHostDeterminedPolicy"
-//           or: the app config value LegacyUnhandledExceptionPolicy() is set.
-//
-//  Parameters:
-//    none
-//
-//  Return value:
-//    true - the runtime should "swallow" unhandled exceptions
-//
-inline bool SwallowUnhandledExceptions()
-{
-    return (eHostDeterminedPolicy == GetEEPolicy()->GetUnhandledExceptionPolicy()) ||
-           g_pConfig->LegacyUnhandledExceptionPolicy();
-}
 
 // Enums
 // return values of LookForHandler
@@ -223,12 +197,20 @@ enum UnhandledExceptionLocation
                             FatalExecutionEngineException
 };
 
+#ifdef HOST_WINDOWS
+void InitializeCrashDump();
+bool GenerateCrashDump(LPCWSTR dumpName, int dumpType, bool diag);
+void CreateCrashDumpIfEnabled();
+#endif
+
+// Generates crash dumps if enabled for both Windows and Linux
+void CrashDumpAndTerminateProcess(UINT exitCode);
+
 struct ThreadBaseExceptionFilterParam
 {
     UnhandledExceptionLocation location;
 };
 
-LONG ThreadBaseExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 
@@ -835,10 +817,10 @@ LONG ReflectionInvocationExceptionFilter(
 class CEHelper
 {
     BOOL static IsMethodInPreV4Assembly(PTR_MethodDesc pMethodDesc);
-    BOOL static CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity, BOOL fCalculateSecurityInfo = TRUE);
+    BOOL static CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity);
 
 public:
-    BOOL static CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc, BOOL fCalculateSecurityInfo = TRUE);
+    BOOL static CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc);
     BOOL static CanIDispatchTargetHandleException();
     BOOL static IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
     BOOL static IsProcessCorruptedStateException(OBJECTREF oThrowable);

@@ -399,6 +399,7 @@ set(VM_SOURCES_WKS
     syncclean.cpp
     synch.cpp
     synchronizationcontextnative.cpp
+    tailcallhelp.cpp
     threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp
@@ -517,6 +518,7 @@ set(VM_HEADERS_WKS
     syncclean.hpp
     synch.h
     synchronizationcontextnative.h
+    tailcallhelp.h
     tieredcompilation.h
     threaddebugblockinginfo.h
     threadsuspend.h
@@ -782,7 +784,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     )
 
     set(VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/jithelpersamd64.cpp
         ${ARCH_SOURCES_DIR}/jitinterfaceamd64.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
@@ -835,7 +836,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     )
 
     set(VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/jithelpersarm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
