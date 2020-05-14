@@ -5,21 +5,23 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// When specified on <see cref="JsonSerializerOptions.DefaultIgnoreCondition"/>, controls whether properties with default values are ignored during serialization.
-    /// When specified on <see cref="JsonIgnoreAttribute.Condition"/>, controls whether a property is ignored during serialization and deserialization.
+    /// When specified on <see cref="JsonSerializerOptions.DefaultIgnoreCondition"/>,
+    /// <see cref="WhenWritingDefault"/> specifies that properties with default values are ignored during serialization.
+    /// When specified on <see cref="JsonIgnoreAttribute.Condition"/>, controls whether
+    /// a property is ignored during serialization and deserialization.
     /// </summary>
     public enum JsonIgnoreCondition
     {
         /// <summary>
-        /// Property will always be serialized and deserialized.
+        /// Property is never ignored during serialization or deserialization.
         /// </summary>
         Never = 0,
         /// <summary>
-        /// Property will never be serialized or deserialized.
+        /// Property is always ignored during serialization and deserialization.
         /// </summary>
         Always = 1,
         /// <summary>
-        /// Property will not be serialized if it is the default value.
+        /// If the value is the default, the property is ignored during serialization.
         /// </summary>
         WhenWritingDefault = 2,
     }

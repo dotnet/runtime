@@ -507,5 +507,40 @@ namespace System.Text.Json.Serialization.Tests
 
             public override bool HandleNull => true;
         }
+
+        [Fact]
+        public static void SetterCalledWhenConverterReturnsNull()
+        {
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                Converters = { new UriToNullConverter() }
+            };
+
+            // Baseline - null values ignored, converter is not called.
+            string json = @"{""MyUri"":null}";
+
+            ClassWithInitializedUri obj = JsonSerializer.Deserialize<ClassWithInitializedUri>(json, options);
+            Assert.Equal(new Uri("https://microsoft.com"), obj.MyUri);
+
+            // Baseline - setter is called if payload is not null and converter returns null.
+            json = @"{""MyUri"":""https://default""}";
+            obj = JsonSerializer.Deserialize<ClassWithInitializedUri>(json, options);
+            Assert.Null(obj.MyUri);
+        }
+
+        private class ClassWithInitializedUri
+        {
+            public Uri MyUri { get; set; } = new Uri("https://microsoft.com");
+        }
+
+        public class UriToNullConverter : JsonConverter<Uri>
+        {
+            public override Uri Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => null;
+
+            public override void Write(Utf8JsonWriter writer, Uri value, JsonSerializerOptions options) => throw new NotImplementedException();
+
+            public override bool HandleNull => true;
+        }
     }
 }
