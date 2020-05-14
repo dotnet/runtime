@@ -52,10 +52,6 @@ unzip ~/openssl.zip -o -d ${ANDROID_OPENSSL_AAR} && rm -rf ~/openssl.zip
 printf "\n\nexport ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT}\nexport ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}\nexport ANDROID_OPENSSL_AAR=${ANDROID_OPENSSL_AAR}\n" >> ${BASHRC}
 ```
 
-## macOS
-
-*TODO:* 
-
 ## Building Libs and Tests for Android
 
 Now we're ready to build everything for Android:
