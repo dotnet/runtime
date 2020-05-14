@@ -2678,12 +2678,12 @@ public:
             cseSsaNum               = m_pCompiler->lvaTable[cseLclVarNum].lvPerSsaData.AllocSsaNum(allocator);
         }
 
-#ifdef DEBUG
         // Verify that all of the ValueNumbers in this list are correct as
         // Morph will change them when it performs a mutating operation.
         //
         ValueNum firstVN = ValueNumStore::NoVN;
         ValueNum currVN;
+        bool     setRefCnt = true;
         bool     allSame = true;
 
         lst = dsc->csdTreeList;
@@ -2703,11 +2703,34 @@ public:
                 else if (currVN != firstVN)
                 {
                     allSame = false;
-                    break;
+                }
+
+                BasicBlock* blk = lst->tslBlock;
+                const BasicBlock::weight_t weight = blk->getBBWeight(m_pCompiler);
+
+                if (setRefCnt)
+                {
+                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCnt(1);
+                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCntWtd(weight);
+                    setRefCnt = false;
+                }
+                else
+                {
+                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(weight, m_pCompiler);
+                }
+
+                // A CSE Def references the LclVar twice
+                //
+                GenTree* exp = lst->tslTree;
+                if (IS_CSE_DEF(exp->gtCSEnum))
+                {
+                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(weight, m_pCompiler);
                 }
             }
             lst = lst->tslNext;
         }
+
+#ifdef DEBUG
         if (!allSame)
         {
             lst                = dsc->csdTreeList;
