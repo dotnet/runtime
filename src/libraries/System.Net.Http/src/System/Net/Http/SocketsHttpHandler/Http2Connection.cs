@@ -5,6 +5,7 @@
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
@@ -1155,7 +1156,8 @@ namespace System.Net.Http
             }
         }
 
-        private HttpRequestException GetShutdownException()
+        [DoesNotReturn]
+        private void ThrowShutdownException()
         {
             Debug.Assert(Monitor.IsEntered(SyncObject));
 
@@ -1183,7 +1185,6 @@ namespace System.Net.Http
             }
 
             ThrowRetry(SR.net_http_client_execution_error, innerException);
-            return null!;
         }
 
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool mustFlush)
@@ -1211,7 +1212,8 @@ namespace System.Net.Http
                 {
                     Debug.Assert(_disposed || _lastStreamId != -1);
                     Debug.Assert(_httpStreams.Count == 0);
-                    throw GetShutdownException();
+                    ThrowShutdownException();
+                    throw; // unreachable
                 }
             }
 
@@ -1251,7 +1253,7 @@ namespace System.Net.Http
                             // We ran out of stream IDs or we raced between acquiring the connection from the pool and shutting down.
                             // Throw a retryable request exception. This will cause retry logic to kick in
                             // and perform another connection attempt. The user should never see this exception.
-                            throw GetShutdownException();
+                            ThrowShutdownException();
                         }
 
                         streamId = _nextStream;
@@ -1770,10 +1772,10 @@ namespace System.Net.Http
                     // The connection is shutting down.
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
-                    throw GetShutdownException();
+                    ThrowShutdownException();
                 }
 
-                Http2Stream http2Stream = new Http2Stream(request, this, streamId, _initialWindowSize);
+                var http2Stream = new Http2Stream(request, this, streamId, _initialWindowSize);
 
                 _httpStreams.Add(streamId, http2Stream);
 
@@ -1824,15 +1826,19 @@ namespace System.Net.Http
                 memberName,                   // method name
                 message);                     // message
 
+        [DoesNotReturn]
         private static void ThrowRetry(string message, Exception innerException) =>
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
 
+        [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>
             throw new IOException(SR.net_http_request_aborted, innerException);
 
+        [DoesNotReturn]
         private static void ThrowProtocolError() =>
             ThrowProtocolError(Http2ProtocolErrorCode.ProtocolError);
 
+        [DoesNotReturn]
         private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode) =>
             throw new Http2ConnectionException(errorCode);
     }
