@@ -24,7 +24,9 @@ AppleAppBuilder generates temp Xcode projects you can manually open and resolve 
 
 ### Test App Design
 iOS/tvOS `*.app` (or `*.ipa`) is basically a simple [ObjC app](https://github.com/dotnet/runtime/blob/master/src/mono/msbuild/AppleAppBuilder/Templates/main-console.m) that inits the Mono Runtime. This Mono Runtime starts a simple xunit test
-runner called XHarness TestRunner which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool to deploy `*.app` and `*.ipa` to a target (device or simulator) and listens for logs via network sockets.
+runner called XHarness.TestRunner (see https://github.com/dotnet/xharness) which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool to deploy `*.app` and `*.ipa` to a target (device or simulator) and listens for logs via network sockets.
 
 ### Existing Limitations
 - Most of the test suites crash on devices due to #35674
+- Simulator uses JIT mode only at the moment (to be extended with FullAOT and Interpreter)
+- Interpreter is not enabled yet.

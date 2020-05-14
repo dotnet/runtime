@@ -76,3 +76,4 @@ Or simply open `logcat` window in Android Studio or Visual Stuido.
 ### Existing Limitations
 - `-os Android` is not supported for Windows yet (`WSL` can be used instead)
 - XHarness.CLI is not able to boot emulators yet (so you need to boot via `AVD Manager` or IDE)
+- AOT and Interpreter modes are not supported yet
