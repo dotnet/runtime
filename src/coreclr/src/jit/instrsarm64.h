@@ -347,6 +347,19 @@ INST4(fcmgt,       "fcmgt",        0,      IF_EN4I,   0x7EA0E400,  0x2EA0E400,  
                                    //  fcmgt   Vd,Vn                DV_2G  010111101X100000 110010nnnnnddddd   5EA0 E800   Vd Vn      (scalar)
                                    //  fcmgt   Vd,Vn                DV_2A  0Q0011101X100000 110010nnnnnddddd   0EA0 C800   Vd Vn      (vector)
 
+//    enum         name            LD/ST              DV_2N        DV_2O        DV_3E        DV_3A
+INST4(sqshl,       "sqshl",        0,      IF_EN4J,   0x5F007400,  0x0F007400,  0x5E204C00,  0x0E204C00)
+                                   //  sqshl   Vd,Vn,imm            DV_2N  010111110iiiiiii 011101nnnnnddddd   5F00 7400   Vd Vn imm  (shift - scalar)
+                                   //  sqshl   Vd,Vn,imm            DV_2O  0Q0011110iiiiiii 011101nnnnnddddd   0F00 7400   Vd Vn imm  (shift - vector)
+                                   //  sqshl   Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 010011nnnnnddddd   5E20 4C00   Vd Vn Vm   (scalar)
+                                   //  sqshl   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 010011nnnnnddddd   0E20 4C00   Vd Vn Vm   (vector)
+
+INST4(uqshl,       "uqshl",        0,      IF_EN4J,   0x7F007400,  0x2F007400,  0x7E204C00,  0x2E204C00)
+                                   //  uqshl   Vd,Vn,imm            DV_2N  011111110iiiiiii 011101nnnnnddddd   7F00 7400   Vd Vn imm  (shift - scalar)
+                                   //  uqshl   Vd,Vn,imm            DV_2O  0Q1011110iiiiiii 011101nnnnnddddd   2F00 7400   Vd Vn imm  (shift - vector)
+                                   //  uqshl   Vd,Vn,Vm             DV_3E  01111110XX1mmmmm 010011nnnnnddddd   7E20 4C00   Vd Vn Vm   (scalar)
+                                   //  uqshl   Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 010011nnnnnddddd   2E20 4C00   Vd Vn Vm   (vector)
+
 //    enum         name            LD/ST              DR_3A        DR_3B        DI_2C
 INST3(ands,        "ands",         0,      IF_EN3A,   0x6A000000,  0x6A000000,  0x72000000)
                                    //  ands    Rd,Rn,Rm             DR_3A  X1101010000mmmmm 000000nnnnnddddd   6A00 0000
