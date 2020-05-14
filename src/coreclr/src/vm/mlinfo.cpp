@@ -1235,13 +1235,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
 #ifdef FEATURE_COMINTEROP
     m_fDispItf                      = FALSE;
-    m_fInspItf                      = FALSE;
     m_fErrorNativeType              = FALSE;
-    m_hiddenLengthParamIndex        = (UINT16)-1;
-    m_dwHiddenLengthManagedHomeLocal= 0xFFFFFFFF;
-    m_dwHiddenLengthNativeHomeLocal = 0xFFFFFFFF;
-
-    m_pDefaultItfMT                 = NULL;
 #endif // FEATURE_COMINTEROP
 
 
@@ -3197,12 +3191,11 @@ void MarshalInfo::GetItfMarshalInfo(ItfMarshalInfo* pInfo)
         TypeHandle(),
 #endif // FEATURE_COMINTEROP
         m_fDispItf,
-        m_fInspItf,
         m_ms,
         pInfo);
 }
 
-void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispItf, BOOL fInspItf, MarshalScenario ms, ItfMarshalInfo *pInfo)
+void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispItf, MarshalScenario ms, ItfMarshalInfo *pInfo)
 {
     CONTRACTL
     {
@@ -3295,17 +3288,9 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
             {
                 pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
             }
-            else if (fInspItf)
-            {
-                COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
-            }
 
             pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_USE_BASIC_ITF;
         }
-    }
-    else if (fInspItf)
-    {
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
     }
     else
     {
@@ -3347,7 +3332,7 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
 #endif // FEATURE_COMINTEROP
 }
 
-HRESULT MarshalInfo::TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, BOOL fInspItf, ItfMarshalInfo *pInfo)
+HRESULT MarshalInfo::TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, ItfMarshalInfo *pInfo)
 {
     CONTRACTL
     {
@@ -3362,7 +3347,7 @@ HRESULT MarshalInfo::TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, BOOL fIn
 
     EX_TRY
     {
-        GetItfMarshalInfo(th, TypeHandle(), fDispItf, fInspItf,
+        GetItfMarshalInfo(th, TypeHandle(), fDispItf,
 #ifdef FEATURE_COMINTEROP
             MARSHAL_SCENARIO_COMINTEROP,
 #else // FEATURE_COMINTEROP
@@ -3672,7 +3657,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
         case MARSHAL_TYPE_INTERFACE:
         {
             ItfMarshalInfo itfInfo;
-            GetItfMarshalInfo(TypeHandle(m_pMT), TypeHandle(m_pDefaultItfMT), m_fDispItf, m_fInspItf, m_ms, &itfInfo);
+            GetItfMarshalInfo(TypeHandle(m_pMT), TypeHandle(m_pDefaultItfMT), m_fDispItf, m_ms, &itfInfo);
             pDispParamMarshaler = new DispParamInterfaceMarshaler(
                 itfInfo.dwFlags & ItfMarshalInfo::ITF_MARSHAL_DISP_ITF,
                 itfInfo.thItf.GetMethodTable(),
@@ -3733,7 +3718,7 @@ DispatchWrapperType MarshalInfo::GetDispWrapperType()
         case MARSHAL_TYPE_INTERFACE:
         {
             ItfMarshalInfo itfInfo;
-            GetItfMarshalInfo(TypeHandle(m_pMT), TypeHandle(m_pDefaultItfMT), m_fDispItf, m_fInspItf, m_ms, &itfInfo);
+            GetItfMarshalInfo(TypeHandle(m_pMT), TypeHandle(m_pDefaultItfMT), m_fDispItf, m_ms, &itfInfo);
             WrapperType = !!(itfInfo.dwFlags & ItfMarshalInfo::ITF_MARSHAL_DISP_ITF) ? DispatchWrapperType_Dispatch : DispatchWrapperType_Unknown;
             break;
         }
@@ -3801,7 +3786,7 @@ VOID MarshalInfo::MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpeci
     else if (m_type == MARSHAL_TYPE_INTERFACE)
     {
         ItfMarshalInfo itfInfo;
-        GetItfMarshalInfo(TypeHandle(m_pMT), TypeHandle(m_pDefaultItfMT), m_fDispItf, m_fInspItf, m_ms, &itfInfo);
+        GetItfMarshalInfo(TypeHandle(m_pMT), TypeHandle(m_pDefaultItfMT), m_fDispItf, m_ms, &itfInfo);
 
         if (!itfInfo.thItf.IsNull())
         {
@@ -4487,7 +4472,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             // Compat: Even if the classes have layout, we still convert them to interface pointers.
 
             ItfMarshalInfo itfInfo;
-            MarshalInfo::GetItfMarshalInfo(m_thElement, TypeHandle(), FALSE, FALSE, ms, &itfInfo);
+            MarshalInfo::GetItfMarshalInfo(m_thElement, TypeHandle(), FALSE, ms, &itfInfo);
 
             // Compat: We must always do VT_UNKNOWN marshaling for parameters, even if the interface is marked late-bound.
             if (ms == MarshalInfo::MARSHAL_SCENARIO_FIELD)

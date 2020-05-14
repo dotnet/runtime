@@ -437,42 +437,6 @@ public:
         return m_nolowerbounds;
     }
 
-#ifdef FEATURE_COMINTEROP
-    void SetHiddenLengthParamIndex(UINT16 index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_hiddenLengthParamIndex == (UINT16)-1);
-        m_hiddenLengthParamIndex = index;
-    }
-
-    UINT16 HiddenLengthParamIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_hiddenLengthParamIndex != (UINT16)-1);
-        return m_hiddenLengthParamIndex;
-    }
-
-    DWORD GetHiddenLengthManagedHome()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_dwHiddenLengthManagedHomeLocal != 0xFFFFFFFF);
-        return m_dwHiddenLengthManagedHomeLocal;
-    }
-
-    DWORD GetHiddenLengthNativeHome()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_dwHiddenLengthNativeHomeLocal != 0xFFFFFFFF);
-        return m_dwHiddenLengthNativeHomeLocal;
-    }
-
-    MarshalType GetHiddenLengthParamMarshalType();
-    CorElementType GetHiddenLengthParamElementType();
-    UINT16      GetHiddenLengthParamStackSize();
-
-    void MarshalHiddenLengthArgument(NDirectStubLinker *psl, BOOL managedToNative, BOOL isForReturnArray);
-#endif // FEATURE_COMINTEROP
-
     // used the same logic of tlbexp to check whether the argument of the method is a VarArg
     BOOL IsOleVarArgCandidate()
     {
@@ -505,8 +469,8 @@ public:
     void GetItfMarshalInfo(ItfMarshalInfo* pInfo);
 
     // Helper functions used to map the specified type to its interface marshalling info.
-    static void GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispItf, BOOL fInspItf, MarshalScenario ms, ItfMarshalInfo *pInfo);
-    static HRESULT TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, BOOL fInspItf, ItfMarshalInfo *pInfo);
+    static void GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispItf, MarshalScenario ms, ItfMarshalInfo *pInfo);
+    static HRESULT TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, ItfMarshalInfo *pInfo);
 
     VOID MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpecified);
     static VOID VarTypeToString(VARTYPE vt, SString& strVarType);
@@ -564,12 +528,7 @@ private:
     UINT16          m_countParamIdx;  // index of "sizeis" parameter
 
 #ifdef FEATURE_COMINTEROP
-    // For NATIVE_TYPE_HIDDENLENGTHARRAY
-    UINT16          m_hiddenLengthParamIndex;           // index of the injected hidden length parameter
-    DWORD           m_dwHiddenLengthManagedHomeLocal;   // home local for the managed hidden length parameter
-    DWORD           m_dwHiddenLengthNativeHomeLocal;    // home local for the native hidden length parameter
-
-    MethodTable*    m_pDefaultItfMT;                    // WinRT default interface (if m_pMT is a class)
+    MethodTable*    m_pDefaultItfMT;                    // default interface (if m_pMT is a class)
 #endif // FEATURE_COMINTEROP
 
     UINT16          m_nativeArgSize;
@@ -577,7 +536,6 @@ private:
     MarshalScenario m_ms;
     BOOL            m_fAnsi;
     BOOL            m_fDispItf;
-    BOOL            m_fInspItf;
 #ifdef FEATURE_COMINTEROP
     BOOL            m_fErrorNativeType;
 #endif // FEATURE_COMINTEROP
@@ -644,7 +602,6 @@ public:
 
 #ifdef FEATURE_COMINTEROP
     void InitForSafeArray(MarshalInfo::MarshalScenario ms, TypeHandle elemTypeHnd, VARTYPE elementVT, BOOL isAnsi);
-    void InitForHiddenLengthArray(TypeHandle elemTypeHnd);
 #endif // FEATURE_COMINTEROP
 
     TypeHandle GetElementTypeHandle()

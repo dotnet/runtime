@@ -368,12 +368,6 @@ public:
         return m_thClass;
     }
 
-    MethodTable *GetWinRTRuntimeClass()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pWinRTRuntimeClass;
-    }
-
     BOOL IsSafeTypeForMarshalling();
 
     // Creates a new Template and caches it on the MethodTable or class factory.
@@ -407,7 +401,6 @@ private:
     ComCallWrapperTemplate*                 m_pParent;
     TypeHandle                              m_thClass;
     MethodTable*                            m_pDefaultItf;
-    MethodTable*                            m_pWinRTRuntimeClass;
     ComMethodTable*                         m_pClassComMT;
     ComMethodTable*                         m_pBasicComMT;
 

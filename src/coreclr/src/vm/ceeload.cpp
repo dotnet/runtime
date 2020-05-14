@@ -4436,7 +4436,6 @@ Assembly * Module::GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(md
 }
 #endif // !defined(DACCESS_COMPILE) && defined(FEATURE_PREJIT)
 
-// Fills ppContainingWinRtAppDomain only if WinRT type name is passed and if the assembly is found (return value != NULL).
 Assembly *
 Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
@@ -4753,8 +4752,6 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
         RETURN pDomainAssembly;
     }
 
-    bool fHasBindableIdentity = true;
-
     {
         PEAssemblyHolder pFile = GetDomainAssembly()->GetFile()->LoadAssembly(
                 kAssemblyRef,
@@ -4775,18 +4772,13 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
     if (pDomainAssembly != NULL)
     {
         _ASSERTE(
-            !fHasBindableIdentity ||                        // GetAssemblyIfLoaded will not find non-bindable assemblies
             pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find mscorlib (see AppDomain::FindCachedFile)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
             GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
-        // Note: We cannot cache WinRT AssemblyRef, because it is meaningless without the TypeRef context
         if (pDomainAssembly->GetCurrentAssembly() != NULL)
         {
-            if (fHasBindableIdentity)
-            {
-                StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetCurrentAssembly());
-            }
+            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetCurrentAssembly());
         }
     }
 

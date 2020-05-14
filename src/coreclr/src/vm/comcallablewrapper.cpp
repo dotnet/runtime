@@ -5262,7 +5262,6 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
     pTemplate->m_pClassComMT = NULL;
     pTemplate->m_pBasicComMT = NULL;
     pTemplate->m_pDefaultItf = pItfMT;
-    pTemplate->m_pWinRTRuntimeClass = NULL;
     pTemplate->m_pICustomQueryInterfaceGetInterfaceMD = NULL;
     pTemplate->m_pIIDToInterfaceTemplateCache = NULL;
     pTemplate->m_flags = enum_RepresentsVariantInterface;
