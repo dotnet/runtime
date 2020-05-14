@@ -76,7 +76,7 @@ jobs:
         value: '-os Browser'
     - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
       - name: llvmParameter
-        value: /p:MonoEnableLLVM=true
+        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
     - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
       - name: llvmParameter
         value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true

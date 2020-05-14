@@ -12,6 +12,7 @@
       Needs to happen in Directory.Build.targets to allow all the pkgproj's to set Version property first.
     -->
     <StableVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">$(Version)</StableVersion>
+    <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
   </PropertyGroup>
 
   <!--
