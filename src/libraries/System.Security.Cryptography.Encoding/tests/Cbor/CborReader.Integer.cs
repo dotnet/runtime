@@ -48,7 +48,7 @@ namespace System.Formats.Cbor
         public ulong ReadCborNegativeIntegerEncoding()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
-            ulong value = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+            ulong value = ReadUnsignedInteger(GetRemainingBytes(), header, out int additionalBytes);
             AdvanceBuffer(1 + additionalBytes);
             AdvanceDataItemCounters();
             return value;
@@ -61,7 +61,7 @@ namespace System.Formats.Cbor
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    ulong value = ReadUnsignedInteger(_buffer.Span, header, out additionalBytes);
+                    ulong value = ReadUnsignedInteger(GetRemainingBytes(), header, out additionalBytes);
                     return value;
 
                 case CborMajorType.NegativeInteger:
@@ -80,11 +80,11 @@ namespace System.Formats.Cbor
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    value = checked((long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
+                    value = checked((long)ReadUnsignedInteger(GetRemainingBytes(), header, out additionalBytes));
                     return value;
 
                 case CborMajorType.NegativeInteger:
-                    value = checked(-1 - (long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
+                    value = checked(-1 - (long)ReadUnsignedInteger(GetRemainingBytes(), header, out additionalBytes));
                     return value;
 
                 default:
@@ -104,7 +104,7 @@ namespace System.Formats.Cbor
                     return (ulong)x;
 
                 case CborAdditionalInfo.Additional8BitData:
-                    EnsureBuffer(buffer, 2);
+                    EnsureReadCapacity(buffer, 2);
                     result = buffer[1];
 
                     if (result < (int)CborAdditionalInfo.Additional8BitData)
@@ -116,7 +116,7 @@ namespace System.Formats.Cbor
                     return result;
 
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureBuffer(buffer, 3);
+                    EnsureReadCapacity(buffer, 3);
                     result = BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(1));
 
                     if (result <= byte.MaxValue)
@@ -128,7 +128,7 @@ namespace System.Formats.Cbor
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
-                    EnsureBuffer(buffer, 5);
+                    EnsureReadCapacity(buffer, 5);
                     result = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(1));
 
                     if (result <= ushort.MaxValue)
@@ -140,7 +140,7 @@ namespace System.Formats.Cbor
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
-                    EnsureBuffer(buffer, 9);
+                    EnsureReadCapacity(buffer, 9);
                     result = BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
 
                     if (result <= uint.MaxValue)

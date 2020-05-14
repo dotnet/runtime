@@ -25,9 +25,10 @@ namespace System.Formats.Cbor
             }
             else
             {
-                ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+                ReadOnlySpan<byte> buffer = GetRemainingBytes();
+                ulong arrayLength = ReadUnsignedInteger(buffer, header, out int additionalBytes);
 
-                if (arrayLength > (ulong)_buffer.Length)
+                if (arrayLength > (ulong)buffer.Length)
                 {
                     throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }

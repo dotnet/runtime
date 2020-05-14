@@ -33,9 +33,11 @@ namespace System.Formats.Cbor
             }
             else
             {
-                ulong mapSize = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+                ReadOnlySpan<byte> buffer = GetRemainingBytes();
 
-                if (mapSize > int.MaxValue || 2 * mapSize > (ulong)_buffer.Length)
+                ulong mapSize = ReadUnsignedInteger(buffer, header, out int additionalBytes);
+
+                if (mapSize > int.MaxValue || 2 * mapSize > (ulong)buffer.Length)
                 {
                     throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }
@@ -45,7 +47,7 @@ namespace System.Formats.Cbor
                 length = (int)mapSize;
             }
 
-            _currentKeyOffset = _bytesRead;
+            _currentKeyOffset = _offset;
             _currentItemIsKey = true;
             return length;
         }
@@ -80,7 +82,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentItemIsKey);
 
-            (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _bytesRead - _currentKeyOffset.Value);
+            (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _offset - _currentKeyOffset.Value);
 
             if (_isConformanceLevelCheckEnabled)
             {
@@ -101,7 +103,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && !_currentItemIsKey);
 
-            _currentKeyOffset = _bytesRead;
+            _currentKeyOffset = _offset;
             _currentItemIsKey = true;
         }
 
@@ -113,9 +115,9 @@ namespace System.Formats.Cbor
             {
                 (int Offset, int Length) previousKeyRange = _previousKeyRange.Value;
 
-                ReadOnlySpan<byte> originalBuffer = _originalBuffer.Span;
-                ReadOnlySpan<byte> previousKeyEncoding = originalBuffer.Slice(previousKeyRange.Offset, previousKeyRange.Length);
-                ReadOnlySpan<byte> currentKeyEncoding = originalBuffer.Slice(currentKeyRange.Offset, currentKeyRange.Length);
+                ReadOnlySpan<byte> buffer = _buffer.Span;
+                ReadOnlySpan<byte> previousKeyEncoding = buffer.Slice(previousKeyRange.Offset, previousKeyRange.Length);
+                ReadOnlySpan<byte> currentKeyEncoding = buffer.Slice(currentKeyRange.Offset, currentKeyRange.Length);
 
                 int cmp = CborConformanceLevelHelpers.CompareKeyEncodings(previousKeyEncoding, currentKeyEncoding, ConformanceLevel);
                 if (cmp > 0)
@@ -185,7 +187,7 @@ namespace System.Formats.Cbor
 
             private ReadOnlySpan<byte> GetKeyEncoding((int Offset, int Length) range)
             {
-                return _reader._originalBuffer.Span.Slice(range.Offset, range.Length);
+                return _reader._buffer.Span.Slice(range.Offset, range.Length);
             }
 
             public int GetHashCode((int Offset, int Length) value)

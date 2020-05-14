@@ -39,9 +39,8 @@ namespace System.Formats.Cbor
 
     public partial class CborReader
     {
-        private readonly ReadOnlyMemory<byte> _originalBuffer;
-        private ReadOnlyMemory<byte> _buffer;
-        private int _bytesRead = 0;
+        private readonly ReadOnlyMemory<byte> _buffer;
+        private int _offset = 0;
 
         private Stack<StackFrame>? _nestedDataItems;
         private CborMajorType? _currentMajorType = null; // major type of the currently written data item. Null iff at the root context
@@ -49,11 +48,11 @@ namespace System.Formats.Cbor
         private int _frameOffset = 0; // buffer offset particular to the current data item context
         private bool _isTagContext = false; // true if reader is expecting a tagged value
 
-        // Map-specific book keeping
-        private int? _currentKeyOffset = null;
-        private bool _currentItemIsKey = false;
-        private (int Offset, int Length)? _previousKeyRange;
-        private HashSet<(int Offset, int Length)>? _keyEncodingRanges;
+        // Map-specific book-keeping
+        private int? _currentKeyOffset = null; // offset for the current key encoding
+        private bool _currentItemIsKey = false; // tracking whether current data item is key or value
+        private (int Offset, int Length)? _previousKeyRange; // previous key encoding range
+        private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
 
         // flag used to temporarily disable conformance level checks,
         // e.g. during a skip operation over nonconforming encodings.
@@ -66,7 +65,6 @@ namespace System.Formats.Cbor
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
-            _originalBuffer = buffer;
             _buffer = buffer;
             ConformanceLevel = conformanceLevel;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
@@ -76,8 +74,8 @@ namespace System.Formats.Cbor
         public CborConformanceLevel ConformanceLevel { get; }
         public bool AllowMultipleRootLevelValues { get; }
         public int Depth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
-        public int BytesRead => _bytesRead;
-        public int BytesRemaining => _buffer.Length;
+        public int BytesRead => _offset;
+        public int BytesRemaining => _buffer.Length - _offset;
 
         public CborReaderState PeekState()
         {
@@ -108,11 +106,11 @@ namespace System.Formats.Cbor
                 else
                 {
                     // is at the end of the root value
-                    return _buffer.IsEmpty ? CborReaderState.Finished : CborReaderState.FinishedWithTrailingBytes;
+                    return _offset == _buffer.Length ? CborReaderState.Finished : CborReaderState.FinishedWithTrailingBytes;
                 }
             }
 
-            if (_buffer.IsEmpty)
+            if (_offset == _buffer.Length)
             {
                 if (_currentMajorType is null && _remainingDataItems is null)
                 {
@@ -123,7 +121,7 @@ namespace System.Formats.Cbor
                 return CborReaderState.EndOfData;
             }
 
-            var initialByte = new CborInitialByte(_buffer.Span[0]);
+            var initialByte = new CborInitialByte(_buffer.Span[_offset]);
 
             if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
             {
@@ -226,17 +224,18 @@ namespace System.Formats.Cbor
             }
         }
 
+        // TODO pass a `validateConformance` parameter
+        // TODO change return type to ReadOnSpan<byte>
         public ReadOnlyMemory<byte> ReadEncodedValue()
         {
-            // keep a snapshot of the initial buffer state
-            ReadOnlyMemory<byte> initialBuffer = _buffer;
-            int initialBytesRead = _bytesRead;
+            // keep a snapshot of the current offset
+            int initialOffset = _offset;
 
             // call skip to read and validate the next value
             SkipValue(validateConformance: true);
 
             // return the slice corresponding to the consumed value
-            return initialBuffer.Slice(0, _bytesRead - initialBytesRead);
+            return _buffer.Slice(initialOffset, _offset - initialOffset);
         }
 
         private CborInitialByte PeekInitialByte()
@@ -246,9 +245,9 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
             }
 
-            if (_buffer.IsEmpty)
+            if (_offset == _buffer.Length)
             {
-                if (_currentMajorType is null && _remainingDataItems is null && _bytesRead > 0)
+                if (_currentMajorType is null && _remainingDataItems is null && _offset > 0)
                 {
                     // we are at the end of a well-formed sequence of root-level CBOR values
                     throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
@@ -257,7 +256,7 @@ namespace System.Formats.Cbor
                 throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
 
-            var nextByte = new CborInitialByte(_buffer.Span[0]);
+            var nextByte = new CborInitialByte(_buffer.Span[_offset]);
 
             if (_currentMajorType != null)
             {
@@ -322,7 +321,7 @@ namespace System.Formats.Cbor
 
             _currentMajorType = majorType;
             _remainingDataItems = expectedNestedItems;
-            _frameOffset = _bytesRead;
+            _frameOffset = _offset;
             _isTagContext = false;
             _currentKeyOffset = null;
             _currentItemIsKey = false;
@@ -393,31 +392,35 @@ namespace System.Formats.Cbor
             _isTagContext = false;
         }
 
+        private ReadOnlySpan<byte> GetRemainingBytes() => _buffer.Span.Slice(_offset);
+
         private void AdvanceBuffer(int length)
         {
-            _buffer = _buffer.Slice(length);
-            _bytesRead += length;
+            Debug.Assert(_offset + length <= _buffer.Length);
+
+            _offset += length;
             // invalidate the state cache
             _cachedState = CborReaderState.Unknown;
         }
 
         private void ResetBuffer(int position)
         {
-            _buffer = _originalBuffer.Slice(position);
-            _bytesRead = position;
+            Debug.Assert(position <= _buffer.Length);
+
+            _offset = position;
             // invalidate the state cache
             _cachedState = CborReaderState.Unknown;
         }
 
-        private void EnsureBuffer(int length)
+        private void EnsureReadCapacity(int length)
         {
-            if (_buffer.Length < length)
+            if (_buffer.Length - _offset < length)
             {
                 throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
         }
 
-        private static void EnsureBuffer(ReadOnlySpan<byte> buffer, int requiredLength)
+        private static void EnsureReadCapacity(ReadOnlySpan<byte> buffer, int requiredLength)
         {
             if (buffer.Length < requiredLength)
             {
@@ -462,7 +465,7 @@ namespace System.Formats.Cbor
         private readonly struct Checkpoint
         {
             public Checkpoint(
-                int bytesRead,
+                int offset,
                 int stackDepth,
                 int frameOffset,
                 int? remainingDataItems,
@@ -471,7 +474,7 @@ namespace System.Formats.Cbor
                 (int Offset, int Length)? previousKeyRange,
                 HashSet<(int Offset, int Length)>? previousKeyRanges)
             {
-                BytesRead = bytesRead;
+                Offset = offset;
                 StackDepth = stackDepth;
                 FrameOffset = frameOffset;
                 RemainingDataItems = remainingDataItems;
@@ -482,7 +485,7 @@ namespace System.Formats.Cbor
                 PreviousKeyRanges = previousKeyRanges;
             }
 
-            public int BytesRead { get; }
+            public int Offset { get; }
             public int StackDepth { get; }
             public int FrameOffset { get; }
             public int? RemainingDataItems { get; }
@@ -496,7 +499,7 @@ namespace System.Formats.Cbor
         private Checkpoint CreateCheckpoint()
         {
             return new Checkpoint(
-                bytesRead: _bytesRead,
+                offset: _offset,
                 stackDepth: Depth,
                 frameOffset: _frameOffset,
                 remainingDataItems: _remainingDataItems,
@@ -526,8 +529,7 @@ namespace System.Formats.Cbor
                 }
             }
 
-            _buffer = _originalBuffer.Slice(checkpoint.BytesRead);
-            _bytesRead = checkpoint.BytesRead;
+            _offset = checkpoint.Offset;
             _frameOffset = checkpoint.FrameOffset;
             _remainingDataItems = checkpoint.RemainingDataItems;
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
