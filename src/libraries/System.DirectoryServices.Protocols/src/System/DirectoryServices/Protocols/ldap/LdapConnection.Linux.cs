@@ -44,8 +44,7 @@ namespace System.DirectoryServices.Protocols
             Marshal.StructureToPtr(defaults, ptrToDefaults, false);
             try
             {
-                int error = Interop.ldap_sasl_interactive_bind(_ldapHandle, null, Interop.KerberosDefaultMechanism, IntPtr.Zero, IntPtr.Zero, Interop.LDAP_SASL_QUIET, LdapPal.SaslInteractionProcedure, ptrToDefaults);
-                return error;
+                return Interop.ldap_sasl_interactive_bind(_ldapHandle, null, Interop.KerberosDefaultMechanism, IntPtr.Zero, IntPtr.Zero, Interop.LDAP_SASL_QUIET, LdapPal.SaslInteractionProcedure, ptrToDefaults);
             }
             finally
             {
