@@ -16268,7 +16268,7 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* src, CORINFO
 
 GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
 {
-    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for small struct return."));
+    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for small struct return"));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
     return ret;
@@ -16288,7 +16288,7 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
 
 GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
 {
-    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
+    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
 
