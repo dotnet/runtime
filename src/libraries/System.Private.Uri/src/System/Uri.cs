@@ -144,6 +144,7 @@ namespace System
             public string? Host;
             public string? ScopeId;        //only IP v6 may need this
             public string? String;
+            public string? PathAndQuery;
             public Offset Offset;
 
             /// <summary>
@@ -182,7 +183,6 @@ namespace System
         {
             public string? Path;
             public string? Query;
-            public string? PathAndQuery;
             public string? Fragment;
             public string? AbsoluteUri;
             public string? RemoteUrl;
@@ -844,7 +844,7 @@ namespace System
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                MoreInfo info = EnsureUriInfo().MoreInfo;
+                UriInfo info = EnsureUriInfo();
 
                 if (info.PathAndQuery is null)
                 {
