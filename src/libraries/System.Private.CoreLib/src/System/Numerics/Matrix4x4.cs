@@ -1486,6 +1486,8 @@ namespace System.Numerics
                 result.M42 = row4.GetElement<float>(1);
                 result.M43 = row4.GetElement<float>(2);
                 result.M44 = row4.GetElement<float>(3);
+
+                return true;
             }
 
             //                                       -1
