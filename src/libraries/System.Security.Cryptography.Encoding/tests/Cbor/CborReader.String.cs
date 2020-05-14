@@ -30,10 +30,11 @@ namespace System.Formats.Cbor
                 return ReadChunkedByteStringConcatenated();
             }
 
-            int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + length);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int length = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            EnsureReadCapacity(1 + additionalBytes + length);
             byte[] result = new byte[length];
-            _buffer.Slice(1 + additionalBytes, length).CopyTo(result);
+            buffer.Slice(1 + additionalBytes, length).CopyTo(result);
             AdvanceBuffer(1 + additionalBytes + length);
             AdvanceDataItemCounters();
             return result;
@@ -53,8 +54,9 @@ namespace System.Formats.Cbor
                 return TryReadChunkedByteStringConcatenated(destination, out bytesWritten);
             }
 
-            int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + length);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int length = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            EnsureReadCapacity(1 + additionalBytes + length);
 
             if (length > destination.Length)
             {
@@ -62,7 +64,7 @@ namespace System.Formats.Cbor
                 return false;
             }
 
-            _buffer.Span.Slice(1 + additionalBytes, length).CopyTo(destination);
+            buffer.Slice(1 + additionalBytes, length).CopyTo(destination);
             AdvanceBuffer(1 + additionalBytes + length);
             AdvanceDataItemCounters();
 
@@ -85,9 +87,10 @@ namespace System.Formats.Cbor
                 return ReadChunkedTextStringConcatenated();
             }
 
-            int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + length);
-            ReadOnlySpan<byte> encodedString = _buffer.Span.Slice(1 + additionalBytes, length);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int length = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            EnsureReadCapacity(1 + additionalBytes + length);
+            ReadOnlySpan<byte> encodedString = buffer.Slice(1 + additionalBytes, length);
             Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
 
             string result;
@@ -119,11 +122,12 @@ namespace System.Formats.Cbor
                 return TryReadChunkedTextStringConcatenated(destination, out charsWritten);
             }
 
-            int byteLength = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + byteLength);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            EnsureReadCapacity(1 + additionalBytes + byteLength);
 
             Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
-            ReadOnlySpan<byte> encodedSlice = _buffer.Span.Slice(1 + additionalBytes, byteLength);
+            ReadOnlySpan<byte> encodedSlice = buffer.Slice(1 + additionalBytes, byteLength);
 
             int charLength = ValidateUtf8AndGetCharCount(encodedSlice, utf8Encoding);
 
@@ -202,7 +206,7 @@ namespace System.Formats.Cbor
                 return false;
             }
 
-            ReadOnlySpan<byte> source = _buffer.Span;
+            ReadOnlySpan<byte> source = GetRemainingBytes();
 
             foreach ((int o, int l) in ranges)
             {
@@ -220,7 +224,7 @@ namespace System.Formats.Cbor
         private bool TryReadChunkedTextStringConcatenated(Span<char> destination, out int charsWritten)
         {
             List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int _);
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
             Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
 
             int concatenatedStringSize = 0;
@@ -253,7 +257,7 @@ namespace System.Formats.Cbor
             List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
             var output = new byte[concatenatedBufferSize];
 
-            ReadOnlySpan<byte> source = _buffer.Span;
+            ReadOnlySpan<byte> source = GetRemainingBytes();
             Span<byte> target = output;
 
             foreach ((int o, int l) in ranges)
@@ -273,7 +277,7 @@ namespace System.Formats.Cbor
         {
             List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
             Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
             int concatenatedStringSize = 0;
 
             foreach ((int o, int l) in ranges)
@@ -281,7 +285,7 @@ namespace System.Formats.Cbor
                 concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l), utf8Encoding);
             }
 
-            string output = string.Create(concatenatedStringSize, (ranges, _buffer, utf8Encoding), BuildString);
+            string output = string.Create(concatenatedStringSize, (ranges, _buffer.Slice(_offset), utf8Encoding), BuildString);
 
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
@@ -307,7 +311,7 @@ namespace System.Formats.Cbor
         private List<(int Offset, int Length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
             List<(int Offset, int Length)> ranges = AcquireIndefiniteLengthStringRangeList();
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
             concatenatedBufferSize = 0;
 
             int i = 1; // skip the indefinite-length initial byte
@@ -331,7 +335,7 @@ namespace System.Formats.Cbor
 
             static CborInitialByte ReadNextInitialByte(ReadOnlySpan<byte> buffer, CborMajorType expectedType)
             {
-                EnsureBuffer(buffer, 1);
+                EnsureReadCapacity(buffer, 1);
                 var header = new CborInitialByte(buffer[0]);
 
                 if (header.InitialByte != CborInitialByte.IndefiniteLengthBreakByte && header.MajorType != expectedType)
@@ -350,9 +354,9 @@ namespace System.Formats.Cbor
 
             CborInitialByte header = PeekInitialByte(expectedType: type);
 
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
             int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + byteLength);
+            EnsureReadCapacity(1 + additionalBytes + byteLength);
 
             // if conformance level requires it, validate the utf-8 encoding that is being skipped
             if (type == CborMajorType.TextString && _isConformanceLevelCheckEnabled &&

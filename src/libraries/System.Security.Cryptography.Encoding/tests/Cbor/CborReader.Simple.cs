@@ -11,20 +11,20 @@ namespace System.Formats.Cbor
         public float ReadSingle()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
             float result;
 
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureBuffer(buffer, 3);
+                    EnsureReadCapacity(buffer, 3);
                     result = (float)ReadHalfBigEndian(buffer.Slice(1));
                     AdvanceBuffer(3);
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
-                    EnsureBuffer(buffer, 5);
+                    EnsureReadCapacity(buffer, 5);
                     result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(5);
                     AdvanceDataItemCounters();
@@ -42,27 +42,27 @@ namespace System.Formats.Cbor
         public double ReadDouble()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
             double result;
 
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureBuffer(buffer, 3);
+                    EnsureReadCapacity(buffer, 3);
                     result = ReadHalfBigEndian(buffer.Slice(1));
                     AdvanceBuffer(3);
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
-                    EnsureBuffer(buffer, 5);
+                    EnsureReadCapacity(buffer, 5);
                     result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(5);
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
-                    EnsureBuffer(buffer, 9);
+                    EnsureReadCapacity(buffer, 9);
                     result = BinaryPrimitives.ReadDoubleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(9);
                     AdvanceDataItemCounters();
@@ -115,8 +115,8 @@ namespace System.Formats.Cbor
                     AdvanceDataItemCounters();
                     return (CborSimpleValue)header.AdditionalInfo;
                 case CborAdditionalInfo.Additional8BitData:
-                    EnsureBuffer(2);
-                    byte value = _buffer.Span[1];
+                    EnsureReadCapacity(2);
+                    byte value = _buffer.Span[_offset + 1];
 
                     if (value < 32)
                     {

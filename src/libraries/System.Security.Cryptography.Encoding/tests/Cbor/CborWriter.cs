@@ -24,14 +24,12 @@ namespace System.Formats.Cbor
         private int _frameOffset = 0; // buffer offset particular to the current data item context
         private bool _isTagContext = false; // true if writer is expecting a tagged value
 
-        // Map-specific conformance book-keeping
-        private int? _currentKeyOffset = null;
-        private int? _currentValueOffset = null;
-        // State required for sorting map keys
-        private bool _keysRequireSorting = false;
-        private List<KeyValueEncodingRange>? _keyValueEncodingRanges = null;
-        // State required for checking key uniqueness
-        private HashSet<(int Offset, int Length)>? _keyEncodingRanges = null;
+        // Map-specific book-keeping
+        private int? _currentKeyOffset = null; // offset for the current key encoding
+        private int? _currentValueOffset = null; // offset for the current value encoding
+        private bool _keysRequireSorting = false; // tracks whether key/value pair encodings need to be sorted
+        private List<KeyValuePairEncodingRange>? _keyValuePairEncodingRanges = null; // all key/value pair encoding ranges
+        private HashSet<(int Offset, int Length)>? _keyEncodingRanges = null; // all key encoding ranges up to encoding equality
 
         public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool encodeIndefiniteLengths = false, bool allowMultipleRootLevelValues = false)
         {
@@ -73,7 +71,7 @@ namespace System.Formats.Cbor
                 _currentKeyOffset = null;
                 _currentValueOffset = null;
                 _keysRequireSorting = false;
-                _keyValueEncodingRanges?.Clear();
+                _keyValuePairEncodingRanges?.Clear();
                 _keyEncodingRanges?.Clear();
             }
         }
@@ -175,7 +173,7 @@ namespace System.Formats.Cbor
                 currentKeyOffset: _currentKeyOffset,
                 currentValueOffset: _currentValueOffset,
                 keysRequireSorting: _keysRequireSorting,
-                keyValueEncodingRanges: _keyValueEncodingRanges,
+                keyValuePairEncodingRanges: _keyValuePairEncodingRanges,
                 keyEncodingRanges: _keyEncodingRanges
             );
 
@@ -189,7 +187,7 @@ namespace System.Formats.Cbor
             _currentValueOffset = null;
             _keysRequireSorting = false;
             _keyEncodingRanges = null;
-            _keyValueEncodingRanges = null;
+            _keyValuePairEncodingRanges = null;
         }
 
         private void PopDataItem(CborMajorType expectedType)
@@ -235,7 +233,7 @@ namespace System.Formats.Cbor
             _currentKeyOffset = frame.CurrentKeyOffset;
             _currentValueOffset = frame.CurrentValueOffset;
             _keysRequireSorting = frame.KeysRequireSorting;
-            _keyValueEncodingRanges = frame.KeyValueEncodingRanges;
+            _keyValuePairEncodingRanges = frame.KeyValuePairEncodingRanges;
             _keyEncodingRanges = frame.KeyEncodingRanges;
         }
 
@@ -327,7 +325,7 @@ namespace System.Formats.Cbor
                 int? currentKeyOffset,
                 int? currentValueOffset,
                 bool keysRequireSorting,
-                List<KeyValueEncodingRange>? keyValueEncodingRanges,
+                List<KeyValuePairEncodingRange>? keyValuePairEncodingRanges,
                 HashSet<(int Offset, int Length)>? keyEncodingRanges)
             {
                 MajorType = type;
@@ -337,7 +335,7 @@ namespace System.Formats.Cbor
                 CurrentKeyOffset = currentKeyOffset;
                 CurrentValueOffset = currentValueOffset;
                 KeysRequireSorting = keysRequireSorting;
-                KeyValueEncodingRanges = keyValueEncodingRanges;
+                KeyValuePairEncodingRanges = keyValuePairEncodingRanges;
                 KeyEncodingRanges = keyEncodingRanges;
             }
 
@@ -349,7 +347,7 @@ namespace System.Formats.Cbor
             public int? CurrentKeyOffset { get; }
             public int? CurrentValueOffset { get; }
             public bool KeysRequireSorting { get; }
-            public List<KeyValueEncodingRange>? KeyValueEncodingRanges { get; }
+            public List<KeyValuePairEncodingRange>? KeyValuePairEncodingRanges { get; }
             public HashSet<(int Offset, int Length)>? KeyEncodingRanges { get; }
         }
     }

@@ -12,7 +12,7 @@ namespace System.Formats.Cbor
     {
         private KeyEncodingComparer? _keyEncodingComparer;
         private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;
-        private Stack<List<KeyValueEncodingRange>>? _pooledKeyValueEncodingRangeLists;
+        private Stack<List<KeyValuePairEncodingRange>>? _pooledKeyValuePairEncodingRangeLists;
 
         public void WriteStartMap(int definiteLength)
         {
@@ -79,9 +79,9 @@ namespace System.Formats.Cbor
 
             if (CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
             {
-                List<KeyValueEncodingRange> keyValueRanges = GetKeyValueEncodingRanges();
+                List<KeyValuePairEncodingRange> keyValuePairEncodingRanges = GetKeyValueEncodingRanges();
 
-                var currentKeyValueRange = new KeyValueEncodingRange(
+                var currentKeyValueRange = new KeyValuePairEncodingRange(
                     offset: _currentKeyOffset.Value,
                     keyLength: _currentValueOffset.Value - _currentKeyOffset.Value,
                     totalLength: _offset - _currentKeyOffset.Value);
@@ -89,14 +89,14 @@ namespace System.Formats.Cbor
                 // Check that the keys are written in sorted order.
                 // Once invalidated, declare that the map requires sorting,
                 // which will prompt a sorting of the encodings once map writes have completed.
-                if (!_keysRequireSorting && keyValueRanges.Count > 0)
+                if (!_keysRequireSorting && keyValuePairEncodingRanges.Count > 0)
                 {
                     KeyEncodingComparer comparer = GetKeyEncodingComparer();
-                    KeyValueEncodingRange previousKeyValueRange = keyValueRanges[keyValueRanges.Count - 1];
+                    KeyValuePairEncodingRange previousKeyValueRange = keyValuePairEncodingRanges[keyValuePairEncodingRanges.Count - 1];
                     _keysRequireSorting = comparer.Compare(previousKeyValueRange, currentKeyValueRange) > 0;
                 }
 
-                keyValueRanges.Add(currentKeyValueRange);
+                keyValuePairEncodingRanges.Add(currentKeyValueRange);
             }
 
             // update offset state to the next key
@@ -108,10 +108,10 @@ namespace System.Formats.Cbor
         {
             if (_keysRequireSorting)
             {
-                Debug.Assert(_keyValueEncodingRanges != null);
+                Debug.Assert(_keyValuePairEncodingRanges != null);
 
                 // sort the key/value ranges in-place
-                _keyValueEncodingRanges.Sort(GetKeyEncodingComparer());
+                _keyValuePairEncodingRanges.Sort(GetKeyEncodingComparer());
 
                 // copy sorted ranges to temporary buffer
                 int totalMapPayloadEncodingLength = _offset - _frameOffset;
@@ -121,11 +121,11 @@ namespace System.Formats.Cbor
                 Span<byte> tmpSpan = tempBuffer.AsSpan(0, totalMapPayloadEncodingLength);
 
                 Span<byte> s = tmpSpan;
-                foreach (KeyValueEncodingRange range in _keyValueEncodingRanges)
+                foreach (KeyValuePairEncodingRange range in _keyValuePairEncodingRanges)
                 {
-                    ReadOnlySpan<byte> keyValueEncoding = source.Slice(range.Offset, range.TotalLength);
-                    keyValueEncoding.CopyTo(s);
-                    s = s.Slice(keyValueEncoding.Length);
+                    ReadOnlySpan<byte> keyValuePairEncoding = source.Slice(range.Offset, range.TotalLength);
+                    keyValuePairEncoding.CopyTo(s);
+                    s = s.Slice(keyValuePairEncoding.Length);
                 }
                 Debug.Assert(s.IsEmpty);
 
@@ -135,7 +135,7 @@ namespace System.Formats.Cbor
             }
 
             ReturnKeyEncodingRangeAllocation();
-            ReturnKeyValueEncodingRangeAllocation();
+            ReturnKeyValuePairEncodingRangeAllocation();
         }
 
         // Gets or initializes a hashset containing all key encoding ranges for the current CBOR map context
@@ -169,30 +169,30 @@ namespace System.Formats.Cbor
             }
         }
 
-        private List<KeyValueEncodingRange> GetKeyValueEncodingRanges()
+        private List<KeyValuePairEncodingRange> GetKeyValueEncodingRanges()
         {
-            if (_keyValueEncodingRanges != null)
+            if (_keyValuePairEncodingRanges != null)
             {
-                return _keyValueEncodingRanges;
+                return _keyValuePairEncodingRanges;
             }
 
-            if (_pooledKeyValueEncodingRangeLists != null &&
-                _pooledKeyValueEncodingRangeLists.TryPop(out List<KeyValueEncodingRange>? result))
+            if (_pooledKeyValuePairEncodingRangeLists != null &&
+                _pooledKeyValuePairEncodingRangeLists.TryPop(out List<KeyValuePairEncodingRange>? result))
             {
                 result.Clear();
-                return _keyValueEncodingRanges = result;
+                return _keyValuePairEncodingRanges = result;
             }
 
-            return _keyValueEncodingRanges = new List<KeyValueEncodingRange>();
+            return _keyValuePairEncodingRanges = new List<KeyValuePairEncodingRange>();
         }
 
-        private void ReturnKeyValueEncodingRangeAllocation()
+        private void ReturnKeyValuePairEncodingRangeAllocation()
         {
-            if (_keyValueEncodingRanges != null)
+            if (_keyValuePairEncodingRanges != null)
             {
-                _pooledKeyValueEncodingRangeLists ??= new Stack<List<KeyValueEncodingRange>>();
-                _pooledKeyValueEncodingRangeLists.Push(_keyValueEncodingRanges);
-                _keyValueEncodingRanges = null;
+                _pooledKeyValuePairEncodingRangeLists ??= new Stack<List<KeyValuePairEncodingRange>>();
+                _pooledKeyValuePairEncodingRangeLists.Push(_keyValuePairEncodingRanges);
+                _keyValuePairEncodingRanges = null;
             }
         }
 
@@ -201,9 +201,9 @@ namespace System.Formats.Cbor
             return _keyEncodingComparer ??= new KeyEncodingComparer(this);
         }
 
-        private readonly struct KeyValueEncodingRange
+        private readonly struct KeyValuePairEncodingRange
         {
-            public KeyValueEncodingRange(int offset, int keyLength, int totalLength)
+            public KeyValuePairEncodingRange(int offset, int keyLength, int totalLength)
             {
                 Offset = offset;
                 KeyLength = keyLength;
@@ -216,7 +216,7 @@ namespace System.Formats.Cbor
         }
 
         // Defines order and equality semantics for a key/value encoding range pair up to key encoding
-        private class KeyEncodingComparer : IComparer<KeyValueEncodingRange>,
+        private class KeyEncodingComparer : IComparer<KeyValuePairEncodingRange>,
                                             IEqualityComparer<(int Offset, int Length)>
         {
             private readonly CborWriter _writer;
@@ -231,7 +231,7 @@ namespace System.Formats.Cbor
                 return _writer._buffer.AsSpan(range.Offset, range.Length);
             }
 
-            private Span<byte> GetKeyEncoding(in KeyValueEncodingRange range)
+            private Span<byte> GetKeyEncoding(in KeyValuePairEncodingRange range)
             {
                 return _writer._buffer.AsSpan(range.Offset, range.KeyLength);
             }
@@ -246,7 +246,7 @@ namespace System.Formats.Cbor
                 return CborConformanceLevelHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
             }
 
-            public int Compare(KeyValueEncodingRange x, KeyValueEncodingRange y)
+            public int Compare(KeyValuePairEncodingRange x, KeyValuePairEncodingRange y)
             {
                 return CborConformanceLevelHelpers.CompareKeyEncodings(GetKeyEncoding(in x), GetKeyEncoding(in y), _writer.ConformanceLevel);
             }
