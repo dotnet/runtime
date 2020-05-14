@@ -604,11 +604,11 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
-            assert(id->idOpSize() == EA_8BYTE);
             assert(insOptsNone(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
-            assert(isValidImmShift(emitGetInsSC(id), EA_8BYTE));
+            elemsize = id->idOpSize();
+            assert(isValidImmShift(emitGetInsSC(id), elemsize));
             break;
 
         case IF_DV_2O: // DV_2O   .Q.......iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - vector)
@@ -10749,9 +10749,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
-            imm  = emitGetInsSC(id);
-            code = emitInsCode(ins, fmt);
-            code |= insEncodeVectorShift(EA_8BYTE, imm); // iiiiiii
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            code     = emitInsCode(ins, fmt);
+            code |= insEncodeVectorShift(elemsize, imm); // iiiiiii
             code |= insEncodeReg_Vd(id->idReg1());       // ddddd
             code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
             dst += emitOutput_Instr(dst, code);
