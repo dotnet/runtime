@@ -4861,17 +4861,17 @@ void emitter::emitIns_R_R_I(
             fmt = IF_DI_2B;
             break;
 
-        case INS_sshr:
-        case INS_ssra:
+        case INS_shl:
+        case INS_sli:
+        case INS_sri:
         case INS_srshr:
         case INS_srsra:
-        case INS_shl:
-        case INS_ushr:
-        case INS_usra:
+        case INS_sshr:
+        case INS_ssra:
         case INS_urshr:
         case INS_ursra:
-        case INS_sri:
-        case INS_sli:
+        case INS_ushr:
+        case INS_usra:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             if (insOptsAnyArrangement(opt))
@@ -4896,13 +4896,67 @@ void emitter::emitIns_R_R_I(
             }
             break;
 
+        case INS_sqshl:
+        case INS_uqshl:
+        case INS_sqshlu:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidArrangement(size, opt));
+                assert(opt != INS_OPTS_1D); // The encoding immh = 1xxx, Q = 0 is reserved
+                elemsize = optGetElemsize(opt);
+                assert(isValidImmShift(imm, elemsize));
+                fmt = IF_DV_2O;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert(isValidVectorElemsize(size));
+                assert(isValidImmShift(imm, size));
+                fmt = IF_DV_2N;
+            }
+            break;
+
+        case INS_sqrshrn:
+        case INS_sqrshrun:
+        case INS_sqshrn:
+        case INS_sqshrun:
+        case INS_uqrshrn:
+        case INS_uqshrn:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidArrangement(size, opt));
+                assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding immh = 1xxx, Q = x is reserved
+                elemsize = optGetElemsize(opt);
+                assert(isValidImmShift(imm, elemsize));
+                fmt = IF_DV_2O;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert(isValidVectorElemsize(size));
+                assert(size != EA_8BYTE); // The encoding immh = 1xxx is reserved
+                assert(isValidImmShift(imm, size));
+                fmt = IF_DV_2N;
+            }
+            break;
+
         case INS_sxtl:
         case INS_uxtl:
             assert(imm == 0);
             __fallthrough;
 
-        case INS_shrn:
         case INS_rshrn:
+        case INS_shrn:
         case INS_sshll:
         case INS_ushll:
             assert(isVectorRegister(reg1));
@@ -4922,17 +4976,24 @@ void emitter::emitIns_R_R_I(
             assert(imm == 0);
             __fallthrough;
 
-        case INS_shrn2:
         case INS_rshrn2:
+        case INS_shrn2:
+        case INS_sqrshrn2:
+        case INS_sqrshrun2:
+        case INS_sqshrn2:
+        case INS_sqshrun2:
         case INS_sshll2:
+        case INS_uqrshrn2:
+        case INS_uqshrn2:
         case INS_ushll2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+
             // Vector operation
             assert(size == EA_16BYTE);
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(elemsize != EA_8BYTE); // Reserved encodings
+            assert(elemsize != EA_8BYTE); // The encoding immh = 1xxx, Q = x is reserved
             assert(isValidVectorElemsize(elemsize));
             assert(isValidImmShift(imm, elemsize));
             fmt = IF_DV_2O;
@@ -5582,6 +5643,10 @@ void emitter::emitIns_R_R_R(
         case INS_cmhi:
         case INS_cmhs:
         case INS_cmtst:
+        case INS_srshl:
+        case INS_sshl:
+        case INS_urshl:
+        case INS_ushl:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5603,8 +5668,12 @@ void emitter::emitIns_R_R_R(
             break;
 
         case INS_sqadd:
+        case INS_sqrshl:
+        case INS_sqshl:
         case INS_sqsub:
         case INS_uqadd:
+        case INS_uqrshl:
+        case INS_uqshl:
         case INS_uqsub:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -14309,6 +14378,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_shadd:
                 case INS_shsub:
                 case INS_srhadd:
+                case INS_srshl:
+                case INS_sshl:
                 case INS_smax:
                 case INS_smaxp:
                 case INS_smin:
@@ -14320,6 +14391,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_uhadd:
                 case INS_uhsub:
                 case INS_urhadd:
+                case INS_urshl:
+                case INS_ushl:
                 case INS_uzp1:
                 case INS_uzp2:
                 case INS_zip1:
@@ -14358,6 +14431,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_mul:
                 case INS_mla:
                 case INS_mls:
+                case INS_sqshl:
+                case INS_sqrshl:
+                case INS_uqrshl:
+                case INS_uqshl:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
@@ -14487,9 +14564,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
                 case INS_rshrn:
                 case INS_rshrn2:
-                case INS_ssra:
                 case INS_srshr:
+                case INS_sqshrn:
+                case INS_sqshrn2:
+                case INS_ssra:
                 case INS_urshr:
+                case INS_uqshrn:
+                case INS_uqshrn2:
                 case INS_usra:
                     if (id->idOpSize() == EA_16BYTE)
                     {
