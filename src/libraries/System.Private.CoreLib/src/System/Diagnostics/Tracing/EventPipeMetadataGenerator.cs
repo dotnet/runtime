@@ -9,6 +9,12 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
     internal sealed class EventPipeMetadataGenerator
     {
+        private enum MetadataTag
+        {
+            Opcode = 1,
+            ParameterPayload = 2
+        }
+
         public static EventPipeMetadataGenerator Instance = new EventPipeMetadataGenerator();
 
         private EventPipeMetadataGenerator() { }
@@ -66,46 +72,9 @@ namespace System.Diagnostics.Tracing
             uint version,
             EventOpcode opcode,
             EventParameterInfo[] parameters)
-
-        {
-            byte[]? metadataV1 = GenerateMetadata(eventId, eventName, keywords, level, version, parameters,
-                out bool hasUnsupportedParamTypes);
-            byte[]? metadataV2 = null;
-            if (hasUnsupportedParamTypes || opcode != EventOpcode.Info)
-            {
-                if (metadataV1 == null)
-                {
-                    // We bailed on metadata generation so we can't trust anything
-                    return null;
-                }
-
-                metadataV2 = GenerateMetadataV2(eventId, eventName, keywords, level, version, opcode, parameters);
-                if (metadataV2 != null)
-                {
-                    // TODO: I would like this to not allocate 2x what it needs to
-                    // Append the new metadata to the end of the original metadata.
-                    byte[] temp = new byte[metadataV1.Length + metadataV2.Length];
-                    Array.Copy(metadataV1, 0, temp, 0, metadataV1.Length);
-                    Array.Copy(metadataV2, 0, temp, metadataV1.Length, metadataV2.Length);
-
-                    metadataV1 = temp;
-                }
-            }
-
-            return metadataV1;
-        }
-
-        private unsafe byte[]? GenerateMetadata(
-            int eventId,
-            string eventName,
-            long keywords,
-            uint level,
-            uint version,
-            EventParameterInfo[] parameters,
-            out bool hasUnsupportedParameterTypes)
         {
             byte[]? metadata = null;
-            hasUnsupportedParameterTypes = false;
+            bool hasV2ParameterTypes = false;
             try
             {
                 // eventID          : 4 bytes
@@ -114,8 +83,9 @@ namespace System.Diagnostics.Tracing
                 // eventVersion     : 4 bytes
                 // level            : 4 bytes
                 // parameterCount   : 4 bytes
-                uint metadataLength = 24 + ((uint)eventName.Length + 1) * 2;
-                uint defaultMetadataLength = metadataLength;
+                uint v1MetadataLength = 24 + ((uint)eventName.Length + 1) * 2;
+                uint v2MetadataLength = 0;
+                uint defaultV1MetadataLength = v1MetadataLength;
 
                 // Check for an empty payload.
                 // Write<T> calls with no arguments by convention have a parameter of
@@ -128,146 +98,115 @@ namespace System.Diagnostics.Tracing
                 // Increase the metadataLength for parameters.
                 foreach (EventParameterInfo parameter in parameters)
                 {
-                    int pMetadataLength = parameter.GetMetadataLength();
-                    // The call above may return -1 which means we failed to get the metadata length.
-                    // We then return a default metadata blob (with parameterCount of 0) to prevent it from generating malformed metadata.
-                    if (pMetadataLength < 0)
+                    uint pMetadataLength;
+                    if (!parameter.GetMetadataLength(out pMetadataLength))
                     {
-                        hasUnsupportedParameterTypes = true;
-                        parameters = Array.Empty<EventParameterInfo>();
-                        metadataLength = defaultMetadataLength;
+                        // The call above may return false which means it is an unsupported type for V1.
+                        // If that is the case we use the v2 blob for metadata instead
+                        hasV2ParameterTypes = true;
                         break;
                     }
-                    metadataLength += (uint)pMetadataLength;
+
+                    v1MetadataLength += (uint)pMetadataLength;
                 }
 
-                metadata = new byte[metadataLength];
 
-                // Write metadata: eventID, eventName, keywords, eventVersion, level, parameterCount, param1 type, param1 name...
-                fixed (byte* pMetadata = metadata)
+                if (hasV2ParameterTypes)
                 {
-                    uint offset = 0;
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)eventId);
-                    fixed (char* pEventName = eventName)
-                    {
-                        WriteToBuffer(pMetadata, metadataLength, ref offset, (byte*)pEventName, ((uint)eventName.Length + 1) * 2);
-                    }
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, keywords);
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, version);
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, level);
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)parameters.Length);
+                    v1MetadataLength = defaultV1MetadataLength;
+
+                    // V2 length is the parameter count (4 bytes) plus the size of the params
+                    v2MetadataLength = 4;
                     foreach (EventParameterInfo parameter in parameters)
                     {
-                        if (!parameter.GenerateMetadata(pMetadata, ref offset, metadataLength))
-                        {                            hasUnsupportedParameterTypes = true;
-                            return GenerateMetadata(eventId, eventName, keywords, level, version, Array.Empty<EventParameterInfo>(), out bool unused);
+                        uint pMetadataLength;
+                        if (!parameter.GetMetadataLengthV2(out pMetadataLength))
+                        {
+                            // Give up if we can't parse the metadata
+                            return null;
                         }
+
+                        v2MetadataLength += (uint)pMetadataLength;
                     }
-                    Debug.Assert(metadataLength == offset);
-                }
-            }
-            catch
-            {
-                // If a failure occurs during metadata generation, make sure that we don't return
-                // malformed metadata.  Instead, return a null metadata blob.
-                // Consumers can either build in knowledge of the event or skip it entirely.
-                metadata = null;
-            }
-
-            return metadata;
-        }
-
-        private unsafe byte[]? GenerateMetadataV2(
-            int eventId,
-            string eventName,
-            long keywords,
-            uint level,
-            uint version,
-            EventOpcode opcode,
-            EventParameterInfo[] parameters)
-        {
-            byte[]? metadata = null;
-            try
-            {
-                // header area
-                // metadataHeaderLength  : 4 bytes
-                // eventID               : 4 bytes
-                // eventName             : (eventName.Length + 1) * 2 bytes
-                // keywords              : 8 bytes
-                // eventVersion          : 4 bytes
-                // level                 : 4 bytes
-                // opcode                : 4 bytes
-                uint metadataLength = 28 + ((uint)eventName.Length + 1) * 2;
-                uint metadataHeaderLength = metadataLength;
-
-                // "V2" identifier       : 6 bytes
-                metadataLength += 6;
-
-                // parameter area
-                // parameterCount        : 4 bytes
-                // parameters            : N bytes
-                metadataLength += 4;
-
-                // Check for an empty payload.
-                // Write<T> calls with no arguments by convention have a parameter of
-                // type NullTypeInfo which is serialized as nothing.
-                if ((parameters.Length == 1) && (parameters[0].ParameterType == typeof(EmptyStruct)))
-                {
-                    parameters = Array.Empty<EventParameterInfo>();
                 }
 
-                // Increase the metadataLength for parameters.
-                foreach (var parameter in parameters)
-                {
-                    if (!parameter.GetMetadataLengthV2(out uint pMetadataLength))
-                    {
-                        return null;
-                    }
-
-                    metadataLength += pMetadataLength;
-                }
-
-                metadata = new byte[metadataLength];
+                // Optional opcode length needs 1 byte for the opcode + 5 bytes for the tag (4 bytes size, 1 byte kind)
+                uint opcodeMetadataLength = opcode == EventOpcode.Info ? 0u : 6u;
+                // Optional V2 metadata needs the size of the params + 5 bytes for the tag (4 bytes size, 1 byte kind)
+                uint totalV2MetadataLength = v2MetadataLength == 0 ? 0 : v2MetadataLength + 5;
+                uint totalMetadataLength = v1MetadataLength + opcodeMetadataLength + totalV2MetadataLength;
+                metadata = new byte[totalMetadataLength];
 
                 // Write metadata: metadataHeaderLength, eventID, eventName, keywords, eventVersion, level,
-                //                 parameterCount, param1...
+                //                 parameterCount, param1..., optional extended metadata
                 fixed (byte* pMetadata = metadata)
                 {
                     uint offset = 0;
-                    // Write the special code "V2" in to the stream to indicate that we are
-                    // adding V2 metadata
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, 'V');
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, '2');
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, '\0');
 
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, metadataHeaderLength);
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)eventId);
+                    WriteToBuffer(pMetadata, totalMetadataLength, ref offset, (uint)eventId);
                     fixed (char* pEventName = eventName)
                     {
-                        WriteToBuffer(pMetadata, metadataLength, ref offset, (byte*)pEventName, ((uint)eventName.Length + 1) * 2);
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, (byte*)pEventName, ((uint)eventName.Length + 1) * 2);
                     }
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, keywords);
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, version);
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, level);
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)opcode);
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)parameters.Length);
-                    foreach (var parameter in parameters)
+                    WriteToBuffer(pMetadata, totalMetadataLength, ref offset, keywords);
+                    WriteToBuffer(pMetadata, totalMetadataLength, ref offset, version);
+                    WriteToBuffer(pMetadata, totalMetadataLength, ref offset, level);
+
+                    if (hasV2ParameterTypes)
                     {
-                        if (!parameter.GenerateMetadataV2(pMetadata, ref offset, metadataLength))
+                        // If we have unsupported types, the V1 metadata must be empty. Write 0 count of params.
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, 0);
+                    }
+                    else
+                    {
+                        // Without unsupported V1 types we can write all the params now.
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, (uint)parameters.Length);
+                        foreach (var parameter in parameters)
                         {
-                            // If we fail to generate metadata for any parameter fallback to the V1 metadata
-                            return null;
+                            if (!parameter.GenerateMetadata(pMetadata, ref offset, totalMetadataLength))
+                            {
+                                // If we fail to generate metadata for any parameter give up to prevent
+                                // returning corrupt metadata
+                                return null;
+                            }
                         }
                     }
 
-                    Debug.Assert(metadataLength == offset);
+                    Debug.Assert(offset == v1MetadataLength);
+
+                    if (opcode != EventOpcode.Info)
+                    {
+                        // Size of opcode
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, 1);
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, (byte)MetadataTag.Opcode);
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, (byte)opcode);
+                    }
+
+                    if (hasV2ParameterTypes)
+                    {
+                        // Write the V2 supported metadata now
+                        // Starting with the size of the V2 payload
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, v2MetadataLength);
+                        // Now the tag to identify it as a V2 parameter payload
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, (byte)MetadataTag.ParameterPayload);
+                        // Then the count of parameters
+                        WriteToBuffer(pMetadata, totalMetadataLength, ref offset, (uint)parameters.Length);
+                        // Finally the parameters themselves
+                        foreach (var parameter in parameters)
+                        {
+                            if (!parameter.GenerateMetadataV2(pMetadata, ref offset, totalMetadataLength))
+                            {
+                                // If we fail to generate metadata for any parameter fallback to the V1 metadata
+                                return null;
+                            }
+                        }
+                    }
+
+                    Debug.Assert(totalMetadataLength == offset);
                 }
             }
             catch
             {
-                // If a failure occurs during metadata generation, make sure that we don't return
-                // malformed metadata.  Instead, return a null metadata blob.
-                // Consumers can either build in knowledge of the event or skip it entirely.
                 metadata = null;
             }
 
@@ -286,28 +225,11 @@ namespace System.Diagnostics.Tracing
             offset += srcLength;
         }
 
-        // Copy uint value to buffer.
-        internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, uint value)
+        internal static unsafe void WriteToBuffer<T>(byte* buffer, uint bufferLength, ref uint offset, T value) where T : unmanaged
         {
-            Debug.Assert(bufferLength >= (offset + 4));
-            *(uint*)(buffer + offset) = value;
-            offset += 4;
-        }
-
-        // Copy long value to buffer.
-        internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, long value)
-        {
-            Debug.Assert(bufferLength >= (offset + 8));
-            *(long*)(buffer + offset) = value;
-            offset += 8;
-        }
-
-        // Copy char value to buffer.
-        internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, char value)
-        {
-            Debug.Assert(bufferLength >= (offset + 2));
-            *(char*)(buffer + offset) = value;
-            offset += 2;
+            Debug.Assert(bufferLength >= (offset + sizeof(T)));
+            *(T*)(buffer + offset) = value;
+            offset += (uint)sizeof(T);
         }
     }
 
@@ -637,16 +559,16 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal int GetMetadataLength()
+        internal bool GetMetadataLength(out uint size)
         {
-            int ret = 0;
+            size = 0;
 
             TypeCode typeCode = GetTypeCodeExtended(ParameterType);
             if (typeCode == TypeCode.Object)
             {
                 if (!(TypeInfo is InvokeTypeInfo typeInfo))
                 {
-                    return -1;
+                    return false;
                 }
 
                 // Each nested struct is serialized as:
@@ -654,7 +576,7 @@ namespace System.Diagnostics.Tracing
                 //     Number of properties : 4 bytes
                 //     Property description 0...N
                 //     Nested struct property name  : NULL-terminated string.
-                ret += sizeof(uint)  // TypeCode
+                size += sizeof(uint)  // TypeCode
                      + sizeof(uint); // Property count
 
                 // Get the set of properties to be serialized.
@@ -663,21 +585,21 @@ namespace System.Diagnostics.Tracing
                 {
                     foreach (PropertyAnalysis prop in properties)
                     {
-                        ret += (int)GetMetadataLengthForProperty(prop);
+                        size += GetMetadataLengthForProperty(prop);
                     }
                 }
 
                 // For simplicity when writing a reader, we write a NULL char
                 // after the metadata for a top-level struct (for its name) so that
                 // readers don't have do special case the outer-most struct.
-                ret += sizeof(char);
+                size += sizeof(char);
             }
             else
             {
-                ret += (int)(sizeof(uint) + ((ParameterName.Length + 1) * 2));
+                size += (uint)(sizeof(uint) + ((ParameterName.Length + 1) * 2));
             }
 
-            return ret;
+            return true;
         }
 
         private static uint GetMetadataLengthForProperty(PropertyAnalysis property)
