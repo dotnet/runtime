@@ -145,6 +145,10 @@ namespace System
             public string? ScopeId;        //only IP v6 may need this
             public string? String;
             public Offset Offset;
+
+            /// <summary>
+            /// If DnsSafeHost is different from the host, DnsSafeHost will be the same as IdnHost.
+            /// </summary>
             public string? IdnHost;
 
             private MoreInfo? _moreInfo;
@@ -322,8 +326,9 @@ namespace System
 
         private void EnsureHostString(bool allowDnsOptimization)
         {
-            EnsureUriInfo();
-            if ((object?)_info.Host == null)
+            UriInfo info = EnsureUriInfo();
+
+            if (info.Host is null)
             {
                 if (allowDnsOptimization && InFact(Flags.CanonicalDnsHost))
                 {
@@ -1143,15 +1148,24 @@ namespace System
                     return string.Empty;
                 }
 
+                // If DnsSafeHost is different from the host, DnsSafeHost will be the same as IdnHost
+
                 // Special case, will include ScopeID and strip [] around IPv6
                 // This will also unescape the host string
                 string ret = _info.Host;
 
                 if (HostType == Flags.IPv6HostType)
                 {
+                    if (_info.IdnHost != null)
+                    {
+                        return _info.IdnHost;
+                    }
+
                     ret = _info.ScopeId != null ?
                         string.Concat(ret.AsSpan(1, ret.Length - 2), _info.ScopeId) :
                         ret.Substring(1, ret.Length - 2);
+
+                    _info.IdnHost = ret;
                 }
                 // Validate that this basic host qualifies as Dns safe,
                 // It has looser parsing rules that might allow otherwise.
@@ -1159,12 +1173,19 @@ namespace System
                 else if (HostType == Flags.BasicHostType
                     && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
                 {
+                    if (_info.IdnHost != null)
+                    {
+                        return _info.IdnHost;
+                    }
+
                     // Unescape everything
                     char[] dest = new char[ret.Length];
                     int count = 0;
                     UriHelper.UnescapeString(ret, 0, ret.Length, dest, ref count, c_DummyChar, c_DummyChar,
                         c_DummyChar, UnescapeMode.Unescape | UnescapeMode.UnescapeAll, _syntax, false);
                     ret = new string(dest, 0, count);
+
+                    _info.IdnHost = ret;
                 }
 
                 return ret;
