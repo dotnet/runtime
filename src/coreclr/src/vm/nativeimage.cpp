@@ -74,6 +74,11 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
     // count may exceed its component assembly count as it may contain references to
     // assemblies outside of the composite image that are part of its version bubble.
     _ASSERTE(m_manifestAssemblyCount >= m_componentAssemblyCount);
+    
+    S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(m_manifestAssemblyCount);
+
+    // Note: Memory allocated on loader heap is zero filled
+    m_pNativeMetadataAssemblyRefMap = (PTR_Assembly*)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
 }
 
 NativeImage::~NativeImage()

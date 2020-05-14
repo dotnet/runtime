@@ -62,6 +62,7 @@ private:
     ReadyToRunInfo *m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
     PEImageLayout *m_pImageLayout;
+    PTR_Assembly *m_pNativeMetadataAssemblyRefMap;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
     uint32_t m_componentAssemblyCount;
@@ -95,6 +96,7 @@ public:
     ReadyToRunInfo *GetReadyToRunInfo() const { return m_pReadyToRunInfo; }
     IMDInternalImport *GetManifestMetadata() const { return m_pManifestMetadata; }
     uint32_t GetManifestAssemblyCount() const { return m_manifestAssemblyCount; }
+    PTR_Assembly *GetManifestMetadataAssemblyRefMap() { return m_pNativeMetadataAssemblyRefMap; }
 
     Assembly *LoadManifestAssembly(uint32_t rowid);
     
