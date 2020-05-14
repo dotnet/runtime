@@ -122,8 +122,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="errorCode"></param>
         internal void Abort(long errorCode)
         {
-            // TODO-RZ: should we throw if already aborted?
-
             // TODO-RZ: this is the only situation when state is set from user thread, maybe we can
             // find a way to remove the need for the lock
             if (StreamState < SendStreamState.WantReset)

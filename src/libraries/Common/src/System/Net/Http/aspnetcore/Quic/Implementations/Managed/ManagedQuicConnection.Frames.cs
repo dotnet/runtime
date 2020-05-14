@@ -247,12 +247,11 @@ namespace System.Net.Quic.Implementations.Managed
                     QuicError.StreamsLimitViolated,
                     FrameType.ResetStream);
 
-            // TODO-RZ: Receiver can discard any data that it already received
             // TODO-RZ: Return control flow budget
 
             Debug.Assert(stream!.CanRead);
 
-            // TODO-RZ: check stream state against duplicate receipt
+            // duplicate receipt is handled internally (guarded state transitions)
             stream.InboundBuffer!.OnResetStream(frame.ApplicationErrorCode);
             return ProcessPacketResult.Ok;
         }
@@ -284,7 +283,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             Debug.Assert(stream!.CanWrite);
 
-            // TODO-RZ: check stream state against duplicate receipt
+            // duplicate receipt is handled internally (guarded state transitions)
             stream.OutboundBuffer!.Abort(frame.ApplicationErrorCode);
             _streams.MarkForUpdate(stream);
 

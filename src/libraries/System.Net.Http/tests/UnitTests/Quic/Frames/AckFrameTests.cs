@@ -54,7 +54,6 @@ namespace System.Net.Quic.Tests.Frames
         [Fact]
         public void TestNotAckingPastFrames()
         {
-            // TODO-RZ: use natural timeout instead of forced ping
             // since PING frames are ack-eliciting, the endpoint should always send an ack frame, leading to each endpoint always acking only the last received packet.
             var sender = Client;
             var receiver = Server;

@@ -191,8 +191,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (pnSpace.RecvCryptoSeal == null)
             {
-                // Decryption keys are not available yet, drop the packet for now
-                // TODO-RZ: consider buffering the packet
+                // Decryption keys are not available yet
                 return ProcessPacketResult.DropPacket;
             }
 
@@ -210,8 +209,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (pnSpace.RecvCryptoSeal == null)
             {
-                // Decryption keys are not available yet, drop the packet for now
-                // TODO-RZ: consider buffering the packet
+                // Decryption keys are not available yet
                 return ProcessPacketResult.DropPacket;
             }
 
@@ -269,7 +267,9 @@ namespace System.Net.Quic.Implementations.Managed
             if (pnSpace.ReceivedPacketNumbers.Contains(packetNumber))
             {
                 // already processed or outside congestion window
-                // TODO-RZ: there may be false positives if the packet number is 64 lesser than largest received
+                // Note: there may be false positives if the packet number is 64 lesser than largest received, but that
+                // should not occur often due to flow control / congestion window. Besides the data can be retransmitted
+                // in following packet.
                 return ProcessPacketResult.Ok;
             }
 
