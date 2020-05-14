@@ -124,7 +124,7 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.PathResponse => ProcessPathResponseFrame(reader),
                     FrameType.ConnectionCloseQuic => ProcessConnectionClose(reader, context),
                     FrameType.ConnectionCloseApplication => ProcessConnectionClose(reader, context),
-                    FrameType.HandshakeDone => ProcessHandshakeDoneFrame(reader),
+                    FrameType.HandshakeDone => ProcessHandshakeDoneFrame(reader, context),
                     _ when (frameType & FrameType.StreamMask) == frameType => ProcessStreamFrame(reader),
                     _ => CloseConnection(TransportErrorCode.FrameEncodingError, QuicError.UnknownFrameType, frameType)
                 };
@@ -142,8 +142,8 @@ namespace System.Net.Quic.Implementations.Managed
                 return result;
             }
 
-            // do handshake to set encryption secrets (to be able to process coalesced packets)
-            if (context.HandshakeWanted)
+            // advance handshake to set encryption secrets (to be able to process coalesced packets)
+            if (context.HandshakeWanted && _outboundError == null)
             {
                 DoHandshake();
             }
@@ -603,7 +603,7 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
-        private ProcessPacketResult ProcessHandshakeDoneFrame(QuicReader reader)
+        private ProcessPacketResult ProcessHandshakeDoneFrame(QuicReader reader, QuicSocketContext.RecvContext context)
         {
             // frame not being allowed to be sent by client is handled in IsPacketAllowed
             Debug.Assert(!_isServer);
@@ -613,7 +613,7 @@ namespace System.Net.Quic.Implementations.Managed
             _handshakeDoneReceived = true;
 
             // An endpoint MUST discard handshake keys when TLS handshake is complete.
-            DropPacketNumberSpace(PacketSpace.Handshake);
+            DropPacketNumberSpace(PacketSpace.Handshake, context.SentPacketPool);
 
             SignalConnected();
 
@@ -644,7 +644,7 @@ namespace System.Net.Quic.Implementations.Managed
                 _handshakeDoneSent = true;
 
                 // handshake is done
-                DropPacketNumberSpace(PacketSpace.Handshake);
+                DropPacketNumberSpace(PacketSpace.Handshake, context.SentPacketPool);
             }
 
             if (writer.BytesAvailable > 0 && _pingWanted)
@@ -710,7 +710,8 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (_inboundError != null)
             {
-                // RFC allows sending one packet to hasten up the closing, but otherwise we should be draining
+                // We should already be draining, but RFC allows sending one packet to make closing faster. That packet
+                // is going to be sent with this CONNECTION_CLOSE frame
                 StartDraining();
             }
         }

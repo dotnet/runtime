@@ -130,7 +130,7 @@ namespace System.Net.Quic.Implementations.Managed
                             {
                                 // RFC: A server stops sending and processing Initial packets when it receives its first
                                 // Handshake packet
-                                DropPacketNumberSpace(PacketSpace.Initial);
+                                DropPacketNumberSpace(PacketSpace.Initial, context.SentPacketPool);
                             }
 
                             return result;
@@ -554,7 +554,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (!_isServer && packetType == PacketType.Handshake)
             {
                 // RFC: A client stops sending and processing Initial packets when it sends its first Handshake packet
-                DropPacketNumberSpace(PacketSpace.Initial);
+                DropPacketNumberSpace(PacketSpace.Initial, context.SentPacketPool);
             }
 
             return true;

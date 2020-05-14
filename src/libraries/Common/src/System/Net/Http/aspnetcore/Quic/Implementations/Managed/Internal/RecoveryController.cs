@@ -512,8 +512,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Drops all unacked data from given packet space.
         /// </summary>
-        /// <param name="space"></param>
-        internal void DropUnackedData(PacketSpace space)
+        /// <param name="space">Packet space to drop.</param>
+        /// <param name="sentPacketPool">Object pool to which instances of <see cref="SentPacket"/> shoudl be returned.</param>
+        internal void DropUnackedData(PacketSpace space, ObjectPool<SentPacket> sentPacketPool)
         {
             var pnSpace = GetPacketNumberSpace(space);
 
@@ -524,6 +525,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 {
                     BytesInFlight -= pnSpace.SentPackets[i].BytesSent;
                 }
+
+                sentPacketPool.Return(pnSpace.SentPackets[i]);
+            }
+
+            while (pnSpace.AckedPackets.TryDequeue(out var packet))
+            {
+                sentPacketPool.Return(packet);
+            }
+
+            while (pnSpace.LostPackets.TryDequeue(out var packet))
+            {
+                sentPacketPool.Return(packet);
             }
 
             pnSpace.Reset();

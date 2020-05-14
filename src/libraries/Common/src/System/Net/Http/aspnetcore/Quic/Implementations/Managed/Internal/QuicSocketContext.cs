@@ -280,7 +280,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             /// </summary>
             internal long Timestamp { get; set; }
 
-            protected ObjectPool<SentPacket> SentPacketPool { get; }
+            internal ObjectPool<SentPacket> SentPacketPool { get; }
 
             internal void ReturnPacket(SentPacket packet)
             {
