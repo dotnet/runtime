@@ -36,6 +36,7 @@
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(RuntimePackNativeDir)include\mono-2.0"
         MainLibraryFileName="AndroidTestRunner.dll"
+        StripDebugSymbols="False"
         OutputDir="$(BundleDir)"
         SourceDir="$(PublishDir)">
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
