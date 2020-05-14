@@ -8,7 +8,7 @@
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(AndroidAppBuilderDir)AndroidAppBuilder.dll" />
+             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
     <PropertyGroup>
@@ -49,11 +49,11 @@
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
   <UsingTask TaskName="AppleAppBuilderTask" 
-             AssemblyFile="$(AppleAppBuilderDir)AppleAppBuilder.dll" />
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(MonoAOTCompilerDir)MonoAOTCompiler.dll" />
+             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
-  <Import Project="$(MonoProjectRoot)msbuild\AotCompilerTask\MonoAOTCompiler.props" />
+  <Import Project="$(MonoAOTCompilerDir)\MonoAOTCompiler.props" />
 
   <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp">
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />

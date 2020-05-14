@@ -39,7 +39,13 @@
           Inputs="@(RepoTasksSrc)"
           Outputs="$(RepoTasksOutputFile)">
     <ItemGroup>
-      <RepoTaskProjects Include="$(RepoTasksDir)**\*.csproj" />
+      <RepoTaskProjects Include="$(RepoTasksDir)\installer.tasks\**\*.csproj" />
+      <RepoTaskProjects Condition="'$(TargetOS)' == 'Android'"
+                        Include="$(RepoTasksDir)\mobile.tasks\AndroidAppBuilder\AndroidAppBuilder.csproj" />
+      <RepoTaskProjects Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
+                        Include="$(RepoTasksDir)\mobile.tasks\AppleAppBuilder\AppleAppBuilder.csproj" />
+      <RepoTaskProjects Condition="'$(TargetsMobile)' == 'true'"
+                        Include="$(RepoTasksDir)\mobile.tasks\AOTCompilerTask\MonoAOTCompiler.csproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(RepoTaskProjects)"
