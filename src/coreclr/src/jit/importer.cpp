@@ -8898,55 +8898,56 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
     assert(!call->IsVarargs() && "varargs not allowed for System V OSs.");
 
-    // The return type will remain as the incoming struct type unless normalized to a
-    // single eightbyte return type below.
-    call->gtReturnType = call->gtType;
-
     unsigned retRegCount = retTypeDesc->GetReturnRegCount();
-    if (retRegCount != 0)
+    if (retRegCount == 0)
     {
-        if (retRegCount == 1)
+        // struct not returned in registers i.e returned via hiddden retbuf arg.
+        call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+    }
+    else if (retRegCount == 1)
+    {
+        if (!compDoOldStructRetyping())
         {
-            // See if the struct size is smaller than the return
-            // type size...
-            if (retTypeDesc->IsEnclosingType())
+            return call;
+        }
+        // See if the struct size is smaller than the return
+        // type size...
+        if (retTypeDesc->IsEnclosingType())
+        {
+            // If we know for sure this call will remain a call,
+            // retype and return value via a suitable temp.
+            if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
             {
-                // If we know for sure this call will remain a call,
-                // retype and return value via a suitable temp.
-                if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
-                {
-                    call->gtReturnType = retTypeDesc->GetReturnRegType(0);
-                    return impAssignSmallStructTypeToVar(call, retClsHnd);
-                }
+                call->gtReturnType = retTypeDesc->GetReturnRegType(0);
+                return impAssignSmallStructTypeToVar(call, retClsHnd);
             }
             else
             {
-                // Return type is same size as struct, so we can
-                // simply retype the call.
-                call->gtReturnType = retTypeDesc->GetReturnRegType(0);
+                call->gtReturnType = call->gtType;
             }
         }
         else
         {
-            // must be a struct returned in two registers
-            assert(retRegCount == 2);
-
-            if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
-            {
-                // Force a call returning multi-reg struct to be always of the IR form
-                //   tmp = call
-                //
-                // No need to assign a multi-reg struct to a local var if:
-                //  - It is a tail call or
-                //  - The call is marked for in-lining later
-                return impAssignMultiRegTypeToVar(call, retClsHnd);
-            }
+            // Return type is same size as struct, so we can
+            // simply retype the call.
+            call->gtReturnType = retTypeDesc->GetReturnRegType(0);
         }
     }
     else
     {
-        // struct not returned in registers i.e returned via hiddden retbuf arg.
-        call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+        // must be a struct returned in two registers
+        assert(retRegCount == 2);
+
+        if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
+        {
+            // Force a call returning multi-reg struct to be always of the IR form
+            //   tmp = call
+            //
+            // No need to assign a multi-reg struct to a local var if:
+            //  - It is a tail call or
+            //  - The call is marked for in-lining later
+            return impAssignMultiRegTypeToVar(call, retClsHnd);
+        }
     }
 
 #else // not UNIX_AMD64_ABI

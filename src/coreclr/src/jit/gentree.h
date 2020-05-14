@@ -4234,16 +4234,27 @@ struct GenTreeCall final : public GenTree
     //
     bool HasMultiRegRetVal() const
     {
-#if defined(TARGET_X86)
-        return varTypeIsLong(gtType);
-#elif FEATURE_MULTIREG_RET && defined(TARGET_ARM)
-        return varTypeIsLong(gtType) || (varTypeIsStruct(gtType) && !HasRetBufArg());
+#ifdef FEATURE_MULTIREG_RET
+#if defined(TARGET_X86) || defined(TARGET_ARM)
+        if (varTypeIsLong(gtType))
+        {
+            return true;
+        }
 #elif defined(FEATURE_HFA) && defined(TARGET_ARM64)
         // SIMD types are returned in vector regs on ARM64.
-        return (gtType == TYP_STRUCT) && !HasRetBufArg();
-#elif FEATURE_MULTIREG_RET
-        return varTypeIsStruct(gtType) && !HasRetBufArg();
-#else
+        if (varTypeIsSIMD(gtType))
+        {
+            return false;
+        }
+#endif // FEATURE_HFA && TARGET_ARM64
+
+        if (!varTypeIsStruct(gtType) || HasRetBufArg())
+        {
+            return false;
+        }
+        // Now it is a struct that is returned in registers.
+        return GetReturnTypeDesc()->IsMultiRegRetType();
+#else  // !FEATURE_MULTIREG_RET
         return false;
 #endif
     }
