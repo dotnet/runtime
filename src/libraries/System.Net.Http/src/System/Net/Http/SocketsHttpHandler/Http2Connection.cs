@@ -133,17 +133,17 @@ namespace System.Net.Http
             s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
             _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
-            // Send SETTINGS frame
-            WriteFrameHeader(new FrameHeader(FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, 0));
-
-            // Disable push promise
+            // Send SETTINGS frame.  Disable push promise.
+            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, 0);
+            _outgoingBuffer.Commit(FrameHeader.Size);
             BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
             _outgoingBuffer.Commit(2);
             BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
             _outgoingBuffer.Commit(4);
 
             // Send initial connection-level WINDOW_UPDATE
-            WriteFrameHeader(new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, 0));
+            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, 0);
+            _outgoingBuffer.Commit(FrameHeader.Size);
             BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (ConnectionWindowSize - DefaultInitialWindowSize));
             _outgoingBuffer.Commit(4);
 
@@ -897,8 +897,7 @@ namespace System.Net.Http
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace("Started writing.");
 
-            FrameHeader frameHeader = new FrameHeader(0, FrameType.Settings, FrameFlags.Ack, 0);
-            frameHeader.WriteTo(writeBuffer);
+            FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Settings, FrameFlags.Ack, 0);
 
             FinishWrite(FlushTiming.AfterPendingWrites);
         }
@@ -909,12 +908,9 @@ namespace System.Net.Http
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size + FrameHeader.PingLength).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace("Started writing.");
 
-            FrameHeader frameHeader = new FrameHeader(FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, 0);
-            frameHeader.WriteTo(writeBuffer);
-            writeBuffer = writeBuffer.Slice(FrameHeader.Size);
-
             Debug.Assert(sizeof(long) == FrameHeader.PingLength);
-            BinaryPrimitives.WriteInt64BigEndian(writeBuffer.Span, pingContent);
+            FrameHeader.WriteTo(writeBuffer.Span, FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, 0);
+            BinaryPrimitives.WriteInt64BigEndian(writeBuffer.Span.Slice(FrameHeader.Size), pingContent);
 
             FinishWrite(FlushTiming.AfterPendingWrites);
         }
@@ -924,11 +920,8 @@ namespace System.Net.Http
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size + FrameHeader.RstStreamLength).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(errorCode)}={errorCode}");
 
-            FrameHeader frameHeader = new FrameHeader(FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId);
-            frameHeader.WriteTo(writeBuffer);
-            writeBuffer = writeBuffer.Slice(FrameHeader.Size);
-
-            BinaryPrimitives.WriteInt32BigEndian(writeBuffer.Span, (int)errorCode);
+            FrameHeader.WriteTo(writeBuffer.Span, FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId);
+            BinaryPrimitives.WriteInt32BigEndian(writeBuffer.Span.Slice(FrameHeader.Size), (int)errorCode);
 
             FinishWrite(FlushTiming.Now); // ensure cancellation is seen as soon as possible
         }
@@ -1270,7 +1263,7 @@ namespace System.Net.Http
                     if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(totalSize)}={totalSize}");
 
                     // Copy the HEADERS frame.
-                    new FrameHeader(current.Length, FrameType.Headers, flags, streamId).WriteTo(writeBuffer.Span);
+                    FrameHeader.WriteTo(writeBuffer.Span, current.Length, FrameType.Headers, flags, streamId);
                     writeBuffer = writeBuffer.Slice(FrameHeader.Size);
                     current.CopyTo(writeBuffer);
                     writeBuffer = writeBuffer.Slice(current.Length);
@@ -1282,7 +1275,7 @@ namespace System.Net.Http
                         (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
                         flags = remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None;
 
-                        new FrameHeader(current.Length, FrameType.Continuation, flags, streamId).WriteTo(writeBuffer.Span);
+                        FrameHeader.WriteTo(writeBuffer.Span, current.Length, FrameType.Continuation, flags, streamId);
                         writeBuffer = writeBuffer.Slice(FrameHeader.Size);
                         current.CopyTo(writeBuffer);
                         writeBuffer = writeBuffer.Slice(current.Length);
@@ -1344,14 +1337,8 @@ namespace System.Net.Http
                     throw;
                 }
 
-                FrameHeader frameHeader = new FrameHeader(current.Length, FrameType.Data, FrameFlags.None, streamId);
-                frameHeader.WriteTo(writeBuffer);
-                writeBuffer = writeBuffer.Slice(FrameHeader.Size);
-
-                current.CopyTo(writeBuffer);
-                writeBuffer = writeBuffer.Slice(current.Length);
-
-                Debug.Assert(writeBuffer.Length == 0);
+                FrameHeader.WriteTo(writeBuffer.Span, current.Length, FrameType.Data, FrameFlags.None, streamId);
+                current.CopyTo(writeBuffer.Slice(FrameHeader.Size));
 
                 FinishWrite(FlushTiming.Eventually); // no need to flush, as the request content may do so explicitly, or worst case we'll do so as part of the end data frame
             }
@@ -1362,8 +1349,7 @@ namespace System.Net.Http
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace(streamId, "Started writing.");
 
-            FrameHeader frameHeader = new FrameHeader(0, FrameType.Data, FrameFlags.EndStream, streamId);
-            frameHeader.WriteTo(writeBuffer);
+            FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Data, FrameFlags.EndStream, streamId);
 
             FinishWrite(FlushTiming.AfterPendingWrites); // finished sending request body, so flush soon (but ok to wait for pending packets)
         }
@@ -1376,11 +1362,8 @@ namespace System.Net.Http
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size + FrameHeader.WindowUpdateLength).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(amount)}={amount}");
 
-            FrameHeader frameHeader = new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId);
-            frameHeader.WriteTo(writeBuffer);
-            writeBuffer = writeBuffer.Slice(FrameHeader.Size);
-
-            BinaryPrimitives.WriteInt32BigEndian(writeBuffer.Span, amount);
+            FrameHeader.WriteTo(writeBuffer.Span, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId);
+            BinaryPrimitives.WriteInt32BigEndian(writeBuffer.Span.Slice(FrameHeader.Size), amount);
 
             FinishWrite(FlushTiming.Now); // make sure window updates are seen as soon as possible
         }
@@ -1407,15 +1390,6 @@ namespace System.Net.Http
             }
 
             LogExceptions(SendWindowUpdateAsync(0, windowUpdateSize));
-        }
-
-        private void WriteFrameHeader(FrameHeader frameHeader)
-        {
-            if (NetEventSource.IsEnabled) Trace($"{frameHeader}");
-            Debug.Assert(_outgoingBuffer.AvailableMemory.Length >= FrameHeader.Size);
-
-            frameHeader.WriteTo(_outgoingBuffer.AvailableSpan);
-            _outgoingBuffer.Commit(FrameHeader.Size);
         }
 
         /// <summary>Abort all streams and cause further processing to fail.</summary>
@@ -1605,12 +1579,12 @@ namespace System.Net.Http
             Last = 10
         }
 
-        private struct FrameHeader
+        private readonly struct FrameHeader
         {
-            public int Length;
-            public FrameType Type;
-            public FrameFlags Flags;
-            public int StreamId;
+            public readonly int Length;
+            public readonly FrameType Type;
+            public readonly FrameFlags Flags;
+            public readonly int StreamId;
 
             public const int Size = 9;
             public const int MaxLength = 16384;
@@ -1642,34 +1616,29 @@ namespace System.Net.Http
             {
                 Debug.Assert(buffer.Length >= Size);
 
+                byte byte8 = buffer[8]; // help eliminate bounds checks
                 return new FrameHeader(
                     (buffer[0] << 16) | (buffer[1] << 8) | buffer[2],
                     (FrameType)buffer[3],
                     (FrameFlags)buffer[4],
-                    (int)((uint)((buffer[5] << 24) | (buffer[6] << 16) | (buffer[7] << 8) | buffer[8]) & 0x7FFFFFFF));
+                    (int)((uint)((buffer[5] << 24) | (buffer[6] << 16) | (buffer[7] << 8) | byte8) & 0x7FFFFFFF));
             }
 
-            public void WriteTo(Span<byte> buffer)
+            public static void WriteTo(Span<byte> buffer, int length, FrameType type, FrameFlags flags, int streamId)
             {
                 Debug.Assert(buffer.Length >= Size);
-                Debug.Assert(Type <= FrameType.Last);
-                Debug.Assert((Flags & FrameFlags.ValidBits) == Flags);
-                Debug.Assert(Length <= MaxLength);
+                Debug.Assert(type <= FrameType.Last);
+                Debug.Assert((flags & FrameFlags.ValidBits) == flags);
+                Debug.Assert((uint)length <= MaxLength);
 
-                buffer[0] = (byte)((Length & 0x00FF0000) >> 16);
-                buffer[1] = (byte)((Length & 0x0000FF00) >> 8);
-                buffer[2] = (byte)(Length & 0x000000FF);
-
-                buffer[3] = (byte)Type;
-                buffer[4] = (byte)Flags;
-
-                buffer[5] = (byte)((StreamId & 0xFF000000) >> 24);
-                buffer[6] = (byte)((StreamId & 0x00FF0000) >> 16);
-                buffer[7] = (byte)((StreamId & 0x0000FF00) >> 8);
-                buffer[8] = (byte)(StreamId & 0x000000FF);
+                // This ordering helps eliminate bounds checks.
+                BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(5), streamId);
+                buffer[4] = (byte)flags;
+                buffer[0] = (byte)((length & 0x00FF0000) >> 16);
+                buffer[1] = (byte)((length & 0x0000FF00) >> 8);
+                buffer[2] = (byte)(length & 0x000000FF);
+                buffer[3] = (byte)type;
             }
-
-            public void WriteTo(Memory<byte> buffer) => WriteTo(buffer.Span);
 
             public override string ToString() => $"StreamId={StreamId}; Type={Type}; Flags={Flags}; Length={Length}"; // Description for diagnostic purposes
         }
