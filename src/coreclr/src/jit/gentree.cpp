@@ -18950,7 +18950,7 @@ void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
 //     x86 and ARM return long in multiple registers.
 //     ARM and ARM64 return HFA struct in multiple registers.
 //
-regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
+regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 {
     unsigned count = GetReturnRegCount();
     assert(idx < count);
@@ -19079,7 +19079,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 //    of return registers and wants to know the set of return registers.
 //
 // static
-regMaskTP ReturnTypeDesc::GetABIReturnRegs()
+regMaskTP ReturnTypeDesc::GetABIReturnRegs() const
 {
     regMaskTP resultMask = RBM_NONE;
 

@@ -3695,7 +3695,7 @@ public:
     //    var_type of the return register specified by its index.
     //    asserts if the index does not have a valid register return type.
 
-    var_types GetReturnRegType(unsigned index)
+    var_types GetReturnRegType(unsigned index) const
     {
         var_types result = m_regType[index];
         assert(result != TYP_UNKNOWN);
@@ -3711,10 +3711,10 @@ public:
     }
 
     // Get ith ABI return register
-    regNumber GetABIReturnReg(unsigned idx);
+    regNumber GetABIReturnReg(unsigned idx) const;
 
     // Get reg mask of ABI return registers
-    regMaskTP GetABIReturnRegs();
+    regMaskTP GetABIReturnRegs() const;
 };
 
 class TailCallSiteInfo
@@ -3918,7 +3918,6 @@ struct GenTreeCall final : public GenTree
 #if FEATURE_MULTIREG_RET
 
     // State required to support multi-reg returning call nodes.
-    // For now it is enabled only for x64 unix.
     //
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
     ReturnTypeDesc gtReturnTypeDesc;
@@ -3940,9 +3939,24 @@ struct GenTreeCall final : public GenTree
     // Returns
     //    Type descriptor of the value returned by call
     //
-    // Note:
-    //    Right now implemented only for x64 unix and yet to be
-    //    implemented for other multi-reg target arch (Arm64/Arm32/x86).
+    // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
+    const ReturnTypeDesc* GetReturnTypeDesc() const
+    {
+#if FEATURE_MULTIREG_RET
+        return &gtReturnTypeDesc;
+#else
+        return nullptr;
+#endif
+    }
+
+    //-----------------------------------------------------------------------
+    // GetReturnTypeDesc: get the type descriptor of return value of the call
+    //
+    // Arguments:
+    //    None
+    //
+    // Returns
+    //    Type descriptor of the value returned by call
     //
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
     ReturnTypeDesc* GetReturnTypeDesc()
