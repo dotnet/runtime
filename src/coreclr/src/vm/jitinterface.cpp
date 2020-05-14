@@ -115,7 +115,7 @@ long GetJittedBytes()
     return g_cbILJitted;
 }
 
-long GetJittedMethodsCount()
+int GetJittedMethodsCount()
 {
     CONTRACTL
     {
@@ -127,7 +127,6 @@ long GetJittedMethodsCount()
 
     return g_cMethodsJitted;
 }
-
 
 /*********************************************************************/
 
