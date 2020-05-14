@@ -13,7 +13,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class OutboundBuffer
     {
-        private const int PreferredChunkSize = 32 * 1024;
         // TODO-RZ: tie this to control flow limits
         private const int MaximumHeldChunks = 20;
 
@@ -47,8 +46,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Chunk to be filled from user data.
         /// </summary>
-        private StreamChunk _toBeQueuedChunk = new StreamChunk(0, ReadOnlyMemory<byte>.Empty,
-            ArrayPool<byte>.Shared.Rent(PreferredChunkSize));
+        private StreamChunk _toBeQueuedChunk = new StreamChunk(0, ReadOnlyMemory<byte>.Empty, QuicBufferPool.Rent());
 
         /// <summary>
         ///     Channel of incoming chunks of memory from the user.
@@ -209,7 +207,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal void ForceFlushPartialChunk()
         {
             _toSendChannel.Writer.TryWrite(_toBeQueuedChunk);
-            var buffer = ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
+            var buffer = QuicBufferPool.Rent();
             _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
         }
 
@@ -442,18 +440,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         {
             // TODO-RZ: we need to be able to cancel this
             _bufferLimitSemaphore.Wait();
-            return ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
+            return QuicBufferPool.Rent();
         }
 
         private async ValueTask<byte[]> RentBufferAsync(CancellationToken cancellationToken)
         {
             await _bufferLimitSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-            return ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
+            return QuicBufferPool.Rent();
         }
 
         private void ReturnBuffer(byte[] buffer)
         {
-            ArrayPool<byte>.Shared.Return(buffer);
+            QuicBufferPool.Return(buffer);
             _bufferLimitSemaphore.Release();
         }
     }

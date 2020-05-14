@@ -12,7 +12,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class InboundBuffer
     {
-        private const int ReorderBuffersSize = 32 * 1024;
+        private int ReorderBuffersSize => QuicBufferPool.BufferSize;
 
         private object SyncObject => _deliverableChannel;
 
@@ -268,7 +268,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                     // limit maximum number of buffers we have allocated at any moment.
                     while (_receivingBuffers.Count <= recvBufIndex)
                     {
-                        _receivingBuffers.Add(ArrayPool<byte>.Shared.Rent(ReorderBuffersSize));
+                        _receivingBuffers.Add(QuicBufferPool.Rent());
                     }
 
                     int written = Math.Min(data.Length, ReorderBuffersSize - recvBufOffset);
@@ -413,7 +413,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 return;
             }
 
-            ArrayPool<byte>.Shared.Return(chunk.Buffer);
+            QuicBufferPool.Return(chunk.Buffer);
         }
 
         public void OnConnectionError(QuicError error)

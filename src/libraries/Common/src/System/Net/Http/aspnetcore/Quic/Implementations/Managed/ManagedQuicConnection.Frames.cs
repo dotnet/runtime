@@ -805,15 +805,13 @@ namespace System.Net.Quic.Implementations.Managed
             var buffer = stream.InboundBuffer;
 
             if (buffer == null ||
-                // buffer.StreamState != RecvStreamState.Receive ||
+                // only in Receive state do the frames make any sense
+                buffer.StreamState != RecvStreamState.Receive ||
                 buffer.MaxData == buffer.RemoteMaxData)
             {
                 // nothing to update
                 return true;
             }
-
-            // only in Receive state do the frames make any sense
-            Debug.Assert(buffer.StreamState == RecvStreamState.Receive);
 
             var frame = new MaxStreamDataFrame(stream.StreamId, buffer.MaxData);
             if (writer.BytesAvailable < frame.GetSerializedLength())
