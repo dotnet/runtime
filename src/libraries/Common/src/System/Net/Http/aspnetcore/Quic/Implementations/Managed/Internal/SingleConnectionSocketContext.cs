@@ -18,14 +18,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return _connection;
         }
 
-        protected override ValueTask OnSignal()
+        protected override void OnSignal()
         {
-            return UpdateConnectionAndTimout();
+            UpdateConnectionAndTimout();
         }
 
-        protected override ValueTask OnTimeout()
+        protected override void OnTimeout()
         {
-            return UpdateConnectionAndTimout();
+            UpdateConnectionAndTimout();
         }
 
         protected override void OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
@@ -52,9 +52,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override bool ShouldContinue => !_stop;
 
-        private async ValueTask UpdateConnectionAndTimout()
+        private void UpdateConnectionAndTimout()
         {
-            await UpdateAsync(_connection).ConfigureAwait(false);
+            UpdateAsync(_connection);
             UpdateTimeout(_connection.GetNextTimerTimestamp());
         }
 

@@ -72,7 +72,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _signalTcs.TrySetResult(0);
         }
 
-        private async ValueTask UpdateAsync(ManagedQuicConnection connection, QuicConnectionState previousState)
+        private void UpdateAsync(ManagedQuicConnection connection, QuicConnectionState previousState)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -101,17 +101,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                 if (NetEventSource.IsEnabled) NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
 
-                await _socket.SendToAsync(new ArraySegment<byte>(_sendBuffer, 0, _writer.BytesWritten),
-                    SocketFlags.None,
-                    receiver).ConfigureAwait(false);
+                _socket.SendTo(_sendBuffer, 0, _writer.BytesWritten, SocketFlags.None, receiver);
+                // _socket.SendToAsync(new ArraySegment<byte>(_sendBuffer, 0, _writer.BytesWritten),
+                // SocketFlags.None,
+                // receiver).ConfigureAwait(false);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        protected ValueTask UpdateAsync(ManagedQuicConnection connection)
+        protected void UpdateAsync(ManagedQuicConnection connection)
         {
-            return UpdateAsync(connection, connection.ConnectionState);
+            UpdateAsync(connection, connection.ConnectionState);
         }
 
         protected void UpdateTimeout(long timestamp)
@@ -141,7 +142,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected abstract ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender);
 
-        private async ValueTask DoReceive(QuicReader reader, IPEndPoint sender)
+        private void DoReceive(QuicReader reader, IPEndPoint sender)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -153,25 +154,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 var previousState = connection.ConnectionState;
                 _recvContext.Timestamp = Timestamp.Now;
                 connection.ReceiveData(reader, sender, _recvContext);
-                await UpdateAsync(connection, previousState).ConfigureAwait(false);
+                UpdateAsync(connection, previousState);
                 UpdateTimeout(connection.GetNextTimerTimestamp());
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        private async ValueTask DoSignal()
+        private void DoSignal()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             _signalTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
             _waitingTasks[1] = _signalTcs.Task;
-            await OnSignal().ConfigureAwait(false);
+            OnSignal();
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        private async ValueTask DoTimeout()
+        private void DoTimeout()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -179,14 +180,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _currentTimeout = long.MaxValue;
             _waitingTasks[2] = _timeoutTask = _infiniteTimeoutTask;
 
-            await OnTimeout().ConfigureAwait(false);
+            OnTimeout();
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        protected abstract ValueTask OnSignal();
+        protected abstract void OnSignal();
 
-        protected abstract ValueTask OnTimeout();
+        protected abstract void OnTimeout();
 
         protected abstract void
             OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState);
@@ -219,7 +220,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                     if (_timeoutTask.IsCompleted)
                     {
-                        await DoTimeout().ConfigureAwait(false);
+                        DoTimeout();
                     }
 
                     if (socketReceiveTask.IsCompleted)
@@ -233,7 +234,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                             if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
                             {
                                 _reader.Reset(_recvBuffer.AsMemory(0, result.ReceivedBytes));
-                                await DoReceive(_reader, (IPEndPoint)result.RemoteEndPoint).ConfigureAwait(false);
+                                DoReceive(_reader, (IPEndPoint)result.RemoteEndPoint);
                             }
                         }
 
@@ -244,7 +245,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                     if (_signalTcs.Task.IsCompleted)
                     {
-                        await DoSignal().ConfigureAwait(false);
+                        DoSignal();
                     }
                 }
             }

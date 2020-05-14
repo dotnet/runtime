@@ -50,21 +50,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _acceptNewConnections = false;
         }
 
-        protected override async ValueTask OnSignal()
+        protected override void OnSignal()
         {
             // TODO-RZ: make connections signal which connection wishes to do something
             long nextTimeout = long.MaxValue;
 
             foreach (var (_, connection) in _connectionsByEndpoint)
             {
-                await UpdateAsync(connection).ConfigureAwait(false);
+                UpdateAsync(connection);
                 nextTimeout = Math.Min(nextTimeout, connection.GetNextTimerTimestamp());
             }
 
             UpdateTimeout(nextTimeout);
         }
 
-        protected override async ValueTask OnTimeout()
+        protected override void OnTimeout()
         {
             long now = Timestamp.Now;
 
@@ -74,7 +74,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 if (connection.GetNextTimerTimestamp() <= now)
                 {
-                    await UpdateAsync(connection).ConfigureAwait(false);
+                    UpdateAsync(connection);
                 }
 
                 nextTimeout = Math.Min(nextTimeout, connection.GetNextTimerTimestamp());
