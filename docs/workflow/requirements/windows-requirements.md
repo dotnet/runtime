@@ -67,9 +67,9 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 
 ## .NET SDK
 
-While not strictly needed to build or test this repository, having the .NET SDK installed lets you use the dotnet.exe command to run .NET applications in the 'normal' way.
+While not strictly needed to build or test this repository, having the .NET SDK installed lets you browse solution files in this repository with Visual Studio and use the dotnet.exe command to run .NET applications in the 'normal' way.
 We use this in the [Using Your Build](../testing/using-your-build.md) instructions.
-Visual Studio should have installed the .NET SDK, but in case it did not you can get it from the [Installing the .NET SDK](https://dotnet.microsoft.com/download) page.
+The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/master/global.json#L3). [You can find the installers and binaries for nightly builds of .NET SDK here](https://github.com/dotnet/installer#installers-and-binaries).
 
 ## Adding to the default PATH variable
 
