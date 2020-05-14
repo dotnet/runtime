@@ -1271,7 +1271,11 @@ retry_with_libcoreclr:
 #if defined(TARGET_OSX)
 			new_scope = g_strdup ("libcoreclr.dylib");
 #else			
+#if defined(TARGET_ANDROID)
+			new_scope = g_strdup ("libmonosgen-2.0.so");
+#else
 			new_scope = g_strdup ("libcoreclr.so");
+#endif
 #endif			
 			goto retry_with_libcoreclr;
 		}

@@ -6815,7 +6815,10 @@ if test x$with_core = xonly; then
 			if test x$have_sys_icu = xyes; then
 				ICU_CFLAGS="$CPPFLAGS -DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"
 			fi
-			CPPFLAGS=$ORIG_CPPFLAGS			
+			CPPFLAGS=$ORIG_CPPFLAGS
+		elif test x$platform_android = xyes; then 
+			ICU_CFLAGS="-DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			have_sys_icu=yes 
 		elif test x$host_linux = xyes; then
 			AC_CHECK_LIB(icuuc, main, LIBS=$LIBS,
 				[AC_MSG_ERROR([Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform).])])
