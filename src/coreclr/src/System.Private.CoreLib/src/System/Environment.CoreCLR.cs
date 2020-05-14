@@ -110,20 +110,5 @@ namespace System
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
-
-#if FEATURE_COMINTEROP
-        // Separate type so a .cctor is not created for Enviroment which then would be triggered during startup
-        private static class WinRT
-        {
-            // Cache the value in readonly static that can be optimized out by the JIT
-            public static readonly bool IsSupported = WinRTSupported() != Interop.BOOL.FALSE;
-        }
-
-        // Does the current version of Windows have Windows Runtime suppport?
-        internal static bool IsWinRTSupported => WinRT.IsSupported;
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Interop.BOOL WinRTSupported();
-#endif // FEATURE_COMINTEROP
     }
 }

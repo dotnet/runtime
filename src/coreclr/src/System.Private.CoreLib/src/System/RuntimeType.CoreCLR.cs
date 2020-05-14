@@ -3123,11 +3123,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void GetGUID(ref Guid result);
 
-#if FEATURE_COMINTEROP
-        internal override bool IsWindowsRuntimeObjectImpl() => false;
-        internal override bool IsExportedToWindowsRuntimeImpl() => false;
-#endif // FEATURE_COMINTEROP
-
         internal bool IsDelegate() => GetBaseType() == typeof(MulticastDelegate);
 
         public override GenericParameterAttributes GenericParameterAttributes

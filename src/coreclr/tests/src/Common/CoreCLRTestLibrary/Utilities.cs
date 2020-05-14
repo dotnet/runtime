@@ -67,9 +67,8 @@ namespace TestLibrary
         public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         public static bool IsMacOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsWindows7 => IsWindows && Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor == 1;
-        public static bool IsWinRTSupported => IsWindows && !IsWindows7 && !IsWindowsNanoServer;
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
-        
+
         // Windows 10 October 2018 Update
         public static bool IsWindows10Version1809OrGreater =>
             IsWindows && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 17763;
@@ -119,7 +118,7 @@ namespace TestLibrary
             return true;
         }
 
-        // Given a string, display the unicode characters in hex format, optionally displaying each 
+        // Given a string, display the unicode characters in hex format, optionally displaying each
         // characters unicode category
         public static string FormatHexStringFromUnicodeString(string string1, bool includeUnicodeCategory)
         {
@@ -145,7 +144,7 @@ namespace TestLibrary
             return returnString;
         }
 
-        // Given a character, display its unicode value in hex format. ProjectN doens't support 
+        // Given a character, display its unicode value in hex format. ProjectN doens't support
         // unicode category as a Property on Char.
         public static string FormatHexStringFromUnicodeChar(char char1, bool includeUnicodeCategory)
         {
@@ -293,7 +292,7 @@ namespace TestLibrary
             }
 
             internal static unsafe string RtlGetVersion()
-            {            
+            {
                 const string Version = "Microsoft Windows";
                 if (RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi) == 0)
                 {
