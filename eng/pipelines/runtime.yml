@@ -815,7 +815,7 @@ jobs:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       liveRuntimeBuildConfig: release
-      runtimeVariant: 'interpreter'
+      runtimeVariant: 'Interpreter'
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
