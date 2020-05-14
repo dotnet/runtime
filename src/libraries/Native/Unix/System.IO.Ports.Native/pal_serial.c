@@ -72,3 +72,18 @@ int32_t SystemIoPortsNative_Shutdown(intptr_t socket, int32_t socketShutdown)
 {
     return Common_Shutdown(socket, socketShutdown);
 }
+
+int32_t SystemIoPortsNative_ConvertErrorPlatformToPal(int32_t platformErrno)
+{
+    return ConvertErrorPlatformToPal(platformErrno);
+}
+
+int32_t SystemIoPortsNative_ConvertErrorPalToPlatform(int32_t error)
+{
+    return ConvertErrorPalToPlatform(error);
+}
+
+const char* SystemIoPortsNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize)
+{
+    return StrErrorR(platformErrno, buffer, bufferSize);
+}
