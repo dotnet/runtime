@@ -62,7 +62,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
             byte firstByte = reader.ReadUInt8();
             Debug.Assert(!HeaderHelpers.IsLongHeader(firstByte), "Trying to parse long header as short");
 
-            // TODO-RZ: maybe expect only single connection id
             var dcid = connectionIds.Find(reader.PeekSpan(reader.BytesLeft));
             if (dcid == null)
             {

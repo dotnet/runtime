@@ -39,11 +39,5 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Peer aborted sending on the stream using RESET_STREAM frame, no data is sent.
         /// </summary>
         ResetReceived,
-
-        /// <summary>
-        ///     Terminal state. Error from the RESET_STREAM frame has been reported to the application.
-        ///     TODO-RZ: we probably do not need this state explicitly
-        /// </summary>
-        ResetRead,
     }
 }

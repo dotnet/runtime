@@ -45,7 +45,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             return 1 +
                    QuicPrimitives.GetVarIntLength(streamId) +
                    (offset > 0 ? QuicPrimitives.GetVarIntLength(offset) : 0) +
-                   QuicPrimitives.GetVarIntLength(length); // TODO-RZ: length is not mandatory
+                   QuicPrimitives.GetVarIntLength(length);
         }
 
         internal int GetSerializedLength()
@@ -84,8 +84,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static Span<byte> ReservePayloadBuffer(QuicWriter writer, long streamId, long offset, int length, bool fin)
         {
-            // TODO-RZ: leave out length if this is the last frame
+            // We always include length in the frame, regardless whether this is the last frame or not
             var type = FrameType.Stream | FrameType.StreamLenBit;
+
             if (offset != 0) type |= FrameType.StreamOffBit;
             if (fin) type |= FrameType.StreamFinBit;
 

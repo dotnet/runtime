@@ -9,7 +9,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public SingleEventValueTaskSource()
         {
-            // TODO-RZ: validate this
             _source.RunContinuationsAsynchronously = true;
         }
 

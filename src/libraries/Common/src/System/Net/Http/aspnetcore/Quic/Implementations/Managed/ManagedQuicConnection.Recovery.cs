@@ -100,7 +100,6 @@ namespace System.Net.Quic.Implementations.Managed
             foreach (var frame in packet.MaxStreamDataFrames)
             {
                 var stream = GetStream(frame.StreamId);
-                // TODO-RZ: send these frames less often
                 if (frame.MaximumStreamData > stream.InboundBuffer!.RemoteMaxData)
                 {
                     _streams.MarkForUpdate(stream);

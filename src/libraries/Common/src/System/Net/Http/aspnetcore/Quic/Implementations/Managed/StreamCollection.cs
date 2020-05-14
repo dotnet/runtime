@@ -163,7 +163,6 @@ namespace System.Net.Quic.Implementations.Managed
             // use double checking to prevent frequent locking
             if (node.List == null)
             {
-                // TODO-RZ: remove the need for this lock
                 lock (list)
                 {
                     if (node.List == null)

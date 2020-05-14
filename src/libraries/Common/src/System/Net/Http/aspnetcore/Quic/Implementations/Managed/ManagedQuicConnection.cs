@@ -177,7 +177,6 @@ namespace System.Net.Quic.Implementations.Managed
 
         /// <summary>
         ///     True if PING frame should be sent during next flight.
-        ///     //TODO-RZ: this is currently only debug aid to ensure that some ack-eliciting packet is sent.
         /// </summary>
         private bool _pingWanted;
 
@@ -264,8 +263,13 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private void DoHandshake()
         {
-            // TODO-RZ: handle failed handshake attempts
             var status = _tls.DoHandshake();
+
+            if (status == SslError.Ssl)
+            {
+                CloseConnection(TransportErrorCode.InternalError, "SSL error");
+                return;
+            }
 
             if (ReferenceEquals(_peerTransportParameters, TransportParameters.Default))
             {
@@ -317,7 +321,6 @@ namespace System.Net.Quic.Implementations.Managed
             // scenario where there is a pending ack in e.g. Initial epoch, but the connection cannot
             // send it because it is limited by congestion window, because it has in-flight packets
             // in Handshake epoch.
-            // TODO-RZ: this might not happen anymore if we drop packet space data
             var probeSpace = PacketSpace.Initial;
             for (int i = 1; i < _pnSpaces.Length; i++)
             {
@@ -626,7 +629,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void DropPacketNumberSpace(PacketSpace space)
+        private void DropPacketNumberSpace(PacketSpace space, ObjectPool<SentPacket> sentPacketPool)
         {
             // TODO-RZ: discard the PacketNumberSpace instance and let GC collect it?
             var pnSpace = _pnSpaces[(int)space];
@@ -636,7 +639,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            Recovery.DropUnackedData(space);
+            Recovery.DropUnackedData(space, sentPacketPool);
 
             // drop protection keys
             pnSpace.SendCryptoSeal = null;
