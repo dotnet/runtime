@@ -2175,7 +2175,7 @@ public:
         UNATIVE_OFFSET dsdOffs;
         UNATIVE_OFFSET alignment;
 
-        dataSecDsc() : dsdList(nullptr), dsdLast(nullptr), dsdOffs(0), alignment(0)
+        dataSecDsc() : dsdList(nullptr), dsdLast(nullptr), dsdOffs(0), alignment(4)
         {
         }
     };

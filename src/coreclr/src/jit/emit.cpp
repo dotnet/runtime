@@ -5565,7 +5565,17 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     // to constant data, not a real static field.
 
     UNATIVE_OFFSET cnsSize  = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnsAlign = (emitComp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+    UNATIVE_OFFSET cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        // Some platforms don't require doubles to be aligned and so
+        // we can use a smaller alignment to help with smaller code
+
+        cnsAlign = 1;
+    }
+#endif // TARGET_XARCH
 
     UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign);
     return emitComp->eeFindJitDataOffs(cnum);
