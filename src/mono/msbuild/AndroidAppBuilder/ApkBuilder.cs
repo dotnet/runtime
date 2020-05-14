@@ -143,18 +143,25 @@ public class ApkBuilder
             .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
         File.WriteAllText(Path.Combine(OutputDir, "runtime-android.c"), runtimeAndroidSrc);
         
-        string cmakeArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
+        string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
             $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B runtime-android";
 
+        string cmakeBuildArgs = "--build runtime-android";
+        
         if (StripDebugSymbols)
         {
-            // Makefile prints a warrning "clang: warning: argument unused during compilation: '-s'"
-            // but it does use it and calls `android-%abi%-strip` from NDK
-            cmakeArgs+= " -DCMAKE_C_FLAGS=-s";
+            // Use "-s" to strip debug symbols, it complains it's unused but it works
+            cmakeGenArgs+= " -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_C_FLAGS=\"-s -Wno-unused-command-line-argument\"";
+            cmakeBuildArgs += " --config MinSizeRel";
+        }
+        else
+        {
+            cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
+            cmakeBuildArgs += " --config Debug";
         }
 
-        Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeArgs);
-        Utils.RunProcess("make", workingDir: Path.Combine(OutputDir, "runtime-android"));
+        Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeGenArgs);
+        Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeBuildArgs);
 
         // 2. Compile Java files
 
@@ -196,6 +203,8 @@ public class ApkBuilder
                 // we link mono runtime statically into libruntime-android.so
                 continue;
             }
+
+            // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
 
             string destRelative = Path.Combine("lib", abi, dynamicLibName);
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
