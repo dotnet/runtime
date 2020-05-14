@@ -38,8 +38,8 @@ pr:
     - eng/Version.Details.xml
     - docs/*
     - eng/pipelines/runtime.yml
-    - *.md
-    - /*.TXT
+    - '*.md'
+    - '*.TXT'
 
 variables:
   - template: /eng/pipelines/common/variables.yml
