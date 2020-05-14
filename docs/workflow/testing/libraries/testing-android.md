@@ -23,10 +23,10 @@ export ANDROID_NDK_ROOT=~/android-ndk-${NDK_VER}
 export ANDROID_SDK_ROOT=~/android-sdk
 export ANDROID_OPENSSL_AAR=~/openssl-android
 
-curl https://dl.google.com/android/repository/android-ndk-${NDK_VER}-linux-x86_64.zip --output ~/andk.zip
+curl https://dl.google.com/android/repository/android-ndk-${NDK_VER}-linux-x86_64.zip -L --output ~/andk.zip
 unzip ~/andk.zip -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
 
-curl https://dl.google.com/android/repository/commandlinetools-linux-${SDK_TOOLS_VER}.zip --output ~/asdk.zip
+curl https://dl.google.com/android/repository/commandlinetools-linux-${SDK_VER}.zip -L --output ~/asdk.zip
 unzip ~/asdk.zip -d ${ANDROID_SDK_ROOT} && rm -rf ~/asdk.zip
 yes | ${ANDROID_SDK_ROOT}/tools/bin/./sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
 ${ANDROID_SDK_ROOT}/tools/bin/./sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-${SDK_API_LEVEL}" "build-tools;${SDK_BUILD_TOOLS}"
