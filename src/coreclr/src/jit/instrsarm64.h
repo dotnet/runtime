@@ -1802,6 +1802,24 @@ INST1(rshrn,       "rshrn",        0,      IF_DV_2O,  0x0F008C00)
 INST1(rshrn2,      "rshrn2",       0,      IF_DV_2O,  0x4F008C00)
                                    //  rshrn2  Vd,Vn,imm            DV_2O  010011110iiiiiii 100011nnnnnddddd   4F00 8C00   Vd,Vn imm  (shift - vector)
 
+INST1(sqrshrn2,    "sqrshrn2",     0,      IF_DV_2O,  0x0F009C00)
+                                   //  sqrshrn2 Vd,Vn,imm           DV_2O  0Q0011110iiiiiii 100111nnnnnddddd   0F00 9C00   Vd Vn imm  (shift - vector)
+
+INST1(sqrshrun2,   "sqrshrun2",    0,      IF_DV_2O,  0x2F008C00)
+                                   //  sqrshrun2 Vd,Vn,imm          DV_2O  0Q1011110iiiiiii 100011nnnnnddddd   2F00 8C00   Vd Vn imm  (shift - vector)
+
+INST1(sqshrn2,     "sqshrn2",      0,      IF_DV_2O,  0x0F009400)
+                                   //  sqshrn2 Vd,Vn,imm            DV_2O  0Q0011110iiiiiii 100101nnnnnddddd   0F00 9400   Vd Vn imm  (shift - vector)
+
+INST1(sqshrun2,    "sqshrun2",     0,      IF_DV_2O,  0x2F008400)
+                                   //  sqshrun2 Vd,Vn,imm           DV_2O  0Q1011110iiiiiii 100001nnnnnddddd   2F00 8400   Vd Vn imm  (shift - vector)
+
+INST1(uqrshrn2,    "uqrshrn2",     0,      IF_DV_2O,  0x2F009C00)
+                                   //  uqrshrn2 Vd,Vn,imm           DV_2O  0Q1011110iiiiiii 100111nnnnnddddd   2F00 9C00   Vd Vn imm  (shift - vector)
+
+INST1(uqshrn2,     "uqshrn2",      0,      IF_DV_2O,  0x2F009400)
+                                   //  uqshrn2 Vd,Vn,imm            DV_2O  0Q1011110iiiiiii 100101nnnnnddddd   2F00 9400   Vd Vn imm  (shift - vector)
+
 INST1(sxtl,        "sxtl",         0,      IF_DV_2O,  0x0F00A400)
                                    //  sxtl    Vd,Vn                DV_2O  000011110iiiiiii 101001nnnnnddddd   0F00 A400   Vd,Vn      (shift - vector)
 
