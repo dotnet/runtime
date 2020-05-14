@@ -21,6 +21,13 @@
 .class interface public auto ansi abstract IGenRetType<X,Y>  { }
 .class interface public auto ansi abstract IDictionary<KEY,VAL>  { }
 
+.class public auto ansi abstract CA {}
+.class public auto ansi abstract CB extends CA {}
+.class public auto ansi abstract CC extends CB {}
+
+.class interface public auto ansi abstract ICovariant<+ T>  { }
+.class interface public auto ansi abstract IContravariant<- T>  { }
+
 .class interface public auto ansi abstract IGenDerive1<V1,V2> implements IUnused1, IUnused2, class IGenRetType<!V1,!V2>  { }
 .class interface public auto ansi abstract IGenDerive2<U1,U2,U3> implements IUnused1, IUnused2, class IGenDerive1<!U1, class IDictionary<!U3,!U2>>  { }
 .class interface public auto ansi abstract IGenDerive3<T1,T2> implements IUnused1, IUnused2, class IGenDerive2<!T1,!T2,string>  { }
@@ -67,6 +74,22 @@
   {
     ldarg.1
     ldstr "IB GenBaseType.MyFunc()"
+    stind.ref
+    ldnull
+    ret
+  }
+  .method public hidebysig newslot virtual instance class ICovariant<class CB> MyFuncCovariant(string& res)
+  {
+    ldarg.1
+    ldstr "ICovariant<CB> GenBaseType.MyFuncCovariant()"
+    stind.ref
+    ldnull
+    ret
+  }
+  .method public hidebysig newslot virtual instance class IContravariant<class CB> MyFuncContravariant(string& res)
+  {
+    ldarg.1
+    ldstr "IContravariant<CB> GenBaseType.MyFuncContravariant()"
     stind.ref
     ldnull
     ret
@@ -230,7 +253,29 @@
     ldnull
     ret
   }
-  
+
+  .method public hidebysig newslot virtual instance class ICovariant<class CC> MyFuncCovariant(string& res)
+  {
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .override method instance class ICovariant<class CB> class GenBaseType<!U,!V>::MyFuncCovariant(string& res)
+    ldarg.1
+    ldstr "ICovariant<CC> TestType.MyFuncCovariant()"
+    stind.ref
+    ldnull
+    ret
+  }
+
+  .method public hidebysig newslot virtual instance class IContravariant<class CA> MyFuncContravariant(string& res)
+  {
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .override method instance class IContravariant<class CB> class GenBaseType<!U,!V>::MyFuncContravariant(string& res)
+    ldarg.1
+    ldstr "IContravariant<CA> TestType.MyFuncContravariant()"
+    stind.ref
+    ldnull
+    ret
+  }
+
   // ========================================================================================
   // Set of implicit overrides that should be ignored given there are explicit overrides from the MethodImpls
   // ========================================================================================
@@ -270,6 +315,20 @@
   }
   
   .method public hidebysig virtual instance class IB MyFunc(string& res)
+  {
+    ldstr "Should never execute this method"
+    newobj instance void [System.Runtime]System.Exception::.ctor(string)
+    throw
+  }
+
+  .method public hidebysig virtual instance class ICovariant<class CB> MyFuncCovariant(string& res)
+  {
+    ldstr "Should never execute this method"
+    newobj instance void [System.Runtime]System.Exception::.ctor(string)
+    throw
+  }
+
+  .method public hidebysig virtual instance class IContravariant<class CB> MyFuncContravariant(string& res)
   {
     ldstr "Should never execute this method"
     newobj instance void [System.Runtime]System.Exception::.ctor(string)
@@ -646,6 +705,51 @@
     ret
   }
 
+  .method public static bool RunTest7() noinlining
+  {
+    .locals init (string res1, string res2, string res3)
+
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
+    ldloca.s   0
+    callvirt   instance class ICovariant<class CB> class GenBaseType<int32,object>::MyFuncCovariant(string&)
+    pop
+
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class ICovariant<class CC> class GenTestType<int32,object,int32,object>::MyFuncCovariant(string&)
+    pop
+
+    ldstr "ICovariant<CC> TestType.MyFuncCovariant()"
+    ldloc.0
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
+    ret
+  }
+
+  .method public static bool RunTest8() noinlining
+  {
+    .locals init (string res1, string res2, string res3)
+
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
+    ldloca.s   0
+    callvirt   instance class IContravariant<class CB> class GenBaseType<int32,object>::MyFuncContravariant(string&)
+    pop
+
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class IContravariant<class CA> class GenTestType<int32,object,int32,object>::MyFuncContravariant(string&)
+    pop
+
+    ldstr "IContravariant<CA> TestType.MyFuncContravariant()"
+    ldloc.0
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
+    ret
+  }
 
   // ============== Test using GenMiddleType ============== //
   // These test methods will callvirt each method using:
@@ -1001,10 +1105,22 @@
     
     T6:
     call bool CMain::RunTest6()
+    brtrue.s T7
+    ldc.i4.0
+    stloc.0
+
+    T7:
+    call bool CMain::RunTest7()
+    brtrue.s T8
+    ldc.i4.0
+    stloc.0
+
+    T8:
+    call bool CMain::RunTest8()
     brtrue.s M1
     ldc.i4.0
     stloc.0
-    
+
     // ===================================================================================== //
     
     M1:
