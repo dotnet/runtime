@@ -5644,7 +5644,6 @@ read_page_trampoline_uwinfo (MonoTrampInfo *info, int tramp_type, gboolean is_ge
 static unsigned char*
 get_new_trampoline_from_page (int tramp_type)
 {
-	MonoImage *image;
 	TrampolinePage *page;
 	int count;
 	void *tpage;

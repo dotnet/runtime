@@ -4,6 +4,7 @@
 
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include "mini.h"
 
 #if defined(DISABLE_JIT)
 
@@ -18,7 +19,6 @@ mono_simd_intrinsics_init (void)
  * Only LLVM is supported as a backend.
  */
 
-#include "mini.h"
 #include "mini-runtime.h"
 #include "ir-emit.h"
 #ifdef ENABLE_LLVM
