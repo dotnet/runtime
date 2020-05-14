@@ -227,7 +227,7 @@ namespace System.Numerics.Tests
             Matrix4x4 mtx = new Matrix4x4(1, 2, 3, 0, 5, 1, 6, 0, 8, 9, 1, 0, 11, 12, 13, 0);
 
             Matrix4x4 actual;
-            Assert.False(Matrix4x4SSE.Invert(mtx, out actual));
+            Assert.False(Matrix4x4.Invert(mtx, out actual));
 
             Matrix4x4 i = mtx * actual;
             Assert.False(MathHelper.Equal(i, Matrix4x4.Identity));
