@@ -7,19 +7,17 @@ assignees: ''
 
 ---
 
-# Background and Motivation
+#### Background and Motivation
 
 <!--
-
-Please provide a thorough explanation of what necessitates the additional API.
-
+We welcome API proposals! We have a process to evaluate the value and shape of new API. There is an overview of our process [here](https://github.com/dotnet/runtime/blob/master/docs/project/api-review-process.md). This template will help us gather the information we need to start the review process.
+First, please describe the purpose and value of the new API here.
 -->
 
-# Proposed API
+#### Proposed API
 
 <!--
-
-Please provide the precise public API signature diff that you are proposing. If augmenting existing API signatures this should be expressed using diff blocks, for example
+Please provide the specific public API signature diff that you are proposing. For example:
 ```diff
 namespace System.Collections.Generic
 {
@@ -27,21 +25,28 @@ namespace System.Collections.Generic
 +    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlySet<T> {
      }
 ```
-
+You may find the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/framework-design-guidelines-digest.md) helpful.
 -->
 
-# Usage Examples
+#### Usage Examples
 
 <!--
-
 Please provide code examples that highlight how the proposed API additions are meant to be consumed.
-
+This will help suggest whether the API has the right shape to be functional, performant and useable.
+You can use code blocks like this:
+``` C#
+// some lines of code here
+```
 -->
 
-# Risks
+#### Alternative Designs
 
 <!--
+Were there other options you considered, such as alternative API shapes?
+-->
 
+#### Risks
+
+<!--
 Please mention any risks that to your knowledge the API proposal might entail, such as breaking changes, performance regressions, etc.
-
 -->
