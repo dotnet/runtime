@@ -87,6 +87,9 @@ Install the following packages for the toolchain:
 - libssl-dev
 - libkrb5-dev
 - libnuma-dev (optional, enables numa support)
+- autoconf
+- automake
+- libtool
 
 Note: ARM clang has a known issue with CompareExchange
 ([#15074](https://github.com/dotnet/coreclr/issues/15074)), so for ARM you must
@@ -105,7 +108,7 @@ For other version of Debian/Ubuntu, please visit http://apt.llvm.org/.
 
 Then install the packages you need:
 
-    ~$ sudo apt-get install cmake llvm-3.9 clang-9 libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev libnuma-dev libkrb5-dev
+    ~$ sudo apt-get install cmake llvm-3.9 clang-9 libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev libnuma-dev libkrb5-dev autoconf automake libtool
 
 You now have all the required components.
 
