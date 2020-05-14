@@ -3680,6 +3680,7 @@ public:
         }
         else
         {
+            assert(m_inited);
             return ((m_regType[0] != TYP_UNKNOWN) && (m_regType[1] != TYP_UNKNOWN));
         }
     }
@@ -4256,7 +4257,7 @@ struct GenTreeCall final : public GenTree
         return GetReturnTypeDesc()->IsMultiRegRetType();
 #else  // !FEATURE_MULTIREG_RET
         return false;
-#endif
+#endif // !FEATURE_MULTIREG_RET
     }
 
     // Returns true if VM has flagged this method as CORINFO_FLG_PINVOKE.
