@@ -3272,7 +3272,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                 noway_assert(op1->IsMultiRegCall());
 
                 const ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
-                int                   srcCount    = retTypeDesc->GetReturnRegCount();
+                const int             srcCount    = retTypeDesc->GetReturnRegCount();
                 useCandidates                     = retTypeDesc->GetABIReturnRegs();
                 for (int i = 0; i < srcCount; i++)
                 {
