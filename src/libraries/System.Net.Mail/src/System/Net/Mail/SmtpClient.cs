@@ -187,7 +187,7 @@ namespace System.Net.Mail
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                if (value.Length == 0)
+                if (value?.Length == 0)
                 {
                     throw new ArgumentException(SR.net_emptystringset, nameof(value));
                 }
