@@ -224,7 +224,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
     }
 
     // We expect that, at most, the first entry will already be allocated.
-    // (SetJupiterObject gets the first shot at this.)
     int nNextFreeIdx = pNewRCW->m_aInterfaceEntries[0].IsFree() ? 0 : 1;
 
     if (!m_itfTypeHandle.IsNull() && !m_itfTypeHandle.IsTypeDesc())
@@ -252,8 +251,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
                 if (!pNewRCW->IsURTAggregated())
                 {
                     pItfIP.SuppressRelease();
-
-                    RCWWalker::AfterInterfaceAddRef(pNewRCW);
                 }
             }
         }

@@ -175,21 +175,6 @@ const StdInterfaceDesc<15> g_IDispatchEx =
     }
 };
 
-// global ICCW vtable
-const StdInterfaceDesc<7> g_ICCW =
-{
-    enum_ICCW,
-    {
-        (UINT_PTR*)Unknown_QueryInterface_ICCW,
-        (UINT_PTR*)Unknown_AddRefSpecial,
-        (UINT_PTR*)Unknown_ReleaseSpecial,
-        (UINT_PTR*)ICCW_AddRefFromJupiter_Wrapper,
-        (UINT_PTR*)ICCW_ReleaseFromJupiter_Wrapper,
-        (UINT_PTR*)ICCW_Peg_Wrapper,
-        (UINT_PTR*)ICCW_Unpeg_Wrapper
-    }
-};
-
 // Generic helper to check if AppDomain matches and perform a DoCallBack otherwise
 inline BOOL IsCurrentDomainValid(ComCallWrapper* pWrap, Thread* pThread)
 {
@@ -328,77 +313,6 @@ HRESULT __stdcall Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, void** ppv
     CONTRACTL_END;
 
     ComCallWrapper* pWrap = MapIUnknownToWrapper(pUnk);
-    if (IsCurrentDomainValid(pWrap, GET_THREAD()))
-    {
-        return Unknown_QueryInterface_Internal(pWrap, pUnk, riid, ppv);
-    }
-    else
-    {
-        HRESULT hr = S_OK;
-        QIArgs args = {pWrap, pUnk, &riid, ppv, &hr};
-        Unknown_QueryInterface_CallBack(&args);
-        return hr;
-    }
-}
-
-//
-// Non crashing version of Unknown_QueryInterface for ICCW
-// This will either succeed and return a valid AddRef-ed interface pointer, or
-// fail with COR_E_ACCESS_CCW
-//
-HRESULT __stdcall Unknown_QueryInterface_ICCW(IUnknown *pUnk, REFIID riid, void **ppv)
-{
-    SetupThreadForComCall(E_OUTOFMEMORY);
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(CheckPointer(ppv, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ComCallWrapper* pWrap = MapIUnknownToWrapper(pUnk);
-
-    //
-    // AddRef to keep the object alive
-    // AddRef is "safe" at this point because if it is a CCW with outstanding Jupiter Ref,
-    // we know for sure the CCW is no claimed yet (but the object itself could be)
-    //
-    pWrap->AddRef();
-
-    CCWHolder pCCW = pWrap;
-
-    //
-    // Check if the object is still alive, if it is, it'll be kept alive until we release the extra
-    // ref in CCWHolder
-    // We need to do this in COOP mode to make sure next GC will observe the AddRef change on RefCountHandle
-    // and avoids a race that GC could in the middle of NULL-ing out the RefCountHandle
-    //
-    {
-        GCX_COOP_THREAD_EXISTS(GET_THREAD());
-
-        SimpleComCallWrapper *pSimpleWrap = pWrap->GetSimpleWrapper();
-
-        //
-        // For CCWs that have outstanding Jupiter-reference, they could be either:
-        // 1. Neutered - in this case it is unsafe to touch m_ppThis
-        // 2. RefCounted handle NULLed out by GC
-        //
-        if (pWrap->GetSimpleWrapper()->IsNeutered() ||
-            pWrap->GetObjectRef() == NULL)
-        {
-            // In those cases, it is unsafe to proceed with a QueryInterface call
-            return COR_E_ACCESSING_CCW;
-        }
-    }
-
-    //
-    // OK. Now the CCW is going to be alive until the end of this scope. We can go ahead and do the
-    // QI now
-    //
     if (IsCurrentDomainValid(pWrap, GET_THREAD()))
     {
         return Unknown_QueryInterface_Internal(pWrap, pUnk, riid, ppv);
@@ -2485,38 +2399,4 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk,
     SetInterfaceSafetyArgs args = {pUnk, &riid, dwOptionSetMask, dwEnabledOptions, &hr};
     ObjectSafety_SetInterfaceSafetyOptions_CallBack(&args);
     return hr;
-}
-
-ULONG __stdcall ICCW_AddRefFromJupiter_Wrapper(IUnknown *pUnk)
-{
-    SetupForComCallDWORD();
-
-    WRAPPER_NO_CONTRACT;
-
-    return ICCW_AddRefFromJupiter(pUnk);
-}
-
-ULONG __stdcall ICCW_ReleaseFromJupiter_Wrapper(IUnknown *pUnk)
-{
-    SetupForComCallDWORD();
-
-    WRAPPER_NO_CONTRACT;
-
-    return ICCW_ReleaseFromJupiter(pUnk);
-}
-
-HRESULT __stdcall ICCW_Peg_Wrapper(IUnknown *pUnk)
-{
-    SetupForComCallHR();
-    WRAPPER_NO_CONTRACT;
-
-    return ICCW_Peg(pUnk);
-}
-
-HRESULT __stdcall ICCW_Unpeg_Wrapper(IUnknown *pUnk)
-{
-    SetupForComCallHR();
-    WRAPPER_NO_CONTRACT;
-
-    return ICCW_Unpeg(pUnk);
 }

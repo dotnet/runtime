@@ -42,7 +42,6 @@
 #include "contractimpl.h"
 #include "caparser.h"
 #include "appdomain.inl"
-#include "rcwwalker.h"
 #include "typestring.h"
 
 // The enum that describes the value of the IDispatchImplAttribute custom attribute.
@@ -1490,7 +1489,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
 
     // IID_IMarshal                    00000003-0000-0000-C000-000000000046
     // IID_IErrorInfo                  1CF2B120-547D-101B-8E65-08002B2BD119
-    // IID_ICCW                        64BD43F8-BFEE-4EC4-B7EB-2935158DAE21
     // IID_IDispatchEx                 A6EF9860-C720-11d0-9337-00A0C90DCAA9
     // IID_IProvideClassInfo           B196B283-BAB4-101A-B69C-00AA00341D07
     // IID_IConnectionPointContainer   B196B284-BAB4-101A-B69C-00AA00341D07
@@ -1502,7 +1500,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
     {
     HANDLE_IID_INLINE(enum_IMarshal                 ,0x00000003,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46);
     HANDLE_IID_INLINE(enum_IErrorInfo               ,0x1CF2B120,0x547D,0x101B,0x8E,0x65,0x08,0x00,0x2B,0x2B,0xD1,0x19);
-    HANDLE_IID_INLINE(enum_ICCW                     ,0x64BD43F8,0xBFEE,0x4EC4,0xB7,0xEB,0x29,0x35,0x15,0x8D,0xAE,0x21);
     HANDLE_IID_INLINE(enum_IDispatchEx              ,0xA6EF9860,0xC720,0x11d0,0x93,0x37,0x00,0xA0,0xC9,0x0D,0xCA,0xA9); // hit3, !=
     HANDLE_IID_INLINE(enum_ISupportsErrorInfo       ,0xDF0B3D60,0x548F,0x101B,0x8E,0x65,0x08,0x00,0x2B,0x2B,0xD1,0x19);
     HANDLE_IID_INLINE(enum_IProvideClassInfo        ,0xB196B283,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07);  // hit4, !=
@@ -2025,8 +2022,8 @@ void ComCallWrapper::Cleanup()
     LONGLONG llRefCount = m_pSimpleWrapper->GetRealRefCount();
 
     LOG((LF_INTEROP, LL_INFO100,
-        "Calling ComCallWrapper::Cleanup on CCW 0x%p. cbRef = 0x%x, cbJupiterRef = 0x%x, IsPegged = %d, GlobalPeggingFlag = %d\n",
-        this, GET_COM_REF(llRefCount), GET_JUPITER_REF(llRefCount), IsPegged(), RCWWalker::IsGlobalPeggingOn()));
+        "Calling ComCallWrapper::Cleanup on CCW 0x%p. cbRef = 0x%x, cbJupiterRef = 0x%x, IsPegged = %d\n",
+        this, GET_COM_REF(llRefCount), GET_JUPITER_REF(llRefCount), IsPegged()));
 
     if (GET_COM_REF(llRefCount) != 0)
     {

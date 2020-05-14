@@ -23,7 +23,6 @@
 #include "dispatchinfo.h"
 #include "wrappers.h"
 #include "internalunknownimpl.h"
-#include "rcwwalker.h"
 #include "util.hpp"
 
 class CCacheLineAllocator;
@@ -2044,7 +2043,7 @@ inline BOOL ComCallWrapper::IsConsideredPegged()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return m_pSimpleWrapper->IsPegged() || RCWWalker::IsGlobalPeggingOn();
+    return m_pSimpleWrapper->IsPegged();
 }
 
 inline ULONG ComCallWrapper::GetJupiterRefCount()
@@ -2150,9 +2149,9 @@ inline BOOL ComCallWrapper::IsWrapperActive()
     BOOL bIsWrapperActive = (bHasStrongCOMRefCount && !m_pSimpleWrapper->IsHandleWeak());
 
     LOG((LF_INTEROP, LL_INFO1000,
-         "CCW 0x%p: cbRef = 0x%x, cbJupiterRef = 0x%x, IsPegged = %d, GlobalPegging = %d, IsHandleWeak = %d\n",
+         "CCW 0x%p: cbRef = 0x%x, cbJupiterRef = 0x%x, IsPegged = %d, IsHandleWeak = %d\n",
          this,
-         cbRef, cbJupiterRef, m_pSimpleWrapper->IsPegged(), RCWWalker::IsGlobalPeggingOn(), m_pSimpleWrapper->IsHandleWeak()));
+         cbRef, cbJupiterRef, m_pSimpleWrapper->IsPegged(), m_pSimpleWrapper->IsHandleWeak()));
     LOG((LF_INTEROP, LL_INFO1000, "CCW 0x%p: IsWrapperActive returned %d\n", this, bIsWrapperActive));
 
     return bIsWrapperActive;

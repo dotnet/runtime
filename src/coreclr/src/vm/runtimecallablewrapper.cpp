@@ -40,7 +40,6 @@ class Object;
 #include "caparser.h"
 #include "classnames.h"
 #include "objectnative.h"
-#include "rcwwalker.h"
 #include "finalizerthread.h"
 
 // static
@@ -1061,9 +1060,8 @@ void RCWCache::ReleaseWrappersWorker(LPVOID pCtxCookie)
                 // are in that context, including non-FTM regular RCWs, and FTM Jupiter objects
                 // Otherwise clean up all the wrappers.
                 // Ignore RCWs that aggregate the FTM if we are cleaning up context
-                // specific RCWs (note that we rely on this behavior in WinRT factory cache code)
-                // Note that Jupiter RCWs are special and they are considered to be context-bound
-                if (!pCtxCookie || ((pWrap->GetWrapperCtxCookie() == pCtxCookie) && (pWrap->IsJupiterObject() || !pWrap->IsFreeThreaded())))
+                // specific RCWs
+                if (!pCtxCookie || ((pWrap->GetWrapperCtxCookie() == pCtxCookie) && !pWrap->IsFreeThreaded()))
                 {
                     if (!pWrap->IsURTAggregated())
                         CleanupList.AddWrapper_NoLock(pWrap);
@@ -1159,9 +1157,6 @@ public:
                 // No need to use InterlockedOr here since every other place that modifies the flags
                 // runs in cooperative GC mode (i.e. definitely not concurrently with this function).
                 pRCW->m_Flags.m_Detached = 1;
-
-                if (pRCW->IsJupiterObject())
-                    RCWWalker::BeforeJupiterRCWDestroyed(pRCW);
             }
         }
     }
@@ -1746,10 +1741,6 @@ RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodT
         pRCW = RCW::CreateRCWInternal(pUnk, dwSyncBlockIndex, flags, pClassMT);
     }
 
-    // No exception after this point
-    if (pRCW->IsJupiterObject())
-        RCWWalker::AfterJupiterRCWCreated(pRCW);
-
     RETURN pRCW;
 }
 
@@ -1928,9 +1919,6 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
     // Store the sync block index.
     m_SyncBlockIndex = dwSyncBlockIndex;
 
-    // Check if this object is a Jupiter object (only for WinRT scenarios)
-    _ASSERTE(m_Flags.m_fIsJupiterObject == 0);
-
     // Log the wrapper initialization.
     LOG((LF_INTEROP, LL_INFO100, "Initializing RCW %p with SyncBlock index %d\n", this, dwSyncBlockIndex));
 
@@ -1966,18 +1954,6 @@ VOID RCW::MarkURTAggregated()
         PRECONDITION(m_Flags.m_fURTContained == 0);
     }
     CONTRACTL_END;
-
-    if (!m_Flags.m_fURTAggregated && m_Flags.m_fIsJupiterObject)
-    {
-        // Notify Jupiter that we are about to release IJupiterObject
-        RCWWalker::BeforeInterfaceRelease(this);
-
-        // If we mark this RCW as aggregated and we've done a QI for IJupiterObject,
-        // release it to account for the extra ref
-        // Note that this is a quick fix for PDC-2 and eventually we should replace
-        // this with a better fix
-        SafeRelease(GetJupiterObject());
-    }
 
     m_Flags.m_fURTAggregated = 1;
 }
@@ -2253,9 +2229,6 @@ void RCW::MinorCleanup()
     // On server build, multiple threads will be removing
     // wrappers from wrapper cache,
     pCache->RemoveWrapper(this);
-
-    if (IsJupiterObject() && !IsDetached())
-        RCWWalker::BeforeJupiterRCWDestroyed(this);
 
     // Clear the SyncBlockIndex as the object is being GC'd and the index will become
     // invalid as soon as the object is collected.
@@ -2548,9 +2521,6 @@ void RCW::DecoupleFromObject()
 
     if (m_SyncBlockIndex != 0)
     {
-        if (IsJupiterObject() && !IsDetached())
-            RCWWalker::BeforeJupiterRCWDestroyed(this);
-
         // remove reference to wrapper from sync block
         SyncBlock* pSB = GetSyncBlock();
         _ASSERTE(pSB);
@@ -3047,11 +3017,6 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
                     // Get an extra addref to hold this reference alive in our cache
                     cbRef = SafeAddRef(pUnk);
                     LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in InterfaceEntry cache");
-
-                    // Notify Jupiter we have done a AddRef
-                    // We should do this *after* we made a AddRef because we should never
-                    // be in a state where report refs > actual refs
-                    RCWWalker::AfterInterfaceAddRef(this);
                 }
 
                 fInterfaceCached = true;
@@ -3072,11 +3037,6 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
             // Get an extra addref to hold this reference alive in our cache
             cbRef = SafeAddRef(pUnk);
             LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in the auxiliary interface pointer cache");
-
-            // Notify Jupiter we have done a AddRef
-            // We should do this *after* we made a AddRef because we should never
-            // be in a state where report refs > actual refs
-            RCWWalker::AfterInterfaceAddRef(this);
         }
 
         fInterfaceCached = true;
@@ -3254,19 +3214,12 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
 
                 if (pCurrentCtxCookie == NULL || pCurrentCtxCookie == it.GetCtxCookie() || pWrap->IsFreeThreaded())
                 {
-                    // Notify Jupiter we are about to do a Release() for every cached interface pointer
-                    // This needs to be made before call Release because we should never be in a
-                    // state that we report more than the actual ref
-                    RCWWalker::BeforeInterfaceRelease(pWrap);
-
                     // make sure we never try to clean this up again
                     pEntry->Free();
                     SafeReleasePreemp(pUnk, pWrap);
                 }
                 else
                 {
-                    _ASSERTE(!pWrap->IsJupiterObject());
-
                     // Retrieve the addref'ed context entry that the wrapper lives in.
                     CtxEntryHolder pCtxEntry = it.GetCtxEntry();
 
@@ -3307,11 +3260,6 @@ void RCW::ReleaseAllInterfaces()
 
     RCW_VTABLEPTR(this);
 
-    // Notify Jupiter we are about to do a Release() for IUnknown
-    // This needs to be made before call Release because we should never be in a
-    // state that we report more than the actual ref
-    RCWWalker::BeforeInterfaceRelease(this);
-
     // Release the pUnk held by IUnkEntry
     m_UnkEntry.ReleaseInterface(this);
 
@@ -3325,11 +3273,6 @@ void RCW::ReleaseAllInterfaces()
 
             if (!m_aInterfaceEntries[i].IsFree())
             {
-                // Notify Jupiter we are about to do a Release() for every cached interface pointer
-                // This needs to be made before call Release because we should never be in a
-                // state that we report more than the actual ref
-                RCWWalker::BeforeInterfaceRelease(this);
-
                 DWORD cbRef = SafeReleasePreemp(m_aInterfaceEntries[i].m_pUnknown, this);
                 LogInteropRelease(m_aInterfaceEntries[i].m_pUnknown, cbRef, "RCW::ReleaseAllInterfaces: Releasing ref from InterfaceEntry table");
             }

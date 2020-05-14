@@ -68,7 +68,6 @@
 #include "comcache.h"
 #include "threads.h"
 #include "comcache.h"
-#include "jupiterobject.h"
 
 class Object;
 class ComCallWrapper;
@@ -524,31 +523,6 @@ struct RCW
         return m_cbRefCount;
     }
 
-    IJupiterObject *GetJupiterObjectNoCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsJupiterObject());
-
-        // We saved IJupiterObject * on the first slot
-        _ASSERTE((IUnknown *)m_aInterfaceEntries[0].m_pUnknown != NULL);
-        _ASSERTE((MethodTable *)m_aInterfaceEntries[0].m_pMT == NULL);
-
-        return (IJupiterObject *)m_aInterfaceEntries[0].m_pUnknown.Load();
-    }
-
-    IJupiterObject *GetJupiterObject()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (IsJupiterObject())
-        {
-            return GetJupiterObjectNoCheck();
-        }
-
-        return NULL;
-    }
-
     void GetCachedInterfaceTypes(BOOL bIInspectableOnly,
                         SArray<PTR_MethodTable> * rgItfTables)
     {
@@ -575,24 +549,6 @@ struct RCW
                 }
             }
         }
-    }
-
-    // Save IJupiterObject * on the first slot
-    // Only call this in Initialize code
-    void SetJupiterObject(IJupiterObject *pJupiterObject)
-    {
-
-        LIMITED_METHOD_CONTRACT;
-
-        m_Flags.m_fIsJupiterObject = 1;
-
-        //
-        // Save pJupiterObject* on the first SLOT
-        // Only AddRef if not aggregated
-        //
-        _ASSERTE(m_aInterfaceEntries[0].IsFree());
-
-        m_aInterfaceEntries[0].Init(NULL, pJupiterObject);
     }
 
     LPVOID     GetVTablePtr() { LIMITED_METHOD_CONTRACT; return m_vtablePtr; }
@@ -664,13 +620,6 @@ struct RCW
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (m_Flags.m_MarshalingType == MarshalingType_Inhibit) ;
-    }
-
-    BOOL IsJupiterObject()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_Flags.m_fIsJupiterObject == 1;
     }
 
     // Returns TRUE if this RCW has been detached. Detached RCWs are fully functional but have been found
@@ -858,7 +807,6 @@ public:
             DWORD       m_fURTAggregated:1;        // this RCW represents a COM object aggregated by a managed object
             DWORD       m_fURTContained:1;         // this RCW represents a COM object contained by a managed object
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
-            DWORD       m_fIsJupiterObject:1;      // this RCW represents a COM object from Jupiter
 
             static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
             DWORD       m_GCPressure:3;            // index into s_rGCPressureTable

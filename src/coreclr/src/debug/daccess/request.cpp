@@ -3904,7 +3904,6 @@ HRESULT ClrDataAccess::GetRCWData(CLRDATA_ADDRESS addr, struct DacpRCWData *rcwD
     rcwData->refCount        = pRCW->m_cbRefCount;
     rcwData->isAggregated = pRCW->IsURTAggregated();
     rcwData->isContained = pRCW->IsURTContained();
-    rcwData->jupiterObject = TO_CDADDR(pRCW->GetJupiterObject());
     rcwData->isFreeThreaded = pRCW->IsFreeThreaded();
     rcwData->isDisconnected = pRCW->IsDisconnected();
 
@@ -4082,7 +4081,7 @@ HRESULT ClrDataAccess::GetCCWData(CLRDATA_ADDRESS ccw, struct DacpCCWData *ccwDa
 
     ccwData->jupiterRefCount = pSimpleCCW->GetJupiterRefCount();
     ccwData->isPegged = pSimpleCCW->IsPegged();
-    ccwData->isGlobalPegged = RCWWalker::IsGlobalPeggingOn();
+    ccwData->isGlobalPegged = false;
     ccwData->hasStrongRef = pCCW->IsWrapperActive();
     ccwData->handle = pCCW->GetObjectHandle();
     ccwData->isExtendsCOMObject = pCCW->GetSimpleWrapper()->IsExtendsCOMObject();

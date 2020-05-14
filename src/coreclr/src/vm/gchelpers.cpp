@@ -34,8 +34,6 @@
 #include "runtimecallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
-#include "rcwwalker.h"
-
 //========================================================================
 //
 //      ALLOCATION HELPERS

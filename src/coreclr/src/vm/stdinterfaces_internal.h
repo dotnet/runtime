@@ -302,15 +302,5 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
 HRESULT __stdcall ClassInfo_GetClassInfo(IUnknown* pUnk,
                          ITypeInfo** ppTI  //Address of output variable that receives the type info.
                         );
-//-------------------------------------------------------------------------
-// ICCW methods
-ULONG __stdcall ICCW_AddRefFromJupiter(IUnknown* pUnk);
-
-ULONG __stdcall ICCW_ReleaseFromJupiter(IUnknown* pUnk);
-
-HRESULT __stdcall ICCW_Peg(IUnknown* pUnk);
-
-HRESULT __stdcall ICCW_Unpeg(IUnknown* pUnk);
-
 
 #endif

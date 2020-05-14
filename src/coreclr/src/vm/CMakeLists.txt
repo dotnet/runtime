@@ -565,13 +565,11 @@ if(CLR_CMAKE_TARGET_WIN32)
 set(VM_SOURCES_DAC_AND_WKS_WIN32
     amsi.cpp
     clrtocomcall.cpp
-    rcwwalker.cpp
 )
 
 set(VM_HEADERS_DAC_AND_WKS_WIN32
     amsi.h
     clrtocomcall.h
-    rcwwalker.h
 )
 
 list(APPEND VM_SOURCES_WKS

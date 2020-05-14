@@ -80,7 +80,6 @@ const SLOT * const g_rgStdVtables[] =
     (SLOT*)&g_IConnectionPointContainer.m_vtable,
     (SLOT*)&g_IObjectSafety.m_vtable,
     (SLOT*)&g_IDispatchEx.m_vtable,
-    (SLOT*)&g_ICCW.m_vtable,
 };
 
 //------------------------------------------------------------------------------------------
@@ -2510,92 +2509,6 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
 
     if ((dwEnabledOptions & ~(INTERFACESAFE_FOR_UNTRUSTED_DATA | INTERFACESAFE_FOR_UNTRUSTED_CALLER)) != 0)
         return E_FAIL;
-
-    return S_OK;
-}
-
-ULONG __stdcall
-ICCW_AddRefFromJupiter(IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(IsSimpleTearOff(pUnk));
-    }
-    CONTRACTL_END;
-
-    SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-
-    return pSimpleWrap->AddJupiterRef();
-}
-
-ULONG __stdcall
-ICCW_ReleaseFromJupiter(IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pUnk));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = -1;
-
-    HRESULT hr;
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-
-        cbRef = pSimpleWrap->ReleaseJupiterRef();
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return cbRef;
-}
-
-HRESULT __stdcall
-ICCW_Peg(IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pUnk));
-    }
-    CONTRACTL_END;
-
-    SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-
-    pSimpleWrap->MarkPegged();
-
-    STRESS_LOG1(LF_INTEROP, LL_INFO1000, "CCW 0x%p pegged\n", (ComCallWrapper *)pSimpleWrap->GetMainWrapper());
-
-    return S_OK;
-}
-
-HRESULT __stdcall
-ICCW_Unpeg(IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pUnk));
-    }
-    CONTRACTL_END;
-
-    SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-
-    pSimpleWrap->UnMarkPegged();
-
-    STRESS_LOG1(LF_INTEROP, LL_INFO1000, "CCW 0x%p unpegged\n", (ComCallWrapper *)pSimpleWrap->GetMainWrapper());
 
     return S_OK;
 }

@@ -191,28 +191,6 @@ void RCWRefCache::ShrinkDependentHandles()
 }
 
 //
-// Add a reference from RCW to CCW
-//
-HRESULT RCWRefCache::AddReferenceFromRCWToCCW(RCW *pRCW, ComCallWrapper *pCCW)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pRCW));
-        PRECONDITION(CheckPointer(pCCW));
-        PRECONDITION(CheckPointer(OBJECTREFToObject(pCCW->GetObjectRef())));
-        PRECONDITION(pRCW->IsJupiterObject());
-        PRECONDITION(pCCW->GetJupiterRefCount() > 0);
-    }
-    CONTRACTL_END;
-
-    // Try adding reference using dependent handles
-    return AddReferenceUsingDependentHandle(pRCW->GetExposedObject(), pCCW->GetObjectRef());
-}
-
-//
 // Add a reference from obj1 to obj2
 //
 HRESULT RCWRefCache::AddReferenceFromObjectToObject(OBJECTREF obj1, OBJECTREF obj2)

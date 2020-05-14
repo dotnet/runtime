@@ -5,7 +5,6 @@
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
-#include "rcwwalker.h"
 #include "olecontexthelpers.h"
 #include "finalizerthread.h"
 
@@ -801,6 +800,11 @@ namespace
     }
 }
 
+namespace
+{
+    BOOL g_isGlobalPeggingOn;
+}
+
 namespace InteropLibImports
 {
     void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario) noexcept
@@ -980,7 +984,7 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
-        return (RCWWalker::s_bIsGlobalPeggingOn != FALSE);
+        return (g_isGlobalPeggingOn != FALSE);
     }
 
     void SetGlobalPeggingState(_In_ bool state) noexcept
@@ -994,7 +998,7 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         BOOL newState = state ? TRUE : FALSE;
-        VolatileStore(&RCWWalker::s_bIsGlobalPeggingOn, newState);
+        VolatileStore(&g_isGlobalPeggingOn, newState);
     }
 
     HRESULT GetOrCreateTrackerTargetForExternal(
@@ -1463,20 +1467,6 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
-    //
-    // Let GC detect managed/native cycles with input from jupiter
-    // Jupiter will
-    // 1. Report reference from RCW to CCW based on native reference in Jupiter
-    // 2. Identify the subset of CCWs that needs to be rooted
-    //
-    // We'll build the references from RCW to CCW using
-    // 1. Preallocated arrays
-    // 2. Dependent handles
-    //
-    RCWWalker::OnGCStarted(nCondemnedGeneration);
-#endif // FEATURE_COMINTEROP
-
 #ifdef FEATURE_COMWRAPPERS
     //
     // Note that we could get nested GCStart/GCEnd calls, such as :
@@ -1520,13 +1510,6 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    //
-    // Tell Jupiter GC has finished
-    //
-    RCWWalker::OnGCFinished(nCondemnedGeneration);
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
     //

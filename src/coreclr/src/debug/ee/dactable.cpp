@@ -21,7 +21,6 @@
 #include "../../vm/common.h"
 #include "../../vm/gcenv.h"
 #include "../../vm/ecall.h"
-#include "../../vm/rcwwalker.h"
 // This header include will need to be rmeoved as part of GitHub#12170.
 // The only reason it's here now is that this file references the GC-private
 // variable g_HandleTableMap.
@@ -40,7 +39,7 @@ extern DWORD gAppDomainTLSIndex;
 extern BOOL g_fAppX;
 #endif // FEATURE_APPX
 
-DLLEXPORT 
+DLLEXPORT
 DacGlobals g_dacTable;
 
 // DAC global pointer table initialization

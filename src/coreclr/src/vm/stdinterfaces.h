@@ -19,8 +19,6 @@
 #include "weakreference.h"
 #include "common.h"
 
-extern const IID IID_ICCW;
-
 // Until the Windows SDK is updated, just hard-code the INoMarshal IID
 #ifndef __INoMarshal_INTERFACE_DEFINED__
 DEFINE_GUID(IID_INoMarshal,0xecc8691b,0xc1db,0x4dc0,0x85,0x5e,0x65,0xf6,0xc5,0x51,0xaf,0x49);
@@ -54,7 +52,6 @@ enum Enum_StdInterfaces
     enum_IConnectionPointContainer,
     enum_IObjectSafety,
     enum_IDispatchEx,
-    enum_ICCW,
     // add your favorite std interface here
     enum_LastStdVtable,
 
@@ -103,7 +100,6 @@ extern const StdInterfaceDesc<8>  g_IErrorInfo;
 extern const StdInterfaceDesc<5>  g_IConnectionPointContainer;
 extern const StdInterfaceDesc<5>  g_IObjectSafety;
 extern const StdInterfaceDesc<15> g_IDispatchEx;
-extern const StdInterfaceDesc<7>  g_ICCW;
 
 // enum class types
 enum ComClassType
@@ -364,23 +360,10 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk,
                                                          DWORD dwOptionSetMask,
                                                          DWORD dwEnabledOptions);
 
-//------------------------------------------------------------------------------------------
-//      ICCW methods for Jupiter
-ULONG __stdcall ICCW_AddRefFromJupiter_Wrapper(IUnknown *pUnk);
-
-ULONG __stdcall ICCW_ReleaseFromJupiter_Wrapper(IUnknown *pUnk);
-
-HRESULT __stdcall ICCW_Peg_Wrapper(IUnknown *pUnk);
-
-HRESULT __stdcall ICCW_Unpeg_Wrapper(IUnknown *pUnk);
-
-
-
 // IUNKNOWN wrappers
 
 // prototypes IUnknown methods
 HRESULT __stdcall   Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, void** ppv);
-HRESULT __stdcall   Unknown_QueryInterface_ICCW(IUnknown *pUnk, REFIID riid, void **ppv);
 
 ULONG __stdcall     Unknown_AddRef(IUnknown* pUnk);
 ULONG __stdcall     Unknown_Release(IUnknown* pUnk);
