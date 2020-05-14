@@ -19,20 +19,7 @@
 #include "weakreference.h"
 #include "common.h"
 
-extern const IID IID_IWeakReferenceSource;
-extern const IID IID_IWeakReference;
-extern const IID IID_ICustomPropertyProvider;
 extern const IID IID_ICCW;
-
-// Until the Windows SDK is updated, just hard-code the IAgileObject IID
-#ifndef __IAgileObject_INTERFACE_DEFINED__
-DEFINE_GUID(IID_IAgileObject,0x94ea2b94,0xe9cc,0x49e0,0xc0,0xff,0xee,0x64,0xca,0x8f,0x5b,0x90);
-MIDL_INTERFACE("94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90")
-IAgileObject : public IUnknown
-{
-public:
-};
-#endif // !__IAgileObject_INTERFACE_DEFINED__
 
 // Until the Windows SDK is updated, just hard-code the INoMarshal IID
 #ifndef __INoMarshal_INTERFACE_DEFINED__
