@@ -5337,7 +5337,8 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
-            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegModified);
+            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg,
+                                 pInitRegModified);
             offset += spAdjustment2;
 
             // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"

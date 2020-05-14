@@ -9256,7 +9256,10 @@ void CodeGen::genArm64EmitterUnitTests()
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegModified, regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned  frameSize,
+                               regNumber initReg,
+                               bool*     pInitRegModified,
+                               regMaskTP maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -9353,7 +9356,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, rLimit, rOffset); // If equal, we need to probe again
         GetEmitter()->emitIns_J(INS_bls, NULL, -4);
 
-        *pInitRegModified = true; 
+        *pInitRegModified = true;
 
         compiler->unwindPadding();
 
@@ -9368,7 +9371,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         compiler->unwindPadding();
 
         regSet.verifyRegUsed(initReg);
-        *pInitRegModified = true; 
+        *pInitRegModified = true;
     }
 }
 
