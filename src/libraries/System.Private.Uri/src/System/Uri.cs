@@ -3262,7 +3262,8 @@ namespace System
             // For iri parsing if we found unicode the idx has offset into _originalUnicodeString..
             // so restart parsing from there and make _info.Offset.Path as _string.Length
 
-            idx = origIdx = _info.Offset.Path;
+            idx = _info.Offset.Path;
+            origIdx = _info.Offset.Path;
 
             //Some uris do not have a query
             //    When '?' is passed as delimiter, then it's special case
