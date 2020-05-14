@@ -887,17 +887,11 @@
     <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
              Properties="Configuration=$(Configuration);Platform=$(HostArch)"
              Targets="Restore;Build" />
-    <MSBuild Projects="$(AppleTestRunnerProjDirectory)AppleTestRunner.csproj"
-             Properties="Configuration=$(Configuration)"
-             Targets="Restore;Build" />
   </Target>
 
   <Target Name="BuildAndroidAppBuilder" Condition="'$(TargetsAndroid)' == 'true'">
     <MSBuild Projects="$(AndroidAppBuilderProjDirectory)AndroidAppBuilder.csproj"
              Properties="Configuration=$(Configuration);Platform=$(HostArch)"
-             Targets="Restore;Build" />
-    <MSBuild Projects="$(AndroidTestRunnerProjDirectory)AndroidTestRunner.csproj"
-             Properties="Configuration=$(Configuration)"
              Targets="Restore;Build" />
   </Target>
 
