@@ -7,7 +7,6 @@
  *
  *          id      -- the enum name for the instruction
  *          nm      -- textual name (for assembly dipslay)
- *          fp      -- floating point instruction
  *          ld/st/cmp   -- load/store/compare instruction
  *          fmt     -- encoding format used by this instruction
  *          e1      -- encoding 1
@@ -15,6 +14,10 @@
  *          e3      -- encoding 3
  *          e4      -- encoding 4
  *          e5      -- encoding 5
+ *          e6      -- encoding 6
+ *          e7      -- encoding 7
+ *          e8      -- encoding 8
+ *          e9      -- encoding 9
  *
 ******************************************************************************/
 
@@ -45,7 +48,7 @@
 #endif
 
 /*****************************************************************************/
-/*               The following is ARM64-specific                               */
+/*               The following is ARM64-specific                             */
 /*****************************************************************************/
 
 // If you're adding a new instruction:
