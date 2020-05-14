@@ -155,7 +155,7 @@ namespace System.Formats.Cbor.Tests
                 if (TryReadCoseKeyLabel(CoseKeyLabel.KeyOps))
                 {
                     // No-op, simply tolerate potential key_ops labels
-                    reader.SkipValue(validateConformance: true);
+                    reader.SkipValue();
                 }
 
                 ReadCoseKeyLabel(CoseKeyLabel.EcCrv);
