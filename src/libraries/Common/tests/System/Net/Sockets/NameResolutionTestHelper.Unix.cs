@@ -9,27 +9,18 @@ namespace System.Net.NameResolution.Tests
     internal static class NameResolutionTestHelper
     {
         /// <summary>
-        /// Check if name resolution (getaddrinfo) at OS level.
+        /// Check if name resolution works at OS level.
         /// In case of failure we may force the tests fail, so we can gather diagnostics from the CI environment.
         /// After collecting enough information we shall alter call sites to use throwOnFailure:false,
         /// since the failure does not indicate an error within the NCL product code.
         /// </summary>
-        public static unsafe bool EnsureNameToAddressWorks(string hostName, ITestOutputHelper? testOutput, bool throwOnFailure)
+        public static bool EnsureNameToAddrlazyessWorks(string hostName, ITestOutputHelper? testOutput, bool throwOnFailure)
         {
-            addrinfo hint = default;
-            hint.ai_family = 0; // AF_UNSPEC
-            hint.ai_flags = 2; // AI_CANONNAME
-            hint.ai_socktype = 1; // SOCK_STREAM;
-
-            addrinfo* res = default;
-
-            int err = getaddrinfo(hostName, null, &hint, &res);
-            freeaddrinfo(res);
-
-            if (err != 0)
+            IntPtr hostEntry = gethostbyname(hostName);
+            if (hostEntry == IntPtr.Zero)
             {
                 string failureInfo =
-                    $"Failed to resolve '{hostName}'! getaddrinfo error: {err}{Environment.NewLine}{LogUnixInfo()}";
+                    $"Failed to resolve '{hostName}'! {Environment.NewLine}{LogUnixInfo()}";
                 testOutput?.WriteLine(failureInfo);
                 if (throwOnFailure)
                 {
@@ -75,25 +66,7 @@ namespace System.Net.NameResolution.Tests
             return bld.ToString();
         }
 
-#pragma warning disable 169
-        [StructLayout(LayoutKind.Sequential)]
-        unsafe struct addrinfo
-        {
-            public int ai_flags;
-            public int ai_family;
-            public int ai_socktype;
-            int ai_protocol;
-            uint ai_addrlen;
-            UIntPtr ai_addr;
-            UIntPtr ai_canonname;
-            addrinfo* ai_next;
-        };
-#pragma warning restore 169
-
         [DllImport("libc")]
-        private static extern unsafe int getaddrinfo(string node, string service, addrinfo* hints, addrinfo** res);
-
-        [DllImport("libc")]
-        private static extern unsafe void freeaddrinfo(addrinfo* res);
+        private static extern IntPtr gethostbyname(string name);
     }
 }
