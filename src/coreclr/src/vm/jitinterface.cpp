@@ -101,7 +101,7 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #ifdef FEATURE_EVENT_TRACE
 long g_cbILJitted = 0;
-long g_cMethodsJitted = 0;
+int g_cMethodsJitted = 0;
 
 long GetJittedBytes()
 {

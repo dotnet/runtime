@@ -1685,7 +1685,7 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 bool __stdcall TrackAllocationsEnabled();
 
 long GetJittedBytes();
-long GetJittedMethodsCount();
+int GetJittedMethodsCount();
 
 #endif // JITINTERFACE_H
 
