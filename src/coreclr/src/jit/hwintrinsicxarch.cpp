@@ -633,7 +633,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic));
 
-            var_types baseTypeOfIntrinsic = getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
+            var_types baseTypeOfIntrinsic =
+                getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
             assert(baseType == baseTypeOfIntrinsic);
 
             switch (getSIMDTypeForSize(simdSize))
@@ -706,8 +707,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     assert(intrinsic == NI_Vector256_AsVector256);
-                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType,
-                                            simdSize);
+                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType, simdSize);
                 }
             }
 

@@ -619,7 +619,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector128_ToScalar:
             {
                 ssize_t indexValue = 0;
-                if (intrin.id == NI_Vector64_GetElement || intrin.id == NI_Vector128_GetElement)
+                if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
                 {
                     assert(intrin.op2->IsCnsIntOrI());
                     indexValue = intrin.op2->AsIntCon()->gtIconVal;
