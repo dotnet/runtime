@@ -9259,8 +9259,18 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
     if (size >= max ((extra_space + 2*OS_PAGE_SIZE), 100*OS_PAGE_SIZE))
     {
         page_start += max(extra_space, 32*OS_PAGE_SIZE);
-        size -= max (extra_space, 32*OS_PAGE_SIZE);
+        decommit_heap_segment_pages_worker (seg, page_start);
+    }
+}
 
+size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
+                                                    uint8_t* new_committed)
+{
+    assert(!use_large_pages_p);
+    uint8_t* page_start = align_on_page (new_committed);
+    size_t size = heap_segment_committed (seg) - page_start;
+    if (size > 0)
+    {
         virtual_decommit (page_start, size, heap_number);
         dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
             (size_t)page_start,
@@ -9272,6 +9282,7 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
             heap_segment_used (seg) = heap_segment_committed (seg);
         }
     }
+    return size;
 }
 
 //decommit all pages except one or 2
@@ -31787,9 +31798,11 @@ void gc_heap::decommit_ephemeral_segment_pages()
     {
         gradual_decommit_in_progress_p = TRUE;
     }
+#ifdef _DEBUG
     // these are only for checking against logic errors
     ephemeral_heap_segment->saved_committed = heap_segment_committed (ephemeral_heap_segment);
-    ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation(dd0);
+    ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation (dd0);
+#endif // _DEBUG
 #endif // MULTIPLE_HEAPS
 
 #ifndef MULTIPLE_HEAPS
@@ -31835,10 +31848,8 @@ bool gc_heap::decommit_step ()
 size_t gc_heap::decommit_ephemeral_segment_pages_step ()
 {
     // we rely on desired allocation not being changed outside of GC
-    if (ephemeral_heap_segment->saved_desired_allocation != dd_desired_allocation(dynamic_data_of(0)))
-    {
-        GCToOSInterface::DebugBreak();
-    }
+    assert (ephemeral_heap_segment->saved_desired_allocation == dd_desired_allocation (dynamic_data_of(0)));
+
     uint8_t* decommit_target = heap_segment_decommit_target (ephemeral_heap_segment);
     size_t EXTRA_SPACE = 4 * OS_PAGE_SIZE;
     decommit_target += EXTRA_SPACE;
@@ -31846,30 +31857,26 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
     if (decommit_target < committed)
     {
         // we rely on other threads not messing with committed if we are about to trim it down
-        if (ephemeral_heap_segment->saved_committed != heap_segment_committed (ephemeral_heap_segment))
-        {
-            GCToOSInterface::DebugBreak();
-        }
+        assert (ephemeral_heap_segment->saved_committed == heap_segment_committed (ephemeral_heap_segment));
 
         // limit the decommit size to some reasonable value per time interval
-        size_t decommit_size = align_on_page ((DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS) / n_heaps);
+        ptrdiff_t decommit_size = ((DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS) / n_heaps);
 
         // but do at least 100 pages to make the OS call worthwhile
-        decommit_size = max (decommit_size, 100 * OS_PAGE_SIZE);
+        decommit_size = max (decommit_size, (ptrdiff_t)(100 * OS_PAGE_SIZE));
 
-        uint8_t* page_start = align_on_page ( max (decommit_target, (committed - decommit_size)));
-        size_t size = (committed - page_start);
-        virtual_decommit (page_start, size, heap_number);
-        dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
-            (size_t)page_start,
-            (size_t)(page_start + size),
-            size));
-        heap_segment_committed (ephemeral_heap_segment) = page_start;
-        ephemeral_heap_segment->saved_committed = page_start;
-        if (heap_segment_used (ephemeral_heap_segment) > heap_segment_committed (ephemeral_heap_segment))
-        {
-            heap_segment_used (ephemeral_heap_segment) = heap_segment_committed (ephemeral_heap_segment);
-        }
+        // but don't try to do more than what's actually committed in the segment
+        decommit_size = min ((heap_segment_committed (ephemeral_heap_segment) - heap_segment_mem (ephemeral_heap_segment)),
+                             decommit_size);
+
+        // figure out where the new committed should be
+        uint8_t* new_committed = max (decommit_target, (committed - decommit_size));
+        size_t size = decommit_heap_segment_pages_worker (ephemeral_heap_segment, new_committed);
+
+#ifdef _DEBUG
+        ephemeral_heap_segment->saved_committed = committed - size;
+#endif // _DEBUG
+
         return size;
     }
     return 0;
