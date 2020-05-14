@@ -4077,12 +4077,13 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
 
     // Read CCWs QI address and compare it to the managed object wrapper's implementation.
     ULONG32 bytesRead = 0;
-    CLRDATA_ADDRESS vTableAddress = NULL;
-    IfFailGo(m_pTarget->ReadVirtual(ccwPtr, (PBYTE)&vTableAddress, sizeof(CLRDATA_ADDRESS), &bytesRead));
-    if (bytesRead != sizeof(CLRDATA_ADDRESS)
+    TADDR ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
+    TADDR vTableAddress = NULL;
+    IfFailGo(m_pTarget->ReadVirtual(ccw, (PBYTE)&vTableAddress, sizeof(TADDR), &bytesRead));
+    if (bytesRead != sizeof(TADDR)
         || vTableAddress == NULL)
     {
-        hr = S_FALSE;
+        hr = E_FAIL;
         goto ErrExit;
     }
 
@@ -4091,7 +4092,7 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
     if (bytesRead != sizeof(TADDR)
         || qiAddress == NULL)
     {
-        hr = S_FALSE;
+        hr = E_FAIL;
         goto ErrExit;
     }
 
@@ -4103,19 +4104,19 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
 
     if (qiAddress != GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface))
     {
-        hr = S_FALSE;
+        hr = E_FAIL;
         goto ErrExit;
     }
 
     // Mask the "dispatch pointer" to get a double pointer to the ManagedObjectWrapper
-    CLRDATA_ADDRESS managedObjectWrapperPtrPtr = ccwPtr & InteropLib::ABI::DispatchThisPtrMask;
+    TADDR managedObjectWrapperPtrPtr = ccw & InteropLib::ABI::DispatchThisPtrMask;
 
     // Return ManagedObjectWrapper as an OBJECTHANDLE. (The OBJECTHANDLE is guaranteed to live at offset 0).
-    CLRDATA_ADDRESS managedObjectWrapperPtr;
-    IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtrPtr, (PBYTE)&managedObjectWrapperPtr, sizeof(CLRDATA_ADDRESS), &bytesRead));
-    if (bytesRead != sizeof(CLRDATA_ADDRESS))
+    TADDR managedObjectWrapperPtr;
+    IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtrPtr, (PBYTE)&managedObjectWrapperPtr, sizeof(TADDR), &bytesRead));
+    if (bytesRead != sizeof(TADDR))
     {
-        hr = S_FALSE;
+        hr = E_FAIL;
         goto ErrExit;
     }
 
@@ -4123,7 +4124,7 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
     IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtr, (PBYTE)&handle, sizeof(OBJECTHANDLE), &bytesRead));
     if (bytesRead != sizeof(OBJECTHANDLE))
     {
-        hr = S_FALSE;
+        hr = E_FAIL;
         goto ErrExit;
     }
 
