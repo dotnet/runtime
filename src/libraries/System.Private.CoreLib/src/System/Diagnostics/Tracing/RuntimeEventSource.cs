@@ -36,7 +36,7 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _gen2SizeCounter;
         private PollingCounter? _lohSizeCounter;
         private PollingCounter? _assemblyCounter;
-        private PollingCounter? _ILBytesJittedCounter;
+        private IncrementingPollingCounter? _ILBytesJittedCounter;
         private PollingCounter? _totalMethodsJittedCounter;
 #endif
 
