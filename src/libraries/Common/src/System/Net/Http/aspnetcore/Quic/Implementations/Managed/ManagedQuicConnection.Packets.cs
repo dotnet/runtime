@@ -64,8 +64,10 @@ namespace System.Net.Quic.Implementations.Managed
                     // clients SHOULD ignore fixed bit when receiving version negotiation
                     !header.FixedBit && _isServer && header.PacketType == PacketType.VersionNegotiation ||
                     // packet is not meant for us after all
+                    // TODO-RZ: following checks should be moved later into SocketContext
                     SourceConnectionId != null &&
-                    !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data))
+                    !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data) ||
+                    header.Version != QuicVersion.Draft27)
                 {
                     return ProcessPacketResult.DropPacket;
                 }
@@ -92,12 +94,9 @@ namespace System.Net.Quic.Implementations.Managed
         {
             var type = header.PacketType;
 
-            // TODO-RZ: Check that connection IDs match and have correct length (not too long)
-
             switch (type)
             {
                 case PacketType.Initial:
-                    // TODO-RZ: server must not send Token (Protocol violation)
                 case PacketType.Handshake:
                 case PacketType.ZeroRtt:
                     if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData) ||
@@ -106,10 +105,19 @@ namespace System.Net.Quic.Implementations.Managed
                         return ProcessPacketResult.DropPacket;
                     }
 
-                    // TODO-RZ: after client receives the first packet (which is either initial or retry), it must
+                    // Servers may not send Token in Initial packets
+                    if (!_isServer && !headerData.Token.IsEmpty)
+                    {
+                        return CloseConnection(
+                            TransportErrorCode.ProtocolViolation,
+                            QuicError.UnexpectedToken);
+                    }
+
+                    // after client receives the first packet (which is either initial or retry), it must
                     // use the connection id supplied by the server, but should ignore any further changes to CID,
                     // see [TRANSPORT] Section 7.2
-                    if (header.PacketType == PacketType.Initial && !_isServer)
+                    if (header.PacketType == PacketType.Initial && !_isServer &&
+                        GetPacketNumberSpace(EncryptionLevel.Initial).LargestReceivedPacketNumber >= 0)
                     {
                         // protection keys are not affected by this change
                         DestinationConnectionId = new ConnectionId(
@@ -146,12 +154,14 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header,
             QuicSocketContext.RecvContext context)
         {
+            // TODO-RZ: Retry not supported
             throw new NotImplementedException();
         }
 
         private ProcessPacketResult ReceiveVersionNegotiation(QuicReader reader, in LongPacketHeader header,
             QuicSocketContext.RecvContext context)
         {
+            // TODO-RZ: Version negotiation not supported
             throw new NotImplementedException();
         }
 

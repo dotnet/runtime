@@ -163,5 +163,20 @@ namespace System.Net.Quic.Tests
             // handshake is now confirmed on the client
             Assert.True(Client.Connected);
         }
+
+        [Fact]
+        public void SendsConnectionCloseWhenServerSendsToken()
+        {
+            SendFlight(Client, Server);
+            InterceptFlight(Server, Client, flight =>
+            {
+                Assert.IsType<InitialPacket>(flight.Packets[0]).Token = new byte[] {1, 2, 3, 4};
+            });
+
+            var packet = (CommonPacket)SendFlight(Client, Server).Packets[0];
+            packet.ShouldHaveConnectionClose(
+                TransportErrorCode.ProtocolViolation,
+                QuicError.UnexpectedToken);
+        }
     }
 }

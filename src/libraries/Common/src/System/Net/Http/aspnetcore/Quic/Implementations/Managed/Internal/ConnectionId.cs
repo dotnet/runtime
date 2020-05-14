@@ -9,11 +9,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal class ConnectionId : IEquatable<ConnectionId>
     {
+        /// <summary>
+        ///     Maximum connection id length for the non-version negotiation packets. (Future versions may allow larger
+        ///     connection ids)
+        /// </summary>
+        internal const int MaximumLength = 20;
+
         public static readonly Comparer<ConnectionId> SequenceNumberComparer = Comparer<ConnectionId>.Create((l,r) => l.SequenceNumber.CompareTo(r.SequenceNumber));
 
         private static Random _random = new Random(41);
 
-        internal const int DefaultCidSize = 20;
+        internal const int DefaultCidSize = MaximumLength;
 
         public static ConnectionId Random(int length)
         {
