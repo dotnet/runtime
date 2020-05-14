@@ -485,18 +485,8 @@ namespace Mono.Linker.Steps
 			var interfaceType = overrideInformation.InterfaceType;
 			var overrideDeclaringType = overrideInformation.Override.DeclaringType;
 
-			if (!IsInterfaceImplementationMarked (overrideDeclaringType, interfaceType)) {
-				var derivedInterfaceTypes = Annotations.GetDerivedInterfacesForInterface (interfaceType);
-
-				// There are no derived interface types that could be marked, it's safe to skip marking this override
-				if (derivedInterfaceTypes == null)
-					return true;
-
-				// If none of the other interfaces on the type that implement the interface from the @base type are marked, then it's safe to skip
-				// marking this override
-				if (!derivedInterfaceTypes.Any (d => IsInterfaceImplementationMarked (overrideDeclaringType, d)))
-					return true;
-			}
+			if (!IsInterfaceImplementationMarkedRecursively (overrideDeclaringType, interfaceType))
+				return true;
 
 			return false;
 		}
@@ -504,6 +494,25 @@ namespace Mono.Linker.Steps
 		bool IsInterfaceImplementationMarked (TypeDefinition type, TypeDefinition interfaceType)
 		{
 			return type.HasInterface (@interfaceType, out InterfaceImplementation implementation) && Annotations.IsMarked (implementation);
+		}
+
+		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
+		{
+			if (IsInterfaceImplementationMarked (type, interfaceType))
+				return true;
+
+			if (type.HasInterfaces) {
+				foreach (var iface in type.Interfaces) {
+					var resolved = iface.InterfaceType.Resolve ();
+					if (resolved == null)
+						continue;
+
+					if (IsInterfaceImplementationMarkedRecursively (resolved, interfaceType))
+						return true;
+				}
+			}
+
+			return false;
 		}
 
 		void MarkMarshalSpec (IMarshalInfoProvider spec, in DependencyInfo reason)
