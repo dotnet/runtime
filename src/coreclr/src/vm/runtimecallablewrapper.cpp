@@ -1702,10 +1702,6 @@ const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
     GC_PRESSURE_PROCESS_LOCAL,   // GCPressureSize_ProcessLocal
     GC_PRESSURE_MACHINE_LOCAL,   // GCPressureSize_MachineLocal
     GC_PRESSURE_REMOTE,          // GCPressureSize_Remote
-    GC_PRESSURE_WINRT_BASE,      // GCPressureSize_WinRT_Base
-    GC_PRESSURE_WINRT_LOW,       // GCPressureSize_WinRT_Low
-    GC_PRESSURE_WINRT_MEDIUM,    // GCPressureSize_WinRT_Medium
-    GC_PRESSURE_WINRT_HIGH,      // GCPressureSize_WinRT_High
 };
 
 // Deletes all items in code:s_RCWStandbyList.
@@ -1820,7 +1816,6 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
                     pWrap->m_Flags.m_fIsDCOMProxy = 1;
                 }
 
-                // Only add memory pressure for proxies for non-WinRT objects
                 switch(dwValue)
                 {
                     case SERVER_LOCALITY_PROCESS_LOCAL:
@@ -2009,16 +2004,7 @@ void RCW::AddMemoryPressure(GCPressureSize pressureSize)
 
     int pressure = s_rGCPressureTable[pressureSize];
 
-    if (pressureSize >= GCPressureSize_WinRT_Base)
-    {
-        // use the new implementation for WinRT RCWs
-        GCInterface::NewAddMemoryPressure(pressure);
-    }
-    else
-    {
-        // use the old implementation for classic COM interop
-        GCInterface::AddMemoryPressure(pressure);
-    }
+    GCInterface::AddMemoryPressure(pressure);
 
     // Remember the pressure we set.
     m_Flags.m_GCPressure = pressureSize;
@@ -2041,16 +2027,7 @@ void RCW::RemoveMemoryPressure()
 
     int pressure = s_rGCPressureTable[m_Flags.m_GCPressure];
 
-    if (m_Flags.m_GCPressure >= GCPressureSize_WinRT_Base)
-    {
-        // use the new implementation for WinRT RCWs
-        GCInterface::NewRemoveMemoryPressure(pressure);
-    }
-    else
-    {
-        // use the old implementation for classic COM interop
-        GCInterface::RemoveMemoryPressure(pressure);
-    }
+    GCInterface::RemoveMemoryPressure(pressure);
 
     m_Flags.m_GCPressure = GCPressureSize_None;
 }
@@ -2602,194 +2579,7 @@ static bool MethodTableHasSameTypeDefAsMscorlibClass(MethodTable* pMT, BinderCla
     return (pMT->HasSameTypeDefAs(pMT_MscorlibClass) != FALSE);
 }
 
-// Returns an interface with variance corresponding to pMT or NULL if pMT does not support variance.
-// The reason why we don't just call HasVariance() is that we also deal with the WinRT interfaces
-// like IIterable<T> which do not (and cannot) have variance from .NET type system point of view.
-// static
-MethodTable *RCW::GetVariantMethodTable(MethodTable *pMT)
-{
-    CONTRACT(MethodTable *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(RETVAL == NULL || RETVAL->HasVariance());
-    }
-    CONTRACT_END;
-
-    RCWPerTypeData *pData = pMT->GetRCWPerTypeData();
-    if (pData == NULL)
-    {
-        // if this type has no RCW data allocated, we know for sure that pMT has no
-        // corresponding MethodTable with variance
-        _ASSERTE(ComputeVariantMethodTable(pMT) == NULL);
-        RETURN NULL;
-    }
-
-    if ((pData->m_dwFlags & RCWPerTypeData::VariantTypeInited) == 0)
-    {
-        pData->m_pVariantMT = ComputeVariantMethodTable(pMT);
-        FastInterlockOr(&pData->m_dwFlags, RCWPerTypeData::VariantTypeInited);
-    }
-    RETURN pData->m_pVariantMT;
-}
-
-// static
-MethodTable *RCW::ComputeVariantMethodTable(MethodTable *pMT)
-{
-    CONTRACT(MethodTable *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(RETVAL == NULL || RETVAL->HasVariance());
-    }
-    CONTRACT_END;
-
-    RETURN NULL;
-}
-
 #ifndef CROSSGEN_COMPILE
-//-----------------------------------------------------------------
-// Returns a known working IEnumerable<T>::GetEnumerator to be used in lieu of the non-generic
-// IEnumerable::GetEnumerator.
-MethodDesc *RCW::GetGetEnumeratorMethod()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pAuxiliaryData == NULL || m_pAuxiliaryData->m_pGetEnumeratorMethod == NULL)
-    {
-        MethodTable *pClsMT;
-        {
-            GCX_COOP();
-            pClsMT = GetExposedObject()->GetMethodTable();
-        }
-
-        SetGetEnumeratorMethod(pClsMT);
-    }
-
-    return (m_pAuxiliaryData == NULL ? NULL : m_pAuxiliaryData->m_pGetEnumeratorMethod);
-}
-
-//-----------------------------------------------------------------
-// Sets the first "known" GetEnumerator method on the RCW if not set already.
-void RCW::SetGetEnumeratorMethod(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pAuxiliaryData != NULL && m_pAuxiliaryData->m_pGetEnumeratorMethod != NULL)
-        return;
-
-    // Retrieve cached GetEnumerator method or compute the right one for this pMT
-    MethodDesc *pMD = GetOrComputeGetEnumeratorMethodForType(pMT);
-
-    if (pMD != NULL)
-    {
-        // We successfully got a GetEnumerator method - cache it in the RCW
-        // We can have multiple casts going on concurrently, make sure that
-        // the result of this method is stable.
-        InterlockedCompareExchangeT(&GetOrCreateAuxiliaryData()->m_pGetEnumeratorMethod, pMD, NULL);
-    }
-}
-
-// Retrieve cached GetEnumerator method or compute the right one for a specific type
-MethodDesc *RCW::GetOrComputeGetEnumeratorMethodForType(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodDesc *pMD = NULL;
-
-    RCWPerTypeData *pData = pMT->GetRCWPerTypeData();
-    if (pData != NULL)
-    {
-        if ((pData->m_dwFlags & RCWPerTypeData::GetEnumeratorInited) == 0)
-        {
-            pData->m_pGetEnumeratorMethod = ComputeGetEnumeratorMethodForType(pMT);
-            FastInterlockOr(&pData->m_dwFlags, RCWPerTypeData::GetEnumeratorInited);
-        }
-
-        pMD = pData->m_pGetEnumeratorMethod;
-    }
-    else
-    {
-        pMD = ComputeGetEnumeratorMethodForType(pMT);
-    }
-
-    return pMD;
-}
-
-// Compute the first GetEnumerator for a specific type
-MethodDesc *RCW::ComputeGetEnumeratorMethodForType(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodDesc *pMD = ComputeGetEnumeratorMethodForTypeInternal(pMT);
-
-    // Walk the interface impl and use these interfaces to compute
-    MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
-    while (pMD == NULL && it.Next())
-    {
-        pMT = it.GetInterface();
-        pMD = GetOrComputeGetEnumeratorMethodForType(pMT);
-    }
-
-    return pMD;
-}
-
-// Get the GetEnumerator method for IEnumerable<T> or IIterable<T>
-MethodDesc *RCW::ComputeGetEnumeratorMethodForTypeInternal(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodDesc *pMD = pMT->GetMethodDescForSlot(0);
-    _ASSERTE(strcmp(pMD->GetName(), "GetEnumerator") == 0);
-
-    if (pMD->IsSharedByGenericInstantiations())
-    {
-        pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-            pMD,
-            pMT,
-            FALSE,           // forceBoxedEntryPoint
-            Instantiation(), // methodInst
-            FALSE,           // allowInstParam
-            TRUE);           // forceRemotableMethod
-    }
-
-    return pMD;
-}
-
 // Performs QI for the given interface, optionally instantiating it with the given generic args.
 HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk)
 {
@@ -2810,117 +2600,6 @@ HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid,
 
     pMT->GetGuid(piid, TRUE);
     hr = SafeQueryInterfaceRemoteAware(*piid, ppUnk);
-
-    if (SUCCEEDED(hr))
-    {
-        if (pMT == MscorlibBinder::GetClass(CLASS__IENUMERABLE))
-        {
-            // remember the first IEnumerable<T> interface we successfully QI'ed for
-            SetGetEnumeratorMethod(pMT);
-        }
-    }
-
-    return hr;
-}
-
-// Performs QI for interfaces that are castable to pMT using co-/contra-variance.
-HRESULT RCW::CallQueryInterfaceUsingVariance(MethodTable *pMT, IUnknown **ppUnk)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = E_NOINTERFACE;
-
-    // see if pMT is an interface with variance, if not we return NULL
-    MethodTable *pVariantMT = GetVariantMethodTable(pMT);
-
-    if (pVariantMT != NULL)
-    {
-        MethodTable *pItfMT = NULL;
-        IID variantIid;
-
-        MethodTable *pClassMT;
-
-        {
-            GCX_COOP();
-            pClassMT = GetExposedObject()->GetMethodTable();
-        }
-
-        // Try interfaces that we know about from metadata
-        if (pClassMT != NULL && pClassMT != g_pBaseCOMObject)
-        {
-            MethodTable::InterfaceMapIterator it = pClassMT->IterateInterfaceMap();
-            while (FAILED(hr) && it.Next())
-            {
-                pItfMT = GetVariantMethodTable(it.GetInterface());
-                if (pItfMT != NULL && pItfMT->CanCastByVarianceToInterfaceOrDelegate(pVariantMT, NULL))
-                {
-                    hr = CallQueryInterface(pMT, pItfMT->GetInstantiation(), &variantIid, ppUnk);
-                }
-            }
-        }
-
-        // Then try the interface pointer cache
-        CachedInterfaceEntryIterator it = IterateCachedInterfacePointers();
-        while (FAILED(hr) && it.Next())
-        {
-            MethodTable *pCachedItfMT = (MethodTable *)it.GetEntry()->m_pMT;
-            if (pCachedItfMT != NULL)
-            {
-                pItfMT = GetVariantMethodTable(pCachedItfMT);
-                if (pItfMT != NULL && pItfMT->CanCastByVarianceToInterfaceOrDelegate(pVariantMT, NULL))
-                {
-                    hr = CallQueryInterface(pMT, pItfMT->GetInstantiation(), &variantIid, ppUnk);
-                }
-
-                // The cached interface may not support variance, but one of its base interfaces can
-                if (FAILED(hr))
-                {
-                    MethodTable::InterfaceMapIterator it = pCachedItfMT->IterateInterfaceMap();
-                    while (FAILED(hr) && it.Next())
-                    {
-                        pItfMT = GetVariantMethodTable(it.GetInterface());
-                        if (pItfMT != NULL && pItfMT->CanCastByVarianceToInterfaceOrDelegate(pVariantMT, NULL))
-                        {
-                            hr = CallQueryInterface(pMT, pItfMT->GetInstantiation(), &variantIid, ppUnk);
-                        }
-                    }
-                }
-            }
-        }
-
-        // If we still haven't succeeded, enumerate the variant interface cache
-        if (FAILED(hr) && m_pAuxiliaryData != NULL && m_pAuxiliaryData->m_prVariantInterfaces != NULL)
-        {
-            // make a copy of the cache under the lock
-            ArrayList rVariantInterfacesCopy;
-            {
-                CrstHolder ch(&m_pAuxiliaryData->m_VarianceCacheCrst);
-
-                ArrayList::Iterator it = m_pAuxiliaryData->m_prVariantInterfaces->Iterate();
-                while (it.Next())
-                {
-                    rVariantInterfacesCopy.Append(it.GetElement());
-                }
-            }
-
-            ArrayList::Iterator it = rVariantInterfacesCopy.Iterate();
-            while (FAILED(hr) && it.Next())
-            {
-                pItfMT = (MethodTable *)it.GetElement();
-                if (pItfMT->CanCastByVarianceToInterfaceOrDelegate(pVariantMT, NULL))
-                {
-                    hr = CallQueryInterface(pMT, pItfMT->GetInstantiation(), &variantIid, ppUnk);
-                }
-            }
-        }
-    }
-
     return hr;
 }
 
@@ -2986,17 +2665,6 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
     // First, try to QI for the interface that we were asked for
     hr = CallQueryInterface(pMT, Instantiation(), &iid, &pUnk);
 
-    // If that failed and the interface has variance, we'll try to find another instantiation
-    bool fVarianceUsed = false;
-    if (FAILED(hr))
-    {
-        hr = CallQueryInterfaceUsingVariance(pMT, &pUnk);
-        if (pUnk != NULL)
-        {
-            fVarianceUsed = true;
-        }
-    }
-
     if (pUnk == NULL)
         RETURN NULL;
 
@@ -3040,21 +2708,6 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
         }
 
         fInterfaceCached = true;
-    }
-
-    // Make sure we cache successful QI's for variant interfaces. This is so we can cast an RCW for
-    // example to IEnumerable<object> if we previously successfully QI'ed for IEnumerable<IFoo>. We
-    // only need to do this if we actually didn't use variance for this QI.
-    if (!fVarianceUsed)
-    {
-        MethodTable *pVariantMT = GetVariantMethodTable(pMT);
-
-        // We can also skip the potentially expensive CacheVariantInterface call if we already inserted
-        // the variant interface into our interface pointer cache.
-        if (pVariantMT != NULL && (!fInterfaceCached || pVariantMT != pMT))
-        {
-            GetOrCreateAuxiliaryData()->CacheVariantInterface(pVariantMT);
-        }
     }
 
     RETURN pUnk;
@@ -3588,7 +3241,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         // Retrieve the IID of the interface.
         MethodTable *pCOMItfMT = thCastTo.GetMethodTable();
 
-        // keep calling the throwing GetGuid for non-WinRT interfaces (back compat)
+        // keep calling the throwing GetGuid (back compat)
         pCOMItfMT->GetGuid(&iid, TRUE);
 
         // Query for the interface to determine the failure HRESULT.

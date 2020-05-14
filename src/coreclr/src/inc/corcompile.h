@@ -1449,19 +1449,6 @@ class ICorCompileInfo
             CORINFO_ASSEMBLY_HANDLE *pHandle
             ) = 0;
 
-
-#ifdef FEATURE_COMINTEROP
-    // Loads a WinRT typeref into the EE and returns
-    // a handle to it.  We have to load all typerefs
-    // during dependency computation since assemblyrefs
-    // are meaningless to WinRT.
-    virtual HRESULT LoadTypeRefWinRT(
-            IMDInternalImport       *pAssemblyImport,
-            mdTypeRef               ref,
-            CORINFO_ASSEMBLY_HANDLE *pHandle
-            ) = 0;
-#endif
-
     virtual BOOL IsInCurrentVersionBubble(CORINFO_MODULE_HANDLE hModule) = 0;
 
     // Loads a module from an assembly into the EE

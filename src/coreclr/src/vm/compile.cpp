@@ -341,19 +341,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
     return hr;
 }
 
-
-#ifdef FEATURE_COMINTEROP
-HRESULT CEECompileInfo::LoadTypeRefWinRT(
-    IMDInternalImport       *pAssemblyImport,
-    mdTypeRef               ref,
-    CORINFO_ASSEMBLY_HANDLE *pHandle)
-{
-    STANDARD_VM_CONTRACT;
-
-    return E_NOTIMPL;
-}
-#endif
-
 BOOL CEECompileInfo::IsInCurrentVersionBubble(CORINFO_MODULE_HANDLE hModule)
 {
     WRAPPER_NO_CONTRACT;

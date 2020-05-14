@@ -155,14 +155,6 @@ public:
     static FCDECL2(FC_BOOL_RET, TypeEQ, Object* left, Object* right);
     static FCDECL2(FC_BOOL_RET, TypeNEQ, Object* left, Object* right);
 
-
-#ifdef FEATURE_COMINTEROP
-    static FCDECL1(FC_BOOL_RET, IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE);
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-    static FCDECL1(FC_BOOL_RET, IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE);
-#endif
-#endif //FEATURE_COMINTEROP
-
     static
     void QCALLTYPE PrepareMemberInfoCache(QCall::TypeHandle pMemberInfoCache);
 

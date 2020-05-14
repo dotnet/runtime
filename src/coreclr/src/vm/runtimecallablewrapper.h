@@ -77,18 +77,6 @@ class Thread;
 #define GC_PRESSURE_MACHINE_LOCAL 4004
 #define GC_PRESSURE_REMOTE 4824
 
-#ifdef HOST_64BIT
-#define GC_PRESSURE_WINRT_BASE    1000
-#define GC_PRESSURE_WINRT_LOW     12000
-#define GC_PRESSURE_WINRT_MEDIUM  120000
-#define GC_PRESSURE_WINRT_HIGH    1200000
-#else // HOST_64BIT
-#define GC_PRESSURE_WINRT_BASE    750
-#define GC_PRESSURE_WINRT_LOW     8000
-#define GC_PRESSURE_WINRT_MEDIUM  80000
-#define GC_PRESSURE_WINRT_HIGH    800000
-#endif // HOST_64BIT
-
 enum {INTERFACE_ENTRY_CACHE_SIZE = 8};
 
 struct RCWAuxiliaryData;
@@ -478,32 +466,8 @@ struct RCW
 
 #endif // #ifndef DACCESS_COMPILE
 
-
-    // Returns an interface with variance corresponding to pMT or NULL if pMT does not support variance.
-    static MethodTable *GetVariantMethodTable(MethodTable *pMT);
-    static MethodTable *ComputeVariantMethodTable(MethodTable *pMT);
-
     // Performs QI for the given interface, optionally instantiating it with the given generic args.
     HRESULT CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk);
-
-    // Performs QI for interfaces that are castable to pMT using co-/contra-variance.
-    HRESULT CallQueryInterfaceUsingVariance(MethodTable *pMT, IUnknown **ppUnk);
-
-    // Returns the GetEnumerator method of the first IEnumerable<T> this RCW was successfully
-    // cast to, or NULL if no such cast has ever succeeded.
-    MethodDesc *GetGetEnumeratorMethod();
-
-    // Sets the first "known" GetEnumerator method if not set already.
-    void SetGetEnumeratorMethod(MethodTable *pMT);
-
-    // Retrieve cached GetEnumerator method or compute the right one for a specific type
-    static MethodDesc *GetOrComputeGetEnumeratorMethodForType(MethodTable *pMT);
-
-    // Compute the first GetEnumerator for a specific type
-    static MethodDesc *ComputeGetEnumeratorMethodForType(MethodTable *pMT);
-
-    // Get the GetEnumerator method for IEnumerable<T> or IIterable<T>
-    static MethodDesc *ComputeGetEnumeratorMethodForTypeInternal(MethodTable *pMT);
 
     //-----------------------------------------------------------------
     // Retrieve correct COM IP for the current apartment.

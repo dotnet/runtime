@@ -206,13 +206,6 @@ class CEECompileInfo : public ICorCompileInfo
                                BOOL                     fExplicitBindToNativeImage,
                                CORINFO_ASSEMBLY_HANDLE *pHandle);
 
-
-#ifdef FEATURE_COMINTEROP
-    HRESULT LoadTypeRefWinRT(IMDInternalImport       *pAssemblyImport,
-                                     mdTypeRef               ref,
-                                     CORINFO_ASSEMBLY_HANDLE *pHandle);
-#endif
-
     BOOL IsInCurrentVersionBubble(CORINFO_MODULE_HANDLE hModule);
 
     HRESULT LoadAssemblyModule(CORINFO_ASSEMBLY_HANDLE assembly,

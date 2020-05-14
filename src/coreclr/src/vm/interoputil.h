@@ -425,7 +425,6 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
 #define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
 
 class ICOMInterfaceMarshalerCallback;
-void GetNativeWinRTFactoryObject(MethodTable *pMT, Thread *pThread, MethodTable *pFactoryIntfMT, BOOL bNeedUniqueRCW, ICOMInterfaceMarshalerCallback *pCallback, OBJECTREF *prefFactory);
 
 #else // FEATURE_COMINTEROP
 inline HRESULT EnsureComStartedNoThrow()
