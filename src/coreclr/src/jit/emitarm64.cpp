@@ -14590,6 +14590,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
+                case INS_sqrshrn:
+                case INS_sqrshrn2:
+                case INS_sqrshrun:
+                case INS_sqrshrun2:
+                case INS_sqshrun:
+                case INS_sqshrun2:
+                case INS_sqshl:
+                case INS_sqshlu:
+                case INS_uqrshrn:
+                case INS_uqrshrn2:
+                case INS_uqshl:
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);
