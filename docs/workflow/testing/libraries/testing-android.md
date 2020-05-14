@@ -5,37 +5,50 @@ To build the tests and run them on Android (devices or emulators) you need the f
 - Android NDK
 - Android SDK
 - OpenJDK
+- OpenSSL
 
-## Linux
-The following script should install the dependencies and add `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT` and `ANDROID_OPENSSL_AAR`
-environment variables to the `~/.bashrc`:
+These packages should be installed on Linux:
+```bash
+sudo apt-get install openjdk-8 unzip
+```
+
+The following script should install the rest of the dependencies and add `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT` and `ANDROID_OPENSSL_AAR`
+environment variables to the `~/.bashrc` on Linux or `~/.zprofile` on macOS:
 ```bash
 #!/usr/bin/env bash
+set -e
 
 NDK_VER=r21b
 SDK_VER=6200805_latest
 SDK_API_LEVEL=29
 SDK_BUILD_TOOLS=29.0.3
-BASHRC=~/.bashrc
 OPENSSL_VER=1.1.1g-alpha-1
 
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    HOST_OS=darwin
+    HOST_OS_SHORT=mac
+    BASHRC=~/.zprofile
+else
+    HOST_OS=linux
+    HOST_OS_SHORT=linux
+    BASHRC=~/.bashrc
+fi
+
 export ANDROID_NDK_ROOT=~/android-ndk-${NDK_VER}
+curl https://dl.google.com/android/repository/android-ndk-${NDK_VER}-${HOST_OS}-x86_64.zip -L --output ~/andk.zip
+unzip ~/andk.zip -o -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
+
 export ANDROID_SDK_ROOT=~/android-sdk
-export ANDROID_OPENSSL_AAR=~/openssl-android
-
-curl https://dl.google.com/android/repository/android-ndk-${NDK_VER}-linux-x86_64.zip -L --output ~/andk.zip
-unzip ~/andk.zip -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
-
-curl https://dl.google.com/android/repository/commandlinetools-linux-${SDK_VER}.zip -L --output ~/asdk.zip
-unzip ~/asdk.zip -d ${ANDROID_SDK_ROOT} && rm -rf ~/asdk.zip
+curl https://dl.google.com/android/repository/commandlinetools-${HOST_OS_SHORT}-${SDK_VER}.zip -L --output ~/asdk.zip
+unzip ~/asdk.zip -o -d ${ANDROID_SDK_ROOT} && rm -rf ~/asdk.zip
 yes | ${ANDROID_SDK_ROOT}/tools/bin/./sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
 ${ANDROID_SDK_ROOT}/tools/bin/./sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-${SDK_API_LEVEL}" "build-tools;${SDK_BUILD_TOOLS}"
 
 # We also need to download precompiled binaries and headers for OpenSSL from maven, this step is a temporary hack
 # and will be removed once we figure out how to integrate OpenSSL properly as a dependency
+export ANDROID_OPENSSL_AAR=~/openssl-android
 curl https://maven.google.com/com/android/ndk/thirdparty/openssl/${OPENSSL_VER}/openssl-${OPENSSL_VER}.aar -L --output ~/openssl.zip
-unzip ~/openssl.zip -d ${ANDROID_OPENSSL_AAR} && rm -rf ~/openssl.zip
-
+unzip ~/openssl.zip -o -d ${ANDROID_OPENSSL_AAR} && rm -rf ~/openssl.zip
 printf "\n\nexport ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT}\nexport ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}\nexport ANDROID_OPENSSL_AAR=${ANDROID_OPENSSL_AAR}\n" >> ${BASHRC}
 ```
 
