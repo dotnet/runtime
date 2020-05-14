@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 using System.IO;
 using System.Xml.Schema;
 using System.Collections.Generic;
+using System.Text;
 
 namespace System.Xml.Tests
 {
@@ -1150,5 +1151,219 @@ namespace System.Xml.Tests
                 ss.Compile();
             }
         }
+
+        #region tests causing XmlSchemaException with Sch_WhiteSpaceRestriction1
+        public static IEnumerable<object[]> WhiteSpaceRestriction1_Throws_TestData
+        {
+            get
+            {
+                return new List<object[]>()
+                {
+                    new object[]
+                    {
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='baseType'>
+        <xs:restriction base='xs:string'>
+            <xs:whiteSpace value='collapse'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='restrictedType'>
+        <xs:restriction base='baseType'>
+            <xs:whiteSpace value='preserve'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='baseType'>
+        <xs:restriction base='xs:string'>
+            <xs:whiteSpace value='collapse'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='restrictedType'>
+        <xs:restriction base='baseType'>
+            <xs:whiteSpace value='replace'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WhiteSpaceRestriction1_Throws_TestData))]
+        public void WhiteSpaceRestriction1_Throws(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            using (StringReader sr = new StringReader(schema))
+            using (XmlReader xmlrdr = XmlReader.Create(sr))
+            {
+                ss.Add(null, xmlrdr);
+            }
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            Assert.Contains("whiteSpace", ex.Message);
+            Assert.Contains("collapse", ex.Message);
+            Assert.Contains("preserve", ex.Message);
+            Assert.Contains("replace", ex.Message);
+        }
+        #endregion
+
+        #region tests causing XmlSchemaException with Sch_WhiteSpaceRestriction2
+        public static IEnumerable<object[]> WhiteSpaceRestriction2_Throws_TestData
+        {
+            get
+            {
+                return new List<object[]>()
+                {
+                    new object[]
+                    {
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='baseType'>
+        <xs:restriction base='xs:string'>
+            <xs:whiteSpace value='replace'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='restrictedType'>
+        <xs:restriction base='baseType'>
+            <xs:whiteSpace value='preserve'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WhiteSpaceRestriction2_Throws_TestData))]
+        public void WhiteSpaceRestriction2_Throws(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            using (StringReader sr = new StringReader(schema))
+            using (XmlReader xmlrdr = XmlReader.Create(sr))
+            {
+                ss.Add(null, xmlrdr);
+            }
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            Assert.Contains("whiteSpace", ex.Message);
+            Assert.DoesNotContain("collapse", ex.Message);
+            Assert.Contains("preserve", ex.Message);
+            Assert.Contains("replace", ex.Message);
+        }
+        #endregion
+
+        #region Attribute Restriction Invalid From WildCard tests
+
+        public static IEnumerable<object[]> AttributeRestrictionInvalidFromWildCard_Throws_TestData
+        {
+            get
+            {
+                return new List<object[]>()
+                {
+                    new object[]
+                    {
+                        @"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+
+    <xs:redefine schemaLocation='fake://0'>
+        <xs:attributeGroup name='baseGroup'>
+            <xs:attribute name='a' type='xs:integer'/>
+            <xs:attribute name='b' type='xs:integer'/>
+            <xs:attribute name='c' type='xs:integer'/>
+            <xs:attribute name='d' type='xs:integer'/>
+        </xs:attributeGroup>
+    </xs:redefine>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {
+                        @"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'
+            targetNamespace='http://www.foo.bar'>
+
+    <xs:redefine schemaLocation='fake://1'>
+        <xs:attributeGroup name='baseGroup'>
+            <xs:attribute name='a' type='xs:integer'/>
+            <xs:attribute name='b' type='xs:integer'/>
+            <xs:attribute name='c' type='xs:integer'/>
+            <xs:attribute name='d' type='xs:integer' form='qualified'/>
+        </xs:attributeGroup>
+    </xs:redefine>
+</xs:schema>
+"
+                    }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AttributeRestrictionInvalidFromWildCard_Throws_TestData))]
+        public void AttributeRestrictionInvalidFromWildCard_Throws(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.XmlResolver = new FakeXmlResolverAttributeRestriction();
+            using (StringReader sr = new StringReader(schema))
+            using (XmlReader xmlrdr = XmlReader.Create(sr))
+            {
+                ss.Add(null, xmlrdr);
+            }
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            Assert.Contains("wildcard", ex.Message);
+            Assert.Contains("redefine", ex.Message);
+        }
+
+        private class FakeXmlResolverAttributeRestriction : XmlResolver
+        {
+            public override object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
+            {
+                int uriIndex = int.Parse(absoluteUri.Host);
+                string[] schema = { @"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:attributeGroup name='baseGroup'>
+        <xs:attribute name='a' type='xs:integer'/>
+        <xs:attribute name='b' type='xs:integer'/>
+        <xs:attribute name='c' type='xs:integer'/>
+    </xs:attributeGroup>
+</xs:schema>
+",
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:attributeGroup name='baseGroup'>
+        <xs:attribute name='a' type='xs:integer'/>
+        <xs:attribute name='b' type='xs:integer'/>
+        <xs:attribute name='c' type='xs:integer'/>
+        <xs:anyAttribute namespace='##local'/>
+    </xs:attributeGroup>
+</xs:schema>
+"
+                };
+
+                return new MemoryStream(Encoding.UTF8.GetBytes(schema[uriIndex]));
+            }
+        }
+        #endregion
     }
 }

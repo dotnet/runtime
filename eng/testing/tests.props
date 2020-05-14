@@ -20,10 +20,17 @@
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
 
-  <!-- Set env variable to use the local netfx assemblies instead of the ones in the GAC. -->
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <MobileHelpersDirSuffix>$(NetCoreAppCurrent)-$(MonoConfiguration)</MobileHelpersDirSuffix>
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelpersDirSuffix)'))</AppleAppBuilderDir>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(MobileHelpersDirSuffix)'))</AndroidAppBuilderDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(MobileHelpersDirSuffix)'))</MonoAOTCompilerDir>
+
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <PlatformManifestFile />
+  </PropertyGroup>
 
   <!--
     Unit/Functional/Integration test support.

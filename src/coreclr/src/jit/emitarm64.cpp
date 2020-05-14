@@ -649,12 +649,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2D: // DV_2D   .Q.........iiiii ......nnnnnddddd      Vd Vn[]  (dup - vector)
+            ins      = id->idIns();
             datasize = id->idOpSize();
             assert(isValidVectorDatasize(datasize));
             assert(isValidArrangement(datasize, id->idInsOpt()));
             elemsize = optGetElemsize(id->idInsOpt());
             index    = emitGetInsSC(id);
-            assert(isValidVectorIndex(datasize, elemsize, index));
+            assert((ins == INS_dup) || isValidVectorIndex(datasize, elemsize, index));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -5031,12 +5032,17 @@ void emitter::emitIns_R_R_I(
             {
                 if (insOptsAnyArrangement(opt))
                 {
+                    // The size and opt were modified to be based on the
+                    // return type but the immediate is based on the operand
+                    // which can be of a larger size. As such, we don't
+                    // assert the index is valid here and instead do it in
+                    // codegen.
+
                     // Vector operation
                     assert(isValidVectorDatasize(size));
                     assert(isValidArrangement(size, opt));
                     elemsize = optGetElemsize(opt);
                     assert(isValidVectorElemsize(elemsize));
-                    assert(isValidVectorIndex(size, elemsize, imm));
                     assert(opt != INS_OPTS_1D); // Reserved encoding
                     fmt = IF_DV_2D;
                     break;
@@ -7542,7 +7548,7 @@ void emitter::emitIns_R_C(
             fmt = IF_LARGELDC;
             if (isVectorRegister(reg))
             {
-                assert(isValidScalarDatasize(size));
+                assert(isValidVectorLSDatasize(size));
                 // For vector (float/double) register, we should have an integer address reg to
                 // compute long address which consists of page address and page offset.
                 // For integer constant, this is not needed since the dest reg can be used to
@@ -7555,6 +7561,7 @@ void emitter::emitIns_R_C(
                 assert(isValidGeneralDatasize(size));
             }
             break;
+
         default:
             unreached();
     }
@@ -12712,7 +12719,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA);
+        assert(addr->OperGet() == GT_CLS_VAR_ADDR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA);
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -12789,7 +12796,13 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         }
         else // no Index register
         {
-            if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
+            if (addr->OperGet() == GT_CLS_VAR_ADDR)
+            {
+                // Get a temp integer register to compute long address.
+                regNumber addrReg = indir->GetSingleTempReg();
+                emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
+            }
+            else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
                 // Then load/store dataReg from/to [memBase + offset]
                 emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);

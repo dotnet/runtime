@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
@@ -21,10 +22,7 @@ namespace System.Net.Security.Tests
 
         public SslStreamSystemDefaultTest()
         {
-            var network = new VirtualNetwork();
-            var clientNet = new VirtualNetworkStream(network, isServer:false);
-            var serverNet = new VirtualNetworkStream(network, isServer: true);
-
+            (Stream clientNet, Stream serverNet) = TestHelper.GetConnectedTcpStreams();
             _clientStream = new SslStream(clientNet, false, ClientCertCallback);
             _serverStream = new SslStream(serverNet, false, ServerCertCallback);
         }

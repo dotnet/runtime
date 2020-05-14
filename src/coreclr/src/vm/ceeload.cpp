@@ -503,7 +503,7 @@ uint32_t Module::GetNativeMetadataAssemblyCount()
     NativeImage *compositeImage = GetCompositeNativeImage();
     if (compositeImage != NULL)
     {
-        return compositeImage->GetComponentAssemblyCount();
+        return compositeImage->GetManifestAssemblyCount();
     }
     else
     {

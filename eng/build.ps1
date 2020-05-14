@@ -2,15 +2,15 @@
 Param(
   [switch][Alias('h')]$help,
   [switch][Alias('t')]$test,
-  [string[]][Alias('c')]$configuration = @("Debug"),
+  [ValidateSet("Debug","Release","Checked")][string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
-  [string]$os,
+  [ValidateSet("Windows_NT","Linux","OSX")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
   [switch]$testnobuild,
-  [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
+  [ValidateSet("x86","x64","arm","arm64")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
   [Parameter(Position=0)][string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
@@ -21,7 +21,7 @@ function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -subset                   Build a subset, print available subsets with -subset help (short: -s)"
   Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
-  Write-Host "  -os                       Build operating system: Windows_NT or Unix"
+  Write-Host "  -os                       Build operating system: Windows_NT, Linux or OSX"
   Write-Host "  -arch                     Build platform: x86, x64, arm or arm64 (short: -a). Pass a comma-separated list to build for multiple architectures."
   Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c). Pass a comma-separated list to build for multiple configurations"
   Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
@@ -61,6 +61,7 @@ if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $
 
 # VS Test Explorer support for libraries
 if ($vs) {
+  Write-Host "VS Test Explorer now works without needing to call build.cmd. The -vs switch will be removed eventually."
   . $PSScriptRoot\common\tools.ps1
 
   # Microsoft.DotNet.CoreSetup.sln is special - hosting tests are currently meant to run on the

@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            value = new KeyValuePair<TKey, TValue>(k, v);
+            value = new KeyValuePair<TKey, TValue>(k!, v!);
             return true;
         }
 

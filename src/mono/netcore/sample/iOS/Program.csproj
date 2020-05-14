@@ -2,51 +2,89 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
+    <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetOS>iOS</TargetOS>
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
-    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-iOS-$(Configuration)-$(TargetArchitecture)\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
     <MonoRuntimeDir>$(ArtifactsDir)bin\mono\iOS.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(NetCoreAppCurrent)-$(Configuration)'))</AppleAppBuilderDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(NetCoreAppCurrent)-$(Configuration)'))</MonoAOTCompilerDir>
+    <RunAOTCompilation Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'">true</RunAOTCompilation>
   </PropertyGroup>
 
   <Target Name="RebuildAppleAppBuilder">
-    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)" Targets="Restore;Build" />
+    <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
   </Target>
 
-  <UsingTask TaskName="AppleAppBuilderTask" 
-      AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
+  <Target Name="RebuildMonoAOTCompilerTask">
+    <MSBuild Projects="$(MonoAOTCompilerProjDirectory)MonoAOTCompiler.csproj"
+             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
+  </Target>
 
-  <Target Name="BuildAppBundle" DependsOnTargets="RebuildAppleAppBuilder">
-    <PropertyGroup>
-      <TargetArch Condition="$(RuntimeIdentifier.EndsWith('arm64'))">arm64</TargetArch>
-      <TargetArch Condition="'$(TargetArch)' == ''">x64</TargetArch>
-    </PropertyGroup>
-    <ItemGroup>
-      <AppBinaries Include="bin\*.*"/>
-      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
-      <MonoRuntimeBinaries Include="$(MonoRuntimeDir)\*.*" />
-    </ItemGroup>
+  <UsingTask TaskName="AppleAppBuilderTask"
+             AssemblyFile="$(AppleAppBuilderDir)\AppleAppBuilder.dll" />
+
+  <UsingTask TaskName="MonoAOTCompiler"
+      AssemblyFile="$(MonoAOTCompilerDir)\MonoAOTCompiler.dll" />
+
+  <ItemGroup>
+    <AppAssemblies Include="$(OutputPath)\*.dll"/>
+    <BclAssemblies Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.dll;$(RuntimePackDir)\native\System.Private.CoreLib.dll" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
+    <MonoRuntimeBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\System.Private.CoreLib.dll;$(RuntimePackDir)\native\libmono.dylib" />
+  </ItemGroup>
+
+  <Import Project="$(MonoAOTCompilerProjDirectory)MonoAOTCompiler.props" />
+  <Target Name="LinkAndAOT" Condition="'$(RunAOTCompilation)' == 'true'">
     <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
     <RemoveDir Directories="$(BundleDir)" />
-    <Copy SourceFiles="@(AppBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
-    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-    <!-- runtime pack contains all needed binaries but lets overwrite them from artifacts/bin/mono to sync runtime changes -->
-    <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-    <AppleAppBuilderTask 
+    <Copy SourceFiles="@(BclAssemblies)" DestinationFolder="$(BundleDir)\PreTrim\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(AppAssemblies)" DestinationFolder="$(BundleDir)\PreTrim\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <ItemGroup>
+      <PreTrimAssemblies Include="$(BundleDir)\PreTrim\*.dll" />
+    </ItemGroup>
+    <ILLink AssemblyPaths="@(PreTrimAssemblies)"
+            RootAssemblyNames="$(MSBuildProjectName)"
+            OutputDirectory="$(BundleDir)" />
+    <ItemGroup>
+      <AotInputAssemblies Include="$(BundleDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+    </ItemGroup>
+    <MonoAOTCompiler
+        CompilerBinaryPath="$(RuntimePackDir)\native\cross\mono-aot-cross"
+        Mode="Full"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        UseLLVM="$(UseLLVM)"
+        LLVMPath="$(RuntimePackDir)\native\cross">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+  </Target>
+
+  <Target Name="CopyAssembliesWithoutAOT" Condition="'$(RunAOTCompilation)' != 'true'">
+    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
+    <RemoveDir Directories="$(BundleDir)" />
+    <Copy SourceFiles="@(BclAssemblies)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(AppAssemblies)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+  </Target>
+
+  <Target Name="BuildAppBundle" DependsOnTargets="RebuildAppleAppBuilder;RebuildMonoAOTCompilerTask;LinkAndAOT;CopyAssembliesWithoutAOT">
+    <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <AppleAppBuilderTask
         Arch="$(TargetArchitecture)"
         ProjectName="HelloiOS"
         MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
-        CrossCompiler="$(RuntimePackDir)\native\cross\mono-aot-cross"
+        Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
-        UseLlvm="$(UseLlvm)"
-        LlvmPath="$(RuntimePackDir)\native\cross"
-        Optimized="False"
+        Optimized="True"
         AppDir="$(BundleDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />

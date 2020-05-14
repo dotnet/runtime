@@ -315,7 +315,141 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     void LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
+    void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
+
+    union VectorConstant {
+        int8_t   i8[32];
+        uint8_t  u8[32];
+        int16_t  i16[16];
+        uint16_t u16[16];
+        int32_t  i32[8];
+        uint32_t u32[8];
+        int64_t  i64[4];
+        uint64_t u64[4];
+        float    f32[8];
+        double   f64[4];
+    };
+
+    //----------------------------------------------------------------------------------------------
+    // ProcessArgForHWIntrinsicCreate: Processes an argument for the Lowering::LowerHWIntrinsicCreate method
+    //
+    //  Arguments:
+    //     arg      - The argument to process
+    //     argIdx   - The index of the argument being processed
+    //     vecCns   - The vector constant being constructed
+    //     baseType - The base type of the vector constant
+    //
+    //  Returns:
+    //     true if arg was a constant; otherwise, false
+    static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConstant& vecCns, var_types baseType)
+    {
+        switch (baseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    vecCns.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    assert(vecCns.i8[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    vecCns.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    assert(vecCns.i16[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    vecCns.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    assert(vecCns.i32[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                if (arg->OperIs(GT_CNS_LNG))
+                {
+                    vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsLngCon()->gtLconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    assert(vecCns.i64[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    vecCns.f32[argIdx] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    // We check against the i32, rather than f32, to account for -0.0
+                    assert(vecCns.i32[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    vecCns.f64[argIdx] = static_cast<double>(arg->AsDblCon()->gtDconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    // We check against the i64, rather than f64, to account for -0.0
+                    assert(vecCns.i64[argIdx] == 0);
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        return false;
+    }
 #endif // FEATURE_HW_INTRINSICS
 
     // Utility functions

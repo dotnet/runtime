@@ -1684,7 +1684,7 @@
     <value>Derived attribute's use has to be required if base attribute's use is required.</value>
   </data>
   <data name="Sch_AttributeRestrictionInvalidFromWildcard" xml:space="preserve">
-    <value>The {base type definition} must have an {attribute wildcard} and the {target namespace} of the R's {attribute declaration} must be valid with respect to that wildcard.</value>
+    <value>The base type definition must have an attribute wildcard and the target namespace of the attribute declaration in the 'redefine' must be valid with respect to that wildcard.</value>
   </data>
   <data name="Sch_NoDerivedAttribute" xml:space="preserve">
     <value>The base attribute '{0}' whose use = 'required' does not have a corresponding derived attribute while redefining attribute group '{1}'.</value>
@@ -1771,10 +1771,10 @@
     <value>Values that are declared with fixed='true' in a base type can not be changed in a derived type.</value>
   </data>
   <data name="Sch_WhiteSpaceRestriction1" xml:space="preserve">
-    <value>It is an error if 'whiteSpace' is among the members of {facets} of {base type definition}, {value} is 'replace' or 'preserve', and the {value} of the parent 'whiteSpace' is 'collapse'.</value>
+    <value>It is an error if 'whiteSpace' is among the facets of the type definition, its value is 'replace' or 'preserve', and the value of the parent 'whiteSpace' is 'collapse'.</value>
   </data>
   <data name="Sch_WhiteSpaceRestriction2" xml:space="preserve">
-    <value>It is an error if 'whiteSpace' is among the members of {facets} of {base type definition}, {value} is 'preserve', and the {value} of the parent 'whiteSpace' is 'replace'.</value>
+    <value>It is an error if 'whiteSpace' is among the facets of the type definition, its value is 'preserve', and the value of the parent 'whiteSpace' is 'replace'.</value>
   </data>
   <data name="Sch_XsiNilAndFixed" xml:space="preserve">
     <value>There must be no fixed value when an attribute is 'xsi:nil' and has a value of 'true'.</value>

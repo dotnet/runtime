@@ -2228,7 +2228,11 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 			return res;
 		cache_key = method->klass;
 	} else if (static_method_with_first_arg_bound) {
-		cache = get_cache (&get_method_image (target_method)->delegate_bound_static_invoke_cache,
+		GHashTable **cache_ptr;
+
+		cache_ptr = &mono_method_get_wrapper_cache (target_method)->delegate_bound_static_invoke_cache;
+
+		cache = get_cache (cache_ptr,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
 		/*
@@ -6548,8 +6552,8 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	if (image->wrapper_caches.delegate_abstract_invoke_cache)
 		g_hash_table_foreach_remove (image->wrapper_caches.delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
 	// FIXME: Need to clear the caches in other images as well
-	if (image->delegate_bound_static_invoke_cache)
-		g_hash_table_remove (image->delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
+	if (image->wrapper_caches.delegate_bound_static_invoke_cache)
+		g_hash_table_remove (image->wrapper_caches.delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
 
 	if (marshal_mutex_initialized)
 		mono_marshal_unlock ();

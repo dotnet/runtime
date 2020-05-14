@@ -19,7 +19,7 @@ Please note that when choosing an image choosing the same image as the host os y
 Once you have chosen an image the build is one command run from the root of the runtime repository:
 
 ```sh
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191120200116 ./src/coreclr/build.sh -clang9
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20200508132555-78cbb55 ./build.sh --subset clr -clang9
 ```
 
 Dissecting the command:
@@ -30,16 +30,18 @@ Dissecting the command:
 
 `-w: /runtime`: set /runtime as working directory for the container
 
-`mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191120200116`: image name.
+`mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20200508132555-78cbb55`: image name.
 
-`./src/coreclr/build.sh`: command to be run in the container, run the build to coreclr.
+`./build.sh`: command to be run in the container, run the build to coreclr.
+
+`--subset clr`: build the runtime subset (excluding libraries and installers)
 
 `-clang9`: argument to use clang 9 for the build, only compiler in the build image.
 
-If you are attempting to cross build for arm/arm64 then use the crossrootfs location to set the ROOTFS_DIR. The command would add `-e ROOTFS_DIR=<crossrootfs location>`. See [Docker Images](#Docker-Images) for the crossrootfs location. In addition you will need to specify `cross`.
+If you are attempting to cross build for arm/arm64 then use the crossrootfs location to set the ROOTFS_DIR. The command would add `-e ROOTFS_DIR=<crossrootfs location>`. See [Docker Images](#Docker-Images) for the crossrootfs location. In addition you will need to specify `--cross`.
 
 ```sh
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20200413125008-cfdd435 ./src/coreclr/build.sh arm64 cross
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20200508132638-b2c2436 ./build.sh --arch arm64 --cross --subset clr
 ```
 
 Note that instructions on building the crossrootfs location can be found at [cross-building.md](cross-building.md). These instructions are suggested only if there are plans to change the rootfs, or the Docker images for arm/arm64 are insufficient for you build.

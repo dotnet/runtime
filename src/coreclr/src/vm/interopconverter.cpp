@@ -79,7 +79,7 @@ namespace
 //--------------------------------------------------------------------------------
 // IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, ...)
 // Convert ObjectRef to a COM IP, based on MethodTable* pMT.
-IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecurityCheck, BOOL bEnableCustomizedQueryInterface)
+IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnableCustomizedQueryInterface)
 {
     CONTRACT (IUnknown*)
     {
@@ -103,8 +103,15 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
 
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
-        pUnk.SuppressRelease();
-        RETURN pUnk;
+        GUID iid;
+        pMT->GetGuid(&iid, /*bGenerateIfNotFound*/ FALSE, /*bClassic*/ FALSE);
+
+        IUnknown* pvObj;
+        hr = SafeQueryInterface(pUnk, iid, &pvObj);
+        if (FAILED(hr))
+            COMPlusThrowHR(hr);
+
+        RETURN pvObj;
     }
 
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
@@ -118,7 +125,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
         CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(poref);
 
         GetComIPFromCCW::flags flags = GetComIPFromCCW::None;
-        if (!bSecurityCheck)                    { flags |= GetComIPFromCCW::SuppressSecurityCheck; }
         if (!bEnableCustomizedQueryInterface)   { flags |= GetComIPFromCCW::SuppressCustomizedQueryInterface; }
 
         pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, GUID_NULL, pMT, flags);
@@ -176,10 +182,15 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
     {
         hr = S_OK;
 
-        SafeComHolder<IUnknown> pvObj;
+        IUnknown* pvObj;
         if (ReqIpType & ComIpType_Dispatch)
         {
-            hr = pUnk->QueryInterface(IID_IDispatch, &pvObj);
+            hr = SafeQueryInterface(pUnk, IID_IDispatch, &pvObj);
+            pUnk->Release();
+        }
+        else
+        {
+            pvObj = pUnk;
         }
 
         if (FAILED(hr))
@@ -188,7 +199,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         if (pFetchedIpType != NULL)
             *pFetchedIpType = ReqIpType;
 
-        RETURN pUnk;
+        RETURN pvObj;
     }
 
     MethodTable *pMT = (*poref)->GetMethodTable();
@@ -300,12 +311,13 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
-        SafeComHolder<IUnknown> pvObj;
-        hr = pUnk->QueryInterface(iid, &pvObj);
+        IUnknown* pvObj;
+        hr = SafeQueryInterface(pUnk, iid, &pvObj);
+        pUnk->Release();
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
-        RETURN pUnk;
+        RETURN pvObj;
     }
 
     MethodTable *pMT = (*poref)->GetMethodTable();

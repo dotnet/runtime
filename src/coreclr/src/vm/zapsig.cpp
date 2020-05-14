@@ -650,7 +650,7 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
         {
             if (nativeImage != NULL)
             {
-                pAssembly = nativeImage->LoadComponentAssembly(index);
+                pAssembly = nativeImage->LoadManifestAssembly(index);
             }
             else
             {

@@ -12,32 +12,10 @@ using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 #endif
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else // TARGET_64BIT
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif // TARGET_64BIT
-#else
-using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
-using nuint = System.UInt64;
-#endif
-
 namespace System.Text
 {
     internal static partial class ASCIIUtility
     {
-#if DEBUG && SYSTEM_PRIVATE_CORELIB
-        static ASCIIUtility()
-        {
-            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
-            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
-        }
-#endif // DEBUG && SYSTEM_PRIVATE_CORELIB
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllBytesInUInt64AreAscii(ulong value)
         {
@@ -524,7 +502,9 @@ namespace System.Text
 
             char* pOriginalBuffer = pBuffer;
 
+#if SYSTEM_PRIVATE_CORELIB
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
+#endif
 
             // Before we drain off char-by-char, try a generic vectorized loop.
             // Only run the loop if we have at least two vectors we can pull out.
@@ -687,7 +667,9 @@ namespace System.Text
             Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
             const uint NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether 'currentMask' contains non-ASCII data
 
+#if SYSTEM_PRIVATE_CORELIB
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
+#endif
 
             // Read the first vector unaligned.
 

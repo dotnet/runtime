@@ -3253,7 +3253,7 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
                             HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
 #ifdef FEATURE_COMINTEROP
-                            HNDTYPE_REFCOUNTED, HNDTYPE_WEAK_WINRT
+                            HNDTYPE_REFCOUNTED, HNDTYPE_WEAK_NATIVE_COM
 #endif
                             };
 
@@ -3291,7 +3291,7 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
                             HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
 #ifdef FEATURE_COMINTEROP
-                            HNDTYPE_REFCOUNTED, HNDTYPE_WEAK_WINRT
+                            HNDTYPE_REFCOUNTED, HNDTYPE_WEAK_NATIVE_COM
 #endif
                             };
 

@@ -75,9 +75,6 @@
   <!-- Language configuration -->
   <PropertyGroup>
     <Deterministic>true</Deterministic>
-
-    <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->
-    <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
   </PropertyGroup>
 
   <PropertyGroup>

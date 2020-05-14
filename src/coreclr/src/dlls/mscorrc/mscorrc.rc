@@ -318,7 +318,7 @@ BEGIN
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
-    IDS_EE_WINRT_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
+    IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
 #endif // FEATURE_COMINTEROP
 
     IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"

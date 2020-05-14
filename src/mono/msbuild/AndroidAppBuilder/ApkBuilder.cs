@@ -14,6 +14,7 @@ public class ApkBuilder
     public string? BuildApiLevel { get; set; }
     public string? BuildToolsVersion { get; set; }
     public string? OutputDir { get; set; }
+    public bool StripDebugSymbols { get; set; }
 
     public (string apk, string packageId) BuildApk(
         string sourceDir, string abi, string entryPointLib, string monoRuntimeHeaders)
@@ -81,15 +82,28 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         
+        var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
+        if (StripDebugSymbols)
+        {
+            extensionsToIgnore.Add(".pdb");
+            extensionsToIgnore.Add(".dbg");
+        }
+
         // Copy AppDir to OutputDir/assets (ignore native files)
         Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets"), file =>
         {
             string fileName = Path.GetFileName(file);
             string extension = Path.GetExtension(file);
-            // ignore native files, those go to lib/%abi%
-            if (extension == ".so" || extension == ".a")
+
+            if (file.Any(s => s >= 128))
             {
-                // ignore ".pdb" and ".dbg" to make APK smaller
+                // non-ascii files/folders are not allowed
+                return false;
+            }
+            if (extensionsToIgnore.Contains(extension))
+            {
+                // ignore native files, those go to lib/%abi%
+                // also, aapt is not happy about zip files
                 return false;
             }
             if (fileName.StartsWith("."))
@@ -129,10 +143,25 @@ public class ApkBuilder
             .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
         File.WriteAllText(Path.Combine(OutputDir, "runtime-android.c"), runtimeAndroidSrc);
         
-        Utils.RunProcess(cmake, workingDir: OutputDir,
-            args: $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
-            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B runtime-android");
-        Utils.RunProcess("make", workingDir: Path.Combine(OutputDir, "runtime-android"));
+        string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
+            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B runtime-android";
+
+        string cmakeBuildArgs = "--build runtime-android";
+        
+        if (StripDebugSymbols)
+        {
+            // Use "-s" to strip debug symbols, it complains it's unused but it works
+            cmakeGenArgs+= " -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_C_FLAGS=\"-s -Wno-unused-command-line-argument\"";
+            cmakeBuildArgs += " --config MinSizeRel";
+        }
+        else
+        {
+            cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
+            cmakeBuildArgs += " --config Debug";
+        }
+
+        Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeGenArgs);
+        Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeBuildArgs);
 
         // 2. Compile Java files
 
@@ -168,7 +197,16 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "lib", abi));
         foreach (var dynamicLib in dynamicLibs)
         {
-            string destRelative = Path.Combine("lib", abi, Path.GetFileName(dynamicLib));
+            string dynamicLibName = Path.GetFileName(dynamicLib);
+            if (dynamicLibName == "libmonosgen-2.0.so")
+            {
+                // we link mono runtime statically into libruntime-android.so
+                continue;
+            }
+
+            // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
+
+            string destRelative = Path.Combine("lib", abi, dynamicLibName);
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
             Utils.RunProcess(aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
         }
@@ -193,6 +231,8 @@ public class ApkBuilder
 
         Utils.RunProcess(apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " + 
             $"--ks-pass pass:android --key-pass pass:android {alignedApk}", workingDir: OutputDir);
+
+        Utils.LogInfo($"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
 
         return (alignedApk, packageId);
     }

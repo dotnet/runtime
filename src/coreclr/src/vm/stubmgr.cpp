@@ -1787,6 +1787,12 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case 0x%x\n", target));
         trace->InitForUnmanaged(target);
     }
+    else if (pStubMD->IsStructMarshalStub())
+    {
+        // There's no "target" for struct marshalling stubs
+        // so we have nowhere to tell the debugger to move the breakpoint.
+        return FALSE;
+    }
     else
     {
         // This is either direct forward P/Invoke or a CLR-to-COM call, the argument is MD
