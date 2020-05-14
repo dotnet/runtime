@@ -885,6 +885,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         public static T GetElement<T>(this Vector64<T> vector, int index)
             where T : struct
         {
@@ -928,6 +929,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to get the first element from.</param>
         /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static T ToScalar<T>(this Vector64<T> vector)
             where T : struct
         {
