@@ -6320,7 +6320,7 @@ protected:
     {
         CSEdsc* csdNextInBucket; // used by the hash table
 
-        unsigned csdHashKey; // the orginal hashkey
+        INT64    csdHashKey; // the orginal hashkey
 
         unsigned csdIndex; // 1..optCSECandidateCount
         bool     csdLiveAcrossCall;

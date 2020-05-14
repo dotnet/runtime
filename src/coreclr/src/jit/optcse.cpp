@@ -401,7 +401,7 @@ void Compiler::optValnumCSE_Init()
 //
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
-    unsigned key;
+    size_t   key;
     unsigned hash;
     unsigned hval;
     CSEdsc*  hashDsc;
@@ -446,11 +446,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         if (vnOp2Lib != vnLib)
         {
-            key = (unsigned)vnLib; // include the exc set in the hash key
+            key = (size_t)vnLib; // include the exc set in the hash key
         }
         else
         {
-            key = (unsigned)vnLibNorm;
+            key = (size_t)vnLibNorm;
         }
 
         // If we didn't do the above we would have op1 as the CSE def
@@ -461,12 +461,15 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     }
     else // Not a GT_COMMA
     {
-        key = (unsigned)vnLibNorm;
+        key = (size_t)vnLibNorm;
     }
 
     // Compute the hash value for the expression
 
-    hash = key;
+    hash = (unsigned)key;
+#ifdef TARGET_64BIT
+    hash ^= (unsigned)(key >> 32);
+#endif
     hash *= (unsigned)(s_optCSEhashSize + 1);
     hash >>= 7;
 
@@ -478,7 +481,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
     for (hashDsc = optCSEhash[hval]; hashDsc; hashDsc = hashDsc->csdNextInBucket)
     {
-        if (hashDsc->csdHashKey == key)
+        if (hashDsc->csdHashKey == (INT64) key)
         {
             treeStmtLst* newElem;
 
@@ -584,7 +587,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         {
             hashDsc = new (this, CMK_CSE) CSEdsc;
 
-            hashDsc->csdHashKey        = key;
+            hashDsc->csdHashKey        = (INT64) key;
             hashDsc->csdIndex          = 0;
             hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
@@ -646,7 +649,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         if (verbose)
         {
             printf("\nCSE candidate #%02u, vn=", CSEindex);
-            vnPrint(key, 0);
+            vnPrint((ValueNum) key, 0);
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
             gtDispTree(tree);
         }
