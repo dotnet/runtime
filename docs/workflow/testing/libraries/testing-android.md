@@ -4,10 +4,10 @@ To build the tests and run them on Android (devices or emulators) you need the f
 
 - Android NDK
 - Android SDK
-- OpenJDK 8
+- OpenJDK
 
 ## Linux
-The following script should install those dependencies and add `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT` and `ANDROID_OPENSSL_AAR`
+The following script should install the dependencies and add `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT` and `ANDROID_OPENSSL_AAR`
 environment variables to the `~/.bashrc`:
 ```bash
 #!/usr/bin/env bash
@@ -54,8 +54,7 @@ and even run tests one by one for each test suite:
 ./build.sh libs.tests -os Android -arch x64 -test
 ```
 Make sure an emulator is booted (see `AVD Manager`) or a device is plugged in and unlocked.
-
-**NOTE**: Xharness doesn't run any UI on Android and runs tests using headless testing API so the device/emulator won't show anything (but still must stay active).
+`AVD Manager` recommends to install `x86` images by default so if you follow this recommendation make sure `-arch x86` was used for the build script.
 
 ### Running individual test suites
 - The following shows how to run tests for a specific library
@@ -63,16 +62,17 @@ Make sure an emulator is booted (see `AVD Manager`) or a device is plugged in an
 ./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
 ```
 
-### How the tests work
+### Test App Design
 Android app is basically a [Java Instrumentation](https://github.com/dotnet/runtime/blob/master/src/mono/msbuild/AndroidAppBuilder/Templates/MonoRunner.java) and a simple Activity that inits the Mono Runtime via JNI. This Mono Runtime starts a simple xunit test
-runner called XHarness TestRunner which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool with ADB inside to deploy `*.apk` to a target (device or emulator) and obtain logs once tests are completed.
+runner called XHarness.TestRunner (see https://github.com/dotnet/xharness) which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool with ADB embedded to deploy `*.apk` to a target (device or emulator) and obtain logs once tests are completed.
 
 ### Obtaining the logs
-XHarness for Android doesn't talk much and only saves tests result to a file once tests finished but you can also subscribe to live logs via the following command:
+XHarness for Android doesn't talk much and only saves test results to a file. However, you can also subscribe to live logs via the following command:
 ```
 adb logcat -s "DOTNET"
 ```
 Or simply open `logcat` window in Android Studio or Visual Stuido.
 
-### Known Issues
-- We don't support `-os Android` on Windows yet (`WSL` can be used instead)
+### Existing Limitations
+- `-os Android` is not supported for Windows yet (`WSL` can be used instead)
+- XHarness.CLI is not able to boot emulators yet (so you need to boot via `AVD Manager` or IDE)
