@@ -40,10 +40,10 @@
     <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
     <Copy Condition="'$(AndroidOpenSslAar)' != ''"
           SourceFiles="$(AndroidOpenSslAar)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
     <Copy Condition="'$(AndroidOpenSslAar)' != ''"
           SourceFiles="$(AndroidOpenSslAar)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
 
     <AndroidAppBuilderTask 
         Abi="$(AndroidAbi)"
