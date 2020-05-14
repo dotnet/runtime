@@ -94,6 +94,7 @@ namespace System.Net.Quic.Tests.Harness
             }
 
             seal.EncryptPacket(writer.Buffer.Span, pnOffset, payloadLength, (uint) PacketNumber);
+            seal.ProtectHeader(writer.Buffer.Span, pnOffset);
         }
 
         protected (int pnLength, long packetNumber) DeserializePayloadWithFrames(QuicReader reader, ITestHarnessContext harnessContext, List<FrameBase> frames, PacketType packetType, int payloadLength)
@@ -106,6 +107,7 @@ namespace System.Net.Quic.Tests.Harness
             var seal = harnessContext.GetRecvSeal(packetType);
 
             // guess largest acked packet number to make deserialization work
+            seal.UnprotectHeader(reader.Buffer.Span, pnOffset);
             Assert.True(seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength, Math.Max(0, (int) expectedPn - 3)));
 
             int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer.Span[0]);

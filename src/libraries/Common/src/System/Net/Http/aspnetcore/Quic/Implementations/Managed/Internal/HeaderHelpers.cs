@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Security;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
@@ -33,6 +34,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal static bool IsLongHeader(byte firstByte)
         {
             return (firstByte & FormBitMask) != 0;
+        }
+
+        internal static bool HasPacketTypeEncryption(PacketType type)
+        {
+            return type switch
+            {
+                PacketType.Initial => true,
+                PacketType.ZeroRtt => true,
+                PacketType.Handshake => true,
+                PacketType.OneRtt => true,
+                _ => false
+            };
         }
 
         internal static PacketType GetLongPacketType(byte firstByte)

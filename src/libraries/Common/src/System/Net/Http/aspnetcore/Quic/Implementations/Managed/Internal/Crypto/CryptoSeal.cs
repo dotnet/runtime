@@ -51,14 +51,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
             // encrypt payload in-place
             _algorithm.Encrypt(nonce, payload, tag, header);
+        }
 
-            // apply header protection
+        public void ProtectHeader(Span<byte> buffer, int pnOffset)
+        {
+            int pnLength = HeaderHelpers.GetPacketNumberLength(buffer[0]);
+
             Span<byte> protectionMask = stackalloc byte[5];
 
             // sample as if pnLength == 4
             _algorithm.CreateProtectionMask(buffer.Slice(pnOffset + 4, _algorithm.SampleLength), protectionMask);
 
-            ProtectHeader(header, protectionMask, pnLength);
+            ProtectHeader(buffer.Slice(0, pnOffset + pnLength), protectionMask, pnLength);
         }
 
         public static void ProtectHeader(Span<byte> header, Span<byte> mask, int pnLength)
@@ -81,14 +85,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             }
         }
 
-        public bool DecryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, long largestAckedPn)
+        public int UnprotectHeader(Span<byte> buffer, int pnOffset)
         {
             // remove header protection
             Span<byte> protectionMask = stackalloc byte[5];
             _algorithm.CreateProtectionMask(buffer.Slice(pnOffset + 4, _algorithm.SampleLength), protectionMask);
 
             // pass header span as if packet number had the maximum 4 bytes
-            int pnLength = UnprotectHeader(buffer.Slice(0, pnOffset + 4), protectionMask);
+            return UnprotectHeader(buffer.Slice(0, pnOffset + 4), protectionMask);
+        }
+
+        public bool DecryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, long largestAckedPn)
+        {
+            // we expect the header protection to be already removed.
+            int pnLength = HeaderHelpers.GetPacketNumberLength(buffer[0]);
 
             // now we can get correct span size after establishing the packet number length
             var header = buffer.Slice(0, pnOffset + pnLength);

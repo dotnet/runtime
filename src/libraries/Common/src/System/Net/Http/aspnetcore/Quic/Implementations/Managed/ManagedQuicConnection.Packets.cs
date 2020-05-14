@@ -57,14 +57,93 @@ namespace System.Net.Quic.Implementations.Managed
         {
             byte first = reader.Peek();
 
-            ProcessPacketResult result;
             if (HeaderHelpers.IsLongHeader(first))
             {
-                if (!LongPacketHeader.Read(reader, out var header) ||
-                    // clients SHOULD ignore fixed bit when receiving version negotiation
-                    !header.FixedBit && _isServer && header.PacketType == PacketType.VersionNegotiation ||
-                    // packet is not meant for us after all
-                    // TODO-RZ: following checks should be moved later into SocketContext
+                // first, just parse the header without validation, we will validate after lifting header protection
+                if (!LongPacketHeader.Read(reader, out var header))
+                {
+                    return ProcessPacketResult.DropPacket;
+                }
+
+                if (HeaderHelpers.HasPacketTypeEncryption(header.PacketType))
+                {
+                    var pnSpace = GetPacketNumberSpace(GetEncryptionLevel(header.PacketType));
+
+                    if (!UnprotectLongHeaderPacket(reader, ref header, out var headerData, pnSpace))
+                    {
+                        return ProcessPacketResult.DropPacket;
+                    }
+
+                    switch (header.PacketType)
+                    {
+                        case PacketType.Initial:
+                            if (_isServer)
+                            {
+                                // check UDP datagram size, by now the reader's buffer end is aligned with the UDP datagram end.
+                                // TODO-RZ: in rare cases when initial is not the first of the coalesced packets this can falsely close the connection.
+                                // as the QUIC does only recommend, not mandate order of the coalesced packets
+                                if (reader.Buffer.Length < QuicConstants.MinimumClientInitialDatagramSize)
+                                {
+                                    return CloseConnection(TransportErrorCode.ProtocolViolation,
+                                        QuicError.InitialPacketTooShort);
+                                }
+                            }
+
+                            // Servers may not send Token in Initial packets
+                            if (!_isServer && !headerData.Token.IsEmpty)
+                            {
+                                return CloseConnection(
+                                    TransportErrorCode.ProtocolViolation,
+                                    QuicError.UnexpectedToken);
+                            }
+
+                            // after client receives the first packet (which is either initial or retry), it must
+                            // use the connection id supplied by the server, but should ignore any further changes to CID,
+                            // see [TRANSPORT] Section 7.2
+                            if (!_isServer &&
+                                GetPacketNumberSpace(EncryptionLevel.Initial).LargestReceivedPacketNumber >= 0)
+                            {
+                                // protection keys are not affected by this change
+                                DestinationConnectionId = new ConnectionId(
+                                    header.SourceConnectionId.ToArray(),
+                                    DestinationConnectionId!.SequenceNumber,
+                                    DestinationConnectionId.StatelessResetToken);
+                            }
+
+                            // continue processing
+                            goto case PacketType.Handshake;
+                        case PacketType.Handshake:
+                        case PacketType.ZeroRtt:
+                            // TODO-RZ: validate reserved bits etc.
+                            if (headerData.Length > reader.BytesLeft)
+                            {
+                                return ProcessPacketResult.DropPacket;
+                            }
+
+                            // total length of the packet is known and checked during header parsing.
+                            // Adjust the buffer to the range belonging to the current packet.
+                            reader.Reset(reader.Buffer.Slice(0, reader.BytesRead + (int)headerData.Length),
+                                reader.BytesRead);
+                            ProcessPacketResult result = ReceiveCommon(reader, header, headerData, pnSpace, context);
+
+                            if (result == ProcessPacketResult.Ok && _isServer && header.PacketType == PacketType.Handshake)
+                            {
+                                // RFC: A server stops sending and processing Initial packets when it receives its first
+                                // Handshake packet
+                                DropPacketNumberSpace(PacketSpace.Initial);
+                            }
+
+                            return result;
+
+                        // other types handled elsewhere
+                        default:
+                            throw new InvalidOperationException("Unreachable");
+                    }
+                }
+
+                // clients SHOULD ignore fixed bit when receiving version negotiation
+                if (!header.FixedBit && _isServer && header.PacketType == PacketType.VersionNegotiation ||
+                    // TODO-RZ: following checks should be moved into SocketContext
                     SourceConnectionId != null &&
                     !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data) ||
                     header.Version != QuicVersion.Draft27)
@@ -72,83 +151,114 @@ namespace System.Net.Quic.Implementations.Managed
                     return ProcessPacketResult.DropPacket;
                 }
 
-                result = ReceiveLongHeaderPackets(reader, header, context);
+                switch (header.PacketType)
+                {
+                    case PacketType.Retry:
+                        return ReceiveRetry(reader, header, context);
+                    case PacketType.VersionNegotiation:
+                        return ReceiveVersionNegotiation(reader, header, context);
+                    // other types handled elsewhere
+                    default:
+                        throw new InvalidOperationException("Unreachable");
+                }
             }
-
-            else
+            else // short header
             {
-                if (!ShortPacketHeader.Read(reader, _localConnectionIdCollection, out var header) ||
-                    !header.FixedBit)
+                var pnSpace = GetPacketNumberSpace(EncryptionLevel.Application);
+                if (pnSpace.RecvCryptoSeal == null)
+                {
+                    // Decryption keys are not available yet
+                    return ProcessPacketResult.DropPacket;
+                }
+
+                // read first without validation
+                if (!ShortPacketHeader.Read(reader, _localConnectionIdCollection, out var header))
                 {
                     return ProcessPacketResult.DropPacket;
                 }
 
-                result = Receive1Rtt(reader, header, context);
-            }
+                // remove header protection
+                int pnOffset = reader.BytesRead;
+                pnSpace.RecvCryptoSeal.UnprotectHeader(reader.Buffer.Span, pnOffset);
 
-            return result;
+                // refresh the first byte
+                header = new ShortPacketHeader(reader.Buffer.Span[0], header.DestinationConnectionId);
+
+                // TODO-RZ: validate reserved bits etc.
+                if (!header.FixedBit)
+                {
+                    return ProcessPacketResult.DropPacket;
+                }
+
+                int pnOffset1 = reader.BytesRead;
+                PacketType packetType = PacketType.OneRtt;
+                int payloadLength = reader.BytesLeft;
+
+                CryptoSeal recvSeal = pnSpace.RecvCryptoSeal;
+
+                // the peer MUST not initiate key update before handshake is done,
+                // so the seals should already exist, but we should still check against an attack.
+                if (header.KeyPhaseBit != _currentKeyPhase && HandshakeConfirmed)
+                {
+                    // An endpoint SHOULD retain old keys so that packets sent by its peer
+                    // prior to receiving the key update can be processed.  Discarding old
+                    // keys too early can cause delayed packets to be discarded.  Discarding
+                    // packets will be interpreted as packet loss by the peer and could
+                    // adversely affect performance.
+
+                    // keys will be updated next time a packet is sent
+                    _doKeyUpdate = true;
+                    if (_nextRecvSeal == null)
+                    {
+                        // create updated keys
+
+                        _nextSendSeal = CryptoSeal.UpdateSeal(pnSpace.SendCryptoSeal!);
+                        _nextRecvSeal = CryptoSeal.UpdateSeal(pnSpace.RecvCryptoSeal!);
+                    }
+
+                    recvSeal = _nextRecvSeal;
+                }
+
+                return ReceiveProtectedFrames(reader, pnSpace, pnOffset1, payloadLength, packetType, recvSeal,
+                    context);
+            }
         }
 
-        private ProcessPacketResult ReceiveLongHeaderPackets(QuicReader reader, in LongPacketHeader header,
-            QuicSocketContext.RecvContext context)
+        private bool UnprotectLongHeaderPacket(QuicReader reader, ref LongPacketHeader header, out SharedPacketData headerData, PacketNumberSpace pnSpace)
         {
-            var type = header.PacketType;
-
-            switch (type)
+            // initialize protection keys if necessary
+            if (_isServer && header.PacketType == PacketType.Initial &&
+                pnSpace.RecvCryptoSeal == null)
             {
-                case PacketType.Initial:
-                case PacketType.Handshake:
-                case PacketType.ZeroRtt:
-                    if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData) ||
-                        headerData.Length > reader.BytesLeft)
-                    {
-                        return ProcessPacketResult.DropPacket;
-                    }
+                // clients destination connection Id is ours source connection Id
+                SourceConnectionId = new ConnectionId(header.DestinationConnectionId.ToArray(), 0,
+                    StatelessResetToken.Random());
+                DestinationConnectionId = new ConnectionId(header.SourceConnectionId.ToArray(), 0,
+                    StatelessResetToken.Random());
 
-                    // Servers may not send Token in Initial packets
-                    if (!_isServer && !headerData.Token.IsEmpty)
-                    {
-                        return CloseConnection(
-                            TransportErrorCode.ProtocolViolation,
-                            QuicError.UnexpectedToken);
-                    }
-
-                    // after client receives the first packet (which is either initial or retry), it must
-                    // use the connection id supplied by the server, but should ignore any further changes to CID,
-                    // see [TRANSPORT] Section 7.2
-                    if (header.PacketType == PacketType.Initial && !_isServer &&
-                        GetPacketNumberSpace(EncryptionLevel.Initial).LargestReceivedPacketNumber >= 0)
-                    {
-                        // protection keys are not affected by this change
-                        DestinationConnectionId = new ConnectionId(
-                            header.SourceConnectionId.ToArray(),
-                            DestinationConnectionId!.SequenceNumber,
-                            DestinationConnectionId.StatelessResetToken);
-                    }
-
-                    // total length of the packet is known and checked during header parsing.
-                    // Adjust the buffer to the range belonging to the current packet.
-                    reader.Reset(reader.Buffer.Slice(0, reader.BytesRead + (int)headerData.Length), reader.BytesRead);
-                    var result = ReceiveCommon(reader, header, headerData, context);
-
-                    if (result == ProcessPacketResult.Ok && _isServer && type == PacketType.Handshake)
-                    {
-                        // RFC: A server stops sending and processing Initial packets when it receives its first
-                        // HandshakeConfirmed packet
-                        DropPacketNumberSpace(PacketSpace.Initial);
-                    }
-
-                    return result;
-                case PacketType.Retry:
-                    return ReceiveRetry(reader, header, context);
-                case PacketType.VersionNegotiation:
-                    return ReceiveVersionNegotiation(reader, header, context);
-                case PacketType.OneRtt:
-                    // this type is handled elsewhere
-                    throw new InvalidOperationException("Unreachable");
-                default:
-                    throw new ArgumentOutOfRangeException();
+                _localConnectionIdCollection.Add(SourceConnectionId);
+                DeriveInitialProtectionKeys(SourceConnectionId.Data);
             }
+
+            if (pnSpace.RecvCryptoSeal == null || // Decryption keys are not available yet
+                // skip additional data so the reader position is on packet number offset
+                !SharedPacketData.Read(reader, header.FirstByte, out headerData))
+            {
+                headerData = default;
+                return false;
+            }
+
+            // remove header protection
+            int pnOffset = reader.BytesRead;
+            pnSpace.RecvCryptoSeal!.UnprotectHeader(reader.Buffer.Span, pnOffset);
+
+            byte unprotectedFirst = reader.Buffer.Span[0];
+
+            // update headers with the new unprotected first byte data
+            header = new LongPacketHeader(unprotectedFirst,
+                header.Version, header.DestinationConnectionId, header.SourceConnectionId);
+            headerData = new SharedPacketData(unprotectedFirst, headerData.Token, headerData.Length);
+            return true;
         }
 
         private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header,
@@ -166,93 +276,14 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         private ProcessPacketResult ReceiveCommon(QuicReader reader, in LongPacketHeader header,
-            in SharedPacketData headerData, QuicSocketContext.RecvContext context)
+            in SharedPacketData headerData, PacketNumberSpace pnSpace, QuicSocketContext.RecvContext context)
         {
-            //TODO-RZ: Version negotiation
-            //TODO-RZ: Check connection id length (beware that greater length is allowed in initial packets)
-
             int pnOffset = reader.BytesRead;
-            var pnSpace = GetPacketNumberSpace(GetEncryptionLevel(header.PacketType));
             int payloadLength = (int)headerData.Length;
             PacketType packetType = header.PacketType;
 
-            if (_isServer && packetType == PacketType.Initial)
-            {
-                if (pnSpace.RecvCryptoSeal == null)
-                {
-                    // initialize protection keys
-                    // clients destination connection Id is ours source connection Id
-                    SourceConnectionId = new ConnectionId(header.DestinationConnectionId.ToArray(), 0, StatelessResetToken.Random());
-                    DestinationConnectionId = new ConnectionId(header.SourceConnectionId.ToArray(), 0, StatelessResetToken.Random());
-
-                    _localConnectionIdCollection.Add(SourceConnectionId);
-                    DeriveInitialProtectionKeys(SourceConnectionId.Data);
-                }
-
-                // check UDP datagram size, by now the reader's buffer end is aligned with the UDP datagram end.
-                // TODO-RZ: in rare cases when initial is not the first of the coalesced packets this can falsely close the connection.
-                // as the QUIC does only recommend, not mandate order of the coalesced packets
-                if (reader.Buffer.Length < QuicConstants.MinimumClientInitialDatagramSize)
-                {
-                    return CloseConnection(TransportErrorCode.ProtocolViolation,
-                        QuicError.InitialPacketTooShort);
-                }
-            }
-
-            if (pnSpace.RecvCryptoSeal == null)
-            {
-                // Decryption keys are not available yet
-                return ProcessPacketResult.DropPacket;
-            }
-
             return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, pnSpace.RecvCryptoSeal!,
                 context);
-        }
-
-        private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header,
-            QuicSocketContext.RecvContext context)
-        {
-            int pnOffset = reader.BytesRead;
-            PacketType packetType = PacketType.OneRtt;
-            var pnSpace = GetPacketNumberSpace(EncryptionLevel.Application);
-            int payloadLength = reader.BytesLeft;
-
-            if (pnSpace.RecvCryptoSeal == null)
-            {
-                // Decryption keys are not available yet
-                return ProcessPacketResult.DropPacket;
-            }
-
-            CryptoSeal recvSeal = pnSpace.RecvCryptoSeal;
-
-            if (header.KeyPhaseBit != _currentKeyPhase && false)
-            {
-                // TODO-RZ: Key phase is protected by header protection, for key phase implementation,
-                // we need to separate removing header protection and packet payload decryption
-
-                // An endpoint SHOULD retain old keys so that packets sent by its peer
-                // prior to receiving the key update can be processed.  Discarding old
-                // keys too early can cause delayed packets to be discarded.  Discarding
-                // packets will be interpreted as packet loss by the peer and could
-                // adversely affect performance.
-
-                // keys will be updated next time a packet is sent
-                _doKeyUpdate = true;
-                if (_nextRecvSeal == null)
-                {
-                    // create updated keys
-
-                    // TODO-RZ: the peer MUST not initiate key update before handshake is done,
-                    // so the seals should already exist, but we should still check against an attack.
-                    _nextSendSeal = CryptoSeal.UpdateSeal(pnSpace.SendCryptoSeal!);
-                    _nextRecvSeal = CryptoSeal.UpdateSeal(pnSpace.RecvCryptoSeal!);
-                }
-
-                recvSeal = _nextRecvSeal;
-            }
-
-
-            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, recvSeal, context);
         }
 
         private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
@@ -505,6 +536,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             seal.EncryptPacket(writer.Buffer.Span, pnOffset, payloadLength, truncatedPn);
+            seal.ProtectHeader(writer.Buffer.Span, pnOffset);
 
             // remember what we sent in this packet
             context.SentPacket.PacketNumber = pnSpace.NextPacketNumber;
