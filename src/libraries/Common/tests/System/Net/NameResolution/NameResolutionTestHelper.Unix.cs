@@ -14,7 +14,7 @@ namespace System.Net.NameResolution.Tests
         /// After collecting enough information we shall alter call sites to use throwOnFailure:false,
         /// since the failure does not indicate an error within the NCL product code.
         /// </summary>
-        public static bool EnsureNameToAddrlazyessWorks(string hostName, ITestOutputHelper? testOutput, bool throwOnFailure)
+        public static bool EnsureNameToAddressWorks(string hostName, ITestOutputHelper? testOutput, bool throwOnFailure)
         {
             IntPtr hostEntry = gethostbyname(hostName);
             if (hostEntry == IntPtr.Zero)

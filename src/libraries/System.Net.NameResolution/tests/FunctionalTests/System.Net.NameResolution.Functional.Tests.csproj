@@ -22,11 +22,11 @@
              Link="Common\System\Net\Configuration.Sockets.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\NameResolutionTestHelper.Unix.cs"
-             Link="Common\System\Net\Sockets\NameResolutionTestHelper.Unix.cs"
+    <Compile Include="$(CommonTestPath)System\Net\NameResolution\NameResolutionTestHelper.Unix.cs"
+             Link="Common\System\Net\NameResolution\NameResolutionTestHelper.Unix.cs"
              Condition="'$(TargetsUnix)' == 'true'" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\NameResolutionTestHelper.Windows.cs"
-             Link="Common\System\Net\Sockets\NameResolutionTestHelper.Windows.cs"
+    <Compile Include="$(CommonTestPath)System\Net\NameResolution\NameResolutionTestHelper.Windows.cs"
+             Link="Common\System\Net\NameResolution\NameResolutionTestHelper.Windows.cs"
              Condition="'$(TargetsWindows)' == 'true'" />
   </ItemGroup>
 </Project>
