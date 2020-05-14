@@ -9,9 +9,15 @@ assignees: ''
 
 # Background and Motivation
 
+<!--
+
 Please provide a thorough explanation of what necessitates the additional API.
 
+-->
+
 # Proposed API
+
+<!--
 
 Please provide the precise public API signature diff that you are proposing. If augmenting existing API signatures this should be expressed using diff blocks, for example
 ```diff
@@ -22,10 +28,20 @@ namespace System.Collections.Generic
      }
 ```
 
+-->
+
 # Usage Examples
+
+<!--
 
 Please provide code examples that highlight how the proposed API additions are meant to be consumed.
 
+-->
+
 # Risks
 
+<!--
+
 Please mention any risks that to your knowledge the API proposal might entail, such as breaking changes, performance regressions, etc.
+
+-->
