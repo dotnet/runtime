@@ -138,6 +138,8 @@
     <TestEnvironment Include="jitguardeddevirtualization" JitEnableGuardedDevirtualization="1" TieredCompilation="0" />
     <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
+    <!-- Mono specific options -->
+    <TestEnvironment Include="interpreter" MONO_ENV_OPTIONS="--interpreter"/>
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
