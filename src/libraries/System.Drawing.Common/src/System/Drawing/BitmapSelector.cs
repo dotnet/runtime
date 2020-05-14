@@ -64,7 +64,7 @@ namespace System.Drawing
         /// </summary>
         public static string GetFileName(string originalPath)
         {
-            if (Suffix.Length == 0)
+            if (string.IsNullOrEmpty(Suffix))
                 return originalPath;
 
             string newPath = AppendSuffix(originalPath);
