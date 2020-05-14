@@ -9,7 +9,7 @@ assignees: ''
 
 <!--This is just a template - feel free to delete any and all of it and replace as appropriate.-->
 
-#### Description
+### Description
 
 <!--
 * Please share a clear and concise description of the problem.
@@ -17,7 +17,7 @@ assignees: ''
 * What behavior are you seeing, and what behavior would you expect?
   -->
 
-#### Configuration
+### Configuration
 
 <!--
 * Which version of .NET is the code running on?
@@ -26,13 +26,13 @@ assignees: ''
 * Do you know whether it is specific to that configuration?
   -->
 
-#### Regression?
+### Regression?
 
 <!--
 * Did this work in a previous build or release of .NET Core, or from .NET Framework? If you can try a previous release or build to find out, that can help us narrow down the problem. If you don't know, that's OK.
   -->
 
-#### Other information
+### Other information
 
 <!--
 * Please include any relevant stack traces or error messages. If possible please include text as text rather than images (so it shows up in searches).
