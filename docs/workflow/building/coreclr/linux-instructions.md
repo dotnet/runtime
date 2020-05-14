@@ -87,9 +87,9 @@ Install the following packages for the toolchain:
 - libssl-dev
 - libkrb5-dev
 - libnuma-dev (optional, enables numa support)
-- autoconf
-- automake
-- libtool
+- autoconf (needed for Mono Runtime)
+- automake (needed for Mono Runtime)
+- libtool  (needed for Mono Runtime)
 
 Note: ARM clang has a known issue with CompareExchange
 ([#15074](https://github.com/dotnet/coreclr/issues/15074)), so for ARM you must
@@ -114,7 +114,7 @@ You now have all the required components.
 
 If you are using Fedora, then you will need to install the following packages:
 
-    ~$ sudo dnf install llvm cmake clang lldb-devel libunwind-devel lttng-ust-devel libicu-devel numactl-devel
+    ~$ sudo dnf install llvm cmake clang lldb-devel libunwind-devel lttng-ust-devel libicu-devel numactl-devel autoconf automake libtool
 
 Git Setup
 ---------
