@@ -744,8 +744,8 @@ namespace System.PrivateUri.Tests
             if (PlatformDetection.IsNotWindows)
             {
                 // Unix absolute file path
-                yield return new object[] { "/\u00FCri/", "/\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
-                yield return new object[] { "/a/b\uD83D\uDE1F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "a/b\uD83D\uDE1F/Foo.cs" };
+                yield return new object[] { "/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
+                yield return new object[] { "/a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
             }
 
             // Absolute fie path
@@ -770,13 +770,13 @@ namespace System.PrivateUri.Tests
             }
             else
             {
-                yield return new object[] { "/a/?b/c\u00FC/", "/a/?b/c\u00FC/", "/a/?b/c%C3%BC/", "file:///a/?b/c%C3%BC/", "/a/?b/c\u00FC/" };
-                yield return new object[] { "/a/#b/c\u00FC/", "/a/#b/c\u00FC/", "/a/#b/c%C3%BC/", "file:///a/#b/c%C3%BC/", "/a/#b/c\u00FC/" };
-                yield return new object[] { "/a/?b/#c/d\u00FC/", "/a/#b/c\u00FC/", "/a/?b/#c/d%C3%BC/", "file:///a/?b/#c/d%C3%BC/", "/a/?b/#c/d\u00FC/" };
+                yield return new object[] { "/a/?b/c\u00FC/", "file:///a/%3Fb/c\u00FC/", "/a/%3Fb/c%C3%BC/", "file:///a/%3Fb/c%C3%BC/", "/a/?b/c\u00FC/" };
+                yield return new object[] { "/a/#b/c\u00FC/", "file:///a/%23b/c\u00FC/", "/a/%23b/c%C3%BC/", "file:///a/%23b/c%C3%BC/", "/a/#b/c\u00FC/" };
+                yield return new object[] { "/a/?b/#c/d\u00FC/", "file:///a/%3Fb/%23c/d\u00FC/", "/a/%3Fb/%23c/d%C3%BC/", "file:///a/%3Fb/%23c/d%C3%BC/", "/a/?b/#c/d\u00FC/" };
 
-                yield return new object[] { "file:///a/?b/c\u00FC/", "file:///a/?b/c\u00FC/", "/a/?b/c%C3%BC/", "file:///a/?b/c%C3%BC/", "/a/?b/c\u00FC/" };
-                yield return new object[] { "file:///a/#b/c\u00FC/", "file:///a/#b/c\u00FC/", "/a/#b/c%C3%BC/", "file:///a/#b/c%C3%BC/", "/a/#b/c\u00FC/" };
-                yield return new object[] { "file:///a/?b/#c/d\u00FC/", "file:///a/?b/#c/d\u00FC/", "/a/?b/#c/d%C3%BC/", "file:///a/?b/#c/d%C3%BC/", "/a/?b/#c/d\u00FC/" };
+                yield return new object[] { "file:///a/?b/c\u00FC/", "file:///a/?b/c\u00FC/", "/a/", "file:///a/?b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/#b/c\u00FC/", "file:///a/#b/c\u00FC/", "/a/", "file:///a/#b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/?b/#c/d\u00FC/", "file:///a/?b/#c/d\u00FC/", "/a/", "file:///a/?b/#c/d%C3%BC/", "/a/" };
             }
         }
 
