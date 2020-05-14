@@ -100,7 +100,6 @@ namespace System.Net.Quic.Implementations.Managed
                     GetPacketNumberSpace(GetEncryptionLevel(packetType)).AckElicited = true;
                 }
 
-                // TODO-RZ: don't process anything except connection close frames when closing
                 ProcessPacketResult result = frameType switch
                 {
                     FrameType.Padding => DiscardPadding(reader),
@@ -179,6 +178,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (!AckFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             PacketNumberSpace pnSpace = GetPacketNumberSpace(GetEncryptionLevel(packetType));
 
             if (frame.LargestAcknowledged >= pnSpace.NextPacketNumber || // acking future packet
@@ -234,6 +235,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (!ResetStreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             if (!StreamHelpers.CanRead(_isServer, frame.StreamId))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.StreamNotReadable,
@@ -258,6 +261,8 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!StopSendingFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+
+            if (IsClosing) return ProcessPacketResult.Ok;
 
             if (!StreamHelpers.CanWrite(_isServer, frame.StreamId))
                 return CloseConnection(TransportErrorCode.StreamStateError,
@@ -290,6 +295,8 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             EncryptionLevel level = GetEncryptionLevel(packetType);
             var stream = GetPacketNumberSpace(level).CryptoInboundBuffer;
 
@@ -313,6 +320,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (!NewTokenFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             // TODO-RZ: Implement NEW_TOKEN
             return FrameNotSupported(FrameType.NewToken);
         }
@@ -330,6 +339,8 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!MaxStreamDataFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+
+            if (IsClosing) return ProcessPacketResult.Ok;
 
             if (!StreamHelpers.CanWrite(_isServer, frame.StreamId))
                 // TODO-RZ: check stream state
@@ -358,6 +369,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (!MaxStreamsFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             if (frame.Bidirectional)
                 _peerLimits.UpdateMaxStreamsBidi(frame.MaximumStreams);
             else
@@ -371,6 +384,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (!DataBlockedFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             // TODO-RZ: Implement DATA_BLOCKED
             return FrameNotSupported(FrameType.DataBlocked);
         }
@@ -379,6 +394,8 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!StreamDataBlockedFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+
+            if (IsClosing) return ProcessPacketResult.Ok;
 
             if (!TryGetOrCreateStream(frame.StreamId, out var stream))
                 return CloseConnection(TransportErrorCode.StreamLimitError,
@@ -394,6 +411,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (!StreamsBlockedFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             // TODO-RZ: Implement STREAMS_BLOCKED
             return FrameNotSupported(frame.Bidirectional
                 ? FrameType.StreamsBlockedBidirectional
@@ -404,6 +423,8 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!NewConnectionIdFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+
+            if (IsClosing) return ProcessPacketResult.Ok;
 
             if (DestinationConnectionId!.Data.Length == 0)
             {
@@ -449,6 +470,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (!RetireConnectionIdFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             // TODO-RZ: Implement RETIRE_CONNECTION_ID
             return FrameNotSupported(FrameType.RetireConnectionId);
         }
@@ -458,6 +481,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (!PathChallengeFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
+            if (IsClosing) return ProcessPacketResult.Ok;
+
             // TODO-RZ: Implement PATH_CHALLENGE
             return FrameNotSupported(FrameType.PathChallenge);
         }
@@ -466,6 +491,8 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!PathChallengeFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+
+            if (IsClosing) return ProcessPacketResult.Ok;
 
             // TODO-RZ: Implement PATH_RESPONSE
             return FrameNotSupported(FrameType.PathResponse);
@@ -517,6 +544,8 @@ namespace System.Net.Quic.Implementations.Managed
             var frameType = reader.PeekFrameType();
             if (!StreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+
+            if (IsClosing) return ProcessPacketResult.Ok;
 
             if (!StreamHelpers.CanRead(_isServer, frame.StreamId))
                 return CloseConnection(TransportErrorCode.StreamStateError,
@@ -576,6 +605,7 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(!_isServer);
 
             reader.ReadFrameType(); // there are no more data, just the frame type identifier.
+
             _handshakeDoneReceived = true;
 
             // An endpoint MUST discard handshake keys when TLS handshake is complete.
