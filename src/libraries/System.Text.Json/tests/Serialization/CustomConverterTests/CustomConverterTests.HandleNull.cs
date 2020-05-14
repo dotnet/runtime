@@ -523,7 +523,7 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithInitializedUri obj = JsonSerializer.Deserialize<ClassWithInitializedUri>(json, options);
             Assert.Equal(new Uri("https://microsoft.com"), obj.MyUri);
 
-            // Baseline - setter is called if payload is not null and converter returns null.
+            // Test - setter is called if payload is not null and converter returns null.
             json = @"{""MyUri"":""https://default""}";
             obj = JsonSerializer.Deserialize<ClassWithInitializedUri>(json, options);
             Assert.Null(obj.MyUri);
