@@ -26,6 +26,8 @@ namespace System.Net.Http.Functional.Tests
 
         protected virtual Version UseVersion => HttpVersion.Version11;
 
+        protected virtual bool TestAsync => true;
+
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
             _output = output;
@@ -76,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
             new[]
             {
                 true,
-#if NETCOREAPP
+#if __NETCOREAPP
                 false
 #endif
             };
@@ -158,6 +160,26 @@ namespace System.Net.Http.Functional.Tests
                 // Note that the sync call must be done on a different thread because it blocks until the server replies.
                 // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
                 return Task.Run(() => client.Send(request, completionOption, cancellationToken));
+#else
+                // Framework won't ever have the sync API.
+                // This shouldn't be called due to AsyncBoolValues returning only true on Framework.
+                Debug.Fail("Framework doesn't have Sync API and it shouldn't be attempted to be tested.");
+                return Task.FromResult<HttpResponseMessage>(null);
+#endif
+            }
+        }
+        public static Task<HttpResponseMessage> SendAsync(this HttpMessageInvoker invoker, bool async, HttpRequestMessage request, CancellationToken cancellationToken = default)
+        {
+            if (async)
+            {
+                return invoker.SendAsync(request, cancellationToken);
+            }
+            else
+            {
+#if NETCOREAPP
+                // Note that the sync call must be done on a different thread because it blocks until the server replies.
+                // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
+                return Task.Run(() => invoker.Send(request, cancellationToken));
 #else
                 // Framework won't ever have the sync API.
                 // This shouldn't be called due to AsyncBoolValues returning only true on Framework.

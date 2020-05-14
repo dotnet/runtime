@@ -22,7 +22,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
+    /*public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
 
@@ -951,14 +951,16 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
-    }
+    }*/
 
-    public sealed class SocketsHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
+    public sealed class SyncHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
     {
-        public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
+        protected override bool TestAsync => false;
+
+        public SyncHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
+    /*public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
     }
@@ -982,108 +984,15 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
-    }
+    }*/
 
-    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Http11_Cancellation_Test
+    public sealed class SyncHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Http11_Cancellation_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
+        protected override bool TestAsync => false;
 
-        [Fact]
-        public void ConnectTimeout_Default()
-        {
-            using (var handler = new SocketsHttpHandler())
-            {
-                Assert.Equal(Timeout.InfiniteTimeSpan, handler.ConnectTimeout);
-            }
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-2)]
-        [InlineData(int.MaxValue + 1L)]
-        public void ConnectTimeout_InvalidValues(long ms)
-        {
-            using (var handler = new SocketsHttpHandler())
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(ms));
-            }
-        }
-
-        [Theory]
-        [InlineData(-1)]
-        [InlineData(1)]
-        [InlineData(int.MaxValue - 1)]
-        [InlineData(int.MaxValue)]
-        public void ConnectTimeout_ValidValues_Roundtrip(long ms)
-        {
-            using (var handler = new SocketsHttpHandler())
-            {
-                handler.ConnectTimeout = TimeSpan.FromMilliseconds(ms);
-                Assert.Equal(TimeSpan.FromMilliseconds(ms), handler.ConnectTimeout);
-            }
-        }
-
-        [Fact]
-        public void ConnectTimeout_SetAfterUse_Throws()
-        {
-            using (var handler = new SocketsHttpHandler())
-            using (HttpClient client = CreateHttpClient(handler))
-            {
-                handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
-                Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.ConnectTimeout);
-                Assert.Throws<InvalidOperationException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(1));
-            }
-        }
-
-        [Fact]
-        public void Expect100ContinueTimeout_Default()
-        {
-            using (var handler = new SocketsHttpHandler())
-            {
-                Assert.Equal(TimeSpan.FromSeconds(1), handler.Expect100ContinueTimeout);
-            }
-        }
-
-        [Theory]
-        [InlineData(-2)]
-        [InlineData(int.MaxValue + 1L)]
-        public void Expect100ContinueTimeout_InvalidValues(long ms)
-        {
-            using (var handler = new SocketsHttpHandler())
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(ms));
-            }
-        }
-
-        [Theory]
-        [InlineData(-1)]
-        [InlineData(1)]
-        [InlineData(int.MaxValue - 1)]
-        [InlineData(int.MaxValue)]
-        public void Expect100ContinueTimeout_ValidValues_Roundtrip(long ms)
-        {
-            using (var handler = new SocketsHttpHandler())
-            {
-                handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(ms);
-                Assert.Equal(TimeSpan.FromMilliseconds(ms), handler.Expect100ContinueTimeout);
-            }
-        }
-
-        [Fact]
-        public void Expect100ContinueTimeout_SetAfterUse_Throws()
-        {
-            using (var handler = new SocketsHttpHandler())
-            using (HttpClient client = CreateHttpClient(handler))
-            {
-                handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
-                Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.Expect100ContinueTimeout);
-                Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
-            }
-        }
+        public SyncHttpHandler_HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
     }
-
+    /*
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
@@ -2134,5 +2043,5 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-    }
+    }*/
 }

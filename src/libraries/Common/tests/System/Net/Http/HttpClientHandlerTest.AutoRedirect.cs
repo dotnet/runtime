@@ -40,37 +40,15 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static IEnumerable<object[]> AsyncRedirectStatusCodesOldMethodsNewMethods()
+        public static IEnumerable<object[]> RedirectStatusCodesOldMethodsNewMethods()
         {
-            foreach (bool value in AsyncBoolValues)
+            foreach (int statusCode in new[] { 300, 301, 302, 303, 307, 308 })
             {
-                foreach (int statusCode in new[] { 300, 301, 302, 303 })
-                {
-                    yield return new object[] { value, statusCode, "GET", "GET" };
-                    yield return new object[] { value, statusCode, "POST", "GET" };
-                    yield return new object[] { value, statusCode, "HEAD", "HEAD" };
-                }
-
-                foreach (int statusCode in new[] {307, 308})
-                {
-                    yield return new object[] {value, statusCode, "GET", "GET"};
-                    yield return new object[] {value, statusCode, "POST", "POST"};
-                    yield return new object[] {value, 307, "HEAD", "HEAD"};
-                }
+                yield return new object[] { statusCode, "GET", "GET" };
+                yield return new object[] { statusCode, "POST", statusCode <= 303 ? "GET" : "POST" };
+                yield return new object[] { statusCode, "HEAD", "HEAD" };
             }
         }
-
-        public static IEnumerable<object[]> AsyncRedirectStatusCodes()
-        {
-            foreach (bool value in AsyncBoolValues)
-            {
-                yield return new object[] { value, 300 };
-                yield return new object[] { value, 301 };
-                yield return new object[] { value, 302 };
-                yield return new object[] { value, 303 };
-            }
-        }
-
         public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Uses external server")]
@@ -100,9 +78,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData(nameof(AsyncRedirectStatusCodesOldMethodsNewMethods))]
+        [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
-            bool async, int statusCode, string oldMethod, string newMethod)
+            int statusCode, string oldMethod, string newMethod)
         {
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
@@ -117,7 +95,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl) { Version = UseVersion };
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(async, request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {
@@ -146,8 +124,12 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData(nameof(AsyncRedirectStatusCodes))]
-        public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(bool async, int statusCode)
+        [Theory]
+        [InlineData(300)]
+        [InlineData(301)]
+        [InlineData(302)]
+        [InlineData(303)]
+        public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(int statusCode)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             using (HttpClient client = CreateHttpClient(handler))
@@ -158,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Content = new StringContent(ExpectedContent);
                     request.Headers.TransferEncodingChunked = true;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(async, request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {
