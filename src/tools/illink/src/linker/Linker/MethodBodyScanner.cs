@@ -71,10 +71,11 @@ namespace Mono.Linker
 				if (!type.IsClass)
 					continue;
 
-				AddMatchingInterfaces (interfaceImplementations, type, interfaceTypes);
-				var bases = annotations.GetClassHierarchy (type);
-				foreach (var @base in bases) {
-					AddMatchingInterfaces (interfaceImplementations, @base, interfaceTypes);
+				TypeDefinition currentType = type;
+				while (currentType?.BaseType != null) // Checking BaseType != null to skip System.Object
+				{
+					AddMatchingInterfaces (interfaceImplementations, currentType, interfaceTypes);
+					currentType = currentType.BaseType.Resolve ();
 				}
 			}
 
@@ -130,6 +131,9 @@ namespace Mono.Linker
 
 		static void AddMatchingInterfaces (HashSet<(InterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition[] interfaceTypes)
 		{
+			if (!type.HasInterfaces)
+				return;
+
 			foreach (var interfaceType in interfaceTypes) {
 				if (type.HasInterface (interfaceType, out InterfaceImplementation implementation))
 					results.Add ((implementation, type));

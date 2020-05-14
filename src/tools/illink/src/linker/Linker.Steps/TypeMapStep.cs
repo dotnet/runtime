@@ -45,28 +45,12 @@ namespace Mono.Linker.Steps
 		{
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
-			MapInterfaceHierarchy (type);
-			MapBaseTypeHierarchy (type);
 
 			if (!type.HasNestedTypes)
 				return;
 
 			foreach (var nested in type.NestedTypes)
 				MapType (nested);
-		}
-
-		void MapInterfaceHierarchy (TypeDefinition type)
-		{
-			if (!type.IsInterface || !type.HasInterfaces)
-				return;
-
-			foreach (var iface in type.Interfaces) {
-				var resolved = iface.InterfaceType.Resolve ();
-				if (resolved == null)
-					continue;
-
-				Annotations.AddDerivedInterfaceForInterface (resolved, type);
-			}
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)
@@ -165,30 +149,6 @@ namespace Mono.Linker.Steps
 
 				AnnotateMethods (@override, method);
 			}
-		}
-
-		void MapBaseTypeHierarchy (TypeDefinition type)
-		{
-			if (!type.IsClass)
-				return;
-
-			var bases = new List<TypeDefinition> ();
-			var current = type.BaseType;
-
-			while (current != null) {
-				var resolved = current.Resolve ();
-				if (resolved == null)
-					break;
-
-				// Exclude Object.  That's implied and adding it to the list will just lead to lots of extra unnecessary processing
-				if (resolved.BaseType == null)
-					break;
-
-				bases.Add (resolved);
-				current = resolved.BaseType;
-			}
-
-			Annotations.SetClassHierarchy (type, bases);
 		}
 
 		void AnnotateMethods (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
