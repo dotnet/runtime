@@ -111,7 +111,7 @@ namespace System.Net.Quic.Tests.Harness
             Assert.True(seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength, Math.Max(0, (int) expectedPn - 3)));
 
             int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer.Span[0]);
-            reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
+            reader.TryReadPacketNumber(pnLength,expectedPn, out long packetNumber);
 
             var originalSegment = reader.Buffer;
             reader.Reset(reader.Buffer.Slice(reader.BytesRead, payloadLength - pnLength - seal.TagLength));
@@ -121,7 +121,7 @@ namespace System.Net.Quic.Tests.Harness
             }
             reader.Reset(originalSegment, pnOffset + payloadLength);
 
-            return (pnLength, QuicPrimitives.DecodePacketNumber(expectedPn, truncatedPn, pnLength));
+            return (pnLength, packetNumber);
         }
     }
 }

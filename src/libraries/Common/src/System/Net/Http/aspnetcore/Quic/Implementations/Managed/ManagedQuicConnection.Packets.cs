@@ -180,7 +180,6 @@ namespace System.Net.Quic.Implementations.Managed
                 // remove header protection
                 int pnOffset = reader.BytesRead;
                 pnSpace.RecvCryptoSeal.UnprotectHeader(reader.Buffer.Span, pnOffset);
-
                 // refresh the first byte
                 header = new ShortPacketHeader(reader.Buffer.Span[0], header.DestinationConnectionId);
 
@@ -189,10 +188,6 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     return ProcessPacketResult.DropPacket;
                 }
-
-                int pnOffset1 = reader.BytesRead;
-                PacketType packetType = PacketType.OneRtt;
-                int payloadLength = reader.BytesLeft;
 
                 CryptoSeal recvSeal = pnSpace.RecvCryptoSeal;
 
@@ -219,7 +214,10 @@ namespace System.Net.Quic.Implementations.Managed
                     recvSeal = _nextRecvSeal;
                 }
 
-                return ReceiveProtectedFrames(reader, pnSpace, pnOffset1, payloadLength, packetType, recvSeal,
+                PacketType packetType = PacketType.OneRtt;
+                int payloadLength = reader.BytesLeft;
+
+                return ReceiveProtectedFrames(reader, pnSpace, pnOffset, header.PacketNumberLength, payloadLength, packetType, recvSeal,
                     context);
             }
         }
@@ -282,12 +280,12 @@ namespace System.Net.Quic.Implementations.Managed
             int payloadLength = (int)headerData.Length;
             PacketType packetType = header.PacketType;
 
-            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, pnSpace.RecvCryptoSeal!,
+            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, header.PacketNumberLength, payloadLength, packetType, pnSpace.RecvCryptoSeal!,
                 context);
         }
 
         private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
-            int payloadLength,
+            int pnLength, int payloadLength,
             PacketType packetType, CryptoSeal seal, QuicSocketContext.RecvContext context)
         {
             if (!seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength,
@@ -298,12 +296,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return ProcessPacketResult.DropPacket;
             }
 
-            // TODO-RZ: read in a better way
-            int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer.Span[0]);
-            reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
-
-            long packetNumber = QuicPrimitives.DecodePacketNumber(pnSpace.LargestReceivedPacketNumber,
-                truncatedPn, pnLength);
+            reader.TryReadPacketNumber(pnLength, pnSpace.LargestReceivedPacketNumber, out long packetNumber);
 
             if (pnSpace.ReceivedPacketNumbers.Contains(packetNumber))
             {

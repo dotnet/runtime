@@ -46,7 +46,7 @@ namespace System.Net.Quic.Tests
 
             // packet number left unread
             Assert.Equal(header.PacketNumberLength, reader.BytesLeft);
-            Assert.True(reader.TryReadTruncatedPacketNumber(header.PacketNumberLength, out int pn));
+            Assert.True(reader.TryReadPacketNumber(header.PacketNumberLength, 0, out long pn));
             Assert.Equal(2, pn);
         }
 

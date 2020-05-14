@@ -91,9 +91,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             writer.WriteInt32((int) version);
         }
 
-        internal static bool TryReadTruncatedPacketNumber(this QuicReader reader, int length, out int truncatedPn)
+        internal static bool TryReadPacketNumber(this QuicReader reader, int length, long largestAcked, out long packetNumber)
         {
             bool success;
+
+            int truncatedPn;
 
             switch (length)
             {
@@ -125,6 +127,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     throw new ArgumentOutOfRangeException(nameof(length));
             }
 
+            packetNumber = QuicPrimitives.DecodePacketNumber(largestAcked, truncatedPn, length);
             return success;
         }
 
