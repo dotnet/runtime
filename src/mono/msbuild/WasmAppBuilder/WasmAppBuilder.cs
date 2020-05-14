@@ -28,6 +28,7 @@ public class WasmAppBuilder : Task
     public string? MainJS { get; set; }
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
+    public ITaskItem[]? ExtraAssemblies { get; set; }
 
     Dictionary<string, Assembly>? Assemblies;
     Resolver? Resolver;
@@ -53,6 +54,13 @@ public class WasmAppBuilder : Task
 
         var mainAssembly = mlc.LoadFromAssemblyPath (MainAssembly);
         Add (mlc, mainAssembly);
+
+        if (ExtraAssemblies != null) {
+            foreach (var item in ExtraAssemblies) {
+                var refAssembly = mlc.LoadFromAssemblyPath (item.ItemSpec);
+                Add (mlc, refAssembly);
+            }
+        }
 
         // Create app
         Directory.CreateDirectory (AppDir!);
