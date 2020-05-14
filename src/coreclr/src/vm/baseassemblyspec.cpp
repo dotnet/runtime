@@ -342,24 +342,6 @@ BOOL BaseAssemblySpec::RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAss
     }
 }
 
-//===========================================================================================
-// This function may embed additional information, if required.
-//
-// For WinRT (ContentType=WindowsRuntime) assembly specs, this will embed the type name in
-// the IAssemblyName's ASM_NAME_NAME property; otherwise this just creates an IAssemblyName
-// for the provided assembly spec.
-
-void BaseAssemblySpec::GetEncodedName(SString & ssEncodedName) const
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    ssEncodedName.SetUTF8(m_pAssemblyName);
-}
-
 VOID BaseAssemblySpec::SetName(SString const & ssName)
 {
     CONTRACTL
@@ -584,7 +566,7 @@ HRESULT BaseAssemblySpec::CreateFusionName(
         NonVMComHolder< IAssemblyName > holder(NULL);
 
         SmallStackSString ssAssemblyName;
-        fMustBeBindable ? GetEncodedName(ssAssemblyName) : GetName(ssAssemblyName);
+        GetName(ssAssemblyName);
 
         IfFailGo(CreateAssemblyNameObject(&pFusionAssemblyName, ssAssemblyName.GetUnicode(), false /*parseDisplayName*/));
 

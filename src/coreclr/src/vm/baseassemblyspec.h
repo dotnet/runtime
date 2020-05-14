@@ -124,8 +124,6 @@ public:
         BOOL fIncludeCodeBase = TRUE, /* Used by fusion only */
         BOOL fMustBeBindable = FALSE) const;
 
-    void GetEncodedName(SString & ssEncodedName) const;
-
     // Returns true
     inline BOOL HasUniqueIdentity() const
     {

@@ -104,8 +104,6 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
     }
     CONTRACTL_END;
 
-    // If we are not in an APPX process, and an object could have a strongly typed RCW as a COM CoClass,
-    // we prefer that to the WinRT class.This preserves compatibility for exisitng code.
     // If we are in an APPX process we do not check for IProvideClassInfo.
     if (m_typeHandle.IsNull() && !AppX::IsAppXProcess())
     {
@@ -262,8 +260,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         RCWHolder pRCW(m_pThread);
         pRCW.InitNoCheck(pNewRCW);
 
-        // We may get back an RCW from another STA thread (mainly in WinRT factory cache scenario,
-        // as those factories are typically singleton), and we can only touch the RCW if we hold the lock,
+        // We may get back an RCW from another STA thread and we can only touch the RCW if we hold the lock,
         // otherwise we may AV if the STA thread dies and takes the RCW with it
         RCWCache::LockHolder lh(m_pWrapperCache);
 
@@ -393,8 +390,7 @@ OBJECTREF COMInterfaceMarshaler::FindOrCreateObjectRefInternal(IUnknown **ppInco
         GCPROTECT_BEGIN_THREAD(m_pThread, oref);
 
         {
-            // We may get back an RCW from another STA thread (mainly in WinRT factory cache scenario,
-            // as those factories are typically singleton), and we can only touch the RCW if we hold the lock,
+            // We may get back an RCW from another STA thread and we can only touch the RCW if we hold the lock,
             // otherwise we may AV if the STA thread dies and takes the RCW with it
             RCWCache::LockHolder lh(m_pWrapperCache);
 

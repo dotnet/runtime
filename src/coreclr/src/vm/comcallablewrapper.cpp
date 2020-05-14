@@ -2763,8 +2763,8 @@ static IUnknown * GetComIPFromCCW_ForIID_Worker(
     if (IsIClassX(pMT, riid, &pIntfComMT))
     {
         // If the class that this IClassX's was generated for is marked
-        // as ClassInterfaceType.AutoDual or AutoDisp, or it is a WinRT
-        // delegate, then give out the IClassX IP.
+        // as ClassInterfaceType.AutoDual or AutoDisp,
+        // then give out the IClassX IP.
         if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
         {
             // Make sure the all the base classes of the class this IClassX corresponds to
@@ -2811,8 +2811,8 @@ static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodT
             ComMethodTable * pIntfComMT = pIntfCCWTemplate->GetClassComMT();
 
             // If the class that this IClassX's was generated for is marked
-            // as ClassInterfaceType.AutoDual or AutoDisp, or it is a WinRT
-            // delegate, then give out the IClassX IP.
+            // as ClassInterfaceType.AutoDual or AutoDisp,
+            // then give out the IClassX IP.
             if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
             {
                 // Make sure the all the base classes of the class this IClassX corresponds to
@@ -3920,9 +3920,6 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         else
         {
             // we will perform interface dispatch at run-time
-            // note that even in fully statically typed WinRT, we don't always have an implementation
-            // MethodDesc in the hierarchy because our metadata adapter does not make these up for
-            // redirected interfaces
             pNewMD->InitMethod(pIntfMD, NULL);
         }
 

@@ -4035,7 +4035,7 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
     AddAvailableClassHaveLock(
         pModule,
         classdef,
-        pamTracker);     // cchWinRtNamespacePrefix
+        pamTracker);
 }
 
 // This routine must be single threaded!  The reason is that there are situations which allow

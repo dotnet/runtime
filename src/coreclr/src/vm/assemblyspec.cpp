@@ -883,7 +883,7 @@ HRESULT AssemblySpec::EmitToken(
     EX_TRY
     {
         SmallStackSString ssName;
-        fMustBeBindable ? GetEncodedName(ssName) : GetName(ssName);
+        GetName(ssName);
 
         ASSEMBLYMETADATA AMD;
 
