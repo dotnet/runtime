@@ -1553,9 +1553,6 @@ namespace System
             return _info.String;
         }
 
-        //
-        //  A static shortcut to Uri.Equals
-        //
         public static bool operator ==(Uri? uri1, Uri? uri2)
         {
             if (ReferenceEquals(uri1, uri2))
@@ -1571,9 +1568,6 @@ namespace System
             return uri1.Equals(uri2);
         }
 
-        //
-        //  A static shortcut to !Uri.Equals
-        //
         public static bool operator !=(Uri? uri1, Uri? uri2)
         {
             if (ReferenceEquals(uri1, uri2))
@@ -1595,7 +1589,7 @@ namespace System
         //  Overrides default function (in Object class)
         //
         // Assumes:
-        //  <comparand> is an object of class Uri
+        //  <comparand> is an object of class Uri or String
         //
         // Returns:
         //  true if objects have the same value, else false
@@ -1617,11 +1611,9 @@ namespace System
 
             Uri? obj = comparand as Uri;
 
-            //
             // we allow comparisons of Uri and String objects only. If a string
             // is passed, convert to Uri. This is inefficient, but allows us to
             // canonicalize the comparand, making comparison possible
-            //
             if (obj is null)
             {
                 if (!(comparand is string s))
@@ -1634,9 +1626,6 @@ namespace System
                     return false;
             }
 
-            // Since v1.0 two Uris are equal if everything but fragment and UserInfo does match
-
-            // This check is for a case where we already fixed up the equal references
             if (ReferenceEquals(OriginalString, obj.OriginalString))
             {
                 return true;
