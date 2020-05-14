@@ -135,10 +135,6 @@ private:
                            unsigned int stackId = 0,
                            BOOL isSortedEvent = TRUE);
 
-    void WriteMetadataEventToBlock(EventPipeEventInstance &instance,
-        unsigned int metadataId,
-        const SString& providerName);
-
     // The format to serialize
     EventPipeSerializationFormat m_format;
 
