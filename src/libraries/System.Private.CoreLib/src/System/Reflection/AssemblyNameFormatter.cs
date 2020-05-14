@@ -15,7 +15,7 @@ namespace System.Reflection
         {
             const int PUBLIC_KEY_TOKEN_LEN = 8;
 
-            if (name == string.Empty)
+            if (name.Length == 0)
                 throw new FileLoadException();
 
             StringBuilder sb = new StringBuilder();
@@ -54,7 +54,7 @@ namespace System.Reflection
 
             if (cultureName != null)
             {
-                if (cultureName == string.Empty)
+                if (cultureName.Length == 0)
                     cultureName = "neutral";
                 sb.Append(", Culture=");
                 sb.AppendQuoted(cultureName);

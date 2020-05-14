@@ -1513,7 +1513,7 @@ namespace System.Xml
 
         private void SetEmptyNode()
         {
-            Debug.Assert(_tmpNode.localName == string.Empty && _tmpNode.prefix == string.Empty && _tmpNode.name == string.Empty && _tmpNode.namespaceUri == string.Empty);
+            Debug.Assert(_tmpNode.localName.Length == 0 && _tmpNode.prefix.Length == 0 && _tmpNode.name.Length == 0 && _tmpNode.namespaceUri.Length == 0);
             _tmpNode.type = XmlNodeType.None;
             _tmpNode.value = string.Empty;
 

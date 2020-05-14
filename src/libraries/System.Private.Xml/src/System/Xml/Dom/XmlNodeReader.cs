@@ -897,7 +897,7 @@ namespace System.Xml
                 {
                     return _nameTable.Add(XmlReservedNs.NsXml);
                 }
-                if (prefix == string.Empty)
+                if (prefix.Length == 0)
                 {
                     return _nameTable.Add(string.Empty);
                 }
@@ -919,7 +919,7 @@ namespace System.Xml
             {
                 return _nameTable.Add("xml");
             }
-            if (namespaceName == string.Empty)
+            if (namespaceName.Length == 0)
             {
                 return string.Empty;
             }
@@ -1018,7 +1018,7 @@ namespace System.Xml
 
             if (scope != XmlNamespaceScope.Local)
             {
-                if (dict.ContainsKey(string.Empty) && dict[string.Empty] == string.Empty)
+                if (dict.ContainsKey(string.Empty) && dict[string.Empty].Length == 0)
                 {
                     dict.Remove(string.Empty);
                 }

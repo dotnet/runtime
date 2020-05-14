@@ -85,7 +85,7 @@ namespace System.ServiceModel.Syndication
             {
                 foreach (XmlQualifiedName key in _attributeExtensions.Keys)
                 {
-                    if (key.Name == Atom10Constants.TypeTag && key.Namespace == string.Empty)
+                    if (key.Name == Atom10Constants.TypeTag && key.Namespace.Length == 0)
                     {
                         continue;
                     }

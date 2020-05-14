@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.Build.CloudTestTasks
             string stringToSign = string.Format(
                 "{0}\n\n\n{1}\n{5}\n{6}\n\n\n{2}\n\n\n\n{3}{4}",
                 method,
-                (size == string.Empty) ? string.Empty : size,
+                (size.Length == 0) ? string.Empty : size,
                 ifMatch,
                 GetCanonicalizedHeaders(request),
                 GetCanonicalizedResource(request.RequestUri, storageAccount),

@@ -329,7 +329,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [NonEvent]
         private static LoggerFilterRule[] ParseFilterSpec(string filterSpec, LogLevel defaultLevel)
         {
-            if (filterSpec == string.Empty)
+            if (filterSpec.Length == 0)
             {
                 return new[] { new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, defaultLevel, null) };
             }

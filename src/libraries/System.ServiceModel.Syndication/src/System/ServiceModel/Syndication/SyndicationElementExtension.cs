@@ -62,7 +62,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(dataContractExtension));
             }
-            if (outerName == string.Empty)
+            if (outerName.Length == 0)
             {
                 throw new ArgumentException(SR.OuterNameOfElementExtensionEmpty, nameof(outerName));
             }

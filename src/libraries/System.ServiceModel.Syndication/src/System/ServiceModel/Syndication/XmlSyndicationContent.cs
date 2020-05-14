@@ -33,7 +33,7 @@ namespace System.ServiceModel.Syndication
                     string name = reader.LocalName;
                     string ns = reader.NamespaceURI;
                     string value = reader.Value;
-                    if (name == Atom10Constants.TypeTag && ns == string.Empty)
+                    if (name == Atom10Constants.TypeTag && ns.Length == 0)
                     {
                         _type = value;
                     }

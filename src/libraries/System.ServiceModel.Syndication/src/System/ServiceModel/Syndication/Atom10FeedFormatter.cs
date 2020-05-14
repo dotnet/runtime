@@ -133,15 +133,15 @@ namespace System.ServiceModel.Syndication
             {
                 while (reader.MoveToNextAttribute())
                 {
-                    if (reader.LocalName == Atom10Constants.TermTag && reader.NamespaceURI == string.Empty)
+                    if (reader.LocalName == Atom10Constants.TermTag && reader.NamespaceURI.Length == 0)
                     {
                         category.Name = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.SchemeTag && reader.NamespaceURI == string.Empty)
+                    else if (reader.LocalName == Atom10Constants.SchemeTag && reader.NamespaceURI.Length == 0)
                     {
                         category.Scheme = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.LabelTag && reader.NamespaceURI == string.Empty)
+                    else if (reader.LocalName == Atom10Constants.LabelTag && reader.NamespaceURI.Length == 0)
                     {
                         category.Label = reader.Value;
                     }
@@ -569,7 +569,7 @@ namespace System.ServiceModel.Syndication
             {
                 while (reader.MoveToNextAttribute())
                 {
-                    if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI == string.Empty)
+                    if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI.Length == 0)
                     {
                         continue;
                     }
@@ -664,11 +664,11 @@ namespace System.ServiceModel.Syndication
                 {
                     while (reader.MoveToNextAttribute())
                     {
-                        if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI == string.Empty)
+                        if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI.Length == 0)
                         {
                             continue;
                         }
-                        else if (reader.LocalName == Atom10Constants.SourceTag && reader.NamespaceURI == string.Empty)
+                        else if (reader.LocalName == Atom10Constants.SourceTag && reader.NamespaceURI.Length == 0)
                         {
                             continue;
                         }
@@ -919,23 +919,23 @@ namespace System.ServiceModel.Syndication
                     {
                         link.BaseUri = FeedUtils.CombineXmlBase(link.BaseUri, reader.Value);
                     }
-                    else if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI == string.Empty)
+                    else if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI.Length == 0)
                     {
                         mediaType = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.RelativeTag && reader.NamespaceURI == string.Empty)
+                    else if (reader.LocalName == Atom10Constants.RelativeTag && reader.NamespaceURI.Length == 0)
                     {
                         relationship = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.TitleTag && reader.NamespaceURI == string.Empty)
+                    else if (reader.LocalName == Atom10Constants.TitleTag && reader.NamespaceURI.Length == 0)
                     {
                         title = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.LengthTag && reader.NamespaceURI == string.Empty)
+                    else if (reader.LocalName == Atom10Constants.LengthTag && reader.NamespaceURI.Length == 0)
                     {
                         lengthStr = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.HrefTag && reader.NamespaceURI == string.Empty)
+                    else if (reader.LocalName == Atom10Constants.HrefTag && reader.NamespaceURI.Length == 0)
                     {
                         val = reader.Value;
                     }

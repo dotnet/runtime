@@ -776,7 +776,7 @@ namespace System.Xml
             // get BaseUri from XmlParserContext
             if (context != null)
             {
-                Debug.Assert(baseUriStr == string.Empty, "BaseURI can come either from XmlParserContext or from the constructor argument, not from both");
+                Debug.Assert(baseUriStr.Length == 0, "BaseURI can come either from XmlParserContext or from the constructor argument, not from both");
                 if (context.BaseURI != null)
                 {
                     baseUriStr = context.BaseURI;

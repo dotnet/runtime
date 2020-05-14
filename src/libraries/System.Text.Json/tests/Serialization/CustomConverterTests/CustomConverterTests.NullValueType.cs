@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
 
                 string value = reader.GetString();
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     return default;
                 }

@@ -161,7 +161,7 @@ namespace System.IO.Packaging
         internal static void ThrowIfInvalidRelationshipType(string relationshipType)
         {
             // Look for empty string or string with just spaces
-            if (relationshipType.Trim() == string.Empty)
+            if (relationshipType.Trim().Length == 0)
                 throw new ArgumentException(SR.InvalidRelationshipType);
         }
 

@@ -98,7 +98,7 @@ namespace System.Net.Http.Headers
             set
             {
                 // Null and empty string are equivalent. In this case it means, remove the From header value (if any).
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     value = null;
                 }
@@ -117,7 +117,7 @@ namespace System.Net.Http.Headers
             set
             {
                 // Null and empty string are equivalent. In this case it means, remove the Host header value (if any).
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     value = null;
                 }
