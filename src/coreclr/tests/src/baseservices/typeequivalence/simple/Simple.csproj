@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(TypeEquivalence.props))" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- The Type Equivalence feature is unsupported outside of windows -->
