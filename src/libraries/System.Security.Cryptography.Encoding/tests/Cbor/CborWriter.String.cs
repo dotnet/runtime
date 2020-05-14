@@ -11,8 +11,6 @@ namespace System.Formats.Cbor
 {
     public partial class CborWriter
     {
-        private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-
         // keeps track of chunk offsets for written indefinite-length string ranges
         private List<(int Offset, int Length)>? _currentIndefiniteLengthStringRanges = null;
 
@@ -37,10 +35,12 @@ namespace System.Formats.Cbor
         // Implements major type 3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void WriteTextString(ReadOnlySpan<char> value)
         {
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+
             int length;
             try
             {
-                length = s_utf8Encoding.GetByteCount(value);
+                length = utf8Encoding.GetByteCount(value);
             }
             catch (EncoderFallbackException e)
             {
@@ -57,7 +57,7 @@ namespace System.Formats.Cbor
                 _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
             }
 
-            s_utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));
+            utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));
             _offset += length;
             AdvanceDataItemCounters();
         }

@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System;
 using System.Linq;
-using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -651,12 +649,26 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData("61ff")]
-        [InlineData("62f090")]
-        public static void ReadTextString_InvalidUnicode_ShouldThrowFormatException(string hexEncoding)
+        [InlineData(CborConformanceLevel.Lax)]
+        public static void ReadTextString_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
         {
-            byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding);
+            byte[] encoding = "62f090".HexToByteArray();
+            string expected = "\ufffd"; // unicode replacement character
+
+            var reader = new CborReader(encoding, conformanceLevel);
+            string actual = reader.ReadTextString();
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict)]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void ReadTextString_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel)
+        {
+            byte[] encoding = "62f090".HexToByteArray();
+            var reader = new CborReader(encoding, conformanceLevel);
             FormatException exn = Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
@@ -664,13 +676,31 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData("61ff")]
-        [InlineData("62f090")]
-        public static void TryReadTextString_InvalidUnicode_ShouldThrowFormatException(string hexEncoding)
+        [InlineData(CborConformanceLevel.Lax)]
+        public static void TryReadTextString_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
         {
-            byte[] encoding = hexEncoding.HexToByteArray();
+            byte[] encoding = "62f090".HexToByteArray();
+            string expected = "\ufffd"; // unicode replacement character
+
             char[] buffer = new char[32];
-            var reader = new CborReader(encoding);
+            var reader = new CborReader(encoding, conformanceLevel);
+
+            bool result = reader.TryReadTextString(buffer, out int bytesRead);
+
+            Assert.True(result);
+            Assert.Equal(1, bytesRead);
+            Assert.Equal(buffer[0], expected[0]);
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict)]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void TryReadTextString_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel)
+        {
+            byte[] encoding = "62f090".HexToByteArray();
+            char[] buffer = new char[32];
+            var reader = new CborReader(encoding, conformanceLevel);
 
             FormatException exn = Assert.Throws<FormatException>(() => reader.TryReadTextString(buffer, out int _));
             Assert.NotNull(exn.InnerException);
@@ -800,15 +830,33 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
-        [Fact]
-        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_ShouldThrowFormatException()
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax)]
+        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
+        {
+            // while the concatenated string is valid utf8, the individual chunks are not,
+            // which is in violation of the CBOR format.
+
+            string hexEncoding = "7f62f090628591ff";
+            string expected = "\ufffd\ufffd\ufffd";
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, conformanceLevel);
+            string actual = reader.ReadTextString();
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict)]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_StrictConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel)
         {
             // while the concatenated string is valid utf8, the individual chunks are not,
             // which is in violation of the CBOR format.
 
             string hexEncoding = "7f62f090628591ff";
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding);
+            var reader = new CborReader(encoding, conformanceLevel);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }

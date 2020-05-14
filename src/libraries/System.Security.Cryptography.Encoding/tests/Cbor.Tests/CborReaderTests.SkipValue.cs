@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -90,12 +89,24 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData("61ff")]
-        [InlineData("62f090")]
-        public static void SkipValue_ValidationEnabled_InvalidUtf8_ShouldThrowFormatException(string hexEncoding)
+        [InlineData(CborConformanceLevel.Lax)]
+        public static void SkipValue_ValidationEnabled_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
         {
-            byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding);
+            byte[] encoding = "62f090".HexToByteArray();
+            var reader = new CborReader(encoding, conformanceLevel);
+
+            reader.SkipValue(validateConformance: true);
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict)]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void SkipValue_ValidationEnabled_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel)
+        {
+            byte[] encoding = "62f090".HexToByteArray();
+            var reader = new CborReader(encoding, conformanceLevel);
 
             FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue(validateConformance: true));
             Assert.NotNull(exn.InnerException);

@@ -12,8 +12,6 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-
         // stores a reusable List allocation for keeping ranges in the buffer
         private List<(int Offset, int Length)>? _indefiniteLengthStringRangeAllocation = null;
 
@@ -90,11 +88,12 @@ namespace System.Formats.Cbor
             int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + length);
             ReadOnlySpan<byte> encodedString = _buffer.Span.Slice(1 + additionalBytes, length);
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
 
             string result;
             try
             {
-                result = s_utf8Encoding.GetString(encodedString);
+                result = utf8Encoding.GetString(encodedString);
             }
             catch (DecoderFallbackException e)
             {
@@ -123,9 +122,10 @@ namespace System.Formats.Cbor
             int byteLength = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + byteLength);
 
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
             ReadOnlySpan<byte> encodedSlice = _buffer.Span.Slice(1 + additionalBytes, byteLength);
 
-            int charLength = ValidateUtf8AndGetCharCount(encodedSlice);
+            int charLength = ValidateUtf8AndGetCharCount(encodedSlice, utf8Encoding);
 
             if (charLength > destination.Length)
             {
@@ -133,7 +133,7 @@ namespace System.Formats.Cbor
                 return false;
             }
 
-            s_utf8Encoding.GetChars(encodedSlice, destination);
+            utf8Encoding.GetChars(encodedSlice, destination);
             AdvanceBuffer(1 + additionalBytes + byteLength);
             AdvanceDataItemCounters();
             charsWritten = charLength;
@@ -221,11 +221,12 @@ namespace System.Formats.Cbor
         {
             List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int _);
             ReadOnlySpan<byte> buffer = _buffer.Span;
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
 
             int concatenatedStringSize = 0;
             foreach ((int o, int l) in ranges)
             {
-                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l));
+                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l), utf8Encoding);
             }
 
             if (concatenatedStringSize > destination.Length)
@@ -236,7 +237,7 @@ namespace System.Formats.Cbor
 
             foreach ((int o, int l) in ranges)
             {
-                s_utf8Encoding.GetChars(buffer.Slice(o, l), destination);
+                utf8Encoding.GetChars(buffer.Slice(o, l), destination);
                 destination = destination.Slice(l);
             }
 
@@ -271,29 +272,30 @@ namespace System.Formats.Cbor
         private string ReadChunkedTextStringConcatenated()
         {
             List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
             ReadOnlySpan<byte> buffer = _buffer.Span;
             int concatenatedStringSize = 0;
 
             foreach ((int o, int l) in ranges)
             {
-                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l));
+                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l), utf8Encoding);
             }
 
-            string output = string.Create(concatenatedStringSize, (ranges, _buffer), BuildString);
+            string output = string.Create(concatenatedStringSize, (ranges, _buffer, utf8Encoding), BuildString);
 
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
             ReturnIndefiniteLengthStringRangeList(ranges);
             return output;
 
-            static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source) input)
+            static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source, Encoding utf8Encoding) input)
             {
                 ReadOnlySpan<byte> source = input.source.Span;
 
                 foreach ((int o, int l) in input.ranges)
                 {
-                    s_utf8Encoding.GetChars(source.Slice(o, l), target);
-                    target = target.Slice(l);
+                    int charsWritten = input.utf8Encoding.GetChars(source.Slice(o, l), target);
+                    target = target.Slice(charsWritten);
                 }
 
                 Debug.Assert(target.IsEmpty);
@@ -342,31 +344,34 @@ namespace System.Formats.Cbor
         }
 
         // SkipValue() helper: reads a cbor string without allocating or copying to a buffer
-        // NB this only handles definite-length chunks
         private void SkipString(CborMajorType type)
         {
+            Debug.Assert(type == CborMajorType.ByteString || type == CborMajorType.TextString);
+
             CborInitialByte header = PeekInitialByte(expectedType: type);
 
             ReadOnlySpan<byte> buffer = _buffer.Span;
             int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + byteLength);
 
-            // Force any UTF8 decoding errors if text string
-            if (_isConformanceLevelCheckEnabled && type == CborMajorType.TextString)
+            // if conformance level requires it, validate the utf-8 encoding that is being skipped
+            if (type == CborMajorType.TextString && _isConformanceLevelCheckEnabled &&
+                CborConformanceLevelHelpers.RequiresUtf8Validation(ConformanceLevel))
             {
                 ReadOnlySpan<byte> encodedSlice = buffer.Slice(1 + additionalBytes, byteLength);
-                ValidateUtf8AndGetCharCount(encodedSlice);
+                Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+                ValidateUtf8AndGetCharCount(encodedSlice, utf8Encoding);
             }
 
             AdvanceBuffer(1 + additionalBytes + byteLength);
             AdvanceDataItemCounters();
         }
 
-        private int ValidateUtf8AndGetCharCount(ReadOnlySpan<byte> buffer)
+        private int ValidateUtf8AndGetCharCount(ReadOnlySpan<byte> buffer, Encoding utf8Encoding)
         {
             try
             {
-                return s_utf8Encoding.GetCharCount(buffer);
+                return utf8Encoding.GetCharCount(buffer);
             }
             catch (DecoderFallbackException e)
             {
