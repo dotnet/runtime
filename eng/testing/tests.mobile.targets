@@ -21,11 +21,11 @@
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
 
     <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
-    <Copy Condition="'$(AndroidOpenSslAar)' != ''"
-          SourceFiles="$(AndroidOpenSslAar)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
           DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(AndroidOpenSslAar)' != ''"
-          SourceFiles="$(AndroidOpenSslAar)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
           DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
