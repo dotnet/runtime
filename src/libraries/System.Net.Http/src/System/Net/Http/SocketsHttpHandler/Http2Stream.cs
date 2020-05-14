@@ -129,6 +129,13 @@ namespace System.Net.Http
                     }
                 }
 
+                _response = new HttpResponseMessage()
+                {
+                    Version = HttpVersion.Version20,
+                    RequestMessage = _request,
+                    Content = new HttpConnectionResponseContent()
+                };
+
                 if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
 
@@ -472,13 +479,8 @@ namespace System.Net.Http
                             }
 
                             int statusValue = ParseStatusCode(value);
-                            _response = new HttpResponseMessage()
-                            {
-                                Version = HttpVersion.Version20,
-                                RequestMessage = _request,
-                                Content = new HttpConnectionResponseContent(),
-                                StatusCode = (HttpStatusCode)statusValue
-                            };
+                            Debug.Assert(_response != null);
+                            _response.StatusCode = (HttpStatusCode)statusValue;
 
                             if (statusValue < 200)
                             {
