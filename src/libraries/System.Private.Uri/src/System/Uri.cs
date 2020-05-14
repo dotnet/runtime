@@ -145,7 +145,7 @@ namespace System
             public string? ScopeId;        //only IP v6 may need this
             public string? String;
             public Offset Offset;
-            public string? DnsSafeHost;    // stores dns safe host when idn is on and we have unicode or idn host
+            public string? IdnHost;
 
             private MoreInfo? _moreInfo;
             public MoreInfo MoreInfo
@@ -178,6 +178,7 @@ namespace System
         {
             public string? Path;
             public string? Query;
+            public string? PathAndQuery;
             public string? Fragment;
             public string? AbsoluteUri;
             public string? RemoteUrl;
@@ -838,16 +839,23 @@ namespace System
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                string result = GetParts(UriComponents.PathAndQuery, UriFormat.UriEscaped);
-                //
-                // Compatibility:
-                // Remove the first slash from a Dos Path if it's present
-                //
-                if (IsDosPath && result[0] == '/')
+                MoreInfo info = EnsureUriInfo().MoreInfo;
+
+                if (info.PathAndQuery is null)
                 {
-                    result = result.Substring(1);
+                    string result = GetParts(UriComponents.PathAndQuery, UriFormat.UriEscaped);
+
+                    // Compatibility:
+                    // Remove the first slash from a Dos Path if it's present
+                    if (IsDosPath && result[0] == '/')
+                    {
+                        result = result.Substring(1);
+                    }
+
+                    info.PathAndQuery = result;
                 }
-                return result;
+
+                return info.PathAndQuery;
             }
         }
 
@@ -1129,12 +1137,7 @@ namespace System
 
                 EnsureHostString(false);
 
-                if (_info.DnsSafeHost != null)
-                {
-                    // Cached
-                    return _info.DnsSafeHost;
-                }
-                else if (_info.Host!.Length == 0)
+                if (_info.Host!.Length == 0)
                 {
                     // Empty host, no possible processing
                     return string.Empty;
@@ -1164,8 +1167,6 @@ namespace System
                     ret = new string(dest, 0, count);
                 }
 
-                _info.DnsSafeHost = ret;
-
                 return ret;
             }
         }
@@ -1175,14 +1176,26 @@ namespace System
         {
             get
             {
-                string host = this.DnsSafeHost;
-
-                if (HostType == Flags.DnsHostType)
+                if (IsNotAbsoluteUri)
                 {
-                    host = DomainNameHelper.IdnEquivalent(host);
+                    throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                return host;
+                UriInfo info = EnsureUriInfo();
+
+                if (info.IdnHost is null)
+                {
+                    string host = DnsSafeHost;
+
+                    if (HostType == Flags.DnsHostType)
+                    {
+                        host = DomainNameHelper.IdnEquivalent(host);
+                    }
+
+                    info.IdnHost = host;
+                }
+
+                return info.IdnHost;
             }
         }
 
