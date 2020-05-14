@@ -942,7 +942,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         return retNode;
     }
 
-    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig, baseType, retType);
+    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig, baseType, retType, simdSize);
 }
 
 #endif // FEATURE_HW_INTRINSICS

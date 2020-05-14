@@ -480,14 +480,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO*     sig,
                                        var_types             baseType,
-                                       var_types             retType)
+                                       var_types             retType,
+                                       unsigned              simdSize)
 {
     // other intrinsics need special importation
     switch (HWIntrinsicInfo::lookupIsa(intrinsic))
     {
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
-            return impBaseIntrinsic(intrinsic, clsHnd, method, sig, baseType, retType);
+            return impBaseIntrinsic(intrinsic, clsHnd, method, sig, baseType, retType, simdSize);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig);
         case InstructionSet_SSE2:
@@ -523,7 +524,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_METHOD_HANDLE method,
                                     CORINFO_SIG_INFO*     sig,
                                     var_types             baseType,
-                                    var_types             retType)
+                                    var_types             retType,
+                                    unsigned              simdSize)
 {
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
@@ -532,22 +534,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
     if (!featureSIMD)
     {
         return nullptr;
-    }
-
-    unsigned  simdSize   = 0;
-    var_types sigRetType = JITtype2varType(sig->retType);
-
-    if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
-    {
-        getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
-    }
-    else if (sigRetType == TYP_STRUCT)
-    {
-        getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
-    }
-    else
-    {
-        getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
     }
 
     switch (intrinsic)
@@ -604,7 +590,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
             {
                 // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector128.ToVector256
-                return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType);
+                return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType, simdSize);
             }
 
             assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
@@ -645,6 +631,10 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsVector128:
         {
             assert(sig->numArgs == 1);
+            assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic));
+
+            var_types baseTypeOfIntrinsic = getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
+            assert(baseType == baseTypeOfIntrinsic);
 
             switch (getSIMDTypeForSize(simdSize))
             {
@@ -672,7 +662,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_SIMD32:
                 {
                     // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector256.GetLower
-                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, baseType, retType);
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, baseType, retType, simdSize);
                 }
 
                 default:
@@ -711,12 +701,13 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (intrinsic == NI_Vector256_AsVector)
                 {
-                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, baseType, retType);
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, baseType, retType, simdSize);
                 }
                 else
                 {
                     assert(intrinsic == NI_Vector256_AsVector256);
-                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType);
+                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType,
+                                            simdSize);
                 }
             }
 
