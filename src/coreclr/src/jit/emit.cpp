@@ -5552,12 +5552,12 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     if (attr == EA_4BYTE)
     {
-        f        = forceCastToFloat(constValue);
-        cnsAddr  = &f;
+        f       = forceCastToFloat(constValue);
+        cnsAddr = &f;
     }
     else
     {
-        cnsAddr  = &constValue;
+        cnsAddr = &constValue;
     }
 
     // Access to inline data is 'abstracted' by a special type of static member
