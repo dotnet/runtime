@@ -38,12 +38,9 @@ namespace System.Text.Json.Serialization.Converters
                 _keyName = namingPolicy.ConvertName(KeyNameCLR);
                 _valueName = namingPolicy.ConvertName(ValueNameCLR);
 
-                if (_keyName == null ||
-                    _valueName == null ||
-                    string.Equals(_keyName, ValueNameCLR, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(_valueName, KeyNameCLR, StringComparison.OrdinalIgnoreCase))
+                if (_keyName == null || _valueName == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_KeyValuePairPropertyNameInvalid(namingPolicy);
+                    ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(namingPolicy);
                 }
             }
 

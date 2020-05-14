@@ -163,16 +163,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(Type policyType)
+        public static void ThrowInvalidOperationException_NamingPolicyReturnNull(JsonNamingPolicy namingPolicy)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, policyType));
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_KeyValuePairPropertyNameInvalid(JsonNamingPolicy namingPolicy)
-        {
-            throw new InvalidOperationException(SR.Format(SR.KeyValuePairPropertyNameInvalid, namingPolicy.GetType()));
+            throw new InvalidOperationException(SR.Format(SR.NamingPolicyReturnNull, namingPolicy));
         }
 
         [DoesNotReturn]

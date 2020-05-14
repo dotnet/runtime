@@ -389,8 +389,6 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(KeyNameNullPolicy))]
         [InlineData(typeof(ValueNameNullPolicy))]
-        [InlineData(typeof(KeyNameMapsToValuePolicy))]
-        [InlineData(typeof(ValueNameMapsToKeyPolicy))]
         public static void InvalidPropertyNameFail(Type policyType)
         {
             var options = new JsonSerializerOptions
@@ -400,11 +398,7 @@ namespace System.Text.Json.Serialization.Tests
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>>("", options));
             string exAsStr = ex.ToString();
-
             Assert.Contains(policyType.ToString(), exAsStr);
-            Assert.Contains("'Key'", exAsStr);
-            Assert.Contains("'Value'", exAsStr);
-            Assert.Contains("'KeyValuePair'", exAsStr);
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new KeyValuePair<string, string>("", ""), options));
         }
@@ -417,16 +411,6 @@ namespace System.Text.Json.Serialization.Tests
         private class ValueNameNullPolicy : JsonNamingPolicy
         {
             public override string ConvertName(string name) => name == "Value" ? null : name;
-        }
-
-        private class KeyNameMapsToValuePolicy : JsonNamingPolicy
-        {
-            public override string ConvertName(string name) => name == "Key" ? "Value" : name;
-        }
-
-        private class ValueNameMapsToKeyPolicy : JsonNamingPolicy
-        {
-            public override string ConvertName(string name) => name == "Value" ? "k\u0045y" : name; // kEy
         }
 
         [Theory]
