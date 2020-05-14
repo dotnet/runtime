@@ -99,7 +99,6 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #else // DACCESS_COMPILE
 
-#ifdef FEATURE_EVENT_TRACE
 long g_cbILJitted = 0;
 int g_cMethodsJitted = 0;
 
@@ -128,9 +127,6 @@ long GetJittedMethodsCount()
 
     return g_cMethodsJitted;
 }
-
-
-#endif
 
 
 /*********************************************************************/
@@ -12899,10 +12895,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                                                   nativeCodeVersion);
             LOG((LF_CORDB, LL_EVERYTHING, "Got through CallCompile MethodWithSEHWrapper\n"));
 
-#ifdef FEATURE_EVENT_TRACE
             g_cbILJitted += methodInfo.ILCodeSize;
             g_cMethodsJitted++;
-#endif
 
 #if FEATURE_PERFMAP
             // Save the code size so that it can be reported to the perfmap.
