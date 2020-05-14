@@ -535,11 +535,6 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ProcessStreamFrame(QuicReader reader)
         {
-            // TODO-RZ: Discard data if STOP_SENDING requested.
-            // STREAM frames received after sending STOP_SENDING are still counted
-            // toward connection and stream flow control, even though these frames
-            // can be discarded upon receipt.
-
             var frameType = reader.PeekFrameType();
             if (!StreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
@@ -593,7 +588,17 @@ namespace System.Net.Quic.Implementations.Managed
                 return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.WritingPastFinalSize, frameType);
             }
 
-            buffer.Receive(frame.Offset, frame.StreamData, frame.Fin);
+            // RFC: STREAM frames received after sending STOP_SENDING are still counted
+            // toward connection and stream flow control, even though these frames
+            // can be discarded upon receipt.
+            //
+            // we also discard any data received after receiving RESET_STREAM, which might occur
+            // due to packet reordering.
+            if (buffer.StreamState <= RecvStreamState.SizeKnown)
+            {
+                buffer.Receive(frame.Offset, frame.StreamData, frame.Fin);
+            }
+
 
             return ProcessPacketResult.Ok;
         }
@@ -906,7 +911,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void WriteMaxDataFrame(QuicWriter writer, QuicSocketContext.SendContext context)
         {
-            // TODO-RZ: strategy for deciding whether the frame should be sent.
+            // TODO-RZ: better strategy for deciding whether the frame should be sent.
             if (MaxDataFrameSent ||
                 _localLimits.MaxData - _peerReceivedLocalLimits.MaxData < 1024 * 32 )
             {
