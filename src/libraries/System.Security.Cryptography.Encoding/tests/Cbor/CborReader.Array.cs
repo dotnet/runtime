@@ -41,7 +41,7 @@ namespace System.Formats.Cbor
 
         public void ReadEndArray()
         {
-            if (_remainingDataItems == null)
+            if (_definiteLength is null)
             {
                 ValidateNextByteIsBreakByte();
                 PopDataItem(expectedType: CborMajorType.Array);

@@ -5,8 +5,6 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace System.Formats.Cbor
 {
@@ -48,17 +46,16 @@ namespace System.Formats.Cbor
             }
 
             _currentKeyOffset = _offset;
-            _currentItemIsKey = true;
             return length;
         }
 
         public void ReadEndMap()
         {
-            if (_remainingDataItems == null)
+            if (_definiteLength is null)
             {
                 ValidateNextByteIsBreakByte();
 
-                if (!_currentItemIsKey)
+                if (_itemsWritten % 2 != 0)
                 {
                     throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
                 }
@@ -80,7 +77,7 @@ namespace System.Formats.Cbor
 
         private void HandleMapKeyRead()
         {
-            Debug.Assert(_currentKeyOffset != null && _currentItemIsKey);
+            Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 == 0);
 
             (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _offset - _currentKeyOffset.Value);
 
@@ -95,16 +92,13 @@ namespace System.Formats.Cbor
                     ValidateKeyUniqueness(currentKeyRange);
                 }
             }
-
-            _currentItemIsKey = false;
         }
 
         private void HandleMapValueRead()
         {
-            Debug.Assert(_currentKeyOffset != null && !_currentItemIsKey);
+            Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 != 0);
 
             _currentKeyOffset = _offset;
-            _currentItemIsKey = true;
         }
 
         private void ValidateSortedKeyEncoding((int Offset, int Length) currentKeyRange)
