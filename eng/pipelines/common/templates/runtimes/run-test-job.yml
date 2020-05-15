@@ -107,10 +107,6 @@ jobs:
         - name: crossgenArg
           value: 'composite'
 
-    - ${{ if eq(parameters.runtimeMode, 'interpreter') }}:
-      - name: RuntimeModeDisplayName
-        value: 'Interpreter' 
-
     # Set job timeouts
     #
     # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
