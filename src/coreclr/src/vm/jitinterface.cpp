@@ -12954,9 +12954,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             "Jitted Entry at" FMT_ADDR "method %s::%s %s\n", DBG_ADDR(nativeEntry),
              ftn->m_pszDebugClassName, ftn->m_pszDebugMethodName, ftn->m_pszDebugMethodSignature));
 
-        g_cbILJitted += methodInfo.ILCodeSize;
-        g_cMethodsJitted++;
-
 #if defined(FEATURE_CORESYSTEM)
 
 #ifdef _DEBUG
@@ -12995,6 +12992,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     if (fHeartbeat)
         printf(".");
 #endif // _DEBUG
+
+    FastInterlockExchangeAddLong((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
+    FastInterlockIncrement((LONG*)&g_cMethodsJitted);
 
     COOPERATIVE_TRANSITION_END();
     return ret;
