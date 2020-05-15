@@ -298,6 +298,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>The base type for all value task box reusable box objects, regardless of state machine type.</summary>
         internal abstract class StateMachineBox :
+            StateMachineWorkItem,
             IValueTaskSource<TResult>, IValueTaskSource
         {
             /// <summary>A delegate to the MoveNext method.</summary>
@@ -336,6 +337,7 @@ namespace System.Runtime.CompilerServices
 
         private sealed class SyncSuccessSentinelStateMachineBox : StateMachineBox
         {
+            public override void MoveNext() { }
             public SyncSuccessSentinelStateMachineBox() => SetResult(default!);
         }
 
@@ -460,10 +462,23 @@ namespace System.Runtime.CompilerServices
             public Action MoveNextAction => _moveNextAction ??= new Action(MoveNext);
 
             /// <summary>Invoked to run MoveNext when this instance is executed from the thread pool.</summary>
-            void IThreadPoolWorkItem.Execute() => MoveNext();
+            void IThreadPoolWorkItem.Execute()
+            {
+                ExecutionContext? context = Context;
+
+                if (context is null)
+                {
+                    Debug.Assert(!(StateMachine is null));
+                    StateMachine.MoveNext();
+                }
+                else
+                {
+                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this);
+                }
+            }
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
-            public void MoveNext()
+            public override void MoveNext()
             {
                 ExecutionContext? context = Context;
 

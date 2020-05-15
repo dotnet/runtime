@@ -29,17 +29,32 @@ namespace System.Threading
 
         public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
 
-        /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
-        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = state =>
-        {
-            if (!(state is IAsyncStateMachineBox box))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
-                return;
-            }
+        /// <summary>Shim used to invoke <see cref="StateMachineWorkItem.MoveNext"/> of the supplied <see cref="StateMachineWorkItem"/>.</summary>
+        internal static readonly Action<object?> s_invokeStateMachineWorkItem = Invoke.Instance.StateMachineWorkItem;
 
-            box.MoveNext();
-        };
+        private class Invoke
+        {
+            // Invoking an delegate on an instance is faster than invoking it as a static method.
+            public static Invoke Instance { get; } = new Invoke();
+
+            public void StateMachineWorkItem(object? state)
+            {
+                if (!(state is StateMachineWorkItem box))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                    return;
+                }
+
+                box.MoveNext();
+            }
+        }
+    }
+
+    internal abstract class StateMachineWorkItem : IThreadPoolWorkItem
+    {
+        public abstract void MoveNext();
+        // The StateMachineWorkItem must reimplement the interface
+        void IThreadPoolWorkItem.Execute() => throw NotImplemented.ByDesign;
     }
 
     [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
@@ -1120,17 +1135,17 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
 
-            // If the callback is the runtime-provided invocation of an IAsyncStateMachineBox,
-            // then we can queue the Task state directly to the ThreadPool instead of
+            // If the callback is the runtime-provided invocation of an StateMachineWorkItem,
+            // then we can queue the Task state directly to the ThreadPool as a IThreadPoolWorkItem instead of
             // wrapping it in a QueueUserWorkItemCallback.
             //
             // This occurs when user code queues its provided continuation to the ThreadPool;
             // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
-            if (ReferenceEquals(callBack, ThreadPoolGlobals.s_invokeAsyncStateMachineBox))
+            if (ReferenceEquals(callBack, ThreadPoolGlobals.s_invokeStateMachineWorkItem))
             {
-                if (!(state is IAsyncStateMachineBox))
+                if (!(state is StateMachineWorkItem))
                 {
-                    // The provided state must be the internal IAsyncStateMachineBox (Task) type
+                    // The provided state must be the internal ThreadPoolStateMachineWorkItem type
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
                 }
 
