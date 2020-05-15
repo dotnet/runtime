@@ -110,5 +110,60 @@ namespace System.DirectoryServices.Protocols
         internal static string PtrToString(IntPtr requestName) => Marshal.PtrToStringAnsi(requestName);
 
         internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
+
+        /// <summary>
+        /// Function that will be sent to the Sasl interactive bind procedure which will resolve all Sasl challenges
+        /// that get passed in by using the defaults that we get passed in.
+        /// </summary>
+        /// <param name="ldapHandle">The connection handle to the LDAP server.</param>
+        /// <param name="flags">Flags that control the interaction used to retrieve any necessary Sasl authentication parameters</param>
+        /// <param name="defaultsPtr">Pointer to the defaults structure that was sent to sasl_interactive_bind</param>
+        /// <param name="interactPtr">Pointer to the challenge we need to resolve</param>
+        /// <returns></returns>
+        internal static int SaslInteractionProcedure(IntPtr ldapHandle, uint flags, IntPtr defaultsPtr, IntPtr interactPtr)
+        {
+            if (ldapHandle == IntPtr.Zero)
+            {
+                return -9; // Parameter Error
+            }
+            // Convert pointers into managed structures.
+            IntPtr currentInteractPtr = interactPtr;
+            SaslInteractiveChallenge interactChallenge = Marshal.PtrToStructure<SaslInteractiveChallenge>(currentInteractPtr);
+            SaslDefaultCredentials defaults = Marshal.PtrToStructure<SaslDefaultCredentials>(defaultsPtr);
+
+            // loop through all of the challenges that were sent through the interactChallenge.
+            while (interactChallenge.saslChallengeType != (int)SaslChallengeType.SASL_CB_LIST_END)
+            {
+                // use defaults to fix the challenge type
+                switch (interactChallenge.saslChallengeType)
+                {
+                    case (int)SaslChallengeType.SASL_CB_GETREALM:
+                        interactChallenge.defresult = defaults.realm;
+                        break;
+                    case (int)SaslChallengeType.SASL_CB_AUTHNAME:
+                        interactChallenge.defresult = defaults.authcid;
+                        break;
+                    case (int)SaslChallengeType.SASL_CB_PASS:
+                        interactChallenge.defresult = defaults.passwd;
+                        break;
+                    case (int)SaslChallengeType.SASL_CB_USER:
+                        interactChallenge.defresult = defaults.authzid;
+                        break;
+                }
+
+                if (!string.IsNullOrEmpty(interactChallenge.defresult))
+                {
+                    interactChallenge.result = Marshal.StringToHGlobalAnsi(interactChallenge.defresult);
+                    interactChallenge.len = interactChallenge != null ? (uint)interactChallenge.defresult.Length : 0;
+                }
+
+                // Move to next interact challenge
+                Marshal.StructureToPtr(interactChallenge, currentInteractPtr, false);
+                currentInteractPtr = IntPtr.Add(currentInteractPtr, Marshal.SizeOf<SaslInteractiveChallenge>());
+                interactChallenge = Marshal.PtrToStructure<SaslInteractiveChallenge>(currentInteractPtr);
+            }
+
+            return 0;
+        }
     }
 }
