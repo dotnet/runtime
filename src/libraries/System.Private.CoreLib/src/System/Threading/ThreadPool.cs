@@ -683,6 +683,15 @@ namespace System.Threading
                 // If we get here, it's because our quantum expired.  Tell the VM we're returning normally.
                 return true;
             }
+            catch
+            {
+                // We want to stop the first pass of EH here. That way we can restore the
+                // previous context before any of our callers' EH filters run.
+
+                // Return to clean ExecutionContext and SynchronizationContext
+                ExecutionContext.ResetThreadPoolThread(Thread.CurrentThread);
+                throw;
+            }
             finally
             {
                 //

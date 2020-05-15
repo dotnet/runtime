@@ -631,7 +631,14 @@ namespace System.Threading
             {
                 if (isThreadPool)
                 {
-                    ExecutionContext.RunFromThreadPoolDispatchLoop(Thread.CurrentThread, context, s_callCallbackInContext, this);
+                    if (context.IsDefault)
+                    {
+                        _timerCallback(_state);
+                    }
+                    else
+                    {
+                        ExecutionContext.RunForThreadPoolUnsafe(context, s_callCallbackInContext, this);
+                    }
                 }
                 else
                 {

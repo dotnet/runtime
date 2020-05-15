@@ -460,7 +460,20 @@ namespace System.Runtime.CompilerServices
             public Action MoveNextAction => _moveNextAction ??= new Action(MoveNext);
 
             /// <summary>Invoked to run MoveNext when this instance is executed from the thread pool.</summary>
-            void IThreadPoolWorkItem.Execute() => MoveNext();
+            void IThreadPoolWorkItem.Execute()
+            {
+                ExecutionContext? context = Context;
+                // Call directly if EC flow is suppressed or if context is Default on ThreadPool
+                if (context is null || context.IsDefault)
+                {
+                    Debug.Assert(!(StateMachine is null));
+                    StateMachine.MoveNext();
+                }
+                else
+                {
+                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this);
+                }
+            }
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()

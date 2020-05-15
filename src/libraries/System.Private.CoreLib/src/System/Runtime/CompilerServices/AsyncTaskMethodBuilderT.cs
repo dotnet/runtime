@@ -316,21 +316,27 @@ namespace System.Runtime.CompilerServices
                     AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.Execution);
                 }
 
+                Debug.Assert(StateMachine != null);
+
                 ExecutionContext? context = Context;
                 if (context == null)
                 {
-                    Debug.Assert(StateMachine != null);
                     StateMachine.MoveNext();
+                }
+                else if (threadPoolThread is null)
+                {
+                    ExecutionContext.RunInternal(context, s_callback, this);
                 }
                 else
                 {
-                    if (threadPoolThread is null)
+                    if (context.IsDefault)
                     {
-                        ExecutionContext.RunInternal(context, s_callback, this);
+                        // Context starts as Default on ThreadPool
+                        StateMachine.MoveNext();
                     }
                     else
                     {
-                        ExecutionContext.RunFromThreadPoolDispatchLoop(threadPoolThread, context, s_callback, this);
+                        ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this, threadPoolThread);
                     }
                 }
 
