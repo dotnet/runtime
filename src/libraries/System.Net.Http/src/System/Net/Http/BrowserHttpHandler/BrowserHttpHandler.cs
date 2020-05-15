@@ -199,6 +199,7 @@ namespace System.Net.Http
                         abortController?.Dispose();
                     }
                     wasmHttpReadStream?.Dispose();
+                    abortCts.Dispose();
                 }));
 
                 var args = new Interop.JavaScript.Array();
@@ -317,6 +318,7 @@ namespace System.Net.Http
                     // Free any other managed objects here.
                     //
                     _abortCts.Cancel();
+                    _abortCts.Dispose();
                     _abortRegistration.Dispose();
                 }
 
