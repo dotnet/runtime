@@ -521,4 +521,10 @@
   <data name="CannotPopulateCollection" xml:space="preserve">
     <value>The collection type '{0}' is abstract, an interface, or is read only, and could not be instantiated and populated.</value>
   </data>
+  <data name="DefaultIgnoreConditionAlreadySpecified" xml:space="preserve">
+    <value>'IgnoreNullValues' and 'DefaultIgnoreCondition' cannot both be set to non-default values.</value>
+  </data>
+  <data name="DefaultIgnoreConditionInvalid" xml:space="preserve">
+    <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
+  </data>
 </root>

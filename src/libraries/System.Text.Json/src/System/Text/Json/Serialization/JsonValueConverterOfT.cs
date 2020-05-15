@@ -12,6 +12,8 @@ namespace System.Text.Json.Serialization
     {
         internal sealed override ClassType ClassType => ClassType.NewValue;
 
+        public sealed override bool HandleNull => false;
+
         [return: MaybeNull]
         public sealed override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
