@@ -100,7 +100,7 @@ namespace System.Net.Quic.Implementations.Managed
                             // use the connection id supplied by the server, but should ignore any further changes to CID,
                             // see [TRANSPORT] Section 7.2
                             if (!_isServer &&
-                                GetPacketNumberSpace(EncryptionLevel.Initial).LargestReceivedPacketNumber >= 0)
+                                GetPacketNumberSpace(EncryptionLevel.Initial).LargestReceivedPacketNumber < 0)
                             {
                                 // protection keys are not affected by this change
                                 DestinationConnectionId = new ConnectionId(
@@ -315,21 +315,17 @@ namespace System.Net.Quic.Implementations.Managed
             pnSpace.UnackedPacketNumbers.Add(packetNumber);
             pnSpace.ReceivedPacketNumbers.Add(packetNumber);
 
-            return ProcessFramesWithoutTag(reader, packetType, context);
-        }
-
-        private ProcessPacketResult ProcessFramesWithoutTag(QuicReader reader, PacketType packetType,
-            QuicSocketContext.RecvContext context)
-        {
-            // HACK: we do not want to try processing the AEAD integrity tag as if it were frames.
+            // HACK: we do not want to try processing the AEAD integrity tag as if it were frames, so we just temporarily
+            // replace the buffer with shortened version while processing the frames.
             var originalSegment = reader.Buffer;
             int originalBytesRead = reader.BytesRead;
-            int tagLength = GetPacketNumberSpace(GetEncryptionLevel(packetType)).RecvCryptoSeal!.TagLength;
+            int tagLength = seal.TagLength;
             int length = reader.BytesLeft - tagLength;
             reader.Reset(originalSegment.Slice(originalBytesRead, length));
-            var retval = ProcessFrames(reader, packetType, context);
+
+            var result = ProcessFrames(reader, packetType, context);
             reader.Reset(originalSegment);
-            return retval;
+            return result;
         }
 
         internal void SendData(QuicWriter writer, out IPEndPoint? receiver, QuicSocketContext.SendContext ctx)

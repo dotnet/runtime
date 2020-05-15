@@ -204,7 +204,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (Interop.OpenSslQuic.SslGetPeerQuicTransportParams(_ssl, out byte* data, out IntPtr length) == 0 ||
                 length.ToInt32() == 0)
             {
-                return null;
+                // nothing received yet, use default values
+                return TransportParameters.Default;
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(length.ToInt32());
