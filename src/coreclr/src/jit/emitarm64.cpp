@@ -604,20 +604,23 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
+            ins      = id->idIns();
+            datasize = id->idOpSize();
             assert(insOptsNone(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
-            elemsize = id->idOpSize();
-            assert(isValidImmShift(emitGetInsSC(id), elemsize));
+            assert(isValidVectorShiftAmount(emitGetInsSC(id), datasize, emitInsIsVectorRightShift(ins)));
             break;
 
         case IF_DV_2O: // DV_2O   .Q.......iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - vector)
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            ins      = id->idIns();
+            datasize = id->idOpSize();
+            elemsize = optGetElemsize(id->idInsOpt());
+            assert(isValidVectorDatasize(datasize));
+            assert(isValidArrangement(datasize, id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidImmShift(emitGetInsSC(id), elemsize));
+            assert(isValidVectorShiftAmount(emitGetInsSC(id), elemsize, emitInsIsVectorRightShift(ins)));
             break;
 
         case IF_DV_2B: // DV_2B   .Q.........iiiii ......nnnnnddddd      Rd Vn[]  (umov/smov    - to general)
@@ -4821,6 +4824,7 @@ void emitter::emitIns_R_R_I(
         bool       canEncode;
         bitMaskImm bmi;
         unsigned   registerListSize;
+        bool       isRightShift;
 
         case INS_mov:
             // Check for the 'mov' aliases for the vector registers
@@ -4887,6 +4891,8 @@ void emitter::emitIns_R_R_I(
         case INS_usra:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
+
             if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
@@ -4894,7 +4900,7 @@ void emitter::emitIns_R_R_I(
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert(isValidVectorElemsize(elemsize));
-                assert(isValidImmShift(imm, elemsize));
+                assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
                 assert(opt != INS_OPTS_1D); // Reserved encoding
                 fmt = IF_DV_2O;
                 break;
@@ -4904,7 +4910,7 @@ void emitter::emitIns_R_R_I(
                 // Scalar operation
                 assert(insOptsNone(opt));
                 assert(size == EA_8BYTE); // only supported size
-                assert(isValidImmShift(imm, size));
+                assert(isValidVectorShiftAmount(imm, size, isRightShift));
                 fmt = IF_DV_2N;
             }
             break;
@@ -4914,6 +4920,7 @@ void emitter::emitIns_R_R_I(
         case INS_sqshlu:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
 
             if (insOptsAnyArrangement(opt))
             {
@@ -4921,7 +4928,7 @@ void emitter::emitIns_R_R_I(
                 assert(isValidArrangement(size, opt));
                 assert(opt != INS_OPTS_1D); // The encoding immh = 1xxx, Q = 0 is reserved
                 elemsize = optGetElemsize(opt);
-                assert(isValidImmShift(imm, elemsize));
+                assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
                 fmt = IF_DV_2O;
             }
             else
@@ -4929,7 +4936,7 @@ void emitter::emitIns_R_R_I(
                 // Scalar operation
                 assert(insOptsNone(opt));
                 assert(isValidVectorElemsize(size));
-                assert(isValidImmShift(imm, size));
+                assert(isValidVectorShiftAmount(imm, size, isRightShift));
                 fmt = IF_DV_2N;
             }
             break;
@@ -4942,6 +4949,7 @@ void emitter::emitIns_R_R_I(
         case INS_uqshrn:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
 
             if (insOptsAnyArrangement(opt))
             {
@@ -4949,7 +4957,7 @@ void emitter::emitIns_R_R_I(
                 assert(isValidArrangement(size, opt));
                 assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding immh = 1xxx, Q = x is reserved
                 elemsize = optGetElemsize(opt);
-                assert(isValidImmShift(imm, elemsize));
+                assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
                 fmt = IF_DV_2O;
             }
             else
@@ -4958,7 +4966,7 @@ void emitter::emitIns_R_R_I(
                 assert(insOptsNone(opt));
                 assert(isValidVectorElemsize(size));
                 assert(size != EA_8BYTE); // The encoding immh = 1xxx is reserved
-                assert(isValidImmShift(imm, size));
+                assert(isValidVectorShiftAmount(imm, size, isRightShift));
                 fmt = IF_DV_2N;
             }
             break;
@@ -4974,13 +4982,14 @@ void emitter::emitIns_R_R_I(
         case INS_ushll:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
             // Vector operation
             assert(size == EA_8BYTE);
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
             assert(elemsize != EA_8BYTE); // Reserved encodings
             assert(isValidVectorElemsize(elemsize));
-            assert(isValidImmShift(imm, elemsize));
+            assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
             fmt = IF_DV_2O;
             break;
 
@@ -5001,6 +5010,7 @@ void emitter::emitIns_R_R_I(
         case INS_ushll2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
 
             // Vector operation
             assert(size == EA_16BYTE);
@@ -5008,7 +5018,7 @@ void emitter::emitIns_R_R_I(
             elemsize = optGetElemsize(opt);
             assert(elemsize != EA_8BYTE); // The encoding immh = 1xxx, Q = x is reserved
             assert(isValidVectorElemsize(elemsize));
-            assert(isValidImmShift(imm, elemsize));
+            assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
             fmt = IF_DV_2O;
             break;
 

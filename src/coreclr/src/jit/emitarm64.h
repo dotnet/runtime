@@ -518,6 +518,13 @@ inline static unsigned isValidImmShift(ssize_t imm, emitAttr size)
     return (imm >= 0) && (imm < getBitWidth(size));
 }
 
+// Returns true if the 'shiftAmount' represents a valid shift for the given 'size'.
+inline static unsigned isValidVectorShiftAmount(ssize_t shiftAmount, emitAttr size, bool rightShift)
+{
+    return (rightShift && (shiftAmount >= 1) && (shiftAmount <= getBitWidth(size))) ||
+           (shiftAmount >= 0) && (shiftAmount < getBitWidth(size));
+}
+
 inline static bool isValidGeneralDatasize(emitAttr size)
 {
     return (size == EA_8BYTE) || (size == EA_4BYTE);
