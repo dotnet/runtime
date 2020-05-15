@@ -889,7 +889,7 @@
   <Target Name="BuildWasmAppBuilder" Condition="'$(TargetsBrowser)' == 'true'">
     <MSBuild Projects="$(MonoProjectRoot)msbuild\WasmAppBuilder\WasmAppBuilder.csproj"
              Properties="Configuration=$(Configuration);"
-             Targets="Restore;Build;Publish;"/>
+             Targets="Restore;Build;Publish"/>
   </Target>
 
   <!-- Ordering matters! Overwriting the Build target. -->

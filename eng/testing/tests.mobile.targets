@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
-  <UsingTask TaskName="AndroidAppBuilderTask" 
+  <UsingTask Condition="'$(TargetOS)' == 'Android'"
+             TaskName="AndroidAppBuilderTask" 
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
@@ -48,7 +49,8 @@
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
-  <UsingTask TaskName="AppleAppBuilderTask" 
+  <UsingTask Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
+             TaskName="AppleAppBuilderTask" 
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="MonoAOTCompiler"
              AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
