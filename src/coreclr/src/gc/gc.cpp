@@ -9266,7 +9266,7 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
 size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                                                     uint8_t* new_committed)
 {
-    assert(!use_large_pages_p);
+    assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
     size_t size = heap_segment_committed (seg) - page_start;
     if (size > 0)
@@ -31833,7 +31833,7 @@ bool gc_heap::decommit_step ()
 {
     // should never get here for large pages because decommit_ephemeral_segment_pages
     // will not do anything if use_large_pages_p is true
-    assert(!use_large_pages_p);
+    assert (!use_large_pages_p);
 
     size_t decommit_size = 0;
     for (int i = 0; i < n_heaps; i++)
@@ -31848,7 +31848,7 @@ bool gc_heap::decommit_step ()
 size_t gc_heap::decommit_ephemeral_segment_pages_step ()
 {
     // we rely on desired allocation not being changed outside of GC
-    assert (ephemeral_heap_segment->saved_desired_allocation == dd_desired_allocation (dynamic_data_of(0)));
+    assert (ephemeral_heap_segment->saved_desired_allocation == dd_desired_allocation (dynamic_data_of (0)));
 
     uint8_t* decommit_target = heap_segment_decommit_target (ephemeral_heap_segment);
     size_t EXTRA_SPACE = 4 * OS_PAGE_SIZE;
