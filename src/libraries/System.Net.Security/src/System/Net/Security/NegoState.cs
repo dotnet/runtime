@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.IO;
-using System.Security.Principal;
-using System.Threading;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Principal;
+using System.Threading;
 
 namespace System.Net.Security
 {
@@ -58,13 +59,7 @@ namespace System.Net.Security
             _innerStream = innerStream;
         }
 
-        internal static string DefaultPackage
-        {
-            get
-            {
-                return NegotiationInfoClass.Negotiate;
-            }
-        }
+        internal static string DefaultPackage => NegotiationInfoClass.Negotiate;
 
         internal IIdentity GetIdentity()
         {
@@ -157,7 +152,7 @@ namespace System.Net.Security
             else if (protectionLevel == ProtectionLevel.Sign)
             {
                 // Assuming user expects NT4 SP4 and above.
-                flags |= (ContextFlagsPal.ReplayDetect | ContextFlagsPal.SequenceDetect | ContextFlagsPal.InitIntegrity);
+                flags |= ContextFlagsPal.ReplayDetect | ContextFlagsPal.SequenceDetect | ContextFlagsPal.InitIntegrity;
             }
 
             if (isServer)
@@ -211,72 +206,25 @@ namespace System.Net.Security
                 _exception = e;
             }
 
-            if (_exception != null && _context != null)
-            {
-                _context.CloseContext();
-            }
+            _context?.CloseContext();
 
-            return _exception!;
+            return _exception;
         }
 
-        internal bool IsAuthenticated
-        {
-            get
-            {
-                return _context != null && HandshakeComplete && _exception == null && _remoteOk;
-            }
-        }
+        internal bool IsAuthenticated => _context != null && HandshakeComplete && _exception == null && _remoteOk;
 
-        internal bool IsMutuallyAuthenticated
-        {
-            get
-            {
-                if (!IsAuthenticated)
-                {
-                    return false;
-                }
+        internal bool IsMutuallyAuthenticated =>
+            IsAuthenticated &&
+            !_context!.IsNTLM && // Suppressing for NTLM since SSPI does not return correct value in the context flags.
+            _context.IsMutualAuthFlag;
 
-                // Suppressing for NTLM since SSPI does not return correct value in the context flags.
-                if (_context!.IsNTLM)
-                {
-                    return false;
-                }
+        internal bool IsEncrypted => IsAuthenticated && _context!.IsConfidentialityFlag;
 
-                return _context.IsMutualAuthFlag;
-            }
-        }
+        internal bool IsSigned => IsAuthenticated && (_context!.IsIntegrityFlag || _context.IsConfidentialityFlag);
 
-        internal bool IsEncrypted
-        {
-            get
-            {
-                return IsAuthenticated && _context!.IsConfidentialityFlag;
-            }
-        }
+        internal bool IsServer => _context != null && _context.IsServer;
 
-        internal bool IsSigned
-        {
-            get
-            {
-                return IsAuthenticated && (_context!.IsIntegrityFlag || _context.IsConfidentialityFlag);
-            }
-        }
-
-        internal bool IsServer
-        {
-            get
-            {
-                return _context != null && _context.IsServer;
-            }
-        }
-
-        internal bool CanGetSecureStream
-        {
-            get
-            {
-                return (_context!.IsConfidentialityFlag || _context.IsIntegrityFlag);
-            }
-        }
+        internal bool CanGetSecureStream => _context!.IsConfidentialityFlag || _context.IsIntegrityFlag;
 
         internal TokenImpersonationLevel AllowedImpersonation
         {
@@ -287,24 +235,13 @@ namespace System.Net.Security
             }
         }
 
-        private TokenImpersonationLevel PrivateImpersonationLevel
-        {
-            get
-            {
-                // We should suppress the delegate flag in NTLM case.
-                return (_context!.IsDelegationFlag && _context.ProtocolName != NegotiationInfoClass.NTLM) ? TokenImpersonationLevel.Delegation
-                        : _context.IsIdentifyFlag ? TokenImpersonationLevel.Identification
-                        : TokenImpersonationLevel.Impersonation;
-            }
-        }
+        private TokenImpersonationLevel PrivateImpersonationLevel =>
+            // We should suppress the delegate flag in NTLM case.
+            (_context!.IsDelegationFlag && _context.ProtocolName != NegotiationInfoClass.NTLM) ? TokenImpersonationLevel.Delegation
+                    : _context.IsIdentifyFlag ? TokenImpersonationLevel.Identification
+                    : TokenImpersonationLevel.Impersonation;
 
-        private bool HandshakeComplete
-        {
-            get
-            {
-                return _context!.IsCompleted && _context.IsValidContext;
-            }
-        }
+        private bool HandshakeComplete => _context!.IsCompleted && _context.IsValidContext;
 
         internal void CheckThrow(bool authSucessCheck)
         {
@@ -325,11 +262,8 @@ namespace System.Net.Security
         internal void Close()
         {
             // Mark this instance as disposed.
-            _exception = new ObjectDisposedException("NegotiateStream");
-            if (_context != null)
-            {
-                _context.CloseContext();
-            }
+            _exception = new ObjectDisposedException(nameof(NegotiateStream));
+            _context?.CloseContext();
         }
 
         internal void ProcessAuthentication(LazyAsyncResult? lazyResult)
@@ -389,9 +323,7 @@ namespace System.Net.Security
             // No "artificial" timeouts implemented so far, InnerStream controls that.
             lazyResult.InternalWaitForCompletion();
 
-            Exception? e = lazyResult.Result as Exception;
-
-            if (e != null)
+            if (lazyResult.Result is Exception e)
             {
                 // Round-trip it through the SetException().
                 e = SetException(e);
@@ -401,13 +333,9 @@ namespace System.Net.Security
 
         private bool CheckSpn()
         {
-            if (_context!.IsKerberos)
-            {
-                return true;
-            }
-
-            if (_extendedProtectionPolicy!.PolicyEnforcement == PolicyEnforcement.Never ||
-                    _extendedProtectionPolicy.CustomServiceNames == null)
+            if (_context!.IsKerberos ||
+                _extendedProtectionPolicy!.PolicyEnforcement == PolicyEnforcement.Never ||
+                _extendedProtectionPolicy.CustomServiceNames == null)
             {
                 return true;
             }
@@ -416,17 +344,10 @@ namespace System.Net.Security
 
             if (string.IsNullOrEmpty(clientSpn))
             {
-                if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                return _extendedProtectionPolicy.CustomServiceNames.Contains(clientSpn);
+                return _extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.WhenSupported;
             }
 
-            return false;
+            return _extendedProtectionPolicy.CustomServiceNames.Contains(clientSpn);
         }
 
         //
@@ -453,7 +374,7 @@ namespace System.Net.Security
                 {
                     exception = new AuthenticationException(SR.net_auth_bad_client_creds_or_target_mismatch);
                     int statusCode = ERROR_TRUST_FAILURE;
-                    message = new byte[8];  //sizeof(long)
+                    message = new byte[sizeof(long)];
 
                     for (int i = message.Length - 1; i >= 0; --i)
                     {
@@ -469,7 +390,7 @@ namespace System.Net.Security
                 {
                     exception = new AuthenticationException(SR.Format(SR.net_auth_context_expectation, _expectedImpersonationLevel.ToString(), PrivateImpersonationLevel.ToString()));
                     int statusCode = ERROR_TRUST_FAILURE;
-                    message = new byte[8];  //sizeof(long)
+                    message = new byte[sizeof(long)];
 
                     for (int i = message.Length - 1; i >= 0; --i)
                     {
@@ -487,7 +408,7 @@ namespace System.Net.Security
                 {
                     exception = new AuthenticationException(SR.Format(SR.net_auth_context_expectation, result.ToString(), _expectedProtectionLevel.ToString()));
                     int statusCode = ERROR_TRUST_FAILURE;
-                    message = new byte[8];  //sizeof(long)
+                    message = new byte[sizeof(long)];
 
                     for (int i = message.Length - 1; i >= 0; --i)
                     {
@@ -507,11 +428,8 @@ namespace System.Net.Security
                     _remoteOk = true;
 
                     // However the client will wait for server to send this ACK
-                    //Force signaling server OK to the client
-                    if (message == null)
-                    {
-                        message = s_emptyMessage;
-                    }
+                    // Force signaling server OK to the client
+                    message ??= s_emptyMessage;
                 }
             }
             else if (message == null || message == s_emptyMessage)
@@ -536,6 +454,7 @@ namespace System.Net.Security
                     _framer.EndWriteMessage(ar);
                 }
             }
+
             CheckCompletionBeforeNextReceive(lazyResult);
         }
 
@@ -547,11 +466,7 @@ namespace System.Net.Security
             if (HandshakeComplete && _remoteOk)
             {
                 // We are done with success.
-                if (lazyResult != null)
-                {
-                    lazyResult.InvokeCallback();
-                }
-
+                lazyResult?.InvokeCallback();
                 return;
             }
 
@@ -595,7 +510,7 @@ namespace System.Net.Security
             // Process Header information.
             if (_framer!.ReadHeader.MessageId == FrameHeader.HandshakeErrId)
             {
-                if (message.Length >= 8)    // sizeof(long)
+                if (message.Length >= sizeof(long))
                 {
                     // Try to recover remote win32 Exception.
                     long error = 0;
@@ -634,11 +549,8 @@ namespace System.Net.Security
                 {
                     throw new AuthenticationException(SR.Format(SR.net_io_header_id, "MessageId", _framer!.ReadHeader.MessageId, FrameHeader.HandshakeDoneId), null);
                 }
-                if (lazyResult != null)
-                {
-                    lazyResult.InvokeCallback();
-                }
 
+                lazyResult?.InvokeCallback();
                 return;
             }
 
@@ -656,14 +568,7 @@ namespace System.Net.Security
 
             if (IsLogonDeniedException(exception))
             {
-                if (IsServer)
-                {
-                    exception = new InvalidCredentialException(SR.net_auth_bad_client_creds, exception);
-                }
-                else
-                {
-                    exception = new InvalidCredentialException(SR.net_auth_bad_client_creds_or_target_mismatch, exception);
-                }
+                exception = new InvalidCredentialException(IsServer ? SR.net_auth_bad_client_creds : SR.net_auth_bad_client_creds_or_target_mismatch, exception);
             }
 
             if (!(exception is AuthenticationException))
@@ -703,9 +608,8 @@ namespace System.Net.Security
                 return;
             }
 
-            LazyAsyncResult lazyResult = (LazyAsyncResult)transportResult.AsyncState!;
-
             // Async completion.
+            LazyAsyncResult lazyResult = (LazyAsyncResult)transportResult.AsyncState!;
             try
             {
                 NegoState authState = (NegoState)lazyResult.AsyncObject!;
@@ -720,14 +624,8 @@ namespace System.Net.Security
 
                 authState.CheckCompletionBeforeNextReceive(lazyResult);
             }
-            catch (Exception e)
+            catch (Exception e) when (!lazyResult.InternalPeekCompleted) // this will throw on a worker thread.
             {
-                if (lazyResult.InternalPeekCompleted)
-                {
-                    // This will throw on a worker thread.
-                    throw;
-                }
-
                 lazyResult.InvokeCallback(e);
             }
         }
@@ -744,31 +642,22 @@ namespace System.Net.Security
                 return;
             }
 
-            LazyAsyncResult lazyResult = (LazyAsyncResult)transportResult.AsyncState!;
-
             // Async completion.
+            LazyAsyncResult lazyResult = (LazyAsyncResult)transportResult.AsyncState!;
             try
             {
                 NegoState authState = (NegoState)lazyResult.AsyncObject!;
                 byte[]? message = authState._framer!.EndReadMessage(transportResult);
                 authState.ProcessReceivedBlob(message, lazyResult);
             }
-            catch (Exception e)
+            catch (Exception e) when (!lazyResult.InternalPeekCompleted) // this will throw on a worker thread.
             {
-                if (lazyResult.InternalPeekCompleted)
-                {
-                    // This will throw on a worker thread.
-                    throw;
-                }
-
                 lazyResult.InvokeCallback(e);
             }
         }
 
-        internal static bool IsError(SecurityStatusPal status)
-        {
-            return ((int)status.ErrorCode >= (int)SecurityStatusPalErrorCode.OutOfMemory);
-        }
+        internal static bool IsError(SecurityStatusPal status) =>
+            (int)status.ErrorCode >= (int)SecurityStatusPalErrorCode.OutOfMemory;
 
         private unsafe byte[]? GetOutgoingBlob(byte[]? incomingBlob, ref Exception? e)
         {
@@ -783,7 +672,7 @@ namespace System.Net.Security
                 for (int i = message.Length - 1; i >= 0; --i)
                 {
                     message[i] = (byte)(error & 0xFF);
-                    error = (error >> 8);
+                    error >>= 8;
                 }
             }
 
@@ -795,13 +684,13 @@ namespace System.Net.Security
             return message;
         }
 
-        internal int EncryptData(byte[] buffer, int offset, int count, ref byte[]? outBuffer)
+        internal int EncryptData(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? outBuffer)
         {
             CheckThrow(true);
 
             // SSPI seems to ignore this sequence number.
             ++_writeSequenceNumber;
-            return _context!.Encrypt(buffer, offset, count, ref outBuffer, _writeSequenceNumber);
+            return _context!.Encrypt(buffer, ref outBuffer, _writeSequenceNumber);
         }
 
         internal int DecryptData(byte[] buffer, int offset, int count, out int newOffset)
@@ -815,26 +704,17 @@ namespace System.Net.Security
 
         internal static void ThrowCredentialException(long error)
         {
-            Win32Exception e = new Win32Exception((int)error);
-
-            if (e.NativeErrorCode == (int)SecurityStatusPalErrorCode.LogonDenied)
+            var e = new Win32Exception((int)error);
+            throw e.NativeErrorCode switch
             {
-                throw new InvalidCredentialException(SR.net_auth_bad_client_creds, e);
-            }
-
-            if (e.NativeErrorCode == NegoState.ERROR_TRUST_FAILURE)
-            {
-                throw new AuthenticationException(SR.net_auth_context_expectation_remote, e);
-            }
-
-            throw new AuthenticationException(SR.net_auth_alert, e);
+                (int)SecurityStatusPalErrorCode.LogonDenied => new InvalidCredentialException(SR.net_auth_bad_client_creds, e),
+                ERROR_TRUST_FAILURE => new AuthenticationException(SR.net_auth_context_expectation_remote, e),
+                _ => new AuthenticationException(SR.net_auth_alert, e)
+            };
         }
 
-        internal static bool IsLogonDeniedException(Exception exception)
-        {
-            Win32Exception? win32exception = exception as Win32Exception;
-
-            return (win32exception != null) && (win32exception.NativeErrorCode == (int)SecurityStatusPalErrorCode.LogonDenied);
-        }
+        internal static bool IsLogonDeniedException(Exception exception) =>
+            exception is Win32Exception win32exception &&
+            win32exception.NativeErrorCode == (int)SecurityStatusPalErrorCode.LogonDenied;
     }
 }
