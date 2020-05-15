@@ -91,36 +91,30 @@ namespace System.Threading
                     w = new Waiter(this);
                 }
 
-                bool acquired = false;
                 lock (SyncObj)
                 {
                     // Now that we're holding the lock, check to see whether the async lock is acquirable.
                     if (!_lockedSemaphoreFull)
                     {
-                        _lockedSemaphoreFull = acquired = true;
+                        // If we are able to acquire the lock, we're done.
+                        _lockedSemaphoreFull = true;
+                        return default;
+                    }
+
+                    // The lock couldn't be acquired.
+                    // Add the waiter to the linked list of waiters.
+                    if (_waitersTail is null)
+                    {
+                        w.Next = w.Prev = w;
                     }
                     else
                     {
-                        // Add it to the linked list of waiters.
-                        if (_waitersTail is null)
-                        {
-                            w.Next = w.Prev = w;
-                        }
-                        else
-                        {
-                            Debug.Assert(_waitersTail.Next != null && _waitersTail.Prev != null);
-                            w.Next = _waitersTail;
-                            w.Prev = _waitersTail.Prev;
-                            w.Prev.Next = w.Next.Prev = w;
-                        }
-                        _waitersTail = w;
+                        Debug.Assert(_waitersTail.Next != null && _waitersTail.Prev != null);
+                        w.Next = _waitersTail;
+                        w.Prev = _waitersTail.Prev;
+                        w.Prev.Next = w.Next.Prev = w;
                     }
-                }
-
-                // If we were able to acquire the lock, we're done.
-                if (acquired)
-                {
-                    return default;
+                    _waitersTail = w;
                 }
 
                 // At this point the waiter was added to the list of waiters, so we want to

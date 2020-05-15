@@ -781,8 +781,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(Monitor.IsEntered(SyncObject));
 
-                Exception? resetException = _resetException;
-                if (resetException != null)
+                if (_resetException is Exception resetException)
                 {
                     if (_canRetry)
                     {

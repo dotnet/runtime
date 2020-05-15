@@ -135,7 +135,7 @@ namespace System.Net.Http
             _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
             // Send SETTINGS frame.  Disable push promise.
-            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, 0);
+            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
             _outgoingBuffer.Commit(FrameHeader.Size);
             BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
             _outgoingBuffer.Commit(2);
@@ -143,7 +143,7 @@ namespace System.Net.Http
             _outgoingBuffer.Commit(4);
 
             // Send initial connection-level WINDOW_UPDATE
-            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, 0);
+            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
             _outgoingBuffer.Commit(FrameHeader.Size);
             BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (ConnectionWindowSize - DefaultInitialWindowSize));
             _outgoingBuffer.Commit(4);
@@ -196,7 +196,7 @@ namespace System.Net.Http
 
             // Parse the frame header from our read buffer and validate it.
             FrameHeader frameHeader = FrameHeader.ReadFrom(_incomingBuffer.ActiveSpan);
-            if (frameHeader.Length > FrameHeader.MaxLength)
+            if (frameHeader.PayloadLength > FrameHeader.MaxPayloadLength)
             {
                 if (initialFrame && NetEventSource.IsEnabled)
                 {
@@ -210,16 +210,16 @@ namespace System.Net.Http
             _incomingBuffer.Discard(FrameHeader.Size);
 
             // Ensure we've read the frame contents into our buffer.
-            if (_incomingBuffer.ActiveLength < frameHeader.Length)
+            if (_incomingBuffer.ActiveLength < frameHeader.PayloadLength)
             {
-                _incomingBuffer.EnsureAvailableSpace(frameHeader.Length - _incomingBuffer.ActiveLength);
+                _incomingBuffer.EnsureAvailableSpace(frameHeader.PayloadLength - _incomingBuffer.ActiveLength);
                 do
                 {
                     int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                     _incomingBuffer.Commit(bytesRead);
-                    if (bytesRead == 0) ThrowPrematureEOF(frameHeader.Length);
+                    if (bytesRead == 0) ThrowPrematureEOF(frameHeader.PayloadLength);
                 }
-                while (_incomingBuffer.ActiveLength < frameHeader.Length);
+                while (_incomingBuffer.ActiveLength < frameHeader.PayloadLength);
             }
 
             // Return the read frame header.
@@ -371,10 +371,10 @@ namespace System.Net.Http
             http2Stream?.OnHeadersStart();
 
             _hpackDecoder.Decode(
-                GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
+                GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
                 frameHeader.EndHeadersFlag,
                 http2Stream);
-            _incomingBuffer.Discard(frameHeader.Length);
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
 
             while (!frameHeader.EndHeadersFlag)
             {
@@ -386,10 +386,10 @@ namespace System.Net.Http
                 }
 
                 _hpackDecoder.Decode(
-                    _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length),
+                    _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength),
                     frameHeader.EndHeadersFlag,
                     http2Stream);
-                _incomingBuffer.Discard(frameHeader.Length);
+                _incomingBuffer.Discard(frameHeader.PayloadLength);
             }
 
             _hpackDecoder.CompleteDecode();
@@ -445,7 +445,7 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) Trace($"{frameHeader}");
             Debug.Assert(frameHeader.Type == FrameType.AltSvc);
 
-            ReadOnlySpan<byte> span = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length);
+            ReadOnlySpan<byte> span = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength);
 
             if (BinaryPrimitives.TryReadUInt16BigEndian(span, out ushort originLength))
             {
@@ -466,7 +466,7 @@ namespace System.Net.Http
                 }
             }
 
-            _incomingBuffer.Discard(frameHeader.Length);
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
 
         private void ProcessDataFrame(FrameHeader frameHeader)
@@ -478,7 +478,7 @@ namespace System.Net.Http
             // Note, http2Stream will be null if this is a closed stream.
             // Just ignore the frame in this case.
 
-            ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
+            ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), hasPad: frameHeader.PaddedFlag, hasPriority: false);
 
             if (http2Stream != null)
             {
@@ -492,7 +492,7 @@ namespace System.Net.Http
                 ExtendWindow(frameData.Length);
             }
 
-            _incomingBuffer.Discard(frameHeader.Length);
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
 
         private void ProcessSettingsFrame(FrameHeader frameHeader)
@@ -506,7 +506,7 @@ namespace System.Net.Http
 
             if (frameHeader.AckFlag)
             {
-                if (frameHeader.Length != 0)
+                if (frameHeader.PayloadLength != 0)
                 {
                     ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
                 }
@@ -522,13 +522,13 @@ namespace System.Net.Http
             }
             else
             {
-                if ((frameHeader.Length % 6) != 0)
+                if ((frameHeader.PayloadLength % 6) != 0)
                 {
                     ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
                 }
 
                 // Parse settings and process the ones we care about.
-                ReadOnlySpan<byte> settings = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length);
+                ReadOnlySpan<byte> settings = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength);
                 while (settings.Length > 0)
                 {
                     Debug.Assert((settings.Length % 6) == 0);
@@ -569,7 +569,7 @@ namespace System.Net.Http
                     }
                 }
 
-                _incomingBuffer.Discard(frameHeader.Length);
+                _incomingBuffer.Discard(frameHeader.PayloadLength);
 
                 // Send acknowledgement
                 // Don't wait for completion, which could happen asynchronously.
@@ -613,14 +613,14 @@ namespace System.Net.Http
         {
             Debug.Assert(frameHeader.Type == FrameType.Priority);
 
-            if (frameHeader.StreamId == 0 || frameHeader.Length != FrameHeader.PriorityInfoLength)
+            if (frameHeader.StreamId == 0 || frameHeader.PayloadLength != FrameHeader.PriorityInfoLength)
             {
                 ThrowProtocolError();
             }
 
             // Ignore priority info.
 
-            _incomingBuffer.Discard(frameHeader.Length);
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
 
         private void ProcessPingFrame(FrameHeader frameHeader)
@@ -638,7 +638,7 @@ namespace System.Net.Http
                 ThrowProtocolError();
             }
 
-            if (frameHeader.Length != FrameHeader.PingLength)
+            if (frameHeader.PayloadLength != FrameHeader.PingLength)
             {
                 ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
@@ -652,14 +652,14 @@ namespace System.Net.Http
 
             LogExceptions(SendPingAckAsync(pingContentLong));
 
-            _incomingBuffer.Discard(frameHeader.Length);
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
 
         private void ProcessWindowUpdateFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.WindowUpdate);
 
-            if (frameHeader.Length != FrameHeader.WindowUpdateLength)
+            if (frameHeader.PayloadLength != FrameHeader.WindowUpdateLength)
             {
                 ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
@@ -673,7 +673,7 @@ namespace System.Net.Http
                 ThrowProtocolError();
             }
 
-            _incomingBuffer.Discard(frameHeader.Length);
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
 
             if (frameHeader.StreamId == 0)
             {
@@ -696,7 +696,7 @@ namespace System.Net.Http
         {
             Debug.Assert(frameHeader.Type == FrameType.RstStream);
 
-            if (frameHeader.Length != FrameHeader.RstStreamLength)
+            if (frameHeader.PayloadLength != FrameHeader.RstStreamLength)
             {
                 ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
@@ -710,14 +710,14 @@ namespace System.Net.Http
             if (http2Stream == null)
             {
                 // Ignore invalid stream ID, as per RFC
-                _incomingBuffer.Discard(frameHeader.Length);
+                _incomingBuffer.Discard(frameHeader.PayloadLength);
                 return;
             }
 
             var protocolError = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan);
             if (NetEventSource.IsEnabled) Trace(frameHeader.StreamId, $"{nameof(protocolError)}={protocolError}");
 
-            _incomingBuffer.Discard(frameHeader.Length);
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
 
             if (protocolError == Http2ProtocolErrorCode.RefusedStream)
             {
@@ -733,7 +733,7 @@ namespace System.Net.Http
         {
             Debug.Assert(frameHeader.Type == FrameType.GoAway);
 
-            if (frameHeader.Length < FrameHeader.GoAwayMinLength)
+            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
             {
                 ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
@@ -751,7 +751,7 @@ namespace System.Net.Http
 
             StartTerminatingConnection(lastValidStream, new Http2ConnectionException(errorCode));
 
-            _incomingBuffer.Discard(frameHeader.Length);
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
 
         internal async Task FlushAsync(CancellationToken cancellationToken = default)
@@ -898,7 +898,7 @@ namespace System.Net.Http
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace("Started writing.");
 
-            FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Settings, FrameFlags.Ack, 0);
+            FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Settings, FrameFlags.Ack, streamId: 0);
 
             FinishWrite(FlushTiming.AfterPendingWrites);
         }
@@ -910,7 +910,7 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) Trace("Started writing.");
 
             Debug.Assert(sizeof(long) == FrameHeader.PingLength);
-            FrameHeader.WriteTo(writeBuffer.Span, FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, 0);
+            FrameHeader.WriteTo(writeBuffer.Span, FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, streamId: 0);
             BinaryPrimitives.WriteInt64BigEndian(writeBuffer.Span.Slice(FrameHeader.Size), pingContent);
 
             FinishWrite(FlushTiming.AfterPendingWrites);
@@ -1228,11 +1228,11 @@ namespace System.Net.Http
                 Debug.Assert(remaining.Length > 0);
 
                 // Calculate the total number of bytes we're going to use (content + headers).
-                int frameCount = ((remaining.Length - 1) / FrameHeader.MaxLength) + 1;
+                int frameCount = ((remaining.Length - 1) / FrameHeader.MaxPayloadLength) + 1;
                 int totalSize = remaining.Length + (frameCount * FrameHeader.Size);
 
                 ReadOnlyMemory<byte> current;
-                (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
+                (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxPayloadLength);
                 FrameFlags flags =
                     (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None) |
                     (request.Content == null ? FrameFlags.EndStream : FrameFlags.None);
@@ -1282,7 +1282,7 @@ namespace System.Net.Http
                     // Copy CONTINUATION frames, if any.
                     while (remaining.Length > 0)
                     {
-                        (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
+                        (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxPayloadLength);
                         flags = remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None;
 
                         FrameHeader.WriteTo(writeBuffer.Span, current.Length, FrameType.Continuation, flags, http2Stream.StreamId);
@@ -1320,7 +1320,7 @@ namespace System.Net.Http
 
             while (remaining.Length > 0)
             {
-                int frameSize = Math.Min(remaining.Length, FrameHeader.MaxLength);
+                int frameSize = Math.Min(remaining.Length, FrameHeader.MaxPayloadLength);
 
                 // Once credit had been granted, we want to actually consume those bytes.
                 frameSize = await _connectionWindow.RequestCreditAsync(frameSize, cancellationToken).ConfigureAwait(false);
@@ -1586,13 +1586,13 @@ namespace System.Net.Http
 
         private readonly struct FrameHeader
         {
-            public readonly int Length;
+            public readonly int PayloadLength;
             public readonly FrameType Type;
             public readonly FrameFlags Flags;
             public readonly int StreamId;
 
             public const int Size = 9;
-            public const int MaxLength = 16384;
+            public const int MaxPayloadLength = 16384;
 
             public const int SettingLength = 6;            // per setting (total SETTINGS length must be a multiple of this)
             public const int PriorityInfoLength = 5;       // for both PRIORITY frame and priority info within HEADERS
@@ -1601,11 +1601,11 @@ namespace System.Net.Http
             public const int RstStreamLength = 4;
             public const int GoAwayMinLength = 8;
 
-            public FrameHeader(int length, FrameType type, FrameFlags flags, int streamId)
+            public FrameHeader(int payloadLength, FrameType type, FrameFlags flags, int streamId)
             {
                 Debug.Assert(streamId >= 0);
 
-                Length = length;
+                PayloadLength = payloadLength;
                 Type = type;
                 Flags = flags;
                 StreamId = streamId;
@@ -1621,31 +1621,31 @@ namespace System.Net.Http
             {
                 Debug.Assert(buffer.Length >= Size);
 
-                byte byte8 = buffer[8]; // help eliminate bounds checks
-                return new FrameHeader(
-                    (buffer[0] << 16) | (buffer[1] << 8) | buffer[2],
-                    (FrameType)buffer[3],
-                    (FrameFlags)buffer[4],
-                    (int)((uint)((buffer[5] << 24) | (buffer[6] << 16) | (buffer[7] << 8) | byte8) & 0x7FFFFFFF));
+                FrameFlags flags = (FrameFlags)buffer[4]; // do first to avoid some bounds checks
+                int payloadLength = (buffer[0] << 16) | (buffer[1] << 8) | buffer[2];
+                FrameType type = (FrameType)buffer[3];
+                int streamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(5)) & 0x7FFFFFFF);
+
+                return new FrameHeader(payloadLength, type, flags, streamId);
             }
 
-            public static void WriteTo(Span<byte> buffer, int length, FrameType type, FrameFlags flags, int streamId)
+            public static void WriteTo(Span<byte> destination, int payloadLength, FrameType type, FrameFlags flags, int streamId)
             {
-                Debug.Assert(buffer.Length >= Size);
+                Debug.Assert(destination.Length >= Size);
                 Debug.Assert(type <= FrameType.Last);
                 Debug.Assert((flags & FrameFlags.ValidBits) == flags);
-                Debug.Assert((uint)length <= MaxLength);
+                Debug.Assert((uint)payloadLength <= MaxPayloadLength);
 
                 // This ordering helps eliminate bounds checks.
-                BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(5), streamId);
-                buffer[4] = (byte)flags;
-                buffer[0] = (byte)((length & 0x00FF0000) >> 16);
-                buffer[1] = (byte)((length & 0x0000FF00) >> 8);
-                buffer[2] = (byte)(length & 0x000000FF);
-                buffer[3] = (byte)type;
+                BinaryPrimitives.WriteInt32BigEndian(destination.Slice(5), streamId);
+                destination[4] = (byte)flags;
+                destination[0] = (byte)((payloadLength & 0x00FF0000) >> 16);
+                destination[1] = (byte)((payloadLength & 0x0000FF00) >> 8);
+                destination[2] = (byte)(payloadLength & 0x000000FF);
+                destination[3] = (byte)type;
             }
 
-            public override string ToString() => $"StreamId={StreamId}; Type={Type}; Flags={Flags}; Length={Length}"; // Description for diagnostic purposes
+            public override string ToString() => $"StreamId={StreamId}; Type={Type}; Flags={Flags}; PayloadLength={PayloadLength}"; // Description for diagnostic purposes
         }
 
         [Flags]
