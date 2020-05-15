@@ -8847,18 +8847,33 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return bits;
 }
 
-/*****************************************************************************
- *
- *   Returns the encoding to shift by 'shift' for an Arm64 vector or scalar instruction
- */
-
-/*static*/ emitter::code_t emitter::insEncodeVectorShift(emitAttr size, ssize_t shift)
+// insEncodeVectorShift: Returns the encoding for the SIMD shift (immediate) instructions.
+//
+// Arguments:
+//    size  - for the scalar variants specifies 'datasize', for the vector variants specifies 'element size'.
+//    shift - if the shift is positive, the operation is a left shift. Otherwise, it is a right shift.
+//
+// Returns:
+//    "immh:immb" field of the instruction that contains encoded shift amount.
+//
+/*static*/ emitter::code_t emitter::insEncodeVectorShift(emitAttr size, ssize_t shiftAmount)
 {
-    assert(shift < getBitWidth(size));
+    if (shiftAmount < 0)
+    {
+        shiftAmount = -shiftAmount;
+        // The right shift amount must be in the range 1 to the destination element width in bits.
+        assert((shiftAmount > 0) && (shiftAmount <= getBitWidth(size)));
 
-    code_t imm = (code_t)(getBitWidth(size) + shift);
-
-    return imm << 16;
+        code_t imm = (code_t)(2 * getBitWidth(size) - shiftAmount);
+        return imm << 16;
+    }
+    else
+    {
+        // The left shift amount must in the range 0 to the element width in bits minus 1.
+        assert(shiftAmount < getBitWidth(size));
+        code_t imm = (code_t)(getBitWidth(size) + shiftAmount);
+        return imm << 16;
+    }
 }
 
 /*****************************************************************************
@@ -10850,9 +10865,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm      = emitGetInsSC(id);
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
-            code |= insEncodeVectorShift(elemsize, imm); // iiiiiii
-            code |= insEncodeReg_Vd(id->idReg1());       // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
+            code |= insEncodeVectorShift(elemsize, emitInsIsVectorRightShift(ins) ? -imm : imm); // iiiiiii
+            code |= insEncodeReg_Vd(id->idReg1());                                               // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());                                               // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10860,10 +10875,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm      = emitGetInsSC(id);
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
-            code |= insEncodeVectorsize(id->idOpSize()); // Q
-            code |= insEncodeVectorShift(elemsize, imm); // iiiiiii
-            code |= insEncodeReg_Vd(id->idReg1());       // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
+            code |= insEncodeVectorsize(id->idOpSize());                                         // Q
+            code |= insEncodeVectorShift(elemsize, emitInsIsVectorRightShift(ins) ? -imm : imm); // iiiiiii
+            code |= insEncodeReg_Vd(id->idReg1());                                               // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());                                               // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 

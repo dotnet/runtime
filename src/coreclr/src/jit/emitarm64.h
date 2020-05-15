@@ -301,8 +301,8 @@ static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
-// Returns the encoding to shift by 'shift' bits for an Arm64 vector or scalar instruction
-static code_t insEncodeVectorShift(emitAttr size, ssize_t shift);
+// Returns the encoding for ASIMD Shift instruction.
+static code_t insEncodeVectorShift(emitAttr size, ssize_t shiftAmount);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 vector instruction
 static code_t insEncodeElemsize(emitAttr size);
