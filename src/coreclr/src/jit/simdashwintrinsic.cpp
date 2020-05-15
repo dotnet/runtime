@@ -353,6 +353,25 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     {
         case 1:
         {
+            bool isOpExplicit = (intrinsic == NI_VectorT128_op_Explicit);
+
+#if defined(TARGET_XARCH)
+            isOpExplicit |= (intrinsic == NI_VectorT256_op_Explicit);
+#endif
+
+            if (isOpExplicit)
+            {
+                // We fold away the cast here, as it only exists to satisfy the
+                // type system. It is safe to do this here since the op1 type
+                // and the signature return type are both the same TYP_SIMD.
+
+                op1 = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+                SetOpLclRelatedToSIMDIntrinsic(op1);
+                assert(op1->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+
+                return op1;
+            }
+
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
