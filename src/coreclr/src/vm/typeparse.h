@@ -16,12 +16,6 @@
 #include "class.h"
 #include "typehandle.h"
 
-// To work around a warning about redefining "TypeName" include the file
-// that defines Windows.UI.Xaml.Interop.TypeName now.
-#ifdef FEATURE_COMINTEROP
-#include <windows.ui.xaml.interop.h>
-#endif
-
 //#define TYPE_NAME_RESERVED_CHAR W(",[]&*+\\")
 
 bool inline IsTypeNameReservedChar(WCHAR ch)

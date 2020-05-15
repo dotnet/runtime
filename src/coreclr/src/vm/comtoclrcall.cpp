@@ -718,7 +718,7 @@ static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
         {
             // Transform the exception into an HRESULT. This also sets up
             // an IErrorInfo on the current thread for the exception.
-            hrRetVal = SetupErrorInfo(pThrowable, pFrame->GetComCallMethodDesc());
+            hrRetVal = SetupErrorInfo(pThrowable);
         }
     }
 

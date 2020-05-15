@@ -1793,34 +1793,6 @@
     ]
   },
   {
-    "Name": "System.Runtime.WindowsRuntime",
-    "Description": "Provides extensions methods that improve interoperation between managed code and the Windows Runtime.",
-    "CommonTypes": [
-      "System.WindowsRuntimeSystemExtensions",
-      "System.IO.WindowsRuntimeStorageExtensions",
-      "System.IO.WindowsRuntimeStreamExtensions",
-      "System.Runtime.InteropServices.WindowsRuntime.AsyncInfo",
-      "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBuffer"
-    ]
-  },
-  {
-    "Name": "System.Runtime.WindowsRuntime.UI.Xaml",
-    "Description": "Provides managed equivalents of Extensible Application Markup Language (XAML) UI types from Windows Runtime.",
-    "CommonTypes": [
-      "Windows.UI.Xaml.CornerRadius",
-      "Windows.UI.Xaml.Duration",
-      "Windows.UI.Xaml.DurationType",
-      "Windows.UI.Xaml.GridLength",
-      "Windows.UI.Xaml.GridUnitType",
-      "Windows.UI.Xaml.Thickness",
-      "Windows.UI.Xaml.Media.Matrix",
-      "Windows.UI.Xaml.Media.Animation.KeyTime",
-      "Windows.UI.Xaml.Media.Animation.RepeatBehavior",
-      "Windows.UI.Xaml.Media.Animation.RepeatBehaviorType",
-      "Windows.UI.Xaml.Media.Media3D.Matrix3D"
-    ]
-  },
-  {
     "Name": "System.Security.AccessControl",
     "Description": "Provides base classes that enable managing access and audit control lists on securable objects.",
     "CommonTypes": [

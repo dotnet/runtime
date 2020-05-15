@@ -502,7 +502,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                         {
                             // Transform the exception into an HRESULT. This also sets up
                             // an IErrorInfo on the current thread for the exception.
-                            hr = SetupErrorInfo(pADThrowable, pCMD);
+                            hr = SetupErrorInfo(pADThrowable);
                             pADThrowable = NULL;
                             fExceptionThrown = TRUE;
                         }
@@ -532,7 +532,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                             {
                                 // Transform the exception into an HRESULT. This also sets up
                                 // an IErrorInfo on the current thread for the exception.
-                                hr = SetupErrorInfo(pADThrowable, pCMD);
+                                hr = SetupErrorInfo(pADThrowable);
                                 pADThrowable = NULL;
                             }
                         }
@@ -554,7 +554,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
             {
                 // Transform the exception into an HRESULT. This also sets up
                 // an IErrorInfo on the current thread for the exception.
-                hr = SetupErrorInfo(pThrowable, pCMD);
+                hr = SetupErrorInfo(pThrowable);
                 pThrowable = NULL;
             }
         }

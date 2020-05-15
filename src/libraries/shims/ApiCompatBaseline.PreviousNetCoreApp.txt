@@ -20,4 +20,23 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' 
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
 CannotChangeAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' on 'System.Diagnostics.ProcessStartInfo.Verb' changed from '[DefaultValueAttribute(null)]' in the contract to '[DefaultValueAttribute("")]' in the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
-Total Issues: 18
+Compat issues due to removal of System.Runtime.InteropServices.WindowsRuntime
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.DefaultInterfaceAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T>' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.IActivationFactory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.InterfaceImplementedInVersionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.ReadOnlyArrayAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.ReturnValueNameAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMarshal' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.WriteOnlyArrayAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.DefaultInterfaceAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T>' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.IActivationFactory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.InterfaceImplementedInVersionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.ReadOnlyArrayAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.ReturnValueNameAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMarshal' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.WriteOnlyArrayAttribute' does not exist in the implementation but it does exist in the contract.
+Total Issues: 36

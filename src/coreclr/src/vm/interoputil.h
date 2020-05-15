@@ -66,7 +66,6 @@ struct ExceptionData;
  // setup error info for exception object
 //
 #ifdef FEATURE_COMINTEROP
-HRESULT SetupErrorInfo(OBJECTREF pThrownObject, ComCallMethodDesc *pCMD);
 BOOL IsManagedObject(IUnknown *pErrInfo);
 #endif // FEATURE_COMINTEROP
 

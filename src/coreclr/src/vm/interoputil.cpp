@@ -79,19 +79,6 @@ void AllocateComClassObject(ComClassFactory* pComClsFac, OBJECTREF* pComObj);
 // setup error info for exception object
 //
 #ifdef FEATURE_COMINTEROP
-HRESULT SetupErrorInfo(OBJECTREF pThrownObject, ComCallMethodDesc *pCMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pCMD));
-    }
-    CONTRACTL_END;
-
-    return SetupErrorInfo(pThrownObject, false);
-}
 
 // HRESULT for CLR created IErrorInfo pointers are accessible
 // from the enclosing simple wrapper

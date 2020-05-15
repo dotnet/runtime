@@ -9643,7 +9643,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 
             if (bIsComObject)
             {
-                // Make System.__ComObject/System.Runtime.InteropServices.WindowsRuntime.RuntimeClass a ComImport type
+                // Make System.__ComObject a ComImport type
                 // We can't do it using attribute as C# won't allow putting code in ComImport types
                 pMT->SetComObjectType();
 

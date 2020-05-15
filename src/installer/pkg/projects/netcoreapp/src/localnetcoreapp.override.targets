@@ -20,14 +20,6 @@
     <PropertyGroup>
       <_crossDir Condition="'$(_crossHostArch)' != ''">/$(_crossHostArch)_$(TargetArchitecture)</_crossDir>
     </PropertyGroup>
-
-    <ItemGroup>
-      <_requiredProperty Include="_winmdPackageDir" />
-    </ItemGroup>
-
-    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
-    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
-    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
   </Target>
 
   <Target Name="GetCrossgenToolPaths"
@@ -62,10 +54,6 @@
     <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
       <_diaSymReaderToolDir>$(IntermediateOutputPath)</_diaSymReaderToolDir>
     </PropertyGroup>
-
-    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
-    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
-    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
 
     <ItemGroup>
       <!--
