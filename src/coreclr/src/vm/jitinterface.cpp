@@ -99,34 +99,23 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #else // DACCESS_COMPILE
 
-long g_cbILJitted = 0;
-int g_cMethodsJitted = 0;
+uint64_t g_cbILJitted = 0;
+uint32_t g_cMethodsJitted = 0;
 
-long GetJittedBytes()
+FCIMPL0(INT64, GetJittedBytes)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
+    FCALL_CONTRACT;
     return g_cbILJitted;
 }
+FCIMPLEND
 
-int GetJittedMethodsCount()
+FCIMPL0(INT32, GetJittedMethodsCount)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    FCALL_CONTRACT;
 
     return g_cMethodsJitted;
 }
+FCIMPLEND
 
 /*********************************************************************/
 
