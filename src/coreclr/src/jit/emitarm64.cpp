@@ -1393,9 +1393,10 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     return insFormats[ins];
 }
 
-#define LD 2
-#define ST 4
-#define CMP 8
+#define LD 1
+#define ST 2
+#define CMP 4
+#define RSH 8
 
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
@@ -1411,57 +1412,62 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 };
 // clang-format on
 
-/*****************************************************************************
- *
- *  Returns true if the instruction is some kind of compare or test instruction
- */
-
+//------------------------------------------------------------------------
+// emitInsIsCompare: Returns true if the instruction is some kind of compare or test instruction.
+//
 bool emitter::emitInsIsCompare(instruction ins)
 {
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
-        return (CodeGenInterface::instInfo[ins] & CMP) ? true : false;
+        return (CodeGenInterface::instInfo[ins] & CMP) != 0;
     else
         return false;
 }
 
-/*****************************************************************************
- *
- *  Returns true if the instruction is some kind of load instruction
- */
-
+//------------------------------------------------------------------------
+// emitInsIsLoad: Returns true if the instruction is some kind of load instruction.
+//
 bool emitter::emitInsIsLoad(instruction ins)
 {
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
-        return (CodeGenInterface::instInfo[ins] & LD) ? true : false;
+        return (CodeGenInterface::instInfo[ins] & LD) != 0;
     else
         return false;
 }
-/*****************************************************************************
- *
- *  Returns true if the instruction is some kind of store instruction
- */
 
+//------------------------------------------------------------------------
+// emitInsIsStore: Returns true if the instruction is some kind of store instruction.
+//
 bool emitter::emitInsIsStore(instruction ins)
 {
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
-        return (CodeGenInterface::instInfo[ins] & ST) ? true : false;
+        return (CodeGenInterface::instInfo[ins] & ST) != 0;
     else
         return false;
 }
 
-/*****************************************************************************
- *
- *  Returns true if the instruction is some kind of load/store instruction
- */
-
+//------------------------------------------------------------------------
+// emitInsIsLoadOrStore: Returns true if the instruction is some kind of load or store instruction.
+//
 bool emitter::emitInsIsLoadOrStore(instruction ins)
 {
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
-        return (CodeGenInterface::instInfo[ins] & (LD | ST)) ? true : false;
+        return (CodeGenInterface::instInfo[ins] & (LD | ST)) != 0;
+    else
+        return false;
+}
+
+//------------------------------------------------------------------------
+// emitInsIsVectorRightShift: Returns true if the instruction is ASIMD right shift.
+//
+bool emitter::emitInsIsVectorRightShift(instruction ins)
+{
+    // We have pseudo ins like lea which are not included in emitInsLdStTab.
+    if (ins < ArrLen(CodeGenInterface::instInfo))
+        return (CodeGenInterface::instInfo[ins] & RSH) != 0;
     else
         return false;
 }
@@ -1469,6 +1475,7 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
 #undef LD
 #undef ST
 #undef CMP
+#undef RHS
 
 /*****************************************************************************
  *
