@@ -3,8 +3,8 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)" />
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)" />
 
   <PropertyGroup>
     <!--
@@ -112,7 +112,7 @@
   -->
   <Target Name="RemoveDuplicateResolvedNuGetPackageAssets">
     <RemoveDuplicates Inputs="@(ReferenceCopyLocalPaths)">
-      <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths"/>
+      <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths" />
     </RemoveDuplicates>
 
     <ItemGroup>
@@ -321,31 +321,31 @@
 
     <ItemGroup>
       <!-- UNIX -->
-      <SingleFileHostInclude Include="libSystem.Globalization.Native.so"/>
-      <SingleFileHostInclude Include="libSystem.IO.Compression.Native.so"/>
-      <SingleFileHostInclude Include="libSystem.IO.Ports.Native.so"/>
-      <SingleFileHostInclude Include="libSystem.Native.so"/>
-      <SingleFileHostInclude Include="libSystem.Net.Security.Native.so"/>
-      <SingleFileHostInclude Include="llibSystem.Security.Cryptography.Native.OpenSsl.so"/>
-      <SingleFileHostInclude Include="libclrjit.so"/>
-      <SingleFileHostInclude Include="libcoreclr.so"/>
+      <SingleFileHostIncludeFilename Include="libSystem.Globalization.Native.so" />
+      <SingleFileHostIncludeFilename Include="libSystem.IO.Compression.Native.so" />
+      <SingleFileHostIncludeFilename Include="libSystem.IO.Ports.Native.so" />
+      <SingleFileHostIncludeFilename Include="libSystem.Native.so" />
+      <SingleFileHostIncludeFilename Include="libSystem.Net.Security.Native.so" />
+      <SingleFileHostIncludeFilename Include="llibSystem.Security.Cryptography.Native.OpenSsl.so" />
+      <SingleFileHostIncludeFilename Include="libclrjit.so" />
+      <SingleFileHostIncludeFilename Include="libcoreclr.so" />
 
       <!-- OSX -->
-      <SingleFileHostInclude Include="libSystem.Globalization.Native.dylib"/>
-      <SingleFileHostInclude Include="libSystem.IO.Compression.Native.dylib"/>
-      <SingleFileHostInclude Include="libSystem.IO.Ports.Native.dylib"/>
-      <SingleFileHostInclude Include="libSystem.Native.dylib"/>
-      <SingleFileHostInclude Include="libSystem.Net.Security.Native.dylib"/>
-      <SingleFileHostInclude Include="libSystem.Security.Cryptography.Native.Apple.dylib"/>
-      <SingleFileHostInclude Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib"/>
-      <SingleFileHostInclude Include="libclrjit.dylib"/>
-      <SingleFileHostInclude Include="libcoreclr.dylib"/>
+      <SingleFileHostIncludeFilename Include="libSystem.Globalization.Native.dylib" />
+      <SingleFileHostIncludeFilename Include="libSystem.IO.Compression.Native.dylib" />
+      <SingleFileHostIncludeFilename Include="libSystem.IO.Ports.Native.dylib" />
+      <SingleFileHostIncludeFilename Include="libSystem.Native.dylib" />
+      <SingleFileHostIncludeFilename Include="libSystem.Net.Security.Native.dylib" />
+      <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.Apple.dylib" />
+      <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" />
+      <SingleFileHostIncludeFilename Include="libclrjit.dylib" />
+      <SingleFileHostIncludeFilename Include="libcoreclr.dylib" />
 
       <!-- Windows -->
-      <SingleFileHostInclude Include="clrcompression.dll"/>
-      <SingleFileHostInclude Include="clrjit.dll"/>
-      <SingleFileHostInclude Include="coreclr.dll"/>
-      <SingleFileHostInclude Include="mscordaccore.dll"/>
+      <SingleFileHostIncludeFilename Include="clrcompression.dll" />
+      <SingleFileHostIncludeFilename Include="clrjit.dll" />
+      <SingleFileHostIncludeFilename Include="coreclr.dll" />
+      <SingleFileHostIncludeFilename Include="mscordaccore.dll" />
     </ItemGroup>
 
     <CreateFrameworkListFile
@@ -354,7 +354,7 @@
       TargetFile="$(FrameworkListFile)"
       TargetFilePrefixes="ref/;runtimes/"
       RootAttributes="@(FrameworkListRootAttributes)"
-      SingleFileHostIncludeFilenames="@(SingleFileHostInclude)"/>
+      SingleFileHostIncludeFilenames="@(SingleFileHostIncludeFilename)" />
 
     <ItemGroup>
       <File Include="$(FrameworkListFile)">
@@ -401,7 +401,7 @@
       <PackageReference
         Include="@(CrossgenToolPackageReference)"
         Exclude="@(PackageReference)"
-        ExcludeAssets="All"/>
+        ExcludeAssets="All" />
     </ItemGroup>
   </Target>
 </Project>
