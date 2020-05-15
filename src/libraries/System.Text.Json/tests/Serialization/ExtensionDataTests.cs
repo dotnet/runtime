@@ -56,7 +56,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ExtensionPropertyIgnoredWhenNull()
+        public static void ExtensionPropertyIgnoredWhenWritingDefault()
         {
             string expected = @"{}";
             string actual = JsonSerializer.Serialize(new ClassWithExtensionPropertyAsObject());
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void MultipleExtensionPropertyIgnoredWhenNull()
+        public static void MultipleExtensionPropertyIgnoredWhenWritingDefault()
         {
             var obj = new ClassWithMultipleDictionaries();
             string actual = JsonSerializer.Serialize(obj);

@@ -409,7 +409,7 @@ done
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
-platform=$(uname)
+platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
   __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then

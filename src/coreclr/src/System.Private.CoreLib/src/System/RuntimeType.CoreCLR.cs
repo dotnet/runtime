@@ -244,14 +244,17 @@ namespace System
                     switch (cacheType)
                     {
                         case CacheType.Method:
-                            list = (T[])(object)new RuntimeMethodInfo[1] {
-                            new RuntimeMethodInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null)
-                        };
+                            list = (T[])(object)new RuntimeMethodInfo[1]
+                            {
+                                new RuntimeMethodInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null)
+                            };
                             break;
+
                         case CacheType.Constructor:
-                            list = (T[])(object)new RuntimeConstructorInfo[1] {
-                            new RuntimeConstructorInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags)
-                        };
+                            list = (T[])(object)new RuntimeConstructorInfo[1]
+                            {
+                                new RuntimeConstructorInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags)
+                            };
                             break;
                     }
 
@@ -4062,7 +4065,7 @@ namespace System
 
             // Handle arguments that are passed as ByRef and those
             // arguments that need to be wrapped.
-            ParameterModifier[] aParamMod = null!;
+            ParameterModifier[]? aParamMod = null;
             if (cArgs > 0)
             {
                 ParameterModifier paramMod = new ParameterModifier(cArgs);
@@ -4087,7 +4090,7 @@ namespace System
             for (int i = 0; i < cArgs; i++)
             {
                 // Determine if the parameter is ByRef.
-                if (aParamMod[0][i] && aArgs[i] != null)
+                if (aParamMod![0][i] && aArgs[i] != null)
                 {
                     Type argType = aArgsTypes[i];
                     if (!ReferenceEquals(argType, aArgs[i].GetType()))

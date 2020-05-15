@@ -1641,6 +1641,13 @@ CorUnix::InternalSetThreadDescription(
 
     pTargetThread->Lock(pThread);
 
+    // Ignore requests to set the main thread name because
+    // it causes the value returned by Process.ProcessName to change.
+    if ((pid_t)pTargetThread->GetThreadId() == getpid())
+    {
+        goto InternalSetThreadDescriptionExit;
+    }
+
     /* translate the wide char lpThreadDescription string to multibyte string */
     nameSize = WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, NULL, 0, NULL, NULL);
 

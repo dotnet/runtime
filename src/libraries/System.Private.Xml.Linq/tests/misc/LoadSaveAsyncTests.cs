@@ -415,6 +415,12 @@ namespace CoreXml.Test.XLinq
             Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
             return Task.CompletedTask;
         }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        {
+            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
+            return default;
+        }
     }
 
     public class CheckSyncAsyncStream : Stream

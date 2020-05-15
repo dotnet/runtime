@@ -20,12 +20,21 @@
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <MobileHelpersDirSuffix>$(NetCoreAppCurrent)-$(MonoConfiguration)</MobileHelpersDirSuffix>
-    <AppleTestBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelpersDirSuffix)'))</AppleTestBuilderDir>
-    <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileHelpersDirSuffix)'))</AppleTestRunnerDir>
-    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(MobileHelpersDirSuffix)'))</AndroidAppBuilderDir>
-    <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileHelpersDirSuffix)'))</AndroidTestRunnerDir>
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <MobileHelperTasksDirSuffix>$(NetCoreAppCurrent)-$(MonoConfiguration)</MobileHelperTasksDirSuffix>
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelperTasksDirSuffix)'))</AppleAppBuilderDir>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(MobileHelperTasksDirSuffix)'))</AndroidAppBuilderDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(MobileHelperTasksDirSuffix)'))</MonoAOTCompilerDir>
+
+    <!-- Test runners are built as part of libs.pretest so we need to use libraries configuration -->
+    <MobileRunnersDirSuffix>$(NetCoreAppCurrent)-$(Configuration)</MobileRunnersDirSuffix>
+    <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileRunnersDirSuffix)'))</AppleTestRunnerDir>
+    <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileRunnersDirSuffix)'))</AndroidTestRunnerDir>
+
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <PlatformManifestFile />
   </PropertyGroup>
 
   <!--

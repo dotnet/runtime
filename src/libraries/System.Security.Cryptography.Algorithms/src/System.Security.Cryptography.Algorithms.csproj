@@ -477,8 +477,8 @@
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
-    <Compile Condition="'$(TargetsAndroid)' != 'true' or '$(AndroidOpenSslHeaders)' != ''" Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
-    <Compile Condition="'$(TargetsAndroid)' == 'true' and '$(AndroidOpenSslHeaders)' == ''" Include="Internal\Cryptography\HashProviderDispenser.Android.cs" />
+    <Compile Condition="'$(TargetsAndroid)' != 'true' or '$(ANDROID_OPENSSL_AAR)' != ''" Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''" Include="Internal\Cryptography\HashProviderDispenser.Android.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />

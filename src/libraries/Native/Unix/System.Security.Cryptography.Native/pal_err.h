@@ -6,6 +6,13 @@
 #include <stdint.h>
 #include "opensslshim.h"
 
+#include <pthread.h>
+
+#ifdef NEED_OPENSSL_1_1
+extern pthread_mutex_t g_err_mutex;
+extern int volatile g_err_unloaded;
+#endif
+
 /*
 Shims the ERR_clear_error method.
 */

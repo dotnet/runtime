@@ -185,7 +185,7 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 		} else {
 			auto info = reg->getPassInfo (pass->getPassID());
 			auto name = info->getPassArgument ();
-			printf("Opt pass is ignored: %.*s\n", name.size(), name.data());
+			printf("Opt pass is ignored: %.*s\n", (int) name.size(), name.data());
 		}
 	}
 	// -place-safepoints pass is mandatory

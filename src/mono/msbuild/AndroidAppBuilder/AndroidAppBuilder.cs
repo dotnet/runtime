@@ -41,6 +41,8 @@ public class AndroidAppBuilderTask : Task
     
     public string? BuildToolsVersion { get; set; }
 
+    public bool StripDebugSymbols { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
     
@@ -59,6 +61,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.MinApiLevel = MinApiLevel;
         apkBuilder.BuildApiLevel = BuildApiLevel;
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
+        apkBuilder.StripDebugSymbols = StripDebugSymbols;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, Abi, MainLibraryFileName, MonoRuntimeHeaders);
         
         return true;

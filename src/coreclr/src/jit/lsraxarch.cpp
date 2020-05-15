@@ -1033,11 +1033,11 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool            hasMultiRegRetVal = false;
-    ReturnTypeDesc* retTypeDesc       = nullptr;
-    int             srcCount          = 0;
-    int             dstCount          = 0;
-    regMaskTP       dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal = false;
+    const ReturnTypeDesc* retTypeDesc       = nullptr;
+    int                   srcCount          = 0;
+    int                   dstCount          = 0;
+    regMaskTP             dstCandidates     = RBM_NONE;
 
     assert(!call->isContained());
     if (call->TypeGet() != TYP_VOID)
@@ -2666,16 +2666,31 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     srcCount += BuildAddrUses(op2->gtGetOp1());
                 }
-                else if (isRMW && !op2->isContained())
+                else if (isRMW)
                 {
-                    if (HWIntrinsicInfo::IsCommutative(intrinsicId))
+                    if (!op2->isContained() && HWIntrinsicInfo::IsCommutative(intrinsicId))
                     {
+                        // When op2 is not contained and we are commutative, we can set op2
+                        // to also be a tgtPrefUse. Codegen will then swap the operands.
+
                         tgtPrefUse2 = BuildUse(op2);
                         srcCount += 1;
                     }
+                    else if (!op2->isContained() || varTypeIsArithmetic(intrinsicTree->TypeGet()))
+                    {
+                        // When op2 is not contained or if we are producing a scalar value
+                        // we need to mark it as delay free because the operand and target
+                        // exist in the same register set.
+
+                        srcCount += BuildDelayFreeUses(op2);
+                    }
                     else
                     {
-                        srcCount += BuildDelayFreeUses(op2);
+                        // When op2 is contained and we are not producing a scalar value we
+                        // have no concerns of overwriting op2 because they exist in different
+                        // register sets.
+
+                        srcCount += BuildOperandUses(op2);
                     }
                 }
                 else
