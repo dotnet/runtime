@@ -12,9 +12,7 @@ namespace System.Threading
         {
         }
 
-#if !FEATURE_APPX
         public static SynchronizationContext? Current => Thread.CurrentThread._synchronizationContext;
-#endif
 
         protected void SetWaitNotificationRequired() => _requireWaitNotification = true;
 

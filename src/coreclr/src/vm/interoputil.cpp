@@ -454,13 +454,14 @@ BOOL IsManagedObject(IUnknown *pIUnknown)
         PRECONDITION(CheckPointer(pIUnknown));
     }
     CONTRACTL_END;
-
+#if FEATURE_COMINTEROP
     //Check based on IUnknown slots, i.e. we'll see whether the IP maps to a CCW.
     if (MapIUnknownToWrapper(pIUnknown) != NULL)
     {
         // We found an existing CCW hence this is a managed exception.
         return TRUE;
     }
+#endif
     return FALSE;
 }
 #endif

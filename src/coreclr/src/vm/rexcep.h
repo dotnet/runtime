@@ -212,9 +212,11 @@ DEFINE_EXCEPTION(g_SystemNS,           NullReferenceException,         false,  C
 // Note: this has to come after NullReferenceException since we want NullReferenceException to be created
 // when E_POINTER is returned from COM interfaces.
 DEFINE_EXCEPTION(g_SystemNS,           AccessViolationException,       false,  E_POINTER)
-
+#ifdef TARGET_WINDOWS
 DEFINE_EXCEPTION(g_SystemNS,           ObjectDisposedException,        false,  COR_E_OBJECTDISPOSED, RO_E_CLOSED)
-
+#else
+DEFINE_EXCEPTION(g_SystemNS,           ObjectDisposedException,        false,  COR_E_OBJECTDISPOSED)
+#endif
 DEFINE_EXCEPTION(g_SystemNS,           OperationCanceledException,     false,  COR_E_OPERATIONCANCELED)
 
 DEFINE_EXCEPTION(g_SystemNS,           OverflowException,              false,  COR_E_OVERFLOW, CTL_E_OVERFLOW)
