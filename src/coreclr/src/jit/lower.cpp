@@ -321,14 +321,35 @@ GenTree* Lowering::LowerNode(GenTree* node)
             if ((node->TypeGet() == TYP_STRUCT) && (src->OperGet() != GT_PHI))
             {
                 LclVarDsc* varDsc = comp->lvaGetDesc(store);
-#if FEATURE_MULTIREG_RET
                 if (src->OperGet() == GT_CALL)
                 {
-                    assert(src->AsCall()->HasMultiRegRetVal());
+#ifdef DEBUG
+                    const ClassLayout* layout    = varDsc->GetLayout();
+                    const unsigned     slotCount = layout->GetSlotCount();
+                    const var_types    regType   = layout->GetRegisterType();
+#if defined(TARGET_XARCH) && !defined(UNIX_AMD64_ABI)
+                    // Windows x64 doesn't have multireg returns,
+                    // x86 uses it only for long return type, not for structs.
+                    assert(!comp->compDoOldStructRetyping());
+                    assert(slotCount == 1);
+                    assert(regType != TYP_UNDEF);
+#else  // !TARGET_XARCH || UNIX_AMD64_ABI
+                    if (!varDsc->lvIsHfa())
+                    {
+                        if (slotCount > 1)
+                        {
+                            assert(src->AsCall()->HasMultiRegRetVal());
+                        }
+                        else
+                        {
+                            assert(!comp->compDoOldStructRetyping());
+                            assert(regType != TYP_UNDEF);
+                        }
+                    }
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
+#endif // DEBUG
                 }
-                else
-#endif // FEATURE_MULTIREG_RET
-                    if (!src->OperIs(GT_LCL_VAR, GT_CALL) || varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF)
+                else if (!src->OperIs(GT_LCL_VAR) || varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF)
                 {
                     GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(store->GetLclNum(), TYP_BYREF);
 
