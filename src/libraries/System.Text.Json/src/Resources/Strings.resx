@@ -521,7 +521,10 @@
   <data name="CannotPopulateCollection" xml:space="preserve">
     <value>The collection type '{0}' is abstract, an interface, or is read only, and could not be instantiated and populated.</value>
   </data>
-  <data name="KeyValuePairPropertyNameInvalid" xml:space="preserve">
-    <value>The naming policy '{0}' returned an invalid value for a 'KeyValuePair' property name. The value cannot be 'null', cannot be a case-insensitive match for the literal 'Value' when converting the 'Key' property name, and cannot be a case-insensitive match for the literal 'Key' when converting the 'Value' property name.</value>
+  <data name="DefaultIgnoreConditionAlreadySpecified" xml:space="preserve">
+    <value>'IgnoreNullValues' and 'DefaultIgnoreCondition' cannot both be set to non-default values.</value>
+  </data>
+  <data name="DefaultIgnoreConditionInvalid" xml:space="preserve">
+    <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
   </data>
 </root>

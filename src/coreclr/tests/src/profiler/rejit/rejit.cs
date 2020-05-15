@@ -100,7 +100,7 @@ namespace Profiler.Tests
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "ReJITWithInlining",
                                           profilerClsid: ReJitProfilerGuid,
-                                          profileeOptions: ProfileeOptions.DisableTieredCompilation);
+                                          profileeOptions: ProfileeOptions.OptimizationSensitive);
         }
     }
 }

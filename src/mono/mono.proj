@@ -134,6 +134,7 @@
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
       <_MonoCFLAGS Include="-isysroot $(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk" />
       <_MonoCFLAGS Include="-mtvos-version-min=$(tvOSVersionMin)" />
+      <_MonoCFLAGS Include="-Werror=partial-availability" />
       <_MonoCFLAGS Include="-Wl,-application_extension" />
       <_MonoCFLAGS Include="-fexceptions" />
       <_MonoCFLAGS Include="-fembed-bitcode" />
@@ -158,7 +159,7 @@
       <_MonoCPPFLAGS Include="-DHAVE_LARGE_FILE_SUPPORT=1" />
 
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
-      <_MonoLDFLAGS Include="-Wl,-no_weak_imports" />
+      <!--<_MonoLDFLAGS Include="-Wl,-no_weak_imports" />--> <!-- TODO: reenable once Xcode bug is fixed: https://github.com/mono/mono/issues/19393 -->
       <_MonoLDFLAGS Include="-Wl,-bitcode_bundle" />
       <_MonoLDFLAGS Include="-framework CoreFoundation" />
       <_MonoLDFLAGS Include="-lobjc" />
@@ -278,6 +279,7 @@
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-arch armv7s" />
       <_MonoCFLAGS Include="-isysroot $(XcodeDir)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(iOSVersion).sdk" />
       <_MonoCFLAGS Include="-miphoneos-version-min=$(iOSVersionMin)" />
+      <_MonoCFLAGS Include="-Werror=partial-availability" />
       <_MonoCFLAGS Include="-Wl,-application_extension" />
       <_MonoCFLAGS Include="-fexceptions" />
 
@@ -303,7 +305,7 @@
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-arch armv7" />
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-arch armv7s" />
-      <_MonoLDFLAGS Include="-Wl,-no_weak_imports" />
+      <!--<_MonoLDFLAGS Include="-Wl,-no_weak_imports" />--> <!-- TODO: reenable once Xcode bug is fixed: https://github.com/mono/mono/issues/19393 -->
       <_MonoLDFLAGS Include="-framework CoreFoundation" />
       <_MonoLDFLAGS Include="-lobjc" />
       <_MonoLDFLAGS Include="-lc++" />
@@ -887,17 +889,11 @@
     <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
              Properties="Configuration=$(Configuration);Platform=$(HostArch)"
              Targets="Restore;Build" />
-    <MSBuild Projects="$(AppleTestRunnerProjDirectory)AppleTestRunner.csproj"
-             Properties="Configuration=$(Configuration)"
-             Targets="Restore;Build" />
   </Target>
 
   <Target Name="BuildAndroidAppBuilder" Condition="'$(TargetsAndroid)' == 'true'">
     <MSBuild Projects="$(AndroidAppBuilderProjDirectory)AndroidAppBuilder.csproj"
              Properties="Configuration=$(Configuration);Platform=$(HostArch)"
-             Targets="Restore;Build" />
-    <MSBuild Projects="$(AndroidTestRunnerProjDirectory)AndroidTestRunner.csproj"
-             Properties="Configuration=$(Configuration)"
              Targets="Restore;Build" />
   </Target>
 
