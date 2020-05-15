@@ -41,6 +41,16 @@
 #define DT_LNK 10
 #endif
 
+#ifdef __linux__
+#define PAL_CWD_SIZE 0
+#elif defined(MAXPATHLEN)
+#define PAL_CWD_SIZE MAXPATHLEN
+#elif defined(PATH_MAX)
+#define PAL_CWD_SIZE PATH_MAX
+#else
+#error "Don't know how to obtain max path on this platform"
+#endif
+
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
     pal::string_t ret = in;
@@ -118,7 +128,7 @@ void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
 bool pal::getcwd(pal::string_t* recv)
 {
     recv->clear();
-    pal::char_t* buf = ::getcwd(nullptr, 0);
+    pal::char_t* buf = ::getcwd(nullptr, PAL_CWD_SIZE);
     if (buf == nullptr)
     {
         if (errno == ENOENT)
@@ -129,6 +139,7 @@ bool pal::getcwd(pal::string_t* recv)
         trace::error(_X("getcwd() failed: %s"), strerror(errno));
         return false;
     }
+
     recv->assign(buf);
     ::free(buf);
     return true;
@@ -767,6 +778,28 @@ bool pal::get_own_executable_path(pal::string_t* recv)
         }
     }
     return false;
+}
+#elif defined(__sun)
+bool pal::get_own_executable_path(pal::string_t* recv)
+{
+    const char *path;
+    if ((path = getexecname()) == NULL)
+    {
+        return false;
+    }
+    else if (*path != '/')
+    {
+        if (!getcwd(recv))
+        {
+            return false;
+        }
+
+        recv->append("/").append(path);
+        return true;
+    }
+
+    recv->assign(path);
+    return true;
 }
 #else
 bool pal::get_own_executable_path(pal::string_t* recv)

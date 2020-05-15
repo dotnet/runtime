@@ -21,12 +21,15 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <MobileHelpersDirSuffix>$(NetCoreAppCurrent)-$(MonoConfiguration)</MobileHelpersDirSuffix>
-    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelpersDirSuffix)'))</AppleAppBuilderDir>
-    <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileHelpersDirSuffix)'))</AppleTestRunnerDir>
-    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(MobileHelpersDirSuffix)'))</AndroidAppBuilderDir>
-    <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileHelpersDirSuffix)'))</AndroidTestRunnerDir>
-    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(MobileHelpersDirSuffix)'))</MonoAOTCompilerDir>
+    <MobileHelperTasksDirSuffix>$(NetCoreAppCurrent)-$(MonoConfiguration)</MobileHelperTasksDirSuffix>
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(MobileHelperTasksDirSuffix)'))</AppleAppBuilderDir>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(MobileHelperTasksDirSuffix)'))</AndroidAppBuilderDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(MobileHelperTasksDirSuffix)'))</MonoAOTCompilerDir>
+
+    <!-- Test runners are built as part of libs.pretest so we need to use libraries configuration -->
+    <MobileRunnersDirSuffix>$(NetCoreAppCurrent)-$(Configuration)</MobileRunnersDirSuffix>
+    <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileRunnersDirSuffix)'))</AppleTestRunnerDir>
+    <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileRunnersDirSuffix)'))</AndroidTestRunnerDir>
 
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>

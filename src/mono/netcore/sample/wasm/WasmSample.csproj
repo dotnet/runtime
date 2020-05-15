@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)\runtimes\browser-wasm</RuntimePackDir>
+    <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
+    <AppDir>$(MSBuildThisFileDirectory)\bin\$(Configuration)\publish</AppDir>
+  </PropertyGroup>
+
+  <Target Name="RebuildWasmAppBuilder">
+    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\WasmAppBuilder\WasmAppBuilder.csproj"
+             Properties="Configuration=$(Configuration)" Targets="Restore;Build;Publish" />
+  </Target>
+
+  <UsingTask TaskName="WasmAppBuilder" 
+      AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(NetCoreAppCurrent)-$(Configuration)\publish\WasmAppBuilder.dll"/>
+
+  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+    <ItemGroup>
+      <AssemblySearchPaths Include="bin"/>
+      <AssemblySearchPaths Include="$(RuntimePackDir)\native"/>
+      <AssemblySearchPaths Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
+    </ItemGroup>
+    <WasmAppBuilder
+      AppDir="$(AppDir)"
+      RuntimePackDir="$(RuntimePackDir)"
+      MainAssembly="bin\WasmSample.dll"
+      MainJS="runtime.js"
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

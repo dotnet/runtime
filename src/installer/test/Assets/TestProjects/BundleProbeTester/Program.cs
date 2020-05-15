@@ -9,13 +9,17 @@ namespace BundleProbeTester
 {
     public static class Program
     {
+        // The return type on BundleProbeDelegate is byte instead of bool because
+        // using non-blitable bool type caused a failure (incorrect value) on linux-musl-x64.
+        // The bundle-probe callback is only called from native code in the product
+        // Therefore the type on this test is adjusted to circumvent the failure.
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate bool BundleProbeDelegate([MarshalAs(UnmanagedType.LPWStr)] string path, IntPtr size, IntPtr offset);
+        public delegate byte BundleProbeDelegate([MarshalAs(UnmanagedType.LPWStr)] string path, IntPtr size, IntPtr offset);
 
         unsafe static bool Probe(BundleProbeDelegate bundleProbe, string path, bool isExpected)
         {
             Int64 size, offset;
-            bool exists = bundleProbe(path, (IntPtr)(&offset), (IntPtr)(&size));
+            bool exists = bundleProbe(path, (IntPtr)(&offset), (IntPtr)(&size)) != 0;
 
             switch (exists, isExpected)
             {
@@ -39,8 +43,6 @@ namespace BundleProbeTester
                 case (false, false):
                     return true;
             }
-
-            return false; // dummy
         }
 
         public static int Main(string[] args)
@@ -72,13 +74,10 @@ namespace BundleProbeTester
             bool success =
                 Probe(bundleProbeDelegate, "BundleProbeTester.dll", isExpected: true) &&
                 Probe(bundleProbeDelegate, "BundleProbeTester.runtimeconfig.json", isExpected: true) &&
-                Probe(bundleProbeDelegate, "System.Private.CoreLib.dll", isExpected: true);
-                // The following test is failing on Linux-musl-x64-release. 
-                // The test is temporarily disabled to keep rolling builds green until the bug is fixed.
-                // https://github.com/dotnet/runtime/issues/35755
-                // Probe(bundleProbeDelegate, "hostpolicy.dll", isExpected: false) &&
-                // Probe(bundleProbeDelegate, "--", isExpected: false) &&
-                // Probe(bundleProbeDelegate, "", isExpected: false);
+                Probe(bundleProbeDelegate, "System.Private.CoreLib.dll", isExpected: true) &&
+                Probe(bundleProbeDelegate, "hostpolicy.dll", isExpected: false) &&
+                Probe(bundleProbeDelegate, "--", isExpected: false) &&
+                Probe(bundleProbeDelegate, "", isExpected: false);
 
             if (!success)
             {

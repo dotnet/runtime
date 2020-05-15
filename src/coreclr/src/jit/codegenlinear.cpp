@@ -1081,10 +1081,10 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
         }
         else if (unspillTree->IsMultiRegCall())
         {
-            GenTreeCall*         call        = unspillTree->AsCall();
-            ReturnTypeDesc*      retTypeDesc = call->GetReturnTypeDesc();
-            unsigned             regCount    = retTypeDesc->GetReturnRegCount();
-            GenTreeCopyOrReload* reloadTree  = nullptr;
+            GenTreeCall*          call        = unspillTree->AsCall();
+            const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+            const unsigned        regCount    = retTypeDesc->GetReturnRegCount();
+            GenTreeCopyOrReload*  reloadTree  = nullptr;
             if (tree->OperGet() == GT_RELOAD)
             {
                 reloadTree = tree->AsCopyOrReload();
@@ -1904,9 +1904,9 @@ void CodeGen::genProduceReg(GenTree* tree)
             // know which of its result regs needs to be spilled.
             if (tree->IsMultiRegCall())
             {
-                GenTreeCall*    call        = tree->AsCall();
-                ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-                unsigned        regCount    = retTypeDesc->GetReturnRegCount();
+                GenTreeCall*          call        = tree->AsCall();
+                const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+                const unsigned        regCount    = retTypeDesc->GetReturnRegCount();
 
                 for (unsigned i = 0; i < regCount; ++i)
                 {
@@ -1987,9 +1987,9 @@ void CodeGen::genProduceReg(GenTree* tree)
             // Mark all the regs produced by call node.
             if (tree->IsMultiRegCall())
             {
-                GenTreeCall*    call        = tree->AsCall();
-                ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-                unsigned        regCount    = retTypeDesc->GetReturnRegCount();
+                const GenTreeCall*    call        = tree->AsCall();
+                const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+                const unsigned        regCount    = retTypeDesc->GetReturnRegCount();
 
                 for (unsigned i = 0; i < regCount; ++i)
                 {
@@ -2006,10 +2006,10 @@ void CodeGen::genProduceReg(GenTree* tree)
 
                 // A multi-reg GT_COPY node produces those regs to which
                 // copy has taken place.
-                GenTreeCopyOrReload* copy        = tree->AsCopyOrReload();
-                GenTreeCall*         call        = copy->gtGetOp1()->AsCall();
-                ReturnTypeDesc*      retTypeDesc = call->GetReturnTypeDesc();
-                unsigned             regCount    = retTypeDesc->GetReturnRegCount();
+                const GenTreeCopyOrReload* copy        = tree->AsCopyOrReload();
+                const GenTreeCall*         call        = copy->gtGetOp1()->AsCall();
+                const ReturnTypeDesc*      retTypeDesc = call->GetReturnTypeDesc();
+                const unsigned             regCount    = retTypeDesc->GetReturnRegCount();
 
                 for (unsigned i = 0; i < regCount; ++i)
                 {

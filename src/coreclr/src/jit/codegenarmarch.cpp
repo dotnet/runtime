@@ -1394,8 +1394,8 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 
     genConsumeRegs(op1);
 
-    ReturnTypeDesc* pRetTypeDesc = call->GetReturnTypeDesc();
-    unsigned        regCount     = pRetTypeDesc->GetReturnRegCount();
+    const ReturnTypeDesc* pRetTypeDesc = call->GetReturnTypeDesc();
+    const unsigned        regCount     = pRetTypeDesc->GetReturnRegCount();
 
     if (treeNode->GetRegNum() != REG_NA)
     {
@@ -2610,9 +2610,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 
     // Determine return value size(s).
-    ReturnTypeDesc* pRetTypeDesc  = call->GetReturnTypeDesc();
-    emitAttr        retSize       = EA_PTRSIZE;
-    emitAttr        secondRetSize = EA_UNKNOWN;
+    const ReturnTypeDesc* pRetTypeDesc  = call->GetReturnTypeDesc();
+    emitAttr              retSize       = EA_PTRSIZE;
+    emitAttr              secondRetSize = EA_UNKNOWN;
 
     if (call->HasMultiRegRetVal())
     {
@@ -3880,12 +3880,9 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         GenTree*     actualOp1 = op1->gtSkipReloadOrCopy();
         GenTreeCall* call      = actualOp1->AsCall();
 
-        ReturnTypeDesc* pRetTypeDesc;
-        unsigned        regCount;
-        unsigned        matchingCount = 0;
-
-        pRetTypeDesc = call->GetReturnTypeDesc();
-        regCount     = pRetTypeDesc->GetReturnRegCount();
+        const ReturnTypeDesc* pRetTypeDesc  = call->GetReturnTypeDesc();
+        const unsigned        regCount      = pRetTypeDesc->GetReturnRegCount();
+        unsigned              matchingCount = 0;
 
         var_types regType[MAX_RET_REG_COUNT];
         regNumber returnReg[MAX_RET_REG_COUNT];

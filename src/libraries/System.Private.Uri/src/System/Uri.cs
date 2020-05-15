@@ -1553,38 +1553,34 @@ namespace System
             return _info.String;
         }
 
-        //
-        //  A static shortcut to Uri.Equals
-        //
         public static bool operator ==(Uri? uri1, Uri? uri2)
         {
-            if ((object?)uri1 == (object?)uri2)
+            if (ReferenceEquals(uri1, uri2))
             {
                 return true;
             }
-            if ((object?)uri1 == null || (object?)uri2 == null)
+
+            if (uri1 is null || uri2 is null)
             {
                 return false;
             }
-            return uri2.Equals(uri1);
+
+            return uri1.Equals(uri2);
         }
 
-        //
-        //  A static shortcut to !Uri.Equals
-        //
         public static bool operator !=(Uri? uri1, Uri? uri2)
         {
-            if ((object?)uri1 == (object?)uri2)
+            if (ReferenceEquals(uri1, uri2))
             {
                 return false;
             }
 
-            if ((object?)uri1 == null || (object?)uri2 == null)
+            if (uri1 is null || uri2 is null)
             {
                 return true;
             }
 
-            return !uri2.Equals(uri1);
+            return !uri1.Equals(uri2);
         }
 
         //
@@ -1593,7 +1589,7 @@ namespace System
         //  Overrides default function (in Object class)
         //
         // Assumes:
-        //  <comparand> is an object of class Uri
+        //  <comparand> is an object of class Uri or String
         //
         // Returns:
         //  true if objects have the same value, else false
@@ -1603,38 +1599,34 @@ namespace System
         //
         public override bool Equals(object? comparand)
         {
-            if ((object?)comparand == null)
+            if (comparand is null)
             {
                 return false;
             }
 
-            if ((object?)this == (object?)comparand)
+            if (ReferenceEquals(this, comparand))
             {
                 return true;
             }
 
             Uri? obj = comparand as Uri;
 
-            //
             // we allow comparisons of Uri and String objects only. If a string
             // is passed, convert to Uri. This is inefficient, but allows us to
             // canonicalize the comparand, making comparison possible
-            //
-            if ((object?)obj == null)
+            if (obj is null)
             {
-                string? s = comparand as string;
-
-                if ((object?)s == null)
+                if (!(comparand is string s))
                     return false;
+
+                if (ReferenceEquals(s, OriginalString))
+                    return true;
 
                 if (!TryCreate(s, UriKind.RelativeOrAbsolute, out obj))
                     return false;
             }
 
-            // Since v1.0 two Uris are equal if everything but fragment and UserInfo does match
-
-            // This check is for a case where we already fixed up the equal references
-            if ((object)_string == (object)obj._string)
+            if (ReferenceEquals(OriginalString, obj.OriginalString))
             {
                 return true;
             }
@@ -1648,36 +1640,7 @@ namespace System
             if (NotAny(Flags.AllUriInfoSet) || obj.NotAny(Flags.AllUriInfoSet))
             {
                 // Try raw compare for _strings as the last chance to keep the working set small
-                if (!IsUncOrDosPath)
-                {
-                    if (_string.Length == obj._string.Length)
-                    {
-                        unsafe
-                        {
-                            // Try case sensitive compare on _strings
-                            fixed (char* selfPtr = _string)
-                            {
-                                fixed (char* otherPtr = obj._string)
-                                {
-                                    // This will never go negative since _string is checked to be a valid URI
-                                    int i = (_string.Length - 1);
-                                    for (; i >= 0; --i)
-                                    {
-                                        if (*(selfPtr + i) != *(otherPtr + i))
-                                        {
-                                            break;
-                                        }
-                                    }
-                                    if (i == -1)
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (string.Equals(_string, obj._string, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(_string, obj._string, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -1753,44 +1716,12 @@ namespace System
             MoreInfo selfInfo = _info.MoreInfo;
             MoreInfo otherInfo = obj._info.MoreInfo;
 
+            // Fragment AND UserInfo are ignored
             string selfUrl = selfInfo.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
             string otherUrl = otherInfo.RemoteUrl ??= obj.GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
 
-            if (!IsUncOrDosPath)
-            {
-                if (selfUrl.Length != otherUrl.Length)
-                {
-                    return false;
-                }
-                unsafe
-                {
-                    // Try case sensitive compare on _strings
-                    fixed (char* seltPtr = selfUrl)
-                    {
-                        fixed (char* otherPtr = otherUrl)
-                        {
-                            char* endSelf = seltPtr + selfUrl.Length;
-                            char* endOther = otherPtr + selfUrl.Length;
-                            while (endSelf != seltPtr)
-                            {
-                                if (*--endSelf != *--endOther)
-                                {
-                                    return false;
-                                }
-                            }
-                            return true;
-                        }
-                    }
-                }
-            }
-
             // if IsUncOrDosPath is true then we ignore case in the path comparison
-            // Get Unescaped form as most safe for the comparison
-            // Fragment AND UserInfo are ignored
-            //
-            return (string.Compare(selfUrl,
-                                   otherUrl,
-                                   IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0);
+            return string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
         }
 
         public Uri MakeRelativeUri(Uri uri)

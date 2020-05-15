@@ -16,6 +16,9 @@
   <ItemGroup>
     <RuntimeProject Include="restore\runtime\runtime.depproj" />
     <ProjectReference Include="@(RuntimeProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"/>
+    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
   </ItemGroup>
 
   <Target Name="RestoreTestHost"
@@ -70,14 +73,6 @@
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
-  </Target>
-
-  <!-- Wasm runtimes depend on the mono runtime and libs to be built, so they can only be built here -->
-  <Target Name="BuildWasmPackageDependency"
-          Condition="'$(TargetOS)' == 'Browser'"
-          AfterTargets="RestoreTestHost">
-    <MSBuild Projects="$(MonoProjectRoot)\wasm\wasm.proj"
-             Properties="Configuration=$(Configuration);TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)"/>
   </Target>
 
   <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>

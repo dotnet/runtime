@@ -583,10 +583,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
                 break;
 
-            case NI_Vector64_Create:
-            case NI_Vector128_Create:
             case NI_AdvSimd_DuplicateToVector64:
             case NI_AdvSimd_DuplicateToVector128:
+            case NI_AdvSimd_Arm64_DuplicateToVector64:
             case NI_AdvSimd_Arm64_DuplicateToVector128:
             {
                 if (varTypeIsFloating(intrin.baseType))
@@ -595,6 +594,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
                         GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
+                    }
+                    else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
+                    {
+                        assert(intrin.baseType == TYP_DOUBLE);
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
                     else
                     {
@@ -610,6 +614,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                 }
+            }
+            break;
+
+            case NI_Vector64_GetElement:
+            case NI_Vector128_GetElement:
+            case NI_Vector64_ToScalar:
+            case NI_Vector128_ToScalar:
+            {
+                ssize_t indexValue = 0;
+                if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
+                {
+                    assert(intrin.op2->IsCnsIntOrI());
+                    indexValue = intrin.op2->AsIntCon()->gtIconVal;
+                }
+
+                // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
+                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))
+                {
+                    break;
+                }
+
+                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
+                                            INS_OPTS_NONE);
             }
             break;
 

@@ -3063,7 +3063,12 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             LowerRetStructLclVar(ret);
             break;
 
+#ifdef FEATURE_SIMD
         case GT_SIMD:
+#endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+#endif // FEATURE_HW_INTRINSICS
         case GT_LCL_FLD:
         {
             GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), retVal, nullptr);

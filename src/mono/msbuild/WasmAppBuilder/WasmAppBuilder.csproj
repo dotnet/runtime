@@ -12,5 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PInvokeTableGenerator.cs" />
+    <Compile Include="WasmAppBuilder.cs" />
   </ItemGroup>
 </Project>

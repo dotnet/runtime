@@ -52,7 +52,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'">true</TargetsMobile>
+    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
   </PropertyGroup>
 
   <!--Feature switches -->
