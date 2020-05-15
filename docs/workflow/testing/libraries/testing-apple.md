@@ -1,6 +1,6 @@
 # Testing Libraries on iOS and tvOS
 
-In order to build libraries and tests for iOS or tvOS you only need some fresh version of XCode installed (e.g. 11.3 or higher).
+In order to build libraries and tests for iOS or tvOS you need recent version of XCode installed (e.g. 11.3 or higher).
 
 Build Libraries for iOS:
 ```
