@@ -388,7 +388,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<long> Create(long value)
         {
-            if (Sse2.X64.IsSupported || AdvSimd.IsSupported)
+            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 return Create(value);
             }
@@ -546,7 +546,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(ulong value)
         {
-            if (Sse2.X64.IsSupported || AdvSimd.IsSupported)
+            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 return Create(value);
             }
@@ -587,32 +587,10 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<byte> result = CreateScalarUnsafe(e0);
-                result = AdvSimd.Insert(result, 1, e1);
-                result = AdvSimd.Insert(result, 2, e2);
-                result = AdvSimd.Insert(result, 3, e3);
-                result = AdvSimd.Insert(result, 4, e4);
-                result = AdvSimd.Insert(result, 5, e5);
-                result = AdvSimd.Insert(result, 6, e6);
-                result = AdvSimd.Insert(result, 7, e7);
-                result = AdvSimd.Insert(result, 8, e8);
-                result = AdvSimd.Insert(result, 9, e9);
-                result = AdvSimd.Insert(result, 10, e10);
-                result = AdvSimd.Insert(result, 11, e11);
-                result = AdvSimd.Insert(result, 12, e12);
-                result = AdvSimd.Insert(result, 13, e13);
-                result = AdvSimd.Insert(result, 14, e14);
-                return AdvSimd.Insert(result, 15, e15);
-            }
-#endif
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
 
@@ -650,18 +628,10 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<double> Create(double e0, double e1)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<double> result = CreateScalarUnsafe(e0);
-                return AdvSimd.Insert(result, 1, e1);
-            }
-#endif
 
             return SoftwareFallback(e0, e1);
 
@@ -691,24 +661,10 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<short> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1, e2, e3, e4, e5, e6, e7);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<short> result = CreateScalarUnsafe(e0);
-                result = AdvSimd.Insert(result, 1, e1);
-                result = AdvSimd.Insert(result, 2, e2);
-                result = AdvSimd.Insert(result, 3, e3);
-                result = AdvSimd.Insert(result, 4, e4);
-                result = AdvSimd.Insert(result, 5, e5);
-                result = AdvSimd.Insert(result, 6, e6);
-                return AdvSimd.Insert(result, 7, e7);
-            }
-#endif
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
 
@@ -740,20 +696,10 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<int> Create(int e0, int e1, int e2, int e3)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1, e2, e3);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<int> result = CreateScalarUnsafe(e0);
-                result = AdvSimd.Insert(result, 1, e1);
-                result = AdvSimd.Insert(result, 2, e2);
-                return AdvSimd.Insert(result, 3, e3);
-            }
-#endif
 
             return SoftwareFallback(e0, e1, e2, e3);
 
@@ -779,18 +725,10 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<long> Create(long e0, long e1)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.X64.IsSupported)
+            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 return Create(e0, e1);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<long> result = CreateScalarUnsafe(e0);
-                return AdvSimd.Insert(result, 1, e1);
-            }
-#endif
 
             return SoftwareFallback(e0, e1);
 
@@ -829,32 +767,10 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<sbyte> result = CreateScalarUnsafe(e0);
-                result = AdvSimd.Insert(result, 1, e1);
-                result = AdvSimd.Insert(result, 2, e2);
-                result = AdvSimd.Insert(result, 3, e3);
-                result = AdvSimd.Insert(result, 4, e4);
-                result = AdvSimd.Insert(result, 5, e5);
-                result = AdvSimd.Insert(result, 6, e6);
-                result = AdvSimd.Insert(result, 7, e7);
-                result = AdvSimd.Insert(result, 8, e8);
-                result = AdvSimd.Insert(result, 9, e9);
-                result = AdvSimd.Insert(result, 10, e10);
-                result = AdvSimd.Insert(result, 11, e11);
-                result = AdvSimd.Insert(result, 12, e12);
-                result = AdvSimd.Insert(result, 13, e13);
-                result = AdvSimd.Insert(result, 14, e14);
-                return AdvSimd.Insert(result, 15, e15);
-            }
-#endif
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
 
@@ -894,20 +810,10 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<float> Create(float e0, float e1, float e2, float e3)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse.IsSupported)
+            if (Sse.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1, e2, e3);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<float> result = CreateScalarUnsafe(e0);
-                result = AdvSimd.Insert(result, 1, e1);
-                result = AdvSimd.Insert(result, 2, e2);
-                return AdvSimd.Insert(result, 3, e3);
-            }
-#endif
 
             return SoftwareFallback(e0, e1, e2, e3);
 
@@ -940,24 +846,10 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1, e2, e3, e4, e5, e6, e7);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<ushort> result = CreateScalarUnsafe(e0);
-                result = AdvSimd.Insert(result, 1, e1);
-                result = AdvSimd.Insert(result, 2, e2);
-                result = AdvSimd.Insert(result, 3, e3);
-                result = AdvSimd.Insert(result, 4, e4);
-                result = AdvSimd.Insert(result, 5, e5);
-                result = AdvSimd.Insert(result, 6, e6);
-                return AdvSimd.Insert(result, 7, e7);
-            }
-#endif
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
 
@@ -990,20 +882,10 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(uint e0, uint e1, uint e2, uint e3)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1, e2, e3);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<uint> result = CreateScalarUnsafe(e0);
-                result = AdvSimd.Insert(result, 1, e1);
-                result = AdvSimd.Insert(result, 2, e2);
-                return AdvSimd.Insert(result, 3, e3);
-            }
-#endif
 
             return SoftwareFallback(e0, e1, e2, e3);
 
@@ -1030,18 +912,10 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(ulong e0, ulong e1)
         {
-#if !TARGET_ARM && !TARGET_ARM64
-            if (Sse2.X64.IsSupported)
+            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 return Create(e0, e1);
             }
-#else
-            if (AdvSimd.IsSupported)
-            {
-                Vector128<ulong> result = CreateScalarUnsafe(e0);
-                return AdvSimd.Insert(result, 1, e1);
-            }
-#endif
 
             return SoftwareFallback(e0, e1);
 

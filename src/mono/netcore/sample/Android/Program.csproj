@@ -7,7 +7,7 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
-    <AndroidAppBuilder>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder'))</AndroidAppBuilder>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(NetCoreAppCurrent)-$(Configuration)'))</AndroidAppBuilderDir>
   </PropertyGroup>
 
   <Target Name="RebuildAndroidAppBuilder">
@@ -15,13 +15,13 @@
              Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
   </Target>
 
-  <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(AndroidAppBuilder)\$(NetCoreAppCurrent)-$(Configuration)\AndroidAppBuilder.dll" />
+  <UsingTask TaskName="AndroidAppBuilderTask"
+             AssemblyFile="$(AndroidAppBuilderDir)\AndroidAppBuilder.dll" />
 
   <Target Name="BuildAppBundle" DependsOnTargets="RebuildAndroidAppBuilder">
     <PropertyGroup>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi-v7a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(AndroidAbi)'==''">$(TargetArchitecture)</AndroidAbi>
     </PropertyGroup>
@@ -38,11 +38,11 @@
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
     <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
-    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
-          SourceFiles="$(AndroidOpenSslCryptoLib)"
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
           DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
-          SourceFiles="$(AndroidOpenSslLib)"
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
           DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
 
     <AndroidAppBuilderTask 

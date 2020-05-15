@@ -229,6 +229,13 @@ mono_llvm_build_weighted_branch (LLVMBuilderRef builder, LLVMValueRef cond, LLVM
 	return wrap (ins);
 }
 
+LLVMValueRef
+mono_llvm_build_exact_ashr (LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs) {
+	auto b = unwrap (builder);
+	auto ins = b->CreateAShr (unwrap (lhs), unwrap (rhs), "", true);
+	return wrap (ins);
+}
+
 void
 mono_llvm_add_string_metadata (LLVMValueRef insref, const char* label, const char* text)
 {

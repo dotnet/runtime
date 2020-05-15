@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class ExceptionUtility
+    public static class ExceptionHelpers
     {
         public static void ValidateExceptionProperties(Exception e,
             int hResult,

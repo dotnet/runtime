@@ -304,9 +304,9 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
     if (tree->IsMultiRegCall())
     {
-        call                        = tree->AsCall();
-        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        treeType                    = retTypeDesc->GetReturnRegType(regIdx);
+        call                              = tree->AsCall();
+        const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        treeType                          = retTypeDesc->GetReturnRegType(regIdx);
     }
 #ifdef TARGET_ARM
     else if (tree->OperIsPutArgSplit())

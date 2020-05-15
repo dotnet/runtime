@@ -1298,7 +1298,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 }
 
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // WinRT stowed exception holds the (CCW)pointer to a managed exception object.
@@ -1431,11 +1431,26 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
     if (ccwPtr == NULL)
         return S_OK;
 
+    OBJECTREF managedExceptionObject = NULL;
+
+#ifdef FEATURE_COMINTEROP
     // dump the managed exception object wrapped in CCW
     // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
     DacpCCWData ccwData;
     GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
-    DumpManagedExcepObject(flags, OBJECTREF(TO_TADDR(ccwData.managedObject)));
+    managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
+#endif
+#ifdef FEATURE_COMWRAPPERS
+    if (managedExceptionObject == NULL)
+    {
+        OBJECTREF wrappedObjAddress;
+        if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
+        {
+            managedExceptionObject = wrappedObjAddress;
+        }
+    }
+#endif
+    DumpManagedExcepObject(flags, managedExceptionObject);
 
     // dump memory of the 2nd slot in the CCW's vtable
     // this is used in DACGetCCWFromAddress to identify if the passed in pointer is a valid CCW.
@@ -1450,7 +1465,8 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
     (
-        ReportMem(vTableAddress + sizeof(PBYTE)* TEAR_OFF_SLOT, sizeof(TADDR));
+        ReportMem(vTableAddress, sizeof(TADDR)); // Report the QI slot on the vtable for ComWrappers
+        ReportMem(vTableAddress + sizeof(PBYTE) * TEAR_OFF_SLOT, sizeof(TADDR)); // Report the AddRef slot on the vtable for built-in CCWs
     );
 
     return S_OK;

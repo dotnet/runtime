@@ -917,7 +917,7 @@ FCIMPL1(int, GCInterface::GetGenerationWR, LPVOID handle)
     OBJECTREF temp;
     temp = ObjectFromHandle((OBJECTHANDLE) handle);
     if (temp == NULL)
-        COMPlusThrowArgumentNull(W("weak handle"));
+        COMPlusThrowArgumentNull(W("wo"));
 
     iRetVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp));
 

@@ -15,6 +15,7 @@ trigger:
     - docs/manpages/*
     exclude:
     - eng/Version.Details.xml
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -36,6 +37,7 @@ pr:
     - docs/manpages/*
     exclude:
     - eng/Version.Details.xml
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md

@@ -137,14 +137,14 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             ReturnTypeDesc retTypeDesc;
             if (varTypeIsLong(compiler->info.compRetNativeType))
             {
-                retTypeDesc.InitializeLongReturnType(compiler);
+                retTypeDesc.InitializeLongReturnType();
             }
             else // we must have a struct return type
             {
                 retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass);
             }
 
-            unsigned regCount = retTypeDesc.GetReturnRegCount();
+            const unsigned regCount = retTypeDesc.GetReturnRegCount();
 
             // Only x86 and x64 Unix ABI allows multi-reg return and
             // number of result regs should be equal to MAX_RET_REG_COUNT.
@@ -1179,7 +1179,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 
         ReturnTypeDesc retTypeDesc;
         retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
-        unsigned regCount = retTypeDesc.GetReturnRegCount();
+        const unsigned regCount = retTypeDesc.GetReturnRegCount();
         assert(regCount == MAX_RET_REG_COUNT);
 
         if (varTypeIsEnregisterable(op1))
@@ -1243,10 +1243,10 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 
         genConsumeRegs(op1);
 
-        GenTree*        actualOp1   = op1->gtSkipReloadOrCopy();
-        GenTreeCall*    call        = actualOp1->AsCall();
-        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        unsigned        regCount    = retTypeDesc->GetReturnRegCount();
+        const GenTree*        actualOp1   = op1->gtSkipReloadOrCopy();
+        const GenTreeCall*    call        = actualOp1->AsCall();
+        const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        const unsigned        regCount    = retTypeDesc->GetReturnRegCount();
         assert(regCount == MAX_RET_REG_COUNT);
 
         // Handle circular dependency between call allocated regs and ABI return regs.
@@ -2043,7 +2043,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 
     genConsumeRegs(op1);
 
-    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+    const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
     assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
     unsigned regCount = retTypeDesc->GetReturnRegCount();
 
@@ -2154,8 +2154,8 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 
     genConsumeRegs(op1);
 
-    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-    unsigned        regCount    = retTypeDesc->GetReturnRegCount();
+    const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+    unsigned              regCount    = retTypeDesc->GetReturnRegCount();
     assert(regCount == MAX_RET_REG_COUNT);
 
     // Stack store
@@ -5490,9 +5490,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 
     // Determine return value size(s).
-    ReturnTypeDesc* retTypeDesc   = call->GetReturnTypeDesc();
-    emitAttr        retSize       = EA_PTRSIZE;
-    emitAttr        secondRetSize = EA_UNKNOWN;
+    const ReturnTypeDesc* retTypeDesc   = call->GetReturnTypeDesc();
+    emitAttr              retSize       = EA_PTRSIZE;
+    emitAttr              secondRetSize = EA_UNKNOWN;
 
     if (call->HasMultiRegRetVal())
     {
@@ -5755,7 +5755,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             if (call->HasMultiRegRetVal())
             {
                 assert(retTypeDesc != nullptr);
-                unsigned regCount = retTypeDesc->GetReturnRegCount();
+                const unsigned regCount = retTypeDesc->GetReturnRegCount();
 
                 // If regs allocated to call node are different from ABI return
                 // regs in which the call has returned its result, move the result

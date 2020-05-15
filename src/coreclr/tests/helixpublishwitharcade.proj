@@ -5,7 +5,7 @@
        to send test jobs to helix. -->
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
-  <Import Project="Directory.Build.props" Condition=" '$(UsesHelixSdk)' != 'true' "/>
+  <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
        that will run in parallel. -->
@@ -33,10 +33,14 @@
         RunInUnloadableContext=$(_RunInUnloadableContext);
         TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes);
         TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes);
-        RuntimeMode=$(_RuntimeMode)
+        RuntimeMode=$(_RuntimeMode);
+        BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion)
       </_PropertiesToPass>
     </PropertyGroup>
 
+    <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
+    <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
+    <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
@@ -59,12 +63,24 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
 
+  <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
+  <PropertyGroup>
+    <HelixRuntimeRid Condition="'$(TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Linux_musl'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+  </PropertyGroup>
+
   <PropertyGroup>
     <BinDir>$([MSBuild]::NormalizeDirectory($(TestWorkingDir)))</BinDir>
     <CoreRootDirectory>$(BinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(BinDir)Payloads\</PayloadsRootDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
+
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>runtime</DotNetCliPackageType>
+    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
@@ -236,12 +252,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <CoreRun>%CORE_ROOT%\CoreRun.exe</CoreRun>
     <XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <CoreRun>$CORE_ROOT/corerun</CoreRun>
     <XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
@@ -263,12 +277,13 @@
 
     <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>$(CoreRun) $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
-      <Command Condition=" '%(TestGroup)' != '' ">$(CoreRun) $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
+      <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
+      <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
   </ItemGroup>
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' == 'true' " />
+  <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
 </Project>
