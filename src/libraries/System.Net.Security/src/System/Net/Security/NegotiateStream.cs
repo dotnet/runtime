@@ -37,16 +37,9 @@ namespace System.Net.Security
 
         public NegotiateStream(Stream innerStream, bool leaveInnerStreamOpen) : base(innerStream, leaveInnerStreamOpen)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
-            {
-#endif
-                _negoState = new NegoState(innerStream);
-                _package = NegoState.DefaultPackage;
-                InitializeStreamPart();
-#if DEBUG
-            }
-#endif
+            _negoState = new NegoState(innerStream);
+            _package = NegoState.DefaultPackage;
+            InitializeStreamPart();
         }
 
         public virtual IAsyncResult BeginAuthenticateAsClient(AsyncCallback? asyncCallback, object? asyncState)
@@ -92,31 +85,17 @@ namespace System.Net.Security
             AsyncCallback? asyncCallback,
             object? asyncState)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
-            {
-#endif
-                _negoState.ValidateCreateContext(_package, false, credential, targetName, binding, requiredProtectionLevel, allowedImpersonationLevel);
+            _negoState.ValidateCreateContext(_package, false, credential, targetName, binding, requiredProtectionLevel, allowedImpersonationLevel);
 
-                LazyAsyncResult result = new LazyAsyncResult(_negoState, asyncState, asyncCallback);
-                _negoState.ProcessAuthentication(result);
+            LazyAsyncResult result = new LazyAsyncResult(_negoState, asyncState, asyncCallback);
+            _negoState.ProcessAuthentication(result);
 
-                return result;
-#if DEBUG
-            }
-#endif
+            return result;
         }
 
         public virtual void EndAuthenticateAsClient(IAsyncResult asyncResult)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
-            {
-#endif
-                _negoState.EndProcessAuthentication(asyncResult);
-#if DEBUG
-            }
-#endif
+            _negoState.EndProcessAuthentication(asyncResult);
         }
 
         public virtual void AuthenticateAsServer()
@@ -136,15 +115,8 @@ namespace System.Net.Security
 
         public virtual void AuthenticateAsServer(NetworkCredential credential, ExtendedProtectionPolicy? policy, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
-            {
-#endif
-                _negoState.ValidateCreateContext(_package, credential, string.Empty, policy, requiredProtectionLevel, requiredImpersonationLevel);
-                _negoState.ProcessAuthentication(null);
-#if DEBUG
-            }
-#endif
+            _negoState.ValidateCreateContext(_package, credential, string.Empty, policy, requiredProtectionLevel, requiredImpersonationLevel);
+            _negoState.ProcessAuthentication(null);
         }
 
         public virtual IAsyncResult BeginAuthenticateAsServer(AsyncCallback? asyncCallback, object? asyncState)
@@ -175,31 +147,17 @@ namespace System.Net.Security
             AsyncCallback? asyncCallback,
             object? asyncState)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
-            {
-#endif
-                _negoState.ValidateCreateContext(_package, credential, string.Empty, policy, requiredProtectionLevel, requiredImpersonationLevel);
+            _negoState.ValidateCreateContext(_package, credential, string.Empty, policy, requiredProtectionLevel, requiredImpersonationLevel);
 
-                LazyAsyncResult result = new LazyAsyncResult(_negoState, asyncState, asyncCallback);
-                _negoState.ProcessAuthentication(result);
+            LazyAsyncResult result = new LazyAsyncResult(_negoState, asyncState, asyncCallback);
+            _negoState.ProcessAuthentication(result);
 
-                return result;
-#if DEBUG
-            }
-#endif
+            return result;
         }
         //
         public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
-            {
-#endif
-                _negoState.EndProcessAuthentication(asyncResult);
-#if DEBUG
-            }
-#endif
+            _negoState.EndProcessAuthentication(asyncResult);
         }
 
         public virtual void AuthenticateAsClient()
@@ -226,15 +184,8 @@ namespace System.Net.Security
         public virtual void AuthenticateAsClient(
             NetworkCredential credential, ChannelBinding? binding, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
-            {
-#endif
-                _negoState.ValidateCreateContext(_package, false, credential, targetName, binding, requiredProtectionLevel, allowedImpersonationLevel);
-                _negoState.ProcessAuthentication(null);
-#if DEBUG
-            }
-#endif
+            _negoState.ValidateCreateContext(_package, false, credential, targetName, binding, requiredProtectionLevel, allowedImpersonationLevel);
+            _negoState.ProcessAuthentication(null);
         }
 
         public virtual Task AuthenticateAsClientAsync()
@@ -295,14 +246,7 @@ namespace System.Net.Security
         {
             get
             {
-#if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
-                {
-#endif
-                    return _negoState.IsAuthenticated;
-#if DEBUG
-                }
-#endif
+                return _negoState.IsAuthenticated;
             }
         }
 
@@ -310,14 +254,7 @@ namespace System.Net.Security
         {
             get
             {
-#if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
-                {
-#endif
-                    return _negoState.IsMutuallyAuthenticated;
-#if DEBUG
-                }
-#endif
+                return _negoState.IsMutuallyAuthenticated;
             }
         }
 
@@ -325,14 +262,7 @@ namespace System.Net.Security
         {
             get
             {
-#if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
-                {
-#endif
-                    return _negoState.IsEncrypted;
-#if DEBUG
-                }
-#endif
+                return _negoState.IsEncrypted;
             }
         }
 
@@ -340,14 +270,7 @@ namespace System.Net.Security
         {
             get
             {
-#if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
-                {
-#endif
-                    return _negoState.IsSigned;
-#if DEBUG
-                }
-#endif
+                return _negoState.IsSigned;
             }
         }
 
@@ -355,14 +278,7 @@ namespace System.Net.Security
         {
             get
             {
-#if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
-                {
-#endif
-                    return _negoState.IsServer;
-#if DEBUG
-                }
-#endif
+                return _negoState.IsServer;
             }
         }
 
@@ -370,14 +286,7 @@ namespace System.Net.Security
         {
             get
             {
-#if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
-                {
-#endif
-                    return _negoState.AllowedImpersonation;
-#if DEBUG
-                }
-#endif
+                return _negoState.AllowedImpersonation;
             }
         }
 
@@ -385,20 +294,12 @@ namespace System.Net.Security
         {
             get
             {
-#if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                if (_remoteIdentity == null)
                 {
-#endif
-
-                    if (_remoteIdentity == null)
-                    {
-                        _remoteIdentity = _negoState.GetIdentity();
-                    }
-
-                    return _remoteIdentity;
-#if DEBUG
+                    _remoteIdentity = _negoState.GetIdentity();
                 }
-#endif
+
+                return _remoteIdentity;
             }
         }
 
@@ -493,14 +394,7 @@ namespace System.Net.Security
 
         public override void Flush()
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
-            {
-#endif
-                InnerStream.Flush();
-#if DEBUG
-            }
-#endif
+            InnerStream.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -510,21 +404,14 @@ namespace System.Net.Security
 
         protected override void Dispose(bool disposing)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
+            try
             {
-#endif
-                try
-                {
-                    _negoState.Close();
-                }
-                finally
-                {
-                    base.Dispose(disposing);
-                }
-#if DEBUG
+                _negoState.Close();
             }
-#endif
+            finally
+            {
+                base.Dispose(disposing);
+            }
         }
 
         public override async ValueTask DisposeAsync()
@@ -541,183 +428,139 @@ namespace System.Net.Security
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            _negoState.CheckThrow(true);
+
+            if (!_negoState.CanGetSecureStream)
             {
-#endif
-                _negoState.CheckThrow(true);
-
-                if (!_negoState.CanGetSecureStream)
-                {
-                    return InnerStream.Read(buffer, offset, count);
-                }
-
-                return ProcessRead(buffer, offset, count, null);
-#if DEBUG
+                return InnerStream.Read(buffer, offset, count);
             }
-#endif
+
+            return ProcessRead(buffer, offset, count, null);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            _negoState.CheckThrow(true);
+
+            if (!_negoState.CanGetSecureStream)
             {
-#endif
-                _negoState.CheckThrow(true);
-
-                if (!_negoState.CanGetSecureStream)
-                {
-                    InnerStream.Write(buffer, offset, count);
-                    return;
-                }
-
-                ProcessWrite(buffer, offset, count, null);
-#if DEBUG
+                InnerStream.Write(buffer, offset, count);
+                return;
             }
-#endif
+
+            ProcessWrite(buffer, offset, count, null);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            _negoState.CheckThrow(true);
+
+            if (!_negoState.CanGetSecureStream)
             {
-#endif
-                _negoState.CheckThrow(true);
-
-                if (!_negoState.CanGetSecureStream)
-                {
-                    return TaskToApm.Begin(InnerStream.ReadAsync(buffer, offset, count), asyncCallback, asyncState);
-                }
-
-                BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
-                AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(bufferResult);
-                ProcessRead(buffer, offset, count, asyncRequest);
-                return bufferResult;
-#if DEBUG
+                return TaskToApm.Begin(InnerStream.ReadAsync(buffer, offset, count), asyncCallback, asyncState);
             }
-#endif
+
+            BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
+            AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(bufferResult);
+            ProcessRead(buffer, offset, count, asyncRequest);
+            return bufferResult;
         }
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
+            _negoState.CheckThrow(true);
+
+            if (!_negoState.CanGetSecureStream)
             {
-#endif
-                _negoState.CheckThrow(true);
-
-                if (!_negoState.CanGetSecureStream)
-                {
-                    return TaskToApm.End<int>(asyncResult);
-                }
-
-
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
-
-                BufferAsyncResult? bufferResult = asyncResult as BufferAsyncResult;
-                if (bufferResult == null)
-                {
-                    throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), nameof(asyncResult));
-                }
-
-                if (Interlocked.Exchange(ref _NestedRead, 0) == 0)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndRead"));
-                }
-
-                // No "artificial" timeouts implemented so far, InnerStream controls timeout.
-                bufferResult.InternalWaitForCompletion();
-
-                if (bufferResult.Result is Exception e)
-                {
-                    if (e is IOException)
-                    {
-                        ExceptionDispatchInfo.Throw(e);
-                    }
-
-                    throw new IOException(SR.net_io_read, e);
-                }
-
-                return bufferResult.Int32Result;
-#if DEBUG
+                return TaskToApm.End<int>(asyncResult);
             }
-#endif
+
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
+
+            BufferAsyncResult? bufferResult = asyncResult as BufferAsyncResult;
+            if (bufferResult == null)
+            {
+                throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), nameof(asyncResult));
+            }
+
+            if (Interlocked.Exchange(ref _NestedRead, 0) == 0)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndRead"));
+            }
+
+            // No "artificial" timeouts implemented so far, InnerStream controls timeout.
+            bufferResult.InternalWaitForCompletion();
+
+            if (bufferResult.Result is Exception e)
+            {
+                if (e is IOException)
+                {
+                    ExceptionDispatchInfo.Throw(e);
+                }
+
+                throw new IOException(SR.net_io_read, e);
+            }
+
+            return bufferResult.Int32Result;
         }
-        //
-        //
+
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            _negoState.CheckThrow(true);
+
+            if (!_negoState.CanGetSecureStream)
             {
-#endif
-                _negoState.CheckThrow(true);
-
-                if (!_negoState.CanGetSecureStream)
-                {
-                    return TaskToApm.Begin(InnerStream.WriteAsync(buffer, offset, count), asyncCallback, asyncState);
-                }
-
-                BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
-                AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(bufferResult);
-
-                ProcessWrite(buffer, offset, count, asyncRequest);
-                return bufferResult;
-#if DEBUG
+                return TaskToApm.Begin(InnerStream.WriteAsync(buffer, offset, count), asyncCallback, asyncState);
             }
-#endif
+
+            BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
+            AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(bufferResult);
+
+            ProcessWrite(buffer, offset, count, asyncRequest);
+            return bufferResult;
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
+            _negoState.CheckThrow(true);
+
+            if (!_negoState.CanGetSecureStream)
             {
-#endif
-                _negoState.CheckThrow(true);
-
-                if (!_negoState.CanGetSecureStream)
-                {
-                    TaskToApm.End(asyncResult);
-                    return;
-                }
-
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
-
-                BufferAsyncResult? bufferResult = asyncResult as BufferAsyncResult;
-                if (bufferResult == null)
-                {
-                    throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), nameof(asyncResult));
-                }
-
-                if (Interlocked.Exchange(ref _NestedWrite, 0) == 0)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndWrite"));
-                }
-
-                // No "artificial" timeouts implemented so far, InnerStream controls timeout.
-                bufferResult.InternalWaitForCompletion();
-
-                if (bufferResult.Result is Exception e)
-                {
-                    if (e is IOException)
-                    {
-                        ExceptionDispatchInfo.Throw(e);
-                    }
-
-                    throw new IOException(SR.net_io_write, e);
-                }
-#if DEBUG
+                TaskToApm.End(asyncResult);
+                return;
             }
-#endif
+
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
+
+            BufferAsyncResult? bufferResult = asyncResult as BufferAsyncResult;
+            if (bufferResult == null)
+            {
+                throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), nameof(asyncResult));
+            }
+
+            if (Interlocked.Exchange(ref _NestedWrite, 0) == 0)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndWrite"));
+            }
+
+            // No "artificial" timeouts implemented so far, InnerStream controls timeout.
+            bufferResult.InternalWaitForCompletion();
+
+            if (bufferResult.Result is Exception e)
+            {
+                if (e is IOException)
+                {
+                    ExceptionDispatchInfo.Throw(e);
+                }
+
+                throw new IOException(SR.net_io_write, e);
+            }
         }
     }
 }
