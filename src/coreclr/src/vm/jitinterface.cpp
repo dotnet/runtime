@@ -105,6 +105,7 @@ uint32_t g_cMethodsJitted = 0;
 FCIMPL0(INT64, GetJittedBytes)
 {
     FCALL_CONTRACT;
+
     return g_cbILJitted;
 }
 FCIMPLEND
@@ -12603,10 +12604,6 @@ void ThrowExceptionForJit(HRESULT res)
  }
 
 // ********************************************************************
-#ifdef _DEBUG
-LONG g_JitCount = 0;
-#endif
-
 //#define PERF_TRACK_METHOD_JITTIMES
 #ifdef TARGET_AMD64
 BOOL g_fAllowRel32 = TRUE;
@@ -12983,7 +12980,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 
 #ifdef _DEBUG
-    FastInterlockIncrement(&g_JitCount);
     static BOOL fHeartbeat = -1;
 
     if (fHeartbeat == -1)
