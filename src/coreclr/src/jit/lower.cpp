@@ -3002,12 +3002,32 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
             GenTree* retVal = ret->gtGetOp1();
             if (varTypeIsStruct(ret->TypeGet()) != varTypeIsStruct(retVal->TypeGet()))
             {
-                // This could happen if we have retyped op1 as a primitive type during struct promotion,
-                // check `retypedFieldsMap` for details.
-                assert(genActualType(comp->info.compRetNativeType) == genActualType(retVal->TypeGet()));
+                if (varTypeIsStruct(ret->TypeGet()))
+                {
+                    assert(!comp->compDoOldStructRetyping());
+                    bool actualTypesMatch = false;
+                    if (genActualType(comp->info.compRetNativeType) == genActualType(retVal->TypeGet()))
+                    {
+                        // This could happen if we have retyped op1 as a primitive type during struct promotion,
+                        // check `retypedFieldsMap` for details.
+                        actualTypesMatch = true;
+                    }
+                    bool constStructInit = retVal->IsConstInitVal();
+                    assert(actualTypesMatch || constStructInit);
+                }
+                else
+                {
+#ifdef FEATURE_SIMD
+                    assert(comp->compDoOldStructRetyping());
+                    assert(ret->TypeIs(TYP_DOUBLE));
+                    assert(retVal->TypeIs(TYP_SIMD8));
+#else  // !FEATURE_SIMD
+                    unreached();
+#endif // !FEATURE_SIMD
+                }
             }
         }
-#endif
+#endif // DEBUG
         if (varTypeIsStruct(ret))
         {
             assert(!comp->compDoOldStructRetyping());
