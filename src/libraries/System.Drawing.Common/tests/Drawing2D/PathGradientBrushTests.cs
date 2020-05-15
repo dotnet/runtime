@@ -344,26 +344,13 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Argument not updated on NetFX")]
         public void Blend_InvalidFactorPositionsLengthMismatch_ThrowsArgumentOutOfRangeException()
         {
             Blend invalidBlend = new Blend() { Factors = new float[2], Positions = new float[1] };
 
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => brush.Blend = invalidBlend);
-            }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
-        public void Blend_InvalidFactorPositionsLengthMismatch_ThrowsArgumentOutOfRangeException_NullArgument()
-        {
-            Blend invalidBlend = new Blend() { Factors = new float[2], Positions = new float[1] };
-
-            using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => brush.Blend = invalidBlend);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", null, () => brush.Blend = invalidBlend);
             }
         }
 
@@ -379,23 +366,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Argument not updated on NetFX")]
         public void Blend_NullBlendProperites_ThrowsArgumentException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>("value", () =>
-                    brush.Blend = new Blend() { Factors = new float[0], Positions = null });
-            }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
-        public void Blend_NullBlendProperites_ThrowsArgumentNullException()
-        {
-            using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("source", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentNullException>("value", "source", () =>
                     brush.Blend = new Blend() { Factors = new float[0], Positions = null });
             }
         }
@@ -676,23 +651,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception not updated on NetFX")]
         public void InterpolationColors_NullPoints_ArgumentException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>("value", () =>
-                    brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = null });
-            }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
-        public void InterpolationColors_NullPoints_ArgumentNullException()
-        {
-            using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("source", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentNullException>("value", "source", () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = null });
             }
         }
@@ -717,23 +680,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception not updated on NetFX")]
         public void InterpolationColors_PointsLengthGreaterThenColorsLength_ArgumentOutOfRangeException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () =>
-                    brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = new float[2] });
-            }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
-        public void InterpolationColors_PointsLengthGreaterThenColorsLength_ArgumentException()
-        {
-            using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
-            {
-                AssertExtensions.Throws<ArgumentException>(null, () =>
+                AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("value", null, () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = new float[2] });
             }
         }

@@ -193,7 +193,7 @@
   <data name="net_value_cannot_be_negative" xml:space="preserve">
     <value>The specified value cannot be negative.</value>
   </data>
-  <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
+  <data name="ArgumentOutOfRange_Bounds_Lower_Upper_Named" xml:space="preserve">
     <value>Argument '{2}' must be between {0} and {1}.</value>
   </data>
   <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">

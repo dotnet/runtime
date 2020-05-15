@@ -65,6 +65,9 @@
     <value>Array may not be empty or null.</value>
   </data>
   <data name="Arg_EmptyOrNullString" xml:space="preserve">
+    <value>String cannot be empty or null.</value>
+  </data>
+  <data name="Arg_EmptyOrNullString_Named" xml:space="preserve">
     <value>The '{0}' string cannot be empty or null.</value>
   </data>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">

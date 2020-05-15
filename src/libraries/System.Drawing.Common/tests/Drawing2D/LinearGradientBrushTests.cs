@@ -358,42 +358,20 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception not updated on NetFX")]
         public void Blend_SetNullBlendPositions_ThrowsArgumentException()
         {
             using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
             {
-                AssertExtensions.Throws<ArgumentException>("value", () => brush.Blend = new Blend { Factors = new float[2], Positions = null });
+                AssertExtensions.Throws<ArgumentException, ArgumentNullException>("value", "source", () => brush.Blend = new Blend { Factors = new float[2], Positions = null });
             }
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
-        public void Blend_SetNullBlendPositions_ThrowsArgumentNullException()
-        {
-            using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("source", () => brush.Blend = new Blend { Factors = new float[2], Positions = null });
-            }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Argument not updated on NetFX")]
         public void Blend_SetFactorsLengthGreaterThanPositionsLength_ThrowsArgumentOutOfRangeException()
         {
             using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => brush.Blend = new Blend { Factors = new float[2], Positions = new float[1] });
-            }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "Only for NetFX")]
-        public void Blend_SetFactorsLengthGreaterThanPositionsLength_ThrowsArgumentOutOfRangeException_NetFx()
-        {
-            using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => brush.Blend = new Blend { Factors = new float[2], Positions = new float[1] });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", null, () => brush.Blend = new Blend { Factors = new float[2], Positions = new float[1] });
             }
         }
 

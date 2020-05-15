@@ -300,9 +300,7 @@ namespace System.Drawing.Drawing2D
 
                 if (value.Positions == null)
                     throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "value.Positions", value.Positions), nameof(value));
-                if (value.Colors.Length > value.Positions.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                if (value.Colors.Length < value.Positions.Length)
+                if (value.Colors.Length != value.Positions.Length)
                     throw new ArgumentOutOfRangeException(nameof(value));
 
                 float[] positions = value.Positions;
