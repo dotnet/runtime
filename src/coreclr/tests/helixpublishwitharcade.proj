@@ -197,7 +197,6 @@
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) $(Scenario) @ </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(RuntimeMode)' == 'interpreter' ">$(TestRunNamePrefix) Interpreter </TestRunNamePrefix>  
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
@@ -224,7 +223,6 @@
     <HelixPreCommand Include="set __CollectDumps=1" />
     <HelixPreCommand Include="set __CrashDumpFolder=%HELIX_DUMP_FOLDER%" />
     <HelixPreCommand Include="type %__TestEnv%" />
-    <HelixPreCommand Include="set MONO_ENV_OPTIONS='--interpreter'" Condition=" '$(RuntimeMode)' == 'interpreter' " />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
@@ -244,7 +242,6 @@
     <HelixPreCommand Include="cat $__TestEnv" />
     <HelixPreCommand Include="sudo bash -c 'echo $HELIX_DUMP_FOLDER/core.%u.%p > /proc/sys/kernel/core_pattern'" Condition=" '$(TargetOS)' != 'OSX' " />
     <HelixPreCommand Include="ulimit -c unlimited" Condition=" '$(TargetOS)' == 'OSX' " />
-    <HelixPreCommand Include="export MONO_ENV_OPTIONS='--interpreter" Condition=" '$(RuntimeMode)' == 'interpreter' " />
   </ItemGroup>
 
   <PropertyGroup>
