@@ -54,10 +54,10 @@ namespace System.Reflection
 
             if (cultureName != null)
             {
-                if (cultureName?.Length == 0)
+                if (cultureName.Length == 0)
                     cultureName = "neutral";
                 sb.Append(", Culture=");
-                sb.AppendQuoted(cultureName!);
+                sb.AppendQuoted(cultureName);
             }
 
             if (pkt != null)
