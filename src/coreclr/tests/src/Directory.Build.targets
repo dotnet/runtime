@@ -245,6 +245,7 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets"/>
+  <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
 
   <Import Project="../../clr.featuredefines.props" />
 </Project>
