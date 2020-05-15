@@ -9,9 +9,11 @@
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-iOS-$(Configuration)-$(TargetArchitecture)\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
     <MonoRuntimeDir>$(ArtifactsDir)bin\mono\iOS.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
-    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(NetCoreAppCurrent)-$(Configuration)'))</AppleAppBuilderDir>
-    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(NetCoreAppCurrent)-$(Configuration)'))</MonoAOTCompilerDir>
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AppleAppBuilderDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppCurrent)'))</MonoAOTCompilerDir>
     <RunAOTCompilation Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'">true</RunAOTCompilation>
+    <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
+    <Optimized Condition="'$(Configuration)' == 'Debug'">false</Optimized>
   </PropertyGroup>
 
   <Target Name="RebuildAppleAppBuilder">
@@ -84,7 +86,7 @@
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
-        Optimized="True"
+        Optimized="$(Optimized)"
         AppDir="$(BundleDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
