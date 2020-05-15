@@ -1625,17 +1625,17 @@ INST1(umin,        "umin",         0,      IF_DV_3A,  0x2E206C00)
 INST1(uminp,       "uminp",        0,      IF_DV_3A,  0x2E20AC00)
                                    //  umin    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 101011nnnnnddddd   2E20 AC00   Vd,Vn,Vm  (vector)
 
-INST1(fcvtl,       "fcvtl",        0,      IF_DV_2G,  0x0E217800)
-                                   //  fcvtl   Vd,Vn                DV_2G  000011100X100001 011110nnnnnddddd   0E21 7800   Vd,Vn    (scalar)
+INST1(fcvtl,       "fcvtl",        0,      IF_DV_2A,  0x0E217800)
+                                   //  fcvtl   Vd,Vn                DV_2A  000011100X100001 011110nnnnnddddd   0E21 7800   Vd,Vn    (vector)
 
-INST1(fcvtl2,      "fcvtl2",       0,      IF_DV_2G,  0x4E217800)
-                                   //  fcvtl2  Vd,Vn                DV_2G  040011100X100001 011110nnnnnddddd   4E21 7800   Vd,Vn    (scalar)
+INST1(fcvtl2,      "fcvtl2",       0,      IF_DV_2A,  0x4E217800)
+                                   //  fcvtl2  Vd,Vn                DV_2A  040011100X100001 011110nnnnnddddd   4E21 7800   Vd,Vn    (vector)
 
-INST1(fcvtn,       "fcvtn",        0,      IF_DV_2G,  0x0E216800)
-                                   //  fcvtn   Vd,Vn                DV_2G  000011100X100001 011010nnnnnddddd   0E21 6800   Vd,Vn    (scalar)
+INST1(fcvtn,       "fcvtn",        0,      IF_DV_2A,  0x0E216800)
+                                   //  fcvtn   Vd,Vn                DV_2A  000011100X100001 011010nnnnnddddd   0E21 6800   Vd,Vn    (vector)
 
-INST1(fcvtn2,      "fcvtn2",       0,      IF_DV_2G,  0x4E216800)
-                                   //  fcvtn2  Vd,Vn                DV_2G  040011100X100001 011010nnnnnddddd   4E21 6800   Vd,Vn    (scalar)
+INST1(fcvtn2,      "fcvtn2",       0,      IF_DV_2A,  0x4E216800)
+                                   //  fcvtn2  Vd,Vn                DV_2A  040011100X100001 011010nnnnnddddd   4E21 6800   Vd,Vn    (vector)
 
 INST1(frecpx,      "frecpx",       0,      IF_DV_2G,  0x5EA1F800)
                                    //  frecpx  Vd,Vn                DV_2G  010111101X100001 111110nnnnnddddd   5EA1 F800   Vd,Vn    (scalar)

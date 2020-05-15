@@ -4404,15 +4404,21 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_fcvtl:
-        case INS_fcvtl2:
         case INS_fcvtn:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(size == EA_8BYTE);
+            assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+            fmt = IF_DV_2A;
+            break;
+
+        case INS_fcvtl2:
         case INS_fcvtn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            assert(isValidVectorDatasize(size));
-            assert(insOptsNone(opt));
-            assert(size == EA_8BYTE); // Narrowing from Double or Widening to Double (Half not supported)
-            fmt = IF_DV_2G;
+            assert(size == EA_16BYTE);
+            assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
+            fmt = IF_DV_2A;
             break;
 
         case INS_scvtf:
@@ -10675,9 +10681,25 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(id->idOpSize()); // Q
-            code |= insEncodeFloatElemsize(elemsize);    // X
-            code |= insEncodeReg_Vd(id->idReg1());       // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
+            if ((ins == INS_fcvtl) || (ins == INS_fcvtl2) || (ins == INS_fcvtn) || (ins == INS_fcvtn2))
+            {
+                // fcvtl{2} and fcvtn{2} encode the element size as
+                //   esize = 16 << UInt(sz)
+                if (elemsize == EA_4BYTE)
+                {
+                    code |= 0x00400000; // X
+                }
+                else
+                {
+                    assert(elemsize == EA_2BYTE);
+                }
+            }
+            else
+            {
+                code |= insEncodeFloatElemsize(elemsize); // X
+            }
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -14012,6 +14034,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
+                case INS_fcvtl:
+                case INS_fcvtl2:
+                case INS_fcvtn:
+                case INS_fcvtn2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);
@@ -14062,14 +14092,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fcmlt:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-
-                case INS_fcvtl:
-                case INS_fcvtl2:
-                case INS_fcvtn:
-                case INS_fcvtn2:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
                 case INS_frecpe:
