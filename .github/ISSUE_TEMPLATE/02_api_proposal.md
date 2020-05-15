@@ -1,6 +1,6 @@
 ---
-name: API Proposal
-about: Propose a change to the public API surface.
+name: API proposal
+about: Propose a change to the public API surface
 title: ''
 labels: api-suggestion
 assignees: ''
