@@ -135,9 +135,9 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool            hasMultiRegRetVal = false;
-    ReturnTypeDesc* retTypeDesc       = nullptr;
-    regMaskTP       dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal = false;
+    const ReturnTypeDesc* retTypeDesc       = nullptr;
+    regMaskTP             dstCandidates     = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;

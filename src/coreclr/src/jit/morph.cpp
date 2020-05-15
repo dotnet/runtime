@@ -63,38 +63,41 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
     tree->ChangeOper(GT_CALL, GenTree::PRESERVE_VN);
 
-    tree->AsCall()->gtCallType            = CT_HELPER;
-    tree->AsCall()->gtCallMethHnd         = eeFindHelper(helper);
-    tree->AsCall()->gtCallThisArg         = nullptr;
-    tree->AsCall()->gtCallArgs            = args;
-    tree->AsCall()->gtCallLateArgs        = nullptr;
-    tree->AsCall()->fgArgInfo             = nullptr;
-    tree->AsCall()->gtRetClsHnd           = nullptr;
-    tree->AsCall()->gtCallMoreFlags       = 0;
-    tree->AsCall()->gtInlineCandidateInfo = nullptr;
-    tree->AsCall()->gtControlExpr         = nullptr;
+    GenTreeCall* call = tree->AsCall();
+
+    call->gtCallType            = CT_HELPER;
+    call->gtCallMethHnd         = eeFindHelper(helper);
+    call->gtCallThisArg         = nullptr;
+    call->gtCallArgs            = args;
+    call->gtCallLateArgs        = nullptr;
+    call->fgArgInfo             = nullptr;
+    call->gtRetClsHnd           = nullptr;
+    call->gtCallMoreFlags       = 0;
+    call->gtInlineCandidateInfo = nullptr;
+    call->gtControlExpr         = nullptr;
 
 #if DEBUG
     // Helper calls are never candidates.
 
-    tree->AsCall()->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
+    call->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif // DEBUG
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    tree->AsCall()->gtEntryPoint.addr       = nullptr;
-    tree->AsCall()->gtEntryPoint.accessType = IAT_VALUE;
+    call->gtEntryPoint.addr       = nullptr;
+    call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
 
+#if FEATURE_MULTIREG_RET
+    call->ResetReturnType();
+    call->ClearOtherRegs();
+    call->ClearOtherRegFlags();
 #ifndef TARGET_64BIT
     if (varTypeIsLong(tree))
     {
-        GenTreeCall*    callNode    = tree->AsCall();
-        ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
-        retTypeDesc->Reset();
-        retTypeDesc->InitializeLongReturnType(this);
-        callNode->ClearOtherRegs();
+        call->InitializeLongReturnType();
     }
 #endif // !TARGET_64BIT
+#endif // FEATURE_MULTIREG_RET
 
     if (tree->OperMayThrow(this))
     {
@@ -115,7 +118,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
 
     if (morphArgs)
     {
-        tree = fgMorphArgs(tree->AsCall());
+        tree = fgMorphArgs(call);
     }
 
     return tree;

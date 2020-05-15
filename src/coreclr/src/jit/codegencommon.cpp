@@ -11554,7 +11554,7 @@ void CodeGen::genReturn(GenTree* treeNode)
         {
             if (varTypeIsLong(compiler->info.compRetNativeType))
             {
-                retTypeDesc.InitializeLongReturnType(compiler);
+                retTypeDesc.InitializeLongReturnType();
             }
             else // we must have a struct return type
             {
