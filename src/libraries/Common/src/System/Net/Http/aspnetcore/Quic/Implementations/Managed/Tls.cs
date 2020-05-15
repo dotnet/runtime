@@ -77,9 +77,11 @@ namespace System.Net.Quic.Implementations.Managed
         {
             Span<byte> buffer = stackalloc byte[protos.Sum(p => p.Protocol.Length + 1)];
             int offset = 0;
-            foreach (var protocol in protos)
+
+            for (var i = 0; i < protos.Count; i++)
             {
-                buffer[offset] = (byte) protocol.Protocol.Length;
+                var protocol = protos[i];
+                buffer[offset] = (byte)protocol.Protocol.Length;
                 protocol.Protocol.Span.CopyTo(buffer.Slice(offset + 1));
                 offset += 1 + protocol.Protocol.Length;
             }

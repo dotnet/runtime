@@ -66,6 +66,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             _socket.Bind(_listenEndpoint);
+            if (_listenEndpoint.AddressFamily == AddressFamily.InterNetwork)
+            {
+                _socket.DontFragment = true;
+            }
 
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -229,13 +233,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 while (ShouldContinue && !token.IsCancellationRequested)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Wait");
-                    await Task.WhenAny(_waitingTasks).ConfigureAwait(false);
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Wait");
-
+                    bool shouldWait = true;
                     if (_timeoutTask.IsCompleted)
                     {
                         DoTimeout();
+                        shouldWait = false;
                     }
 
                     if (socketReceiveTask.IsCompleted)
@@ -252,15 +254,40 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                             }
                         }
 
+                        // receive also all following packets
+                        while (_socket.Poll(0, SelectMode.SelectRead))
+                        {
+                            EndPoint remoteEp = _listenEndpoint;
+                            var result = _socket.ReceiveFrom(_recvBuffer, ref remoteEp);
+
+                            // process only datagrams big enough to contain valid QUIC packets
+                            if (result >= QuicConstants.MinimumPacketSize)
+                            {
+                                _reader.Reset(_recvBuffer.AsMemory(0, result));
+                                DoReceive(_reader, (IPEndPoint)remoteEp);
+                            }
+                        }
+
                         // start new receiving task
                         _waitingTasks[0] = socketReceiveTask =
                             _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
+                        shouldWait = false;
                     }
 
                     if (_signalTcs.Task.IsCompleted)
                     {
                         DoSignal();
+                        shouldWait = false;
                     }
+
+                    if (shouldWait)
+                    {
+                        if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Wait");
+                        // use WaitAny instead of await Task.WhenAny() to reduce allocation
+                        Task.WaitAny(_waitingTasks);
+                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Wait");
+                    }
+
                 }
             }
             catch (Exception e)

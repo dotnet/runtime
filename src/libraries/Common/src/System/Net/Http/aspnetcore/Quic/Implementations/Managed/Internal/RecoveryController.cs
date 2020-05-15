@@ -289,12 +289,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             int rangeIndex = 0;
             bool newlyAckedIncludeAckEliciting = false;
-            // TODO-RZ: make this more efficient
-            // var pnsInFlight = pnSpace.SentPackets.Keys.ToArray();
 
-            pnSpace.SentPackets.RemoveAll(packet =>
+            int toRemove = 0;
+            int removeStart = 0;
+            var sentPackets = pnSpace.SentPackets;
+
+            // remove the acked packet from the sentPacket list, compacting it during the process
+            while (toRemove + removeStart < sentPackets.Count)
             {
-                long pn = packet.PacketNumber;
+                var packet = sentPackets[toRemove + removeStart];
+                var pn = packet.PacketNumber;
+
                 while (rangeIndex < ranges.Count && ranges[rangeIndex].End < pn)
                 {
                     rangeIndex++;
@@ -303,15 +308,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 if (rangeIndex == ranges.Count)
                 {
                     // all ranges processed
-                    return false;
+                    break;
                 }
 
                 Debug.Assert(pn <= ranges[rangeIndex].End);
                 if (pn < ranges[rangeIndex].Start)
                 {
-                    return false;
+                    // this packet was not acked, move it before the acked (deleted) ones
+                    sentPackets[removeStart] = packet;
+                    removeStart++;
+                    continue;
                 }
 
+                // packet is acked, remove it from the list
                 newlyAckedIncludeAckEliciting |= packet.AckEliciting;
 
                 if (packet.InFlight)
@@ -320,8 +329,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
 
                 pnSpace.AckedPackets.Enqueue(packet);
-                return true;
-            });
+                toRemove++;
+            }
+
+            // remove the range left by acked packets to shift packets that we did not get to.
+            sentPackets.RemoveRange(removeStart, toRemove);
 
             return newlyAckedIncludeAckEliciting;
         }

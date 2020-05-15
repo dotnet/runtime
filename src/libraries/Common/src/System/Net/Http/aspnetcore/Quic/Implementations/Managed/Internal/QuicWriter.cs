@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -36,7 +37,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void WriteUInt8(byte value)
         {
-            CheckSizeAvailable(sizeof(byte));
+            Debug.Assert(BytesAvailable > 0);
             _buffer.Span[_written] = value;
             Advance(sizeof(byte));
         }
@@ -89,13 +90,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private Span<byte> GetSpan(int length)
         {
-            CheckSizeAvailable(length);
+            Debug.Assert(BytesAvailable >= length);
             return _buffer.Span.Slice(BytesWritten, length);
-        }
-
-        private void CheckSizeAvailable(int size)
-        {
-            if (BytesAvailable < size) throw new ArgumentException("Buffer too short");
         }
     }
 }
