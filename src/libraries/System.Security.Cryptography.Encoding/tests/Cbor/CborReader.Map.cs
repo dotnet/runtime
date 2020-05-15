@@ -11,7 +11,7 @@ namespace System.Formats.Cbor
     public partial class CborReader
     {
         private KeyEncodingComparer? _keyEncodingComparer;
-        private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;
+        private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeAllocations;
 
         public int? ReadStartMap()
         {
@@ -101,43 +101,43 @@ namespace System.Formats.Cbor
             _currentKeyOffset = _offset;
         }
 
-        private void ValidateSortedKeyEncoding((int Offset, int Length) currentKeyRange)
+        private void ValidateSortedKeyEncoding((int Offset, int Length) currentKeyEncodingRange)
         {
             Debug.Assert(_currentKeyOffset != null);
 
-            if (_previousKeyRange != null)
+            if (_previousKeyEncodingRange != null)
             {
-                (int Offset, int Length) previousKeyRange = _previousKeyRange.Value;
+                (int Offset, int Length) previousKeyEncodingRange = _previousKeyEncodingRange.Value;
 
                 ReadOnlySpan<byte> buffer = _buffer.Span;
-                ReadOnlySpan<byte> previousKeyEncoding = buffer.Slice(previousKeyRange.Offset, previousKeyRange.Length);
-                ReadOnlySpan<byte> currentKeyEncoding = buffer.Slice(currentKeyRange.Offset, currentKeyRange.Length);
+                ReadOnlySpan<byte> previousKeyEncoding = buffer.Slice(previousKeyEncodingRange.Offset, previousKeyEncodingRange.Length);
+                ReadOnlySpan<byte> currentKeyEncoding = buffer.Slice(currentKeyEncodingRange.Offset, currentKeyEncodingRange.Length);
 
                 int cmp = CborConformanceLevelHelpers.CompareKeyEncodings(previousKeyEncoding, currentKeyEncoding, ConformanceLevel);
                 if (cmp > 0)
                 {
-                    ResetBuffer(currentKeyRange.Offset);
+                    ResetBuffer(currentKeyEncodingRange.Offset);
                     throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_KeysNotInSortedOrder, ConformanceLevel));
                 }
                 else if (cmp == 0 && CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
                 {
-                    ResetBuffer(currentKeyRange.Offset);
+                    ResetBuffer(currentKeyEncodingRange.Offset);
                     throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
                 }
             }
 
-            _previousKeyRange = currentKeyRange;
+            _previousKeyEncodingRange = currentKeyEncodingRange;
         }
 
-        private void ValidateKeyUniqueness((int Offset, int Length) currentKeyRange)
+        private void ValidateKeyUniqueness((int Offset, int Length) currentKeyEncodingRange)
         {
             Debug.Assert(_currentKeyOffset != null);
 
-            HashSet<(int Offset, int Length)> previousKeys = GetKeyEncodingRanges();
+            HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
 
-            if (!previousKeys.Add(currentKeyRange))
+            if (!keyEncodingRanges.Add(currentKeyEncodingRange))
             {
-                ResetBuffer(currentKeyRange.Offset);
+                ResetBuffer(currentKeyEncodingRange.Offset);
                 throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
             }
         }
@@ -149,8 +149,8 @@ namespace System.Formats.Cbor
                 return _keyEncodingRanges;
             }
 
-            if (_pooledKeyEncodingRangeSets != null &&
-                _pooledKeyEncodingRangeSets.TryPop(out HashSet<(int Offset, int Length)>? result))
+            if (_pooledKeyEncodingRangeAllocations != null &&
+                _pooledKeyEncodingRangeAllocations.TryPop(out HashSet<(int Offset, int Length)>? result))
             {
                 result.Clear();
                 return _keyEncodingRanges = result;
@@ -160,13 +160,12 @@ namespace System.Formats.Cbor
             return _keyEncodingRanges = new HashSet<(int Offset, int Length)>(_keyEncodingComparer);
         }
 
-        private void ReturnKeyEncodingRangeAllocation()
+        private void ReturnKeyEncodingRangeAllocation(HashSet<(int Offset, int Length)>? allocation)
         {
-            if (_keyEncodingRanges != null)
+            if (allocation != null)
             {
-                _pooledKeyEncodingRangeSets ??= new Stack<HashSet<(int Offset, int Length)>>();
-                _pooledKeyEncodingRangeSets.Push(_keyEncodingRanges);
-                _keyEncodingRanges = null;
+                _pooledKeyEncodingRangeAllocations ??= new Stack<HashSet<(int Offset, int Length)>>();
+                _pooledKeyEncodingRangeAllocations.Push(allocation);
             }
         }
 

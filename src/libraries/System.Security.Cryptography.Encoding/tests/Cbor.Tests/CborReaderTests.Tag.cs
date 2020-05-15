@@ -248,6 +248,24 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(CborTag.DateTimeString, reader.ReadTag());
         }
 
+        [Fact]
+        public static void ReadDateTimeOffset_StrictConformance_OnError_ShouldRollbackConformanceValidationState()
+        {
+            string hexEncoding = "a20101c06001"; // { 1 : 1 , 0("") : 1 } conforming CBOR with invalid date/time schema
+            var reader = new CborReader(hexEncoding.HexToByteArray(), CborConformanceLevel.Strict);
+
+            reader.ReadStartMap();
+            reader.ReadInt32();
+            reader.ReadInt32();
+
+            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
+            reader.SkipValue(validateConformance: true); // skip the failed value, should not complain about duplicate keys
+
+            reader.ReadInt32();
+            reader.ReadEndMap();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
         [Theory]
         [InlineData("2013-03-21T20:04:00Z", "c11a514b67b0")]
         [InlineData("2013-03-21T20:04:00.5Z", "c1fb41d452d9ec200000")]
