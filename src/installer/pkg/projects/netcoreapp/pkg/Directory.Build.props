@@ -6,9 +6,9 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <FrameworkListName>$(NETCoreAppFrameworkBrandName)</FrameworkListName>
-    <FrameworkListTargetFrameworkIdentifier>$(NETCoreAppFrameworkIdentifier)</FrameworkListTargetFrameworkIdentifier>
-    <FrameworkListTargetFrameworkVersion>$(NETCoreAppFrameworkVersion)</FrameworkListTargetFrameworkVersion>
+    <FrameworkListName>$(NetCoreAppCurrentBrandName)</FrameworkListName>
+    <FrameworkListTargetFrameworkIdentifier>$(NetCoreAppCurrentIdentifier)</FrameworkListTargetFrameworkIdentifier>
+    <FrameworkListTargetFrameworkVersion>$(NetCoreAppCurrentVersion)</FrameworkListTargetFrameworkVersion>
     <FrameworkListFrameworkName>$(SharedFrameworkName)</FrameworkListFrameworkName>
   </PropertyGroup>
 
