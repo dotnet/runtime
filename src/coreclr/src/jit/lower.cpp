@@ -3070,6 +3070,13 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_CNS_INT:
             assert(retVal->TypeIs(TYP_INT));
+            assert(retVal->AsIntCon()->IconValue() == 0);
+            if (varTypeUsesFloatReg(nativeReturnType))
+            {
+                retVal->ChangeOperConst(GT_CNS_DBL);
+                retVal->ChangeType(TYP_FLOAT);
+                retVal->AsDblCon()->gtDconVal = 0;
+            }
             break;
 
         case GT_OBJ:
