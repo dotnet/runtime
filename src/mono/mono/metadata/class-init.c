@@ -3295,7 +3295,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
 							override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
-						TRACE_INTERFACE_VTABLE (printf ("adding iface override from %s [%p] to %s [%p]\n",
+						TRACE_INTERFACE_VTABLE (printf ("adding base class override from %s [%p] to %s [%p]\n",
 							mono_method_full_name (m1, 1), m1,
 							mono_method_full_name (cm, 1), cm));
 						g_hash_table_insert (override_map, m1, cm);
