@@ -109,7 +109,7 @@ namespace System.Formats.Cbor
             {
                 (int Offset, int Length) previousKeyEncodingRange = _previousKeyEncodingRange.Value;
 
-                ReadOnlySpan<byte> buffer = _buffer.Span;
+                ReadOnlySpan<byte> buffer = _data.Span;
                 ReadOnlySpan<byte> previousKeyEncoding = buffer.Slice(previousKeyEncodingRange.Offset, previousKeyEncodingRange.Length);
                 ReadOnlySpan<byte> currentKeyEncoding = buffer.Slice(currentKeyEncodingRange.Offset, currentKeyEncodingRange.Length);
 
@@ -180,7 +180,7 @@ namespace System.Formats.Cbor
 
             private ReadOnlySpan<byte> GetKeyEncoding((int Offset, int Length) range)
             {
-                return _reader._buffer.Span.Slice(range.Offset, range.Length);
+                return _reader._data.Span.Slice(range.Offset, range.Length);
             }
 
             public int GetHashCode((int Offset, int Length) value)

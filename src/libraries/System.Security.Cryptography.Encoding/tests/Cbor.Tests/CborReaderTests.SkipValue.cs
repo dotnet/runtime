@@ -59,9 +59,9 @@ namespace System.Formats.Cbor.Tests
 
             reader.ReadStartArray();
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.SkipValue());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -72,7 +72,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.SkipValue());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -112,7 +112,7 @@ namespace System.Formats.Cbor.Tests
             Assert.NotNull(exn.InnerException);
             Assert.IsType<DecoderFallbackException>(exn.InnerException);
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -172,16 +172,14 @@ namespace System.Formats.Cbor.Tests
 
             // capture current state
             int currentBytesRead = reader.BytesRead;
-            int currentBytesRemaining = reader.BytesRemaining;
 
             // make failing call
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<FormatException>(() => reader.SkipValue());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
 
             // ensure reader state has reverted to original
             Assert.Equal(reader.BytesRead, currentBytesRead);
-            Assert.Equal(reader.BytesRemaining, currentBytesRemaining);
 
             // ensure we can read every value up to the format error
             Assert.Equal(CborReaderState.StartArray, reader.PeekState());

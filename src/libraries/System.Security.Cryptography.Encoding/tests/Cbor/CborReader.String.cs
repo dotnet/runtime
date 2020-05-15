@@ -285,7 +285,7 @@ namespace System.Formats.Cbor
                 concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l), utf8Encoding);
             }
 
-            string output = string.Create(concatenatedStringSize, (ranges, _buffer.Slice(_offset), utf8Encoding), BuildString);
+            string output = string.Create(concatenatedStringSize, (ranges, _data.Slice(_offset), utf8Encoding), BuildString);
 
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();

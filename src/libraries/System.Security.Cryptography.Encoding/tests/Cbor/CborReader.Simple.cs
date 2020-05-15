@@ -116,7 +116,7 @@ namespace System.Formats.Cbor
                     return (CborSimpleValue)header.AdditionalInfo;
                 case CborAdditionalInfo.Additional8BitData:
                     EnsureReadCapacity(2);
-                    byte value = _buffer.Span[_offset + 1];
+                    byte value = _data.Span[_offset + 1];
 
                     if (value < 32)
                     {
