@@ -130,6 +130,9 @@ void EventPipeProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessage& messa
     case EventPipeCommandId::StopTracing:
         EventPipeProtocolHelper::StopTracing(message, pStream);
         break;
+    case EventPipeCommandId::ResumeStartup:
+        EventPipeProtocolHelper::ResumeStartup(message, pStream);
+        break;
 
     default:
         STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, "Received unknown request type (%d)\n", message.GetHeader().CommandSet);
@@ -299,6 +302,26 @@ void EventPipeProtocolHelper::CollectTracing2(DiagnosticsIpc::IpcMessage& messag
             successResponse.Send(pStream);
         EventPipe::StartStreaming(sessionId);
     }
+}
+
+void EventPipeProtocolHelper::ResumeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pStream != nullptr);
+    }
+    CONTRACTL_END;
+
+    // no payload
+    EventPipe::ResumeRuntimeStartup();
+    HRESULT res = S_OK;
+
+    DiagnosticsIpc::IpcMessage successResponse;
+    if (successResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, res))
+        successResponse.Send(pStream);
 }
 
 #endif // FEATURE_PERFTRACING

@@ -40,6 +40,9 @@ unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
 Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
 bool EventPipe::s_enableSampleProfilerAtStartup = false;
+CLREventStatic *EventPipe::s_ResumeRuntimeStartupEvent = new CLREventStatic();
+CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
+bool EventPipe::s_CanStartThreads = false;
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
 #ifdef TARGET_UNIX
@@ -66,6 +69,8 @@ void EventPipe::Initialize()
         session.Store(nullptr);
 
     s_config.Initialize();
+
+    s_ResumeRuntimeStartupEvent->CreateManualEvent(false);
 
     s_pEventSource = new EventPipeEventSource();
 
@@ -108,6 +113,15 @@ void EventPipe::Initialize()
 void EventPipe::FinishInitialize()
 {
     STANDARD_VM_CONTRACT;
+
+    s_CanStartThreads = true;
+
+    while (s_rgDeferredEventPipeSessionIds.Size() > 0)
+    {
+        EventPipeSessionID id = s_rgDeferredEventPipeSessionIds.Pop();
+        EventPipeSession *pSession = reinterpret_cast<EventPipeSession*>(id);
+        pSession->StartStreaming();
+    }
 
     if (s_enableSampleProfilerAtStartup)
     {
@@ -384,9 +398,13 @@ bool EventPipe::EnableInternal(
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
     // Enable the sample profiler
-    if (enableSampleProfiler)
+    if (enableSampleProfiler && s_CanStartThreads)
     {
         SampleProfiler::Enable();
+    }
+    else if (enableSampleProfiler && !s_CanStartThreads)
+    {
+        s_enableSampleProfilerAtStartup = true;
     }
 
     return true;
@@ -409,7 +427,15 @@ void EventPipe::StartStreaming(EventPipeSessionID id)
 
     EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
 
-    pSession->StartStreaming();
+    if (s_CanStartThreads)
+    {
+        pSession->StartStreaming();
+    }
+    else
+    {
+        s_rgDeferredEventPipeSessionIds.Push(id);
+    }
+    
 }
 
 void EventPipe::Disable(EventPipeSessionID id)
@@ -971,5 +997,45 @@ bool EventPipe::IsLockOwnedByCurrentThread()
     return GetLock()->OwnedByCurrentThread();
 }
 #endif
+
+void EventPipe::PauseForTracingAgent()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(s_ResumeRuntimeStartupEvent->IsValid());
+    }
+    CONTRACTL_END;
+
+    CLRConfigStringHolder pDotnetDiagnosticsMonitorAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorAddress);
+    DWORD dwDotnetDiagnosticsMonitorStopOnStart = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorStopOnStart);
+    if (pDotnetDiagnosticsMonitorAddress != nullptr && dwDotnetDiagnosticsMonitorStopOnStart != 0)
+    {
+        const DWORD dwFiveSecondWait = s_ResumeRuntimeStartupEvent->Wait(5000, false);
+        if (dwFiveSecondWait == WAIT_TIMEOUT)
+        {
+            fprintf(stdout, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command.");
+            const DWORD dwWait = s_ResumeRuntimeStartupEvent->Wait(INFINITE, false);
+            if (dwWait != WAIT_OBJECT_0)
+            {
+                // TODO
+            }
+        }
+        else
+        {
+            // TODO
+        }
+    }
+
+    s_enableSampleProfilerAtStartup = true;
+}
+
+void EventPipe::ResumeRuntimeStartup()
+{
+    LIMITED_METHOD_CONTRACT;
+    s_ResumeRuntimeStartupEvent->Set();
+}
 
 #endif // FEATURE_PERFTRACING

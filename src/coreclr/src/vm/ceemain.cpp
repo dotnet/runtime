@@ -675,6 +675,10 @@ void EEStartupHelper()
         // Initialize the event pipe.
         EventPipe::Initialize();
 
+        DiagnosticServer::Initialize();
+
+        EventPipe::PauseForTracingAgent();
+
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
@@ -1009,7 +1013,7 @@ void EEStartupHelper()
         g_fEEStarted = TRUE;
 #ifndef CROSSGEN_COMPILE
 #ifdef FEATURE_PERFTRACING
-        DiagnosticServer::Initialize();
+        // DiagnosticServer::Initialize();
 #endif
 #endif
         g_EEStartupStatus = S_OK;
