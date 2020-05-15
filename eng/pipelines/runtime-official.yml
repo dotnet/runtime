@@ -9,6 +9,7 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
