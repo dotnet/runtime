@@ -5,7 +5,6 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.SqlServer.Server;
 
 namespace System.Formats.Cbor
 {
@@ -51,7 +50,7 @@ namespace System.Formats.Cbor
 
         // Map-specific book-keeping
         private int? _currentKeyOffset = null; // offset for the current key encoding
-        private (int Offset, int Length)? _previousKeyRange; // previous key encoding range
+        private (int Offset, int Length)? _previousKeyEncodingRange; // previous key encoding range
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
 
         // flag used to temporarily disable conformance level checks,
@@ -312,8 +311,8 @@ namespace System.Formats.Cbor
                 definiteLength: _definiteLength,
                 itemsWritten: _itemsWritten,
                 currentKeyOffset: _currentKeyOffset,
-                previousKeyRange: _previousKeyRange,
-                previousKeyRanges: _keyEncodingRanges
+                previousKeyEncodingRange: _previousKeyEncodingRange,
+                keyEncodingRanges: _keyEncodingRanges
             );
 
             _nestedDataItems.Push(frame);
@@ -324,7 +323,7 @@ namespace System.Formats.Cbor
             _frameOffset = _offset;
             _isTagContext = false;
             _currentKeyOffset = null;
-            _previousKeyRange = null;
+            _previousKeyEncodingRange = null;
             _keyEncodingRanges = null;
         }
 
@@ -354,23 +353,11 @@ namespace System.Formats.Cbor
 
             if (_currentMajorType == CborMajorType.Map)
             {
-                ReturnKeyEncodingRangeAllocation();
+                ReturnKeyEncodingRangeAllocation(_keyEncodingRanges);
             }
 
             StackFrame frame = _nestedDataItems.Pop();
-
-            _currentMajorType = frame.MajorType;
-            _frameOffset = frame.FrameOffset;
-            _definiteLength = frame.DefiniteLength;
-            _itemsWritten = frame.ItemsWritten;
-            _currentKeyOffset = frame.CurrentKeyOffset;
-            _previousKeyRange = frame.PreviousKeyRange;
-            _keyEncodingRanges = frame.PreviousKeyRanges;
-            // Popping items from the stack can change the reader state
-            // without necessarily needing to advance the buffer
-            // (e.g. we're at the end of a definite-length collection).
-            // We therefore need to invalidate the cache here.
-            _cachedState = CborReaderState.Unknown;
+            RestoreStackFrame(in frame);
         }
 
         private void AdvanceDataItemCounters()
@@ -437,8 +424,8 @@ namespace System.Formats.Cbor
                 int? definiteLength,
                 int itemsWritten,
                 int? currentKeyOffset,
-                (int Offset, int Length)? previousKeyRange,
-                HashSet<(int Offset, int Length)>? previousKeyRanges)
+                (int Offset, int Length)? previousKeyEncodingRange,
+                HashSet<(int Offset, int Length)>? keyEncodingRanges)
             {
                 MajorType = type;
                 FrameOffset = frameOffset;
@@ -446,8 +433,8 @@ namespace System.Formats.Cbor
                 ItemsWritten = itemsWritten;
 
                 CurrentKeyOffset = currentKeyOffset;
-                PreviousKeyRange = previousKeyRange;
-                PreviousKeyRanges = previousKeyRanges;
+                PreviousKeyEncodingRange = previousKeyEncodingRange;
+                KeyEncodingRanges = keyEncodingRanges;
             }
 
             public CborMajorType? MajorType { get; }
@@ -456,8 +443,24 @@ namespace System.Formats.Cbor
             public int ItemsWritten { get; }
 
             public int? CurrentKeyOffset { get; }
-            public (int Offset, int Length)? PreviousKeyRange { get; }
-            public HashSet<(int Offset, int Length)>? PreviousKeyRanges { get; }
+            public (int Offset, int Length)? PreviousKeyEncodingRange { get; }
+            public HashSet<(int Offset, int Length)>? KeyEncodingRanges { get; }
+        }
+
+        private void RestoreStackFrame(in StackFrame frame)
+        {
+            _currentMajorType = frame.MajorType;
+            _frameOffset = frame.FrameOffset;
+            _definiteLength = frame.DefiniteLength;
+            _itemsWritten = frame.ItemsWritten;
+            _currentKeyOffset = frame.CurrentKeyOffset;
+            _previousKeyEncodingRange = frame.PreviousKeyEncodingRange;
+            _keyEncodingRanges = frame.KeyEncodingRanges;
+            // Popping items from the stack can change the reader state
+            // without necessarily needing to advance the buffer
+            // (e.g. we're at the end of a definite-length collection).
+            // We therefore need to invalidate the cache here.
+            _cachedState = CborReaderState.Unknown;
         }
 
         // Struct containing checkpoint data for rolling back reader state in the event of a failure
@@ -466,80 +469,85 @@ namespace System.Formats.Cbor
         private readonly struct Checkpoint
         {
             public Checkpoint(
+                int depth,
                 int offset,
-                int stackDepth,
                 int frameOffset,
-                int? definiteLength,
                 int itemsWritten,
                 int? currentKeyOffset,
-                (int Offset, int Length)? previousKeyRange,
-                HashSet<(int Offset, int Length)>? previousKeyRanges)
-            {
-                Offset = offset;
-                StackDepth = stackDepth;
-                FrameOffset = frameOffset;
-                DefiniteLength = definiteLength;
-                ItemsWritten = itemsWritten;
+                (int Offset, int Length)? previousKeyEncodingRange)
 
+            {
+                Depth = depth;
+                Offset = offset;
+                FrameOffset = frameOffset;
+                ItemsWritten = itemsWritten;
                 CurrentKeyOffset = currentKeyOffset;
-                PreviousKeyRange = previousKeyRange;
-                PreviousKeyRanges = previousKeyRanges;
+                PreviousKeyEncodingRange = previousKeyEncodingRange;
             }
 
+            public int Depth { get; }
             public int Offset { get; }
-            public int StackDepth { get; }
             public int FrameOffset { get; }
-            public int? DefiniteLength { get; }
             public int ItemsWritten { get; }
 
             public int? CurrentKeyOffset { get; }
-            public (int Offset, int Length)? PreviousKeyRange { get; }
-            public HashSet<(int Offset, int Length)>? PreviousKeyRanges { get; }
+            public (int Offset, int Length)? PreviousKeyEncodingRange { get; }
         }
 
         private Checkpoint CreateCheckpoint()
         {
             return new Checkpoint(
+                depth: Depth,
                 offset: _offset,
-                stackDepth: Depth,
                 frameOffset: _frameOffset,
-                definiteLength: _definiteLength,
                 itemsWritten: _itemsWritten,
                 currentKeyOffset: _currentKeyOffset,
-                previousKeyRange: _previousKeyRange,
-                previousKeyRanges: _keyEncodingRanges);
+                previousKeyEncodingRange: _previousKeyEncodingRange);
         }
 
         private void RestoreCheckpoint(in Checkpoint checkpoint)
         {
-            if (_nestedDataItems != null)
+            int restoreHeight = Depth - checkpoint.Depth;
+            Debug.Assert(restoreHeight >= 0, "Attempting to restore checkpoint outside of its original context.");
+
+            if (restoreHeight > 0)
             {
-                int stackOffset = _nestedDataItems.Count - checkpoint.StackDepth;
+                // pop any nested contexts added after the checkpoint
 
-                Debug.Assert(stackOffset >= 0, "Attempting to restore checkpoint outside of its original context.");
-                Debug.Assert(
-                    (stackOffset == 0) ?
-                    _frameOffset == checkpoint.FrameOffset :
-                    _nestedDataItems.ToArray()[stackOffset - 1].FrameOffset == checkpoint.FrameOffset,
-                    "Attempting to restore checkpoint outside of its original context.");
+                Debug.Assert(_nestedDataItems != null);
+                Debug.Assert(_nestedDataItems.ToArray()[restoreHeight - 1].FrameOffset == checkpoint.FrameOffset,
+                                "Attempting to restore checkpoint outside of its original context.");
 
-                // pop any nested data items introduced after the checkpoint
-                for (int i = 0; i < stackOffset; i++)
+                StackFrame frame;
+                for (int i = 0; i < restoreHeight - 1; i++)
                 {
-                    _nestedDataItems.Pop();
+                    frame = _nestedDataItems.Pop();
+                    ReturnKeyEncodingRangeAllocation(frame.KeyEncodingRanges);
                 }
+
+                frame = _nestedDataItems.Pop();
+                RestoreStackFrame(in frame);
+            }
+            else
+            {
+                Debug.Assert(checkpoint.FrameOffset == _frameOffset, "Attempting to restore checkpoint outside of its original context.");
+            }
+
+            // Remove any key encodings added after the current checkpoint.
+            // This is only needed when rolling back key reads in the Strict conformance level.
+            if (_keyEncodingRanges != null && _itemsWritten > checkpoint.ItemsWritten)
+            {
+                int checkpointOffset = checkpoint.Offset;
+                _keyEncodingRanges.RemoveWhere(key => key.Offset >= checkpointOffset);
             }
 
             _offset = checkpoint.Offset;
-            _frameOffset = checkpoint.FrameOffset;
-            _definiteLength = checkpoint.DefiniteLength;
             _itemsWritten = checkpoint.ItemsWritten;
+            _previousKeyEncodingRange = checkpoint.PreviousKeyEncodingRange;
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
-            _previousKeyRange = checkpoint.PreviousKeyRange;
-            _keyEncodingRanges = checkpoint.PreviousKeyRanges;
-
-            // invalidate the state cache
             _cachedState = CborReaderState.Unknown;
+
+            Debug.Assert(Depth == checkpoint.Depth);
         }
     }
 }
