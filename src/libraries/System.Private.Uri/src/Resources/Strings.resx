@@ -192,6 +192,9 @@
   <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
     <value>The given key '{0}' was not present in the dictionary.</value>
   </data>
+  <data name="InvalidNullArgument" xml:space="preserve">
+    <value>Null is not a valid value for {0}.</value>
+  </data>
   <data name="net_uri_InitializeCalledAlreadyOrTooLate" xml:space="preserve">
     <value>UriParser's base InitializeAndValidate may only be called once on a single Uri instance and only from an override of InitializeAndValidate.</value>
   </data>
