@@ -136,7 +136,6 @@ namespace System.Net.Quic.Implementations.Managed
             InboundBuffer.RequestAbort(errorCode);
             _connection.OnStreamStateUpdated(this);
 
-            // TODO-RZ: abort current reads
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 

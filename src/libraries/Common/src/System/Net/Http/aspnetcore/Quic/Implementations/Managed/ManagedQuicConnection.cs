@@ -523,7 +523,6 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override async ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
-
             ThrowIfDisposed();
             ThrowIfError();
 
@@ -576,7 +575,7 @@ namespace System.Net.Quic.Implementations.Managed
             AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            // ThrowIfError();
+            ThrowIfError();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -623,6 +622,8 @@ namespace System.Net.Quic.Implementations.Managed
         internal void ThrowIfError()
         {
             var error = _inboundError ?? _outboundError;
+            // don't throw if connection was closed gracefully. By doing so, we still allow retrieving
+            // unread data/streams if the connection was closed by the peer.
             if (error != null && error.ErrorCode != TransportErrorCode.NoError)
             {
                 throw MakeAbortedException(error);

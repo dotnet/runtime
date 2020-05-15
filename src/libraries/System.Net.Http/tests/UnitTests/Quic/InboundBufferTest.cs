@@ -147,5 +147,19 @@ namespace System.Net.Quic.Tests
 
             Assert.Equal(oldMaxData + 10, buffer.MaxData);
         }
+
+        [Fact]
+        public async Task RequestingAbortAbortsReaders()
+        {
+            var destination = new byte[100];
+
+            var exnTask = Assert.ThrowsAsync<QuicStreamAbortedException>(
+                () => buffer.DeliverAsync(destination, CancellationToken.None).AsTask());
+
+            buffer.RequestAbort(10000);
+
+            var exn = await exnTask.TimeoutAfter(5_000);
+            Assert.Equal(10000, exn.ErrorCode);
+        }
     }
 }
