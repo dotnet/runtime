@@ -38,7 +38,7 @@ namespace System
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type) =>
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)] Type type) =>
             CreateInstance(type, nonPublic: false);
 
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName) =>
