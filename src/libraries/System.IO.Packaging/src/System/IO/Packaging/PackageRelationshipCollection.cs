@@ -35,7 +35,7 @@ namespace System.IO.Packaging
         /// <returns></returns>
         public IEnumerator<PackageRelationship> GetEnumerator()
         {
-            List<PackageRelationship>.Enumerator relationshipsEnumerator = _relationships.GetEnumerator();
+            IEnumerator<PackageRelationship> relationshipsEnumerator = _relationships.GetEnumerator();
 
             if (_filter == null)
                 return relationshipsEnumerator;
