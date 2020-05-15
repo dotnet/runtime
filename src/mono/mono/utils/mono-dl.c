@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
-#if defined(ENABLE_NETCORE) && defined(TARGET_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
+#if defined(ENABLE_NETCORE) && defined(TARGET_ANDROID)
 #include <dlfcn.h>
 #endif
 
@@ -182,7 +182,7 @@ fix_libc_name (const char *name)
 MonoDl*
 mono_dl_open_self (char **error_msg)
 {
-#if defined(ENABLE_NETCORE) && defined(TARGET_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
+#if defined(ENABLE_NETCORE) && defined(TARGET_ANDROID)
 	MonoDl *module;
 	if (error_msg)
 		*error_msg = NULL;
