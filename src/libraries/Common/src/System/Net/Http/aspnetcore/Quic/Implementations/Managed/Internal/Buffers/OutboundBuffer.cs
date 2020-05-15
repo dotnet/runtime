@@ -122,20 +122,30 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         {
             // TODO-RZ: this is the only situation when state is set from user thread, maybe we can
             // find a way to remove the need for the lock
-            if (StreamState < SendStreamState.WantReset)
+            if (StreamState >= SendStreamState.WantReset)
             {
-                lock (SyncObject)
-                {
-                    if (StreamState < SendStreamState.WantReset)
-                    {
-                        Debug.Assert(Error == null);
-                        Error = errorCode;
-                        StreamState = SendStreamState.WantReset;
-                    }
-                }
+                return;
             }
 
-            // TODO-RZ: Can we drop all buffered data?
+            lock (SyncObject)
+            {
+                if (StreamState >= SendStreamState.WantReset)
+                {
+                    return;
+                }
+
+                Debug.Assert(Error == null);
+                Error = errorCode;
+                StreamState = SendStreamState.WantReset;
+            }
+
+            _toSendChannel.Writer.TryComplete();
+            if (_toBeQueuedChunk.Buffer != null)
+            {
+                ReturnBuffer(_toBeQueuedChunk.Buffer);
+                _toBeQueuedChunk = default;
+            }
+            // other buffered data will be dropped from socket thread once RESET_STREAM is sent.
         }
 
         internal void OnResetSent()
@@ -143,6 +153,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             // we are past WantReset, no synchronization needed
             Debug.Assert(StreamState == SendStreamState.WantReset);
             StreamState = SendStreamState.ResetSent;
+
+            // conveniently, also drop all buffered data.
+            while (_toSendChannel.Reader.TryRead(out var chunk))
+            {
+                if (chunk.Buffer != null)
+                {
+                    ReturnBuffer(chunk.Buffer);
+                }
+            }
         }
 
         internal void OnResetAcked()
