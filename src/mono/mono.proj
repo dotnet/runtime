@@ -29,6 +29,9 @@
     <LibrariesTesthostRoot>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesTestConfig)-$(Platform)\</LibrariesTesthostRoot>
     <LibrariesTesthostRuntimeDir>$(LibrariesTesthostRoot)shared\Microsoft.NETCore.App\$(ProductVersion)\</LibrariesTesthostRuntimeDir>
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\config.h</CrossConfigH>
   </PropertyGroup>
 
@@ -886,7 +889,7 @@
   <Target Name="BuildWasmAppBuilder" Condition="'$(TargetsBrowser)' == 'true'">
     <MSBuild Projects="$(MonoProjectRoot)msbuild\WasmAppBuilder\WasmAppBuilder.csproj"
              Properties="Configuration=$(Configuration);"
-             Targets="Restore;Build;Publish"/>
+             Targets="Restore;Build;Publish;"/>
   </Target>
 
   <!-- Ordering matters! Overwriting the Build target. -->
