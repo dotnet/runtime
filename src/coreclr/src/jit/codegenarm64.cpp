@@ -4312,17 +4312,10 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
 
     instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
 
-    if (varTypeIsFloating(baseType))
-    {
-        GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg);
-    }
-    else
-    {
-        emitAttr attr = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi) ? EA_16BYTE : EA_8BYTE;
-        insOpts  opt  = genGetSimdInsOpt(attr, baseType);
+    emitAttr attr = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi) ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt  = genGetSimdInsOpt(attr, baseType);
 
-        GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
-    }
+    GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
 
     genProduceReg(simdNode);
 }
