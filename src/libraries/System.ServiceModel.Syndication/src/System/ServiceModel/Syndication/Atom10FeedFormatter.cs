@@ -133,7 +133,7 @@ namespace System.ServiceModel.Syndication
             {
                 while (reader.MoveToNextAttribute())
                 {
-                    if (reader.LocalName == Atom10Constants.TermTag && reader.NamespaceURI.Length == 0)
+                    if (reader.LocalName == Atom10Constants.TermTag && reader.NamespaceURI == string.Empty)
                     {
                         category.Name = reader.Value;
                     }

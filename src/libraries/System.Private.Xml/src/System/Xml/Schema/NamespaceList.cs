@@ -367,7 +367,7 @@ namespace System.Xml.Schema
                     { // clause 6 - o1 is negation of absent
                         nslist = o2.Clone();
                     }
-                    else if (o2._targetNamespace.Length == 0)
+                    else if (o2._targetNamespace == string.Empty)
                     { //clause 6 - o1 is negation of absent
                         nslist = o1.Clone();
                     }

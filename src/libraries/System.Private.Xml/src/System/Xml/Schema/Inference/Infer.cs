@@ -507,7 +507,7 @@ namespace System.Xml.Schema
             XmlSchemaElement returnedElement = xse; //this value will change to elementReference if childURI!= parentURI
             XmlSchema xs = null;
             bool bCreatingNewType = true;
-            if (childURI.Length == 0)
+            if (childURI == string.Empty)
             {
                 childURI = null;
             }
