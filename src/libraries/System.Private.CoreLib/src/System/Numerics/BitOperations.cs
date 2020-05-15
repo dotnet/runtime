@@ -254,7 +254,7 @@ namespace System.Numerics
                 // Hence use Vector64.Create(ulong) to create Vector64<ulong> and operate on that.
                 Vector64<ulong> input = Vector64.Create((ulong)value);
                 Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
-                return AdvSimd.Extract(aggregated, 0);
+                return aggregated.ToScalar();
             }
 
             return SoftwareFallback(value);
@@ -293,7 +293,7 @@ namespace System.Numerics
                 // PopCount works on vector so convert input value to vector first.
                 Vector64<ulong> input = Vector64.Create(value);
                 Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
-                return AdvSimd.Extract(aggregated, 0);
+                return aggregated.ToScalar();
             }
 
 #if TARGET_32BIT
