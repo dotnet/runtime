@@ -14,12 +14,12 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslClientAuthenticationOptionsTest
+    public abstract class SslClientAuthenticationOptionsTestBase
     {
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication(bool async)
+        protected abstract bool TestAuthenticateAsync { get; }
+
+        [Fact]
+        public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication()
         {
             using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             using (X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate())
@@ -76,8 +76,8 @@ namespace System.Net.Security.Tests
                     };
 
                     // Authenticate
-                    Task clientTask = client.AuthenticateAsClientAsync(clientOptions, async);
-                    Task serverTask = server.AuthenticateAsServerAsync(serverOptions, async);
+                    Task clientTask = client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
+                    Task serverTask = server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
                     await new[] {clientTask, serverTask}.WhenAllOrAnyFailed();
 
                     // Validate that client options are unchanged
@@ -106,5 +106,15 @@ namespace System.Net.Security.Tests
                 }
             }
         }
+    }
+
+    public sealed class SslClientAuthenticationOptionsTestBase_Sync : SslClientAuthenticationOptionsTestBase
+    {
+        protected override bool TestAuthenticateAsync => false;
+    }
+
+    public sealed class SslClientAuthenticationOptionsTestBase_Async : SslClientAuthenticationOptionsTestBase
+    {
+        protected override bool TestAuthenticateAsync => true;
     }
 }
