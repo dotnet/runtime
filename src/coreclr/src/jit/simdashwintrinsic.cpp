@@ -254,6 +254,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (sig->numArgs)
     {
+        case 0:
+        {
+            assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
+            return gtNewSimdAsHWIntrinsicNode(retType, hwIntrinsic, baseType, simdSize);
+        }
+
         case 1:
         {
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));

@@ -89,12 +89,12 @@ namespace System.Numerics
         }
         private static readonly Vector<T> s_one = new Vector<T>(GetOneValue());
 
-        internal static Vector<T> AllOnes
+        internal static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            get => s_allOnes;
+            get => s_allBitsSet;
         }
-        private static readonly Vector<T> s_allOnes = new Vector<T>(GetAllBitsSetValue());
+        private static readonly Vector<T> s_allBitsSet = new Vector<T>(GetAllBitsSetValue());
         #endregion Static Members
 
         #region Constructors
@@ -884,7 +884,7 @@ namespace System.Numerics
         /// <returns>The one's complement vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator ~(Vector<T> value) =>
-            s_allOnes ^ value;
+            AllBitsSet ^ value;
         #endregion Bitwise Operators
 
         #region Logical Operators
