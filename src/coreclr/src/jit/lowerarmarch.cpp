@@ -573,8 +573,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //     This check may end up modifying node->gtOp1 if it is a cast node that can be removed
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
-    assert((node->gtHWIntrinsicId == NI_Vector64_Create) ||
-           (node->gtHWIntrinsicId == NI_Vector128_Create) ||
+    assert((node->gtHWIntrinsicId == NI_Vector64_Create) || (node->gtHWIntrinsicId == NI_Vector128_Create) ||
            (node->gtHWIntrinsicId == NI_Vector64_CreateScalarUnsafe) ||
            (node->gtHWIntrinsicId == NI_Vector128_CreateScalarUnsafe) ||
            (node->gtHWIntrinsicId == NI_AdvSimd_DuplicateToVector64) ||
