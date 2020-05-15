@@ -20,11 +20,12 @@ namespace System.Reflection
             return IsAssignableFrom(typeInfo.AsType());
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         protected Type typeImpl = null!;
 
         protected TypeDelegator() { }
 
-        public TypeDelegator(Type delegatingType)
+        public TypeDelegator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type delegatingType)
         {
             if (delegatingType is null)
                 throw new ArgumentNullException(nameof(delegatingType));
