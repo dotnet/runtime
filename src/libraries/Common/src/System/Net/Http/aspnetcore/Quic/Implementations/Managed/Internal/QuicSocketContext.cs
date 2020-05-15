@@ -2,6 +2,7 @@
 
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -59,8 +60,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void Start()
         {
-            Debug.Assert(_backgroundWorkerTask == null);
+            if (_backgroundWorkerTask != null)
+            {
+                return;
+            }
+
             _socket.Bind(_listenEndpoint);
+
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // disable exception when client forcibly closes the socket.
+                // https://stackoverflow.com/questions/38191968/c-sharp-udp-an-existing-connection-was-forcibly-closed-by-the-remote-host
+
+                const int SIO_UDP_CONNRESET = -1744830452;
+                _socket.IOControl(
+                    (IOControlCode)SIO_UDP_CONNRESET, 
+                    new byte[] { 0, 0, 0, 0 }, 
+                    null
+                );
+            }
+
             _backgroundWorkerTask = Task.Run(BackgroundWorker);
         }
 
