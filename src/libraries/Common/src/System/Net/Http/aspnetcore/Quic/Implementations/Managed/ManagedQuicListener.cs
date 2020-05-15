@@ -58,7 +58,6 @@ namespace System.Net.Quic.Implementations.Managed
         public override void Dispose()
         {
             if (_disposed) return;
-            // TODO-RZ: this will leak if no connection is attached
             _socketContext.StopAcceptingConnections();
             _disposed = true;
         }

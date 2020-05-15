@@ -48,9 +48,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return connection;
         }
 
+        /// <summary>
+        ///     Signals that the context should no longer accept new connections.
+        /// </summary>
         internal void StopAcceptingConnections()
         {
             _acceptNewConnections = false;
+            _newConnections.TryComplete();
+            // awake the thread so that it exists
+            Ping();
         }
 
         protected override void OnSignal()
@@ -124,8 +130,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected override void DetachConnection(ManagedQuicConnection connection)
         {
             Debug.Assert(connection.IsClosed);
-            // _connectionIds.Remove(connection.SourceConnectionId!);
-            // ImmutableInterlocked.TryRemove(ref _connections, connection.SourceConnectionId!, out _);
             Debug.Assert(ImmutableInterlocked.TryRemove(ref _connectionsByEndpoint, connection.RemoteEndPoint, out _));
         }
     }

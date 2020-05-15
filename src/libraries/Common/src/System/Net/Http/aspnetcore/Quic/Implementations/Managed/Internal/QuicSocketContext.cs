@@ -78,7 +78,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             // TODO-RZ: I would like to have unbound loop there, but until flow control is implemented, it might loop
             // indefinitely
-            // while (true)
             for (int i = 0; i < 2; i++)
             {
                 _writer.Reset(_sendBuffer);
@@ -102,9 +101,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 if (NetEventSource.IsEnabled) NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
 
                 _socket.SendTo(_sendBuffer, 0, _writer.BytesWritten, SocketFlags.None, receiver);
-                // _socket.SendToAsync(new ArraySegment<byte>(_sendBuffer, 0, _writer.BytesWritten),
-                // SocketFlags.None,
-                // receiver).ConfigureAwait(false);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
