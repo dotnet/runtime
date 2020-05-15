@@ -1,10 +1,12 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
+using System.Threading;
 using System.Threading.Channels;
 
 namespace System.Net.Quic.Implementations.Managed
@@ -15,15 +17,14 @@ namespace System.Net.Quic.Implementations.Managed
     internal sealed class StreamCollection
     {
         /// <summary>
-        ///     All streams organized by the stream type.
+        ///     All streams by their id;
         /// </summary>
-        private readonly List<ManagedQuicStream>[] _streams =
-        {
-            new List<ManagedQuicStream>(),
-            new List<ManagedQuicStream>(),
-            new List<ManagedQuicStream>(),
-            new List<ManagedQuicStream>()
-        };
+        private ImmutableDictionary<long, ManagedQuicStream> _streams = ImmutableDictionary<long, ManagedQuicStream>.Empty;
+
+        /// <summary>
+        ///     Number of total streams by their type.
+        /// </summary>
+        private readonly int[] _streamCounts = new int[4];
 
         /// <summary>
         ///     All streams which are flushable (have data to send).
@@ -44,8 +45,7 @@ namespace System.Net.Quic.Implementations.Managed
                 SingleReader = true, SingleWriter = true
             });
 
-        internal ManagedQuicStream this[long streamId] =>
-            _streams[(int)StreamHelpers.GetStreamType(streamId)][(int)StreamHelpers.GetStreamIndex(streamId)]!;
+        internal ManagedQuicStream this[long streamId] => _streams[streamId];
 
 
         internal ManagedQuicStream? GetFirstFlushableStream()
@@ -79,21 +79,22 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         internal ManagedQuicStream GetOrCreateStream(long streamId, in TransportParameters localParams,
-            in TransportParameters remoteParams, bool isServer, ManagedQuicConnection connection)
+            in TransportParameters remoteParams, bool isLocal, ManagedQuicConnection connection)
         {
             var type = StreamHelpers.GetStreamType(streamId);
-            // TODO-RZ: allow for long indices
-            int index = (int) StreamHelpers.GetStreamIndex(streamId);
+            long index = StreamHelpers.GetStreamIndex(streamId);
             bool unidirectional = !StreamHelpers.IsBidirectional(streamId);
-            bool isLocal = isServer && StreamHelpers.IsServerInitiated(streamId);
 
-            var streamList = _streams[(int)type];
-
-            // reserve space in the list
-            while (streamList.Count <= index)
+            // create also all lower-numbered streams
+            while (_streamCounts[(int)type] <= index)
             {
-                var stream = CreateStream(streamId, isLocal, unidirectional, localParams, remoteParams, connection);
-                streamList.Add(stream);
+                long nextId = StreamHelpers.ComposeStreamId(type, _streamCounts[(int)type]);
+
+                var stream = CreateStream(nextId, isLocal, unidirectional, localParams, remoteParams, connection);
+                if (ImmutableInterlocked.TryAdd(ref _streams, nextId, stream))
+                {
+                    Interlocked.Increment(ref _streamCounts[(int)type]);
+                }
 
                 if (!isLocal)
                 {
@@ -103,7 +104,7 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            return streamList[index];
+            return _streams[streamId];
         }
 
         private ManagedQuicStream CreateStream(long streamId,
@@ -134,18 +135,6 @@ namespace System.Net.Quic.Implementations.Managed
             return new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer, connection);
         }
 
-        internal ManagedQuicStream CreateOutboundStream(StreamType type, in TransportParameters localParams,
-            in TransportParameters remoteParams, ManagedQuicConnection connection)
-        {
-            var streamList = _streams[(int)type];
-            long streamId = StreamHelpers.ComposeStreamId(type, streamList.Count);
-
-            // TODO-RZ: data race: this is called from user-thread
-            var stream = CreateStream(streamId, true, !StreamHelpers.IsBidirectional(type), localParams, remoteParams, connection);
-            streamList.Add(stream);
-            return stream;
-        }
-
         internal void MarkFlushable(ManagedQuicStream stream)
         {
             Debug.Assert(stream.CanWrite);
@@ -173,9 +162,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal long GetStreamCount(StreamType type)
         {
-            return _streams[(int)type].Count;
+            return _streamCounts[(int)type];
         }
 
-        internal IEnumerable<ManagedQuicStream> AllStreams => _streams.SelectMany(i => i);
+        internal IEnumerable<ManagedQuicStream> AllStreams => _streams.Values;
     }
 }

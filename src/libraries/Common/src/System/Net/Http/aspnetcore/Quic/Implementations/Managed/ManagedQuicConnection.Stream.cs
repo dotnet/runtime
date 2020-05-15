@@ -64,6 +64,16 @@ namespace System.Net.Quic.Implementations.Managed
         private long ReceivedData { get; set; }
 
         /// <summary>
+        ///     Number of bidirectional streams explicitly opened by this endpoint.
+        /// </summary>
+        private int _bidirStreamsOpened;
+
+        /// <summary>
+        ///     Number of unidirectional streams explicitly opened by this endpoint.
+        /// </summary>
+        private int _uniStreamsOpened;
+
+        /// <summary>
         ///     Opens a new outbound stream with lowest available stream id.
         /// </summary>
         /// <param name="unidirectional">True if the stream should be unidirectional.</param>
@@ -71,15 +81,27 @@ namespace System.Net.Quic.Implementations.Managed
         internal ManagedQuicStream OpenStream(bool unidirectional)
         {
             var type = StreamHelpers.GetLocallyInitiatedType(_isServer, unidirectional);
+            ref int counter = ref (unidirectional ? ref _uniStreamsOpened : ref _bidirStreamsOpened);
             long limit = unidirectional ? _peerLimits.MaxStreamsUni : _peerLimits.MaxStreamsBidi;
 
-            if (_streams.GetStreamCount(type) == limit)
+            // atomically increment the respective counter
+            int priorCounter = Volatile.Read(ref counter);
+            bool success;
+            do
             {
-                // TODO-RZ: use messages from string resources
-                throw new QuicException("Cannot open stream");
-            }
+                if (priorCounter == limit)
+                {
+                    // TODO-RZ: use messages from string resources
+                    throw new QuicException("Cannot open stream");
+                }
 
-            return _streams.CreateOutboundStream(type, _localTransportParameters, _peerTransportParameters, this);
+                int interlockedResult = Interlocked.CompareExchange(ref counter, priorCounter + 1, priorCounter);
+                success = interlockedResult == priorCounter;
+                priorCounter = interlockedResult;
+            } while (!success);
+
+            // priorCounter now holds the index of the newly opened stream
+            return _streams.GetOrCreateStream(StreamHelpers.ComposeStreamId(type, priorCounter), _localTransportParameters, _peerTransportParameters, true, this);
         }
 
         /// <summary>
@@ -104,7 +126,8 @@ namespace System.Net.Quic.Implementations.Managed
             // check whether the stream can be opened based on local limits
 
             long index = StreamHelpers.GetStreamIndex(streamId);
-            var param = StreamHelpers.IsLocallyInitiated(_isServer, streamId)
+            bool local = StreamHelpers.IsLocallyInitiated(_isServer, streamId);
+            var param = local
                 ? _peerLimits
                 : _localLimits;
 
@@ -118,7 +141,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return false;
             }
 
-            stream = _streams.GetOrCreateStream(streamId, _localTransportParameters, _peerTransportParameters, _isServer, this);
+            stream = _streams.GetOrCreateStream(streamId, _localTransportParameters, _peerTransportParameters, local, this);
             return true;
         }
 

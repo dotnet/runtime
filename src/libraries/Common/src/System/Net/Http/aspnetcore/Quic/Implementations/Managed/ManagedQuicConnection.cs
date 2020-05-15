@@ -664,8 +664,6 @@ namespace System.Net.Quic.Implementations.Managed
 
             _streams.IncomingStreams.Writer.TryComplete(MakeAbortedException(error));
 
-
-            // TODO-RZ: data race with user who is trying to open a new stream?
             foreach (var stream in _streams.AllStreams)
             {
                 stream.OnConnectionClosed(error);
