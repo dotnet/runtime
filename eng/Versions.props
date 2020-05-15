@@ -112,7 +112,7 @@
     <!-- System.Data.SqlClient -->
     <SystemDataSqlClientVersion>4.8.0</SystemDataSqlClientVersion>
     <!-- Testing -->
-    <MicrosoftNETTestSdkVersion>16.7.0-preview-20200429-01</MicrosoftNETTestSdkVersion>
+    <MicrosoftNETTestSdkVersion>16.7.0-preview-20200515-01</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestsRunnersVersion>1.0.0-prerelease.20264.1</MicrosoftDotNetXHarnessTestsRunnersVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
     <CoverletCollectorVersion>1.2.1</CoverletCollectorVersion>
