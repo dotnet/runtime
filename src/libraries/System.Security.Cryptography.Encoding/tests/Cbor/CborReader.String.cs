@@ -159,7 +159,7 @@ namespace System.Formats.Cbor
             }
 
             AdvanceBuffer(1);
-            PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
+            PushDataItem(CborMajorType.TextString, definiteLength: null);
         }
 
         public void ReadEndTextString()
@@ -185,7 +185,7 @@ namespace System.Formats.Cbor
             }
 
             AdvanceBuffer(1);
-            PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
+            PushDataItem(CborMajorType.ByteString, definiteLength: null);
         }
 
         public void ReadEndByteString()
