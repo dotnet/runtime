@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
@@ -13,6 +14,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         internal override int SampleLength => 16;
 
+        // ICryptoTransform is not span-based, so we need intermediate copies in order to avoid allocation.
+        private byte[] _sampleArray = new byte[16];
+        private byte[] _maskArray = new byte[16];
+
         protected CryptoSealAesBase(byte[] headerKey)
         {
             _aesEcb = new AesManaged {KeySize = headerKey.Length * 8, Mode = CipherMode.ECB, Key = headerKey}
@@ -21,9 +26,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         internal override void CreateProtectionMask(ReadOnlySpan<byte> payloadSample, Span<byte> mask)
         {
-            // TODO-RZ: use AES-ECB implementation with allocation-free interface
-            var arr = _aesEcb.TransformFinalBlock(payloadSample.ToArray(), 0, payloadSample.Length);
-            arr.AsSpan(0, 5).CopyTo(mask);
+            Debug.Assert(payloadSample.Length == SampleLength);
+            Debug.Assert(mask.Length == 5);
+
+            // TODO-RZ: we could use span-based implementation of AES-ECB
+            payloadSample.CopyTo(_sampleArray);
+            _aesEcb.TransformBlock(_sampleArray, 0, SampleLength, _maskArray, 0);
+            _maskArray.AsSpan(0, 5).CopyTo(mask);
         }
     }
 }
