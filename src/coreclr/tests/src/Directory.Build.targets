@@ -108,7 +108,6 @@
 
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript"
-          AfterTargets="Build"
           Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
@@ -196,7 +195,7 @@
 
   </Target>
 
-  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference;CreateExecuteScript" />
 
   <Target Name="UpdateReferenceItems"
           BeforeTargets="BeforeResolveReferences"
