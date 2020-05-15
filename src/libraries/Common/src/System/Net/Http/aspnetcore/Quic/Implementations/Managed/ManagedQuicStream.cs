@@ -242,7 +242,6 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfError();
             ThrowIfNotWritable();
 
-            // TODO-RZ: should we do flush?
             OutboundBuffer!.MarkEndOfData();
             await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
             _connection.OnStreamDataWritten(this);
@@ -263,11 +262,7 @@ namespace System.Net.Quic.Implementations.Managed
             NotifyShutdownWriteCompleted();
 
             // TODO-RZ: handle callers blocking on other async tasks
-            // TODO-RZ: make sure an error is always passed
-            if (inboundError != null)
-            {
-                InboundBuffer?.OnConnectionError(inboundError);
-            }
+            InboundBuffer?.OnConnectionError(inboundError);
         }
 
         internal override void Shutdown()
@@ -314,13 +309,56 @@ namespace System.Net.Quic.Implementations.Managed
 
         public override void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            if (CanWrite)
+            {
+                OutboundBuffer!.MarkEndOfData();
+                OutboundBuffer!.FlushChunk();
+                _connection.OnStreamDataWritten(this);
+            }
+
+            if (CanRead)
+            {
+                // TODO-RZ: should we use this error code?
+                InboundBuffer!.RequestAbort(0);
+                _connection.OnStreamStateUpdated(this);
+            }
+
             _disposed = true;
-            // TODO-RZ: we might need to do more
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        public override ValueTask DisposeAsync() => throw new NotImplementedException();
+        public override async ValueTask DisposeAsync()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (CanWrite)
+            {
+                OutboundBuffer!.MarkEndOfData();
+                await OutboundBuffer!.FlushChunkAsync().ConfigureAwait(false);
+                _connection.OnStreamDataWritten(this);
+            }
+
+            if (CanRead)
+            {
+                // TODO-RZ: should we use this error code?
+                InboundBuffer!.RequestAbort(0);
+                _connection.OnStreamStateUpdated(this);
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
 
         #endregion
 

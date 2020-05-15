@@ -194,7 +194,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             var tmp = _toBeQueuedChunk;
             _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
 
-            await _toSendChannel.Writer.WriteAsync(tmp, cancellationToken).ConfigureAwait(false);
+            _toSendChannel.Writer.TryWrite(tmp);
         }
 
         /// <summary>
