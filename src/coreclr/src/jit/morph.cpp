@@ -88,13 +88,23 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
 #ifndef TARGET_64BIT
     if (varTypeIsLong(tree))
     {
-        GenTreeCall*    callNode    = tree->AsCall();
-        ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
-        retTypeDesc->Reset();
-        retTypeDesc->InitializeLongReturnType(this);
+        GenTreeCall* callNode = tree->AsCall();
+        callNode->ResetReturnType();
+        callNode->InitializeLongReturnType();
         callNode->ClearOtherRegs();
+        // TODO: we leave garbage here, call `ClearOtherRegFlags`.
+        // assert(callNode->gtSpillFlags == 0);
     }
+    else
 #endif // !TARGET_64BIT
+    {
+        // TODO: we leave garbage here in gtSpillFlags, gtOtherRegs and gtReturnTypeDesc.
+        // However, we probably never create a helper that returns struct type
+        // so we never read it.
+        // GenTreeCall*    callNode    = tree->AsCall();
+        // assert(callNode->gtOtherRegs[0] == 0);
+        // assert(callNode->gtOtherRegs[1] == 0);
+    }
 
     if (tree->OperMayThrow(this))
     {

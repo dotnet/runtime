@@ -8888,9 +8888,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     call->gtRetClsHnd = retClsHnd;
 
 #if FEATURE_MULTIREG_RET
-    // Initialize Return type descriptor of call node
-    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-    retTypeDesc->InitializeStructReturnType(this, retClsHnd);
+    call->InitializeStructReturnType(this, retClsHnd);
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef UNIX_AMD64_ABI
@@ -8898,7 +8896,8 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
     assert(!call->IsVarargs() && "varargs not allowed for System V OSs.");
 
-    unsigned retRegCount = retTypeDesc->GetReturnRegCount();
+    const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+    const unsigned        retRegCount = retTypeDesc->GetReturnRegCount();
     if (retRegCount == 0)
     {
         // struct not returned in registers i.e returned via hiddden retbuf arg.
@@ -9002,7 +9001,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         }
 
 #if FEATURE_MULTIREG_RET
-        unsigned retRegCount = retTypeDesc->GetReturnRegCount();
+        const unsigned retRegCount = call->GetReturnTypeDesc()->GetReturnRegCount();
         assert(retRegCount != 0);
 
         if (retRegCount >= 2)

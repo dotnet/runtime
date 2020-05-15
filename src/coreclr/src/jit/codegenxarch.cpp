@@ -137,7 +137,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             ReturnTypeDesc retTypeDesc;
             if (varTypeIsLong(compiler->info.compRetNativeType))
             {
-                retTypeDesc.InitializeLongReturnType(compiler);
+                retTypeDesc.InitializeLongReturnType();
             }
             else // we must have a struct return type
             {

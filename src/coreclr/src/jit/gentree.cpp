@@ -644,7 +644,7 @@ bool GenTree::gtHasReg() const
     {
         const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
         const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-        unsigned                   regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
 
         // A Multi-reg copy or reload node is said to have regs,
         // if it has valid regs in any of the positions.
@@ -6172,21 +6172,14 @@ GenTreeCall* Compiler::gtNewCallNode(
     // Initialize spill flags of gtOtherRegs
     node->ClearOtherRegFlags();
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    // Initialize the multi-reg long return info if necessary
+#if !defined(TARGET_64BIT)
     if (varTypeIsLong(node))
     {
-        // The return type will remain as the incoming long type
-        node->gtReturnType = node->gtType;
-
+        assert(node->gtReturnType == node->gtType);
         // Initialize Return type descriptor of call node
-        ReturnTypeDesc* retTypeDesc = node->GetReturnTypeDesc();
-        retTypeDesc->InitializeLongReturnType(this);
-
-        // must be a long returned in two registers
-        assert(retTypeDesc->GetReturnRegCount() == 2);
+        node->InitializeLongReturnType();
     }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
+#endif // !defined(TARGET_64BIT)
 
     return node;
 }
@@ -15305,9 +15298,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 #if FEATURE_MULTIREG_RET
     if (varTypeIsStruct(call))
     {
-        // Initialize Return type descriptor of call node.
-        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        retTypeDesc->InitializeStructReturnType(this, structType);
+        call->InitializeStructReturnType(this, structType);
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -18899,16 +18890,10 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
 // InitializeLongReturnType:
 //    Initialize the Return Type Descriptor for a method that returns a TYP_LONG
 //
-// Arguments
-//    comp        -  Compiler Instance
-//
-// Return Value
-//    None
-//
-void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
+void ReturnTypeDesc::InitializeLongReturnType()
 {
+    assert(!m_inited);
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-
     // Setups up a ReturnTypeDesc for returning a long using two registers
     //
     assert(MAX_RET_REG_COUNT >= 2);

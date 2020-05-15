@@ -3600,8 +3600,8 @@ public:
     void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
 
     // Initialize the Return Type Descriptor for a method that returns a TYP_LONG
-    // Only needed for X86
-    void InitializeLongReturnType(Compiler* comp);
+    // Only needed for X86 and arm32.
+    void InitializeLongReturnType();
 
     // Reset type descriptor to defaults
     void Reset()
@@ -3950,22 +3950,24 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    //-----------------------------------------------------------------------
-    // GetReturnTypeDesc: get the type descriptor of return value of the call
-    //
-    // Arguments:
-    //    None
-    //
-    // Returns
-    //    Type descriptor of the value returned by call
-    //
-    // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
-    ReturnTypeDesc* GetReturnTypeDesc()
+    void InitializeLongReturnType()
     {
 #if FEATURE_MULTIREG_RET
-        return &gtReturnTypeDesc;
-#else
-        return nullptr;
+        gtReturnTypeDesc.InitializeLongReturnType();
+#endif
+    }
+
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+    {
+#if FEATURE_MULTIREG_RET
+        gtReturnTypeDesc.InitializeStructReturnType(comp, retClsHnd);
+#endif
+    }
+
+    void ResetReturnType()
+    {
+#if FEATURE_MULTIREG_RET
+        gtReturnTypeDesc.Reset();
 #endif
     }
 
