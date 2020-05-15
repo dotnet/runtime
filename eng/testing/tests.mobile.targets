@@ -55,7 +55,7 @@
   <UsingTask TaskName="MonoAOTCompiler"
              AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
-  <Import Project="$(MonoAOTCompilerDir)\MonoAOTCompiler.props" />
+  <Import Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
   <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp">
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
