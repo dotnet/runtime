@@ -1,19 +1,18 @@
 # Testing Libraries on Android
 
-To build the tests and run them on Android (devices or emulators) you need the following prerequisites.
+The following dependencies should be installed in order to be able to run tests:
 
 - Android NDK
 - Android SDK
 - OpenJDK
 - OpenSSL
 
-These packages should be installed on Linux:
+OpenJDK can be installed on Linux (Ubuntu) using `apt-get`:
 ```bash
 sudo apt-get install openjdk-8 unzip
 ```
 
-The following script should install the rest of the dependencies and add `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT` and `ANDROID_OPENSSL_AAR`
-environment variables to the `~/.bashrc` on Linux or `~/.zprofile` on macOS:
+Android SDK, NDK and OpenSSL can be automatically installed via the following script:
 ```bash
 #!/usr/bin/env bash
 set -e
@@ -34,10 +33,13 @@ else
     BASHRC=~/.bashrc
 fi
 
+# download Android NDK
 export ANDROID_NDK_ROOT=~/android-ndk-${NDK_VER}
 curl https://dl.google.com/android/repository/android-ndk-${NDK_VER}-${HOST_OS}-x86_64.zip -L --output ~/andk.zip
 unzip ~/andk.zip -o -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
 
+# download Android SDK, accept licenses and download additional packages such as
+# platform-tools, platforms and build-tools
 export ANDROID_SDK_ROOT=~/android-sdk
 curl https://dl.google.com/android/repository/commandlinetools-${HOST_OS_SHORT}-${SDK_VER}.zip -L --output ~/asdk.zip
 unzip ~/asdk.zip -o -d ${ANDROID_SDK_ROOT} && rm -rf ~/asdk.zip
@@ -51,6 +53,7 @@ curl https://maven.google.com/com/android/ndk/thirdparty/openssl/${OPENSSL_VER}/
 unzip ~/openssl.zip -o -d ${ANDROID_OPENSSL_AAR} && rm -rf ~/openssl.zip
 printf "\n\nexport ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT}\nexport ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}\nexport ANDROID_OPENSSL_AAR=${ANDROID_OPENSSL_AAR}\n" >> ${BASHRC}
 ```
+Make sure `ANDROID_NDK_ROOT`, `ANDROID_SDK_ROOT` and `ANDROID_OPENSSL_AAR` environment variables are accessible and point to correct locations.
 
 ## Building Libs and Tests for Android
 
@@ -58,15 +61,15 @@ Now we're ready to build everything for Android:
 ```
 ./build.sh mono+libs -os Android -arch x64
 ```
-and even run tests one by one for each test suite:
+and even run tests one by one for each library:
 ```
 ./build.sh libs.tests -os Android -arch x64 -test
 ```
 Make sure an emulator is booted (see `AVD Manager`) or a device is plugged in and unlocked.
-`AVD Manager` recommends to install `x86` images by default so if you follow this recommendation make sure `-arch x86` was used for the build script.
+`AVD Manager` tool recommends to install `x86` images by default so if you follow that recommendation make sure `-arch x86` was used for the build script.
 
 ### Running individual test suites
-- The following shows how to run tests for a specific library
+The following shows how to run tests for a specific library
 ```
 ./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
 ```
