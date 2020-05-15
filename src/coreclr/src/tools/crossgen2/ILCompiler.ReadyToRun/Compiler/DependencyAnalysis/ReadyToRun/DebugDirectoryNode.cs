@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection.PortableExecutable;
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
@@ -25,10 +26,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sizeof(int);    // PointerToRawData
 
         private EcmaModule _module;
+        private NativeDebugDirectoryEntryNode _nativeEntry;
 
-        public DebugDirectoryNode(EcmaModule sourceModule)
+        public DebugDirectoryNode(EcmaModule sourceModule, string outputFileName)
         {
             _module = sourceModule;
+            string pdbNameRoot = Path.GetFileNameWithoutExtension(outputFileName);
+            if (sourceModule != null)
+            {
+                pdbNameRoot = sourceModule.Assembly.GetName().Name;
+            }
+            _nativeEntry = new NativeDebugDirectoryEntryNode(pdbNameRoot + ".ni.pdb");
         }
 
         public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
@@ -48,13 +56,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($"__DebugDirectory_{_module.Assembly.GetName().Name}");
+            string directoryName;
+            if (_module != null)
+                directoryName = _module.Assembly.GetName().Name;
+            else
+                directoryName = "Composite";
+
+            sb.Append($"__DebugDirectory_{directoryName}");
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         int GetNumDebugDirectoryEntriesInModule()
         {
+            if (_module == null)
+                return 0;
+
             ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.ReadDebugDirectory();
             return entries == null ? 0 : entries.Length;
         }
@@ -65,12 +82,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
 
-            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.ReadDebugDirectory();
+            ImmutableArray<DebugDirectoryEntry> entries = default(ImmutableArray<DebugDirectoryEntry>);
+            if (_module != null)
+                entries = _module.PEReader.ReadDebugDirectory();
+
             int numEntries = GetNumDebugDirectoryEntriesInModule();
 
             // First, write the native debug directory entry
             {
-                var entry = (NativeDebugDirectoryEntryNode)factory.DebugDirectoryEntry(_module, -1);
+                var entry = _nativeEntry;
 
                 builder.EmitUInt(0 /* Characteristics */);
                 if (numEntries > 0)
@@ -121,6 +141,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
+            if (_module == null)
+            {
+                if (((DebugDirectoryNode)other)._module == null)
+                    return 0;
+                return -1;
+            }
+            else if (((DebugDirectoryNode)other)._module == null)
+            {
+                return 1;
+            }
+
             return _module.CompareTo(((DebugDirectoryNode)other)._module);
         }
     }
