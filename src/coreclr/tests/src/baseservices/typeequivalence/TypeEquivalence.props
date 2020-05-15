@@ -1,8 +1,0 @@
-<Project>
-
-  <PropertyGroup>
-    <!-- The Type Equivalence feature is unsupported outside of windows -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-  </PropertyGroup>
-
-</Project>

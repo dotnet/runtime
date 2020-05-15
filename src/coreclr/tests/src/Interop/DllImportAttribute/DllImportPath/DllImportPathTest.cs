@@ -13,13 +13,11 @@ class Test
     private const string PathEnvSubdirectoryName = "Subdirectory";
     private const string PathEnvFileName = "MovedNativeLib";
 
-#if TARGET_WINDOWS
-    private const string RelativePath1 = @".\RelativeNative\..\DllImportPath_Relative";
-    private const string RelativePath3 = @"..\DllImportPathTest\DllImportPath_Relative";
-#else
-    private const string RelativePath1 =  @"./RelativeNative/../libDllImportPath_Relative";
-    private const string RelativePath3 = @"../DllImportPathTest/libDllImportPath_Relative";
-#endif
+    private const string RelativePath1Windows = @".\RelativeNative\..\DllImportPath_Relative";
+    private const string RelativePath3Windows = @"..\DllImportPathTest\DllImportPath_Relative";
+
+    private const string RelativePath1Unix =  @"./RelativeNative/../libDllImportPath_Relative";
+    private const string RelativePath3Unix = @"../DllImportPathTest/libDllImportPath_Relative";
 
     private const string UnicodeFileName = "DllImportPath_Unicode✔";
 
@@ -35,14 +33,20 @@ class Test
     [DllImport(@".\DllImportPath.Local.dll", EntryPoint = "GetZero")]
     private static extern int GetZero_LocalWithDot2();
 
-    [DllImport(RelativePath1, EntryPoint = "GetZero")]
-    private static extern int GetZero_Relative1();
+    [DllImport(RelativePath1Windows, EntryPoint = "GetZero")]
+    private static extern int GetZero_Relative1Windows();
+
+    [DllImport(RelativePath1Unix, EntryPoint = "GetZero")]
+    private static extern int GetZero_Relative1Unix();
 
     [DllImport(@"..\DllImportPathTest\DllImportPath_Relative.dll", EntryPoint = "GetZero")]
     private static extern int GetZero_Relative2();
 
-    [DllImport(RelativePath3, EntryPoint = "GetZero")]
-    private static extern int GetZero_Relative3();
+    [DllImport(RelativePath3Windows, EntryPoint = "GetZero")]
+    private static extern int GetZero_Relative3Windows();
+
+    [DllImport(RelativePath3Unix, EntryPoint = "GetZero")]
+    private static extern int GetZero_Relative3Unix();
 
     [DllImport(@".\..\DllImportPathTest\DllImportPath_Relative.dll", EntryPoint = "GetZero")]
     private static extern int GetZero_Relative4();
@@ -77,22 +81,37 @@ class Test
     {
         string strManaged = "Managed";
         string native = " Native";
+        bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // We need to ensure that the subdirectory exists for off-Windows.
+        if (!isWindows) // We need to ensure that the subdirectory exists for off-Windows.
         {        
             var currentDirectory = Directory.GetCurrentDirectory();
             var info = new DirectoryInfo(currentDirectory);
             info.CreateSubdirectory(RelativeSubdirectoryName);
         }
 
-        GetZero_Relative1();
+        if (isWindows)
+        {
+            GetZero_Relative1Windows();
+        }
+        else
+        {
+            GetZero_Relative1Unix();
+        }
         
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             GetZero_Relative2();
         }
         
-        GetZero_Relative3();
+        if (isWindows)
+        {
+            GetZero_Relative3Windows();
+        }
+        else
+        {
+            GetZero_Relative3Unix();
+        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
