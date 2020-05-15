@@ -13,7 +13,7 @@
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
     <PropertyGroup>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
     </PropertyGroup>
@@ -21,11 +21,11 @@
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
 
     <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
-    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
-          SourceFiles="$(AndroidOpenSslCryptoLib)"
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
           DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
-          SourceFiles="$(AndroidOpenSslLib)"
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
           DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
