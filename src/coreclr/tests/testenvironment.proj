@@ -138,8 +138,6 @@
     <TestEnvironment Include="jitguardeddevirtualization" JitEnableGuardedDevirtualization="1" TieredCompilation="0" />
     <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
-    <!-- Mono specific options -->
-    <TestEnvironment Include="interpreter" MONO_ENV_OPTIONS="--interpreter"/>
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
@@ -176,11 +174,13 @@
   <Target Name="CreateTestEnvFile" DependsOnTargets="OutputCOMPlusVariables">
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
+      <_TestEnvFileLine Include="set MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
       <_TestEnvFileLine Include="#!/usr/bin/env bash" />
       <_TestEnvFileLine Include="@(_COMPlusVariable->'export %(Identity)=%(Value)')"  />
+      <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(TestEnvFileName)" Lines="@(_TestEnvFileLine)" Overwrite="true" />
