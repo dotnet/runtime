@@ -1710,13 +1710,10 @@ void Lowering::LowerCall(GenTree* node)
         LowerFastTailCall(call);
     }
 
-#if !FEATURE_MULTIREG_RET
     if (varTypeIsStruct(call))
     {
-        assert(!comp->compDoOldStructRetyping());
         LowerCallStruct(call);
     }
-#endif // !FEATURE_MULTIREG_RET
 
     ContainCheckCallOperands(call);
     JITDUMP("lowering call (after):\n");
@@ -3014,7 +3011,6 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
         BlockRange().InsertBefore(ret, bitcast);
         ContainCheckBitCast(bitcast);
     }
-#if !FEATURE_MULTIREG_RET
     else
     {
 #ifdef DEBUG
@@ -3049,13 +3045,12 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
             }
         }
 #endif // DEBUG
-        if (varTypeIsStruct(ret))
+        if (varTypeIsStruct(ret) && !comp->compMethodReturnsMultiRegRetType())
         {
             assert(!comp->compDoOldStructRetyping());
             LowerRetStruct(ret);
         }
     }
-#endif // !FEATURE_MULTIREG_RET
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->compMethodRequiresPInvokeFrame() && (comp->compCurBB == comp->genReturnBB))
@@ -3065,7 +3060,6 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     ContainCheckRet(ret);
 }
 
-#if !FEATURE_MULTIREG_RET
 //----------------------------------------------------------------------------------------------
 // LowerRetStructLclVar: Lowers a struct return node.
 //
@@ -3252,7 +3246,12 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
             break;
 
             case GT_STOREIND:
+#ifdef FEATURE_SIMD
                 assert(user->TypeIs(TYP_SIMD8, TYP_REF));
+#else  // !FEATURE_SIMD
+                assert(user->TypeIs(TYP_REF));
+#endif // !FEATURE_SIMD
+
                 user->ChangeType(returnType);
                 break;
 
@@ -3261,7 +3260,6 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
         }
     }
 }
-#endif // !FEATURE_MULTIREG_RET
 
 GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 {
