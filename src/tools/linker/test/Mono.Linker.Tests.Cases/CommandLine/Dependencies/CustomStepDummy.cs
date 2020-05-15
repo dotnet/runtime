@@ -8,7 +8,7 @@ namespace CustomStep
 	{
 		public void Process (LinkContext context)
 		{
-			context.LogMessage ("Custom step added.");
+			context.LogMessage (MessageContainer.CreateInfoMessage ("Custom step added."));
 		}
 	}
 }

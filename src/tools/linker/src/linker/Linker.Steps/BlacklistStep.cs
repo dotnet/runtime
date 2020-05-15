@@ -51,7 +51,7 @@ namespace Mono.Linker.Steps
 					continue;
 
 				try {
-					Context.LogMessage ($"Processing resource linker descriptor: {name}");
+					Context.LogMessage (MessageContainer.CreateInfoMessage ($"Processing resource linker descriptor: {name}"));
 					steps_to_add.Push (GetResolveStep (name));
 				} catch (XmlException ex) {
 					/* This could happen if some broken XML file is included. */
@@ -68,7 +68,7 @@ namespace Mono.Linker.Steps
 									.Where (res => ShouldProcessRootDescriptorResource (GetAssemblyName (res.Name)))
 									.Cast<EmbeddedResource> ()) {
 					try {
-						Context.LogMessage ($"Processing embedded resource linker descriptor: {rsc.Name}");
+						Context.LogMessage (MessageContainer.CreateInfoMessage ($"Processing embedded resource linker descriptor: {rsc.Name}"));
 						steps_to_add.Push (GetExternalResolveStep (rsc, asm));
 					} catch (XmlException ex) {
 						/* This could happen if some broken XML file is embedded. */
@@ -80,7 +80,7 @@ namespace Mono.Linker.Steps
 									.Where (res => res.Name.Equals ("ILLink.Substitutions.xml", StringComparison.OrdinalIgnoreCase))
 									.Cast<EmbeddedResource> ()) {
 					try {
-						Context.LogMessage ($"Processing embedded {rsc.Name} from {asm.Name}");
+						Context.LogMessage (MessageContainer.CreateInfoMessage ($"Processing embedded {rsc.Name} from {asm.Name}"));
 						steps_to_add.Push (GetExternalSubstitutionStep (rsc, asm));
 					} catch (XmlException ex) {
 						Context.LogMessage (MessageContainer.CreateErrorMessage ($"Error processing {rsc.Name}: {ex}", 1003));

@@ -463,17 +463,6 @@ namespace Mono.Linker
 			return Optimizations.IsEnabled (optimization, context);
 		}
 
-		public void LogMessage (string message)
-		{
-			LogMessage (MessageImportance.Normal, message);
-		}
-
-		public void LogMessage (MessageImportance importance, string message)
-		{
-			if (LogMessages && Logger != null)
-				Logger.LogMessage (importance, "{0}", message);
-		}
-
 		public void LogMessage (MessageContainer message)
 		{
 			if (LogMessages)

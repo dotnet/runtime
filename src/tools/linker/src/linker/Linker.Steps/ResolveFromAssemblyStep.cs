@@ -122,8 +122,8 @@ namespace Mono.Linker.Steps
 						//
 						// Both cases are bugs not on our end but we still want to link all assemblies
 						// especially when such types cannot be used anyway
-						//
-						context.LogMessage ($"Cannot find declaration of exported type '{exported}' from the assembly '{assembly}'");
+						//						
+						context.LogMessage (MessageContainer.CreateInfoMessage ($"Cannot find declaration of exported type '{exported}' from the assembly '{assembly}'"));
 
 						continue;
 					}
