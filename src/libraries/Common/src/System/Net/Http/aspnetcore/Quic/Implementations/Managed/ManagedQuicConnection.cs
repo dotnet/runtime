@@ -275,18 +275,22 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 var param = _tls.GetPeerTransportParameters(_isServer);
 
-                if (param != null)
+                if (param == null)
                 {
-                    ref ConnectionFlowControlLimits limits = ref _peerLimits;
-
-                    limits.UpdateMaxData(param.InitialMaxData);
-                    limits.UpdateMaxStreamsBidi(param.InitialMaxStreamsBidi);
-                    limits.UpdateMaxStreamsUni(param.InitialMaxStreamsUni);
-
-                    Recovery.MaxAckDelay = Timestamp.FromMilliseconds(param.MaxAckDelay);
-
-                    _peerTransportParameters = param;
+                    // failed to retrieve transport parameters.
+                    CloseConnection(TransportErrorCode.TransportParameterError);
+                    return;
                 }
+
+                ref ConnectionFlowControlLimits limits = ref _peerLimits;
+
+                limits.UpdateMaxData(param.InitialMaxData);
+                limits.UpdateMaxStreamsBidi(param.InitialMaxStreamsBidi);
+                limits.UpdateMaxStreamsUni(param.InitialMaxStreamsUni);
+
+                Recovery.MaxAckDelay = Timestamp.FromMilliseconds(param.MaxAckDelay);
+
+                _peerTransportParameters = param;
             }
         }
 
@@ -419,7 +423,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <param name="reason">Optional short human-readable reason for closing.</param>
         /// <param name="frameType">Optional type of the frame which was being processed when the error was encountered</param>
         /// <returns>Always returns <see cref="ProcessPacketResult.Error"/> to simplify packet processing code</returns>
-        private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, string? reason,
+        private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, string? reason = null,
             FrameType frameType = FrameType.Padding)
         {
             _outboundError = new QuicError(errorCode, reason, frameType);

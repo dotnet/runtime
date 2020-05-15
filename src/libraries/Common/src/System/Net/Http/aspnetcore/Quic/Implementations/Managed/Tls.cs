@@ -212,7 +212,6 @@ namespace System.Net.Quic.Implementations.Managed
             new Span<byte>(data, length.ToInt32()).CopyTo(buffer);
             var reader = new QuicReader(buffer.AsMemory(0, length.ToInt32()));
 
-            // TODO-RZ: Failure to deserialize should prompt TRANSPORT_PARAMETER_ERROR
             TransportParameters.Read(reader, !isServer, out var parameters);
             ArrayPool<byte>.Shared.Return(buffer);
 

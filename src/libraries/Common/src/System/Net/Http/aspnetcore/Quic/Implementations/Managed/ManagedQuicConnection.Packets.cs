@@ -374,6 +374,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 if (SendOne(writer, level, ctx))
                 {
+                    // prepare for sending next packet.
                     ctx.StartNextPacket();
                 }
                 else
