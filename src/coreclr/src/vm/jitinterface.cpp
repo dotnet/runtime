@@ -12883,9 +12883,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                                                   nativeCodeVersion);
             LOG((LF_CORDB, LL_EVERYTHING, "Got through CallCompile MethodWithSEHWrapper\n"));
 
-            g_cbILJitted += methodInfo.ILCodeSize;
-            g_cMethodsJitted++;
-
 #if FEATURE_PERFMAP
             // Save the code size so that it can be reported to the perfmap.
             if (pSizeOfCode != NULL)
@@ -12956,6 +12953,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         LOG((LF_JIT, LL_INFO10000,
             "Jitted Entry at" FMT_ADDR "method %s::%s %s\n", DBG_ADDR(nativeEntry),
              ftn->m_pszDebugClassName, ftn->m_pszDebugMethodName, ftn->m_pszDebugMethodSignature));
+
+        g_cbILJitted += methodInfo.ILCodeSize;
+        g_cMethodsJitted++;
 
 #if defined(FEATURE_CORESYSTEM)
 
