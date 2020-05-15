@@ -411,14 +411,20 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 if ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
                 {
-                    throw new BadImageFormatException("The file is not a ReadyToRun image");
+                    if (!TryLocateNativeReadyToRunHeader())
+                        throw new BadImageFormatException("The file is not a ReadyToRun image");
+
+                    Debug.Assert(Composite);
+                }
+                else
+                {
+                    _assemblyCache.Add(metadata);
+
+                    DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
+                    _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
+                    Debug.Assert(!Composite);
                 }
 
-                _assemblyCache.Add(metadata);
-
-                DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
-                _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
-                Debug.Assert(!Composite);
             }
             else if (!TryLocateNativeReadyToRunHeader())
             {

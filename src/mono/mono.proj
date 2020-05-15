@@ -885,18 +885,6 @@
 
   <Import Project="Directory.Build.targets" />
 
-  <Target Name="BuildAppleAppBuilder" Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
-    <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
-             Properties="Configuration=$(Configuration);Platform=$(HostArch)"
-             Targets="Restore;Build" />
-  </Target>
-
-  <Target Name="BuildAndroidAppBuilder" Condition="'$(TargetsAndroid)' == 'true'">
-    <MSBuild Projects="$(AndroidAppBuilderProjDirectory)AndroidAppBuilder.csproj"
-             Properties="Configuration=$(Configuration);Platform=$(HostArch)"
-             Targets="Restore;Build" />
-  </Target>
-
   <!-- Need to publish this since it references System.Reflection.MetadataLoadContext -->
   <Target Name="BuildWasmAppBuilder" Condition="'$(TargetsBrowser)' == 'true'">
     <MSBuild Projects="$(MonoProjectRoot)msbuild\WasmAppBuilder\WasmAppBuilder.csproj"
@@ -904,15 +892,9 @@
              Targets="Restore;Build;Publish"/>
   </Target>
 
-  <Target Name="BuildMonoAOTCompilerTask">
-    <MSBuild Projects="$(MonoProjectRoot)msbuild\AotCompilerTask\MonoAOTCompiler.csproj"
-             Properties="Configuration=$(Configuration)"
-             Targets="Restore;Build" />
-  </Target>
-
   <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildAppleAppBuilder;BuildAndroidAppBuilder;BuildWasmAppBuilder;BuildMonoAOTCompilerTask">
+  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildWasmAppBuilder;">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>

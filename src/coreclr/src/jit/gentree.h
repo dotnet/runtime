@@ -775,14 +775,14 @@ public:
 // Note that a node marked GTF_VAR_MULTIREG can only be a pure definition of all the fields, or a pure use of all the fields,
 // so we don't need the equivalent of GTF_VAR_USEASG.
 
-#define GTF_VAR_MULTIREG_DEATH0 0x20000000 // GT_LCL_VAR -- The last-use bit for a lclVar (the first register if it is multireg).
+#define GTF_VAR_MULTIREG_DEATH0 0x04000000 // GT_LCL_VAR -- The last-use bit for a lclVar (the first register if it is multireg).
 #define GTF_VAR_DEATH           GTF_VAR_MULTIREG_DEATH0
-#define GTF_VAR_MULTIREG_DEATH1 0x10000000 // GT_LCL_VAR -- The last-use bit for the second register of a multireg lclVar.
-#define GTF_VAR_MULTIREG_DEATH2 0x08000000 // GT_LCL_VAR -- The last-use bit for the third register of a multireg lclVar.
-#define GTF_VAR_MULTIREG_DEATH3 0x04000000 // GT_LCL_VAR -- The last-use bit for the fourth register of a multireg lclVar.
+#define GTF_VAR_MULTIREG_DEATH1 0x08000000 // GT_LCL_VAR -- The last-use bit for the second register of a multireg lclVar.
+#define GTF_VAR_MULTIREG_DEATH2 0x10000000 // GT_LCL_VAR -- The last-use bit for the third register of a multireg lclVar.
+#define GTF_VAR_MULTIREG_DEATH3 0x20000000 // GT_LCL_VAR -- The last-use bit for the fourth register of a multireg lclVar.
 #define GTF_VAR_DEATH_MASK (GTF_VAR_MULTIREG_DEATH0|GTF_VAR_MULTIREG_DEATH1 | GTF_VAR_MULTIREG_DEATH2 | GTF_VAR_MULTIREG_DEATH3)
-                                       // This is the amount we have to shift, plus the regIndex, to get the last use bit we want.
-#define MULTIREG_LAST_USE_SHIFT 17
+// This is the amount we have to shift, plus the regIndex, to get the last use bit we want.
+#define MULTIREG_LAST_USE_SHIFT 26
 #define GTF_VAR_MULTIREG        0x02000000 // This is a struct or (on 32-bit platforms) long variable that is used or defined
                                        // to/from a multireg source or destination (e.g. a call arg or return, or an op
                                        // that returns its result in multiple registers such as a long multiply).
@@ -1732,6 +1732,9 @@ public:
 
     // Returns the type of the regIndex'th register defined by a multi-reg node.
     var_types GetRegTypeByIndex(int regIndex);
+
+    // Returns the GTF flag equivalent for the regIndex'th register of a multi-reg node.
+    unsigned int GetRegSpillFlagByIdx(int regIndex) const;
 
     // Returns true if it is a GT_COPY or GT_RELOAD node
     inline bool IsCopyOrReload() const;
@@ -3233,6 +3236,7 @@ private:
     unsigned int GetLastUseBit(int regIndex)
     {
         assert(regIndex < 4);
+        static_assert_no_msg((1 << MULTIREG_LAST_USE_SHIFT) == GTF_VAR_MULTIREG_DEATH0);
         return (1 << (MULTIREG_LAST_USE_SHIFT + regIndex));
     }
 
@@ -3251,6 +3255,7 @@ public:
     void SetMultiReg()
     {
         gtFlags |= GTF_VAR_MULTIREG;
+        ClearOtherRegFlags();
     }
 
     regNumber GetRegNumByIdx(int regIndex)
@@ -7300,6 +7305,61 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
     }
 
     assert(!"Invalid node type for GetRegTypeByIndex");
+    return TYP_UNDEF;
+}
+
+//-----------------------------------------------------------------------------------
+// GetRegSpillFlagByIdx: Get a specific register's spill flags, based on regIndex,
+//                       for this multi-reg node.
+//
+// Arguments:
+//     regIndex - which register's spill flags to return
+//
+// Return Value:
+//     The spill flags (GTF_SPILL GTF_SPILLED) for this register.
+//
+// Notes:
+//     This must be a multireg node and 'regIndex' must be a valid index for this node.
+//     This method returns the GTF "equivalent" flags based on the packed flags on the multireg node.
+//
+inline unsigned int GenTree::GetRegSpillFlagByIdx(int regIndex) const
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        return AsCall()->AsCall()->GetRegSpillFlagByIdx(regIndex);
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        return AsPutArgSplit()->GetRegSpillFlagByIdx(regIndex);
+    }
+#endif
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        return AsMultiRegOp()->GetRegSpillFlagByIdx(regIndex);
+    }
+#endif
+
+#endif // FEATURE_MULTIREG_RET
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    if (OperIs(GT_HWINTRINSIC))
+    {
+        // At this time, the only multi-reg HW intrinsics all return the type of their
+        // arguments. If this changes, we will need a way to record or determine this.
+        assert(TypeGet() == TYP_STRUCT);
+        return gtGetOp1()->TypeGet();
+    }
+#endif
+    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    {
+        return AsLclVar()->GetRegSpillFlagByIdx(regIndex);
+    }
+
+    assert(!"Invalid node type for GetRegSpillFlagByIdx");
     return TYP_UNDEF;
 }
 

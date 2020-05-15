@@ -1650,6 +1650,10 @@ bool SsaBuilder::IncludeInSsa(unsigned lclNum)
         //
         return false;
     }
+    else if (varDsc->lvIsStructField && m_pCompiler->lvaGetDesc(varDsc->lvParentLcl)->lvIsMultiRegRet)
+    {
+        return false;
+    }
     // otherwise this variable is included in SSA
     return true;
 }

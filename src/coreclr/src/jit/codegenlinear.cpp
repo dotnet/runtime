@@ -939,6 +939,86 @@ GenTree* sameRegAsDst(GenTree* tree, GenTree*& other /*out*/)
 }
 
 //------------------------------------------------------------------------
+// genUnspillLocal: Reload a register candidate local into a register.
+//
+// Arguments:
+//     varNum    - The variable number of the local to be reloaded (unspilled).
+//                 It may be a local field.
+//     type      - The type of the local.
+//     lclNode   - The node being unspilled. Note that for a multi-reg local,
+//                 the gtLclNum will be that of the parent struct.
+//     regNum    - The register that 'varNum' should be loaded to.
+//     reSpill   - True if it will be immediately spilled after use.
+//     isLastUse - True if this is a last use of 'varNum'.
+//
+// Notes:
+//     The caller must have determined that this local needs to be unspilled.
+void CodeGen::genUnspillLocal(
+    unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse)
+{
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+    inst_set_SV_var(lclNode);
+    instruction ins = ins_Load(type, compiler->isSIMDTypeLocalAligned(varNum));
+    GetEmitter()->emitIns_R_S(ins, emitTypeSize(type), regNum, varNum, 0);
+
+    // TODO-Review: We would like to call:
+    //      genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(tree));
+    // instead of the following code, but this ends up hitting this assert:
+    //      assert((regSet.GetMaskVars() & regMask) == 0);
+    // due to issues with LSRA resolution moves.
+    // So, just force it for now. This probably indicates a condition that creates a GC hole!
+    //
+    // Extra note: I think we really want to call something like gcInfo.gcUpdateForRegVarMove,
+    // because the variable is not really going live or dead, but that method is somewhat poorly
+    // factored because it, in turn, updates rsMaskVars which is part of RegSet not GCInfo.
+    // TODO-Cleanup: This code exists in other CodeGen*.cpp files, and should be moved to CodeGenCommon.cpp.
+
+    // Don't update the variable's location if we are just re-spilling it again.
+
+    if (!reSpill)
+    {
+        varDsc->SetRegNum(regNum);
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+        // We want "VariableLiveRange" inclusive on the beginning and exclusive on the ending.
+        // For that we shouldn't report an update of the variable location if is becoming dead
+        // on the same native offset.
+        if (!isLastUse)
+        {
+            // Report the home change for this variable
+            varLiveKeeper->siUpdateVariableLiveRange(varDsc, varNum);
+        }
+#endif // USING_VARIABLE_LIVE_RANGE
+
+        if (!varDsc->lvLiveInOutOfHndlr)
+        {
+#ifdef DEBUG
+            if (VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
+            {
+                JITDUMP("\t\t\t\t\t\t\tRemoving V%02u from gcVarPtrSetCur\n", varNum);
+            }
+#endif // DEBUG
+            VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
+        }
+
+#ifdef DEBUG
+        if (compiler->verbose)
+        {
+            printf("\t\t\t\t\t\t\tV%02u in reg ", varNum);
+            varDsc->PrintVarReg();
+            printf(" is becoming live  ");
+            compiler->printTreeID(lclNode);
+            printf("\n");
+        }
+#endif // DEBUG
+
+        regSet.AddMaskVars(genGetRegMask(varDsc));
+    }
+
+    gcInfo.gcMarkRegPtrVal(regNum, type);
+}
+
+//------------------------------------------------------------------------
 // genUnspillRegIfNeeded: Reload the value into a register, if needed
 //
 // Arguments:
@@ -968,8 +1048,9 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // Reset spilled flag, since we are going to load a local variable from its home location.
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
-            GenTreeLclVarCommon* lcl    = unspillTree->AsLclVarCommon();
-            LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
+            GenTreeLclVar* lcl       = unspillTree->AsLclVar();
+            LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl->GetLclNum());
+            var_types      spillType = unspillTree->TypeGet();
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
 #ifdef TARGET_XARCH
@@ -985,99 +1066,26 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // In the normalizeOnLoad case ins_Load will return an appropriate sign- or zero-
             // extending load.
 
-            var_types treeType = unspillTree->TypeGet();
-            if (treeType != genActualType(varDsc->lvType) && !varTypeIsGC(treeType) && !varDsc->lvNormalizeOnLoad())
+            if (spillType != genActualType(varDsc->lvType) && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
             {
                 assert(!varTypeIsGC(varDsc));
-                var_types spillType = genActualType(varDsc->lvType);
-                unspillTree->gtType = spillType;
-                inst_RV_TT(ins_Load(spillType, compiler->isSIMDTypeLocalAligned(lcl->GetLclNum())), dstReg,
-                           unspillTree);
-                unspillTree->gtType = treeType;
-            }
-            else
-            {
-                inst_RV_TT(ins_Load(treeType, compiler->isSIMDTypeLocalAligned(lcl->GetLclNum())), dstReg, unspillTree);
+                spillType = genActualType(varDsc->lvType);
             }
 #elif defined(TARGET_ARM64)
             var_types targetType = unspillTree->gtType;
-            if (targetType != genActualType(varDsc->lvType) && !varTypeIsGC(targetType) && !varDsc->lvNormalizeOnLoad())
+            if (spillType != genActualType(varDsc->lvType) && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
             {
                 assert(!varTypeIsGC(varDsc));
-                targetType = genActualType(varDsc->lvType);
+                spillType = genActualType(varDsc->lvType);
             }
-            instruction ins  = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->GetLclNum()));
-            emitAttr    attr = emitActualTypeSize(targetType);
-            emitter*    emit = GetEmitter();
-
-            // Load local variable from its home location.
-            inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
 #elif defined(TARGET_ARM)
-            var_types   targetType = unspillTree->gtType;
-            instruction ins        = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->GetLclNum()));
-            emitAttr    attr       = emitTypeSize(targetType);
-
-            // Load local variable from its home location.
-            inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
+// No normalizing for ARM
 #else
             NYI("Unspilling not implemented for this target architecture.");
 #endif
-
-            // TODO-Review: We would like to call:
-            //      genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(tree));
-            // instead of the following code, but this ends up hitting this assert:
-            //      assert((regSet.GetMaskVars() & regMask) == 0);
-            // due to issues with LSRA resolution moves.
-            // So, just force it for now. This probably indicates a condition that creates a GC hole!
-            //
-            // Extra note: I think we really want to call something like gcInfo.gcUpdateForRegVarMove,
-            // because the variable is not really going live or dead, but that method is somewhat poorly
-            // factored because it, in turn, updates rsMaskVars which is part of RegSet not GCInfo.
-            // TODO-Cleanup: This code exists in other CodeGen*.cpp files, and should be moved to CodeGenCommon.cpp.
-
-            // Don't update the variable's location if we are just re-spilling it again.
-
-            if ((unspillTree->gtFlags & GTF_SPILL) == 0)
-            {
-                genUpdateVarReg(varDsc, tree);
-
-#ifdef USING_VARIABLE_LIVE_RANGE
-                // We want "VariableLiveRange" inclusive on the beginbing and exclusive on the ending.
-                // For that we shouldn't report an update of the variable location if is becoming dead
-                // on the same native offset.
-                if ((unspillTree->gtFlags & GTF_VAR_DEATH) == 0)
-                {
-                    // Report the home change for this variable
-                    varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->GetLclNum());
-                }
-#endif // USING_VARIABLE_LIVE_RANGE
-
-                if (!varDsc->lvLiveInOutOfHndlr)
-                {
-#ifdef DEBUG
-                    if (VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
-                    {
-                        JITDUMP("\t\t\t\t\t\t\tRemoving V%02u from gcVarPtrSetCur\n", lcl->GetLclNum());
-                    }
-#endif // DEBUG
-                    VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
-                }
-
-#ifdef DEBUG
-                if (compiler->verbose)
-                {
-                    printf("\t\t\t\t\t\t\tV%02u in reg ", lcl->GetLclNum());
-                    varDsc->PrintVarReg();
-                    printf(" is becoming live  ");
-                    compiler->printTreeID(unspillTree);
-                    printf("\n");
-                }
-#endif // DEBUG
-
-                regSet.AddMaskVars(genGetRegMask(varDsc));
-            }
-
-            gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
+            bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
+            bool isLastUse = lcl->IsLastUse(0);
+            genUnspillLocal(lcl->GetLclNum(), spillType, lcl, dstReg, reSpill, isLastUse);
         }
         else if (unspillTree->IsMultiRegCall())
         {
@@ -1850,6 +1858,41 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
 }
 
 //-------------------------------------------------------------------------
+// genSpillLocal: Generate the actual spill of a local var.
+//
+// Arguments:
+//     varNum    - The variable number of the local to be spilled.
+//                 It may be a local field.
+//     type      - The type of the local.
+//     lclNode   - The node being spilled. Note that for a multi-reg local,
+//                 the gtLclNum will be that of the parent struct.
+//     regNum    - The register that 'varNum' is currently in.
+//
+// Return Value:
+//     None.
+//
+void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum)
+{
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+    assert(!varDsc->lvNormalizeOnStore() || (type == genActualType(varDsc->TypeGet())));
+
+    // We have a register candidate local that is marked with GTF_SPILL.
+    // This flag generally means that we need to spill this local.
+    // The exception is the case of a use of an EH var use that is being "spilled"
+    // to the stack, indicated by GTF_SPILL (note that all EH lclVar defs are always
+    // spilled, i.e. write-thru).
+    // An EH var use is always valid on the stack (so we don't need to actually spill it),
+    // but the GTF_SPILL flag records the fact that the register value is going dead.
+    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || !varDsc->lvLiveInOutOfHndlr)
+    {
+        // Store local variable to its home location.
+        // Ensure that lclVar stores are typed correctly.
+        GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum,
+                                  varNum, 0);
+    }
+}
+
+//-------------------------------------------------------------------------
 // genProduceReg: do liveness update for register produced by the current
 // node in codegen after code has been emitted for it.
 //
@@ -1877,24 +1920,8 @@ void CodeGen::genProduceReg(GenTree* tree)
 
         if (genIsRegCandidateLocal(tree))
         {
-            unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-            assert(!varDsc->lvNormalizeOnStore() || (tree->TypeGet() == genActualType(varDsc->TypeGet())));
-
-            // If we reach here, we have a register candidate local that is marked with GTF_SPILL.
-            // This flag generally means that we need to spill this local.
-            // The exception is the case of a use of an EH var use that is being "spilled"
-            // to the stack, indicated by GTF_SPILL (note that all EH lclVar defs are always
-            // spilled, i.e. write-thru).
-            // An EH var use is always valid on the stack (so we don't need to actually spill it),
-            // but the GTF_SPILL flag records the fact that the register value is going dead.
-            if (((tree->gtFlags & GTF_VAR_DEF) != 0) || !varDsc->lvLiveInOutOfHndlr)
-            {
-                // Store local variable to its home location.
-                // Ensure that lclVar stores are typed correctly.
-                inst_TT_RV(ins_Store(tree->gtType, compiler->isSIMDTypeLocalAligned(varNum)),
-                           emitTypeSize(tree->TypeGet()), tree, tree->GetRegNum());
-            }
+            unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
+            genSpillLocal(varNum, tree->TypeGet(), tree->AsLclVar(), tree->GetRegNum());
         }
         else
         {
@@ -1983,8 +2010,8 @@ void CodeGen::genProduceReg(GenTree* tree)
         //    the register as live, with a GC pointer, if the variable is dead.
         if (!genIsRegCandidateLocal(tree) || ((tree->gtFlags & GTF_VAR_DEATH) == 0))
         {
-            // Multi-reg call node will produce more than one register result.
-            // Mark all the regs produced by call node.
+            // Multi-reg nodes will produce more than one register result.
+            // Mark all the regs produced by the node.
             if (tree->IsMultiRegCall())
             {
                 const GenTreeCall*    call        = tree->AsCall();
