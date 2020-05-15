@@ -4355,43 +4355,39 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
     instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
     assert((ins == INS_fcvtn) || (ins == INS_xtn));
 
-    if (ins == INS_fcvtn)
-    {
-        GetEmitter()->emitIns_R_R(INS_fcvtn, EA_8BYTE, targetReg, op1Reg);
-        GetEmitter()->emitIns_R_R(INS_fcvtn2, EA_8BYTE, targetReg, op2Reg);
-    }
-    else
-    {
-        insOpts opt  = INS_OPTS_NONE;
-        insOpts opt2 = INS_OPTS_NONE;
+    instruction ins2 = (ins == INS_fcvtn) ? INS_fcvtn2 : INS_xtn2;
 
-        // This is not the same as genGetSimdInsOpt()
-        // Basetype is the soure operand type
-        // However encoding is based on the destination operand type which is 1/2 the basetype.
-        switch (baseType)
-        {
-            case TYP_ULONG:
-            case TYP_LONG:
-                opt  = INS_OPTS_2S;
-                opt2 = INS_OPTS_4S;
-                break;
-            case TYP_UINT:
-            case TYP_INT:
-                opt  = INS_OPTS_4H;
-                opt2 = INS_OPTS_8H;
-                break;
-            case TYP_USHORT:
-            case TYP_SHORT:
-                opt  = INS_OPTS_8B;
-                opt2 = INS_OPTS_16B;
-                break;
-            default:
-                assert(!"Unsupported narrowing element type");
-                unreached();
-        }
-        GetEmitter()->emitIns_R_R(INS_xtn, EA_8BYTE, targetReg, op1Reg, opt);
-        GetEmitter()->emitIns_R_R(INS_xtn2, EA_16BYTE, targetReg, op2Reg, opt2);
+    insOpts opt  = INS_OPTS_NONE;
+    insOpts opt2 = INS_OPTS_NONE;
+
+    // This is not the same as genGetSimdInsOpt()
+    // Basetype is the soure operand type
+    // However encoding is based on the destination operand type which is 1/2 the basetype.
+    switch (baseType)
+    {
+        case TYP_ULONG:
+        case TYP_LONG:
+        case TYP_DOUBLE:
+            opt  = INS_OPTS_2S;
+            opt2 = INS_OPTS_4S;
+            break;
+        case TYP_UINT:
+        case TYP_INT:
+            opt  = INS_OPTS_4H;
+            opt2 = INS_OPTS_8H;
+            break;
+        case TYP_USHORT:
+        case TYP_SHORT:
+            opt  = INS_OPTS_8B;
+            opt2 = INS_OPTS_16B;
+            break;
+        default:
+            assert(!"Unsupported narrowing element type");
+            unreached();
     }
+
+    GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg, opt);
+    GetEmitter()->emitIns_R_R(ins2, EA_16BYTE, targetReg, op2Reg, opt2);
 
     genProduceReg(simdNode);
 }
