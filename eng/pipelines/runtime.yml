@@ -39,6 +39,7 @@ pr:
     - docs/*
     - eng/pipelines/runtime.yml
     - '*.md'
+    - '**/*.md'
     - '*.TXT'
 
 variables:
