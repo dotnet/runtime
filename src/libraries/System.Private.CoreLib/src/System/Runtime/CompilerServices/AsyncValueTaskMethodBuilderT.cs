@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -458,21 +459,84 @@ namespace System.Runtime.CompilerServices
             public Action MoveNextAction => _moveNextAction ??= new Action(MoveNext);
 
             /// <summary>Invoked to run MoveNext when this instance is executed from the thread pool.</summary>
-            void IThreadPoolWorkItem.Execute() => MoveNext();
-
-            /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
-            public void MoveNext()
+            void IThreadPoolWorkItem.Execute()
             {
                 ExecutionContext? context = Context;
-
-                if (context is null)
+                // Call directly if EC flow is suppressed or if context is Default on ThreadPool
+                if (context is null || context.IsDefault)
                 {
                     Debug.Assert(!(StateMachine is null));
                     StateMachine.MoveNext();
                 }
                 else
                 {
-                    ExecutionContext.RunInternal(context, s_callback, this);
+                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this);
+                }
+            }
+
+            /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
+            public void MoveNext()
+            {
+                Debug.Assert(!(StateMachine is null));
+
+                ExecutionContext? context = Context;
+                // As we can't annotate to Jit which branch is unlikely to be taken
+                // this is arranged to prefer specific paths.
+                if (context != null)
+                {
+                    if (context.IsDefault)
+                    {
+                        // 1st preference: Default context
+                        Thread currentThread = Thread.CurrentThread;
+                        ExecutionContext? currentContext = currentThread._executionContext;
+                        if (currentContext == null || currentContext.IsDefault)
+                        {
+                            // Preferred: On Default and to run on Default; however we need to undo any changes that happen in call.
+                            SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
+                            ExceptionDispatchInfo? edi = null;
+                            try
+                            {
+                                // Run directly
+                                StateMachine.MoveNext();
+                            }
+                            catch (Exception ex)
+                            {
+                                edi = ExceptionDispatchInfo.Capture(ex);
+                            }
+
+                            // Enregister references as they have been stack spilled due to crossing EH.
+                            Thread thread = currentThread;
+                            SynchronizationContext? syncCtx = previousSyncCtx;
+                            if (thread._executionContext == null)
+                            {
+                                if (thread._synchronizationContext != syncCtx)
+                                {
+                                    thread._synchronizationContext = syncCtx;
+                                }
+
+                                edi?.Throw();
+                            }
+                            else
+                            {
+                                ExecutionContext.RestoreDefaultContextThrowIfNeeded(thread, syncCtx, edi);
+                            }
+                        }
+                        else
+                        {
+                            // Not preferred: Current thread is not on Default
+                            ExecutionContext.RunOnDefaultContext(currentThread, currentContext, s_callback, this);
+                        }
+                    }
+                    else
+                    {
+                        // 2nd preference: non-default context
+                        ExecutionContext.RunInternal(context, s_callback, this);
+                    }
+                }
+                else
+                {
+                    // 3rd preference: flow supressed context
+                    StateMachine.MoveNext();
                 }
             }
 

@@ -32,7 +32,7 @@ namespace System.Threading.Tasks
         private static readonly ParameterizedThreadStart s_longRunningThreadWork = static s =>
         {
             Debug.Assert(s is Task);
-            ((Task)s).ExecuteEntryUnsafe(threadPoolThread: null);
+            ((Task)s).ExecuteEntryUnsafe();
         };
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace System.Threading.Tasks
 
             try
             {
-                task.ExecuteEntryUnsafe(threadPoolThread: null); // handles switching Task.Current etc.
+                task.ExecuteEntryUnsafe(); // handles switching Task.Current etc.
             }
             finally
             {

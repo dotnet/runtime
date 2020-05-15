@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Internal.Runtime.CompilerServices;
@@ -299,39 +300,33 @@ namespace System.Runtime.CompilerServices
             /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             public Action MoveNextAction => _moveNextAction ??= new Action(MoveNext);
 
-            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
-
-            /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
-            public void MoveNext() => MoveNext(threadPoolThread: null);
-
-            private void MoveNext(Thread? threadPoolThread)
+            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread)
             {
                 Debug.Assert(!IsCompleted);
+                Debug.Assert(threadPoolThread == Thread.CurrentThread);
 
                 bool loggingOn = TplEventSource.Log.IsEnabled();
                 if (loggingOn)
                 {
-                    TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                    // Jump forward for logging, so its not picked.
+                    goto LogStart;
                 }
 
+            Start:
+                Debug.Assert(StateMachine != null);
+
                 ExecutionContext? context = Context;
-                if (context == null)
+                // Call directly if EC flow is suppressed or if context is Default on ThreadPool
+                if (context == null || context.IsDefault)
                 {
-                    Debug.Assert(StateMachine != null);
                     StateMachine.MoveNext();
                 }
                 else
                 {
-                    if (threadPoolThread is null)
-                    {
-                        ExecutionContext.RunInternal(context, s_callback, this);
-                    }
-                    else
-                    {
-                        ExecutionContext.RunFromThreadPoolDispatchLoop(threadPoolThread, context, s_callback, this);
-                    }
+                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this, threadPoolThread);
                 }
 
+                // Can't do much here to work with the branch predictor without excessive gotos.
                 if (IsCompleted)
                 {
                     // If async debugging is enabled, remove the task from tracking.
@@ -357,10 +352,136 @@ namespace System.Runtime.CompilerServices
 #endif
                 }
 
+                if (!loggingOn)
+                {
+                    // Logging off: Preferred.
+                    return;
+                }
+
+                // Logging on: Not preferred.
+                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                return;
+
+            LogStart:
+                TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                goto Start;
+            }
+
+            /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
+            public void MoveNext()
+            {
+                Debug.Assert(!IsCompleted);
+                // As we can't annotate to Jit which branch is unlikely to be taken
+                // this is arranged to prefer specific paths.
+                bool loggingOn = TplEventSource.Log.IsEnabled();
                 if (loggingOn)
                 {
-                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                    // Jump forward for logging, so its not picked.
+                    goto LogStart;
                 }
+
+            Start:
+                Debug.Assert(StateMachine != null);
+
+                ExecutionContext? context = Context;
+
+                if (context != null)
+                {
+                    if (context.IsDefault)
+                    {
+                        // 1st preference: Default context.
+                        Thread currentThread = Thread.CurrentThread;
+                        ExecutionContext? currentContext = currentThread._executionContext;
+                        if (currentContext == null || currentContext.IsDefault)
+                        {
+                            // Preferred: On Default and to run on Default; however we need to undo any changes that happen in call.
+                            SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
+                            ExceptionDispatchInfo? edi = null;
+                            try
+                            {
+                                // Run directly
+                                StateMachine.MoveNext();
+                            }
+                            catch (Exception ex)
+                            {
+                                edi = ExceptionDispatchInfo.Capture(ex);
+                            }
+
+                            // Enregister references as they have been stack spilled due to crossing EH.
+                            Thread thread = currentThread;
+                            SynchronizationContext? syncCtx = previousSyncCtx;
+                            if (thread._executionContext == null)
+                            {
+                                if (thread._synchronizationContext != syncCtx)
+                                {
+                                    thread._synchronizationContext = syncCtx;
+                                }
+
+                                edi?.Throw();
+                            }
+                            else
+                            {
+                                ExecutionContext.RestoreDefaultContextThrowIfNeeded(thread, syncCtx, edi);
+                            }
+                        }
+                        else
+                        {
+                            // Not preferred: Current thread is not on Default.
+                            ExecutionContext.RunOnDefaultContext(currentThread, currentContext, s_callback, this);
+                        }
+                    }
+                    else
+                    {
+                        // 2nd preference: non-default context.
+                        ExecutionContext.RunInternal(context, s_callback, this);
+                    }
+                }
+                else
+                {
+                    // 3rd preference: flow supressed context.
+                    StateMachine.MoveNext();
+                }
+
+                // Can't do much here to work with the branch predictor without excessive gotos.
+                if (IsCompleted)
+                {
+                    // If async debugging is enabled, remove the task from tracking.
+                    if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+                    {
+                        System.Threading.Tasks.Task.RemoveFromActiveTasks(this);
+                    }
+
+                    // Clear out state now that the async method has completed.
+                    // This avoids keeping arbitrary state referenced by lifted locals
+                    // if this Task / state machine box is held onto.
+                    StateMachine = default;
+                    Context = default;
+
+#if !CORERT
+                    // In case this is a state machine box with a finalizer, suppress its finalization
+                    // as it's now complete.  We only need the finalizer to run if the box is collected
+                    // without having been completed.
+                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                    {
+                        GC.SuppressFinalize(this);
+                    }
+#endif
+                }
+
+                if (!loggingOn)
+                {
+                    // Logging Off: Preferred.
+                    return;
+                }
+
+                // Logging on: Not preferred.
+                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                return;
+
+            LogStart:
+                TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                goto Start;
+
             }
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
