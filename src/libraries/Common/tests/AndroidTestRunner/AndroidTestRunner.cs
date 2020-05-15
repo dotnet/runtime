@@ -92,9 +92,7 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
 
     public string? Locale { get; }
 
-#pragma warning disable CS8764
     public override TextWriter? Logger => null;
-#pragma warning restore CS8764
 
     public override string TestsResultsFinalPath
     {
