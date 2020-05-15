@@ -3090,20 +3090,38 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             LowerRetStructLclVar(ret);
             break;
 
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 #ifdef FEATURE_SIMD
         case GT_SIMD:
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
+        {
+            assert(!retVal->TypeIs(TYP_STRUCT));
+            if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
+            {
+                GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), retVal, nullptr);
+                ret->gtOp1           = bitcast;
+                BlockRange().InsertBefore(ret, bitcast);
+                ContainCheckBitCast(bitcast);
+            }
+        }
+        break;
+#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
+
         case GT_LCL_FLD:
         {
-            GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), retVal, nullptr);
-            ret->gtOp1           = bitcast;
-            BlockRange().InsertBefore(ret, bitcast);
-            ContainCheckBitCast(bitcast);
-            break;
+#ifdef DEBUG
+            GenTreeLclFld* lclFld = retVal->AsLclFld();
+            unsigned       lclNum = lclFld->GetLclNum();
+            LclVarDsc*     varDsc = comp->lvaGetDesc(lclNum);
+            assert(varDsc->lvDoNotEnregister);
+#endif
+            retVal->ChangeType(nativeReturnType);
         }
+        break;
+
         default:
             unreached();
     }
