@@ -51,6 +51,10 @@ namespace System.Net.Sockets
                 }
                 if (!socket.Blocking)
                 {
+                    // Stream.Read*/Write* are incompatible with the semantics of non-blocking sockets, and
+                    // allowing non-blocking sockets could result in non-deterministic failures from those
+                    // operations. A developer that requires using NetworkStream with a non-blocking socket can
+                    // temporarily flip Socket.Blocking as a workaround.
                     throw new IOException(SR.net_sockets_blocking);
                 }
                 if (!socket.Connected)

@@ -11627,6 +11627,282 @@ void CodeGen::genReturn(GenTree* treeNode)
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 }
 
+//------------------------------------------------------------------------
+// isStructReturn: Returns whether the 'treeNode' is returning a struct.
+//
+// Arguments:
+//    treeNode - The tree node to evaluate whether is a struct return.
+//
+// Return Value:
+//    Returns true if the 'treeNode" is a GT_RETURN node of type struct.
+//    Otherwise returns false.
+//
+bool CodeGen::isStructReturn(GenTree* treeNode)
+{
+    // This method could be called for 'treeNode' of GT_RET_FILT or GT_RETURN.
+    // For the GT_RET_FILT, the return is always a bool or a void, for the end of a finally block.
+    noway_assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    if (treeNode->OperGet() != GT_RETURN)
+    {
+        return false;
+    }
+
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
+    assert(!varTypeIsStruct(treeNode));
+    return false;
+#elif defined(TARGET_ARM64)
+    return varTypeIsStruct(treeNode) && (compiler->info.compRetNativeType == TYP_STRUCT);
+#else
+    return varTypeIsStruct(treeNode);
+#endif
+}
+
+//------------------------------------------------------------------------
+// genStructReturn: Generates code for returning a struct.
+//
+// Arguments:
+//    treeNode - The GT_RETURN tree node.
+//
+// Return Value:
+//    None
+//
+// Assumption:
+//    op1 of GT_RETURN node is either GT_LCL_VAR or multi-reg GT_CALL
+//
+void CodeGen::genStructReturn(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_RETURN);
+    GenTree* op1 = treeNode->gtGetOp1();
+    genConsumeRegs(op1);
+    GenTree* actualOp1 = op1;
+    if (op1->IsCopyOrReload())
+    {
+        actualOp1 = op1->gtGetOp1();
+    }
+
+    ReturnTypeDesc retTypeDesc;
+    LclVarDsc*     varDsc = nullptr;
+    if (actualOp1->OperIs(GT_LCL_VAR))
+    {
+        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+    }
+    else
+    {
+        assert(actualOp1->OperIs(GT_CALL));
+        retTypeDesc = *(actualOp1->AsCall()->GetReturnTypeDesc());
+    }
+    unsigned regCount = retTypeDesc.GetReturnRegCount();
+    assert(regCount <= MAX_RET_REG_COUNT);
+
+#if FEATURE_MULTIREG_RET
+    if (actualOp1->OperIs(GT_LCL_VAR) && (varTypeIsEnregisterable(op1)))
+    {
+        // Right now the only enregisterable structs supported are SIMD vector types.
+        assert(varTypeIsSIMD(op1));
+#ifdef FEATURE_SIMD
+        genSIMDSplitReturn(op1, &retTypeDesc);
+#endif // FEATURE_SIMD
+    }
+    else if (actualOp1->OperIs(GT_LCL_VAR))
+    {
+        GenTreeLclVar* lclNode = actualOp1->AsLclVar();
+        LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode->GetLclNum());
+        assert(varDsc->lvIsMultiRegRet);
+        int offset = 0;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            var_types type  = retTypeDesc.GetReturnRegType(i);
+            regNumber toReg = retTypeDesc.GetABIReturnReg(i);
+            GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
+            offset += genTypeSize(type);
+        }
+    }
+    else
+    {
+        assert(actualOp1->IsMultiRegCall());
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            var_types type    = retTypeDesc.GetReturnRegType(i);
+            regNumber toReg   = retTypeDesc.GetABIReturnReg(i);
+            regNumber fromReg = op1->GetRegByIndex(i);
+            if (fromReg == REG_NA)
+            {
+                assert(op1->IsCopyOrReload());
+                fromReg = actualOp1->GetRegByIndex(i);
+            }
+            if (fromReg != toReg)
+            {
+                inst_RV_RV(ins_Copy(type), toReg, fromReg, type);
+            }
+        }
+    }
+#else // !FEATURE_MULTIREG_RET
+    unreached();
+#endif
+}
+
+//------------------------------------------------------------------------
+// genRegCopy: Produce code for a GT_COPY node.
+//
+// Arguments:
+//    tree - the GT_COPY node
+//
+// Notes:
+//    This will copy the register(s) produced by this nodes source, to
+//    the register(s) allocated to this GT_COPY node.
+//    It has some special handling for these casess:
+//    - when the source and target registers are in different register files
+//      (note that this is *not* a conversion).
+//    - when the source is a lclVar whose home location is being moved to a new
+//      register (rather than just being copied for temporary use).
+//
+void CodeGen::genRegCopy(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_COPY);
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
+
+    if (op1->IsMultiRegNode())
+    {
+        // Register allocation assumes that any reload and copy are done in operand order.
+        // That is, we can have:
+        //    (reg0, reg1) = COPY(V0,V1) where V0 is in reg1 and V1 is in memory
+        // The register allocation model assumes:
+        //     First, V0 is moved to reg0 (v1 can't be in reg0 because it is still live, which would be a conflict).
+        //     Then, V1 is moved to reg1
+        // However, if we call genConsumeRegs on op1, it will do the reload of V1 before we do the copy of V0.
+        // So we need to handle that case first.
+        //
+        // There should never be any circular dependencies, and we will check that here.
+
+        GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
+        unsigned             regCount = copyNode->GetRegCount();
+        // GenTreeCopyOrReload only reports the number of registers that are valid.
+        assert(regCount <= 2);
+
+        // First set the source registers as busy if they haven't been spilled.
+        // (Note that this is just for verification that we don't have circular dependencies.)
+        regMaskTP busyRegs = RBM_NONE;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            if ((op1->GetRegSpillFlagByIdx(i) & GTF_SPILLED) == 0)
+            {
+                busyRegs |= genRegMask(op1->GetRegByIndex(i));
+            }
+        }
+        // First do any copies - we'll do the reloads after all the copies are complete.
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber sourceReg     = op1->GetRegByIndex(i);
+            regNumber targetReg     = copyNode->GetRegNumByIdx(i);
+            regMaskTP targetRegMask = genRegMask(targetReg);
+            // GenTreeCopyOrReload only reports the number of registers that are valid.
+            if (targetReg != REG_NA)
+            {
+                // We shouldn't specify a no-op move.
+                assert(sourceReg != targetReg);
+                assert((busyRegs & targetRegMask) == 0);
+                // Clear sourceReg from the busyRegs, and add targetReg.
+                busyRegs &= ~genRegMask(sourceReg);
+                busyRegs |= genRegMask(targetReg);
+                var_types type;
+                if (op1->IsMultiRegLclVar())
+                {
+                    type = op1->AsLclVar()->GetFieldTypeByIndex(compiler, i);
+                }
+                else
+                {
+                    type = op1->GetRegTypeByIndex(i);
+                }
+                inst_RV_RV(ins_Copy(type), targetReg, sourceReg, type);
+            }
+        }
+        // Now we can consume op1, which will perform any necessary reloads.
+        genConsumeReg(op1);
+    }
+    else
+    {
+        var_types targetType = treeNode->TypeGet();
+        regNumber targetReg  = treeNode->GetRegNum();
+        assert(targetReg != REG_NA);
+        assert(targetType != TYP_STRUCT);
+
+        // Check whether this node and the node from which we're copying the value have
+        // different register types. This can happen if (currently iff) we have a SIMD
+        // vector type that fits in an integer register, in which case it is passed as
+        // an argument, or returned from a call, in an integer register and must be
+        // copied if it's in an xmm register.
+
+        bool srcFltReg = (varTypeIsFloating(op1) || varTypeIsSIMD(op1));
+        bool tgtFltReg = (varTypeIsFloating(treeNode) || varTypeIsSIMD(treeNode));
+        if (srcFltReg != tgtFltReg)
+        {
+            instruction ins;
+            regNumber   fpReg;
+            regNumber   intReg;
+            if (tgtFltReg)
+            {
+                ins    = ins_CopyIntToFloat(op1->TypeGet(), treeNode->TypeGet());
+                fpReg  = targetReg;
+                intReg = op1->GetRegNum();
+            }
+            else
+            {
+                ins    = ins_CopyFloatToInt(op1->TypeGet(), treeNode->TypeGet());
+                intReg = targetReg;
+                fpReg  = op1->GetRegNum();
+            }
+            inst_RV_RV(ins, fpReg, intReg, targetType);
+        }
+        else
+        {
+            inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
+        }
+
+        if (op1->IsLocal())
+        {
+            // The lclVar will never be a def.
+            // If it is a last use, the lclVar will be killed by genConsumeReg(), as usual, and genProduceReg will
+            // appropriately set the gcInfo for the copied value.
+            // If not, there are two cases we need to handle:
+            // - If this is a TEMPORARY copy (indicated by the GTF_VAR_DEATH flag) the variable
+            //   will remain live in its original register.
+            //   genProduceReg() will appropriately set the gcInfo for the copied value,
+            //   and genConsumeReg will reset it.
+            // - Otherwise, we need to update register info for the lclVar.
+
+            GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
+            assert((lcl->gtFlags & GTF_VAR_DEF) == 0);
+
+            if ((lcl->gtFlags & GTF_VAR_DEATH) == 0 && (treeNode->gtFlags & GTF_VAR_DEATH) == 0)
+            {
+                LclVarDsc* varDsc = compiler->lvaGetDesc(lcl);
+
+                // If we didn't just spill it (in genConsumeReg, above), then update the register info
+                if (varDsc->GetRegNum() != REG_STK)
+                {
+                    // The old location is dying
+                    genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(op1));
+
+                    gcInfo.gcMarkRegSetNpt(genRegMask(op1->GetRegNum()));
+
+                    genUpdateVarReg(varDsc, treeNode);
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+                    // Report the home change for this variable
+                    varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->GetLclNum());
+#endif // USING_VARIABLE_LIVE_RANGE
+
+                    // The new location is going live
+                    genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(treeNode));
+                }
+            }
+        }
+    }
+
+    genProduceReg(treeNode);
+}
+
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
 //------------------------------------------------------------------------
