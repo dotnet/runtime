@@ -29,7 +29,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.XPath;
@@ -247,9 +246,8 @@ namespace Mono.Linker.Steps
 				return;
 
 			if (Annotations.IsMarked (type)) {
-				var existingLevel = Annotations.TryGetPreserve (type, out TypePreserve existingPreserve) ? existingPreserve : TypePreserve.Nothing;
 				var duplicateLevel = preserve != TypePreserve.Nothing ? preserve : nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
-				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {type.FullName} ({existingLevel}).  Duplicate uses ({duplicateLevel})");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Duplicate preserve of '{type.FullName}' in '{_xmlDocumentLocation}'", 2025));
 			}
 
 			Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
@@ -357,7 +355,7 @@ namespace Mono.Linker.Steps
 		void MarkField (TypeDefinition type, FieldDefinition field)
 		{
 			if (Annotations.IsMarked (field))
-				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {field.FullName}");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Duplicate preserve of '{field.FullName}' in '{_xmlDocumentLocation}'", 2025));
 
 			Context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 		}
@@ -425,7 +423,7 @@ namespace Mono.Linker.Steps
 		void MarkMethod (TypeDefinition type, MethodDefinition method, bool required)
 		{
 			if (Annotations.IsMarked (method))
-				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {method.FullName}");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Duplicate preserve of '{method.FullName}' in '{_xmlDocumentLocation}'", 2025));
 
 			Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			Annotations.MarkIndirectlyCalledMethod (method);
@@ -523,7 +521,7 @@ namespace Mono.Linker.Steps
 		void MarkEvent (TypeDefinition type, EventDefinition @event, bool required)
 		{
 			if (Annotations.IsMarked (@event))
-				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {@event.FullName}");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Duplicate preserve of '{@event.FullName}' in '{_xmlDocumentLocation}'", 2025));
 
 			Annotations.Mark (@event, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
@@ -595,7 +593,7 @@ namespace Mono.Linker.Steps
 		void MarkProperty (TypeDefinition type, PropertyDefinition property, string[] accessors, bool required)
 		{
 			if (Annotations.IsMarked (property))
-				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {property.FullName}");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Duplicate preserve of '{property.FullName}' in '{_xmlDocumentLocation}'", 2025));
 
 			Annotations.Mark (property, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 

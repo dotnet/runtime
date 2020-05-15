@@ -154,3 +154,7 @@ error and warning codes.
 #### `IL2024`: There are duplicate parameter names for 'parameter name' inside 'method' in 'XML document location'
 
 - The XML descriptor has more than method parameters with the same name, there can only be one return parameter
+
+#### `IL2025`: Duplicate preserve of 'member' in 'XML document location'
+
+- The XML descriptor marks for preservation the member or type 'member' more than once.

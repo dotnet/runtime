@@ -142,7 +142,7 @@ namespace Mono.Linker.Steps
 			if (!reducer.RewriteBody ())
 				return;
 
-			Context.LogMessage (MessageImportance.Low, $"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method {method.FullName}");
+			Context.LogMessage (MessageContainer.CreateInfoMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method {method.FullName}"));
 
 			if (method.ReturnType.MetadataType == MetadataType.Void)
 				return;
@@ -307,7 +307,7 @@ namespace Mono.Linker.Steps
 
 				var bodySweeper = new BodySweeper (Body, reachableInstrs, unreachableEH, context);
 				if (!bodySweeper.Initialize ()) {
-					context.LogMessage (MessageImportance.Low, $"Unreachable IL reduction is not supported for method '{Body.Method.FullName}'");
+					context.LogMessage (MessageContainer.CreateInfoMessage ($"Unreachable IL reduction is not supported for method '{Body.Method.FullName}'"));
 					return false;
 				}
 
