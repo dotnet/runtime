@@ -45,7 +45,7 @@
       <RepoTaskProjects Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
                         Include="$(RepoTasksDir)\mobile.tasks\AppleAppBuilder\AppleAppBuilder.csproj" />
       <RepoTaskProjects Condition="'$(TargetsMobile)' == 'true'"
-                        Include="$(RepoTasksDir)\mobile.tasks\AOTCompilerTask\MonoAOTCompiler.csproj" />
+                        Include="$(RepoTasksDir)\mobile.tasks\AotCompilerTask\MonoAOTCompiler.csproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(RepoTaskProjects)"
