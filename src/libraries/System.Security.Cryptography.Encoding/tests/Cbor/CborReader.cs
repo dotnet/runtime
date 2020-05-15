@@ -222,8 +222,7 @@ namespace System.Formats.Cbor
         }
 
         // TODO pass a `validateConformance` parameter
-        // TODO change return type to ReadOnSpan<byte>
-        public ReadOnlyMemory<byte> ReadEncodedValue()
+        public ReadOnlySpan<byte> ReadEncodedValue()
         {
             // keep a snapshot of the current offset
             int initialOffset = _offset;
@@ -232,7 +231,7 @@ namespace System.Formats.Cbor
             SkipValue(validateConformance: true);
 
             // return the slice corresponding to the consumed value
-            return _data.Slice(initialOffset, _offset - initialOffset);
+            return _data.Span.Slice(initialOffset, _offset - initialOffset);
         }
 
         private CborInitialByte PeekInitialByte()
