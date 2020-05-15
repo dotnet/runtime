@@ -319,12 +319,42 @@
       Condition="'%(FrameworkListRootAttributes.Value)' == ''"
       Text="Missing value for property 'FrameworkList%(FrameworkListRootAttributes.Identity)'" />
 
+    <ItemGroup>
+      <!-- UNIX -->
+      <SingleFileHostInclude Include="libSystem.Globalization.Native.so"/>
+      <SingleFileHostInclude Include="libSystem.IO.Compression.Native.so"/>
+      <SingleFileHostInclude Include="libSystem.IO.Ports.Native.so"/>
+      <SingleFileHostInclude Include="libSystem.Native.so"/>
+      <SingleFileHostInclude Include="libSystem.Net.Security.Native.so"/>
+      <SingleFileHostInclude Include="llibSystem.Security.Cryptography.Native.OpenSsl.so"/>
+      <SingleFileHostInclude Include="libclrjit.so"/>
+      <SingleFileHostInclude Include="libcoreclr.so"/>
+
+      <!-- OSX -->
+      <SingleFileHostInclude Include="libSystem.Globalization.Native.dylib"/>
+      <SingleFileHostInclude Include="libSystem.IO.Compression.Native.dylib"/>
+      <SingleFileHostInclude Include="libSystem.IO.Ports.Native.dylib"/>
+      <SingleFileHostInclude Include="libSystem.Native.dylib"/>
+      <SingleFileHostInclude Include="libSystem.Net.Security.Native.dylib"/>
+      <SingleFileHostInclude Include="libSystem.Security.Cryptography.Native.Apple.dylib"/>
+      <SingleFileHostInclude Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib"/>
+      <SingleFileHostInclude Include="libclrjit.dylib"/>
+      <SingleFileHostInclude Include="libcoreclr.dylib"/>
+
+      <!-- Windows -->
+      <SingleFileHostInclude Include="clrcompression.dll"/>
+      <SingleFileHostInclude Include="clrjit.dll"/>
+      <SingleFileHostInclude Include="coreclr.dll"/>
+      <SingleFileHostInclude Include="mscordaccore.dll"/>
+    </ItemGroup>
+
     <CreateFrameworkListFile
       Files="@(File)"
       FileClassifications="@(FrameworkListFileClass)"
       TargetFile="$(FrameworkListFile)"
       TargetFilePrefixes="ref/;runtimes/"
-      RootAttributes="@(FrameworkListRootAttributes)" />
+      RootAttributes="@(FrameworkListRootAttributes)"
+      SingleFileHostIncludeFilenames="@(SingleFileHostInclude)"/>
 
     <ItemGroup>
       <File Include="$(FrameworkListFile)">
