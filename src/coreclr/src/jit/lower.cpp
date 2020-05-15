@@ -3068,6 +3068,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 //
 void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 {
+    assert(!comp->compMethodReturnsMultiRegRetType());
     assert(!comp->compDoOldStructRetyping());
     assert(ret->OperIs(GT_RETURN));
     assert(varTypeIsStruct(ret));
@@ -3146,15 +3147,21 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 // LowerRetStructLclVar: Lowers a return node with a struct lclVar as a source.
 //
 // Arguments:
-//     node - The return node to lower.
+//    node - The return node to lower.
+//
+// Notes:
+//    - if LclVar is allocated in memory then read it as return type;
+//    - if LclVar can be enregistered read it as register type and add a bitcast if necessary;
 //
 void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
 {
+    assert(!comp->compMethodReturnsMultiRegRetType());
     assert(!comp->compDoOldStructRetyping());
     assert(ret->OperIs(GT_RETURN));
-    GenTreeLclVar* lclVar = ret->gtGetOp1()->AsLclVar();
-    unsigned       lclNum = lclVar->GetLclNum();
-    LclVarDsc*     varDsc = comp->lvaGetDesc(lclNum);
+    GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();
+    assert(lclVar->OperIs(GT_LCL_VAR));
+    unsigned   lclNum = lclVar->GetLclNum();
+    LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
 
 #ifdef DEBUG
     if (comp->gtGetStructHandleIfPresent(lclVar) == NO_CLASS_HANDLE)
@@ -3165,10 +3172,9 @@ void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
 #endif
     if (varDsc->lvPromoted && (comp->lvaGetPromotionType(lclNum) == Compiler::PROMOTION_TYPE_INDEPENDENT))
     {
-        bool canEnregister = false;
         if (varDsc->lvFieldCnt == 1)
         {
-            // We have to replace it with its field.
+            // We can replace the struct with its only field and keep the field on a register.
             assert(varDsc->lvRefCnt() == 0);
             unsigned   fieldLclNum = varDsc->lvFieldLclStart;
             LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
@@ -3178,10 +3184,11 @@ void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
                 JITDUMP("Replacing an independently promoted local var with its only field for the return %u, %u\n",
                         lclNum, fieldLclNum);
                 lclVar->ChangeType(fieldDsc->lvType);
-                canEnregister = true;
+                lclNum = fieldLclNum;
+                varDsc = comp->lvaGetDesc(lclNum);
             }
         }
-        if (!canEnregister)
+        else
         {
             // TODO-1stClassStructs: We can no longer promote or enregister this struct,
             // since it is referenced as a whole.
@@ -3189,16 +3196,25 @@ void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
         }
     }
 
-    var_types regType = varDsc->GetRegisterType(lclVar);
-    assert((regType != TYP_STRUCT) && (regType != TYP_UNKNOWN));
-    // Note: regType could be a small type, in this case return will generate an extension move.
-    lclVar->ChangeType(regType);
-    if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVar))
+    if (varDsc->lvDoNotEnregister)
     {
-        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), lclVar, nullptr);
-        ret->gtOp1           = bitcast;
-        BlockRange().InsertBefore(ret, bitcast);
-        ContainCheckBitCast(bitcast);
+        lclVar->ChangeOper(GT_LCL_FLD);
+        lclVar->AsLclFld()->SetLclOffs(0);
+        lclVar->ChangeType(ret->TypeGet());
+    }
+    else
+    {
+        var_types lclVarType = varDsc->GetRegisterType(lclVar);
+        assert(lclVarType != TYP_UNDEF);
+        lclVar->ChangeType(lclVarType);
+
+        if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVarType))
+        {
+            GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), lclVar, nullptr);
+            ret->gtOp1           = bitcast;
+            BlockRange().InsertBefore(ret, bitcast);
+            ContainCheckBitCast(bitcast);
+        }
     }
 }
 
