@@ -221,7 +221,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                     if (socketReceiveTask.IsCompleted)
                     {
-                        // TODO-RZ: Avoid connection forcibly closed exception
                         if (socketReceiveTask.IsCompletedSuccessfully)
                         {
                             var result = await socketReceiveTask.ConfigureAwait(false);

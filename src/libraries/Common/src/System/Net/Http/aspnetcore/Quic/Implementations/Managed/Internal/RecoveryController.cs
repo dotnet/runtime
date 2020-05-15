@@ -373,7 +373,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 // return true;
 
             // servers complete address validation when a protected packet is received
-            // TODO-RZ: return (has received Handshake ACK || has received 1-RTT ACK)
+            // TODO-RZ: Implement peer address validation.
             return true;
         }
 

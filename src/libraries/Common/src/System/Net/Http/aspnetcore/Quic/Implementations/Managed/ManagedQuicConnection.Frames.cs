@@ -525,8 +525,11 @@ namespace System.Net.Quic.Implementations.Managed
                     StartDraining();
                 }
 
-                // connection will not succeed
-                _connectTcs.TryCompleteException(new QuicErrorException(_inboundError));
+                if (_connectTcs.IsSet)
+                {
+                    // connection will not succeed
+                    _connectTcs.TryCompleteException(MakeAbortedException(_inboundError));
+                }
             }
 
             return ProcessPacketResult.Ok;

@@ -663,11 +663,18 @@ namespace System.Net.Quic.Implementations.Managed
             // Note: this is to properly discard reordered/delayed packets.
             _closingPeriodEnd = now + 3 * Recovery.GetProbeTimeoutInterval();
 
-            _streams.IncomingStreams.Writer.TryComplete(MakeAbortedException(error));
+            if (error.ErrorCode == TransportErrorCode.NoError)
+            {
+                _streams.IncomingStreams.Writer.TryComplete();
+            }
+            else
+            {
+                _streams.IncomingStreams.Writer.TryComplete(MakeAbortedException(error));
+            }
 
             foreach (var stream in _streams.AllStreams)
             {
-                stream.OnConnectionClosed(error);
+                stream.OnConnectionClosed(MakeAbortedException(error));
             }
         }
 
