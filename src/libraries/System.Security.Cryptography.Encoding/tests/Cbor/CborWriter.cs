@@ -101,7 +101,7 @@ namespace System.Formats.Cbor
 
             static void ValidateEncoding(ReadOnlyMemory<byte> encodedValue, CborConformanceLevel conformanceLevel)
             {
-                var reader = new CborReader(encodedValue, conformanceLevel: conformanceLevel);
+                var reader = new CborReader(encodedValue, conformanceLevel: conformanceLevel, allowMultipleRootLevelValues: false);
 
                 try
                 {
@@ -112,7 +112,7 @@ namespace System.Formats.Cbor
                     throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor, e);
                 }
 
-                if (reader.BytesRemaining != 0)
+                if (reader.HasData)
                 {
                     throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor);
                 }

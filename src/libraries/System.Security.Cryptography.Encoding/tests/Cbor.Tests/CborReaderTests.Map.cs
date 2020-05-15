@@ -193,14 +193,12 @@ namespace System.Formats.Cbor.Tests
             reader.ReadInt32();
 
             int bytesRead = reader.BytesRead;
-            int bytesRemaining = reader.BytesRemaining;
             CborReaderState state = reader.PeekState();
 
             Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, dupeKey));
 
             // ensure reader state is preserved
             Assert.Equal(bytesRead, reader.BytesRead);
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(state, reader.PeekState());
         }
 
@@ -238,7 +236,6 @@ namespace System.Formats.Cbor.Tests
             }
 
             int bytesRead = reader.BytesRead;
-            int bytesRemaining = reader.BytesRemaining;
             CborReaderState state = reader.PeekState();
 
             // the final element violates sorting invariant
@@ -246,7 +243,6 @@ namespace System.Formats.Cbor.Tests
 
             // ensure reader state is preserved
             Assert.Equal(bytesRead, reader.BytesRead);
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(state, reader.PeekState());
         }
 
@@ -268,9 +264,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64(); // value
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -296,9 +292,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadEndMap();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -318,9 +314,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64(); // value
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -345,9 +341,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadEndMap();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -363,9 +359,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadStartArray();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -385,9 +381,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64(); // value
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<FormatException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -421,12 +417,12 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
 
             Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
 
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -443,12 +439,12 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
 
             Assert.Equal(CborReaderState.FormatError, reader.PeekState()); // don't want this to fail
             Assert.Throws<FormatException>(() => reader.ReadEndMap());
 
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -472,9 +468,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadEndArray();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<FormatException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Fact]
@@ -483,9 +479,9 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -503,7 +499,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadStartMap());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -522,7 +518,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -536,7 +532,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
     }
 }

@@ -31,14 +31,13 @@ namespace System.Formats.Cbor
         DoublePrecisionFloat,
         SpecialValue,
         Finished,
-        FinishedWithTrailingBytes,
         EndOfData,
         FormatError,
     }
 
     public partial class CborReader
     {
-        private readonly ReadOnlyMemory<byte> _buffer;
+        private readonly ReadOnlyMemory<byte> _data;
         private int _offset = 0;
 
         private Stack<StackFrame>? _nestedDataItems;
@@ -64,7 +63,7 @@ namespace System.Formats.Cbor
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
-            _buffer = buffer;
+            _data = buffer;
             ConformanceLevel = conformanceLevel;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
@@ -74,7 +73,7 @@ namespace System.Formats.Cbor
         public bool AllowMultipleRootLevelValues { get; }
         public int Depth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
         public int BytesRead => _offset;
-        public int BytesRemaining => _buffer.Length - _offset;
+        public bool HasData => _offset != _data.Length;
 
         public CborReaderState PeekState()
         {
@@ -105,11 +104,11 @@ namespace System.Formats.Cbor
                 else
                 {
                     // is at the end of the root value
-                    return _offset == _buffer.Length ? CborReaderState.Finished : CborReaderState.FinishedWithTrailingBytes;
+                    return CborReaderState.Finished;
                 }
             }
 
-            if (_offset == _buffer.Length)
+            if (_offset == _data.Length)
             {
                 if (_currentMajorType is null && _definiteLength is null)
                 {
@@ -120,7 +119,7 @@ namespace System.Formats.Cbor
                 return CborReaderState.EndOfData;
             }
 
-            var initialByte = new CborInitialByte(_buffer.Span[_offset]);
+            var initialByte = new CborInitialByte(_data.Span[_offset]);
 
             if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
             {
@@ -233,7 +232,7 @@ namespace System.Formats.Cbor
             SkipValue(validateConformance: true);
 
             // return the slice corresponding to the consumed value
-            return _buffer.Slice(initialOffset, _offset - initialOffset);
+            return _data.Slice(initialOffset, _offset - initialOffset);
         }
 
         private CborInitialByte PeekInitialByte()
@@ -243,7 +242,7 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
             }
 
-            if (_offset == _buffer.Length)
+            if (_offset == _data.Length)
             {
                 if (_currentMajorType is null && _definiteLength is null && _offset > 0)
                 {
@@ -254,7 +253,7 @@ namespace System.Formats.Cbor
                 throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
 
-            var nextByte = new CborInitialByte(_buffer.Span[_offset]);
+            var nextByte = new CborInitialByte(_data.Span[_offset]);
 
             if (_currentMajorType != null)
             {
@@ -380,11 +379,11 @@ namespace System.Formats.Cbor
             _isTagContext = false;
         }
 
-        private ReadOnlySpan<byte> GetRemainingBytes() => _buffer.Span.Slice(_offset);
+        private ReadOnlySpan<byte> GetRemainingBytes() => _data.Span.Slice(_offset);
 
         private void AdvanceBuffer(int length)
         {
-            Debug.Assert(_offset + length <= _buffer.Length);
+            Debug.Assert(_offset + length <= _data.Length);
 
             _offset += length;
             // invalidate the state cache
@@ -393,7 +392,7 @@ namespace System.Formats.Cbor
 
         private void ResetBuffer(int position)
         {
-            Debug.Assert(position <= _buffer.Length);
+            Debug.Assert(position <= _data.Length);
 
             _offset = position;
             // invalidate the state cache
@@ -402,7 +401,7 @@ namespace System.Formats.Cbor
 
         private void EnsureReadCapacity(int length)
         {
-            if (_buffer.Length - _offset < length)
+            if (_data.Length - _offset < length)
             {
                 throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }

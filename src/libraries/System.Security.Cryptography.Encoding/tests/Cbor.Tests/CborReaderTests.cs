@@ -20,6 +20,35 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        [InlineData(7)]
+        public static void Depth_ShouldReturnExpectedValue(int depth)
+        {
+            byte[] encoding = Enumerable.Repeat<byte>(0x81, depth).Append<byte>(0x01).ToArray();
+            var reader = new CborReader(encoding);
+
+            for (int i = 0; i < depth; i++)
+            {
+                Assert.Equal(i, reader.Depth);
+                reader.ReadStartArray();
+            }
+
+            Assert.Equal(depth, reader.Depth);
+            reader.ReadInt32();
+            Assert.Equal(depth, reader.Depth);
+
+            for (int i = depth - 1; i >= 0; i--)
+            {
+                reader.ReadEndArray();
+                Assert.Equal(i, reader.Depth);
+            }
+
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
         [Fact]
         public static void BytesRead_NoReads_ShouldReturnZero()
         {
@@ -28,27 +57,11 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void BytesRemaining_NoReads_ShouldReturnBufferSize()
-        {
-            var reader = new CborReader(new byte[10]);
-            Assert.Equal(10, reader.BytesRemaining);
-        }
-
-
-        [Fact]
         public static void BytesRead_SingleRead_ShouldReturnConsumedBytes()
         {
             var reader = new CborReader(new byte[] { 24, 24 });
             reader.ReadInt64();
             Assert.Equal(2, reader.BytesRead);
-        }
-
-        [Fact]
-        public static void BytesRemaining_SingleRead_ShouldReturnRemainingBytes()
-        {
-            var reader = new CborReader(new byte[] { 24, 24 });
-            reader.ReadInt64();
-            Assert.Equal(0, reader.BytesRemaining);
         }
 
         [Fact]
@@ -97,10 +110,11 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(buffer);
             reader.ReadInt64();
 
-            int bytesRemaining = reader.BytesRemaining;
-            Assert.Equal(CborReaderState.FinishedWithTrailingBytes, reader.PeekState());
+            int bytesRead = reader.BytesRead;
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+            Assert.True(reader.HasData);
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -170,7 +184,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadEncodedValue());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
