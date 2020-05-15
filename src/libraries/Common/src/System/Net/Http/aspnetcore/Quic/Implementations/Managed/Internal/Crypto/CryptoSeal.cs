@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Security;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
-using System.Xml;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {

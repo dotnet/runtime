@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 {

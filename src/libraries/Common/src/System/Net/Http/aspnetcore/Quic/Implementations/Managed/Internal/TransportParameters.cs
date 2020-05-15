@@ -1,7 +1,6 @@
 #nullable enable
 
 using System.Diagnostics;
-using System.Net.Quic.Implementations.Managed.Internal.Frames;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {

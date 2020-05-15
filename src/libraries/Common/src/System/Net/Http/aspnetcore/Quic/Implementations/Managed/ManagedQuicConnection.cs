@@ -623,7 +623,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal void ThrowIfError()
         {
             var error = _inboundError ?? _outboundError;
-            if (error != null)
+            if (error != null && error.ErrorCode != TransportErrorCode.NoError)
             {
                 throw MakeAbortedException(error);
             }

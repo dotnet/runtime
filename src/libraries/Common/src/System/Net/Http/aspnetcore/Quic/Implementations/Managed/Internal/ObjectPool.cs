@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {

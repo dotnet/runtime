@@ -1,6 +1,3 @@
-using System.Net.Quic.Implementations.Managed.Internal.Frames;
-using System.Runtime.InteropServices;
-
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal static class QuicReaderWriterExtensions

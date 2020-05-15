@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Net.Sockets;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {

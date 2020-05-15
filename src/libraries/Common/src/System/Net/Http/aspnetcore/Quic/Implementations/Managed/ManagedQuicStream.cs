@@ -1,12 +1,10 @@
 #nullable  enable
 
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
-using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -93,7 +91,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override int Read(Span<byte> buffer)
         {
             ThrowIfDisposed();
-            // ThrowIfError();
+            ThrowIfError();
             ThrowIfNotReadable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -111,7 +109,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            // ThrowIfError();
+            ThrowIfError();
             ThrowIfNotReadable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -366,7 +364,6 @@ namespace System.Net.Quic.Implementations.Managed
         private void ThrowIfError()
         {
             _connection.ThrowIfError();
-            // TODO-RZ: check stream-local errors
         }
     }
 }

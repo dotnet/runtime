@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Threading;
 using System.Threading.Channels;

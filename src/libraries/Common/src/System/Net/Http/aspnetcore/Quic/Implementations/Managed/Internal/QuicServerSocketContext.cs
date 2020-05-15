@@ -1,8 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {

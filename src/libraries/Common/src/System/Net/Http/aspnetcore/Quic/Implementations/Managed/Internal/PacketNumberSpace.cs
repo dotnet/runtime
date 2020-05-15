@@ -1,9 +1,7 @@
 #nullable enable
 
-using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
-using System.Runtime.CompilerServices;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
