@@ -6368,7 +6368,7 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 
 		mono_unichar2 *utf16_array = g_utf8_to_utf16 ((const char *)ptr, arr->max_length, NULL, NULL, NULL);
 		g_free (ptr);
-		memcpy (arr->vector, utf16_array, arr->max_length * sizeof(mono_unichar2));
+		memcpy (arr->vector, utf16_array, arr->max_length * sizeof (mono_unichar2));
 		g_free (utf16_array);
 		break;
 	}
