@@ -3847,8 +3847,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicLessThan:
         case SIMDIntrinsicGreaterThan:
-        case SIMDIntrinsicLessThanOrEqual:
-        case SIMDIntrinsicGreaterThanOrEqual:
             genSIMDIntrinsicBinOp(simdNode);
             break;
 
@@ -3962,14 +3960,8 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicGreaterThan:
                 result = INS_fcmgt;
                 break;
-            case SIMDIntrinsicGreaterThanOrEqual:
-                result = INS_fcmge;
-                break;
             case SIMDIntrinsicLessThan:
                 result = INS_fcmlt;
-                break;
-            case SIMDIntrinsicLessThanOrEqual:
-                result = INS_fcmle;
                 break;
             case SIMDIntrinsicMul:
                 result = INS_fmul;
@@ -4021,16 +4013,9 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicGreaterThan:
                 result = isUnsigned ? INS_cmhi : INS_cmgt;
                 break;
-            case SIMDIntrinsicGreaterThanOrEqual:
-                result = isUnsigned ? INS_cmhs : INS_cmge;
-                break;
             case SIMDIntrinsicLessThan:
                 assert(!isUnsigned);
                 result = INS_cmlt;
-                break;
-            case SIMDIntrinsicLessThanOrEqual:
-                assert(!isUnsigned);
-                result = INS_cmle;
                 break;
             case SIMDIntrinsicMul:
                 result = INS_mul;
@@ -4361,9 +4346,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicLessThan ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGreaterThan ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicLessThanOrEqual ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGreaterThanOrEqual);
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGreaterThan);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     GenTree*  op2       = simdNode->gtGetOp2();

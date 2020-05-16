@@ -268,24 +268,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicLessThanOrEqual:
-            // Packed integers use (a==b) || ( b > a) in place of a <= b.
-            assert(baseType != TYP_INT);
-
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_cmpps;
-                assert(ival != nullptr);
-                *ival = 2;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_cmppd;
-                assert(ival != nullptr);
-                *ival = 2;
-            }
-            break;
-
         case SIMDIntrinsicGreaterThan:
             // Packed float/double use < with swapped operands
             assert(!varTypeIsFloating(baseType));
@@ -1847,7 +1829,6 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         break;
 
         case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicLessThanOrEqual:
         {
             assert(targetReg != REG_NA);
 
@@ -3060,8 +3041,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicLessThan:
         case SIMDIntrinsicGreaterThan:
-        case SIMDIntrinsicLessThanOrEqual:
-        case SIMDIntrinsicGreaterThanOrEqual:
             genSIMDIntrinsicRelOp(simdNode);
             break;
 

@@ -1980,7 +1980,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         // SSE2 doesn't support < and <= directly on int vectors.
         // Instead we need to use > and >= with swapped operands.
         case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicLessThanOrEqual:
             noway_assert(!varTypeIsIntegral(simdTree->gtSIMDBaseType));
             break;
 

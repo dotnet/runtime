@@ -1077,9 +1077,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         case SIMDIntrinsicDiv:
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicLessThanOrEqual:
         case SIMDIntrinsicGreaterThan:
-        case SIMDIntrinsicGreaterThanOrEqual:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicDotProduct:
@@ -1358,122 +1356,6 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpGreaterThan(CORINFO_CLASS_HANDLE typeH
     *pOp2 = w;
     return SIMDIntrinsicBitwiseOr;
 }
-
-// impSIMDLongRelOpGreaterThanOrEqual: transforms operands and returns the SIMD intrinsic to be applied on
-// transformed operands to obtain >= comparison result.
-//
-// Arguments:
-//    typeHnd  -  type handle of SIMD vector
-//    size     -  SIMD vector size
-//    pOp1      -  in-out parameter; first operand
-//    pOp2      -  in-out parameter; second operand
-//
-// Return Value:
-//    Modifies in-out params pOp1, pOp2 and returns intrinsic ID to be applied to modified operands
-//
-SIMDIntrinsicID Compiler::impSIMDLongRelOpGreaterThanOrEqual(CORINFO_CLASS_HANDLE typeHnd,
-                                                             unsigned             size,
-                                                             GenTree**            pOp1,
-                                                             GenTree**            pOp2)
-{
-    var_types simdType = (*pOp1)->TypeGet();
-    assert(varTypeIsSIMD(simdType) && ((*pOp2)->TypeGet() == simdType));
-
-    // expand this to (a == b) | (a > b)
-    GenTree* dupOp1 = nullptr;
-    GenTree* dupOp2 = nullptr;
-
-    if (((*pOp1)->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-        dupOp1 = fgInsertCommaFormTemp(pOp1, typeHnd);
-    }
-    else
-    {
-        dupOp1 = gtCloneExpr(*pOp1);
-    }
-
-    if (((*pOp2)->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-        dupOp2 = fgInsertCommaFormTemp(pOp2, typeHnd);
-    }
-    else
-    {
-        dupOp2 = gtCloneExpr(*pOp2);
-    }
-
-    assert(dupOp1 != nullptr && dupOp2 != nullptr);
-    assert(*pOp1 != nullptr && *pOp2 != nullptr);
-
-    // (a==b)
-    SIMDIntrinsicID id = impSIMDLongRelOpEqual(typeHnd, size, pOp1, pOp2);
-    *pOp1              = gtNewSIMDNode(simdType, *pOp1, *pOp2, id, TYP_LONG, size);
-
-    // (a > b)
-    id    = impSIMDLongRelOpGreaterThan(typeHnd, size, &dupOp1, &dupOp2);
-    *pOp2 = gtNewSIMDNode(simdType, dupOp1, dupOp2, id, TYP_LONG, size);
-
-    return SIMDIntrinsicBitwiseOr;
-}
-
-// impSIMDInt32OrSmallIntRelOpGreaterThanOrEqual: transforms operands and returns the SIMD intrinsic to be applied on
-// transformed operands to obtain >= comparison result in case of integer base type vectors
-//
-// Arguments:
-//    typeHnd  -  type handle of SIMD vector
-//    size     -  SIMD vector size
-//    baseType -  base type of SIMD vector
-//    pOp1      -  in-out parameter; first operand
-//    pOp2      -  in-out parameter; second operand
-//
-// Return Value:
-//    Modifies in-out params pOp1, pOp2 and returns intrinsic ID to be applied to modified operands
-//
-SIMDIntrinsicID Compiler::impSIMDIntegralRelOpGreaterThanOrEqual(
-    CORINFO_CLASS_HANDLE typeHnd, unsigned size, var_types baseType, GenTree** pOp1, GenTree** pOp2)
-{
-    var_types simdType = (*pOp1)->TypeGet();
-    assert(varTypeIsSIMD(simdType) && ((*pOp2)->TypeGet() == simdType));
-
-    // This routine should be used only for integer base type vectors
-    assert(varTypeIsIntegral(baseType));
-    if ((getSIMDSupportLevel() == SIMD_SSE2_Supported) && ((baseType == TYP_LONG) || baseType == TYP_UBYTE))
-    {
-        return impSIMDLongRelOpGreaterThanOrEqual(typeHnd, size, pOp1, pOp2);
-    }
-
-    // expand this to (a == b) | (a > b)
-    GenTree* dupOp1 = nullptr;
-    GenTree* dupOp2 = nullptr;
-
-    if (((*pOp1)->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-        dupOp1 = fgInsertCommaFormTemp(pOp1, typeHnd);
-    }
-    else
-    {
-        dupOp1 = gtCloneExpr(*pOp1);
-    }
-
-    if (((*pOp2)->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-        dupOp2 = fgInsertCommaFormTemp(pOp2, typeHnd);
-    }
-    else
-    {
-        dupOp2 = gtCloneExpr(*pOp2);
-    }
-
-    assert(dupOp1 != nullptr && dupOp2 != nullptr);
-    assert(*pOp1 != nullptr && *pOp2 != nullptr);
-
-    // (a==b)
-    *pOp1 = gtNewSIMDNode(simdType, *pOp1, *pOp2, SIMDIntrinsicEqual, baseType, size);
-
-    // (a > b)
-    *pOp2 = gtNewSIMDNode(simdType, dupOp1, dupOp2, SIMDIntrinsicGreaterThan, baseType, size);
-
-    return SIMDIntrinsicBitwiseOr;
-}
 #endif // TARGET_XARCH
 
 // Transforms operands and returns the SIMD intrinsic to be applied on
@@ -1510,28 +1392,26 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
     {
         // SSE2/AVX doesn't support > and >= on vector float/double.
         // Therefore, we need to use < and <= with swapped operands
-        if (relOpIntrinsicId == SIMDIntrinsicGreaterThan || relOpIntrinsicId == SIMDIntrinsicGreaterThanOrEqual)
+        if (relOpIntrinsicId == SIMDIntrinsicGreaterThan)
         {
             GenTree* tmp = *pOp1;
             *pOp1        = *pOp2;
             *pOp2        = tmp;
 
-            intrinsicID =
-                (relOpIntrinsicId == SIMDIntrinsicGreaterThan) ? SIMDIntrinsicLessThan : SIMDIntrinsicLessThanOrEqual;
+            intrinsicID = SIMDIntrinsicLessThan;
         }
     }
     else if (varTypeIsIntegral(baseType))
     {
         // SSE/AVX doesn't support < and <= on integer base type vectors.
         // Therefore, we need to use > and >= with swapped operands.
-        if (intrinsicID == SIMDIntrinsicLessThan || intrinsicID == SIMDIntrinsicLessThanOrEqual)
+        if (intrinsicID == SIMDIntrinsicLessThan)
         {
             GenTree* tmp = *pOp1;
             *pOp1        = *pOp2;
             *pOp2        = tmp;
 
-            intrinsicID = (relOpIntrinsicId == SIMDIntrinsicLessThan) ? SIMDIntrinsicGreaterThan
-                                                                      : SIMDIntrinsicGreaterThanOrEqual;
+            intrinsicID = SIMDIntrinsicGreaterThan;
         }
 
         if ((getSIMDSupportLevel() == SIMD_SSE2_Supported) && baseType == TYP_LONG)
@@ -1546,24 +1426,13 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
             {
                 intrinsicID = impSIMDLongRelOpGreaterThan(typeHnd, size, pOp1, pOp2);
             }
-            else if (intrinsicID == SIMDIntrinsicGreaterThanOrEqual)
-            {
-                intrinsicID = impSIMDLongRelOpGreaterThanOrEqual(typeHnd, size, pOp1, pOp2);
-            }
             else
             {
                 unreached();
             }
         }
         // SSE2 and AVX direct support for signed comparison of int32, int16 and int8 types
-        else if (!varTypeIsUnsigned(baseType))
-        {
-            if (intrinsicID == SIMDIntrinsicGreaterThanOrEqual)
-            {
-                intrinsicID = impSIMDIntegralRelOpGreaterThanOrEqual(typeHnd, size, baseType, pOp1, pOp2);
-            }
-        }
-        else // unsigned
+        else if (varTypeIsUnsigned(baseType))
         {
             // Vector<byte>, Vector<ushort>, Vector<uint> and Vector<ulong>:
             // SSE2 supports > for signed comparison. Therefore, to use it for
@@ -1643,14 +1512,13 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
 
     // TARGET_ARM64 doesn't support < and <= on register register comparisons
     // Therefore, we need to use > and >= with swapped operands.
-    if (intrinsicID == SIMDIntrinsicLessThan || intrinsicID == SIMDIntrinsicLessThanOrEqual)
+    if (intrinsicID == SIMDIntrinsicLessThan)
     {
         GenTree* tmp = *pOp1;
         *pOp1        = *pOp2;
         *pOp2        = tmp;
 
-        intrinsicID =
-            (intrinsicID == SIMDIntrinsicLessThan) ? SIMDIntrinsicGreaterThan : SIMDIntrinsicGreaterThanOrEqual;
+        intrinsicID = SIMDIntrinsicGreaterThan;
     }
 #else  // !TARGET_XARCH
     assert(!"impSIMDRelOp() unimplemented on target arch");
@@ -2530,9 +2398,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicLessThanOrEqual:
         case SIMDIntrinsicGreaterThan:
-        case SIMDIntrinsicGreaterThanOrEqual:
         {
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType, instMethod);
