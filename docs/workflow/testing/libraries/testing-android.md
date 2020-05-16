@@ -36,13 +36,13 @@ fi
 # download Android NDK
 export ANDROID_NDK_ROOT=~/android-ndk-${NDK_VER}
 curl https://dl.google.com/android/repository/android-ndk-${NDK_VER}-${HOST_OS}-x86_64.zip -L --output ~/andk.zip
-unzip ~/andk.zip -o -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
+unzip ~/andk.zip -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
 
 # download Android SDK, accept licenses and download additional packages such as
 # platform-tools, platforms and build-tools
 export ANDROID_SDK_ROOT=~/android-sdk
 curl https://dl.google.com/android/repository/commandlinetools-${HOST_OS_SHORT}-${SDK_VER}.zip -L --output ~/asdk.zip
-unzip ~/asdk.zip -o -d ${ANDROID_SDK_ROOT} && rm -rf ~/asdk.zip
+unzip ~/asdk.zip -d ${ANDROID_SDK_ROOT} && rm -rf ~/asdk.zip
 yes | ${ANDROID_SDK_ROOT}/tools/bin/./sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
 ${ANDROID_SDK_ROOT}/tools/bin/./sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-${SDK_API_LEVEL}" "build-tools;${SDK_BUILD_TOOLS}"
 
@@ -50,10 +50,10 @@ ${ANDROID_SDK_ROOT}/tools/bin/./sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platf
 # and will be removed once we figure out how to integrate OpenSSL properly as a dependency
 export ANDROID_OPENSSL_AAR=~/openssl-android
 curl https://maven.google.com/com/android/ndk/thirdparty/openssl/${OPENSSL_VER}/openssl-${OPENSSL_VER}.aar -L --output ~/openssl.zip
-unzip ~/openssl.zip -o -d ${ANDROID_OPENSSL_AAR} && rm -rf ~/openssl.zip
+unzip ~/openssl.zip -d ${ANDROID_OPENSSL_AAR} && rm -rf ~/openssl.zip
 printf "\n\nexport ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT}\nexport ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}\nexport ANDROID_OPENSSL_AAR=${ANDROID_OPENSSL_AAR}\n" >> ${BASHRC}
 ```
-Make sure `ANDROID_NDK_ROOT`, `ANDROID_SDK_ROOT` and `ANDROID_OPENSSL_AAR` environment variables are accessible and point to correct locations.
+Save it to a file (e.g. `deps.sh`) and execute using `source` (e.g. `chmod +x deps.sh && source ./deps.sh`) in order to propogate the `ANDROID_NDK_ROOT`, `ANDROID_SDK_ROOT` and `ANDROID_OPENSSL_AAR` environment variables to the current process.
 
 ## Building Libs and Tests for Android
 
