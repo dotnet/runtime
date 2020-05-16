@@ -1662,66 +1662,6 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
     return intrinsicID;
 }
 
-// Creates a GT_SIMD tree for Select operation
-//
-// Arguments:
-//    typeHnd          -  type handle of SIMD vector
-//    baseType         -  base type of SIMD vector
-//    size             -  SIMD vector size
-//    op1              -  first operand = Condition vector vc
-//    op2              -  second operand = va
-//    op3              -  third operand = vb
-//
-// Return Value:
-//    Returns GT_SIMD tree that computes Select(vc, va, vb)
-//
-GenTree* Compiler::impSIMDSelect(
-    CORINFO_CLASS_HANDLE typeHnd, var_types baseType, unsigned size, GenTree* op1, GenTree* op2, GenTree* op3)
-{
-    assert(varTypeIsSIMD(op1));
-    var_types simdType = op1->TypeGet();
-    assert(op2->TypeGet() == simdType);
-    assert(op3->TypeGet() == simdType);
-
-    // TODO-ARM64-CQ Support generating select instruction for SIMD
-
-    // Select(BitVector vc, va, vb) = (va & vc) | (vb & !vc)
-    // Select(op1, op2, op3)        = (op2 & op1) | (op3 & !op1)
-    //                              = SIMDIntrinsicBitwiseOr(SIMDIntrinsicBitwiseAnd(op2, op1),
-    //                                                       SIMDIntrinsicBitwiseAndNot(op3, op1))
-    //
-    // If Op1 has side effect, create an assignment to a temp
-    GenTree* tmp = op1;
-    GenTree* asg = nullptr;
-    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-        unsigned lclNum = lvaGrabTemp(true DEBUGARG("SIMD Select"));
-        lvaSetStruct(lclNum, typeHnd, false);
-        tmp = gtNewLclvNode(lclNum, op1->TypeGet());
-        asg = gtNewTempAssign(lclNum, op1);
-    }
-
-    GenTree* andExpr = gtNewSIMDNode(simdType, op2, tmp, SIMDIntrinsicBitwiseAnd, baseType, size);
-    GenTree* dupOp1  = gtCloneExpr(tmp);
-    assert(dupOp1 != nullptr);
-#ifdef TARGET_ARM64
-    // ARM64 implements SIMDIntrinsicBitwiseAndNot as Left & ~Right
-    GenTree* andNotExpr = gtNewSIMDNode(simdType, op3, dupOp1, SIMDIntrinsicBitwiseAndNot, baseType, size);
-#else
-    // XARCH implements SIMDIntrinsicBitwiseAndNot as ~Left & Right
-    GenTree* andNotExpr = gtNewSIMDNode(simdType, dupOp1, op3, SIMDIntrinsicBitwiseAndNot, baseType, size);
-#endif
-    GenTree* simdTree = gtNewSIMDNode(simdType, andExpr, andNotExpr, SIMDIntrinsicBitwiseOr, baseType, size);
-
-    // If asg not null, create a GT_COMMA tree.
-    if (asg != nullptr)
-    {
-        simdTree = gtNewOperNode(GT_COMMA, simdTree->TypeGet(), asg, simdTree);
-    }
-
-    return simdTree;
-}
-
 //------------------------------------------------------------------------
 // getOp1ForConstructor: Get the op1 for a constructor call.
 //
@@ -2675,19 +2615,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, baseType, size);
             retVal   = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicSelect:
-        {
-            // op3 is a SIMD variable that is the second source
-            // op2 is a SIMD variable that is the first source
-            // op1 is a SIMD variable which is the bit mask.
-            op3 = impSIMDPopStack(simdType);
-            op2 = impSIMDPopStack(simdType);
-            op1 = impSIMDPopStack(simdType);
-
-            retVal = impSIMDSelect(clsHnd, baseType, size, op1, op2, op3);
         }
         break;
 

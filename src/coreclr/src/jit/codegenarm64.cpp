@@ -3882,10 +3882,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicUpperRestore(simdNode);
             break;
 
-        case SIMDIntrinsicSelect:
-            NYI("SIMDIntrinsicSelect lowered during import to (a & sel) | (b & ~sel)");
-            break;
-
         default:
             noway_assert(!"Unimplemented SIMD intrinsic.");
             unreached();
@@ -3991,9 +3987,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 // Return lower bytes instruction here
                 result = INS_fcvtn;
                 break;
-            case SIMDIntrinsicSelect:
-                result = INS_bsl;
-                break;
             case SIMDIntrinsicSub:
                 result = INS_fsub;
                 break;
@@ -4060,9 +4053,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 // Use INS_xtn lower bytes of result followed by INS_xtn2 for upper bytes
                 // Return lower bytes instruction here
                 result = INS_xtn;
-                break;
-            case SIMDIntrinsicSelect:
-                result = INS_bsl;
                 break;
             case SIMDIntrinsicSub:
                 result = INS_sub;

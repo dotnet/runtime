@@ -919,14 +919,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             buildInternalFloatRegisterDefForNode(simdTree);
             break;
 
-        case SIMDIntrinsicSelect:
-            // TODO-ARM64-CQ Allow lowering to see SIMDIntrinsicSelect so we can generate BSL VC, VA, VB
-            // bsl target register must be VC.  Reserve a temp in case we need to shuffle things.
-            // This will require a different approach, as GenTreeSIMD has only two operands.
-            assert(!"SIMDIntrinsicSelect not yet supported");
-            buildInternalFloatRegisterDefForNode(simdTree);
-            break;
-
         case SIMDIntrinsicInitArrayX:
         case SIMDIntrinsicInitFixed:
         case SIMDIntrinsicCopyToArray:
