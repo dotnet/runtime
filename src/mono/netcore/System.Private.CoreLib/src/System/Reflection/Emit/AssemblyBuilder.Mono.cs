@@ -546,22 +546,43 @@ namespace System.Reflection.Emit
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
-            throw new NotImplementedException();
-#if FALSE
-			StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-			return GetSatelliteAssembly (culture, null, true, ref stackMark);
-#endif
+            return GetSatelliteAssembly(culture, null);
         }
 
         //FIXME MS has issues loading satelite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
-            throw new NotImplementedException();
-#if FALSE
-			StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-			return GetSatelliteAssembly (culture, version, true, ref stackMark);
-#endif
+            return InternalGetSatelliteAssembly(culture, version)!;
+        }
+
+        private Assembly? InternalGetSatelliteAssembly(CultureInfo culture, Version? version)
+        {
+            AssemblyName aname = GetName();
+
+            var an = new AssemblyName();
+            if (version == null)
+                an.Version = aname.Version;
+            else
+                an.Version = version;
+
+            an.CultureInfo = culture;
+            an.Name = aname.Name + ".resources";
+
+            Assembly? res = null;
+            try
+            {
+                res = Load(an);
+            }
+            catch
+            {
+            }
+
+            if (res == this)
+                res = null;
+            if (res == null)
+                throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
+            return res;
         }
 
         public override Module ManifestModule
