@@ -1,18 +1,18 @@
-MONO_CONFIG=Debug
+MONO_CONFIG=Release
 MONO_ARCH=arm64
 DOTNET := ../../../../.././dotnet.sh
 
-#export ANDROID_NDK_ROOT=/path/to/android/ndk
-#export ANDROID_SDK_ROOT=/path/to/android/sdk
+all: runtimepack apk
 
-all: bundle
+appbuilder:
+	$(DOTNET) build -c Release ../../../../../tools-local/tasks/mobile.tasks/AndroidAppBuilder/AndroidAppBuilder.csproj
 
-bundle: clean
-	$(DOTNET) build -c $(MONO_CONFIG) Program.csproj
-	$(DOTNET) msbuild /t:BuildAppBundle /p:Configuration=$(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH)
+runtimepack:
+	../../../../.././build.sh Mono+Libs -os Android -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
-deploy-launch: bundle
-	$(DOTNET) msbuild /t:ReinstallAndLaunch
+apk: clean appbuilder
+	$(DOTNET) publish -c Release -r android-$(MONO_ARCH) \
+	/p:Platform=$(MONO_ARCH) /p:DeployAndRun=true
 
 clean:
 	rm -rf bin

@@ -70,10 +70,13 @@
 
     <!-- Release specific options -->
     <ItemGroup Condition="'$(Configuration)' == 'Release'">
-      <_MonoCFLAGS Include="-O2" />
+      <_MonoCFLAGS Include="-O2" Condition="'$(TargetsMobile)' != 'true'" />
+      <_MonoCFLAGS Include="-Os" Condition="'$(TargetsMobile)' == 'true'" />
       <_MonoCFLAGS Include="-g" />
+      <_MonoCFLAGS Include="-Wl,-s" Condition="'$(TargetsAndroid)' == 'true'" />
 
-      <_MonoCXXFLAGS Include="-O2" />
+      <_MonoCXXFLAGS Include="-O2" Condition="'$(TargetsMobile)' != 'true'" />
+      <_MonoCXXFLAGS Include="-Os" Condition="'$(TargetsMobile)' == 'true'" />
       <_MonoCXXFLAGS Include="-g" />
     </ItemGroup>
 

@@ -22,7 +22,7 @@ public class AndroidAppBuilderTask : Task
     public string MainLibraryFileName { get; set; } = ""!;
 
     /// <summary>
-    /// Target arch, can be 'x86', 'x86_64', 'armeabi', 'armeabi-v7a' or 'arm64-v8a'
+    /// Target arch, can be 'x86', 'x86_64', 'armeabi-v7a' or 'arm64-v8a'
     /// </summary>
     [Required]
     public string Abi { get; set; } = ""!;
