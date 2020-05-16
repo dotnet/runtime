@@ -130,21 +130,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicSqrt:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_sqrtps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_sqrtpd;
-            }
-            else
-            {
-                unreached();
-            }
-            break;
-
         case SIMDIntrinsicAdd:
             if (baseType == TYP_FLOAT)
             {
@@ -940,7 +925,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSqrt || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast);
+    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     var_types baseType  = simdNode->gtSIMDBaseType;
@@ -3074,7 +3059,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicInitN(simdNode);
             break;
 
-        case SIMDIntrinsicSqrt:
         case SIMDIntrinsicCast:
             genSIMDIntrinsicUnOp(simdNode);
             break;

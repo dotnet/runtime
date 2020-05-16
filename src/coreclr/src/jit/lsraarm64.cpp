@@ -802,7 +802,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     {
         case SIMDIntrinsicInit:
         case SIMDIntrinsicCast:
-        case SIMDIntrinsicSqrt:
         case SIMDIntrinsicConvertToSingle:
         case SIMDIntrinsicConvertToInt32:
         case SIMDIntrinsicConvertToDouble:

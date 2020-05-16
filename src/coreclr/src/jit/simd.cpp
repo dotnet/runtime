@@ -1075,7 +1075,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         case SIMDIntrinsicSub:
         case SIMDIntrinsicMul:
         case SIMDIntrinsicDiv:
-        case SIMDIntrinsicSqrt:
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicLessThan:
         case SIMDIntrinsicLessThanOrEqual:
@@ -2755,25 +2754,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 simdTree->gtFlags |= GTF_SIMD12_OP;
             }
             retVal = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicSqrt:
-        {
-#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(DEBUG)
-            // SSE/AVX/ARM64 doesn't support sqrt on integer type vectors and hence
-            // should never be seen as an intrinsic here. See SIMDIntrinsicList.h
-            // for supported base types for this intrinsic.
-            if (!varTypeIsFloating(baseType))
-            {
-                assert(!"Sqrt not supported on integer vectors\n");
-                return nullptr;
-            }
-#endif // (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(DEBUG)
-
-            op1 = impSIMDPopStack(simdType);
-
-            retVal = gtNewSIMDNode(genActualType(callType), op1, nullptr, simdIntrinsicID, baseType, size);
         }
         break;
 

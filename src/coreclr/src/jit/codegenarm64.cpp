@@ -3821,7 +3821,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicInitN(simdNode);
             break;
 
-        case SIMDIntrinsicSqrt:
         case SIMDIntrinsicCast:
         case SIMDIntrinsicConvertToSingle:
         case SIMDIntrinsicConvertToInt32:
@@ -3994,9 +3993,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicSelect:
                 result = INS_bsl;
-                break;
-            case SIMDIntrinsicSqrt:
-                result = INS_fsqrt;
                 break;
             case SIMDIntrinsicSub:
                 result = INS_fsub;
@@ -4226,7 +4222,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSqrt || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast ||
+    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToSingle ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt32 ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToDouble ||

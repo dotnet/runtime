@@ -1960,11 +1960,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             noway_assert(varTypeIsFloating(simdTree->gtSIMDBaseType));
             break;
 
-        case SIMDIntrinsicSqrt:
-            // SSE2 has no instruction support for sqrt on integer vectors.
-            noway_assert(varTypeIsFloating(simdTree->gtSIMDBaseType));
-            break;
-
         case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
         case SIMDIntrinsicMul:
