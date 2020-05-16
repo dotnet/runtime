@@ -58,8 +58,8 @@ This file contains the logic for providing Execution Script generation.
   -->
   
   <ItemGroup>
-    <ExecutionScriptKind Include="Batch" />
-    <ExecutionScriptKind Include="Bash" />
+    <ExecutionScriptKind Include="Batch" Condition="'$(TargetsWindows)' == 'true'" />
+    <ExecutionScriptKind Include="Bash"  Condition="'$(TargetsWindows)' != 'true'" />
   </ItemGroup>
 
   <PropertyGroup>
