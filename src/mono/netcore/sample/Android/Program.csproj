@@ -7,6 +7,8 @@
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AndroidAppBuilderDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <PublishTrimmed>true</PublishTrimmed>
+    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -42,7 +44,7 @@
     <Delete Files="$(PublishDir)\libSystem.IO.Compression.Native.so" />
     <Delete Files="$(PublishDir)\libSystem.Security.Cryptography.Native.OpenSsl.so" />
 
-    <AndroidAppBuilderTask 
+    <AndroidAppBuilderTask
         Abi="$(AndroidAbi)"
         ProjectName="HelloAndroid"
         MonoRuntimeHeaders="%(ResolvedRuntimePack.PackageDirectory)\runtimes\android-$(Platform)\native\include\mono-2.0"

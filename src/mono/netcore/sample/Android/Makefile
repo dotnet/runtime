@@ -12,7 +12,7 @@ runtimepack:
 
 apk: clean appbuilder
 	$(DOTNET) publish -c Release -r android-$(MONO_ARCH) \
-	/p:Platform=$(MONO_ARCH) /p:PublishTrimmed=true /p:DeployAndRun=true
+	/p:Platform=$(MONO_ARCH) /p:DeployAndRun=true
 
 clean:
 	rm -rf bin
