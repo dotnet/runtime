@@ -467,9 +467,6 @@
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-fpic" />
       <_MonoCFLAGS Include="-fstack-protector" />
 
-      <_MonoCFLAGS Condition="'$(Platform)' == 'arm' or '$(Platform)' == 'x86'" 
-                   Include="--sysroot=$ANDROID_NDK_ROOT/platforms/android-$(AndroidApiVersion)/arch-$(Platform)" />
-
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-mtune=cortex-a8" />
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-mfpu=vfp" />
