@@ -23,7 +23,7 @@ public class ApkBuilder
             throw new ArgumentException($"sourceDir='{sourceDir}' is empty or doesn't exist");
 
         if (string.IsNullOrEmpty(abi))
-            throw new ArgumentException("abi shoudln't be empty (e.g. x86, x86_64, armeabi, armeabi-v7a or arm64-v8a");
+            throw new ArgumentException("abi shoudln't be empty (e.g. x86, x86_64, armeabi-v7a or arm64-v8a");
 
         if (string.IsNullOrEmpty(entryPointLib))
             throw new ArgumentException("entryPointLib shouldn't be empty");
