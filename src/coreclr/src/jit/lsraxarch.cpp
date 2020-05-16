@@ -1964,9 +1964,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicSub:
         case SIMDIntrinsicMul:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
             // SSE2 32-bit integer multiplication requires two temp regs
             if (simdTree->gtSIMDIntrinsicID == SIMDIntrinsicMul && simdTree->gtSIMDBaseType == TYP_INT &&
                 compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported)

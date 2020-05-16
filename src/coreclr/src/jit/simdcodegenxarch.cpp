@@ -324,25 +324,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicBitwiseAndNot:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_andnps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_andnpd;
-            }
-            else if (baseType == TYP_INT)
-            {
-                result = INS_pandn;
-            }
-            else if (varTypeIsIntegral(baseType))
-            {
-                result = INS_pandn;
-            }
-            break;
-
         case SIMDIntrinsicBitwiseOr:
             if (baseType == TYP_FLOAT)
             {
@@ -355,21 +336,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             else if (varTypeIsIntegral(baseType))
             {
                 result = INS_por;
-            }
-            break;
-
-        case SIMDIntrinsicBitwiseXor:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_xorps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_xorpd;
-            }
-            else if (varTypeIsIntegral(baseType))
-            {
-                result = INS_pxor;
             }
             break;
 
@@ -623,10 +589,10 @@ void CodeGen::genSIMDScalarMove(
 
 void CodeGen::genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg)
 {
-    // We just use `INS_xorps` instead of `getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseXor, baseType)`
-    // since `genSIMDZero` is used for both `System.Numerics.Vectors` and HardwareIntrinsics. Modern
-    // CPUs handle this specially in the renamer and it never hits the execution pipeline, additionally
-    // `INS_xorps` is always available (when using either the legacy or VEX encoding).
+    // We just use `INS_xorps` since `genSIMDZero` is used for both `System.Numerics.Vectors` and
+    // HardwareIntrinsics. Modern CPUs handle this specially in the renamer and it never hits the
+    // execution pipeline, additionally `INS_xorps` is always available (when using either the
+    // legacy or VEX encoding).
     inst_RV_RV(INS_xorps, targetReg, targetReg, targetType, emitActualTypeSize(targetType));
 }
 
@@ -1633,9 +1599,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicAdd || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMul || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDiv ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAndNot ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseXor);
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     GenTree*  op2       = simdNode->gtGetOp2();
@@ -3087,9 +3051,7 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicMul:
         case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
             genSIMDIntrinsicBinOp(simdNode);
             break;
 

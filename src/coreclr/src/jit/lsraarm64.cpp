@@ -854,9 +854,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicMul:
         case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicLessThan:
         case SIMDIntrinsicGreaterThan:

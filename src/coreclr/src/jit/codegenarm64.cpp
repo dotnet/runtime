@@ -3843,9 +3843,7 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicMul:
         case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicLessThan:
         case SIMDIntrinsicGreaterThan:
@@ -3945,14 +3943,8 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicBitwiseAnd:
                 result = INS_and;
                 break;
-            case SIMDIntrinsicBitwiseAndNot:
-                result = INS_bic;
-                break;
             case SIMDIntrinsicBitwiseOr:
                 result = INS_orr;
-                break;
-            case SIMDIntrinsicBitwiseXor:
-                result = INS_eor;
                 break;
             case SIMDIntrinsicCast:
                 result = INS_mov;
@@ -4013,14 +4005,8 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicBitwiseAnd:
                 result = INS_and;
                 break;
-            case SIMDIntrinsicBitwiseAndNot:
-                result = INS_bic;
-                break;
             case SIMDIntrinsicBitwiseOr:
                 result = INS_orr;
-                break;
-            case SIMDIntrinsicBitwiseXor:
-                result = INS_eor;
                 break;
             case SIMDIntrinsicCast:
                 result = INS_mov;
@@ -4372,9 +4358,8 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicAdd || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMul || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDiv ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAndNot ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseXor || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual ||
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicLessThan ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGreaterThan ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicLessThanOrEqual ||

@@ -1081,9 +1081,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         case SIMDIntrinsicGreaterThan:
         case SIMDIntrinsicGreaterThanOrEqual:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
         case SIMDIntrinsicDotProduct:
         case SIMDIntrinsicCast:
         case SIMDIntrinsicConvertToSingle:
@@ -2550,9 +2548,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         case SIMDIntrinsicMul:
         case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
         {
 #if defined(DEBUG)
             // check for the cases where we don't support intrinsics.
@@ -2600,18 +2596,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             // op2 is the second operand
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType, instMethod);
-
-#ifdef TARGET_XARCH
-            if (simdIntrinsicID == SIMDIntrinsicBitwiseAndNot)
-            {
-                // XARCH implements SIMDIntrinsicBitwiseAndNot as ~op1 & op2, while the
-                // software implementation does op1 & ~op2, so we need to swap the operands
-
-                GenTree* tmp = op2;
-                op2          = op1;
-                op1          = tmp;
-            }
-#endif // TARGET_XARCH
 
             simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, baseType, size);
             retVal   = simdTree;
