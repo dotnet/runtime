@@ -6273,6 +6273,10 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 
+		// we only support char[] for in-params; we return a pointer to the managed heap here, and that's not 'in'-safe
+		if ((param_attrs & PARAM_ATTRIBUTE_IN) && eklass != mono_get_char_class ())
+			break;
+
 		if (m_class_get_rank (klass) > 1)
 			break;
 
