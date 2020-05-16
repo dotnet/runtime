@@ -387,9 +387,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(KeyNameNullPolicy))]
-        [InlineData(typeof(ValueNameNullPolicy))]
-        public static void InvalidPropertyNameFail(Type policyType)
+        [InlineData(typeof(KeyNameNullPolicy), "Key")]
+        [InlineData(typeof(ValueNameNullPolicy), "Value")]
+        public static void InvalidPropertyNameFail(Type policyType, string offendingProperty)
         {
             var options = new JsonSerializerOptions
             {
@@ -398,7 +398,7 @@ namespace System.Text.Json.Serialization.Tests
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>>("", options));
             string exAsStr = ex.ToString();
-            Assert.Contains(policyType.ToString(), exAsStr);
+            Assert.Contains(offendingProperty, exAsStr);
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new KeyValuePair<string, string>("", ""), options));
         }
@@ -424,15 +424,30 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("{0")]
         [InlineData(@"{""Random"":")]
         [InlineData(@"{""Value"":1}")]
+        [InlineData(@"{null:1}")]
         [InlineData(@"{""Value"":1,2")]
         [InlineData(@"{""Value"":1,""Random"":")]
         [InlineData(@"{""Key"":1,""Key"":1}")]
+        [InlineData(@"{null:1,""Key"":1}")]
         [InlineData(@"{""Key"":1,""Key"":2}")]
         [InlineData(@"{""Value"":1,""Value"":1}")]
+        [InlineData(@"{""Value"":1,null:1}")]
         [InlineData(@"{""Value"":1,""Value"":2}")]
         public static void InvalidJsonFail(string json)
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+        }
+
+        [Fact]
+        public static void JsonPathIsAccurate()
+        {
+            string json = @"{""Key"":""1"",""Value"":2}";
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+            Assert.Contains("$.Key", ex.ToString());
+
+            json = @"{""Key"":1,""Value"":""2""}";
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+            Assert.Contains("$.Value", ex.ToString());
         }
     }
 }

@@ -82,7 +82,7 @@ namespace System.Text.Json.Serialization.Tests
                             return value;
                         }
 
-                        KeyValuePair<TKey, TValue> kv = _converter.Read(ref reader, typeToConvert, options);
+                        KeyValuePair<TKey, TValue> kv = _converter.Read(ref reader, typeof(KeyValuePair<TKey, TValue>), options);
                         value.Add(kv.Key, kv.Value);
                     }
 

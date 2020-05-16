@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Tests
                         return value;
                     }
 
-                    KeyValuePair<int, string> kvpair = _intToStringConverter.Read(ref reader, typeToConvert, options);
+                    KeyValuePair<int, string> kvpair = _intToStringConverter.Read(ref reader, typeof(KeyValuePair<int, string>), options);
 
                     value.Add(kvpair.Key, kvpair.Value);
                 }

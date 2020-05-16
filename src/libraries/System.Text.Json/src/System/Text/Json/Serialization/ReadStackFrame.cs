@@ -67,17 +67,6 @@ namespace System.Text.Json
             PropertyState = StackFramePropertyState.None;
         }
 
-        public void InitializeReEntry(Type type, JsonSerializerOptions options, string? propertyName)
-        {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
-
-            // The initial JsonPropertyInfo will be used to obtain the converter.
-            JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
-
-            // Set for exception handling calculation of JsonPath.
-            JsonPropertyNameAsString = propertyName;
-        }
-
         /// <summary>
         /// Is the current object a Dictionary.
         /// </summary>

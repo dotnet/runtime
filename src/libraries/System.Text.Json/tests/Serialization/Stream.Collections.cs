@@ -127,6 +127,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 return ImmutableDictionary.CreateRange(GetDict_TypedElements<TElement>(stringLength));
             }
+            else if (type == typeof(KeyValuePair<TElement, TElement>))
+            {
+                TElement item = GetCollectionElement<TElement>(stringLength);
+                return new KeyValuePair<TElement, TElement>(item, item);
+            }
             else if (
                 typeof(IDictionary<string, TElement>).IsAssignableFrom(type) ||
                 typeof(IReadOnlyDictionary<string, TElement>).IsAssignableFrom(type) ||
@@ -161,6 +166,10 @@ namespace System.Text.Json.Serialization.Tests
             else if (type == typeof(ImmutableDictionary<string, TElement>))
             {
                 return ImmutableDictionary.CreateRange(new Dictionary<string, TElement>());
+            }
+            else if (type == typeof(KeyValuePair<TElement, TElement>))
+            {
+                return new KeyValuePair<TElement, TElement>();
             }
             else
             {
@@ -284,6 +293,10 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return type;
             }
+            foreach (Type type in ObjectNotationTypes<TElement>())
+            {
+                yield return type;
+            }
             // Stack types
             foreach (Type type in StackTypes<TElement>())
             {
@@ -310,6 +323,11 @@ namespace System.Text.Json.Serialization.Tests
             yield return typeof(HashSet<TElement>); // ISetOfTConverter
             yield return typeof(List<TElement>); // ListOfTConverter
             yield return typeof(Queue<TElement>); // QueueOfTConverter
+        }
+
+        private static IEnumerable<Type> ObjectNotationTypes<TElement>()
+        {
+            yield return typeof(KeyValuePair<TElement, TElement>); // KeyValuePairConverter
         }
 
         private static IEnumerable<Type> DictionaryTypes<TElement>()
@@ -390,6 +408,11 @@ namespace System.Text.Json.Serialization.Tests
             foreach (Type type in DictionaryTypes<int>())
             {
                 Assert.Equal("{}", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
+            }
+
+            foreach (Type type in ObjectNotationTypes<int>())
+            {
+                Assert.Equal(@"{""Key"":0,""Value"":0}", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }
         }
     }

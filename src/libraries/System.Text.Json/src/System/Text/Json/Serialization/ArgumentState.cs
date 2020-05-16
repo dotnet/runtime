@@ -31,5 +31,9 @@ namespace System.Text.Json
         // For performance, we order the parameters by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int ParameterIndex;
         public List<ParameterRef>? ParameterRefCache;
+
+        // Used when deserializing KeyValuePair instances.
+        public bool FoundKey;
+        public bool FoundValue;
     }
 }
