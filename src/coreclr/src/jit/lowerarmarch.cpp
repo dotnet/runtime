@@ -52,7 +52,7 @@ bool Lowering::IsCallTargetInRange(void* addr)
 // TODO-CQ: we can contain a floating point 0.0 constant in a compare instruction
 // (vcmp on arm, fcmp on arm64).
 //
-bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
+bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
     if (!varTypeIsFloating(parentNode->TypeGet()))
     {
@@ -973,7 +973,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
+void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 {
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();

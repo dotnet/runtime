@@ -37,7 +37,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Notes:
 //    If 'childNode' it has any existing sources, they will now be sources for the parent.
 //
-void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode)
+void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 {
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
