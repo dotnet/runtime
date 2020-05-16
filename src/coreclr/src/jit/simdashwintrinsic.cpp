@@ -164,6 +164,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 {
     assert(!mustExpand);
 
+    CORINFO_CLASS_HANDLE argClass;
+
     if (!featureSIMD)
     {
         // We can't support SIMD intrinsics if the JIT doesn't support the feature
@@ -179,8 +181,6 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     // if it isn't the basis for anything carried on the node.
     baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
     assert(simdSize != 0);
-
-    CORINFO_CLASS_HANDLE argClass;
 
     if (retType == TYP_STRUCT)
     {
@@ -707,7 +707,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 #else
 #error Unsupported platform
-#endif // TARGET_XARCH
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
                 default:
                 {
