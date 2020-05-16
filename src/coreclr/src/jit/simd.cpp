@@ -1076,8 +1076,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         case SIMDIntrinsicMul:
         case SIMDIntrinsicDiv:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicGreaterThan:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicDotProduct:
@@ -1260,102 +1258,6 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
                           SIMDIntrinsicShuffleSSE2, TYP_INT, size);
     return SIMDIntrinsicBitwiseAnd;
 }
-
-// impSIMDLongRelOpGreaterThan: transforms operands and returns the SIMD intrinsic to be applied on
-// transformed operands to obtain > comparison result.
-//
-// Arguments:
-//    typeHnd  -  type handle of SIMD vector
-//    size     -  SIMD vector size
-//    pOp1     -  in-out parameter; first operand
-//    pOp2     -  in-out parameter; second operand
-//
-// Return Value:
-//    Modifies in-out params pOp1, pOp2 and returns intrinsic ID to be applied to modified operands
-//
-SIMDIntrinsicID Compiler::impSIMDLongRelOpGreaterThan(CORINFO_CLASS_HANDLE typeHnd,
-                                                      unsigned             size,
-                                                      GenTree**            pOp1,
-                                                      GenTree**            pOp2)
-{
-    var_types simdType = (*pOp1)->TypeGet();
-    assert(varTypeIsSIMD(simdType) && ((*pOp2)->TypeGet() == simdType));
-
-    // GreaterThan(v1, v2) where v1 and v2 are vector long.
-    // Let us consider the case of single long element comparison.
-    // say L1 = (x1, y1) and L2 = (x2, y2) where x1, y1, x2, and y2 are 32-bit integers that comprise the longs L1 and
-    // L2.
-    //
-    // GreaterThan(L1, L2) can be expressed in terms of > relationship between 32-bit integers that comprise L1 and L2
-    // as
-    //                    =  (x1, y1) > (x2, y2)
-    //                    =  (x1 > x2) || [(x1 == x2) && (y1 > y2)]   - eq (1)
-    //
-    // t = (v1 > v2)  32-bit signed comparison
-    // u = (v1 == v2) 32-bit sized element equality
-    // v = (v1 > v2)  32-bit unsigned comparison
-    //
-    // z = shuffle(t, (3, 3, 1, 1))  - This corresponds to (x1 > x2) in eq(1) above
-    // t1 = Shuffle(v, (2, 2, 0, 0)) - This corresponds to (y1 > y2) in eq(1) above
-    // u1 = Shuffle(u, (3, 3, 1, 1)) - This corresponds to (x1 == x2) in eq(1) above
-    // w = And(t1, u1)               - This corresponds to [(x1 == x2) && (y1 > y2)] in eq(1) above
-    // Result = BitwiseOr(z, w)
-
-    // Since op1 and op2 gets used multiple times, make sure side effects are computed.
-    GenTree* dupOp1    = nullptr;
-    GenTree* dupOp2    = nullptr;
-    GenTree* dupDupOp1 = nullptr;
-    GenTree* dupDupOp2 = nullptr;
-
-    if (((*pOp1)->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-        dupOp1    = fgInsertCommaFormTemp(pOp1, typeHnd);
-        dupDupOp1 = gtNewLclvNode(dupOp1->AsLclVarCommon()->GetLclNum(), simdType);
-    }
-    else
-    {
-        dupOp1    = gtCloneExpr(*pOp1);
-        dupDupOp1 = gtCloneExpr(*pOp1);
-    }
-
-    if (((*pOp2)->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-        dupOp2    = fgInsertCommaFormTemp(pOp2, typeHnd);
-        dupDupOp2 = gtNewLclvNode(dupOp2->AsLclVarCommon()->GetLclNum(), simdType);
-    }
-    else
-    {
-        dupOp2    = gtCloneExpr(*pOp2);
-        dupDupOp2 = gtCloneExpr(*pOp2);
-    }
-
-    assert(dupDupOp1 != nullptr && dupDupOp2 != nullptr);
-    assert(dupOp1 != nullptr && dupOp2 != nullptr);
-    assert(*pOp1 != nullptr && *pOp2 != nullptr);
-
-    // v1GreaterThanv2Signed - signed 32-bit comparison
-    GenTree* v1GreaterThanv2Signed = gtNewSIMDNode(simdType, *pOp1, *pOp2, SIMDIntrinsicGreaterThan, TYP_INT, size);
-
-    // v1Equalsv2 - 32-bit equality
-    GenTree* v1Equalsv2 = gtNewSIMDNode(simdType, dupOp1, dupOp2, SIMDIntrinsicEqual, TYP_INT, size);
-
-    // v1GreaterThanv2Unsigned - unsigned 32-bit comparison
-    var_types       tempBaseType = TYP_UINT;
-    SIMDIntrinsicID sid = impSIMDRelOp(SIMDIntrinsicGreaterThan, typeHnd, size, &tempBaseType, &dupDupOp1, &dupDupOp2);
-    GenTree*        v1GreaterThanv2Unsigned = gtNewSIMDNode(simdType, dupDupOp1, dupDupOp2, sid, tempBaseType, size);
-
-    GenTree* z = gtNewSIMDNode(simdType, v1GreaterThanv2Signed, gtNewIconNode(SHUFFLE_WWYY, TYP_INT),
-                               SIMDIntrinsicShuffleSSE2, TYP_FLOAT, size);
-    GenTree* t1 = gtNewSIMDNode(simdType, v1GreaterThanv2Unsigned, gtNewIconNode(SHUFFLE_ZZXX, TYP_INT),
-                                SIMDIntrinsicShuffleSSE2, TYP_FLOAT, size);
-    GenTree* u1 = gtNewSIMDNode(simdType, v1Equalsv2, gtNewIconNode(SHUFFLE_WWYY, TYP_INT), SIMDIntrinsicShuffleSSE2,
-                                TYP_FLOAT, size);
-    GenTree* w = gtNewSIMDNode(simdType, u1, t1, SIMDIntrinsicBitwiseAnd, TYP_INT, size);
-
-    *pOp1 = z;
-    *pOp2 = w;
-    return SIMDIntrinsicBitwiseOr;
-}
 #endif // TARGET_XARCH
 
 // Transforms operands and returns the SIMD intrinsic to be applied on
@@ -1390,30 +1292,9 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
 
     if (varTypeIsFloating(baseType))
     {
-        // SSE2/AVX doesn't support > and >= on vector float/double.
-        // Therefore, we need to use < and <= with swapped operands
-        if (relOpIntrinsicId == SIMDIntrinsicGreaterThan)
-        {
-            GenTree* tmp = *pOp1;
-            *pOp1        = *pOp2;
-            *pOp2        = tmp;
-
-            intrinsicID = SIMDIntrinsicLessThan;
-        }
     }
     else if (varTypeIsIntegral(baseType))
     {
-        // SSE/AVX doesn't support < and <= on integer base type vectors.
-        // Therefore, we need to use > and >= with swapped operands.
-        if (intrinsicID == SIMDIntrinsicLessThan)
-        {
-            GenTree* tmp = *pOp1;
-            *pOp1        = *pOp2;
-            *pOp2        = tmp;
-
-            intrinsicID = SIMDIntrinsicGreaterThan;
-        }
-
         if ((getSIMDSupportLevel() == SIMD_SSE2_Supported) && baseType == TYP_LONG)
         {
             // There is no direct SSE2 support for comparing TYP_LONG vectors.
@@ -1421,10 +1302,6 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
             if (intrinsicID == SIMDIntrinsicEqual)
             {
                 intrinsicID = impSIMDLongRelOpEqual(typeHnd, size, pOp1, pOp2);
-            }
-            else if (intrinsicID == SIMDIntrinsicGreaterThan)
-            {
-                intrinsicID = impSIMDLongRelOpGreaterThan(typeHnd, size, pOp1, pOp2);
             }
             else
             {
@@ -1507,20 +1384,7 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
             return impSIMDRelOp(intrinsicID, typeHnd, size, inOutBaseType, pOp1, pOp2);
         }
     }
-#elif defined(TARGET_ARM64)
-    // TODO-ARM64-CQ handle comparisons against zero
-
-    // TARGET_ARM64 doesn't support < and <= on register register comparisons
-    // Therefore, we need to use > and >= with swapped operands.
-    if (intrinsicID == SIMDIntrinsicLessThan)
-    {
-        GenTree* tmp = *pOp1;
-        *pOp1        = *pOp2;
-        *pOp2        = tmp;
-
-        intrinsicID = SIMDIntrinsicGreaterThan;
-    }
-#else  // !TARGET_XARCH
+#elif !defined(TARGET_ARM64)
     assert(!"impSIMDRelOp() unimplemented on target arch");
     unreached();
 #endif // !TARGET_XARCH
@@ -2397,8 +2261,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         break;
 
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicGreaterThan:
         {
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType, instMethod);

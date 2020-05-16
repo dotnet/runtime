@@ -7978,8 +7978,7 @@ private:
 
     static bool isRelOpSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
     {
-        return (intrinsicId == SIMDIntrinsicEqual || intrinsicId == SIMDIntrinsicLessThan ||
-                intrinsicId == SIMDIntrinsicGreaterThan);
+        return (intrinsicId == SIMDIntrinsicEqual);
     }
 
     // Returns base type of a TYP_SIMD local.
@@ -8100,13 +8099,6 @@ private:
                                           unsigned             simdVectorSize,
                                           GenTree**            op1,
                                           GenTree**            op2);
-
-    // Transforms operands and returns the SIMD intrinsic to be applied on
-    // transformed operands to obtain > comparison result.
-    SIMDIntrinsicID impSIMDLongRelOpGreaterThan(CORINFO_CLASS_HANDLE typeHnd,
-                                                unsigned             simdVectorSize,
-                                                GenTree**            op1,
-                                                GenTree**            op2);
 
 #endif // defined(TARGET_XARCH)
 

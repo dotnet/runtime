@@ -3845,8 +3845,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicGreaterThan:
             genSIMDIntrinsicBinOp(simdNode);
             break;
 
@@ -3957,12 +3955,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicEqual:
                 result = INS_fcmeq;
                 break;
-            case SIMDIntrinsicGreaterThan:
-                result = INS_fcmgt;
-                break;
-            case SIMDIntrinsicLessThan:
-                result = INS_fcmlt;
-                break;
             case SIMDIntrinsicMul:
                 result = INS_fmul;
                 break;
@@ -4009,13 +4001,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicEqual:
                 result = INS_cmeq;
-                break;
-            case SIMDIntrinsicGreaterThan:
-                result = isUnsigned ? INS_cmhi : INS_cmgt;
-                break;
-            case SIMDIntrinsicLessThan:
-                assert(!isUnsigned);
-                result = INS_cmlt;
                 break;
             case SIMDIntrinsicMul:
                 result = INS_mul;
@@ -4344,9 +4329,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMul || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDiv ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicLessThan ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGreaterThan);
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     GenTree*  op2       = simdNode->gtGetOp2();
