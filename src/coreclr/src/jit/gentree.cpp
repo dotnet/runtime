@@ -18444,8 +18444,6 @@ bool GenTree::isCommutativeSIMDIntrinsic()
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicBitwiseXor:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicMax:
-        case SIMDIntrinsicMin:
         case SIMDIntrinsicMul:
         case SIMDIntrinsicOpEquality:
         case SIMDIntrinsicOpInEquality:

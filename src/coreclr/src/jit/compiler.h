@@ -8092,14 +8092,6 @@ private:
                            GenTree*             op2,
                            GenTree*             op3);
 
-    // Creates a GT_SIMD tree for Min/Max operation
-    GenTree* impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
-                           CORINFO_CLASS_HANDLE typeHnd,
-                           var_types            baseType,
-                           unsigned             simdVectorSize,
-                           GenTree*             op1,
-                           GenTree*             op2);
-
     // Transforms operands and returns the SIMD intrinsic to be applied on
     // transformed operands to obtain given relop result.
     SIMDIntrinsicID impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,

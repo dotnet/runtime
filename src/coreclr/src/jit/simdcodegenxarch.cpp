@@ -233,90 +233,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicMin:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_minps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_minpd;
-            }
-            else if (baseType == TYP_UBYTE)
-            {
-                result = INS_pminub;
-            }
-            else if (baseType == TYP_SHORT)
-            {
-                result = INS_pminsw;
-            }
-            else if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
-            {
-                if (baseType == TYP_BYTE)
-                {
-                    result = INS_pminsb;
-                }
-                else if (baseType == TYP_USHORT)
-                {
-                    result = INS_pminuw;
-                }
-                else if (baseType == TYP_INT)
-                {
-                    result = INS_pminsd;
-                }
-                else if (baseType == TYP_UINT)
-                {
-                    result = INS_pminud;
-                }
-            }
-            else
-            {
-                unreached();
-            }
-            break;
-
-        case SIMDIntrinsicMax:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_maxps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_maxpd;
-            }
-            else if (baseType == TYP_UBYTE)
-            {
-                result = INS_pmaxub;
-            }
-            else if (baseType == TYP_SHORT)
-            {
-                result = INS_pmaxsw;
-            }
-            else if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
-            {
-                if (baseType == TYP_BYTE)
-                {
-                    result = INS_pmaxsb;
-                }
-                else if (baseType == TYP_USHORT)
-                {
-                    result = INS_pmaxuw;
-                }
-                else if (baseType == TYP_INT)
-                {
-                    result = INS_pmaxsd;
-                }
-                else if (baseType == TYP_UINT)
-                {
-                    result = INS_pmaxud;
-                }
-            }
-            else
-            {
-                unreached();
-            }
-            break;
-
         case SIMDIntrinsicEqual:
             if (baseType == TYP_FLOAT)
             {
@@ -1780,8 +1696,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAndNot ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseXor || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMin ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMax);
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseXor);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     GenTree*  op2       = simdNode->gtGetOp2();
@@ -3237,8 +3152,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicBitwiseXor:
-        case SIMDIntrinsicMin:
-        case SIMDIntrinsicMax:
             genSIMDIntrinsicBinOp(simdNode);
             break;
 
