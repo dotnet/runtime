@@ -1650,8 +1650,6 @@ public:
 
     inline bool IsBoxedValue();
 
-    inline bool IsSIMDEqualityOrInequality() const;
-
     static bool OperIsList(genTreeOps gtOper)
     {
         return gtOper == GT_LIST;
@@ -6865,19 +6863,6 @@ inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
     return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
-}
-
-inline bool GenTree::IsSIMDEqualityOrInequality() const
-{
-#ifdef FEATURE_SIMD
-    if (gtOper == GT_SIMD)
-    {
-        SIMDIntrinsicID id = AsSIMD()->gtSIMDIntrinsicID;
-        return (id == SIMDIntrinsicOpEquality) || (id == SIMDIntrinsicOpInEquality);
-    }
-#endif
-
-    return false;
 }
 
 inline GenTree* GenTree::MoveNext()

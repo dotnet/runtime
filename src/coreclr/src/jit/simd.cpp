@@ -2227,38 +2227,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         }
         break;
 
-        case SIMDIntrinsicOpEquality:
-        {
-            op2 = impSIMDPopStack(simdType);
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            assert(op1->TypeGet() == simdType);
-            assert(op2->TypeGet() == simdType);
-
-            simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, SIMDIntrinsicOpEquality, baseType, size);
-            if (simdType == TYP_SIMD12)
-            {
-                simdTree->gtFlags |= GTF_SIMD12_OP;
-            }
-            retVal = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicOpInEquality:
-        {
-            // op1 is the first operand
-            // op2 is the second operand
-            op2      = impSIMDPopStack(simdType);
-            op1      = impSIMDPopStack(simdType, instMethod);
-            simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, SIMDIntrinsicOpInEquality, baseType, size);
-            if (simdType == TYP_SIMD12)
-            {
-                simdTree->gtFlags |= GTF_SIMD12_OP;
-            }
-            retVal = simdTree;
-        }
-        break;
-
         case SIMDIntrinsicEqual:
         {
             op2 = impSIMDPopStack(simdType);

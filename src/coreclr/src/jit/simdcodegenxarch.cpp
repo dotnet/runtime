@@ -1799,100 +1799,6 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         }
         break;
 
-        // (In)Equality that produces bool result instead of a bit vector
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
-        {
-            // We're only setting condition flags, if a 0/1 value is desired then Lowering should have inserted a SETCC.
-            assert(targetReg == REG_NA);
-
-            var_types simdType = op1->TypeGet();
-            // TODO-1stClassStructs: Temporary to minimize asmDiffs
-            if (simdType == TYP_DOUBLE)
-            {
-                simdType = TYP_SIMD8;
-            }
-
-            // Here we should consider TYP_SIMD12 operands as if they were TYP_SIMD16
-            // since both the operands will be in XMM registers.
-            if (simdType == TYP_SIMD12)
-            {
-                simdType = TYP_SIMD16;
-            }
-
-            // On SSE4/AVX, we can generate optimal code for (in)equality against zero using ptest.
-            if (op2->isContained())
-            {
-                assert((compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported) && op2->IsIntegralConstVector(0));
-                inst_RV_RV(INS_ptest, op1->GetRegNum(), op1->GetRegNum(), simdType, emitActualTypeSize(simdType));
-            }
-            else
-            {
-                // We need one additional SIMD register to store the result of the SIMD compare.
-                regNumber tmpReg1 = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-
-                // tmpReg1 = (op1Reg == op2Reg)
-                // Call this value of tmpReg1 as 'compResult' for further reference below.
-                regNumber otherReg = op2Reg;
-                if (tmpReg1 != op2Reg)
-                {
-                    if (tmpReg1 != op1Reg)
-                    {
-                        inst_RV_RV(ins_Copy(simdType), tmpReg1, op1Reg, simdType, emitActualTypeSize(simdType));
-                    }
-                }
-                else
-                {
-                    otherReg = op1Reg;
-                }
-
-                // For all integer types we can use TYP_INT comparison.
-                unsigned    ival = 0;
-                instruction ins =
-                    getOpForSIMDIntrinsic(SIMDIntrinsicEqual, varTypeIsFloating(baseType) ? baseType : TYP_INT, &ival);
-
-                if (varTypeIsFloating(baseType))
-                {
-                    assert((ival >= 0) && (ival <= 255));
-                    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(simdType), tmpReg1, otherReg, (int8_t)ival);
-                }
-                else
-                {
-                    inst_RV_RV(ins, tmpReg1, otherReg, simdType, emitActualTypeSize(simdType));
-                }
-
-                regNumber intReg = simdNode->GetSingleTempReg(RBM_ALLINT);
-                inst_RV_RV(INS_pmovmskb, intReg, tmpReg1, simdType, emitActualTypeSize(simdType));
-                // There's no pmovmskw/pmovmskd/pmovmskq but they're not needed anyway. Vector compare
-                // instructions produce "all ones"/"all zeroes" components and pmovmskb extracts a
-                // subset of each component's ones/zeroes. In the end we need to know if the result is
-                // "all ones" where the number of ones is given by the vector byte size, not by the
-                // vector component count. So, for AVX registers we need to compare to 0xFFFFFFFF and
-                // for SSE registers we need to compare to 0x0000FFFF.
-                // The SIMD12 case is handled specially, because we can't rely on the upper bytes being
-                // zero, so we must compare only the lower 3 floats (hence the byte mask of 0xFFF).
-                // Note that -1 is used instead of 0xFFFFFFFF, on x64 emit doesn't correctly recognize
-                // that 0xFFFFFFFF can be encoded in a single byte and emits the longer 3DFFFFFFFF
-                // encoding instead of 83F8FF.
-                ssize_t mask;
-                if ((simdNode->gtFlags & GTF_SIMD12_OP) != 0)
-                {
-                    mask = 0x00000FFF;
-                    GetEmitter()->emitIns_R_I(INS_and, EA_4BYTE, intReg, mask);
-                }
-                else if (emitActualTypeSize(simdType) == 32)
-                {
-                    mask = -1;
-                }
-                else
-                {
-                    mask = 0x0000FFFF;
-                }
-                GetEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, intReg, mask);
-            }
-        }
-        break;
-
         default:
             noway_assert(!"Unimplemented SIMD relational operation.");
             unreached();
@@ -2984,8 +2890,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicBinOp(simdNode);
             break;
 
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
         case SIMDIntrinsicEqual:
             genSIMDIntrinsicRelOp(simdNode);
             break;

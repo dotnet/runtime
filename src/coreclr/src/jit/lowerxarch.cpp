@@ -743,14 +743,6 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         // the addr of SIMD vector with the given index.
         simdNode->gtOp1->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
     }
-    else if (simdNode->IsSIMDEqualityOrInequality())
-    {
-        LowerNodeCC(simdNode,
-                    simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality ? GenCondition::EQ : GenCondition::NE);
-
-        simdNode->gtType = TYP_VOID;
-        simdNode->ClearUnusedValue();
-    }
 #endif
     ContainCheckSIMD(simdNode);
 }
@@ -3876,19 +3868,6 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
             CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
-            break;
-
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
-            // On SSE4/AVX, we can generate optimal code for (in)equality
-            // against zero using ptest. We can safely do this optimization
-            // for integral vectors but not for floating-point for the reason
-            // that we have +0.0 and -0.0 and +0.0 == -0.0
-            op2 = simdNode->gtGetOp2();
-            if ((comp->getSIMDSupportLevel() >= SIMD_SSE4_Supported) && op2->IsIntegralConstVector(0))
-            {
-                MakeSrcContained(simdNode, op2);
-            }
             break;
 
         case SIMDIntrinsicGetItem:

@@ -1219,11 +1219,6 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
             break;
 
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
-            // TODO-ARM64-CQ Support containing 0
-            break;
-
         case SIMDIntrinsicGetItem:
         {
             // This implements get_Item method. The sources are:

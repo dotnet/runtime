@@ -16511,13 +16511,7 @@ bool GenTree::isContained() const
     {
         // We have to cast away const-ness since AsOp() method is non-const.
         const GenTree* childNode = AsOp()->gtGetOp1();
-        assert((isMarkedContained == false) || childNode->IsSIMDEqualityOrInequality());
-    }
-
-    // these either produce a result in register or set flags reg.
-    else if (IsSIMDEqualityOrInequality())
-    {
-        assert(!isMarkedContained);
+        assert(isMarkedContained == false);
     }
 
     // if it's contained it can't be unused.
@@ -18444,8 +18438,6 @@ bool GenTree::isCommutativeSIMDIntrinsic()
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicMul:
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
             return true;
         default:
             return false;
