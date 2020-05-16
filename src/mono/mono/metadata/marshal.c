@@ -6269,6 +6269,7 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 		return res;
 	}
 	case MONO_TYPE_SZARRAY: {
+		//TODO: Implement structs and in-params for all value types	
 		MonoClass *klass = t->data.klass;
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
