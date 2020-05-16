@@ -6814,27 +6814,40 @@ bool GenTreeOp::usesMagicNumberDivision(Compiler* comp)
     }
 
     const var_types divType = TypeGet();
-    if ((divType == TYP_INT) && !isSignedDivide)
-    {
-        // Clear up the upper 32 bits of the value, they may be set to 1 because constants
-        // are treated as signed and stored in ssize_t which is 64 bit in size on 64 bit targets.
-        divisorValue &= UINT32_MAX;
-    }
 
     if (divisorValue == 0)
     {
         // x / 0 and x % 0 can't be optimized because they are required to throw an exception.
         return false;
     }
-    else if (isSignedDivide && (divisorValue == -1))
+    else if (isSignedDivide)
     {
-        // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
-        return false;
+        if (divisorValue == -1)
+        {
+            // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
+            return false;
+        }
+        else if (isPow2(divisorValue))
+        {
+            return true;
+        }
     }
-    else if (isPow2(divisorValue))
+    else // unsigned divide
     {
-        return true;
+        if (divType == TYP_INT)
+        {
+            // Clear up the upper 32 bits of the value, they may be set to 1 because constants
+            // are treated as signed and stored in ssize_t which is 64 bit in size on 64 bit targets.
+            divisorValue &= UINT32_MAX;
+        }
+
+        size_t unsignedDivisorValue = (size_t)divisorValue;
+        if (isPow2(unsignedDivisorValue))
+        {
+            return true;
+        }
     }
+
 
     const bool isDiv = OperIs(GT_DIV, GT_UDIV);
 
