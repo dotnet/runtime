@@ -297,85 +297,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
             __fallthrough;
 
         case GT_STORE_LCL_FLD:
-        {
-            GenTreeLclVarCommon* const store = node->AsLclVarCommon();
-            GenTree*                   src   = store->gtGetOp1();
-            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(src)) && !store->IsPhiDefn() &&
-                (src->TypeGet() != TYP_STRUCT))
-            {
-                if (m_lsra->isRegCandidate(comp->lvaGetDesc(store->GetLclNum())))
-                {
-                    GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), src, nullptr);
-                    store->gtOp1         = bitcast;
-                    src                  = store->gtGetOp1();
-                    BlockRange().InsertBefore(store, bitcast);
-                    ContainCheckBitCast(bitcast);
-                }
-                else
-                {
-                    // This is an actual store, we'll just retype it.
-                    store->gtType = src->TypeGet();
-                }
-            }
-
-            if ((node->TypeGet() == TYP_STRUCT) && (src->OperGet() != GT_PHI))
-            {
-                LclVarDsc* varDsc = comp->lvaGetDesc(store);
-                if (src->OperGet() == GT_CALL)
-                {
-#ifdef DEBUG
-                    const ClassLayout* layout    = varDsc->GetLayout();
-                    const unsigned     slotCount = layout->GetSlotCount();
-                    const var_types    regType   = layout->GetRegisterType();
-#if defined(TARGET_XARCH) && !defined(UNIX_AMD64_ABI)
-                    // Windows x64 doesn't have multireg returns,
-                    // x86 uses it only for long return type, not for structs.
-                    assert(!comp->compDoOldStructRetyping());
-                    assert(slotCount == 1);
-                    assert(regType != TYP_UNDEF);
-#else  // !TARGET_XARCH || UNIX_AMD64_ABI
-                    if (!varDsc->lvIsHfa())
-                    {
-                        if (slotCount > 1)
-                        {
-                            assert(src->AsCall()->HasMultiRegRetVal());
-                        }
-                        else
-                        {
-                            assert(!comp->compDoOldStructRetyping());
-                            assert(regType != TYP_UNDEF);
-                        }
-                    }
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI
-#endif // DEBUG
-                }
-                else if (!src->OperIs(GT_LCL_VAR) || varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF)
-                {
-                    GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(store->GetLclNum(), TYP_BYREF);
-
-                    addr->gtFlags |= GTF_VAR_DEF;
-                    assert(!addr->IsPartialLclFld(comp));
-                    addr->gtFlags |= GTF_DONT_CSE;
-
-                    // Create the assignment node.
-                    store->ChangeOper(GT_STORE_OBJ);
-
-                    store->gtFlags = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-#ifndef JIT32_GCENCODER
-                    store->AsObj()->gtBlkOpGcUnsafe = false;
-#endif
-                    store->AsObj()->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
-                    store->AsObj()->SetLayout(varDsc->GetLayout());
-                    store->AsObj()->SetAddr(addr);
-                    store->AsObj()->SetData(src);
-                    BlockRange().InsertBefore(store, addr);
-                    LowerBlockStore(store->AsObj());
-                    break;
-                }
-            }
-            LowerStoreLoc(node->AsLclVarCommon());
+            LowerStoreLocCommon(node->AsLclVarCommon());
             break;
-        }
 
 #if defined(TARGET_ARM64)
         case GT_CMPXCHG:
@@ -3058,6 +2981,92 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
     ContainCheckRet(ret);
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerStoreLocCommon: platform idependent part of local var or field store lowering.
+//
+// Arguments:
+//     lclStore - The store lcl node to lower.
+//
+void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
+{
+    assert(lclStore->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
+    GenTree* src = lclStore->gtGetOp1();
+    if ((varTypeUsesFloatReg(lclStore) != varTypeUsesFloatReg(src)) && !lclStore->IsPhiDefn() &&
+        (src->TypeGet() != TYP_STRUCT))
+    {
+        if (m_lsra->isRegCandidate(comp->lvaGetDesc(lclStore->GetLclNum())))
+        {
+            GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, lclStore->TypeGet(), src, nullptr);
+            lclStore->gtOp1      = bitcast;
+            src                  = lclStore->gtGetOp1();
+            BlockRange().InsertBefore(lclStore, bitcast);
+            ContainCheckBitCast(bitcast);
+        }
+        else
+        {
+            // This is an actual store, we'll just retype it.
+            lclStore->gtType = src->TypeGet();
+        }
+    }
+
+    if ((lclStore->TypeGet() == TYP_STRUCT) && (src->OperGet() != GT_PHI))
+    {
+        LclVarDsc* varDsc = comp->lvaGetDesc(lclStore);
+        if (src->OperGet() == GT_CALL)
+        {
+#ifdef DEBUG
+            const ClassLayout* layout    = varDsc->GetLayout();
+            const unsigned     slotCount = layout->GetSlotCount();
+            const var_types    regType   = layout->GetRegisterType();
+#if defined(TARGET_XARCH) && !defined(UNIX_AMD64_ABI)
+            // Windows x64 doesn't have multireg returns,
+            // x86 uses it only for long return type, not for structs.
+            assert(!comp->compDoOldStructRetyping());
+            assert(slotCount == 1);
+            assert(regType != TYP_UNDEF);
+#else  // !TARGET_XARCH || UNIX_AMD64_ABI
+            if (!varDsc->lvIsHfa())
+            {
+                if (slotCount > 1)
+                {
+                    assert(src->AsCall()->HasMultiRegRetVal());
+                }
+                else
+                {
+                    assert(!comp->compDoOldStructRetyping());
+                    assert(regType != TYP_UNDEF);
+                }
+            }
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
+#endif // DEBUG
+        }
+        else if (!src->OperIs(GT_LCL_VAR) || varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF)
+        {
+            GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(lclStore->GetLclNum(), TYP_BYREF);
+
+            addr->gtFlags |= GTF_VAR_DEF;
+            assert(!addr->IsPartialLclFld(comp));
+            addr->gtFlags |= GTF_DONT_CSE;
+
+            // Create the assignment node.
+            lclStore->ChangeOper(GT_STORE_OBJ);
+            GenTreeBlk* objStore = lclStore->AsObj();
+            objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+#ifndef JIT32_GCENCODER
+            objStore->gtBlkOpGcUnsafe = false;
+#endif
+            objStore->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
+            objStore->SetLayout(varDsc->GetLayout());
+            objStore->SetAddr(addr);
+            objStore->SetData(src);
+            BlockRange().InsertBefore(objStore, addr);
+            LowerBlockStore(objStore);
+            return;
+        }
+    }
+    LowerStoreLoc(lclStore);
 }
 
 //----------------------------------------------------------------------------------------------
