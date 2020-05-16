@@ -8109,9 +8109,6 @@ private:
                                  GenTree**            op1,
                                  GenTree**            op2);
 
-    // Creates a GT_SIMD tree for Abs intrinsic.
-    GenTree* impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, unsigned simdVectorSize, GenTree* op1);
-
 #if defined(TARGET_XARCH)
 
     // Transforms operands and returns the SIMD intrinsic to be applied on

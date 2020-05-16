@@ -1960,16 +1960,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             noway_assert(varTypeIsFloating(simdTree->gtSIMDBaseType));
             break;
 
-        case SIMDIntrinsicAbs:
-            // float/double vectors: This gets implemented as bitwise-And operation
-            // with a mask and hence should never see  here.
-            //
-            // Must be a Vector<int> or Vector<short> Vector<sbyte>
-            assert(simdTree->gtSIMDBaseType == TYP_INT || simdTree->gtSIMDBaseType == TYP_SHORT ||
-                   simdTree->gtSIMDBaseType == TYP_BYTE);
-            assert(compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported);
-            break;
-
         case SIMDIntrinsicSqrt:
             // SSE2 has no instruction support for sqrt on integer vectors.
             noway_assert(varTypeIsFloating(simdTree->gtSIMDBaseType));
