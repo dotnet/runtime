@@ -2228,7 +2228,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         break;
 
         case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicInstEquals:
         {
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType, instMethod);
