@@ -5,7 +5,7 @@ Below table shows the combined area owners on this repository:
 | area-AssemblyLoader-coreclr | @jeffschwMSFT @vitek-karas | |
 | area-CodeGen-coreclr | @BruceForstall @dotnet/jit-contrib | |
 | area-CrossGen/NGEN-coreclr | @nattress | |
-| area-crossgen2-coreclr | @nattress @MichalStrehovsky @trylek @mangod9 | |
+| area-crossgen2-coreclr | @nattress @trylek @dotnet/crossgen-contrib | |
 | area-DependencyModel | @eerhardt | Microsoft.Extensions.DependencyModel |
 | area-Diagnostics-coreclr | @tommcdon | |
 | area-ExceptionHandling-coreclr | @janvorli | |
