@@ -2624,5 +2624,11 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/M00/b108366/b108366/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+
+        <!-- The following issues only effect the Mono interpreter; there is currently no way to exclude based on that scenario -->
+        <ExcludeList Include = "$(XunitTestBinBase)JIT/IL_Conformance/Old/Base/ckfinite/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <!-- End interpreter issues -->
     </ItemGroup>
 </Project>
