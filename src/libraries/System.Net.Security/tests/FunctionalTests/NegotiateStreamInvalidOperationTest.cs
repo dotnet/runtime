@@ -286,7 +286,6 @@ namespace System.Net.Security.Tests
                         AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndAuthenticateAsClient(result));
 
                         authStream.EndAuthenticateAsClient(asyncResult);
-                        Assert.Throws<InvalidOperationException>(() => authStream.EndAuthenticateAsClient(asyncResult));
                     }, CredentialCache.DefaultNetworkCredentials, string.Empty, client),
 
                     Task.Factory.FromAsync(server.BeginAuthenticateAsServer, (asyncResult) =>
@@ -298,7 +297,6 @@ namespace System.Net.Security.Tests
                         AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndAuthenticateAsServer(result));
 
                         authStream.EndAuthenticateAsServer(asyncResult);
-                        Assert.Throws<InvalidOperationException>(() => authStream.EndAuthenticateAsServer(asyncResult));
                     }, server));
             }
         }
