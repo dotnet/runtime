@@ -1746,7 +1746,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundByte(ulong match)
-            => BitOperations.Log2Unsafe(match) >> 3;
+            => BitOperations.Log2(match) >> 3;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ushort LoadUShort(ref byte start)

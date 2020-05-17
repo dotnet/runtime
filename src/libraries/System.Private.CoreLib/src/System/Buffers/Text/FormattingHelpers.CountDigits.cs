@@ -104,7 +104,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountHexDigits(ulong value)
         {
-            // The number of hex digits is Log16(value) + 1, or Log2(value) / 4 + 1
+            // The number of hex digits is log16(value) + 1, or log2(value) / 4 + 1
             return (BitOperations.Log2(value) >> 2) + 1;
         }
 
