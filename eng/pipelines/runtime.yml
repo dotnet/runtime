@@ -730,29 +730,6 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Mono CoreCLR runtime Test executions using live libraries
-# Only when Mono is changed
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: release
-    runtimeFlavor: mono
-    platforms:
-    - OSX_x64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      liveRuntimeBuildConfig: release
-      runtimeMode: 'interpreter'
-      runtimeModeDisplayName: 'Interpreter'
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
 # Libraries Release Test Execution against a release mono runtime.
 # Only when libraries or mono changed
 #
