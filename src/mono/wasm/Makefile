@@ -92,7 +92,7 @@ $(eval $(call InterpBuildTemplate,debug,,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS)))
 $(eval $(call InterpBuildTemplate,release,,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
 
 build:
-	EMSDK_PATH=$(PWD)/wasm/emsdk ../../../.dotnet/dotnet build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Release
+	EMSDK_PATH=$(PWD)/wasm/emsdk ../../../.dotnet/dotnet build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
 
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)
