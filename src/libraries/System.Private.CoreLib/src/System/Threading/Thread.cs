@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
 
@@ -154,7 +155,22 @@ namespace System.Threading
             }
         }
 
-        public static Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
+        public static Thread CurrentThread
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                // Arranged like this the conditional is a not predicted branch, with conditional ?? it switches.
+                // However needs to be aggressively inlined in this arrangement.
+                Thread? currentThread = t_currentThread;
+                if (currentThread != null)
+                {
+                    return currentThread;
+                }
+
+                return InitializeCurrentThread();
+            }
+        }
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
