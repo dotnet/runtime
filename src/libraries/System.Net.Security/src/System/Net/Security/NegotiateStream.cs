@@ -411,7 +411,7 @@ namespace System.Net.Security
                     return readBytes;
                 }
             }
-            catch (Exception e) when (!(e is IOException))
+            catch (Exception e) when (!(e is IOException || e is OperationCanceledException))
             {
                 throw new IOException(SR.net_io_read, e);
             }
@@ -482,11 +482,11 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_encrypt, e);
                     }
 
-                    await InnerStream.WriteAsync(new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes)).ConfigureAwait(false);
+                    await adapter.WriteAsync(outBuffer, 0, encryptedBytes).ConfigureAwait(false);
                     buffer = buffer.Slice(chunkBytes);
                 }
             }
-            catch (Exception e) when (!(e is IOException))
+            catch (Exception e) when (!(e is IOException || e is OperationCanceledException))
             {
                 throw new IOException(SR.net_io_write, e);
             }
@@ -749,8 +749,8 @@ namespace System.Net.Security
             if (exception != null)
             {
                 // Signal remote side on a failed attempt.
-                await StartSendAuthResetSignalAsync(adapter, message!, exception).ConfigureAwait(false);
-                return;
+                await SendAuthResetSignalAndThrowAsync(adapter, message!, exception).ConfigureAwait(false);
+                Debug.Fail("Unreachable");
             }
 
             if (HandshakeComplete)
@@ -767,8 +767,8 @@ namespace System.Net.Security
                         statusCode = (int)((uint)statusCode >> 8);
                     }
 
-                    await StartSendAuthResetSignalAsync(adapter, message, exception).ConfigureAwait(false);
-                    return;
+                    await SendAuthResetSignalAndThrowAsync(adapter, message, exception).ConfigureAwait(false);
+                    Debug.Fail("Unreachable");
                 }
 
                 if (PrivateImpersonationLevel < _expectedImpersonationLevel)
@@ -783,8 +783,8 @@ namespace System.Net.Security
                         statusCode = (int)((uint)statusCode >> 8);
                     }
 
-                    await StartSendAuthResetSignalAsync(adapter, message, exception).ConfigureAwait(false);
-                    return;
+                    await SendAuthResetSignalAndThrowAsync(adapter, message, exception).ConfigureAwait(false);
+                    Debug.Fail("Unreachable");
                 }
 
                 ProtectionLevel result = _context.IsConfidentialityFlag ? ProtectionLevel.EncryptAndSign : _context.IsIntegrityFlag ? ProtectionLevel.Sign : ProtectionLevel.None;
@@ -801,8 +801,8 @@ namespace System.Net.Security
                         statusCode = (int)((uint)statusCode >> 8);
                     }
 
-                    await StartSendAuthResetSignalAsync(adapter, message, exception).ConfigureAwait(false);
-                    return;
+                    await SendAuthResetSignalAndThrowAsync(adapter, message, exception).ConfigureAwait(false);
+                    Debug.Fail("Unreachable");
                 }
 
                 // Signal remote party that we are done
@@ -893,7 +893,7 @@ namespace System.Net.Security
 
         //  This is to reset auth state on the remote side.
         //  If this write succeeds we will allow auth retrying.
-        private async Task StartSendAuthResetSignalAsync<TAdapter>(TAdapter adapter, byte[] message, Exception exception) where TAdapter : IReadWriteAdapter
+        private async Task SendAuthResetSignalAndThrowAsync<TAdapter>(TAdapter adapter, byte[] message, Exception exception) where TAdapter : IReadWriteAdapter
         {
             _framer!.WriteHeader.MessageId = FrameHeader.HandshakeErrId;
 
