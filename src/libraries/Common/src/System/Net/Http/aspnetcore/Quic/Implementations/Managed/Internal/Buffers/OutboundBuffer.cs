@@ -39,7 +39,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     True if the peer has acked a frame specifying the final size of the stream.
         /// </summary>
-        private bool _finAcked;
+        internal bool FinAcked { get; private set; }
 
         /// <summary>
         ///     Chunk to be filled from user data.
@@ -398,7 +398,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             if (fin)
             {
                 Debug.Assert(offset + count == WrittenBytes);
-                _finAcked = true;
+                FinAcked = true;
             }
 
             if (count == 0)
@@ -439,7 +439,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
             _chunks.RemoveRange(0, toRemove);
 
-            if (_finAcked && _acked[0].Length == WrittenBytes && StreamState == SendStreamState.DataSent)
+            if (FinAcked && _acked[0].Length == WrittenBytes && StreamState == SendStreamState.DataSent)
             {
                 lock (SyncObject)
                 {

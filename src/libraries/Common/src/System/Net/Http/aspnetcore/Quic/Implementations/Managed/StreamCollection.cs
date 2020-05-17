@@ -46,7 +46,15 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal ManagedQuicStream this[long streamId] => _streams[streamId];
 
+        /// <summary>
+        ///     Returns true if the stream collection has streams to be flushed.
+        /// </summary>
+        internal bool HasFlushableStreams => _flushable.First != null;
 
+        /// <summary>
+        ///     Removes first flushable stream from the queue and returns it. Returns null if no
+        ///     flushable stream is available.
+        /// </summary>
         internal ManagedQuicStream? GetFirstFlushableStream()
         {
             lock (_flushable)
@@ -62,6 +70,15 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
+        /// <summary>
+        ///     Returns true if there are streams awaiting an update.
+        /// </summary>
+        internal bool HasUpdateableStreams => _updateQueue.First != null;
+
+        /// <summary>
+        ///     Removes first stream from the update queue and returns it. Returns null if no such
+        ///     stream is available.
+        /// </summary>
         internal ManagedQuicStream? GetFirstStreamForUpdate()
         {
             lock (_updateQueue)

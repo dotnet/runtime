@@ -94,14 +94,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal long BytesRead { get; private set; }
 
         /// <summary>
-        ///     Final size of the stream. Null if final size is not known yet.
+        ///     True if Fin has been received. Also, if true, <see cref="Size"/> holds the final size of the stream.
         /// </summary>
-        internal long? FinalSize { get; private set; }
+        internal bool FinalSizeKnown { get; private set; }
 
         /// <summary>
-        ///     Estimated size of the stream. Final size may not be lower than this value.
+        ///     Size of the stream. May grow while FinalSizeKnown is false.
         /// </summary>
-        internal long EstimatedSize => _undelivered.Count > 0 ? _undelivered.GetMax() : BytesRead;
+        internal long Size { get; private set; }
 
         /// <summary>
         ///     Number of bytes ready to be read from the stream.
@@ -112,6 +112,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Error code if the inbound buffer was aborted.
         /// </summary>
         public long? Error { get; private set; }
+
+        /// <summary>
+        ///     Returns true if MaxStreamData frame should be sent to the peer.
+        /// </summary>
+        /// <returns></returns>
+        internal bool ShouldUpdateMaxData()
+        {
+            return MaxData - RemoteMaxData >= RemoteMaxData - Size;
+        }
 
         /// <summary>
         ///     Request that the stream be aborted by the sender with specified error code.
@@ -209,7 +218,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         private void OnFinalSize(long finalSize)
         {
-            Debug.Assert(FinalSize == null || FinalSize == finalSize);
+            Debug.Assert(!FinalSizeKnown || Size == finalSize);
 
             if (StreamState == RecvStreamState.Receive)
             {
@@ -219,7 +228,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                     {
                         // TODO-RZ: manage leftover flow control credit
                         StreamState = RecvStreamState.SizeKnown;
-                        FinalSize = finalSize;
+                        Size = finalSize;
+                        FinalSizeKnown = true;
                     }
                 }
             }
@@ -241,6 +251,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             }
         }
 
+        private void OnAllRead()
+        {
+            // no lock necessary here, race condition with incoming reset frame does not affect user.
+            StreamState = RecvStreamState.DataRead;
+        }
+
 
         /// <summary>
         ///     Receives a chunk of data and buffers it for delivery.
@@ -250,12 +266,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="fin">True if this is the last segment of the stream.</param>
         internal void Receive(long offset, ReadOnlySpan<byte> data, bool fin = false)
         {
-            Debug.Assert(FinalSize == null || offset + data.Length <= FinalSize, "Writing after final size");
+            Debug.Assert(!FinalSizeKnown || offset + data.Length <= Size, "Writing after final size");
 
             if (fin)
             {
                 OnFinalSize(offset + data.Length);
             }
+
+            Size = Math.Max(Size, offset + data.Length);
 
             // deliver new data if present
             if (!data.IsEmpty && offset + data.Length > _bytesDeliverable)
@@ -325,7 +343,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 _receivingBuffers.RemoveRange(0, buffersProcessed);
             }
 
-            if (FinalSize == _bytesDeliverable)
+            if (FinalSizeKnown && Size == _bytesDeliverable)
             {
                 OnAllReceived();
             }
@@ -345,7 +363,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             if (delivered > 0)
                 return delivered;
 
-            if (await _deliverableChannel.Reader.WaitToReadAsync(token).ConfigureAwait(false))
+            if (StreamState != RecvStreamState.DataRead && await _deliverableChannel.Reader.WaitToReadAsync(token).ConfigureAwait(false))
             {
                 return Deliver(destination.Span);
             }
@@ -389,6 +407,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
             UpdateMaxData(MaxData + delivered);
             BytesRead += delivered;
+            if (FinalSizeKnown && BytesRead == Size)
+            {
+                OnAllRead();
+            }
 
             return delivered;
         }

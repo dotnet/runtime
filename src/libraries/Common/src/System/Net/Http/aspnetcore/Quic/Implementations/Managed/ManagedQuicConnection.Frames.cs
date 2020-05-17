@@ -559,10 +559,10 @@ namespace System.Net.Quic.Implementations.Managed
             var buffer = stream.InboundBuffer!;
             long writtenOffset = frame.Offset + frame.StreamData.Length;
 
-            if (writtenOffset > buffer.EstimatedSize)
+            if (writtenOffset > buffer.Size)
             {
                 // receiving data on largest offset yet, check also connection-level control flow
-                ReceivedData += writtenOffset - buffer.EstimatedSize;
+                ReceivedData += writtenOffset - buffer.Size;
                 if (ReceivedData > _peerLimits.MaxData)
                 {
                     return CloseConnection(TransportErrorCode.FlowControlError, QuicError.MaxDataViolated, frameType);
@@ -577,16 +577,16 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (frame.Fin)
             {
-                // if trying to change final size, or setting too small final size, report error.
-                if (buffer.FinalSize != null && buffer.FinalSize != writtenOffset ||
-                    writtenOffset < buffer.EstimatedSize)
+                // if trying to change final size, or setting final size lower than already sent data, report error.
+                if (buffer.FinalSizeKnown && writtenOffset != buffer.Size ||
+                    writtenOffset < buffer.Size)
                 {
                     return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.InconsistentFinalSize, frameType);
                 }
             }
 
             // close if writing past known stream end
-            if (buffer.FinalSize != null && frame.Offset + frame.StreamData.Length > buffer.FinalSize)
+            if (buffer.FinalSizeKnown && writtenOffset > buffer.Size)
             {
                 return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.WritingPastFinalSize, frameType);
             }
@@ -657,7 +657,6 @@ namespace System.Net.Quic.Implementations.Managed
                 _pingWanted = false;
             }
 
-            WriteAckFrame(writer, pnSpace, context);
             WriteCryptoFrames(writer, pnSpace, context);
 
             if (packetType == PacketType.OneRtt)
@@ -845,7 +844,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (buffer == null ||
                 // only in Receive state do the frames make any sense
                 buffer.StreamState != RecvStreamState.Receive ||
-                buffer.MaxData == buffer.RemoteMaxData)
+                !buffer.ShouldUpdateMaxData())
             {
                 // nothing to update
                 return true;
@@ -915,9 +914,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void WriteMaxDataFrame(QuicWriter writer, QuicSocketContext.SendContext context)
         {
-            // TODO-RZ: better strategy for deciding whether the frame should be sent.
             if (MaxDataFrameSent ||
-                _localLimits.MaxData - _peerReceivedLocalLimits.MaxData < 1024 * 32 )
+                _localLimits.MaxData - _peerReceivedLocalLimits.MaxData < _peerReceivedLocalLimits.MaxData - ReceivedData)
             {
                 return;
             }
@@ -960,7 +958,7 @@ namespace System.Net.Quic.Implementations.Managed
                 // if size is known, WrittenBytes is no longer mutable
                 bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
 
-                if (count > 0 || fin)
+                if (count > 0 || fin && !buffer.FinAcked)
                 {
                     var payloadDestination = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int)count, fin);
 
