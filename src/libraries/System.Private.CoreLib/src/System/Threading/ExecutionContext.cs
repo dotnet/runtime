@@ -296,18 +296,15 @@ namespace System.Threading
                 edi = ExceptionDispatchInfo.Capture(ex);
             }
 
-            // Enregister threadPoolThread as it crossed EH, and use enregistered variable
-            Thread currentThread = threadPoolThread;
-
-            ExecutionContext? currentExecutionCtx = currentThread._executionContext;
+            ExecutionContext? currentExecutionCtx = threadPoolThread._executionContext;
 
             // Restore changed SynchronizationContext back to Default
-            currentThread._synchronizationContext = null;
+            threadPoolThread._synchronizationContext = null;
             if (currentExecutionCtx != null)
             {
                 // The EC always needs to be reset for this overload, as it will flow back to the caller if it performs
                 // extra work prior to returning to the Dispatch loop. For example for Task-likes it will flow out of await points
-                RestoreChangedContextToThread(currentThread, contextToRestore: null, currentExecutionCtx);
+                RestoreChangedContextToThread(threadPoolThread, contextToRestore: null, currentExecutionCtx);
             }
 
             // If exception was thrown by callback, rethrow it now original contexts are restored
@@ -356,6 +353,43 @@ namespace System.Threading
             // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
         }
 
+        internal static void RunOnDefaultContext(Thread currentThread, ExecutionContext? previousExecutionCtx, ContextCallback callback, object? state)
+        {
+            Debug.Assert(previousExecutionCtx != null && !previousExecutionCtx.m_isDefault);
+
+            SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
+            RestoreChangedContextToThread(currentThread, contextToRestore: null, previousExecutionCtx);
+
+            ExceptionDispatchInfo? edi = null;
+            try
+            {
+                callback.Invoke(state);
+            }
+            catch (Exception ex)
+            {
+                // Note: we have a "catch" rather than a "finally" because we want
+                // to stop the first pass of EH here.  That way we can restore the previous
+                // context before any of our callers' EH filters run.
+                edi = ExceptionDispatchInfo.Capture(ex);
+            }
+
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (currentThread._synchronizationContext != previousSyncCtx)
+            {
+                // Restore changed SynchronizationContext back to previous
+                currentThread._synchronizationContext = previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecutionCtx = currentThread._executionContext;
+            if (currentExecutionCtx != previousExecutionCtx)
+            {
+                RestoreChangedContextToThread(currentThread, previousExecutionCtx, currentExecutionCtx);
+            }
+
+            // If exception was thrown by callback, rethrow it now original contexts are restored
+            edi?.Throw();
+        }
+
         internal static void RestoreChangedContextToThread(Thread currentThread, ExecutionContext? contextToRestore, ExecutionContext? currentContext)
         {
             Debug.Assert(currentThread == Thread.CurrentThread);
@@ -389,6 +423,28 @@ namespace System.Threading
                 currentThread._synchronizationContext = null;
                 currentThread._executionContext = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void RestoreDefaultContextThrowIfNeeded(Thread currentThread, SynchronizationContext? previousSyncCtx, ExceptionDispatchInfo? edi)
+        {
+            ExecutionContext? currentExecutionCtx = currentThread._executionContext;
+
+            // Reset to Default
+            currentThread._executionContext = null;
+            currentThread._synchronizationContext = previousSyncCtx;
+
+            if (currentExecutionCtx != null && currentExecutionCtx.HasChangeNotifications)
+            {
+                OnValuesChanged(currentExecutionCtx, nextExecutionCtx: null);
+
+                // Reset to defaults again without change notifications in case the Change handler changed the contexts
+                currentThread._synchronizationContext = null;
+                currentThread._executionContext = null;
+            }
+
+            // If exception was thrown by callback, rethrow it now original contexts are restored
+            edi?.Throw();
         }
 
         [System.Diagnostics.Conditional("DEBUG")]

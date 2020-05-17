@@ -2234,9 +2234,7 @@ namespace System.Threading.Tasks
         /// can override to customize their behavior, which is usually done by promises
         /// that want to reuse the same object as a queued work item.
         /// </summary>
-        internal virtual void ExecuteFromThreadPool(Thread threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
-
-        internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
+        internal virtual void ExecuteFromThreadPool(Thread threadPoolThread)
         {
             // Remember that we started running the task delegate.
             m_stateFlags |= TASK_STATE_DELEGATE_INVOKED;
@@ -2244,6 +2242,21 @@ namespace System.Threading.Tasks
             if (!IsCancellationRequested & !IsCanceled)
             {
                 ExecuteWithThreadLocal(ref t_currentTask, threadPoolThread);
+            }
+            else
+            {
+                ExecuteEntryCancellationRequestedOrCanceled();
+            }
+        }
+
+        internal void ExecuteEntryUnsafe() // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
+        {
+            // Remember that we started running the task delegate.
+            m_stateFlags |= TASK_STATE_DELEGATE_INVOKED;
+
+            if (!IsCancellationRequested & !IsCanceled)
+            {
+                ExecuteWithThreadLocal(ref t_currentTask);
             }
             else
             {

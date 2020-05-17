@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Internal.Runtime.CompilerServices;
@@ -301,12 +302,63 @@ namespace System.Runtime.CompilerServices
             /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             public Action MoveNextAction => _moveNextAction ??= new Action(MoveNext);
 
-            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
+            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread)
+            {
+                Debug.Assert(!IsCompleted);
+                Debug.Assert(threadPoolThread == Thread.CurrentThread);
+
+                bool loggingOn = AsyncCausalityTracer.LoggingOn;
+                if (loggingOn)
+                {
+                    AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.Execution);
+                }
+
+                Debug.Assert(StateMachine != null);
+
+                ExecutionContext? context = Context;
+                // Call directly if EC flow is suppressed or if context is Default on ThreadPool
+                if (context == null || context.IsDefault)
+                {
+                    StateMachine.MoveNext();
+                }
+                else
+                {
+                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this, threadPoolThread);
+                }
+
+                if (IsCompleted)
+                {
+                    // If async debugging is enabled, remove the task from tracking.
+                    if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+                    {
+                        System.Threading.Tasks.Task.RemoveFromActiveTasks(this);
+                    }
+
+                    // Clear out state now that the async method has completed.
+                    // This avoids keeping arbitrary state referenced by lifted locals
+                    // if this Task / state machine box is held onto.
+                    StateMachine = default;
+                    Context = default;
+
+#if !CORERT
+                    // In case this is a state machine box with a finalizer, suppress its finalization
+                    // as it's now complete.  We only need the finalizer to run if the box is collected
+                    // without having been completed.
+                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                    {
+                        GC.SuppressFinalize(this);
+                    }
+#endif
+                }
+
+                if (loggingOn)
+                {
+                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.Execution);
+                }
+            }
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
-            public void MoveNext() => MoveNext(threadPoolThread: null);
-
-            private void MoveNext(Thread? threadPoolThread)
+            public void MoveNext()
             {
                 Debug.Assert(!IsCompleted);
 
@@ -323,20 +375,35 @@ namespace System.Runtime.CompilerServices
                 {
                     StateMachine.MoveNext();
                 }
-                else if (threadPoolThread is null)
+                else if (!context.IsDefault)
                 {
                     ExecutionContext.RunInternal(context, s_callback, this);
                 }
                 else
                 {
-                    if (context.IsDefault)
+                    Thread currentThread = Thread.CurrentThread;
+                    ExecutionContext? currentContext = currentThread._executionContext;
+                    if (currentContext != null && !currentContext.IsDefault)
                     {
-                        // Context starts as Default on ThreadPool
-                        StateMachine.MoveNext();
+                        // Current thread is not on Default
+                        ExecutionContext.RunOnDefaultContext(currentThread, currentContext, s_callback, this);
                     }
                     else
                     {
-                        ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this, threadPoolThread);
+                        // On Default and to run on Default; however we need to undo any changes that happen in call.
+                        SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
+                        ExceptionDispatchInfo? edi = null;
+                        try
+                        {
+                            // Run directly
+                            StateMachine.MoveNext();
+                        }
+                        catch (Exception ex)
+                        {
+                            edi = ExceptionDispatchInfo.Capture(ex);
+                        }
+
+                        ExecutionContext.RestoreDefaultContextThrowIfNeeded(currentThread, previousSyncCtx, edi);
                     }
                 }
 
