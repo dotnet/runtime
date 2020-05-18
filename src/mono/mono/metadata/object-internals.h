@@ -1920,6 +1920,11 @@ mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy
 void
 mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error);
 
+#ifdef ENABLE_NETCORE
+void
+mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error);
+#endif
+
 MonoVTable *
 mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass);
 

@@ -739,6 +739,8 @@
 			<method name="get_BaseDirectory"/>
 			<!-- object.c: mono_unhandled_exception_checked -->
 			<field name="UnhandledException"/>
+			<!-- object.c: mono_first_chance_exception_checked -->
+			<field name="FirstChanceException"/>
 		</type>
 
 		<type fullname="Mono.NullByRefReturnException">

@@ -95,6 +95,7 @@ array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klas
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, "System.Reflection", "Pointer")
 static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, "System.Runtime.Remoting", "RemotingServices")
 static GENERATE_GET_CLASS_WITH_CACHE (unhandled_exception_event_args, "System", "UnhandledExceptionEventArgs")
+static GENERATE_GET_CLASS_WITH_CACHE (first_chance_exception_event_args, "System.Runtime.ExceptionServices", "FirstChanceExceptionEventArgs")
 static GENERATE_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThreadAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (activation_services, "System.Runtime.Remoting.Activation", "ActivationServices")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading", "ExecutionContext")
@@ -5000,6 +5001,85 @@ mono_unhandled_exception (MonoObject *exc)
 {
 	MONO_EXTERNAL_ONLY_VOID (mono_unhandled_exception_internal (exc));
 }
+
+#ifdef ENABLE_NETCORE
+static MonoObjectHandle
+create_first_chance_exception_eventargs (MonoObjectHandle exc, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoObjectHandle obj;
+	MonoClass *klass = mono_class_get_first_chance_exception_event_args_class ();
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, ctor)
+
+		ctor = mono_class_get_method_from_name_checked (klass, ".ctor", 1, METHOD_ATTRIBUTE_PUBLIC, error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, ctor)
+
+	goto_if_nok (error, return_null);
+	g_assert (ctor);
+
+	gpointer args [1];
+	args [0] = MONO_HANDLE_RAW (exc);
+
+	obj = mono_object_new_handle (mono_domain_get (), klass, error);
+	goto_if_nok (error, return_null);
+
+	mono_runtime_invoke_handle_void (ctor, obj, args, error);
+	goto_if_nok (error, return_null);
+
+	goto leave;
+
+return_null:
+	obj = MONO_HANDLE_NEW (MonoObject, NULL);
+
+leave:
+	HANDLE_FUNCTION_RETURN_REF (MonoObject, obj);
+}
+
+void
+mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
+{
+	MonoClass *klass = mono_handle_class (exc);
+	MonoDomain *domain = mono_domain_get ();
+	MonoObject *delegate = NULL;
+	MonoObjectHandle delegate_handle;
+
+	if (klass == mono_defaults.threadabortexception_class)
+		return;
+
+	MONO_STATIC_POINTER_INIT (MonoClassField, field)
+
+		field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
+		g_assert (field);
+
+	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
+
+	MonoVTable *vt = mono_class_vtable_checked (domain, mono_defaults.appcontext_class, error);
+	return_if_nok (error);
+
+	// TODO: use handles directly
+	mono_field_static_get_value_checked (vt, field, &delegate, MONO_HANDLE_NEW (MonoString, NULL), error);
+	return_if_nok (error);
+	delegate_handle = MONO_HANDLE_NEW (MonoObject, delegate);
+
+	// TODO: is this necessary here?
+	mono_threads_begin_abort_protected_block ();
+
+	if (MONO_HANDLE_BOOL (delegate_handle)) {
+		gpointer args [2];
+		args [0] = domain->domain;
+		args [1] = MONO_HANDLE_RAW (create_first_chance_exception_eventargs (exc, error));
+		mono_error_assert_ok (error);
+		mono_runtime_delegate_try_invoke_handle (delegate_handle, args, error);
+	}
+
+	mono_threads_end_abort_protected_block ();
+}
+#endif
 
 /**
  * mono_unhandled_exception_checked:
