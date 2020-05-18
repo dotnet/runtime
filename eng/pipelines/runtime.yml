@@ -700,7 +700,7 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_arm64
-    - Linux_arm32
+    - Linux_arm
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
