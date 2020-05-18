@@ -224,10 +224,10 @@ namespace System.Numerics.Tests
         public void Matrix4x4InvertRank3()
         {
             // A 4x4 Matrix having a rank of 3
-            Matrix4x4 mtx = new Matrix4x4(1, 2, 3, 0,
-                                          5, 1, 6, 0,
-                                          8, 9, 1, 0,
-                                          4, 7, 3, 0);
+            Matrix4x4 mtx = new Matrix4x4(1.0f, 2.0f, 3.0f, 0.0f,
+                                          5.0f, 1.0f, 6.0f, 0.0f,
+                                          8.0f, 9.0f, 1.0f, 0.0f,
+                                          4.0f, 7.0f, 3.0f, 0.0f);
 
             Matrix4x4 actual;
             Assert.False(Matrix4x4.Invert(mtx, out actual));
