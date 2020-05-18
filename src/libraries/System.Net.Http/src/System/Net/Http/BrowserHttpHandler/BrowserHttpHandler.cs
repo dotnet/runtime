@@ -365,12 +365,13 @@ namespace System.Net.Http
                 return new MemoryStream(data, writable: false);
             }
 
-            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+                SerializeToStreamAsync(stream, context, CancellationToken.None);
+            protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
                 byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
-                await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(continueOnCapturedContext: true);
+                await stream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
-
             protected internal override bool TryComputeLength(out long length)
             {
                 if (_data != null)
