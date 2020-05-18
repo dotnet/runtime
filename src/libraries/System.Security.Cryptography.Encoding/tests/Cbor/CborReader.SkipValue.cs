@@ -124,7 +124,7 @@ namespace System.Formats.Cbor
 
                 case CborReaderState.Null:
                 case CborReaderState.Boolean:
-                case CborReaderState.SpecialValue:
+                case CborReaderState.SimpleValue:
                     ReadSimpleValue();
                     break;
 

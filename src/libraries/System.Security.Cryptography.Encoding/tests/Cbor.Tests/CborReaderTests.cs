@@ -79,7 +79,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(4, CborReaderState.StartArray)]
         [InlineData(5, CborReaderState.StartMap)]
         [InlineData(6, CborReaderState.Tag)]
-        [InlineData(7, CborReaderState.SpecialValue)]
+        [InlineData(7, CborReaderState.SimpleValue)]
         public static void Peek_SingleByteBuffer_ShouldReturnExpectedState(byte majorType, CborReaderState expectedResult)
         {
             ReadOnlyMemory<byte> buffer = new byte[] { (byte)(majorType << 5) };
