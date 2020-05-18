@@ -74,6 +74,10 @@
     <HelixCommand Condition="'$(TargetOS)' != 'Windows_NT'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <HelixPreCommands>dotnet tool install xharness -g --version $(MicrosoftDotNetXHarnessTestsRunnersVersion)</HelixPreCommands>
+  </PropertyGroup>
+
   <!--
     We need to include all dlls in the runtime path as inputs to make it really incremental if we use the root folder,
     if a dll is updated, the folder's timestamp is not updated, therefore skipped.
