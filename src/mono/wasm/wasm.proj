@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <UsingTask TaskName="PInvokeTableGenerator"
-    AssemblyFile="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', '$(NetCoreAppCurrent)-$(MonoConfiguration)'))publish\WasmAppBuilder.dll"/>
+    AssemblyFile="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', '$(MonoConfiguration)', '$(NetCoreAppCurrent)'))publish\WasmAppBuilder.dll"/>
 
   <PropertyGroup>
     <WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
@@ -29,9 +29,10 @@
   </Target>
 
   <Target Name="BuildWasmAppBuilder">
-    <MSBuild Projects="$(MonoProjectRoot)mono.proj"
+    <!-- Need to publish this since it references System.Reflection.MetadataLoadContext -->
+    <MSBuild Projects="$(RepoRoot)\tools-local\tasks\mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj"
              Properties="Configuration=$(Configuration)"
-             Targets="BuildWasmAppBuilder"/>
+             Targets="Restore;Build;Publish"/>
   </Target>
 
   <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;BuildWasmAppBuilder">
