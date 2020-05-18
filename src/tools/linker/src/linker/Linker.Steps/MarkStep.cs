@@ -2352,16 +2352,21 @@ namespace Mono.Linker.Steps
 
 		void ProcessInteropMethod (MethodDefinition method)
 		{
-			TypeDefinition returnTypeDefinition = method.ReturnType.Resolve ();
+			if (method.IsPInvokeImpl) {
+				var pii = method.PInvokeInfo;
+				Annotations.Mark (pii.Module, new DependencyInfo (DependencyKind.InteropMethodDependency, method));
 
-			if (!string.IsNullOrEmpty (_context.PInvokesListFile) && method.IsPInvokeImpl) {
-				_context.PInvokes.Add (new PInvokeInfo {
-					AssemblyName = method.DeclaringType.Module.Name,
-					EntryPoint = method.PInvokeInfo.EntryPoint,
-					FullName = method.FullName,
-					ModuleName = method.PInvokeInfo.Module.Name
-				});
+				if (!string.IsNullOrEmpty (_context.PInvokesListFile)) {
+					_context.PInvokes.Add (new PInvokeInfo {
+						AssemblyName = method.DeclaringType.Module.Name,
+						EntryPoint = pii.EntryPoint,
+						FullName = method.FullName,
+						ModuleName = pii.Module.Name
+					});
+				}
 			}
+
+			TypeDefinition returnTypeDefinition = method.ReturnType.Resolve ();
 
 			const bool includeStaticFields = false;
 			if (returnTypeDefinition != null && !returnTypeDefinition.IsImport) {

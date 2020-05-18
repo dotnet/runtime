@@ -70,6 +70,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (linked == null)
 				Assert.Fail ($"Linked assembly `{original.Assembly.Name.Name}` is missing module `{original.Name}`");
 
+			var expected = original.Assembly.MainModule.AllDefinedTypes ()
+				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptModuleReferenceAttribute)))
+				.ToArray ();
+
+			var actual = linked.ModuleReferences
+				.Select (name => name.Name)
+				.ToArray ();
+
+			Assert.That (actual, Is.EquivalentTo (expected));
+
 			VerifyCustomAttributes (original, linked);
 		}
 

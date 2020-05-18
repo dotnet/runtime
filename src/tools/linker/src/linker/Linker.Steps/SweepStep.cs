@@ -35,7 +35,6 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Steps
 {
-
 	public class SweepStep : BaseStep
 	{
 		AssemblyDefinition[] assemblies;
@@ -150,6 +149,12 @@ namespace Mono.Linker.Steps
 
 			foreach (var module in assembly.Modules)
 				SweepCustomAttributes (module);
+
+			//
+			// MainModule module references are used by pinvoke
+			//
+			if (assembly.MainModule.HasModuleReferences)
+				SweepCollectionMetadata (assembly.MainModule.ModuleReferences);
 
 			SweepTypeForwarders (assembly);
 
