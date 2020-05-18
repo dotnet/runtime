@@ -2694,7 +2694,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		jit_tls->orig_ex_ctx_set = FALSE;
 
 		mono_first_chance_exception_checked (MONO_HANDLE_NEW (MonoObject, obj), error);
-		mono_error_assert_ok (error); // Is this safe to assert? Or will it just hide managed exceptions in weird scenarios?
+		mono_error_assert_ok (error); // Should we swallow any errors here instead?
 
 		StackFrameInfo catch_frame;
 		MonoFirstPassResult res;

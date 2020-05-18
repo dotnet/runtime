@@ -5066,9 +5066,6 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 	return_if_nok (error);
 	delegate_handle = MONO_HANDLE_NEW (MonoObject, delegate);
 
-	// TODO: is this necessary here?
-	mono_threads_begin_abort_protected_block ();
-
 	if (MONO_HANDLE_BOOL (delegate_handle)) {
 		gpointer args [2];
 		args [0] = domain->domain;
@@ -5076,8 +5073,6 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 		mono_error_assert_ok (error);
 		mono_runtime_delegate_try_invoke_handle (delegate_handle, args, error);
 	}
-
-	mono_threads_end_abort_protected_block ();
 }
 #endif
 
@@ -5160,9 +5155,6 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 	goto_if_nok (error, leave);
 	delegate_handle = MONO_HANDLE_NEW (MonoObject, delegate);
 
-	// Unhandled exception callbacks must not be aborted
-	mono_threads_begin_abort_protected_block ();
-
 	if (MONO_HANDLE_IS_NULL (delegate_handle)) {
 		mono_print_unhandled_exception_internal (MONO_HANDLE_RAW (exc)); // TODO: use handles
 	} else {
@@ -5172,8 +5164,6 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 		mono_error_assert_ok (error);
 		mono_runtime_delegate_try_invoke_handle (delegate_handle, args, error);
 	}
-
-	mono_threads_end_abort_protected_block ();
 
 leave:
 #endif
