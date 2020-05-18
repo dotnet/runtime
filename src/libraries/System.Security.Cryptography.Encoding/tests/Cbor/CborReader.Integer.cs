@@ -11,22 +11,21 @@ namespace System.Formats.Cbor
     {
         // Implements major type 0,1 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
-        public long ReadInt64()
-        {
-            long value = PeekSignedInteger(out int additionalBytes);
-            AdvanceBuffer(1 + additionalBytes);
-            AdvanceDataItemCounters();
-            return value;
-        }
-
-        public ulong ReadUInt64()
-        {
-            ulong value = PeekUnsignedInteger(out int additionalBytes);
-            AdvanceBuffer(1 + additionalBytes);
-            AdvanceDataItemCounters();
-            return value;
-        }
-
+        /// <summary>
+        ///   Reads the next data item as a signed integer (major types 0,1)
+        /// </summary>
+        /// <returns>The decoded integer value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does have the correct major type.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        ///   the encoded integer is out of range for <see cref="int"/>
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
         public int ReadInt32()
         {
             int value = checked((int)PeekSignedInteger(out int additionalBytes));
@@ -35,6 +34,21 @@ namespace System.Formats.Cbor
             return value;
         }
 
+        /// <summary>
+        ///   Reads the next data item as an usigned integer (major type 0)
+        /// </summary>
+        /// <returns>The decoded integer value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does have the correct major type.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        ///   the encoded integer is out of range for <see cref="uint"/>
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
         public uint ReadUInt32()
         {
             uint value = checked((uint)PeekUnsignedInteger(out int additionalBytes));
@@ -43,8 +57,72 @@ namespace System.Formats.Cbor
             return value;
         }
 
-        // Returns the next CBOR negative integer encoding according to
-        // https://tools.ietf.org/html/rfc7049#section-2.1
+        /// <summary>
+        ///   Reads the next data item as a signed integer (major types 0,1)
+        /// </summary>
+        /// <returns>The decoded integer value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does have the correct major type.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        ///   the encoded integer is out of range for <see cref="long"/>
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
+        public long ReadInt64()
+        {
+            long value = PeekSignedInteger(out int additionalBytes);
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
+
+        /// <summary>
+        ///   Reads the next data item as an usigned integer (major type 0)
+        /// </summary>
+        /// <returns>The decoded integer value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does have the correct major type.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        ///   the encoded integer is out of range for <see cref="ulong"/>
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
+        public ulong ReadUInt64()
+        {
+            ulong value = PeekUnsignedInteger(out int additionalBytes);
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
+
+        /// <summary>
+        ///   Reads the next data item as a CBOR negative integer encoding (major type 1).
+        /// </summary>
+        /// <returns>
+        ///   An unsigned integer denoting -1 minus the integer.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does have the correct major type.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        ///   the encoded integer is out of range for <see cref="uint"/>
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
+        /// <remarks>
+        ///   Intended as an escape hatch in cases of valid CBOR negative integers exceeding primitive sizes.
+        /// </remarks>
         public ulong ReadCborNegativeIntegerEncoding()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
