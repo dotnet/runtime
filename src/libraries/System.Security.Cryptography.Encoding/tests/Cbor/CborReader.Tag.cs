@@ -11,21 +11,21 @@ namespace System.Formats.Cbor
     {
         public CborTag ReadTag()
         {
-            CborTag tag = PeekTagCore(out int additionalBytes);
+            CborTag tag = PeekTagCore(out int bytesRead);
 
             if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
             {
                 throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
             }
 
-            AdvanceBuffer(1 + additionalBytes);
+            AdvanceBuffer(bytesRead);
             _isTagContext = true;
             return tag;
         }
 
         public void ReadTag(CborTag expectedTag)
         {
-            CborTag tag = PeekTagCore(out int additionalBytes);
+            CborTag tag = PeekTagCore(out int bytesRead);
 
             if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
             {
@@ -37,16 +37,16 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException(SR.Cbor_Reader_TagMismatch);
             }
 
-            AdvanceBuffer(1 + additionalBytes);
+            AdvanceBuffer(bytesRead);
             _isTagContext = true;
         }
 
         public CborTag PeekTag() => PeekTagCore(out int _);
 
-        private CborTag PeekTagCore(out int additionalBytes)
+        private CborTag PeekTagCore(out int bytesRead)
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Tag);
-            return (CborTag)DecodeUnsignedInteger(header, GetRemainingBytes(), out additionalBytes);
+            return (CborTag)DecodeUnsignedInteger(header, GetRemainingBytes(), out bytesRead);
         }
 
         // Additional tagged type support
