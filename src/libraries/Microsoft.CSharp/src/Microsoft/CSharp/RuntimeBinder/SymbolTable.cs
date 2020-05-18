@@ -233,7 +233,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 Type[] ifaces = type.GetInterfaces();
 
-                // Since IsWindowsRuntimeType() is rare, this is probably the final size
                 list = new List<Type>(ifaces.Length + 2)
                 {
                     type
@@ -258,20 +257,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                     // Insert into our list of Types.
                     list.Add(parent);
-                }
-            }
-
-            // If we have a WinRT type then we should load the members of it's collection interfaces
-            // as well as those members are on this type as far as the user is concerned.
-            CType ctype = GetCTypeFromType(type);
-            if (ctype.IsWindowsRuntimeType)
-            {
-                foreach (CType collectionType in ((AggregateType)ctype).WinRTCollectionIfacesAll.Items)
-                {
-                    Debug.Assert(collectionType.IsInterfaceType);
-
-                    // Insert into our list of Types.
-                    list.Add(collectionType.AssociatedSystemType);
                 }
             }
             return list;
@@ -1069,47 +1054,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private static readonly Type s_Sentinel = typeof(SymbolTable);
-        private static Type s_EventRegistrationTokenType = s_Sentinel;
-        private static Type s_WindowsRuntimeMarshal = s_Sentinel;
-        private static Type s_EventRegistrationTokenTable = s_Sentinel;
-
-        internal static Type EventRegistrationTokenType
-        {
-            get
-            {
-                return GetTypeByName(ref s_EventRegistrationTokenType, "System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken, System.Runtime.InteropServices.WindowsRuntime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-            }
-        }
-
-        internal static Type WindowsRuntimeMarshalType
-        {
-            get
-            {
-                return GetTypeByName(ref s_WindowsRuntimeMarshal, "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMarshal, System.Runtime.InteropServices.WindowsRuntime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-            }
-        }
-
-        private static Type EventRegistrationTokenTableType
-        {
-            get
-            {
-                return GetTypeByName(ref s_EventRegistrationTokenTable, "System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable`1, System.Runtime.InteropServices.WindowsRuntime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-            }
-        }
-
-        private static Type GetTypeByName(ref Type cachedResult, string name)
-        {
-#pragma warning disable 252
-            if ((object)cachedResult == s_Sentinel)
-#pragma warning restore 252
-            {
-                System.Threading.Interlocked.CompareExchange(ref cachedResult, Type.GetType(name, throwOnError: false), s_Sentinel);
-            }
-
-            return cachedResult;
-        }
-
         private static void AddEventToSymbolTable(EventInfo eventInfo, AggregateSymbol aggregate, FieldSymbol addedField)
         {
             EventSymbol ev = SymbolStore.LookupSym(
@@ -1150,35 +1094,15 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Symbol
             ev.SetAccess(access);
 
-            Type eventRegistrationTokenType = EventRegistrationTokenType;
-            if ((object)eventRegistrationTokenType != null && (object)WindowsRuntimeMarshalType != null &&
-                ev.methAdd.RetType.AssociatedSystemType == eventRegistrationTokenType &&
-                ev.methRemove.Params[0].AssociatedSystemType == eventRegistrationTokenType)
-            {
-                ev.IsWindowsRuntimeEvent = true;
-            }
-
             // If we imported a field on the same aggregate, with the same name, and it also
             // has the same type, then that field is the backing field for this event, and
             // we mark it as such. This is used for the CSharpIsEventBinder.
-            // In the case of a WindowsRuntime event, the field will be of type
-            // EventRegistrationTokenTable<delegateType>.
             CType addedFieldType = addedField?.GetType();
             if (addedFieldType != null)
             {
                 if (addedFieldType == ev.type)
                 {
                     addedField.isEvent = true;
-                }
-                else
-                {
-                    Type associated = addedFieldType.AssociatedSystemType;
-                    if (associated.IsConstructedGenericType
-                        && associated.GetGenericTypeDefinition() == EventRegistrationTokenTableType
-                        && associated.GenericTypeArguments[0] == ev.type.AssociatedSystemType)
-                    {
-                        addedField.isEvent = true;
-                    }
                 }
             }
         }

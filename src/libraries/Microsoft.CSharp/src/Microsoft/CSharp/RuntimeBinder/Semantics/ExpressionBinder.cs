@@ -429,59 +429,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // always true, leaving the rest to be determined by the field ctor
             AssertObjectIsLvalue(pOptionalObject);
 
-            AggregateType fieldType = null;
-            // If this field is the backing field of a WindowsRuntime event then we need to bind to its
-            // invocationlist property which is a delegate containing all the handlers.
-            if (fwt.Field().isEvent && fwt.Field().getEvent() != null
-                && fwt.Field().getEvent().IsWindowsRuntimeEvent)
-            {
-                fieldType = fwt.Field().GetType() as AggregateType;
-                if (fieldType != null)
-                {
-                    // Access event backing field (EventRegistrationTokenTable<T>) using
-                    // EventRegistrationTokenTable<T>.GetOrCreateEventRegistrationTokenTable()
-                    // to ensure non-null
-                    pFieldType = TypeManager.GetParameterModifier(pFieldType, false);
-                }
-            }
-
             ExprField pResult = ExprFactory.CreateField(pFieldType, pOptionalObject, fwt);
 
             Debug.Assert(BindingFlag.BIND_MEMBERSET == (BindingFlag)EXPRFLAG.EXF_MEMBERSET);
             pResult.Flags |= (EXPRFLAG)(bindFlags & BindingFlag.BIND_MEMBERSET);
-
-            if (fieldType != null)
-            {
-                Name getOrCreateMethodName =
-                    NameManager.GetPredefinedName(PredefinedName.PN_GETORCREATEEVENTREGISTRATIONTOKENTABLE);
-                SymbolTable.PopulateSymbolTableWithName(
-                    getOrCreateMethodName.Text, null, fieldType.AssociatedSystemType);
-                MethodSymbol getOrCreateMethod =
-                    SymbolLoader.LookupAggMember(getOrCreateMethodName, fieldType.OwningAggregate, symbmask_t.MASK_MethodSymbol)
-                         as MethodSymbol;
-
-                MethPropWithInst getOrCreatempwi = new MethPropWithInst(getOrCreateMethod, fieldType);
-                ExprMemberGroup getOrCreateGrp = ExprFactory.CreateMemGroup(null, getOrCreatempwi);
-
-                Expr getOrCreateCall = BindToMethod(
-                    new MethWithInst(getOrCreatempwi), pResult, getOrCreateGrp, (MemLookFlags)MemLookFlags.None);
-
-                AggregateSymbol fieldTypeSymbol = fieldType.OwningAggregate;
-                Name invocationListName = NameManager.GetPredefinedName(PredefinedName.PN_INVOCATIONLIST);
-
-                // InvocationList might not be populated in the symbol table as no one would have called it.
-                SymbolTable.PopulateSymbolTableWithName(invocationListName.Text, null, fieldType.AssociatedSystemType);
-                PropertySymbol invocationList =
-                    SymbolLoader.LookupAggMember(invocationListName, fieldTypeSymbol, symbmask_t.MASK_PropertySymbol)
-                         as PropertySymbol;
-
-                MethPropWithInst mpwi = new MethPropWithInst(invocationList, fieldType);
-                ExprMemberGroup memGroup = ExprFactory.CreateMemGroup(getOrCreateCall, mpwi);
-
-                PropWithType pwt = new PropWithType(invocationList, fieldType);
-                Expr propertyExpr = BindToProperty(getOrCreateCall, pwt, bindFlags, null, memGroup);
-                return propertyExpr;
-            }
 
             return pResult;
         }

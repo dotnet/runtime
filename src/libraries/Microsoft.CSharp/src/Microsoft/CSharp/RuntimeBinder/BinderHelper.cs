@@ -185,34 +185,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        // Try to determine if this object represents a WindowsRuntime object - i.e. it either
-        // is coming from a WinMD file or is derived from a class coming from a WinMD.
-        // The logic here matches the CLR's logic of finding a WinRT object.
-        internal static bool IsWindowsRuntimeObject(DynamicMetaObject obj)
-        {
-            Type curType = obj?.RuntimeType;
-            while (curType != null)
-            {
-                TypeAttributes attributes = curType.Attributes;
-                if ((attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime)
-                {
-                    // Found a WinRT COM object
-                    return true;
-                }
-                if ((attributes & TypeAttributes.Import) == TypeAttributes.Import)
-                {
-                    // Found a class that is actually imported from COM but not WinRT
-                    // this is definitely a non-WinRT COM object
-                    return false;
-                }
-                curType = curType.BaseType;
-            }
-
-            return false;
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
         private static bool IsDynamicallyTypedRuntimeProxy(DynamicMetaObject argument, CSharpArgumentInfo info)
         {
             // This detects situations where, although the argument has a value with
@@ -507,7 +479,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 #if !ENABLECOMBINDER
         internal static void ThrowIfUsingDynamicCom(DynamicMetaObject target)
         {
-            if (!BinderHelper.IsWindowsRuntimeObject(target) && target.LimitType.IsCOMObject)
+            if (target.LimitType.IsCOMObject)
             {
                 throw ErrorHandling.Error(ErrorCode.ERR_DynamicBindingComUnsupported);
             }

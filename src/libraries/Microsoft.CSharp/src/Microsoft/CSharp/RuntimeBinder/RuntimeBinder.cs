@@ -563,19 +563,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
             }
 
-            // If this is a WinRT type we have to add all collection interfaces that have this method
-            // as well so that overload resolution can find them.
-            if (callingType.IsWindowsRuntimeType)
-            {
-                foreach (AggregateType t in callingType.WinRTCollectionIfacesAll.Items)
-                {
-                    if (SymbolTable.AggregateContainsMethod(t.OwningAggregate, Name, mask) && distinctCallingTypes.Add(t))
-                    {
-                        callingTypes.Add(t);
-                    }
-                }
-            }
-
             EXPRFLAG flags = EXPRFLAG.EXF_USERCALLABLE;
             // If its a delegate, mark that on the memgroup.
             if (Name == SpecialNames.Invoke && callingObject.Type.IsDelegateType)
@@ -796,16 +783,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                     BindImplicitConversion(new ArgumentObject[] { arguments[1] }, eventType, locals, false);
                 }
                 memGroup.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
-
-                if (swtEvent.Sym.getKind() == SYMKIND.SK_EventSymbol && swtEvent.Event().IsWindowsRuntimeEvent)
-                {
-                    return BindWinRTEventAccessor(
-                                    new EventWithType(swtEvent.Event(), swtEvent.Ats),
-                                    callingObject,
-                                    arguments,
-                                    locals,
-                                    payload.Name.StartsWith("add_", StringComparison.Ordinal)); //isAddAccessor?
-                }
             }
 
             // Check if we have a potential call to an indexed property accessor.
@@ -824,57 +801,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             CheckForConditionalMethodError(result);
             ReorderArgumentsForNamedAndOptional(callingObject, result);
             return result;
-        }
-
-        private ExprWithArgs BindWinRTEventAccessor(EventWithType ewt, Expr callingObject, ArgumentObject[] arguments, LocalVariableSymbol[] locals, bool isAddAccessor)
-        {
-            // We want to generate either:
-            // WindowsRuntimeMarshal.AddEventHandler<delegType>(new Func<delegType, EventRegistrationToken>(x.add_foo), new Action<EventRegistrationToken>(x.remove_foo), value)
-            // or
-            // WindowsRuntimeMarshal.RemoveEventHandler<delegType>(new Action<EventRegistrationToken>(x.remove_foo), value)
-
-            Type evtType = ewt.Event().type.AssociatedSystemType;
-
-            // Get new Action<EventRegistrationToken>(x.remove_foo)
-            MethPropWithInst removemwi = new MethPropWithInst(ewt.Event().methRemove, ewt.Ats);
-            ExprMemberGroup removeMethGrp = ExprFactory.CreateMemGroup(callingObject, removemwi);
-            removeMethGrp.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
-            Type eventRegistrationTokenType = SymbolTable.EventRegistrationTokenType;
-            Type actionType = Expression.GetActionType(eventRegistrationTokenType);
-            Expr removeMethArg = _binder.mustConvert(removeMethGrp, SymbolTable.GetCTypeFromType(actionType));
-
-            // The value
-            Expr delegateVal = CreateArgumentEXPR(arguments[1], locals[1]);
-            ExprList args;
-            string methodName;
-
-            if (isAddAccessor)
-            {
-                // Get new Func<delegType, EventRegistrationToken>(x.add_foo)
-                MethPropWithInst addmwi = new MethPropWithInst(ewt.Event().methAdd, ewt.Ats);
-                ExprMemberGroup addMethGrp = ExprFactory.CreateMemGroup(callingObject, addmwi);
-                addMethGrp.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
-                Type funcType = Expression.GetFuncType(evtType, eventRegistrationTokenType);
-                Expr addMethArg = _binder.mustConvert(addMethGrp, SymbolTable.GetCTypeFromType(funcType));
-
-                args = ExprFactory.CreateList(addMethArg, removeMethArg, delegateVal);
-                methodName = NameManager.GetPredefinedName(PredefinedName.PN_ADDEVENTHANDLER).Text;
-            }
-            else
-            {
-                args = ExprFactory.CreateList(removeMethArg, delegateVal);
-                methodName = NameManager.GetPredefinedName(PredefinedName.PN_REMOVEEVENTHANDLER).Text;
-            }
-
-            // WindowsRuntimeMarshal.Add\RemoveEventHandler(...)
-            Type windowsRuntimeMarshalType = SymbolTable.WindowsRuntimeMarshalType;
-            SymbolTable.PopulateSymbolTableWithName(methodName, new List<Type> { evtType }, windowsRuntimeMarshalType);
-            ExprClass marshalClass = ExprFactory.CreateClass(SymbolTable.GetCTypeFromType(windowsRuntimeMarshalType));
-            ExprMemberGroup addEventGrp = CreateMemberGroupExpr(methodName, new[] { evtType }, marshalClass, SYMKIND.SK_MethodSymbol);
-            return _binder.BindMethodGroupToArguments(
-                BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY,
-                addEventGrp,
-                args);
         }
 
         private static void CheckForConditionalMethodError(ExprCall call)

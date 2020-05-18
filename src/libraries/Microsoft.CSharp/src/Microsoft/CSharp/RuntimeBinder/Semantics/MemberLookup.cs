@@ -550,7 +550,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 typeCls1 = (AggregateType)typeSrc;
                 typeIface = null;
-                ifaces = typeCls1.IsWindowsRuntimeType ? typeCls1.WinRTCollectionIfacesAll : TypeArray.Empty;
+                ifaces = TypeArray.Empty;
             }
 
             AggregateType typeCls2 = typeIface != null || ifaces.Count > 0
