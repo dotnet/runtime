@@ -3,6 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Interop.PInvoke
 {
+	[KeptModuleReference ("Unused")]
 	class UnusedFieldsOfTypesPassedByRefAreNotRemoved
 	{
 		public static void Main ()
