@@ -86,7 +86,6 @@ namespace System.Formats.Cbor
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
         }
 
-
         /// <summary>
         ///   Read the next CBOR token, without advancing the reader.
         /// </summary>
@@ -100,13 +99,38 @@ namespace System.Formats.Cbor
             return _cachedState;
         }
 
+        /// <summary>
+        ///   Reads the next CBOR data item, returning a <see cref="ReadOnlySpan{T}"/> view
+        ///   of the encoded value. For indefinite length encodings this includes the break byte.
+        /// </summary>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> view of the encoded value.</returns>
+        /// <exception cref="FormatException">
+        ///   The data item is not a valid CBOR data item encoding --OR--
+        ///   The CBOR encoding is not valid under the current conformance level
+        /// </exception>
+        public ReadOnlySpan<byte> ReadEncodedValue()
+        {
+            // keep a snapshot of the current offset
+            int initialOffset = _offset;
+
+            // call skip to read and validate the next value
+            SkipValue(validateConformance: true);
+
+            // return the slice corresponding to the consumed value
+            return _data.Span.Slice(initialOffset, _offset - initialOffset);
+        }
+
         private CborReaderState PeekStateCore(bool throwOnFormatErrors)
         {
             if (_definiteLength - _itemsWritten == 0)
             {
-                if (_currentMajorType != null)
+                // is at the end of a definite-length context
+                if (_currentMajorType == null)
                 {
-                    // is at the end of a definite-length collection
+                    return CborReaderState.Finished;
+                }
+                else
+                {
                     switch (_currentMajorType.Value)
                     {
                         case CborMajorType.Array: return CborReaderState.EndArray;
@@ -114,26 +138,26 @@ namespace System.Formats.Cbor
                         default:
                             Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
                             throw new Exception();
-                    };
-                }
-                else
-                {
-                    // is at the end of the root value
-                    return CborReaderState.Finished;
+                    }
                 }
             }
 
             if (_offset == _data.Length)
             {
+                // is at the end of the read buffer
                 if (_currentMajorType is null && _definiteLength is null)
                 {
                     // is at the end of a well-defined sequence of root-level values
                     return CborReaderState.Finished;
                 }
-
-                return CborReaderState.EndOfData;
+                else
+                {
+                    // incomplete CBOR document(s)
+                    return CborReaderState.EndOfData;
+                }
             }
 
+            // peek the next initial byte
             var initialByte = new CborInitialByte(_data.Span[_offset]);
 
             if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
@@ -175,6 +199,7 @@ namespace System.Formats.Cbor
 
             if (_definiteLength is null && _currentMajorType != null)
             {
+                // is at indefinite-length nested data item
                 switch (_currentMajorType.Value)
                 {
                     case CborMajorType.ByteString:
@@ -234,19 +259,6 @@ namespace System.Formats.Cbor
                         return CborReaderState.SimpleValue;
                 }
             }
-        }
-
-        // TODO pass a `validateConformance` parameter
-        public ReadOnlySpan<byte> ReadEncodedValue()
-        {
-            // keep a snapshot of the current offset
-            int initialOffset = _offset;
-
-            // call skip to read and validate the next value
-            SkipValue(validateConformance: true);
-
-            // return the slice corresponding to the consumed value
-            return _data.Span.Slice(initialOffset, _offset - initialOffset);
         }
 
         private CborInitialByte PeekInitialByte()
