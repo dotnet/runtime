@@ -240,10 +240,10 @@ public class ApkBuilder
 
     private static string GetRid(string abi) => abi switch 
         {
-            "arm64-v8a" => "arm64",
-            "armeabi-v7a" => "arm",
-            "x86_64" => "x64",
-            _ => abi
+            "arm64-v8a" => "android-arm64",
+            "armeabi-v7a" => "android-arm",
+            "x86_64" => "android-x64",
+            _ => "android-" + abi
         };
     
     /// <summary>
