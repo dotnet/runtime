@@ -96,7 +96,7 @@ jobs:
               df -h
             displayName: Disk Usage after Build
 
-        - ${{ if and(eq(parameters.runTests, false), ne(parameters.isSourceBuild, true))yy }}:
+        - ${{ if and(eq(parameters.runTests, false), ne(parameters.isSourceBuild, true)) }}:
           - ${{ if ne(parameters.isOfficialBuild, true) }}:            
             - task: CopyFiles@2
               displayName: Prepare testhost folder to publish
