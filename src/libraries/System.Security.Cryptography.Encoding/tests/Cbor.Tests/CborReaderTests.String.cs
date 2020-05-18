@@ -625,26 +625,24 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        // the input strings are not valid CBOR, however want the reader to throw as soon as the length has been read
         [InlineData("5b0000000100000000ff")]
         [InlineData("5bffffffffffffffff")]
-        public static void ReadByteString_StringLengthTooLarge_ShouldThrowOverflowException(string hexEncoding)
+        public static void ReadByteString_StringLengthTooLarge_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Throws<OverflowException>(() => reader.ReadByteString());
+            Assert.Throws<FormatException>(() => reader.ReadByteString());
             Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
-        // the input strings are not valid CBOR, however want the reader to throw as soon as the length has been read
         [InlineData("7b0000000100000000ff")]
         [InlineData("7bffffffffffffffff")]
-        public static void ReadTextString_StringLengthTooLarge_ShouldThrowOverflowException(string hexEncoding)
+        public static void ReadTextString_StringLengthTooLarge_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Throws<OverflowException>(() => reader.ReadTextString());
+            Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.Equal(0, reader.BytesRead);
         }
 

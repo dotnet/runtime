@@ -26,12 +26,7 @@ namespace System.Formats.Cbor
             else
             {
                 ReadOnlySpan<byte> buffer = GetRemainingBytes();
-                ulong arrayLength = ReadUnsignedInteger(buffer, header, out int additionalBytes);
-
-                if (arrayLength > (ulong)buffer.Length)
-                {
-                    throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
-                }
+                int arrayLength = DecodeDefiniteLength(header, buffer, out int additionalBytes);
 
                 AdvanceBuffer(1 + additionalBytes);
                 PushDataItem(CborMajorType.Array, (int)arrayLength);

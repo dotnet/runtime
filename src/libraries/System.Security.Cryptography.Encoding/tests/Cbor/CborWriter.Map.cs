@@ -22,7 +22,7 @@ namespace System.Formats.Cbor
             }
 
             WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
-            PushDataItem(CborMajorType.Map, definiteLength: checked(2 * definiteLength));
+            PushDataItem(CborMajorType.Map, definiteLength: 2 * definiteLength);
             _currentKeyOffset = _offset;
         }
 
