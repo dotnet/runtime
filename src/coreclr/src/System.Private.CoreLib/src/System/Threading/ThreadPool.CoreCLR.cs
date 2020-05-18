@@ -12,6 +12,7 @@
 =============================================================================*/
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
@@ -190,7 +191,19 @@ namespace System.Threading
     public static partial class ThreadPool
     {
         // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing work items before returning to the OS
-        private const uint DispatchQuantum = 30;
+        private static readonly uint DispatchQuantum = GetDispatchQuantum();
+
+        private static uint GetDispatchQuantum()
+        {
+            // Subtract 1ms for activities surrounding the Dispatch loop
+#if TARGET_WINDOWS
+            // Server has a longer thread DispatchQuantum
+            return (GCSettings.IsServerGC ? 120u : 30u) - 1u;
+#else
+            // Should query the OS for this figure e.g. sched_rr_get_interval on Linux
+            return (GCSettings.IsServerGC ? 100u : 30u) - 1u;
+#endif
+        }
 
         internal static bool KeepDispatching(int startTickCount)
         {
