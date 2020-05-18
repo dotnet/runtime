@@ -10928,7 +10928,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
         if (tree->gtFlags & GTF_SIDE_EFFECT)
         {
-            gtExtractSideEffList(tree, &sideEffList);
+            gtExtractSideEffList(tree, &sideEffList, block);
 
             if (sideEffList)
             {
@@ -14402,7 +14402,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
                 /* Extract the side effects from the conditional */
                 GenTree* sideEffList = nullptr;
 
-                gtExtractSideEffList(switchTree, &sideEffList);
+                gtExtractSideEffList(switchTree, &sideEffList, block);
 
                 if (sideEffList == nullptr)
                 {
@@ -14916,7 +14916,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                 /* Extract the side effects from the conditional */
                 GenTree* sideEffList = nullptr;
 
-                gtExtractSideEffList(cond, &sideEffList);
+                gtExtractSideEffList(cond, &sideEffList, block);
 
                 if (sideEffList == nullptr)
                 {

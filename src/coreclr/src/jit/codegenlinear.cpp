@@ -1512,7 +1512,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
     }
     else if (tree->isContained())
     {
-        if (tree->isIndir())
+        if (tree->OperIsIndir())
         {
             genConsumeAddress(tree->AsIndir()->Addr());
         }

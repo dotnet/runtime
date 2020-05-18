@@ -694,17 +694,8 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_NULLCHECK:
-            // It requires a internal register on ARM, as it is implemented as a load
-            assert(dstCount == 0);
-            assert(!tree->gtGetOp1()->isContained());
-            srcCount = 1;
-            buildInternalIntRegisterDefForNode(tree);
-            BuildUse(tree->gtGetOp1());
-            buildInternalRegisterUses();
-            break;
-
         case GT_IND:
-            assert(dstCount == 1);
+            assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());
             break;
 

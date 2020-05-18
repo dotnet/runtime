@@ -2833,10 +2833,9 @@ public:
     //    when 'list' is non-null a GT_COMMA node is used to insert 'expr'
     GenTree* gtBuildCommaList(GenTree* list, GenTree* expr);
 
-    void gtExtractSideEffList(GenTree*  expr,
-                              GenTree** pList,
-                              unsigned  flags      = GTF_SIDE_EFFECT,
-                              bool      ignoreRoot = false);
+    GenTree* gtFixupDeadIndirection(GenTree* expr, BasicBlock* block);
+    void gtExtractSideEffList(
+        GenTree* expr, GenTree** pList, BasicBlock* block, unsigned flags = GTF_SIDE_EFFECT, bool ignoreRoot = false);
 
     GenTree* gtGetThisArg(GenTreeCall* call);
 

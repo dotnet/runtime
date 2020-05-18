@@ -620,9 +620,17 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_NULLCHECK:
         {
             assert(dstCount == 0);
-            regMaskTP indirCandidates = RBM_NONE;
-            BuildUse(tree->gtGetOp1(), indirCandidates);
-            srcCount = 1;
+            if (tree->gtGetOp1()->isContained())
+            {
+                buildInternalIntRegisterDefForNode(tree);
+                srcCount = BuildIndirUses(tree->AsIndir());
+                buildInternalRegisterUses();
+            }
+            else
+            {
+                BuildUse(tree->gtGetOp1());
+                srcCount = 1;
+            }
             break;
         }
 

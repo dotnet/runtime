@@ -2866,7 +2866,7 @@ public:
                 exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
                 GenTree* sideEffList = nullptr;
-                m_pCompiler->gtExtractSideEffList(exp, &sideEffList, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE);
+                m_pCompiler->gtExtractSideEffList(exp, &sideEffList, blk, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE);
 
                 // If we have any side effects or extracted CSE defs then we need to create a GT_COMMA tree instead
                 //

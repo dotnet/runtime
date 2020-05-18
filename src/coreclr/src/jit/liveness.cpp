@@ -2244,7 +2244,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                     rhsNode = rhsNode->AsIndir()->Addr();
                 }
             }
-            gtExtractSideEffList(rhsNode, &sideEffList);
+            gtExtractSideEffList(rhsNode, &sideEffList, compCurBB);
         }
 
         // Test for interior statement

@@ -3789,7 +3789,7 @@ void Compiler::optUnrollLoops()
                         GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
                         assert(testCopyExpr->gtOper == GT_JTRUE);
                         GenTree* sideEffList = nullptr;
-                        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+                        gtExtractSideEffList(testCopyExpr, &sideEffList, newBlock, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
                         if (sideEffList == nullptr)
                         {
                             fgRemoveStmt(newBlock, testCopyStmt);
@@ -8048,7 +8048,7 @@ void Compiler::optRemoveRangeCheck(GenTree* tree, Statement* stmt)
 
     // Extract side effects
     GenTree* sideEffList = nullptr;
-    gtExtractSideEffList(bndsChkTree, &sideEffList, GTF_ASG);
+    gtExtractSideEffList(bndsChkTree, &sideEffList, compCurBB, GTF_ASG);
 
     // Just replace the bndsChk with a NOP as an operand to the GT_COMMA, if there are no side effects.
     tree->AsOp()->gtOp1 = (sideEffList != nullptr) ? sideEffList : gtNewNothingNode();

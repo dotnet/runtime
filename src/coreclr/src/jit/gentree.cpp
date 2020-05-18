@@ -12185,7 +12185,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
                 // Both sides of the GT_COLON are the same tree
 
                 GenTree* sideEffList = nullptr;
-                gtExtractSideEffList(op1, &sideEffList);
+                gtExtractSideEffList(op1, &sideEffList, compCurBB);
 
                 // Clear colon flags only if the qmark itself is not conditionaly executed
                 if ((tree->gtFlags & GTF_COLON_COND) == 0)
@@ -15574,6 +15574,34 @@ GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
 }
 
 //------------------------------------------------------------------------
+// gtExtractSideEffList: Fixup a side-effect tree that produces a (dead) struct result
+//
+// Arguments:
+//    expr       - the side effect expression tree
+//
+GenTree* Compiler::gtFixupDeadIndirection(GenTree* expr, BasicBlock* block)
+{
+    // If the value being produced comes from loading
+    // via an underlying address, just null check the address.
+    if (expr->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK))
+    {
+        JITDUMP("\nDead indirection:\n");
+        DISPTREE(expr);
+        expr->ChangeOper(GT_NULLCHECK);
+        block->bbFlags |= BBF_HAS_NULLCHECK;
+        optMethodFlags |= OMF_HAS_NULLCHECK;
+        expr->gtType = TYP_BYTE;
+        if (expr->OperIs(GT_DYN_BLK))
+        {
+            expr->AsDynBlk()->gtDynamicSize = nullptr;
+        }
+        JITDUMP("\n ... transformed to ...\n");
+        DISPTREE(expr);
+    }
+    return expr;
+}
+
+//------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //
 // Arguments:
@@ -15588,10 +15616,11 @@ GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
 //    each comma node holds the side effect tree and op2 points to the
 //    next comma node. The original side effect execution order is preserved.
 //
-void Compiler::gtExtractSideEffList(GenTree*  expr,
-                                    GenTree** pList,
-                                    unsigned  flags /* = GTF_SIDE_EFFECT*/,
-                                    bool      ignoreRoot /* = false */)
+void Compiler::gtExtractSideEffList(GenTree*    expr,
+                                    GenTree**   pList,
+                                    BasicBlock* block,
+                                    unsigned    flags /* = GTF_SIDE_EFFECT*/,
+                                    bool        ignoreRoot /* = false */)
 {
     class SideEffectExtractor final : public GenTreeVisitor<SideEffectExtractor>
     {
@@ -15726,7 +15755,14 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
     // built-in size, so memory allocation is avoided.
     while (!extractor.m_sideEffects.Empty())
     {
-        list = gtBuildCommaList(list, extractor.m_sideEffects.Pop());
+        GenTree* expr = extractor.m_sideEffects.Pop();
+        // Change dead indirections to null checks, unless we're in CSE in which case
+        // we can't change it.
+        if ((flags & GTF_IS_IN_CSE) == 0)
+        {
+            expr = gtFixupDeadIndirection(expr, block);
+        }
+        list = gtBuildCommaList(list, expr);
     }
 
     *pList = list;
@@ -16555,12 +16591,12 @@ bool GenTree::isContained() const
 // return true if node is contained and an indir
 bool GenTree::isContainedIndir() const
 {
-    return isIndir() && isContained();
+    return OperIsIndir() && isContained();
 }
 
 bool GenTree::isIndirAddrMode()
 {
-    return isIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained();
+    return OperIsIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained();
 }
 
 bool GenTree::isIndir() const

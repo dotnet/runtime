@@ -3861,7 +3861,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
                 }
 #endif
                 GenTree* list = nullptr;
-                gtExtractSideEffList(call, &list, GTF_SIDE_EFFECT, true);
+                gtExtractSideEffList(call, &list, compCurBB, GTF_SIDE_EFFECT, true);
                 if (list != nullptr)
                 {
                     arg1 = gtNewOperNode(GT_COMMA, call->TypeGet(), list, arg1);
@@ -4826,7 +4826,7 @@ GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
         // have GTF_EXCEPT set, even if it does not actually throw any exceptions).
         bool ignoreRoot = true;
 
-        gtExtractSideEffList(tree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
+        gtExtractSideEffList(tree, &sideEffList, compCurBB, GTF_SIDE_EFFECT, ignoreRoot);
     }
 
     return sideEffList;

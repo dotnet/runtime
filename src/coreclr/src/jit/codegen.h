@@ -1191,7 +1191,7 @@ protected:
     void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
 #endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
-    void genCodeForNullCheck(GenTreeOp* tree);
+    void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
 
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);

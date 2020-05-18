@@ -13960,7 +13960,7 @@ DONE_MORPHING_CHILDREN:
                 GenTree* op1SideEffects = nullptr;
                 // The addition of "GTF_MAKE_CSE" below prevents us from throwing away (for example)
                 // hoisted expressions in loops.
-                gtExtractSideEffList(op1, &op1SideEffects, (GTF_SIDE_EFFECT | GTF_MAKE_CSE));
+                gtExtractSideEffList(op1, &op1SideEffects, compCurBB, (GTF_SIDE_EFFECT | GTF_MAKE_CSE));
                 if (op1SideEffects)
                 {
                     // Replace the left hand side with the side effect list.

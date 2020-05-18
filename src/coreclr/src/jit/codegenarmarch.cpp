@@ -457,7 +457,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsOp());
+            genCodeForNullCheck(treeNode->AsIndir());
             break;
 
         case GT_CATCH_ARG:
@@ -1500,19 +1500,24 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 // Return value:
 //    None
 //
-void CodeGen::genCodeForNullCheck(GenTreeOp* tree)
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_NULLCHECK));
-    assert(!tree->gtOp1->isContained());
-    regNumber addrReg = genConsumeReg(tree->gtOp1);
+    GenTree* op1 = tree->gtOp1;
 
+    genConsumeRegs(op1);
 #ifdef TARGET_ARM64
     regNumber targetReg = REG_ZR;
 #else
-    regNumber targetReg = tree->GetSingleTempReg();
+    // We will use a single temp Reg, but we don't want to call GetSingleTempReg() becaues
+    // that will remove it from the set and we may also need to use it if we have a contained
+    // address.
+    regMaskTP availableSet = tree->gtRsvdRegs;
+    assert(genCountBits(availableSet) == 1);
+    regNumber targetReg = genRegNumFromMask(availableSet);
 #endif
 
-    GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, targetReg, addrReg, 0);
+    GetEmitter()->emitInsLoadStoreOp(INS_ldr, EA_4BYTE, targetReg, tree->AsIndir());
 }
 
 //------------------------------------------------------------------------

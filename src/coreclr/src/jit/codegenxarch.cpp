@@ -1747,7 +1747,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsOp());
+            genCodeForNullCheck(treeNode->AsIndir());
             break;
 
         case GT_CATCH_ARG:
@@ -3795,13 +3795,22 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 // Return value:
 //    None
 //
-void CodeGen::genCodeForNullCheck(GenTreeOp* tree)
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_NULLCHECK));
+    GenTree* op1 = tree->gtOp1;
 
-    assert(tree->gtOp1->isUsedFromReg());
-    regNumber reg = genConsumeReg(tree->gtOp1);
-    GetEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, reg, reg, 0);
+    genConsumeRegs(op1);
+    if (op1->isContained())
+    {
+        regNumber targetReg = tree->GetSingleTempReg();
+        GetEmitter()->emitInsLoadInd(INS_mov, EA_4BYTE, targetReg, tree->AsIndir());
+    }
+    else
+    {
+        regNumber reg = op1->GetRegNum();
+        GetEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, reg, reg, 0);
+    }
 }
 
 //------------------------------------------------------------------------

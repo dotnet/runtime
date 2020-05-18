@@ -102,6 +102,15 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 #endif // TARGET_ARM64
     }
 
+#ifdef TARGET_ARM
+    if (indirTree->OperIs(GT_NULLCHECK) && internalCount == 0)
+    {
+        // We'll need a temp register for the target if we didn't already get a temp above.
+        // (Arm64 uses REG_ZR for the target.)
+        buildInternalIntRegisterDefForNode(indirTree);
+    }
+#endif // TARGET_ARM
+
 #ifdef FEATURE_SIMD
     if (indirTree->TypeGet() == TYP_SIMD12)
     {
@@ -117,7 +126,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     int srcCount = BuildIndirUses(indirTree);
     buildInternalRegisterUses();
 
-    if (indirTree->gtOper != GT_STOREIND)
+    if (!indirTree->OperIs(GT_STOREIND, GT_NULLCHECK))
     {
         BuildDef(indirTree);
     }

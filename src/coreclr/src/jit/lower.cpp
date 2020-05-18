@@ -111,10 +111,17 @@ GenTree* Lowering::LowerNode(GenTree* node)
     assert(node != nullptr);
     switch (node->gtOper)
     {
+        case GT_NULLCHECK:
         case GT_IND:
-            // Process struct typed indirs separately, they only appear as the source of
+            // If we have an unused indirection, tranform it to a nullcheck.
+            if (node->IsUnusedValue())
+            {
+                node->ChangeOper(GT_NULLCHECK);
+                node->ClearUnusedValue();
+            }
+            // Otherwise, process struct typed indirs separately, they only appear as the source of
             // a block copy operation or a return node.
-            if (node->TypeGet() != TYP_STRUCT)
+            if ((node->TypeGet() != TYP_STRUCT) || node->OperIs(GT_NULLCHECK))
             {
                 // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
                 // address containment in some cases so we end up creating trivial (reg + offfset)
