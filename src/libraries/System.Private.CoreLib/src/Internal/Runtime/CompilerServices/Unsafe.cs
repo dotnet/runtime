@@ -8,15 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-using nint = System.Int64;
-#else
-using nuint = System.UInt32;
-using nint = System.Int32;
-#endif
-
 //
 // The implementations of most the methods in this file are provided as intrinsics.
 // In CoreCLR, the body of the functions are replaced by the EE with unsafe code. See see getILIntrinsicImplementationForUnsafe for details.
@@ -144,19 +135,6 @@ namespace Internal.Runtime.CompilerServices
             return (byte*)source + (elementOffset * (nint)SizeOf<T>());
 #endif
         }
-
-#if TARGET_64BIT
-        /// <summary>
-        /// Adds an element offset to the given reference.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref T Add<T>(ref T source, nint elementOffset)
-        {
-            return ref Unsafe.Add(ref source, (IntPtr)(void*)elementOffset);
-        }
-#endif
 
         /// <summary>
         /// Adds an byte offset to the given reference.

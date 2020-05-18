@@ -1815,12 +1815,23 @@ void LinearScan::insertZeroInitRefPositions()
                 Interval* interval = getIntervalForLocalVar(varIndex);
                 if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
                 {
-                    JITDUMP(" creating ZeroInit\n");
-                    GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
-                    RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
-                                                      allRegs(interval->registerType));
-                    pos->setRegOptional(true);
-                    varDsc->lvMustInit = true;
+                    if (interval->recentRefPosition == nullptr)
+                    {
+                        JITDUMP(" creating ZeroInit\n");
+                        GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
+                        RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
+                                                          allRegs(interval->registerType));
+                        pos->setRegOptional(true);
+                        varDsc->lvMustInit = true;
+                    }
+                    else
+                    {
+                        // We must only generate one entry RefPosition for each Interval. Since this is not
+                        // a parameter, it can't be RefTypeParamDef, so it must be RefTypeZeroInit, which
+                        // we must have generated for the live-in case above.
+                        assert(interval->recentRefPosition->refType == RefTypeZeroInit);
+                        JITDUMP(" already ZeroInited\n");
+                    }
                 }
             }
         }
@@ -3102,7 +3113,20 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 #endif // !TARGET_64BIT
     else if (op1->isContained())
     {
-        srcCount = 0;
+#ifdef TARGET_XARCH
+        if (varTypeIsSIMD(storeLoc))
+        {
+            // This is the zero-init case, and we need a register to hold the zero.
+            // (On Arm64 we can just store REG_ZR.)
+            assert(op1->IsSIMDZero());
+            singleUseRef = BuildUse(op1->gtGetOp1());
+            srcCount     = 1;
+        }
+        else
+#endif
+        {
+            srcCount = 0;
+        }
     }
     else
     {

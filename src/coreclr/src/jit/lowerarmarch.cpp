@@ -526,6 +526,15 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    assert(node->TypeGet() != TYP_SIMD32);
+
+    if (node->TypeGet() == TYP_SIMD12)
+    {
+        // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
+        // produces a TYP_SIMD16 result
+        node->gtType = TYP_SIMD16;
+    }
+
     ContainCheckHWIntrinsic(node);
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -721,13 +730,20 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
             return;
         }
     }
+
+    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(storeLoc))
     {
-        if (op1->IsIntegralConst(0))
+        // If this is a store to memory, we can initialize a zero vector in memory from REG_ZR.
+        if ((op1->IsIntegralConst(0) || op1->IsSIMDZero()) && varDsc->lvDoNotEnregister)
         {
-            // For an InitBlk we want op1 to be contained
             MakeSrcContained(storeLoc, op1);
+            if (op1->IsSIMDZero())
+            {
+                MakeSrcContained(op1, op1->gtGetOp1());
+            }
         }
         return;
     }
@@ -736,8 +752,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
-    var_types        type   = varDsc->GetRegisterType(storeLoc);
+    var_types type = varDsc->GetRegisterType(storeLoc);
     if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(type)))
     {
         MakeSrcContained(storeLoc, op1);
@@ -914,6 +929,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
             break;
+
+        case NI_Vector64_Create:
+        case NI_Vector128_Create:
         case NI_Vector64_CreateScalarUnsafe:
         case NI_Vector128_CreateScalarUnsafe:
             if (intrin.op1->IsCnsIntOrI())

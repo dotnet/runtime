@@ -69,6 +69,13 @@ jobs:
       eq(parameters.isOfficialBuild, true),
       ne(parameters.crossrootfsDir, '')) }}
 
+  - name: BuildAction
+    value: -test
+
+  - ${{ if eq(variables.SkipTests, true) }}:
+    - name: BuildAction
+      value: ''
+
   - name: SignType
     value: test
 
@@ -108,7 +115,8 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        build.cmd -subset installer -test -ci
+        build.cmd -subset installer -ci
+        $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -124,7 +132,8 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer -test -ci
+        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -139,7 +148,8 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer --ci --test
+        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(BuildAction)
         -configuration $(_BuildConfig)
         -os ${{ parameters.osGroup }}
         -arch ${{ parameters.archType }}
@@ -199,7 +209,8 @@ jobs:
 
     - name: BuildArguments
       value: >-
-        -subset installer -test -ci
+        -subset installer -ci
+        $(BuildAction)
         /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
@@ -431,8 +442,23 @@ jobs:
         displayName: 'Libraries artifacts (AllConfigurations)'
         cleanUnpackFolder: false
 
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+      displayName: Install Build Dependencies
+
+    - script: |
+        du -sh $(Build.SourcesDirectory)/*
+        df -h
+      displayName: Disk Usage before Build
+
   - script: $(BaseJobBuildCommand)
     displayName: Build
+
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - script: |
+        du -sh $(Build.SourcesDirectory)/*
+        df -h
+      displayName: Disk Usage after Build
 
   # Only in glibc leg, we produce RPMs and Debs
   - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
@@ -448,7 +474,6 @@ jobs:
       # independent installers on this leg, but we need to do it somewhere.)
       - template: steps/build-linux-package.yml
         parameters:
-          buildTraversalBuildDependencies: true
           distroRid: ${{ packageBuild.imageRid }}
           image: ${{ packageBuild.image }}
           packageStepDescription: Runtime Deps, Runtime, Framework Packs installers

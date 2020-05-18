@@ -61,6 +61,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "hwintrinsic.h"
 #include "simd.h"
+#include "simdashwintrinsic.h"
 
 // This is only used locally in the JIT to indicate that
 // a verification block should be inserted
@@ -1737,6 +1738,10 @@ public:
 #else
         unsigned int regSize = 1;
 #endif
+
+        if (numRegs > MAX_ARG_REG_COUNT)
+            NO_WAY("Multireg argument exceeds the maximum length");
+
         for (unsigned int regIndex = 1; regIndex < numRegs; regIndex++)
         {
             argReg = (regNumber)(argReg + regSize);
@@ -2095,6 +2100,8 @@ public:
     bool shouldUseVerboseSsa();
     bool treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
     int  morphNum;              // This counts the the trees that have been morphed, allowing us to label each uniquely.
+    bool doExtraSuperPmiQueries;
+    void makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level); // Make queries recursively 'level' deep.
 
     const char* VarNameToStr(VarName name)
     {
@@ -2613,6 +2620,36 @@ public:
                                                  NamedIntrinsic hwIntrinsicID,
                                                  var_types      baseType,
                                                  unsigned       size);
+
+    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
+        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+    {
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+        node->gtFlags |= GTF_SIMDASHW_OP;
+        return node;
+    }
+
+    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
+        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+    {
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, op2, hwIntrinsicID, baseType, size);
+        node->gtFlags |= GTF_SIMDASHW_OP;
+        return node;
+    }
+
+    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
+                                                   GenTree*       op1,
+                                                   GenTree*       op2,
+                                                   GenTree*       op3,
+                                                   NamedIntrinsic hwIntrinsicID,
+                                                   var_types      baseType,
+                                                   unsigned       size)
+    {
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, baseType, size);
+        node->gtFlags |= GTF_SIMDASHW_OP;
+        return node;
+    }
+
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
                                                    GenTree*       op1,
@@ -2651,7 +2688,7 @@ public:
     fgArgTabEntry* gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
     static GenTree* gtArgNodeByLateArgInx(GenTreeCall* call, unsigned lateArgInx);
 
-    GenTree* gtNewAssignNode(GenTree* dst, GenTree* src);
+    GenTreeOp* gtNewAssignNode(GenTree* dst, GenTree* src);
 
     GenTree* gtNewTempAssign(unsigned    tmp,
                              GenTree*    val,
@@ -3687,16 +3724,36 @@ protected:
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO*     sig,
                                        bool                  mustExpand);
+    GenTree* impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
+                                  CORINFO_CLASS_HANDLE  clsHnd,
+                                  CORINFO_METHOD_HANDLE method,
+                                  CORINFO_SIG_INFO*     sig,
+                                  bool                  mustExpand);
 
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
+
+    GenTree* impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
+                                         CORINFO_CLASS_HANDLE clsHnd,
+                                         CORINFO_SIG_INFO*    sig,
+                                         var_types            retType,
+                                         var_types            baseType,
+                                         unsigned             simdSize);
+
+    GenTree* impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
+                                        var_types            retType,
+                                        var_types            baseType,
+                                        unsigned             simdSize,
+                                        GenTree*             op1,
+                                        GenTree*             op2,
+                                        GenTree*             op3);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
                                  CORINFO_SIG_INFO*     sig);
 
-    GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
+    GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr = false);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
     GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immUpperBound);
 
@@ -3710,6 +3767,13 @@ protected:
     GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
 
+    GenTree* impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
+                                       CORINFO_CLASS_HANDLE clsHnd,
+                                       var_types            retType,
+                                       var_types            baseType,
+                                       unsigned             simdSize,
+                                       GenTree*             op1,
+                                       GenTree*             op2);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -5450,6 +5514,9 @@ public:
 private:
     GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
+#if FEATURE_FASTTAILCALL
+    bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
+#endif
     bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
     bool fgCanTailCallViaJitHelper();
@@ -8082,7 +8149,25 @@ private:
     // AVX: vector2f, 3f and 4f are all considered sub register SIMD types.
     bool isSubRegisterSIMDType(GenTreeSIMD* simdNode)
     {
-        return (simdNode->gtSIMDSize < getSIMDVectorRegisterByteLength());
+        unsigned vectorRegisterByteLength;
+#if defined(TARGET_XARCH)
+        // Calling the getSIMDVectorRegisterByteLength api causes the size of Vector<T> to be recorded
+        // with the AOT compiler, so that it cannot change from aot compilation time to runtime
+        // This api does not require such fixing as it merely pertains to the size of the simd type
+        // relative to the Vector<T> size as used at compile time. (So detecting a vector length of 16 here
+        // does not preclude the code from being used on a machine with a larger vector length.)
+        if (getSIMDSupportLevel() < SIMD_AVX2_Supported)
+        {
+            vectorRegisterByteLength = 16;
+        }
+        else
+        {
+            vectorRegisterByteLength = 32;
+        }
+#else
+        vectorRegisterByteLength = getSIMDVectorRegisterByteLength();
+#endif
+        return (simdNode->gtSIMDSize < vectorRegisterByteLength);
     }
 
     // Get the type for the hardware SIMD vector.
@@ -8180,8 +8265,9 @@ private:
         return emitTypeSize(TYP_SIMD8);
     }
 
+public:
     // Returns the codegen type for a given SIMD size.
-    var_types getSIMDTypeForSize(unsigned size)
+    static var_types getSIMDTypeForSize(unsigned size)
     {
         var_types simdType = TYP_UNDEF;
         if (size == 8)
@@ -8207,6 +8293,7 @@ private:
         return simdType;
     }
 
+private:
     unsigned getSIMDInitTempVarNum()
     {
         if (lvaSIMDInitTempVarNum == BAD_VAR_NUM)
@@ -9063,6 +9150,11 @@ public:
 #else  // !TARGET_AMD64
         return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
 #endif // !TARGET_AMD64
+    }
+
+    bool compDoOldStructRetyping()
+    {
+        return JitConfig.JitDoOldStructRetyping();
     }
 
     // Returns true if the method returns a value in more than one return register

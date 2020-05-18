@@ -76,7 +76,7 @@ stages:
       - tvOS_x64
       - tvOS_arm64
       - iOS_x64
-      # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+      - iOS_arm
       - iOS_arm64
       - OSX_x64
       - Linux_x64
@@ -130,7 +130,7 @@ stages:
       - tvOS_x64
       - tvOS_arm64
       - iOS_x64
-      # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+      - iOS_arm
       - iOS_arm64
       - Browser_wasm
       jobParameters:
@@ -192,7 +192,7 @@ stages:
       - Linux_x64
       - tvOS_x64
       - tvOS_arm64
-      # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+      - iOS_arm
       - iOS_arm64
       - iOS_x64
       - Android_arm

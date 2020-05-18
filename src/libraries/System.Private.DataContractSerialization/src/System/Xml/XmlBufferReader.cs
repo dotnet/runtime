@@ -500,7 +500,7 @@ namespace System.Xml
         public Guid ReadGuid()
         {
             int offset;
-            byte[] buffer = GetBuffer(ValueHandleLength.Guid, out offset);
+            _ = GetBuffer(ValueHandleLength.Guid, out offset);
             Guid guid = GetGuid(offset);
             Advance(ValueHandleLength.Guid);
             return guid;
@@ -509,7 +509,7 @@ namespace System.Xml
         public string ReadUTF8String(int length)
         {
             int offset;
-            byte[] buffer = GetBuffer(length, out offset);
+            _ = GetBuffer(length, out offset);
             char[] chars = GetCharBuffer(length);
             int charCount = GetChars(offset, length, chars);
             string value = new string(chars, 0, charCount);
@@ -853,7 +853,6 @@ namespace System.Xml
 
         public bool IsWhitespaceUnicode(int offset, int length)
         {
-            byte[] buffer = _buffer;
             for (int i = 0; i < length; i += sizeof(char))
             {
                 char ch = (char)GetInt16(offset + i);

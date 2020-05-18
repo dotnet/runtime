@@ -742,11 +742,7 @@ private:
     friend class StackFrameIterator;
     friend class TailCallFrame;
     friend class AppDomain;
-    friend VOID RealCOMPlusThrow(OBJECTREF
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
+    friend VOID RealCOMPlusThrow(OBJECTREF);
     friend FCDECL0(VOID, JIT_StressGC);
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
@@ -2788,7 +2784,7 @@ protected:
 };
 #endif // TARGET_X86 && !TARGET_UNIX
 
-// Frame for the Reverse PInvoke (i.e. NativeCallableAttribute).
+// Frame for the Reverse PInvoke (i.e. UnmanagedCallersOnlyAttribute).
 struct ReversePInvokeFrame
 {
     Thread* currentThread;

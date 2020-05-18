@@ -10,7 +10,7 @@ namespace System.Diagnostics
     /// ActivityContext representation conforms to the w3c TraceContext specification. It contains two identifiers
     /// a TraceId and a SpanId - along with a set of common TraceFlags and system-specific TraceState values.
     /// </summary>
-    public readonly struct ActivityContext : IEquatable<ActivityContext>
+    public readonly partial struct ActivityContext : IEquatable<ActivityContext>
     {
         /// <summary>
         /// Construct a new object of ActivityContext.
@@ -44,12 +44,12 @@ namespace System.Diagnostics
         public ActivitySpanId SpanId { get; }
 
         /// <summary>
-        /// The flags for the details about the trace.
+        /// These flags are defined by the W3C standard along with the ID for the activity.
         /// </summary>
         public ActivityTraceFlags TraceFlags { get; }
 
         /// <summary>
-        /// system-specific configuration data.
+        /// Holds the W3C 'tracestate' header as a string.
         /// </summary>
         public string? TraceState { get; }
 
@@ -58,22 +58,5 @@ namespace System.Diagnostics
         public override bool Equals(object? obj) => (obj is ActivityContext context) ? Equals(context) : false;
         public static bool operator ==(ActivityContext left, ActivityContext right) => left.Equals(right);
         public static bool operator !=(ActivityContext left, ActivityContext right) => !(left == right);
-
-        public override int GetHashCode()
-        {
-            if (this == default)
-                return 0;
-
-            // HashCode.Combine would be the best but we need to compile for the full framework which require adding dependency
-            // on the extensions package. Considering this simple type and hashing is not expected to be used much, we are implementing
-            // the hashing manually.
-            int hash = 5381;
-            hash = ((hash << 5) + hash) + TraceId.GetHashCode();
-            hash = ((hash << 5) + hash) + SpanId.GetHashCode();
-            hash = ((hash << 5) + hash) + (int) TraceFlags;
-            hash = ((hash << 5) + hash) + (TraceState == null ? 0 : TraceState.GetHashCode());
-
-            return hash;
-        }
     }
 }

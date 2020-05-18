@@ -2482,6 +2482,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 		} else if (calli) {
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
+#ifdef TARGET_X86
+			/* Windows not tested/supported yet */
+			if (td->last_ins->opcode == MINT_CALLI_NAT)
+				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
+#endif
+
 			if (op != -1) {
 				td->last_ins->data[1] = op;
 				if (td->last_ins->opcode == MINT_CALLI_NAT_FAST)
@@ -4610,7 +4616,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					/* public ByReference(ref T value) */
 					g_assert (csignature->hasthis && csignature->param_count == 1);
 					interp_add_ins (td, MINT_INTRINS_BYREFERENCE_CTOR);
-					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				} else if (klass != mono_defaults.string_class &&
 						!mono_class_is_marshalbyref (klass) &&
 						!mono_class_has_finalizer (klass) &&
@@ -6493,12 +6498,6 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 			*push = 1;
 			break;
 		case MINT_NEWOBJ: {
-			InterpMethod *imethod = (InterpMethod*) td->data_items [ins->data [0]];
-			*pop = imethod->param_count;
-			*push = 1;
-			break;
-		}
-		case MINT_INTRINS_BYREFERENCE_CTOR: {
 			InterpMethod *imethod = (InterpMethod*) td->data_items [ins->data [0]];
 			*pop = imethod->param_count;
 			*push = 1;

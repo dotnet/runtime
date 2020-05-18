@@ -116,6 +116,10 @@ int g_common_signal_handler_context_locvar_offset = 0;
 
 // TOP of special stack for handling stack overflow
 volatile void* g_stackOverflowHandlerStack = NULL;
+
+// Flag that is or-ed with SIGSEGV to indicate that the SIGSEGV was a stack overflow
+const int StackOverflowFlag = 0x40000000;
+
 #endif // !HAVE_MACH_EXCEPTIONS
 
 /* public function definitions ************************************************/
@@ -529,7 +533,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                     }
                 }
 
-                if (SwitchStackAndExecuteHandler(code, siginfo, context, (size_t)handlerStackTop))
+                if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
                     PROCAbort();
                 }
@@ -841,7 +845,15 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     ucontext = (native_context_t *)sigcontext;
     g_common_signal_handler_context_locvar_offset = (int)((char*)&signalContextRecord - (char*)__builtin_frame_address(0));
 
-    exceptionRecord.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+    if (code == (SIGSEGV | StackOverflowFlag))
+    {
+        exceptionRecord.ExceptionCode = EXCEPTION_STACK_OVERFLOW;
+        code &= ~StackOverflowFlag;
+    }
+    else
+    {
+        exceptionRecord.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+    }
     exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
     exceptionRecord.ExceptionRecord = NULL;
     exceptionRecord.ExceptionAddress = GetNativeContextPC(ucontext);

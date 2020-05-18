@@ -652,10 +652,11 @@ bool pal::unicode_palstring(const char16_t* str, pal::string_t* out)
 // Return if path is valid and file exists, return true and adjust path as appropriate.
 bool pal::realpath(string_t* path, bool skip_error_logging)
 {
-    if (LongFile::IsNormalized(path->c_str()))
+    if (LongFile::IsNormalized(*path))
     {
         WIN32_FILE_ATTRIBUTE_DATA data;
-        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
+        if (path->empty() // An empty path doesn't exist
+            || GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
         {
             return true;
         }

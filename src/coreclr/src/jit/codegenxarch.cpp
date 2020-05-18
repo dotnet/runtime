@@ -1862,8 +1862,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_MEMORYBARRIER:
-            instGen_MemoryBarrier();
+        {
+            CodeGen::BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+
+            instGen_MemoryBarrier(barrierKind);
             break;
+        }
 
         case GT_CMPXCHG:
             genCodeForCmpXchg(treeNode->AsCmpXchg());
@@ -4669,17 +4674,6 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         if (targetType == TYP_SIMD12)
         {
             genStoreLclTypeSIMD12(tree);
-            return;
-        }
-
-        // TODO-CQ: It would be better to simply contain the zero, rather than
-        // generating zero into a register.
-        if (varTypeIsSIMD(targetType) && (targetReg != REG_NA) && op1->IsCnsIntOrI())
-        {
-            // This is only possible for a zero-init.
-            noway_assert(op1->IsIntegralConst(0));
-            genSIMDZero(targetType, varDsc->lvBaseType, targetReg);
-            genProduceReg(tree);
             return;
         }
 #endif // FEATURE_SIMD

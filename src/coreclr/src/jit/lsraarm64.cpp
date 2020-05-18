@@ -1041,25 +1041,28 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
     bool tgtPrefOp1 = false;
 
-    // If we have an RMW intrinsic, we want to preference op1Reg to the target if
-    // op1 is not contained.
-    if (isRMW)
+    if (intrin.op1 != nullptr)
     {
-        tgtPrefOp1 = !intrin.op1->isContained();
-    }
+        // If we have an RMW intrinsic, we want to preference op1Reg to the target if
+        // op1 is not contained.
+        if (isRMW)
+        {
+            tgtPrefOp1 = !intrin.op1->isContained();
+        }
 
-    if (intrinsicTree->OperIsMemoryLoadOrStore())
-    {
-        srcCount += BuildAddrUses(intrin.op1);
-    }
-    else if (tgtPrefOp1)
-    {
-        tgtPrefUse = BuildUse(intrin.op1);
-        srcCount++;
-    }
-    else
-    {
-        srcCount += BuildOperandUses(intrin.op1);
+        if (intrinsicTree->OperIsMemoryLoadOrStore())
+        {
+            srcCount += BuildAddrUses(intrin.op1);
+        }
+        else if (tgtPrefOp1)
+        {
+            tgtPrefUse = BuildUse(intrin.op1);
+            srcCount++;
+        }
+        else
+        {
+            srcCount += BuildOperandUses(intrin.op1);
+        }
     }
 
     if (intrin.op2 != nullptr)

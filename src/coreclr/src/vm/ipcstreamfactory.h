@@ -31,11 +31,12 @@ public:
         virtual void Reset(ErrorCallback callback = nullptr) = 0;
 
         // closes the underlying connections
-        void Close(ErrorCallback callback = nullptr)
+        // only performs minimal cleanup if isShutdown==true
+        void Close(bool isShutdown = false, ErrorCallback callback = nullptr)
         {
             if (_pIpc != nullptr)
-                _pIpc->Close(callback);
-            if (_pStream != nullptr)
+                _pIpc->Close(isShutdown, callback);
+            if (_pStream != nullptr && !isShutdown)
                 _pStream->Close(callback);
         }
 
@@ -77,6 +78,7 @@ public:
     static IpcStream *GetNextAvailableStream(ErrorCallback = nullptr);
     static bool HasActiveConnections();
     static void CloseConnections(ErrorCallback callback = nullptr);
+    static void Shutdown(ErrorCallback callback = nullptr);
 private:
     static CQuickArrayList<ConnectionState*> s_rgpConnectionStates;
     static Volatile<bool> s_isShutdown;

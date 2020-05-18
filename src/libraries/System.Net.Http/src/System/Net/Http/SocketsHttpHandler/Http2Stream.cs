@@ -71,6 +71,8 @@ namespace System.Net.Http
             /// Reset _waitSource.
             /// </summary>
             private ManualResetValueTaskSourceCore<bool> _waitSource = new ManualResetValueTaskSourceCore<bool> { RunContinuationsAsynchronously = true }; // mutable struct, do not make this readonly
+            /// <summary>Cancellation registration used to cancel the <see cref="_waitSource"/>.</summary>
+            private CancellationTokenRegistration _waitSourceCancellation;
             /// <summary>
             /// Whether code has requested or is about to request a wait be performed and thus requires a call to SetResult to complete it.
             /// This is read and written while holding the lock so that most operations on _waitSource don't need to be.
@@ -181,7 +183,7 @@ namespace System.Net.Http
                     {
                         using (Http2WriteStream writeStream = new Http2WriteStream(this))
                         {
-                            await _request.Content.CopyToAsync(writeStream, null, _requestBodyCancellationToken).ConfigureAwait(false);
+                            await _request.Content.InternalCopyToAsync(writeStream, null, _requestBodyCancellationToken).ConfigureAwait(false);
                         }
                     }
 
@@ -327,14 +329,11 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                lock (SyncObject)
+                CreditWaiter? w = _creditWaiter;
+                if (w != null)
                 {
-                    CreditWaiter? w = _creditWaiter;
-                    if (w != null)
-                    {
-                        w.Dispose();
-                        _creditWaiter = null;
-                    }
+                    w.Dispose();
+                    _creditWaiter = null;
                 }
             }
 
@@ -1162,7 +1161,18 @@ namespace System.Net.Http
             // associated with the implementation is just delegated to the ManualResetValueTaskSourceCore.
             ValueTaskSourceStatus IValueTaskSource.GetStatus(short token) => _waitSource.GetStatus(token);
             void IValueTaskSource.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _waitSource.OnCompleted(continuation, state, token, flags);
-            void IValueTaskSource.GetResult(short token) => _waitSource.GetResult(token);
+            void IValueTaskSource.GetResult(short token)
+            {
+                Debug.Assert(!Monitor.IsEntered(SyncObject));
+
+                // Clean up the registration.  It's important to Dispose rather than Unregister, so that we wait
+                // for any in-flight cancellation to complete.
+                _waitSourceCancellation.Dispose();
+                _waitSourceCancellation = default;
+
+                // Propagate any exceptions if there were any.
+                _waitSource.GetResult(token);
+            }
 
             private void WaitForData()
             {
@@ -1180,46 +1190,41 @@ namespace System.Net.Http
                 // Reset'ing it is this code here.  It's possible for this to race with the _waitSource being completed, but that's ok and is
                 // handled by _waitSource as one of its primary purposes.  We can't assert _hasWaiter here, though, as once we released the
                 // lock, a producer could have seen _hasWaiter as true and both set it to false and signaled _waitSource.
-                if (!cancellationToken.CanBeCanceled)
-                {
-                    return new ValueTask(this, _waitSource.Version);
-                }
 
                 // With HttpClient, the supplied cancellation token will always be cancelable, as HttpClient supplies a token that
                 // will have cancellation requested if CancelPendingRequests is called (or when a non-infinite Timeout expires).
                 // However, this could still be non-cancelable if HttpMessageInvoker was used, at which point this will only be
-                // cancelable if the caller's token was cancelable.  To avoid the extra allocation here in such a case, we make
-                // this pay-for-play: if the token isn't cancelable, return a ValueTask wrapping this object directly, and only
-                // if it is cancelable, then register for the cancellation callback, allocate a task for the asynchronously
-                // completing case, etc.
-                return GetCancelableWaiterTask(cancellationToken);
+                // cancelable if the caller's token was cancelable.
 
-                async ValueTask GetCancelableWaiterTask(CancellationToken cancellationToken)
+                _waitSourceCancellation = cancellationToken.UnsafeRegister(s =>
                 {
-                    using (cancellationToken.UnsafeRegister(s =>
-                    {
-                        var thisRef = (Http2Stream)s!;
+                    var thisRef = (Http2Stream)s!;
 
-                        bool signalWaiter;
-                        Debug.Assert(!Monitor.IsEntered(thisRef.SyncObject));
-                        lock (thisRef.SyncObject)
-                        {
-                            signalWaiter = thisRef._hasWaiter;
-                            thisRef._hasWaiter = false;
-                        }
-
-                        if (signalWaiter)
-                        {
-                            // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
-                            thisRef._waitSource.SetResult(true);
-                        }
-                    }, this))
+                    bool signalWaiter;
+                    Debug.Assert(!Monitor.IsEntered(thisRef.SyncObject));
+                    lock (thisRef.SyncObject)
                     {
-                        await new ValueTask(this, _waitSource.Version).ConfigureAwait(false);
+                        signalWaiter = thisRef._hasWaiter;
+                        thisRef._hasWaiter = false;
                     }
 
-                    CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
-                }
+                    if (signalWaiter)
+                    {
+                        // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
+                        thisRef._waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(
+                            CancellationHelper.CreateOperationCanceledException(null, _waitSourceCancellation.Token)));
+                    }
+                }, this);
+
+                // There's a race condition in UnsafeRegister above.  If cancellation is requested prior to UnsafeRegister,
+                // the delegate may be invoked synchronously as part of the UnsafeRegister call.  In that case, it will execute
+                // before _waitSourceCancellation has been set, which means UnsafeRegister will have set a cancellation
+                // exception into the wait source with a default token rather than the ideal one.  To handle that,
+                // we check for cancellation again, and throw here with the right token.  Worst case, if cancellation is
+                // requested prior to here, we end up allocating an extra OCE object.
+                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
+
+                return new ValueTask(this, _waitSource.Version);
             }
 
             public void Trace(string message, [CallerMemberName] string? memberName = null) =>

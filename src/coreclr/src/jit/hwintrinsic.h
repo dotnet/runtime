@@ -57,67 +57,63 @@ enum HWIntrinsicFlag : unsigned int
     // - should be transformed in the compiler front-end, cannot reach CodeGen
     HW_Flag_NoCodeGen = 0x4,
 
-    // Unfixed SIMD-size
-    // - overloaded on multiple vector sizes (SIMD size in the table is unreliable)
-    HW_Flag_UnfixedSIMDSize = 0x8,
-
     // Multi-instruction
     // - that one intrinsic can generate multiple instructions
-    HW_Flag_MultiIns = 0x10,
+    HW_Flag_MultiIns = 0x8,
 
     // Select base type using the first argument type
-    HW_Flag_BaseTypeFromFirstArg = 0x20,
+    HW_Flag_BaseTypeFromFirstArg = 0x10,
 
     // Select base type using the second argument type
-    HW_Flag_BaseTypeFromSecondArg = 0x40,
+    HW_Flag_BaseTypeFromSecondArg = 0x20,
 
     // Indicates compFloatingPointUsed does not need to be set.
-    HW_Flag_NoFloatingPointUsed = 0x80,
+    HW_Flag_NoFloatingPointUsed = 0x40,
 
     // Maybe IMM
     // the intrinsic has either imm or Vector overloads
-    HW_Flag_MaybeIMM = 0x100,
+    HW_Flag_MaybeIMM = 0x80,
 
     // NoJmpTable IMM
     // the imm intrinsic does not need jumptable fallback when it gets non-const argument
-    HW_Flag_NoJmpTableIMM = 0x200,
+    HW_Flag_NoJmpTableIMM = 0x100,
 
     // Special codegen
     // the intrinsics need special rules in CodeGen,
     // but may be table-driven in the front-end
-    HW_Flag_SpecialCodeGen = 0x400,
+    HW_Flag_SpecialCodeGen = 0x200,
 
     // Special import
     // the intrinsics need special rules in importer,
     // but may be table-driven in the back-end
-    HW_Flag_SpecialImport = 0x800,
+    HW_Flag_SpecialImport = 0x400,
 
 // The below is for defining platform-specific flags
 #if defined(TARGET_XARCH)
     // Copy Upper bits
     // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
-    HW_Flag_CopyUpperBits = 0x1000,
+    HW_Flag_CopyUpperBits = 0x800,
 
     // Maybe Memory Load/Store
     // - some intrinsics may have pointer overloads but without HW_Category_MemoryLoad/HW_Category_MemoryStore
-    HW_Flag_MaybeMemoryLoad  = 0x2000,
-    HW_Flag_MaybeMemoryStore = 0x4000,
+    HW_Flag_MaybeMemoryLoad  = 0x1000,
+    HW_Flag_MaybeMemoryStore = 0x2000,
 
     // No Read/Modify/Write Semantics
     // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
-    HW_Flag_NoRMWSemantics = 0x8000,
+    HW_Flag_NoRMWSemantics = 0x4000,
 
     // NoContainment
     // the intrinsic cannot be handled by comtainment,
     // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = 0x10000,
+    HW_Flag_NoContainment = 0x8000,
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has read/modify/write semantics in multiple-operands form.
-    HW_Flag_HasRMWSemantics = 0x1000,
+    HW_Flag_HasRMWSemantics = 0x800,
 
     // The intrinsic supports some sort of containment analysis.
-    HW_Flag_SupportsContainment = 0x2000,
+    HW_Flag_SupportsContainment = 0x1000,
 #else
 #error Unsupported platform
 #endif
@@ -254,7 +250,7 @@ struct HWIntrinsicInfo
     NamedIntrinsic         id;
     const char*            name;
     CORINFO_InstructionSet isa;
-    unsigned               simdSize;
+    int                    simdSize;
     int                    numArgs;
     instruction            ins[10];
     HWIntrinsicCategory    category;
@@ -262,10 +258,11 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*   comp,
-                                   const char* className,
-                                   const char* methodName,
-                                   const char* enclosingClassName);
+    static NamedIntrinsic lookupId(Compiler*         comp,
+                                   CORINFO_SIG_INFO* sig,
+                                   const char*       className,
+                                   const char*       methodName,
+                                   const char*       enclosingClassName);
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
@@ -308,7 +305,7 @@ struct HWIntrinsicInfo
     }
 
 #ifdef TARGET_XARCH
-    static int lookupIval(NamedIntrinsic id)
+    static int lookupIval(NamedIntrinsic id, bool opportunisticallyDependsOnAVX)
     {
         switch (id)
         {
@@ -325,6 +322,22 @@ struct HWIntrinsicInfo
             case NI_SSE_CompareScalarGreaterThan:
             case NI_SSE2_CompareGreaterThan:
             case NI_SSE2_CompareScalarGreaterThan:
+            case NI_AVX_CompareGreaterThan:
+            {
+                if (opportunisticallyDependsOnAVX)
+                {
+                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
+                }
+
+                // CompareGreaterThan is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareGreaterThan);
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
+            }
+
             case NI_SSE_CompareLessThan:
             case NI_SSE_CompareScalarLessThan:
             case NI_SSE2_CompareLessThan:
@@ -338,6 +351,22 @@ struct HWIntrinsicInfo
             case NI_SSE_CompareScalarGreaterThanOrEqual:
             case NI_SSE2_CompareGreaterThanOrEqual:
             case NI_SSE2_CompareScalarGreaterThanOrEqual:
+            case NI_AVX_CompareGreaterThanOrEqual:
+            {
+                if (opportunisticallyDependsOnAVX)
+                {
+                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
+                }
+
+                // CompareGreaterThanOrEqual is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareGreaterThanOrEqual);
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
+            }
+
             case NI_SSE_CompareLessThanOrEqual:
             case NI_SSE_CompareScalarLessThanOrEqual:
             case NI_SSE2_CompareLessThanOrEqual:
@@ -360,6 +389,22 @@ struct HWIntrinsicInfo
             case NI_SSE_CompareScalarNotGreaterThan:
             case NI_SSE2_CompareNotGreaterThan:
             case NI_SSE2_CompareScalarNotGreaterThan:
+            case NI_AVX_CompareNotGreaterThan:
+            {
+                if (opportunisticallyDependsOnAVX)
+                {
+                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
+                }
+
+                // CompareNotGreaterThan is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareNotGreaterThan);
+                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
+            }
+
             case NI_SSE_CompareNotLessThan:
             case NI_SSE_CompareScalarNotLessThan:
             case NI_SSE2_CompareNotLessThan:
@@ -373,6 +418,22 @@ struct HWIntrinsicInfo
             case NI_SSE_CompareScalarNotGreaterThanOrEqual:
             case NI_SSE2_CompareNotGreaterThanOrEqual:
             case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+            case NI_AVX_CompareNotGreaterThanOrEqual:
+            {
+                if (opportunisticallyDependsOnAVX)
+                {
+                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
+                }
+
+                // CompareNotGreaterThanOrEqual is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareNotGreaterThanOrEqual);
+                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
+            }
+
             case NI_SSE_CompareNotLessThanOrEqual:
             case NI_SSE_CompareScalarNotLessThanOrEqual:
             case NI_SSE2_CompareNotLessThanOrEqual:
@@ -441,26 +502,6 @@ struct HWIntrinsicInfo
                 return static_cast<int>(FloatRoundingMode::ToZero);
             }
 
-            case NI_AVX_CompareGreaterThan:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
-            }
-
-            case NI_AVX_CompareGreaterThanOrEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
-            }
-
-            case NI_AVX_CompareNotGreaterThan:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
-            }
-
-            case NI_AVX_CompareNotGreaterThanOrEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
-            }
-
             default:
             {
                 return -1;
@@ -469,9 +510,15 @@ struct HWIntrinsicInfo
     }
 #endif
 
-    static unsigned lookupSimdSize(NamedIntrinsic id)
+    static bool tryLookupSimdSize(NamedIntrinsic id, unsigned* pSimdSize)
     {
-        return lookup(id).simdSize;
+        bool succeeded = false;
+        if (lookup(id).simdSize != -1)
+        {
+            *pSimdSize = lookup(id).simdSize;
+            succeeded  = true;
+        }
+        return succeeded;
     }
 
     static int lookupNumArgs(NamedIntrinsic id)
@@ -517,12 +564,6 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_NoCodeGen) == 0;
-    }
-
-    static bool HasFixedSimdSize(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_UnfixedSIMDSize) == 0;
     }
 
     static bool GeneratesMultipleIns(NamedIntrinsic id)
@@ -659,9 +700,11 @@ private:
         op1 = node->gtGetOp1();
         op2 = node->gtGetOp2();
 
-        assert(op1 != nullptr);
-
-        if (op1->OperIsList())
+        if (op1 == nullptr)
+        {
+            numOperands = 0;
+        }
+        else if (op1->OperIsList())
         {
             assert(op2 == nullptr);
 

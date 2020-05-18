@@ -132,6 +132,11 @@ private:
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
+#if !FEATURE_MULTIREG_RET
+    void LowerRetStruct(GenTreeUnOp* ret);
+    void LowerRetStructLclVar(GenTreeUnOp* ret);
+    void LowerCallStruct(GenTreeCall* call);
+#endif
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
@@ -310,6 +315,7 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     void LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
+    void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
 

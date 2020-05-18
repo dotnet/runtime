@@ -253,7 +253,6 @@ CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLoc
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_AssertOnFailFast, W("AssertOnFailFast"), "")
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("legacyCorruptedStateExceptionsPolicy"), 0, "Enabled Pre-V4 CSE behavior", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_FailFastOnCorruptedStateException, W("FailFastOnCorruptedStateException"), 0, "Failfast if a CSE is encountered", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "", CLRConfig::EEConfig_default)
 

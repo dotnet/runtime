@@ -19,6 +19,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
+        case InstructionSet_X86Base:
+            return InstructionSet_X86Base_X64;
         case InstructionSet_SSE:
             return InstructionSet_SSE_X64;
         case InstructionSet_SSE2:
@@ -134,12 +136,16 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     {
         return InstructionSet_LZCNT;
     }
+    else if (strcmp(className, "X86Base") == 0)
+    {
+        return InstructionSet_X86Base;
+    }
 
     return InstructionSet_ILLEGAL;
 }
 
 //------------------------------------------------------------------------
-// lookupIsa: Gets the InstructionSet for a given class name and enclsoing class name
+// lookupIsa: Gets the InstructionSet for a given class name and enclosing class name
 //
 // Arguments:
 //    className -- The name of the class associated with the InstructionSet to lookup
@@ -374,6 +380,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE42_X64:
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
+        case InstructionSet_X86Base:
+        case InstructionSet_X86Base_X64:
         {
             return true;
         }
@@ -405,6 +413,8 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
         case InstructionSet_LZCNT_X64:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
+        case InstructionSet_X86Base:
+        case InstructionSet_X86Base_X64:
         {
             return true;
         }
@@ -511,6 +521,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 {
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
+    GenTree* op2     = nullptr;
 
     if (!featureSIMD)
     {
@@ -737,6 +748,70 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_Create:
+        case NI_Vector256_Create:
+        {
+#if defined(TARGET_X86)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                // instruction, which takes a 64-bit memory address and
+                // works on 32-bit x86 systems.
+                break;
+            }
+#endif // TARGET_X86
+
+            // We shouldn't handle this as an intrinsic if the
+            // respective ISAs have been disabled by the user.
+
+            if (intrinsic == NI_Vector256_Create)
+            {
+                if (!compExactlyDependsOn(InstructionSet_AVX))
+                {
+                    break;
+                }
+            }
+            else if (baseType == TYP_FLOAT)
+            {
+                if (!compExactlyDependsOn(InstructionSet_SSE))
+                {
+                    break;
+                }
+            }
+            else if (!compExactlyDependsOn(InstructionSet_SSE2))
+            {
+                break;
+            }
+
+            if (sig->numArgs == 1)
+            {
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            else if (sig->numArgs == 2)
+            {
+                op2     = impPopStack().val;
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
+            }
+            else
+            {
+                assert(sig->numArgs >= 3);
+
+                GenTreeArgList* tmp = nullptr;
+
+                for (unsigned i = 0; i < sig->numArgs; i++)
+                {
+                    tmp        = gtNewArgList(impPopStack().val);
+                    tmp->gtOp2 = op1;
+                    op1        = tmp;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
         case NI_Vector128_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
@@ -787,6 +862,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector128_get_Zero:
+        case NI_Vector128_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
 
@@ -832,6 +908,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector256_get_Zero:
+        case NI_Vector256_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
 
@@ -1276,35 +1353,6 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
     switch (intrinsic)
     {
-        case NI_SSE_CompareGreaterThan:
-        case NI_SSE_CompareGreaterThanOrEqual:
-        case NI_SSE_CompareNotGreaterThan:
-        case NI_SSE_CompareNotGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_FLOAT);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                // These intrinsics are "special import" because the non-AVX path isn't directly
-                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
-
-                FloatComparisonMode comparison =
-                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
-                                                   NI_AVX_Compare, baseType, simdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE_CompareScalarGreaterThan:
         case NI_SSE_CompareScalarGreaterThanOrEqual:
         case NI_SSE_CompareScalarNotGreaterThan:
@@ -1322,9 +1370,8 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
                 FloatComparisonMode comparison =
-                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic, true));
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
@@ -1383,68 +1430,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
     switch (intrinsic)
     {
-        case NI_SSE2_CompareGreaterThan:
-        {
-            if (baseType != TYP_DOUBLE)
-            {
-                assert(sig->numArgs == 2);
-                op2 = impSIMDPopStack(TYP_SIMD16);
-                op1 = impSIMDPopStack(TYP_SIMD16);
-
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
-
-                break;
-            }
-
-            __fallthrough;
-        }
-
-        case NI_SSE2_CompareGreaterThanOrEqual:
-        case NI_SSE2_CompareNotGreaterThan:
-        case NI_SSE2_CompareNotGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-            op2 = impSIMDPopStack(TYP_SIMD16);
-            op1 = impSIMDPopStack(TYP_SIMD16);
-            assert(baseType == TYP_DOUBLE);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                // These intrinsics are "special import" because the non-AVX path isn't directly
-                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
-
-                FloatComparisonMode comparison =
-                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
-                                                   NI_AVX_Compare, baseType, simdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
-            }
-            break;
-        }
-
-        case NI_SSE2_CompareLessThan:
-        {
-            assert(sig->numArgs == 2);
-            op2 = impSIMDPopStack(TYP_SIMD16);
-            op1 = impSIMDPopStack(TYP_SIMD16);
-
-            if (baseType == TYP_DOUBLE)
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, baseType, simdSize);
-            }
-            else
-            {
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareGreaterThan, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE2_CompareScalarGreaterThan:
         case NI_SSE2_CompareScalarGreaterThanOrEqual:
         case NI_SSE2_CompareScalarNotGreaterThan:
@@ -1461,9 +1446,8 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
                 FloatComparisonMode comparison =
-                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic, true));
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else

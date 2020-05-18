@@ -1578,6 +1578,18 @@ bool MyICJI::runWithErrorTrap(void (*function)(void*), void* param)
     return RunWithErrorTrap(function, param);
 }
 
+// Ideally we'd just use the copies of this in standardmacros.h
+// however, superpmi is missing various other dependencies as well
+static size_t ALIGN_UP_SPMI(size_t val, size_t alignment)
+{
+    return (val + (alignment - 1)) & ~(alignment - 1);
+}
+
+static void* ALIGN_UP_SPMI(void* val, size_t alignment)
+{
+    return (void*)ALIGN_UP_SPMI((size_t)val, alignment);
+}
+
 // get a block of memory for the code, readonly data, and read-write data
 void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
                       ULONG              coldCodeSize,  /* IN */
@@ -1590,13 +1602,46 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
                       )
 {
     jitInstance->mc->cr->AddCall("allocMem");
-    // TODO-Cleanup: investigate if we need to check roDataBlock as well. Could hot block size be ever 0?
+
+    // TODO-Cleanup: Could hot block size be ever 0?
     *hotCodeBlock = jitInstance->mc->cr->allocateMemory(hotCodeSize);
+
     if (coldCodeSize > 0)
         *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
     else
         *coldCodeBlock = nullptr;
-    *roDataBlock       = jitInstance->mc->cr->allocateMemory(roDataSize);
+
+    if (roDataSize > 0)
+    {
+        size_t roDataAlignment   = sizeof(void*);
+        size_t roDataAlignedSize = static_cast<size_t>(roDataSize);
+
+        if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+        {
+            roDataAlignment = 32;
+        }
+        else if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+        {
+            roDataAlignment = 16;
+        }
+        else if (roDataSize >= 8)
+        {
+            roDataAlignment = 8;
+        }
+
+        // We need to round the roDataSize up to the alignment size and then
+        // overallocate by at most alignment - sizeof(void*) to ensure that
+        // we can offset roDataBlock to be an aligned address and that the
+        // allocation contains at least the originally requested size after
+
+        roDataAlignedSize = ALIGN_UP_SPMI(roDataAlignedSize, roDataAlignment);
+        roDataAlignedSize = roDataAlignedSize + (roDataAlignment - sizeof(void*));
+        *roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
+        *roDataBlock = ALIGN_UP_SPMI(*roDataBlock, roDataAlignment);
+    }
+    else
+        *roDataBlock = nullptr;
+
     jitInstance->mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
                                      coldCodeBlock, roDataBlock);
 }

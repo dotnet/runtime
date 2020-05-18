@@ -8,57 +8,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Create.Byte.cs" />
-    <Compile Include="Create.Double.cs" />
-    <Compile Include="Create.Int16.cs" />
-    <Compile Include="Create.Int32.cs" />
-    <Compile Include="Create.Int64.cs" />
-    <Compile Include="Create.SByte.cs" />
-    <Compile Include="Create.Single.cs" />
-    <Compile Include="Create.UInt16.cs" />
-    <Compile Include="Create.UInt32.cs" />
-    <Compile Include="Create.UInt64.cs" />
-    <Compile Include="CreateElement.Byte.cs" />
-    <Compile Include="CreateElement.Double.cs" />
-    <Compile Include="CreateElement.Int16.cs" />
-    <Compile Include="CreateElement.Int32.cs" />
-    <Compile Include="CreateElement.Int64.cs" />
-    <Compile Include="CreateElement.SByte.cs" />
-    <Compile Include="CreateElement.Single.cs" />
-    <Compile Include="CreateElement.UInt16.cs" />
-    <Compile Include="CreateElement.UInt32.cs" />
-    <Compile Include="CreateElement.UInt64.cs" />
-    <Compile Include="CreateVector.Byte.cs" />
-    <Compile Include="CreateVector.Double.cs" />
-    <Compile Include="CreateVector.Int16.cs" />
-    <Compile Include="CreateVector.Int32.cs" />
-    <Compile Include="CreateVector.Int64.cs" />
-    <Compile Include="CreateVector.SByte.cs" />
-    <Compile Include="CreateVector.Single.cs" />
-    <Compile Include="CreateVector.UInt16.cs" />
-    <Compile Include="CreateVector.UInt32.cs" />
-    <Compile Include="CreateVector.UInt64.cs" />
-    <Compile Include="CreateScalar.Byte.cs" />
-    <Compile Include="CreateScalar.Double.cs" />
-    <Compile Include="CreateScalar.Int16.cs" />
-    <Compile Include="CreateScalar.Int32.cs" />
-    <Compile Include="CreateScalar.Int64.cs" />
-    <Compile Include="CreateScalar.SByte.cs" />
-    <Compile Include="CreateScalar.Single.cs" />
-    <Compile Include="CreateScalar.UInt16.cs" />
-    <Compile Include="CreateScalar.UInt32.cs" />
-    <Compile Include="CreateScalar.UInt64.cs" />
-    <Compile Include="CreateScalarUnsafe.Byte.cs" />
-    <Compile Include="CreateScalarUnsafe.Double.cs" />
-    <Compile Include="CreateScalarUnsafe.Int16.cs" />
-    <Compile Include="CreateScalarUnsafe.Int32.cs" />
-    <Compile Include="CreateScalarUnsafe.Int64.cs" />
-    <Compile Include="CreateScalarUnsafe.SByte.cs" />
-    <Compile Include="CreateScalarUnsafe.Single.cs" />
-    <Compile Include="CreateScalarUnsafe.UInt16.cs" />
-    <Compile Include="CreateScalarUnsafe.UInt32.cs" />
-    <Compile Include="CreateScalarUnsafe.UInt64.cs" />
-    <Compile Include="Program.Vector256.cs" />
+    <Compile Include="*.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

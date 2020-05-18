@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Collections;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
-    public static class BerConverter
+    public static partial class BerConverter
     {
         public static byte[] Encode(string format, params object[] value)
         {
@@ -27,7 +26,7 @@ namespace System.DirectoryServices.Protocols
             Debug.WriteLine("Begin encoding\n");
 
             // allocate the berelement
-            BerSafeHandle berElement = new BerSafeHandle();
+            SafeBerHandle berElement = new SafeBerHandle();
 
             int valueCount = 0;
             int error = 0;
@@ -37,7 +36,7 @@ namespace System.DirectoryServices.Protocols
                 if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n')
                 {
                     // no argument needed
-                    error = Wldap32.ber_printf_emptyarg(berElement, new string(fmt, 1));
+                    error = BerPal.PrintEmptyArgument(berElement, new string(fmt, 1));
                 }
                 else if (fmt == 't' || fmt == 'i' || fmt == 'e')
                 {
@@ -56,7 +55,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // one int argument
-                    error = Wldap32.ber_printf_int(berElement, new string(fmt, 1), (int)value[valueCount]);
+                    error = BerPal.PrintInt(berElement, new string(fmt, 1), (int)value[valueCount]);
 
                     // increase the value count
                     valueCount++;
@@ -78,7 +77,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // one int argument
-                    error = Wldap32.ber_printf_int(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0);
+                    error = BerPal.PrintInt(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0);
 
                     // increase the value count
                     valueCount++;
@@ -220,7 +219,7 @@ namespace System.DirectoryServices.Protocols
             {
                 // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
                 // deallocation, wldap has special check. So have to use IntPtr directly here.
-                error = Wldap32.ber_flatten(berElement, ref flattenptr);
+                error = BerPal.FlattenBerElement(berElement, ref flattenptr);
 
                 if (error == -1)
                 {
@@ -247,7 +246,7 @@ namespace System.DirectoryServices.Protocols
             finally
             {
                 if (flattenptr != IntPtr.Zero)
-                    Wldap32.ber_bvfree(flattenptr);
+                    BerPal.FreeBerval(flattenptr);
             }
 
             return encodingResult;
@@ -273,7 +272,7 @@ namespace System.DirectoryServices.Protocols
             UTF8Encoding utf8Encoder = new UTF8Encoding(false, true);
             berval berValue = new berval();
             ArrayList resultList = new ArrayList();
-            BerSafeHandle berElement = null;
+            SafeBerHandle berElement = null;
 
             object[] decodeResult = null;
             decodeSucceeded = false;
@@ -292,7 +291,7 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                berElement = new BerSafeHandle(berValue);
+                berElement = new SafeBerHandle(berValue);
             }
             finally
             {
@@ -307,17 +306,17 @@ namespace System.DirectoryServices.Protocols
                 char fmt = format[formatCount];
                 if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n' || fmt == 'x')
                 {
-                    error = Wldap32.ber_scanf(berElement, new string(fmt, 1));
+                    error = BerPal.ScanNext(berElement, new string(fmt, 1));
 
-                    if (error != 0)
+                    if (BerPal.IsBerDecodeError(error))
                         Debug.WriteLine("ber_scanf for {, }, [, ], n or x failed");
                 }
                 else if (fmt == 'i' || fmt == 'e' || fmt == 'b')
                 {
                     int result = 0;
-                    error = Wldap32.ber_scanf_int(berElement, new string(fmt, 1), ref result);
+                    error = BerPal.ScanNextInt(berElement, new string(fmt, 1), ref result);
 
-                    if (error == 0)
+                    if (!BerPal.IsBerDecodeError(error))
                     {
                         if (fmt == 'b')
                         {
@@ -341,7 +340,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     // return a string
                     byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', ref error);
-                    if (error == 0)
+                    if (!BerPal.IsBerDecodeError(error))
                     {
                         string s = null;
                         if (byteArray != null)
@@ -354,7 +353,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     // return berval
                     byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, ref error);
-                    if (error == 0)
+                    if (!BerPal.IsBerDecodeError(error))
                     {
                         // add result to the list
                         resultList.Add(byteArray);
@@ -362,26 +361,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (fmt == 'B')
                 {
-                    // return a bitstring and its length
-                    IntPtr ptrResult = IntPtr.Zero;
-                    int length = 0;
-                    error = Wldap32.ber_scanf_bitstring(berElement, "B", ref ptrResult, ref length);
-
-                    if (error == 0)
-                    {
-                        byte[] byteArray = null;
-                        if (ptrResult != IntPtr.Zero)
-                        {
-                            byteArray = new byte[length];
-                            Marshal.Copy(ptrResult, byteArray, 0, length);
-                        }
-                        resultList.Add(byteArray);
-                    }
-                    else
-                        Debug.WriteLine("ber_scanf for format character 'B' failed");
-
-                    // no need to free memory as wldap32 returns the original pointer instead of a duplicating memory pointer that
-                    // needs to be freed
+                    error = DecodeBitStringHelper(resultList, berElement);
                 }
                 else if (fmt == 'v')
                 {
@@ -390,7 +370,7 @@ namespace System.DirectoryServices.Protocols
                     string[] stringArray = null;
 
                     byteArrayresult = DecodingMultiByteArrayHelper(berElement, 'V', ref error);
-                    if (error == 0)
+                    if (!BerPal.IsBerDecodeError(error))
                     {
                         if (byteArrayresult != null)
                         {
@@ -416,7 +396,7 @@ namespace System.DirectoryServices.Protocols
                     byte[][] result = null;
 
                     result = DecodingMultiByteArrayHelper(berElement, fmt, ref error);
-                    if (error == 0)
+                    if (!BerPal.IsBerDecodeError(error))
                     {
                         resultList.Add(result);
                     }
@@ -427,7 +407,7 @@ namespace System.DirectoryServices.Protocols
                     throw new ArgumentException(SR.BerConverterUndefineChar);
                 }
 
-                if (error != 0)
+                if (BerPal.IsBerDecodeError(error))
                 {
                     // decode failed, just return
                     return decodeResult;
@@ -444,7 +424,7 @@ namespace System.DirectoryServices.Protocols
             return decodeResult;
         }
 
-        private static int EncodingByteArrayHelper(BerSafeHandle berElement, byte[] tempValue, char fmt)
+        private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt)
         {
             int error = 0;
 
@@ -454,18 +434,18 @@ namespace System.DirectoryServices.Protocols
                 IntPtr tmp = Marshal.AllocHGlobal(tempValue.Length);
                 Marshal.Copy(tempValue, 0, tmp, tempValue.Length);
                 HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
-
-                error = Wldap32.ber_printf_bytearray(berElement, new string(fmt, 1), memHandle, tempValue.Length);
+                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, tempValue.Length);
             }
             else
             {
-                error = Wldap32.ber_printf_bytearray(berElement, new string(fmt, 1), new HGlobalMemHandle(IntPtr.Zero), 0);
+                HGlobalMemHandle memHandle = new HGlobalMemHandle(HGlobalMemHandle._dummyPointer);
+                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, 0);
             }
 
             return error;
         }
 
-        private static byte[] DecodingByteArrayHelper(BerSafeHandle berElement, char fmt, ref int error)
+        private static byte[] DecodingByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
         {
             error = 0;
             IntPtr result = IntPtr.Zero;
@@ -474,11 +454,11 @@ namespace System.DirectoryServices.Protocols
 
             // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
             // deallocation, wldap has special check. So have to use IntPtr directly here.
-            error = Wldap32.ber_scanf_ptr(berElement, new string(fmt, 1), ref result);
+            error = BerPal.ScanNextPtr(berElement, new string(fmt, 1), ref result);
 
             try
             {
-                if (error == 0)
+                if (!BerPal.IsBerDecodeError(error))
                 {
                     if (result != IntPtr.Zero)
                     {
@@ -494,17 +474,17 @@ namespace System.DirectoryServices.Protocols
             finally
             {
                 if (result != IntPtr.Zero)
-                    Wldap32.ber_bvfree(result);
+                    BerPal.FreeBerval(result);
             }
 
             return byteArray;
         }
 
-        private static int EncodingMultiByteArrayHelper(BerSafeHandle berElement, byte[][] tempValue, char fmt)
+        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt)
         {
             IntPtr berValArray = IntPtr.Zero;
             IntPtr tempPtr = IntPtr.Zero;
-            SafeBerval[] managedBerVal = null;
+            berval[] managedBervalArray = null;
             int error = 0;
 
             try
@@ -513,31 +493,26 @@ namespace System.DirectoryServices.Protocols
                 {
                     int i = 0;
                     berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
-                    int structSize = Marshal.SizeOf(typeof(SafeBerval));
-                    managedBerVal = new SafeBerval[tempValue.Length];
+                    int structSize = Marshal.SizeOf(typeof(berval));
+                    managedBervalArray = new berval[tempValue.Length];
 
                     for (i = 0; i < tempValue.Length; i++)
                     {
                         byte[] byteArray = tempValue[i];
 
                         // construct the managed berval
-                        managedBerVal[i] = new SafeBerval();
+                        managedBervalArray[i] = new berval();
 
-                        if (byteArray == null)
+                        if (byteArray != null)
                         {
-                            managedBerVal[i].bv_len = 0;
-                            managedBerVal[i].bv_val = IntPtr.Zero;
-                        }
-                        else
-                        {
-                            managedBerVal[i].bv_len = byteArray.Length;
-                            managedBerVal[i].bv_val = Marshal.AllocHGlobal(byteArray.Length);
-                            Marshal.Copy(byteArray, 0, managedBerVal[i].bv_val, byteArray.Length);
+                            managedBervalArray[i].bv_len = byteArray.Length;
+                            managedBervalArray[i].bv_val = Marshal.AllocHGlobal(byteArray.Length);
+                            Marshal.Copy(byteArray, 0, managedBervalArray[i].bv_val, byteArray.Length);
                         }
 
                         // allocate memory for the unmanaged structure
                         IntPtr valPtr = Marshal.AllocHGlobal(structSize);
-                        Marshal.StructureToPtr(managedBerVal[i], valPtr, false);
+                        Marshal.StructureToPtr(managedBervalArray[i], valPtr, false);
 
                         tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, valPtr);
@@ -547,9 +522,7 @@ namespace System.DirectoryServices.Protocols
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
-                error = Wldap32.ber_printf_berarray(berElement, new string(fmt, 1), berValArray);
-
-                GC.KeepAlive(managedBerVal);
+                error = BerPal.PrintBerArray(berElement, new string(fmt, 1), berValArray);
             }
             finally
             {
@@ -563,12 +536,22 @@ namespace System.DirectoryServices.Protocols
                     }
                     Marshal.FreeHGlobal(berValArray);
                 }
+                if (managedBervalArray != null)
+                {
+                    foreach (berval managedBerval in managedBervalArray)
+                    {
+                        if (managedBerval.bv_val != IntPtr.Zero)
+                        {
+                            Marshal.FreeHGlobal(managedBerval.bv_val);
+                        }
+                    }
+                }
             }
 
             return error;
         }
 
-        private static byte[][] DecodingMultiByteArrayHelper(BerSafeHandle berElement, char fmt, ref int error)
+        private static byte[][] DecodingMultiByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
         {
             error = 0;
             // several berval
@@ -580,9 +563,9 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                error = Wldap32.ber_scanf_ptr(berElement, new string(fmt, 1), ref ptrResult);
+                error = BerPal.ScanNextPtr(berElement, new string(fmt, 1), ref ptrResult);
 
-                if (error == 0)
+                if (!BerPal.IsBerDecodeError(error))
                 {
                     if (ptrResult != IntPtr.Zero)
                     {
@@ -615,7 +598,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (ptrResult != IntPtr.Zero)
                 {
-                    Wldap32.ber_bvecfree(ptrResult);
+                    BerPal.FreeBervalArray(ptrResult);
                 }
             }
 

@@ -124,7 +124,7 @@ namespace Amd64InstrDecode
     // Instruction which change forms based on modrm.reg are encoded in this extension table.
     // Since there are 8 modrm.reg values, they occur is groups of 8.
     // Each group is referenced from the other tables below using Extension|(index >> 3).
-    static InstrForm instrFormExtension[153]
+    static const InstrForm instrFormExtension[153]
     {
         MOnly_M4B,                               // Primary:0xd90/0 fld
         None,
@@ -280,7 +280,7 @@ namespace Amd64InstrDecode
         MOnly_M8B,                               // Secondary:0xc73/7 vmptrst
     };
 
-    static InstrForm instrFormPrimary[256]
+    static const InstrForm instrFormPrimary[256]
     {
         M1st_M1B,                                // 0x000 add
         M1st_WP_M8B_or_M4B_or_M2B,               // 0x010 add
@@ -540,7 +540,7 @@ namespace Amd64InstrDecode
         InstrForm(int(Extension)|0x06),          // 0xff0
     };
 
-    static InstrForm instrForm3DNow[256]
+    static const InstrForm instrForm3DNow[256]
     {
         MOp_M8B_I1B,                             // 0x000
         MOp_M8B_I1B,                             // 0x010
@@ -800,7 +800,7 @@ namespace Amd64InstrDecode
         MOp_M8B_I1B,                             // 0xff0
     };
 
-    static InstrForm instrFormSecondary[1024]
+    static const InstrForm instrFormSecondary[1024]
     {
         MOnly_M2B,                               // 0x000 lldt,ltr,sldt,str,verr,verw
         MOnly_M2B,                               // 0x001 lldt,ltr,sldt,str,verr,verw
@@ -1828,7 +1828,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static InstrForm instrFormF38[1024]
+    static const InstrForm instrFormF38[1024]
     {
         MOp_M8B,                                 // 0x000 pshufb
         MOp_M16B,                                // 0x001 pshufb
@@ -2856,7 +2856,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static InstrForm instrFormF3A[1024]
+    static const InstrForm instrFormF3A[1024]
     {
         None,                                    // 0x000
         None,                                    // 0x001
@@ -3884,7 +3884,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static InstrForm instrFormVex1[1024]
+    static const InstrForm instrFormVex1[1024]
     {
         None,                                    // 0x000
         None,                                    // 0x001
@@ -4912,7 +4912,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static InstrForm instrFormVex2[1024]
+    static const InstrForm instrFormVex2[1024]
     {
         None,                                    // 0x000
         MOp_L_M32B_or_M16B,                      // 0x001 vpshufb
@@ -5940,7 +5940,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static InstrForm instrFormVex3[1024]
+    static const InstrForm instrFormVex3[1024]
     {
         None,                                    // 0x000
         MOp_M32B_I1B,                            // 0x001 vpermq
@@ -6968,7 +6968,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static InstrForm instrFormXOP8[1024]
+    static const InstrForm instrFormXOP8[1024]
     {
         None,                                    // 0x000
         None,                                    // 0x001
@@ -7996,7 +7996,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static InstrForm instrFormXOP9[1024]
+    static const InstrForm instrFormXOP9[1024]
     {
         None,                                    // 0x000
         None,                                    // 0x001
@@ -9024,7 +9024,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static InstrForm instrFormXOPA[1024]
+    static const InstrForm instrFormXOPA[1024]
     {
         None,                                    // 0x000
         None,                                    // 0x001

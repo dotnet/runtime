@@ -9,13 +9,6 @@ using System.Threading;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System.Runtime.CompilerServices
 {
     internal static unsafe class CastHelpers
@@ -113,7 +106,7 @@ namespace System.Runtime.CompilerServices
             {
                 ref CastCacheEntry pEntry = ref Element(ref tableData, index);
 
-                // must read in this order: version -> entry parts -> version
+                // must read in this order: version -> [entry parts] -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
                 int version = Volatile.Read(ref pEntry._version);
                 nuint entrySource = pEntry._source;
@@ -124,12 +117,19 @@ namespace System.Runtime.CompilerServices
 
                 if (entrySource == source)
                 {
-                    nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
+                    nuint entryTargetAndResult = pEntry._targetAndResult;
                     // target never has its lower bit set.
                     // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
                     entryTargetAndResult ^= target;
                     if (entryTargetAndResult <= 1)
                     {
+                        // make sure 'version' is loaded after 'source' and 'targetAndResults'
+                        //
+                        // We can either:
+                        // - use acquires for both _source and _targetAndResults or
+                        // - issue a load barrier before reading _version
+                        // benchmarks on available hardware show that use of a read barrier is cheaper.
+                        Interlocked.ReadMemoryBarrier();
                         if (version != pEntry._version)
                         {
                             // oh, so close, the entry is in inconsistent state.

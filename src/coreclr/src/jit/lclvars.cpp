@@ -625,7 +625,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
             // If the argType is a struct, then check if it is an HFA
             if (varTypeIsStruct(argType))
             {
-                // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF.
+                // hfaType is set to float, double, or SIMD type if it is an HFA, otherwise TYP_UNDEF
                 hfaType  = GetHfaType(typeHnd);
                 isHfaArg = varTypeIsValidHfaType(hfaType);
             }
@@ -644,9 +644,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 
         if (isHfaArg)
         {
-            // We have an HFA argument, so from here on out treat the type as a float, double or vector.
-            // The orginal struct type is available by using origArgType
-            // We also update the cSlots to be the number of float/double fields in the HFA
+            // We have an HFA argument, so from here on out treat the type as a float, double, or vector.
+            // The orginal struct type is available by using origArgType.
+            // We also update the cSlots to be the number of float/double/vector fields in the HFA.
             argType = hfaType;
             varDsc->SetHfaType(hfaType);
             cSlots = varDsc->lvHfaSlots();
@@ -2615,10 +2615,11 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
             }
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HFA
-            // for structs that are small enough, we check and set lvIsHfa and lvHfaTypeIsFloat
+            // For structs that are small enough, we check and set HFA element type
             if (varDsc->lvExactSize <= MAX_PASS_MULTIREG_BYTES)
             {
-                var_types hfaType = GetHfaType(typeHnd); // set to float or double if it is an HFA, otherwise TYP_UNDEF
+                // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
+                var_types hfaType = GetHfaType(typeHnd);
                 if (varTypeIsValidHfaType(hfaType))
                 {
                     varDsc->SetHfaType(hfaType);
@@ -2671,7 +2672,52 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         compGSReorderStackLayout = true;
         varDsc->lvIsUnsafeBuffer = true;
     }
+#ifdef DEBUG
+    if (JitConfig.EnableExtraSuperPmiQueries())
+    {
+        makeExtraStructQueries(typeHnd, 2);
+    }
+#endif // DEBUG
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// makeExtraStructQueries: Query the information for the given struct handle.
+//
+// Arguments:
+//    structHandle -- The handle for the struct type we're querying.
+//    level        -- How many more levels to recurse.
+//
+void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level)
+{
+    if (level <= 0)
+    {
+        return;
+    }
+    assert(structHandle != NO_CLASS_HANDLE);
+    (void)typGetObjLayout(structHandle);
+    unsigned fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
+    impNormStructType(structHandle);
+#ifdef TARGET_ARMARCH
+    GetHfaType(structHandle);
+#endif
+    for (unsigned int i = 0; i < fieldCnt; i++)
+    {
+        CORINFO_FIELD_HANDLE fieldHandle      = info.compCompHnd->getFieldInClass(structHandle, i);
+        unsigned             fldOffset        = info.compCompHnd->getFieldOffset(fieldHandle);
+        CORINFO_CLASS_HANDLE fieldClassHandle = NO_CLASS_HANDLE;
+        CorInfoType          fieldCorType     = info.compCompHnd->getFieldType(fieldHandle, &fieldClassHandle);
+        var_types            fieldVarType     = JITtype2varType(fieldCorType);
+        if (fieldClassHandle != NO_CLASS_HANDLE)
+        {
+            if (varTypeIsStruct(fieldVarType))
+            {
+                makeExtraStructQueries(fieldClassHandle, level - 1);
+            }
+        }
+    }
+}
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // lvaSetStructUsedAsVarArg: update hfa information for vararg struct args

@@ -112,6 +112,7 @@
   </Target>
 
   <UsingTask TaskName="GenerateCurrentVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+  <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <Target Name="GenerateMsiVersionString">
     <PropertyGroup>
