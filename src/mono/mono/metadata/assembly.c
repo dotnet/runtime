@@ -1712,8 +1712,9 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	if (reference)
 		goto leave;
 
+	// Looking up corlib resources here can cause an infinite loop
 	// See: https://github.com/dotnet/coreclr/blob/0a762eb2f3a299489c459da1ddeb69e042008f07/src/vm/appdomain.cpp#L5178-L5239
-	if (!(strcmp (aname->name, MONO_ASSEMBLY_CORLIB_NAME) == 0 && is_satellite) && postload) {
+	if (!(strcmp (aname->name, MONO_ASSEMBLY_CORLIB_RESOURCE_NAME) == 0 && is_satellite) && postload) {
 		reference = mono_assembly_invoke_search_hook_internal (alc, requesting, aname, FALSE, TRUE);
 		if (reference)
 			goto leave;

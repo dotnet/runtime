@@ -607,7 +607,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void AssemblyResolve_IsNotCalledForCoreLibResources()
         {
             RemoteExecutor.Invoke(() =>

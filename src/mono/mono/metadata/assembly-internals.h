@@ -13,8 +13,10 @@
 
 #ifndef ENABLE_NETCORE
 #define MONO_ASSEMBLY_CORLIB_NAME "mscorlib"
+#define MONO_ASSEMBLY_CORLIB_RESOURCE_NAME "mscorlib.resources"
 #else
 #define MONO_ASSEMBLY_CORLIB_NAME "System.Private.CoreLib"
+#define MONO_ASSEMBLY_CORLIB_RESOURCE_NAME "System.Private.CoreLib.resources"
 #endif
 
 /* Flag bits for mono_assembly_names_equal_flags (). */
