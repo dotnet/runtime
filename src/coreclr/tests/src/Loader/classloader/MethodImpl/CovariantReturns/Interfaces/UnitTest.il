@@ -54,6 +54,18 @@
 .class public auto ansi beforefieldinit C                   implements IUnused1, IUnused2, IC { }
 .class public auto ansi beforefieldinit GenRetType<X,Y>     implements IUnused1, IUnused2, class IGenRetType<!X,!Y> { }
 
+.class public auto ansi beforefieldinit Base<T> {}
+.class public auto ansi beforefieldinit Derived extends class Base<class Derived> {}
+.class public auto ansi beforefieldinit Derived2 extends class Base<class Derived2> {}
+
+.class interface public auto ansi abstract IVariant<+ V>
+{
+  .method public hidebysig newslot virtual instance void Test()
+  {
+    ret
+  }
+}
+
 // ========================================================================================
 // Main base type with various virtual methods that will be overriden later
 // ========================================================================================
@@ -122,6 +134,15 @@
   {
     ldarg.1
     ldstr "IGenRetType<!A, class IDictionary<string,!B>> GenBaseType.MyGenFunc()"
+    stind.ref
+    ldnull
+    ret
+  }
+
+  .method public hidebysig newslot virtual instance class IVariant<class Base<class Derived>> MultiLevelGenericVariantFunc(string&)
+  {
+    ldarg.1
+    ldstr "IVariant<class Base<class Derived>> GenBaseType.MultiLevelGenericVariantFunc()"
     stind.ref
     ldnull
     ret
@@ -404,6 +425,17 @@
     ldnull
     ret
   }
+
+  .method public hidebysig newslot virtual instance class IVariant<class Derived> MultiLevelGenericVariantFunc(string&)
+  {
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .override method instance class IVariant<class Base<class Derived>> class GenBaseType<!U,!V>::MultiLevelGenericVariantFunc(string&)
+    ldarg.1
+    ldstr "class IVariant<class Derived> GenMoreDerived.MultiLevelGenericVariantFunc()"
+    stind.ref
+    ldnull
+    ret
+  }
 }
 
 
@@ -437,6 +469,19 @@
   .method public hidebysig newslot virtual instance class INonGenThroughGen2<object,int32,string> NonGenThroughGenFunc(string& res)
   {
     .override method instance class IB class GenBaseType<!Q,!W>::NonGenThroughGenFunc(string& res)
+    ldnull
+    ret
+  }
+}
+
+.class public auto ansi beforefieldinit Invalid3<Q,W> extends class GenTestType<!Q,!W,!Q,!W>
+{
+  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed { ret }
+
+  .method public hidebysig newslot virtual instance class IVariant<class Derived2> MultiLevelGenericVariantFunc(string&)
+  {
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .override method instance class IVariant<class Base<class Derived>> class GenBaseType<!Q,!W>::MultiLevelGenericVariantFunc(string&)
     ldnull
     ret
   }
@@ -751,6 +796,26 @@
     ret
   }
 
+  .method public static bool RunTest9() noinlining
+  {
+    .locals init (string res1)
+    newobj     instance void class GenMoreDerived<int32,object,int32,object>::.ctor()
+    ldloca.s   0
+    callvirt   instance class IVariant<class Derived> class GenMoreDerived<int32,object,int32,object>::MultiLevelGenericVariantFunc(string&)
+    pop
+
+    ldstr "class IVariant<class Derived> GenMoreDerived.MultiLevelGenericVariantFunc()"
+    ldloc.0
+    ldnull
+    ldnull
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
+
+    ret
+  }
+
+
+
   // ============== Test using GenMiddleType ============== //
   // These test methods will callvirt each method using:
   //    1) The signature from GetBaseType
@@ -1062,6 +1127,13 @@
     ret
   }
 
+  .method public static void RunTest_Invalid3() noinlining
+  {
+    newobj     instance void class Invalid3<int32,object>::.ctor()
+    callvirt   instance class IVariant<class Derived2> class Invalid3<int32,object>::MultiLevelGenericVariantFunc()
+    pop
+    ret
+  }
   // ===================================================================================== //
 
   .method public hidebysig static int32  Main( string[] args) cil managed
@@ -1117,6 +1189,12 @@
 
     T8:
     call bool CMain::RunTest8()
+    brtrue.s T9
+    ldc.i4.0
+    stloc.0
+
+    T9:
+    call bool CMain::RunTest9()
     brtrue.s M1
     ldc.i4.0
     stloc.0
@@ -1213,13 +1291,31 @@
         stloc.0
         ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid2."
         call       void [System.Console]System.Console::WriteLine(string)
-        leave.s DONE
+        leave.s INVALID3
     }
     catch [mscorlib]System.TypeLoadException
     {   
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
         call       void [System.Console]System.Console::WriteLine(object)        
+        leave.s INVALID3
+    }
+
+    INVALID3:
+    .try
+    {
+        call void CMain::RunTest_Invalid3()
+        ldc.i4.0
+        stloc.0
+        ldstr      "FAIL: did not catch expected TypeLoadException when loading DerivedClassFail1."
+        call       void [System.Console]System.Console::WriteLine(string)
+        leave.s DONE
+    }
+    catch [mscorlib]System.TypeLoadException
+    {
+        ldstr "Caught expected TypeLoadException:"
+        call       void [System.Console]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s DONE
     }
 
