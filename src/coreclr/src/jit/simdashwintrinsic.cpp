@@ -189,7 +189,13 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     // We want to resolve and populate the handle cache for this type even
     // if it isn't the basis for anything carried on the node.
     baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
-    assert(simdSize != 0);
+
+    if (simdSize == 0)
+    {
+        // We get here for a devirtualization of IEquatable`1.Equals
+        assert(!isSIMDClass(clsHnd));
+        return nullptr;
+    }
 
     if (retType == TYP_STRUCT)
     {
