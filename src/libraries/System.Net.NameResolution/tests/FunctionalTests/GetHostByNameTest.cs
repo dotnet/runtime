@@ -13,8 +13,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.NameResolution.Tests
 {
-
-
     public class GetHostByNameTest
     {
         private readonly ITestOutputHelper _output;

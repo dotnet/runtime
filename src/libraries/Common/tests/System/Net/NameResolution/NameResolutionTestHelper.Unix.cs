@@ -14,8 +14,19 @@ namespace System.Net.NameResolution.Tests
         /// After collecting enough information we shall alter call sites to use throwOnFailure:false,
         /// since the failure does not indicate an error within the NCL product code.
         /// </summary>
-        public static bool EnsureNameToAddressWorks(string hostName, ITestOutputHelper? testOutput, bool throwOnFailure)
+        public static unsafe bool EnsureNameToAddressWorks(string hostName, ITestOutputHelper? testOutput, bool throwOnFailure)
         {
+            if (hostName == "")
+            {
+                // For hostName == "" we should be able to successfully call gethostname(char *name, size_t len) on Unix
+                // We use the shim from pal_networking.c (SystemNative_GetHostName)
+                byte* name = stackalloc byte[256];
+                int res = GetHostName(name, 256);
+                if (res != 0) throw new Exception("GetHostName failed.");
+                name[255] = 0;
+                hostName = Marshal.PtrToStringAnsi((IntPtr)name)!;
+            }
+
             IntPtr hostEntry = gethostbyname(hostName);
             if (hostEntry == IntPtr.Zero)
             {
@@ -68,5 +79,8 @@ namespace System.Net.NameResolution.Tests
 
         [DllImport("libc")]
         private static extern IntPtr gethostbyname(string name);
+
+        [DllImport("libSystem.Native", EntryPoint = "SystemNative_GetHostName", SetLastError = true)]
+        private static extern unsafe int GetHostName(byte* name, int nameLength);
     }
 }
