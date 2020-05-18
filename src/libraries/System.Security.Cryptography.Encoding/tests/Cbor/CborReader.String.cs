@@ -12,10 +12,24 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
+        // Implements major type 2,3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+
         // stores a reusable List allocation for keeping ranges in the buffer
         private List<(int Offset, int Length)>? _indefiniteLengthStringRangeAllocation = null;
 
-        // Implements major type 2 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+        /// <summary>
+        ///   Reads the next data item as a byte string (major type 2).
+        ///   Both definite and indefinite-length strings are supported.
+        /// </summary>
+        /// <returns>The decoded byte array.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   string encoding not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
         public byte[] ReadByteString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
@@ -40,6 +54,26 @@ namespace System.Formats.Cbor
             return result;
         }
 
+        /// <summary>
+        ///   Reads the next data item as a byte string (major type 2).
+        ///   Both definite and indefinite-length strings are supported.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="bytesWritten">
+        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
+        /// </param>
+        /// <returns>
+        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   length to receive the value, otherwise <c>false</c> and the reader does not advance.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   string encoding not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
         public bool TryReadByteString(Span<byte> destination, out int bytesWritten)
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
@@ -72,7 +106,69 @@ namespace System.Formats.Cbor
             return true;
         }
 
-        // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+        /// <summary>
+        ///   Begin reading an indefinite-length byte string (major type 2)
+        /// </summary>
+        /// <returns>The decoded byte array.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   indefinite-length strings not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
+        public void ReadStartByteString()
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
+
+            if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
+            {
+                throw new InvalidOperationException(SR.Cbor_Reader_NotIndefiniteLengthString);
+            }
+
+            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+            }
+
+            AdvanceBuffer(1);
+            PushDataItem(CborMajorType.ByteString, definiteLength: null);
+        }
+
+        /// <summary>
+        ///   End reading an indefinite-length byte string (major type 2)
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does not have the correct major type --OR--
+        ///   the current context is not an indefinite-length string
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   indefinite-length strings not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
+        public void ReadEndByteString()
+        {
+            ValidateNextByteIsBreakByte();
+            PopDataItem(CborMajorType.ByteString);
+            AdvanceDataItemCounters();
+            AdvanceBuffer(1);
+        }
+
+        /// <summary>
+        ///   Reads the next data item as a UTF-8 text string (major type 3).
+        ///   Both definite and indefinite-length strings are supported.
+        /// </summary>
+        /// <returns>The decoded string.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   string encoding not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
         public string ReadTextString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
@@ -108,6 +204,26 @@ namespace System.Formats.Cbor
             return result;
         }
 
+        /// <summary>
+        ///   Reads the next data item as a UTF-8 text string (major type 3).
+        ///   Both definite and indefinite-length strings are supported.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="bytesWritten">
+        ///   On success, receives the number of chars written to <paramref name="destination"/>.
+        /// </param>
+        /// <returns>
+        ///   <c>true</c> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   length to receive the value, otherwise <c>false</c> and the reader does not advance.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   string encoding not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
         public bool TryReadTextString(Span<char> destination, out int charsWritten)
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
@@ -144,6 +260,17 @@ namespace System.Formats.Cbor
             return true;
         }
 
+        /// <summary>
+        ///   Begin reading an indefinite-length UTF-8 text string (major type 3)
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   indefinite-length strings not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
         public void ReadStartTextString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
@@ -162,36 +289,22 @@ namespace System.Formats.Cbor
             PushDataItem(CborMajorType.TextString, definiteLength: null);
         }
 
+        /// <summary>
+        ///   End reading an indefinite-length UTF-8 text string (major type 3)
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the next value does not have the correct major type --OR--
+        ///   the current context is not an indefinite-length string
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   indefinite-length strings not valid under the current conformance level --OR--
+        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        /// </exception>
         public void ReadEndTextString()
         {
             ValidateNextByteIsBreakByte();
             PopDataItem(CborMajorType.TextString);
-            AdvanceDataItemCounters();
-            AdvanceBuffer(1);
-        }
-
-        public void ReadStartByteString()
-        {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
-
-            if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
-            {
-                throw new InvalidOperationException(SR.Cbor_Reader_NotIndefiniteLengthString);
-            }
-
-            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
-            {
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
-            }
-
-            AdvanceBuffer(1);
-            PushDataItem(CborMajorType.ByteString, definiteLength: null);
-        }
-
-        public void ReadEndByteString()
-        {
-            ValidateNextByteIsBreakByte();
-            PopDataItem(CborMajorType.ByteString);
             AdvanceDataItemCounters();
             AdvanceBuffer(1);
         }
