@@ -1139,13 +1139,24 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
+    GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
+
     if (op2->IsIntegralConstVector(0) && comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
     {
         // On SSE4.1 or higher we can optimize comparisons against zero to
         // just use PTEST. We can't support it for floating-point, however,
         // as it has both +0.0 and -0.0 where +0.0 == -0.0
 
-        GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
+        node->gtOp1 = op1;
+        BlockRange().Remove(op2);
+
+        LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+        ReplaceWithLclVar(op1Use);
+        op1 = node->gtOp1;
+
+        op2 = comp->gtClone(op1);
+        BlockRange().InsertAfter(op1, op2);
+        node->gtOp2 = op2;
 
         if (simdSize == 32)
         {
@@ -1320,6 +1331,11 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     node->gtType = TYP_INT;
     node->gtOp1  = msk;
     node->gtOp2  = mskCns;
+
+    GenTree* cc = LowerNodeCC(node, cmpCnd);
+
+    node->gtType = TYP_VOID;
+    node->ClearUnusedValue();
 
     LowerNode(node);
 }

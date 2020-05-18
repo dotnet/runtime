@@ -482,11 +482,14 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr)
 {
     GenTree* arg = nullptr;
-    if (argType == TYP_STRUCT)
+    if (varTypeIsStruct(argType))
     {
-        unsigned int argSizeBytes;
-        var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
-        argType           = getSIMDTypeForSize(argSizeBytes);
+        if (!varTypeIsSIMD(argType))
+        {
+            unsigned int argSizeBytes;
+            var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
+            argType           = getSIMDTypeForSize(argSizeBytes);
+        }
         assert(varTypeIsSIMD(argType));
         arg = impSIMDPopStack(argType, expectAddr);
         assert(varTypeIsSIMD(arg->TypeGet()));

@@ -10,12 +10,12 @@
 static const SimdAsHWIntrinsicInfo simdAsHWIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define SIMD_AS_HWINTRINSIC(classId, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
-    {NI_##classId##_##name, #name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
+#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
+    {NI_##classId##_##id, name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
 #include "simdashwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
-#define SIMD_AS_HWINTRINSIC(classId, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
-    {NI_##classId##_##name, #name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
+#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
+    {NI_##classId##_##id, name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
 #include "simdashwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
@@ -65,6 +65,15 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
         return NI_Illegal;
     }
 
+    unsigned numArgs          = sig->numArgs;
+    bool     isInstanceMethod = false;
+
+    if (sig->hasThis())
+    {
+        numArgs++;
+        isInstanceMethod = true;
+    }
+
     for (int i = 0; i < (NI_SIMD_AS_HWINTRINSIC_END - NI_SIMD_AS_HWINTRINSIC_START - 1); i++)
     {
         const SimdAsHWIntrinsicInfo& intrinsicInfo = simdAsHWIntrinsicInfoArray[i];
@@ -74,12 +83,12 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
             continue;
         }
 
-        if (sig->numArgs != static_cast<unsigned>(intrinsicInfo.numArgs))
+        if (numArgs != static_cast<unsigned>(intrinsicInfo.numArgs))
         {
             continue;
         }
 
-        if (sig->hasThis() != SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsicInfo.id))
+        if (isInstanceMethod != SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsicInfo.id))
         {
             continue;
         }
@@ -164,7 +173,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 {
     assert(!mustExpand);
 
-    CORINFO_CLASS_HANDLE argClass;
+    CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
 
     if (!featureSIMD)
     {
@@ -193,8 +202,22 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         baseType = getBaseTypeAndSizeOfSIMDType(argClass, &simdSize);
     }
 
-    if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (sig->numArgs != 0))
+    unsigned numArgs          = sig->numArgs;
+    bool     isInstanceMethod = false;
+
+    if (sig->hasThis())
     {
+        assert(SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic));
+        numArgs++;
+
+        isInstanceMethod = true;
+        argClass         = clsHnd;
+    }
+
+    if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0))
+    {
+        assert(!isInstanceMethod);
+
         // We need to fixup the clsHnd in the case we are an intrinsic on Vector
         // The first argument will be the appropriate Vector<T> handle to use
         clsHnd = info.compCompHnd->getArgClass(sig, sig->args);
@@ -250,9 +273,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
 
-    bool isInstanceMethod = SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic);
-
-    switch (sig->numArgs)
+    switch (numArgs)
     {
         case 0:
         {
@@ -262,7 +283,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
         case 1:
         {
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
@@ -271,11 +293,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
         case 2:
         {
-            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
 
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
             if (SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic))
@@ -317,19 +340,31 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     assert(retType != TYP_UNKNOWN);
     assert(varTypeIsArithmetic(baseType));
     assert(simdSize != 0);
-    assert(varTypeIsSIMD(getSIMDTypeForSize(simdSize)));
     assert(SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType) == intrinsic);
 
-    CORINFO_ARG_LIST_HANDLE argList = sig->args;
-    var_types               argType = TYP_UNKNOWN;
-    CORINFO_CLASS_HANDLE    argClass;
+    var_types simdType = getSIMDTypeForSize(simdSize);
+    assert(varTypeIsSIMD(simdType));
+
+    CORINFO_ARG_LIST_HANDLE argList  = sig->args;
+    var_types               argType  = TYP_UNKNOWN;
+    CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
 
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
     GenTree* op3 = nullptr;
 
     SimdAsHWIntrinsicClassId classId          = SimdAsHWIntrinsicInfo::lookupClassId(intrinsic);
-    bool                     isInstanceMethod = SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic);
+    unsigned                 numArgs          = sig->numArgs;
+    bool                     isInstanceMethod = false;
+
+    if (sig->hasThis())
+    {
+        assert(SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic));
+        numArgs++;
+
+        isInstanceMethod = true;
+        argClass         = clsHnd;
+    }
 
 #if defined(TARGET_XARCH)
     bool isVectorT256 = (SimdAsHWIntrinsicInfo::lookupClassId(intrinsic) == SimdAsHWIntrinsicClassId::VectorT256);
@@ -349,7 +384,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 #endif
 
-    switch (sig->numArgs)
+    switch (numArgs)
     {
         case 1:
         {
@@ -372,7 +407,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 return op1;
             }
 
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
@@ -473,11 +509,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 2:
         {
-            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
 
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
@@ -721,8 +758,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 3:
         {
-            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
-            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
             op3     = getArgForHWIntrinsic(argType, argClass);
@@ -730,7 +767,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = getArgForHWIntrinsic(argType, argClass);
 
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));

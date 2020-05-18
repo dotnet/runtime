@@ -133,6 +133,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="other">The Vector4 to compare this instance to.</param>
         /// <returns>True if the other Vector4 is equal to this instance; False otherwise.</returns>
+        [Intrinsic]
         public readonly bool Equals(Vector4 other)
         {
             return this == other;

@@ -88,6 +88,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="other">The Vector2 to compare this instance to.</param>
         /// <returns>True if the other Vector2 is equal to this instance; False otherwise.</returns>
+        [Intrinsic]
         public readonly bool Equals(Vector2 other)
         {
             return this == other;

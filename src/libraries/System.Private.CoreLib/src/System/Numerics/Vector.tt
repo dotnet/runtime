@@ -330,6 +330,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
+        [Intrinsic]
         public readonly bool Equals(Vector<T> other)
         {
             return this == other;

@@ -665,7 +665,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
     BlockRange().InsertAfter(msk, zroCns);
 
-    GenTree* val = comp->gtNewSimdAsHWIntrinsicNode(simdType, msk, zroCns, NI_AdvSimd_Extract, TYP_UBYTE, simdSize);
+    GenTree* val = comp->gtNewSimdAsHWIntrinsicNode(TYP_UBYTE, msk, zroCns, NI_AdvSimd_Extract, TYP_UBYTE, simdSize);
     BlockRange().InsertAfter(zroCns, val);
 
     zroCns = comp->gtNewIconNode(0, TYP_INT);
