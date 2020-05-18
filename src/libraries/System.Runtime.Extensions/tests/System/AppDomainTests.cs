@@ -670,7 +670,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void ResourceResolve()
         {
             RemoteExecutor.Invoke(() => {
