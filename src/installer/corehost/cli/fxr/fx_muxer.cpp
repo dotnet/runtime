@@ -66,27 +66,17 @@ namespace
     }
 }
 
-template<typename T>
 int load_hostpolicy(
     const pal::string_t& lib_dir,
     pal::dll_t* h_host,
-    hostpolicy_contract_t &hostpolicy_contract,
-    const char *main_entry_symbol,
-    T* main_fn)
+    hostpolicy_contract_t& hostpolicy_contract)
 {
-    assert(main_entry_symbol != nullptr && main_fn != nullptr);
-
     int rc = hostpolicy_resolver::load(lib_dir, h_host, hostpolicy_contract);
     if (rc != StatusCode::Success)
     {
         trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, lib_dir.c_str());
         return rc;
     }
-
-    // Obtain entrypoint symbol
-    *main_fn = reinterpret_cast<T>(pal::get_symbol(*h_host, main_entry_symbol));
-    if (*main_fn == nullptr)
-        return StatusCode::CoreHostEntryPointFailure;
 
     return StatusCode::Success;
 }
@@ -114,7 +104,18 @@ static int execute_app(
     hostpolicy_contract_t hostpolicy_contract{};
     corehost_main_fn host_main = nullptr;
 
-    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract, "corehost_main", &host_main);
+    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract);
+
+    // Obtain entrypoint symbol
+    if (code == StatusCode::Success)
+    {
+        host_main = hostpolicy_contract.corehost_main;
+        if (host_main == nullptr)
+        {
+            code = StatusCode::CoreHostEntryPointFailure;
+        }
+    }
+
     if (code != StatusCode::Success)
     {
         handle_initialize_failure_or_abort();
@@ -164,7 +165,18 @@ static int execute_host_command(
     hostpolicy_contract_t hostpolicy_contract{};
     corehost_main_with_output_buffer_fn host_main = nullptr;
 
-    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract, "corehost_main_with_output_buffer", &host_main);
+    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract);
+
+    // Obtain entrypoint symbol
+    if (code == StatusCode::Success)
+    {
+        host_main = hostpolicy_contract.corehost_main_with_output_buffer;
+        if (host_main == nullptr)
+        {
+            code = StatusCode::CoreHostEntryPointFailure;
+        }
+    }
+
     if (code != StatusCode::Success)
         return code;
 
@@ -471,7 +483,7 @@ namespace
 
         if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &hostpolicy_dir))
         {
-            return CoreHostLibMissingFailure;
+            return StatusCode::CoreHostLibMissingFailure;
         }
 
         init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));

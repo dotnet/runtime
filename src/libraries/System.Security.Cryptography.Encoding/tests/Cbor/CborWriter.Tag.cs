@@ -5,12 +5,17 @@
 using System.Diagnostics;
 using System.Numerics;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter
+    public partial class CborWriter
     {
         public void WriteTag(CborTag tag)
         {
+            if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            {
+                throw new InvalidOperationException("Tagged items are not permitted under the current conformance level.");
+            }
+
             WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
             _isTagContext = true;
         }

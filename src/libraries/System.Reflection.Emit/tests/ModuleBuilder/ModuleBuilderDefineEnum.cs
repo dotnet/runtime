@@ -161,7 +161,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineEnum_ByRefUnderlyingType_ThrowsCOMExceptionOnCreation()
         {
             ModuleBuilder module = Helpers.DynamicModule();

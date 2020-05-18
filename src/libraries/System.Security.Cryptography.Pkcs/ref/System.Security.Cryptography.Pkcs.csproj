@@ -1,16 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <TargetFrameworks>netcoreapp3.0;netstandard2.1;net461;$(NetFrameworkCurrent);$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.1;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
+    <!-- Currently the netstandard build is locked to the $(NetFrameworkCurrent) API -->
+    <AssemblyVersion Condition="$(TargetFramework.StartsWith('netstandard'))">4.0.4.0</AssemblyVersion>    
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Pkcs.cs" />
-    <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetStandard)' == 'true'" />
+    <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="!$(TargetFramework.StartsWith('net4'))" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Security" />

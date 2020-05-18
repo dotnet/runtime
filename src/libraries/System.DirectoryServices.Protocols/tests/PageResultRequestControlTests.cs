@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Security.Principal;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class PageResultRequestControlTests
     {
         [Fact]
@@ -21,12 +21,18 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(512, control.PageSize);
             Assert.Equal("1.2.840.113556.1.4.319", control.Type);
 
-            Assert.Equal(new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 }, control.GetValue());
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 };
+            Assert.Equal(expected, control.GetValue());
+        }
+
+        public static IEnumerable<object[]> Ctor_PageSize_Data()
+        {
+            yield return new object[] { 0, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 } };
+            yield return new object[] { 10, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 10, 4, 0 } : new byte[] { 48, 5, 2, 1, 10, 4, 0 } };
         }
 
         [Theory]
-        [InlineData(0, new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 })]
-        [InlineData(10, new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 10, 4, 0 })]
+        [MemberData(nameof(Ctor_PageSize_Data))]
         public void Ctor_PageSize(int pageSize, byte[] expectedValue)
         {
             var control = new PageResultRequestControl(pageSize);
@@ -45,10 +51,15 @@ namespace System.DirectoryServices.Protocols.Tests
             AssertExtensions.Throws<ArgumentException>("value", () => new PageResultRequestControl(-1));
         }
 
+        public static IEnumerable<object[]> Ctor_Cookie_Data()
+        {
+            yield return new object[] { null, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 } };
+            yield return new object[] { new byte[0], (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 } : new byte[] { 48, 6, 2, 2, 2, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 1, 2, 3, }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 9, 2, 2, 2, 0, 4, 3, 1, 2, 3 } : new byte[] { 48, 9, 2, 2, 2, 0, 4, 3, 1, 2, 3 } };
+        }
+
         [Theory]
-        [InlineData(null, new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 })]
-        [InlineData(new byte[0], new byte[] { 48, 132, 0, 0, 0, 6, 2, 2, 2, 0, 4, 0 })]
-        [InlineData(new byte[] { 1, 2, 3, }, new byte[] { 48, 132, 0, 0, 0, 9, 2, 2, 2, 0, 4, 3, 1, 2, 3 })]
+        [MemberData(nameof(Ctor_Cookie_Data))]
         public void Ctor_Cookie(byte[] cookie, byte[] expectedValue)
         {
             var control = new PageResultRequestControl(cookie);

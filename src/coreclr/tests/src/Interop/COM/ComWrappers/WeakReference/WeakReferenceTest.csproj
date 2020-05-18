@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Test unsupported outside of windows -->
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <!-- Native COM interfaces left alive at the test exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
+  <ItemGroup>
+    <Compile Include="WeakReferenceTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
+</Project>

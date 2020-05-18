@@ -324,6 +324,9 @@ typedef struct ucontext {
 #endif
 
 #if defined(__linux__)
+
+/* don't rely on glibc to include this for us, musl won't */
+#include <asm/ptrace.h>
 	typedef ucontext_t os_ucontext;
 
 #ifdef __mono_ppc64__

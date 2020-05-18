@@ -48,8 +48,7 @@ namespace System.Net.Test.Uris.UriParserTest
         public void WebSocketsUri_TryCreateWithAllParts_Success()
         {
             string input = "ws://user:pass@host:90/path1/path2/file.ext?query#fragment";
-            Uri uri;
-            bool success = Uri.TryCreate(input, UriKind.Absolute, out uri);
+            bool success = Uri.TryCreate(input, UriKind.Absolute, out Uri uri);
             Assert.True(success);
 
             Assert.Equal(input, uri.ToString());
@@ -68,8 +67,7 @@ namespace System.Net.Test.Uris.UriParserTest
         public void WebSocketsSecureUri_TryCreateWithAllParts_Success()
         {
             string input = "wss://user:pass@host:90/path1/path2/file.ext?query#fragment";
-            Uri uri;
-            bool success = Uri.TryCreate(input, UriKind.Absolute, out uri);
+            bool success = Uri.TryCreate(input, UriKind.Absolute, out Uri uri);
             Assert.True(success);
 
             Assert.Equal(input, uri.ToString());

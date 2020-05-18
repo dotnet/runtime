@@ -34,14 +34,8 @@ namespace System.Net.Security
         // This is set on the first packet to figure out the framing style.
         private Framing _framing = Framing.Unknown;
 
-        // SSL3/TLS protocol frames definitions.
-        private enum FrameType : byte
-        {
-            ChangeCipherSpec = 20,
-            Alert = 21,
-            Handshake = 22,
-            AppData = 23
-        }
+        private TlsAlertDescription _lastAlertDescription;
+        private TlsFrameHandshakeInfo _lastFrame;
 
         private readonly object _handshakeLock = new object();
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
@@ -274,7 +268,6 @@ namespace System.Net.Security
                 {
                     // get ready to receive first frame
                     _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
-                    _framing = Framing.Unknown;
                 }
 
                 while (!handshakeCompleted)
@@ -288,6 +281,19 @@ namespace System.Net.Security
 
                     if (message.Failed)
                     {
+                        if (_lastFrame.Header.Type == TlsContentType.Handshake && message.Size == 0)
+                        {
+                            // If we failed without OS sending out alert, inject one here to be consistent across platforms.
+                            byte[] alert = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
+                            await adapter.WriteAsync(alert, 0, alert.Length).ConfigureAwait(false);
+                        }
+                        else if (_lastFrame.Header.Type == TlsContentType.Alert && _lastAlertDescription != TlsAlertDescription.CloseNotify &&
+                                 message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
+                        {
+                            // Improve generic message and show details if we failed because of TLS Alert.
+                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastAlertDescription.ToString()), message.GetException());
+                        }
+
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
                     else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -346,17 +352,49 @@ namespace System.Net.Security
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            int frameSize = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
-            if (frameSize < 0)
+            if (_framing == Framing.BeforeSSL3)
+            {
+#pragma warning disable 0618
+                _lastFrame.Header.Version = SslProtocols.Ssl2;
+#pragma warning restore 0618
+                _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+            }
+            else
+            {
+                TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame.Header);
+            }
+
+            if (_lastFrame.Header.Length < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
             }
 
+            // Header length is content only so we must add header size as well.
+            int frameSize = _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
             if (_handshakeBuffer.ActiveLength < frameSize)
             {
                 await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
             }
+
             // At this point, we have at least one TLS frame.
+            if (_lastFrame.Header.Type == TlsContentType.Alert)
+            {
+                TlsAlertLevel level = 0;
+                if (TlsFrameHelper.TryGetAlertInfo(_handshakeBuffer.ActiveReadOnlySpan, ref level, ref _lastAlertDescription))
+                {
+                    if (NetEventSource.IsEnabled && _lastAlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Fail(this, $"Received TLS alert {_lastAlertDescription}");
+                }
+            }
+            else if (_lastFrame.Header.Type == TlsContentType.Handshake)
+            {
+                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null)
+                {
+                    // Process SNI from Client Hello message
+                    TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame);
+                    _sslAuthenticationOptions.TargetHost = _lastFrame.TargetName;
+                }
+            }
 
             return ProcessBlob(frameSize);
         }
@@ -372,23 +410,24 @@ namespace System.Net.Security
             _handshakeBuffer.Discard(frameSize);
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_handshakeBuffer.ActiveLength > SecureChannel.ReadHeaderSize)
+            while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
             {
-                ReadOnlySpan<byte> remainingData = _handshakeBuffer.ActiveReadOnlySpan;
-                if (remainingData[0] >= (int)FrameType.AppData)
+                TlsFrameHeader nextHeader = default;
+
+                if (!TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref nextHeader))
                 {
                     break;
                 }
 
-                frameSize = GetFrameSize(remainingData);
-                if (_handshakeBuffer.ActiveLength >= frameSize)
+                frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
+                if (nextHeader.Type == TlsContentType.AppData || frameSize > _handshakeBuffer.ActiveLength)
                 {
-                    chunkSize += frameSize;
-                    _handshakeBuffer.Discard(frameSize);
-                    continue;
+                    // We don't have full frame left or we already have app data which needs to be processed by decrypt.
+                    break;
                 }
 
-                break;
+                chunkSize += frameSize;
+                _handshakeBuffer.Discard(frameSize);
             }
 
             return _context!.NextMessage(availableData.Slice(0, chunkSize));
@@ -645,7 +684,7 @@ namespace System.Net.Security
                     Debug.Assert(_internalBufferCount >= SecureChannel.ReadHeaderSize);
 
                     // Parse the frame header to determine the payload size (which includes the header size).
-                    int payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+                    int payloadBytes = TlsFrameHelper.GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                     if (payloadBytes < 0)
                     {
                         throw new IOException(SR.net_frame_read_size);
@@ -913,6 +952,7 @@ namespace System.Net.Security
                     Buffer.BlockCopy(saved, 0, buffer, 0, copyCount);
                 }
             }
+
             return buffer;
         }
 
@@ -1003,8 +1043,8 @@ namespace System.Net.Security
             }
 
             // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
-            if (bytes[0] == (byte)FrameType.Handshake || bytes[0] == (byte)FrameType.AppData
-                || bytes[0] == (byte)FrameType.Alert)
+            if (bytes[0] == (byte)TlsContentType.Handshake || bytes[0] == (byte)TlsContentType.AppData
+                || bytes[0] == (byte)TlsContentType.Alert)
             {
                 if (bytes.Length < 3)
                 {

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Net.Sockets</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -51,8 +51,6 @@
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <!-- Logging -->
-    <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs"
-             Link="Common\System\Net\Logging\DebugThreadTracking.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
@@ -236,6 +234,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.GetBytesAvailable.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainSocketSizes.cs"
              Link="Common\Interop\Unix\Interop.GetDomainSocketSizes.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetMaximumAddressSize.cs"
+             Link="Common\Interop\Unix\Interop.GetMaximumAddressSize.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerName.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetPeerName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetSocketErrorOption.cs"
@@ -270,6 +270,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.MulticastOption.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs"
              Link="Common\Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReceiveMessage.cs"
@@ -309,5 +311,8 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

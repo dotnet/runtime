@@ -111,7 +111,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException(nameof(schemaClasses));
+                    throw new ArgumentException(null, nameof(schemaClasses));
                 }
             }
 
@@ -132,7 +132,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException(nameof(schemaClasses));
+                    throw new ArgumentException(null, nameof(schemaClasses));
                 }
             }
 
@@ -154,7 +154,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException(nameof(schemaClasses));
+                    throw new ArgumentException(null, nameof(schemaClasses));
                 }
             }
 
@@ -360,7 +360,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!(value is ActiveDirectorySchemaClass))
             {
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
             }
 
             if (!((ActiveDirectorySchemaClass)value).isBound)

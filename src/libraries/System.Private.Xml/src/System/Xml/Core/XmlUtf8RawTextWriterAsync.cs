@@ -37,7 +37,6 @@ namespace System.Xml
             // Output xml declaration only if user allows it and it was not already output
             if (!omitXmlDeclaration && !autoXmlDeclaration)
             {
-
                 await RawTextAsync("<?xml version=\"").ConfigureAwait(false);
 
                 // Version
@@ -71,6 +70,41 @@ namespace System.Xml
             }
 
             return Task.CompletedTask;
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            try
+            {
+                await FlushBufferAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                // Future calls to Close or Flush shouldn't write to Stream or Writer
+                writeToNull = true;
+
+                if (stream != null)
+                {
+                    try
+                    {
+                        await stream.FlushAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            if (closeOutput)
+                            {
+                                await stream.DisposeAsync().ConfigureAwait(false);
+                            }
+                        }
+                        finally
+                        {
+                            stream = null;
+                        }
+                    }
+                }
+            }
         }
 
         // Serialize the document type declaration.
@@ -515,8 +549,11 @@ namespace System.Xml
                 // Output all characters (except for previous characters stored at beginning of buffer)
                 if (!writeToNull)
                 {
-                    Debug.Assert(stream != null);
-                    await stream.WriteAsync(bufBytes, 1, bufPos - 1).ConfigureAwait(false);
+                    if (bufPos - 1 > 0)
+                    {
+                        Debug.Assert(stream != null);
+                        await stream.WriteAsync(bufBytes.AsMemory(1, bufPos - 1)).ConfigureAwait(false);
+                    }
                 }
             }
             catch

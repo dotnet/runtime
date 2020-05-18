@@ -45,6 +45,7 @@
 
 #include "utilcode.h"
 #include "sbuffer.h"
+#include "debugmacros.h"
 
 // ==========================================================================================
 // Documentational typedefs: use these to indicate specific representations of 8 bit strings:
@@ -808,6 +809,7 @@ template <COUNT_T MEMSIZE>
 class EMPTY_BASES_DECL InlineSString : public SString
 {
 private:
+    DAC_ALIGNAS(SString)
     BYTE m_inline[SBUFFER_PADDED_SIZE(MEMSIZE)];
 
 public:
@@ -990,6 +992,7 @@ template <COUNT_T MEMSIZE>
 class EMPTY_BASES_DECL ScratchBuffer : public SString::AbstractScratchBuffer
 {
   private:
+    DAC_ALIGNAS(::SString::AbstractScratchBuffer)
     BYTE m_inline[MEMSIZE];
 
   public:

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.Json.Serialization
 {
     /// <summary>
@@ -11,7 +13,8 @@ namespace System.Text.Json.Serialization
     /// <typeparam name="T"></typeparam>
     internal abstract class JsonResumableConverter<T> : JsonConverter<T>
     {
-        public override sealed T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        [return: MaybeNull]
+        public sealed override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             // Bridge from resumable to value converters.
             if (options == null)
@@ -25,7 +28,7 @@ namespace System.Text.Json.Serialization
             return value;
         }
 
-        public override sealed void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public sealed override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
             // Bridge from resumable to value converters.
             if (options == null)
@@ -37,5 +40,7 @@ namespace System.Text.Json.Serialization
             state.Initialize(typeof(T), options, supportContinuation: false);
             TryWrite(writer, value, options, ref state);
         }
+
+        public sealed override bool HandleNull => false;
     }
 }

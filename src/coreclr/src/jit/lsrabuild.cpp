@@ -1815,12 +1815,23 @@ void LinearScan::insertZeroInitRefPositions()
                 Interval* interval = getIntervalForLocalVar(varIndex);
                 if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
                 {
-                    JITDUMP(" creating ZeroInit\n");
-                    GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
-                    RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
-                                                      allRegs(interval->registerType));
-                    pos->setRegOptional(true);
-                    varDsc->lvMustInit = true;
+                    if (interval->recentRefPosition == nullptr)
+                    {
+                        JITDUMP(" creating ZeroInit\n");
+                        GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
+                        RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
+                                                          allRegs(interval->registerType));
+                        pos->setRegOptional(true);
+                        varDsc->lvMustInit = true;
+                    }
+                    else
+                    {
+                        // We must only generate one entry RefPosition for each Interval. Since this is not
+                        // a parameter, it can't be RefTypeParamDef, so it must be RefTypeZeroInit, which
+                        // we must have generated for the live-in case above.
+                        assert(interval->recentRefPosition->refType == RefTypeZeroInit);
+                        JITDUMP(" already ZeroInited\n");
+                    }
                 }
             }
         }
@@ -2688,7 +2699,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
     {
         fixedReg = true;
     }
-    ReturnTypeDesc* retTypeDesc = nullptr;
+    const ReturnTypeDesc* retTypeDesc = nullptr;
     if (tree->IsMultiRegCall())
     {
         retTypeDesc = tree->AsCall()->GetReturnTypeDesc();
@@ -3063,9 +3074,9 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
 
         // srcCount = number of registers in which the value is returned by call
-        GenTreeCall*    call        = op1->AsCall();
-        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        srcCount                    = retTypeDesc->GetReturnRegCount();
+        const GenTreeCall*    call        = op1->AsCall();
+        const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        srcCount                          = retTypeDesc->GetReturnRegCount();
 
         for (int i = 0; i < srcCount; ++i)
         {
@@ -3102,7 +3113,20 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 #endif // !TARGET_64BIT
     else if (op1->isContained())
     {
-        srcCount = 0;
+#ifdef TARGET_XARCH
+        if (varTypeIsSIMD(storeLoc))
+        {
+            // This is the zero-init case, and we need a register to hold the zero.
+            // (On Arm64 we can just store REG_ZR.)
+            assert(op1->IsSIMDZero());
+            singleUseRef = BuildUse(op1->gtGetOp1());
+            srcCount     = 1;
+        }
+        else
+#endif
+        {
+            srcCount = 0;
+        }
     }
     else
     {
@@ -3260,9 +3284,9 @@ int LinearScan::BuildReturn(GenTree* tree)
             {
                 noway_assert(op1->IsMultiRegCall());
 
-                ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
-                int             srcCount    = retTypeDesc->GetReturnRegCount();
-                useCandidates               = retTypeDesc->GetABIReturnRegs();
+                const ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
+                const int             srcCount    = retTypeDesc->GetReturnRegCount();
+                useCandidates                     = retTypeDesc->GetABIReturnRegs();
                 for (int i = 0; i < srcCount; i++)
                 {
                     BuildUse(op1, useCandidates, i);

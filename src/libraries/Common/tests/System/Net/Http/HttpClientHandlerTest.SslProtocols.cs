@@ -113,6 +113,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36100", TestPlatforms.Windows)]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -150,9 +151,7 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> SupportedSSLVersionServers()
         {
 #pragma warning disable 0618 // SSL2/3 are deprecated
-            if (PlatformDetection.IsWindows ||
-                PlatformDetection.IsOSX ||
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion < new Version(1, 0, 2) && !PlatformDetection.IsDebian))
+            if (PlatformDetection.SupportsSsl3)
             {
                 yield return new object[] { SslProtocols.Ssl3, Configuration.Http.SSLv3RemoteServer };
             }
@@ -250,6 +249,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12, SslProtocols.Tls)] // Skip this on WinHttpHandler.
         [InlineData(SslProtocols.Tls12, SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls, SslProtocols.Tls12)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36100", TestPlatforms.Windows)]
         public async Task GetAsync_AllowedClientSslVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedClientProtocols, SslProtocols acceptedServerProtocols)
         {

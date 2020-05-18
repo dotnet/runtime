@@ -12,11 +12,11 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw new ArgumentException(nameof(path));
+                throw new ArgumentException(null, nameof(path));
             }
             if (string.IsNullOrEmpty(locale))
             {
-                throw new ArgumentException(nameof(locale));
+                throw new ArgumentException(null, nameof(locale));
             }
             Locale = locale;
             Path = path;

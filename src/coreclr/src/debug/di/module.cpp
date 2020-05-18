@@ -19,6 +19,7 @@
 #include "ildbsymlib.h"
 
 #include "pedecoder.h"
+#include "stgpool.h"
 
 //---------------------------------------------------------------------------------------
 // Update an existing metadata importer with a buffer

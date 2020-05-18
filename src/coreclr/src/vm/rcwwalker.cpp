@@ -570,7 +570,7 @@ void RCWWalker::WalkRCWs()
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(RethrowCorruptingExceptions)   // Make sure we crash on AV (instead of swallowing everything)
+    EX_END_CATCH(RethrowTerminalExceptions)
 
     if (FAILED(hr))
     {

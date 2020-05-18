@@ -1637,7 +1637,10 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 			return &ccontext->gregs [ainfo->reg];
 		case RegTypeHFA:
 		case RegTypeFP:
-			return &ccontext->fregs [ainfo->reg];
+			if (IS_HARD_FLOAT)
+				return &ccontext->fregs [ainfo->reg];
+			else
+				return &ccontext->gregs [ainfo->reg];
 		case RegTypeBase:
 			return ccontext->stack + ainfo->offset;
 		default:

@@ -859,6 +859,7 @@ FCFuncStart(gInterlockedFuncs)
     FCIntrinsicSig("ExchangeAdd", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::ExchangeAdd64, CORINFO_INTRINSIC_InterlockedXAdd64)
 
     FCIntrinsic("MemoryBarrier", COMInterlocked::FCMemoryBarrier, CORINFO_INTRINSIC_MemoryBarrier)
+    FCIntrinsic("ReadMemoryBarrier", COMInterlocked::FCMemoryBarrierLoad, CORINFO_INTRINSIC_MemoryBarrierLoad)
     QCFuncElement("_MemoryBarrierProcessWide", COMInterlocked::MemoryBarrierProcessWide)
 FCFuncEnd()
 
@@ -905,6 +906,9 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
     FCFuncElement("GetUninitializedObjectInternal", ReflectionSerialization::GetUninitializedObject)
     QCFuncElement("AllocateTypeAssociatedMemoryInternal", RuntimeTypeHandle::AllocateTypeAssociatedMemory)
+    FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
+    FCFuncElement("FreeTailCallArgBuffer", TailCallHelp::FreeTailCallArgBuffer)
+    FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
@@ -981,7 +985,8 @@ FCFuncStart(gComWrappersFuncs)
     QCFuncElement("GetIUnknownImplInternal", ComWrappersNative::GetIUnknownImpl)
     QCFuncElement("TryGetOrCreateComInterfaceForObjectInternal", ComWrappersNative::TryGetOrCreateComInterfaceForObject)
     QCFuncElement("TryGetOrCreateObjectForComInstanceInternal", ComWrappersNative::TryGetOrCreateObjectForComInstance)
-    QCFuncElement("SetGlobalInstanceRegistered", GlobalComWrappers::SetGlobalInstanceRegistered)
+    QCFuncElement("SetGlobalInstanceRegisteredForMarshalling", GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling)
+    QCFuncElement("SetGlobalInstanceRegisteredForTrackerSupport", GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 
@@ -1040,6 +1045,7 @@ FCFuncStart(gStubHelperFuncs)
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("MulticastDebuggerTraceHelper", StubHelpers::MulticastDebuggerTraceHelper)
 #endif //FEATURE_MULTICASTSTUB_AS_IL
+    FCIntrinsic("NextCallReturnAddress", StubHelpers::NextCallReturnAddress, CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress)
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)

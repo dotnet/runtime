@@ -19,8 +19,6 @@ namespace System.Runtime.Versioning
         private const string VersionKey = "Version";
         private const string ProfileKey = "Profile";
 
-        private static readonly char[] s_componentSplitSeparator = { ComponentSeparator };
-
         public string Identifier
         {
             get
@@ -146,7 +144,7 @@ namespace System.Runtime.Versioning
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(frameworkName)), nameof(frameworkName));
             }
 
-            string[] components = frameworkName.Split(s_componentSplitSeparator);
+            string[] components = frameworkName.Split(ComponentSeparator);
 
             // Identifier and Version are required, Profile is optional.
             if (components.Length < 2 || components.Length > 3)

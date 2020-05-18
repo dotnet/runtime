@@ -110,9 +110,17 @@ bool IpcStreamFactory::HasActiveConnections()
 
 void IpcStreamFactory::CloseConnections(ErrorCallback callback)
 {
-    s_isShutdown = true;
     for (uint32_t i = 0; i < (uint32_t)s_rgpConnectionStates.Size(); i++)
         s_rgpConnectionStates[i]->Close(callback);
+}
+
+void IpcStreamFactory::Shutdown(ErrorCallback callback)
+{
+    if (s_isShutdown)
+        return;
+    s_isShutdown = true;
+    for (uint32_t i = 0; i < (uint32_t)s_rgpConnectionStates.Size(); i++)
+        s_rgpConnectionStates[i]->Close(true, callback);
 }
 
 // helper function for getting timeout

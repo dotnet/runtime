@@ -53,8 +53,8 @@ namespace System.Text.Json.Serialization
         /// </remarks>
         public static ReferenceHandling Preserve { get; } = new ReferenceHandling(PreserveReferencesHandling.All);
 
-        private readonly PreserveReferencesHandling _preserveHandlingOnSerialize;
-        private readonly PreserveReferencesHandling _preserveHandlingOnDeserialize;
+        private readonly bool _shouldReadPreservedReferences;
+        private readonly bool _shouldWritePreservedReferences;
 
         /// <summary>
         /// Creates a new instance of <see cref="ReferenceHandling"/> using the specified <paramref name="handling"/>
@@ -65,18 +65,18 @@ namespace System.Text.Json.Serialization
         // For future, someone may want to define their own custom Handler with different behaviors of PreserveReferenceHandling on Serialize vs Deserialize.
         private ReferenceHandling(PreserveReferencesHandling preserveHandlingOnSerialize, PreserveReferencesHandling preserveHandlingOnDeserialize)
         {
-            _preserveHandlingOnSerialize = preserveHandlingOnSerialize;
-            _preserveHandlingOnDeserialize = preserveHandlingOnDeserialize;
+            _shouldReadPreservedReferences = preserveHandlingOnDeserialize == PreserveReferencesHandling.All;
+            _shouldWritePreservedReferences = preserveHandlingOnSerialize == PreserveReferencesHandling.All;
         }
 
         internal bool ShouldReadPreservedReferences()
         {
-            return _preserveHandlingOnDeserialize == PreserveReferencesHandling.All;
+            return _shouldReadPreservedReferences;
         }
 
         internal bool ShouldWritePreservedReferences()
         {
-            return _preserveHandlingOnSerialize == PreserveReferencesHandling.All;
+            return _shouldWritePreservedReferences;
         }
     }
 

@@ -13,11 +13,11 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentException(nameof(name));
+                throw new ArgumentException(null, nameof(name));
             }
             if (string.IsNullOrEmpty(version))
             {
-                throw new ArgumentException(nameof(version));
+                throw new ArgumentException(null, nameof(version));
             }
             Name = name;
             Version = version;

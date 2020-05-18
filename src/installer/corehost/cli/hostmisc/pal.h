@@ -272,6 +272,7 @@ namespace pal
 
     bool get_own_executable_path(string_t* recv);
     bool get_own_module_path(string_t* recv);
+    bool get_method_module_path(string_t* recv, void* method);
     bool get_module_path(dll_t mod, string_t* recv);
     bool get_current_module(dll_t *mod);
     bool getenv(const char_t* name, string_t* recv);

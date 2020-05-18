@@ -2573,6 +2573,7 @@ template <class MemMgr>
 class CHashTableAndData : public CHashTable
 {
 public:
+    DAC_ALIGNAS(CHashTable)
     ULONG      m_iFree;                // Index into m_pcEntries[] of next available slot
     ULONG      m_iEntries;             // size of m_pcEntries[]
 
@@ -4714,13 +4715,6 @@ typedef HMODULE HMODULE_TGT;
 BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 
 extern HINSTANCE g_hmodCoreCLR;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-
-// Corrupting Exception limited support for outside the VM folder
-BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 namespace UtilCode
 {

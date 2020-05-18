@@ -39,7 +39,10 @@ namespace System.Linq.Parallel.Tests
                 {
                     foreach (int count in datapoints)
                     {
-                        yield return new object[] { start * sign, count };
+                        if (start != 0 || sign != -1) // don't yield a start*sign==0 twice
+                        {
+                            yield return new object[] { start * sign, count };
+                        }
                     }
                 }
             }
@@ -183,8 +186,7 @@ namespace System.Linq.Parallel.Tests
                     //yield return new object[] { (decimal)element, count };
                     yield return new object[] { "" + element, count };
                 }
-                yield return new object[] { (object)null, count };
-                yield return new object[] { (string)null, count };
+                yield return new object[] { null, count };
             }
         }
 

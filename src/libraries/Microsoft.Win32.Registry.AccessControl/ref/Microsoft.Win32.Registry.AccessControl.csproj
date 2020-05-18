@@ -7,10 +7,10 @@
     <Compile Include="Microsoft.Win32.Registry.AccessControl.cs" />
     <Compile Include="Microsoft.Win32.Registry.AccessControl.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <ProjectReference Include="..\..\Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
   </ItemGroup>

@@ -10,6 +10,7 @@ parameters:
   osSubgroup: ''
   platform: ''
   pool: ''
+  runtimeVariant: ''
   signBinaries: false
   stagedBuild: false
   testGroup: ''
@@ -25,6 +26,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
@@ -37,8 +39,8 @@ jobs:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     ${{ if eq(parameters.compilerName, 'clang') }}:
-      name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -118,6 +120,12 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage before Build
+
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(officialBuildIdArg)
@@ -125,6 +133,12 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
+
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
 
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'x86')) }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)

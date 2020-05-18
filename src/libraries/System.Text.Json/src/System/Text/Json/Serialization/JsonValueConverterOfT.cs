@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.Json.Serialization
 {
     // Used for value converters that need to re-enter the serializer since it will support JsonPath
@@ -10,7 +12,10 @@ namespace System.Text.Json.Serialization
     {
         internal sealed override ClassType ClassType => ClassType.NewValue;
 
-        public override sealed T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public sealed override bool HandleNull => false;
+
+        [return: MaybeNull]
+        public sealed override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             // Bridge from resumable to value converters.
             if (options == null)
@@ -24,7 +29,7 @@ namespace System.Text.Json.Serialization
             return value;
         }
 
-        public override sealed void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public sealed override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
             // Bridge from resumable to value converters.
             if (options == null)

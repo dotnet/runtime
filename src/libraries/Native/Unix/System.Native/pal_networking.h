@@ -7,6 +7,7 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 #include "pal_errno.h"
+#include <pal_networking_common.h>
 
 /**
  * These error values are different on every platform so make a
@@ -110,18 +111,6 @@ typedef enum
     MulticastOption_MULTICAST_DROP = 1, // IP{,V6}_DROP_MEMBERSHIP
     MulticastOption_MULTICAST_IF = 2    // IP_MULTICAST_IF
 } MulticastOption;
-
-/*
- * Socket shutdown modes.
- *
- * NOTE: these values are taken from System.Net.SocketShutdown.
- */
-typedef enum
-{
-    SocketShutdown_SHUT_READ = 0,  // SHUT_RD
-    SocketShutdown_SHUT_WRITE = 1, // SHUT_WR
-    SocketShutdown_SHUT_BOTH = 2,  // SHUT_RDWR
-} SockerShutdown;
 
 /*
  * Socket option levels.
@@ -405,7 +394,7 @@ PALEXPORT int32_t SystemNative_SetRawSockOpt(
 
 PALEXPORT int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket);
 
-PALEXPORT int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType);
+PALEXPORT int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening);
 
 PALEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* available);
 
@@ -429,6 +418,8 @@ PALEXPORT int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void);
 PALEXPORT char* SystemNative_GetPeerUserName(intptr_t socket);
 
 PALEXPORT void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
+
+PALEXPORT int32_t SystemNative_GetMaximumAddressSize(void);
 
 PALEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent);
 

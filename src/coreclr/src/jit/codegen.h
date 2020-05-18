@@ -1028,6 +1028,7 @@ protected:
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
+    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
     void genSSEIntrinsic(GenTreeHWIntrinsic* node);
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
@@ -1112,6 +1113,9 @@ protected:
     // Do liveness update for register produced by the current node in codegen after
     // code has been emitted for it.
     void genProduceReg(GenTree* tree);
+    void genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum);
+    void genUnspillLocal(
+        unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
     void genUnspillRegIfNeeded(GenTree* tree);
     regNumber genConsumeReg(GenTree* tree);
     void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
@@ -1274,10 +1278,13 @@ protected:
     void genEHFinallyOrFilterRet(BasicBlock* block);
 #endif // !FEATURE_EH_FUNCLETS
 
-    void genMultiRegCallStoreToLocal(GenTree* treeNode);
+    void genMultiRegStoreToLocal(GenTree* treeNode);
 
-    // Deals with codegen for muti-register struct returns.
+    // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
+#ifdef FEATURE_SIMD
+    void genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc);
+#endif
     void genStructReturn(GenTree* treeNode);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -1464,11 +1471,13 @@ public:
 
     void instGen_Return(unsigned stkArgSize);
 
-#ifdef TARGET_ARM64
-    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_ISH);
-#else
-    void instGen_MemoryBarrier();
-#endif
+    enum BarrierKind
+    {
+        BARRIER_FULL,      // full barrier
+        BARRIER_LOAD_ONLY, // load barier
+    };
+
+    void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 

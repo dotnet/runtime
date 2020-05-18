@@ -1173,8 +1173,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         ilOffset = impCurStmtOffs;
     }
 
-    assert(src->OperIs(GT_LCL_VAR, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR, GT_COMMA) ||
-           (src->TypeGet() != TYP_STRUCT && (src->OperIsSimdOrHWintrinsic() || src->OperIs(GT_LCL_FLD))));
+    assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR, GT_COMMA) ||
+           (src->TypeGet() != TYP_STRUCT && src->OperIsSimdOrHWintrinsic()));
 
     var_types asgType = src->TypeGet();
 
@@ -1199,8 +1199,11 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
             var_types returnType = (var_types)src->AsCall()->gtReturnType;
 
-            // We won't use a return buffer, so change the type of src->gtType to 'returnType'
-            src->gtType = genActualType(returnType);
+            if (compDoOldStructRetyping())
+            {
+                // We're not using a return buffer, so if we're retyping we'll change the type of 'src' to 'returnTYpe'.
+                src->gtType = genActualType(returnType);
+            }
 
             // First we try to change this to "LclVar/LclFld = call"
             //
@@ -1280,13 +1283,18 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         else
         {
             // Case of inline method returning a struct in one or more registers.
-            //
-            var_types returnType = (var_types)call->gtReturnType;
-
             // We won't need a return buffer
-            asgType      = returnType;
-            src->gtType  = genActualType(returnType);
-            call->gtType = src->gtType;
+            if (compDoOldStructRetyping())
+            {
+                var_types returnType = (var_types)call->gtReturnType;
+                asgType              = returnType;
+                src->gtType          = genActualType(returnType);
+                call->gtType         = src->gtType;
+            }
+            else
+            {
+                asgType = src->gtType;
+            }
 
             if ((destAddr->gtOper != GT_ADDR) || (destAddr->AsOp()->gtOp1->gtOper != GT_LCL_VAR))
             {
@@ -1936,11 +1944,6 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             {
                 op1->AsFptrVal()->gtEntryPoint = pCallInfo->codePointerLookup.constLookup;
             }
-            else
-            {
-                op1->AsFptrVal()->gtEntryPoint.addr       = nullptr;
-                op1->AsFptrVal()->gtEntryPoint.accessType = IAT_VALUE;
-            }
 #endif
             break;
 
@@ -2046,11 +2049,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                              gtNewCallArgs(ctxTree), &pLookup->lookupKind);
         }
 #endif
-        GenTree* argNode =
-            gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
-        GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
-
-        return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
 
     // Slot pointer
@@ -3479,32 +3478,42 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             ni = lookupNamedIntrinsic(method);
 
-#ifdef FEATURE_HW_INTRINSICS
+            // We specially support the following on all platforms to allow for dead
+            // code optimization and to more generally support recursive intrinsics.
+
             if (ni == NI_IsSupported_True)
             {
+                assert(sig->numArgs == 0);
                 return gtNewIconNode(true);
             }
 
             if (ni == NI_IsSupported_False)
             {
+                assert(sig->numArgs == 0);
                 return gtNewIconNode(false);
             }
 
             if (ni == NI_Throw_PlatformNotSupportedException)
             {
-                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
             }
 
+#ifdef FEATURE_HW_INTRINSICS
             if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
             {
                 GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
                 if (mustExpand && (hwintrinsic == nullptr))
                 {
-                    return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
+                    return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
                 }
 
                 return hwintrinsic;
+            }
+
+            if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
+            {
+                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
             }
 #endif // FEATURE_HW_INTRINSICS
         }
@@ -3531,10 +3540,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     assert(intrinsicID != CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr);
 #endif
 
+    if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress)
+    {
+        // For now we just avoid inlining anything into these methods since
+        // this intrinsic is only rarely used. We could do this better if we
+        // wanted to by trying to match which call is the one we need to get
+        // the return address of.
+        info.compHasNextCallRetAddr = true;
+        return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
+
     GenTree* retNode = nullptr;
 
     // Under debug and minopts, only expand what is required.
-    if (!mustExpand && opts.OptimizationDisabled())
+    // NextCallReturnAddress intrinsic returns the return address of the next call.
+    // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
+    // To avoid that we conservatively expand only required intrinsics in methods that call
+    // the NextCallReturnAddress intrinsic.
+    if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
     {
         *pIntrinsicID = CORINFO_INTRINSIC_Illegal;
         return retNode;
@@ -3622,11 +3645,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
         case CORINFO_INTRINSIC_MemoryBarrier:
+        case CORINFO_INTRINSIC_MemoryBarrierLoad:
 
             assert(sig->numArgs == 0);
 
             op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
             op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+
+            // On XARCH `CORINFO_INTRINSIC_MemoryBarrierLoad` fences need not be emitted.
+            // However, we still need to capture the effect on reordering.
+            if (intrinsicID == CORINFO_INTRINSIC_MemoryBarrierLoad)
+            {
+                op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
+            }
+
             retNode = op1;
             break;
 
@@ -4138,7 +4170,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_MathF_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_FMA))
+                if (compExactlyDependsOn(InstructionSet_FMA) && supportSIMDTypes())
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -4245,7 +4277,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     if (mustExpand && (retNode == nullptr))
     {
-        NO_WAY("JIT must expand the intrinsic!");
+        assert(!"Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
+        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 
     // Optionally report if this intrinsic is special
@@ -4453,8 +4486,39 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 #ifdef FEATURE_HW_INTRINSICS
+    else if (strcmp(namespaceName, "System.Numerics") == 0)
+    {
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(method, &sig);
+
+        int sizeOfVectorT = getSIMDVectorRegisterByteLength();
+
+        result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
+    }
+#endif // FEATURE_HW_INTRINSICS
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
+        // We go down this path even when FEATURE_HW_INTRINSICS isn't enabled
+        // so we can specially handle IsSupported and recursive calls.
+
+        // This is required to appropriately handle the intrinsics on platforms
+        // which don't support them. On such a platform methods like Vector64.Create
+        // will be seen as `Intrinsic` and `mustExpand` due to having a code path
+        // which is recursive. When such a path is hit we expect it to be handled by
+        // the importer and we fire an assert if it wasn't and in previous versions
+        // of the JIT would fail fast. This was changed to throw a PNSE instead but
+        // we still assert as most intrinsics should have been recognized/handled.
+
+        // In order to avoid the assert, we specially handle the IsSupported checks
+        // (to better allow dead-code optimizations) and we explicitly throw a PNSE
+        // as we know that is the desired behavior for the HWIntrinsics when not
+        // supported. For cases like Vector64.Create, this is fine because it will
+        // be behind a relevant IsSupported check and will never be hit and the
+        // software fallback will be executed instead.
+
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef FEATURE_HW_INTRINSICS
         namespaceName += 25;
         const char* platformNamespaceName;
 
@@ -4468,28 +4532,94 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
         {
-            result = HWIntrinsicInfo::lookupId(this, className, methodName, enclosingClassName);
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(method, &sig);
+
+            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
         }
-        else if (strcmp(methodName, "get_IsSupported") == 0)
+#endif // FEATURE_HW_INTRINSICS
+
+        if (result == NI_Illegal)
         {
-            return NI_IsSupported_False;
-        }
-        else
-        {
-            return gtIsRecursiveCall(method) ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
+            if (strcmp(methodName, "get_IsSupported") == 0)
+            {
+                // This allows the relevant code paths to be dropped as dead code even
+                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+
+                result = NI_IsSupported_False;
+            }
+            else if (gtIsRecursiveCall(method))
+            {
+                // For the framework itself, any recursive intrinsics will either be
+                // only supported on a single platform or will be guarded by a relevant
+                // IsSupported check so the throw PNSE will be valid or dropped.
+
+                result = NI_Throw_PlatformNotSupportedException;
+            }
         }
     }
-#endif // FEATURE_HW_INTRINSICS
 
     if (result == NI_Illegal)
     {
         JITDUMP("Not recognized\n");
+    }
+    else if (result == NI_IsSupported_False)
+    {
+        JITDUMP("Unsupported - return false");
+    }
+    else if (result == NI_Throw_PlatformNotSupportedException)
+    {
+        JITDUMP("Unsupported - throw PlatformNotSupportedException");
     }
     else
     {
         JITDUMP("Recognized\n");
     }
     return result;
+}
+
+//------------------------------------------------------------------------
+// impUnsupportedNamedIntrinsic: Throws an exception for an unsupported named intrinsic
+//
+// Arguments:
+//    helper     - JIT helper ID for the exception to be thrown
+//    method     - method handle of the intrinsic function.
+//    sig        - signature of the intrinsic call
+//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
+//
+// Return Value:
+//    a gtNewMustThrowException if mustExpand is true; otherwise, nullptr
+//
+GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
+                                                CORINFO_METHOD_HANDLE method,
+                                                CORINFO_SIG_INFO*     sig,
+                                                bool                  mustExpand)
+{
+    // We've hit some error case and may need to return a node for the given error.
+    //
+    // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
+    // scenario, we need to return `nullptr` so that a GT_CALL to the intrinsic is emitted instead. This is to
+    // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
+    // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
+    // match that).
+    //
+    // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
+    // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
+    // `nullptr` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
+
+    if (mustExpand)
+    {
+        for (unsigned i = 0; i < sig->numArgs; i++)
+        {
+            impPopStack();
+        }
+
+        return gtNewMustThrowException(helper, JITtype2varType(sig->retType), sig->retTypeClass);
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 /*****************************************************************************/
@@ -7435,14 +7565,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         sig = &calliSig;
 
-#ifdef DEBUG
-        // We cannot lazily obtain the signature of a CALLI call because it has no method
-        // handle that we can use, so we need to save its full call signature here.
-        assert(call->AsCall()->callSig == nullptr);
-        call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-        *call->AsCall()->callSig = calliSig;
-#endif // DEBUG
-
         if ((sig->flags & CORINFO_SIGFLAG_FAT_CALL) != 0)
         {
             addFatPointerCandidate(call->AsCall());
@@ -7905,11 +8027,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // !FEATURE_VARARG
 
 #ifdef UNIX_X86_ABI
-    if (call->AsCall()->callSig == nullptr)
-    {
-        call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-        *call->AsCall()->callSig = *sig;
-    }
+    // On Unix x86 we usually use caller-cleaned convention.
+    if (!call->AsCall()->IsUnmanaged() && IsCallerPop(sig->callConv))
+        call->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
 
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
@@ -7946,14 +8066,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             unsigned numArgsDef = sig->numArgs;
 #endif
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
-
-#ifdef DEBUG
-            // We cannot lazily obtain the signature of a vararg call because using its method
-            // handle will give us only the declared argument list, not the full argument list.
-            assert(call->AsCall()->callSig == nullptr);
-            call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-            *call->AsCall()->callSig = *sig;
-#endif
 
             // For vararg calls we must be sure to load the return type of the
             // method actually being called, as well as the return types of the
@@ -8384,6 +8496,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
 DONE:
 
+#ifdef DEBUG
+    // In debug we want to be able to register callsites with the EE.
+    assert(call->AsCall()->callSig == nullptr);
+    call->AsCall()->callSig  = new (this, CMK_Generic) CORINFO_SIG_INFO;
+    *call->AsCall()->callSig = *sig;
+#endif
+
     // Final importer checks for calls flagged as tail calls.
     //
     if (tailCallFlags != 0)
@@ -8478,7 +8597,27 @@ DONE:
 #endif // FEATURE_TAILCALL_OPT
                 }
 
-                // we can't report success just yet...
+                // This might or might not turn into a tailcall. We do more
+                // checks in morph. For explicit tailcalls we need more
+                // information in morph in case it turns out to be a
+                // helper-based tailcall.
+                if (isExplicitTailCall)
+                {
+                    assert(call->AsCall()->tailCallInfo == nullptr);
+                    call->AsCall()->tailCallInfo = new (this, CMK_CorTailCallInfo) TailCallSiteInfo;
+                    switch (opcode)
+                    {
+                        case CEE_CALLI:
+                            call->AsCall()->tailCallInfo->SetCalli(sig);
+                            break;
+                        case CEE_CALLVIRT:
+                            call->AsCall()->tailCallInfo->SetCallvirt(sig, pResolvedToken);
+                            break;
+                        default:
+                            call->AsCall()->tailCallInfo->SetCall(sig, pResolvedToken);
+                            break;
+                    }
+                }
             }
             else
             {
@@ -8545,15 +8684,7 @@ DONE:
         //
 
         assert(call->gtOper == GT_CALL);
-        assert(sig != nullptr);
-
-        // Tail calls require us to save the call site's sig info so we can obtain an argument
-        // copying thunk from the EE later on.
-        if (call->AsCall()->callSig == nullptr)
-        {
-            call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-            *call->AsCall()->callSig = *sig;
-        }
+        assert(callInfo != nullptr);
 
         if (compIsForInlining() && opcode == CEE_CALLVIRT)
         {
@@ -8851,9 +8982,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     call->gtRetClsHnd = retClsHnd;
 
 #if FEATURE_MULTIREG_RET
-    // Initialize Return type descriptor of call node
-    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-    retTypeDesc->InitializeStructReturnType(this, retClsHnd);
+    call->InitializeStructReturnType(this, retClsHnd);
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef UNIX_AMD64_ABI
@@ -8861,55 +8990,57 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
     assert(!call->IsVarargs() && "varargs not allowed for System V OSs.");
 
-    // The return type will remain as the incoming struct type unless normalized to a
-    // single eightbyte return type below.
-    call->gtReturnType = call->gtType;
-
-    unsigned retRegCount = retTypeDesc->GetReturnRegCount();
-    if (retRegCount != 0)
+    const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+    const unsigned        retRegCount = retTypeDesc->GetReturnRegCount();
+    if (retRegCount == 0)
     {
-        if (retRegCount == 1)
+        // struct not returned in registers i.e returned via hiddden retbuf arg.
+        call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+    }
+    else if (retRegCount == 1)
+    {
+        if (!compDoOldStructRetyping())
         {
-            // See if the struct size is smaller than the return
-            // type size...
-            if (retTypeDesc->IsEnclosingType())
+            return call;
+        }
+        // See if the struct size is smaller than the return
+        // type size...
+        if (retTypeDesc->IsEnclosingType())
+        {
+            // If we know for sure this call will remain a call,
+            // retype and return value via a suitable temp.
+            if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
             {
-                // If we know for sure this call will remain a call,
-                // retype and return value via a suitable temp.
-                if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
-                {
-                    call->gtReturnType = retTypeDesc->GetReturnRegType(0);
-                    return impAssignSmallStructTypeToVar(call, retClsHnd);
-                }
+                call->gtReturnType = retTypeDesc->GetReturnRegType(0);
+                return impAssignSmallStructTypeToVar(call, retClsHnd);
             }
             else
             {
-                // Return type is same size as struct, so we can
-                // simply retype the call.
-                call->gtReturnType = retTypeDesc->GetReturnRegType(0);
+                call->gtReturnType = call->gtType;
             }
         }
         else
         {
-            // must be a struct returned in two registers
-            assert(retRegCount == 2);
-
-            if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
-            {
-                // Force a call returning multi-reg struct to be always of the IR form
-                //   tmp = call
-                //
-                // No need to assign a multi-reg struct to a local var if:
-                //  - It is a tail call or
-                //  - The call is marked for in-lining later
-                return impAssignMultiRegTypeToVar(call, retClsHnd);
-            }
+            // Return type is same size as struct, so we can
+            // simply retype the call.
+            call->gtReturnType = retTypeDesc->GetReturnRegType(0);
         }
     }
     else
     {
-        // struct not returned in registers i.e returned via hiddden retbuf arg.
-        call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+        // must be a struct returned in two registers
+        assert(retRegCount == 2);
+
+        if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
+        {
+            // Force a call returning multi-reg struct to be always of the IR form
+            //   tmp = call
+            //
+            // No need to assign a multi-reg struct to a local var if:
+            //  - It is a tail call or
+            //  - The call is marked for in-lining later
+            return impAssignMultiRegTypeToVar(call, retClsHnd);
+        }
     }
 
 #else // not UNIX_AMD64_ABI
@@ -8928,6 +9059,10 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     }
     else
     {
+        if (!compDoOldStructRetyping())
+        {
+            return call;
+        }
         assert(returnType != TYP_UNKNOWN);
 
         // See if the struct size is smaller than the return
@@ -8960,7 +9095,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         }
 
 #if FEATURE_MULTIREG_RET
-        unsigned retRegCount = retTypeDesc->GetReturnRegCount();
+        const unsigned retRegCount = call->GetReturnTypeDesc()->GetReturnRegCount();
         assert(retRegCount != 0);
 
         if (retRegCount >= 2)
@@ -8994,6 +9129,12 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
 {
     assert(varTypeIsStruct(info.compRetType));
     assert(info.compRetBuffArg == BAD_VAR_NUM);
+
+    if (!compDoOldStructRetyping() && (!op->IsCall() || !op->AsCall()->TreatAsHasRetBufArg(this)))
+    {
+        // Don't retype `struct` as a primitive type in `ret` instruction.
+        return op;
+    }
 
     JITDUMP("\nimpFixupStructReturnType: retyping\n");
     DISPTREE(op);
@@ -9160,10 +9301,20 @@ REDO_RETURN_NODE:
             // No need to spill anything as we're about to return.
             impAssignTempGen(tmpNum, op, info.compMethodInfo->args.retTypeClass, (unsigned)CHECK_SPILL_NONE);
 
-            // Don't create both a GT_ADDR & GT_OBJ just to undo all of that; instead,
-            // jump directly to a GT_LCL_FLD.
-            op = gtNewLclvNode(tmpNum, info.compRetNativeType);
-            op->ChangeOper(GT_LCL_FLD);
+            if (compDoOldStructRetyping())
+            {
+                // Don't create both a GT_ADDR & GT_OBJ just to undo all of that; instead,
+                // jump directly to a GT_LCL_FLD.
+                op = gtNewLclvNode(tmpNum, info.compRetNativeType);
+                op->ChangeOper(GT_LCL_FLD);
+            }
+            else
+            {
+                op = gtNewLclvNode(tmpNum, info.compRetType);
+                JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer for a special helper\n");
+                DISPTREE(op);
+                return op;
+            }
         }
         else
         {
@@ -15056,10 +15207,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT,
                                               helperArgs);
 
+                    CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
+
                     // The handle struct is returned in register
                     op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
+                    if (!compDoOldStructRetyping())
+                    {
+                        op1->AsCall()->gtRetClsHnd = classHandle;
+                    }
 
-                    tiRetVal = typeInfo(TI_STRUCT, impGetTypeHandleClass());
+                    tiRetVal = typeInfo(TI_STRUCT, classHandle);
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -15096,8 +15253,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = gtNewHelperCallNode(helper, TYP_STRUCT, helperArgs);
 
-                // The handle struct is returned in register
+                // The handle struct is returned in register and
+                // it could be consumed both as `TYP_STRUCT` and `TYP_REF`.
                 op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
+                if (!compDoOldStructRetyping())
+                {
+                    op1->AsCall()->gtRetClsHnd = tokenType;
+                }
 
                 tiRetVal = verMakeTypeInfo(tokenType);
                 impPushOnStack(op1, tiRetVal);
@@ -15274,6 +15436,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewHelperCallNode(helper,
                                               (var_types)((helper == CORINFO_HELP_UNBOX) ? TYP_BYREF : TYP_STRUCT),
                                               gtNewCallArgs(op2, op1));
+                    if (!compDoOldStructRetyping())
+                    {
+                        if (op1->gtType == TYP_STRUCT)
+                        {
+                            op1->AsCall()->gtRetClsHnd = resolvedToken.hClass;
+                        }
+                    }
                 }
 
                 assert(helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF || // Unbox helper returns a byref.
@@ -16192,7 +16361,7 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* src, CORINFO
 
 GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
 {
-    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for small struct return."));
+    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for small struct return"));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
     return ret;
@@ -16212,7 +16381,7 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
 
 GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
 {
-    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
+    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
 
@@ -16450,11 +16619,14 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     // node type. During morphing, the GT_CALL will get the correct, final, native return type.
 
                     bool restoreType = false;
-                    if ((op2->OperGet() == GT_CALL) && (info.compRetType == TYP_STRUCT))
+                    if (compDoOldStructRetyping())
                     {
-                        noway_assert(op2->TypeGet() == TYP_STRUCT);
-                        op2->gtType = info.compRetNativeType;
-                        restoreType = true;
+                        if ((op2->OperGet() == GT_CALL) && (info.compRetType == TYP_STRUCT))
+                        {
+                            noway_assert(op2->TypeGet() == TYP_STRUCT);
+                            op2->gtType = info.compRetNativeType;
+                            restoreType = true;
+                        }
                     }
 
                     impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
@@ -16462,9 +16634,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     GenTree* tmpOp2 = gtNewLclvNode(lvaInlineeReturnSpillTemp, op2->TypeGet());
 
-                    if (restoreType)
+                    if (compDoOldStructRetyping())
                     {
-                        op2->gtType = TYP_STRUCT; // restore it to what it was
+                        if (restoreType)
+                        {
+                            op2->gtType = TYP_STRUCT; // restore it to what it was
+                        }
                     }
 
                     op2 = tmpOp2;
@@ -16691,7 +16866,16 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
         op2 = impFixupStructReturnType(op2, retClsHnd);
         // return op2
-        op1 = gtNewOperNode(GT_RETURN, genActualType(info.compRetNativeType), op2);
+        var_types returnType;
+        if (compDoOldStructRetyping())
+        {
+            returnType = info.compRetNativeType;
+        }
+        else
+        {
+            returnType = info.compRetType;
+        }
+        op1 = gtNewOperNode(GT_RETURN, genActualType(returnType), op2);
     }
     else
     {
@@ -17404,7 +17588,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 #ifdef DEBUG
             char buffer[400];
             sprintf_s(buffer, sizeof(buffer),
-                      "Block at offset %4.4x to %4.4x in %s entered with different stack depths.\n"
+                      "Block at offset %4.4x to %4.4x in %0.200s entered with different stack depths.\n"
                       "Previous depth was %d, current depth is %d",
                       block->bbCodeOffs, block->bbCodeOffsEnd, info.compFullName, block->bbStkDepth,
                       verCurrentState.esStackDepth);
@@ -19628,6 +19812,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (impInlineRoot()->m_inlineStrategy->IsInliningDisabled())
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
+        return;
+    }
+
+    // Don't inline into callers that use the NextCallReturnAddress intrinsic.
+    if (info.compHasNextCallRetAddr)
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLER_USES_NEXT_CALL_RET_ADDR);
         return;
     }
 

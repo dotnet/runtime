@@ -181,9 +181,9 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
-#pragma warning disable CS8610
+#pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void AddEventHandler(object target, System.Delegate handler) { }
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
@@ -192,9 +192,9 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-#pragma warning disable CS8610
+#pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void RemoveEventHandler(object target, System.Delegate handler) { }
-#pragma warning restore CS8610
+#pragma warning restore CS8765
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class ComCompatibleVersionAttribute : System.Attribute
@@ -1006,13 +1006,14 @@ namespace System.Runtime.InteropServices
         protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
         public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
-        public void RegisterAsGlobalInstance() { }
+        public static void RegisterForTrackerSupport(ComWrappers instance) { }
+        public static void RegisterForMarshalling(ComWrappers instance) { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
-    public sealed class NativeCallableAttribute : System.Attribute
+    public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
-        public NativeCallableAttribute() { }
+        public UnmanagedCallersOnlyAttribute() { }
         public System.Runtime.InteropServices.CallingConvention CallingConvention;
         public string? EntryPoint;
     }

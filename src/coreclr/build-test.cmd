@@ -501,8 +501,7 @@ set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 if %%__Mono%%==1 (
   set RuntimeFlavor="mono"
-)
-else (
+) else (
   set RuntimeFlavor="coreclr"
 )
 
@@ -653,15 +652,17 @@ for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll";%CORE_ROOT%
     )))))
 )
 
-echo Composite response line^: %__CompositeResponseFile%
-type "%__CompositeResponseFile%"
+if defined __CompositeBuildMode (
+    echo Composite response line^: %__CompositeResponseFile%
+    type "%__CompositeResponseFile%"
+)
 
 if defined __CompositeBuildMode (
-    set __CompositeCommandLine="%CORE_ROOT%\corerun"
+    set __CompositeCommandLine="%__RepoRootDir%\dotnet.cmd"
     set __CompositeCommandLine=!__CompositeCommandLine! "%CORE_ROOT%\crossgen2\crossgen2.dll"
     set __CompositeCommandLine=!__CompositeCommandLine! "@%__CompositeResponseFile%"
     echo Building composite R2R framework^: !__CompositeCommandLine!
-    !__CompositeCommandLine!
+    call !__CompositeCommandLine!
     set __FailedToPrecompile=!ERRORLEVEL!
     copy /Y "!__CompositeOutputDir!\*.*" "!CORE_ROOT!\"
 )
@@ -679,13 +680,13 @@ REM Compile the managed assemblies in Core_ROOT before running the tests
 set AssemblyPath=%1
 set AssemblyName=%2
 
-set __CrossgenExe="%CORE_ROOT%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT%\x64\crossgen.exe" )
+set __CrossgenExe="%__BinDir%\crossgen.exe"
+if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%__BinDir%\x86\crossgen.exe" )
+if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%__BinDir%\x64\crossgen.exe" )
 set __CrossgenExe=%__CrossgenExe%
 
 if defined __DoCrossgen2 (
-    set __CrossgenExe="%CORE_ROOT%\corerun" "%CORE_ROOT%\crossgen2\crossgen2.dll"
+    set __CrossgenExe="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\crossgen2\crossgen2.dll"
 )
 
 REM Intentionally avoid using the .dll extension to prevent
@@ -695,12 +696,14 @@ set __CrossgenCmd=
 
 if defined __DoCrossgen (
     set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile!
+    echo !__CrossgenCmd!
+    !__CrossgenCmd!
 ) else (
     set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath!
+    echo !__CrossgenCmd!
+    call !__CrossgenCmd!
 )
 
-echo %__CrossgenCmd%
-%__CrossgenCmd%
 set /a __exitCode = !errorlevel!
 
 set /a "%~3+=1"

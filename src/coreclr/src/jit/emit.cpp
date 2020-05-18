@@ -5339,10 +5339,11 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, bool align)
     {
         // Data can have any size but since alignment is deduced from the size there's no
         // way to have a larger data size (e.g. 128) and request 4/8/16 byte alignment.
-        // 32 bytes (and more) alignment requires VM support (see ICorJitInfo::allocMem).
-        assert(size <= 16);
+        // As such, we restrict data above 16 bytes to be a multiple of 16 and assume 16-byte
+        // alignment. Alignment greater than 16 requires VM support (see ICorJitInfo::allocMem).
+        assert((size <= 16) || ((size % 16) == 0));
 
-        if (size == 16)
+        if (size >= 16)
         {
             emitConsDsc.align16 = true;
         }
@@ -7517,19 +7518,16 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
     // lazily obtain it here using the given method handle (we only save the sig
     // info when we explicitly need it, i.e. for CALLI calls, vararg calls, and
     // tail calls).
+    CORINFO_SIG_INFO sigInfo;
+
     if (callSig == nullptr)
     {
         assert(methodHandle != nullptr);
 
         if (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF)
         {
-            if (emitScratchSigInfo == nullptr)
-            {
-                emitScratchSigInfo = new (emitComp, CMK_CorSig) CORINFO_SIG_INFO;
-            }
-
-            emitComp->eeGetMethodSig(methodHandle, emitScratchSigInfo);
-            callSig = emitScratchSigInfo;
+            emitComp->eeGetMethodSig(methodHandle, &sigInfo);
+            callSig = &sigInfo;
         }
     }
 

@@ -927,7 +927,7 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
             if (exceptionCode == STATUS_STACK_OVERFLOW)
             {
                 // We have called HandleStackOverflow for soft SO through our vectored exception handler.
-                EEPolicy::HandleStackOverflow(SOD_UnmanagedFrameHandler, FRAME_TOP);
+                EEPolicy::HandleStackOverflow();
             }
         }
     }

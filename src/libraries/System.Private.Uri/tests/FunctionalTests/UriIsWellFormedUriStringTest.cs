@@ -39,19 +39,13 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriIsWellFormed_NewRelativeRegisteredAbsolute_Throws()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-          {
-              Uri test = new Uri("http://foo", UriKind.Relative);
-          });
+            Assert.ThrowsAny<FormatException>(() => new Uri("http://foo", UriKind.Relative));
         }
 
         [Fact]
         public void UriIsWellFormed_NewAbsoluteUnregisteredAsRelative_Throws()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-          {
-              Uri test = new Uri("any://foo", UriKind.Relative);
-          });
+            Assert.ThrowsAny<FormatException>(() => new Uri("any://foo", UriKind.Relative));
         }
 
         [Fact]
@@ -68,20 +62,15 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriIsWellFormed_NewRelativeWithUnknownSchemeAndQuery_Throws()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-          {
-                // The generic parser allows this kind of absolute Uri, where the http parser does not
-                Uri test;
-              Assert.False(Uri.TryCreate("any:?foo", UriKind.Relative, out test), "TryCreate should have Failed");
-              test = new Uri("any:?foo", UriKind.Relative);
-          });
+            Assert.False(Uri.TryCreate("any:?foo", UriKind.Relative, out _), "TryCreate should have Failed");
+            // The generic parser allows this kind of absolute Uri, where the http parser does not
+            Assert.ThrowsAny<FormatException>(() => new Uri("any:?foo", UriKind.Relative));
         }
 
         [Fact]
         public void UriIsWellFormed_TryCreateNewRelativeWithColon_Failure()
         {
-            Uri test;
-            Assert.False(Uri.TryCreate("http://foo", UriKind.Relative, out test));
+            Assert.False(Uri.TryCreate("http://foo", UriKind.Relative, out _));
         }
 
         // App-compat - A colon in the first segment of a relative Uri is invalid, but we cannot reject it.
@@ -89,8 +78,7 @@ namespace System.PrivateUri.Tests
         public void UriIsWellFormed_TryCreateNewRelativeWithPercentAndColon_Success()
         {
             string input = "bad%20http://foo";
-            Uri test;
-            Assert.True(Uri.TryCreate(input, UriKind.Relative, out test));
+            Assert.True(Uri.TryCreate(input, UriKind.Relative, out Uri test));
             Assert.False(test.IsWellFormedOriginalString());
             Assert.False(Uri.IsWellFormedUriString(input, UriKind.Relative));
             Assert.False(Uri.IsWellFormedUriString(input, UriKind.RelativeOrAbsolute));
@@ -109,7 +97,7 @@ namespace System.PrivateUri.Tests
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<Uri>(test, result); //"Transitivity failure"
+            Assert.Equal(test, result); //"Transitivity failure"
 
             Assert.True(string.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
         }
@@ -125,7 +113,7 @@ namespace System.PrivateUri.Tests
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<Uri>(test, result); //"Transitivity failure"
+            Assert.Equal(test, result); //"Transitivity failure"
 
             Assert.True(string.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
         }
@@ -245,13 +233,13 @@ namespace System.PrivateUri.Tests
             Uri test = new Uri(@"https://base/path/", UriKind.Absolute);
             Uri rel = baseUri.MakeRelativeUri(test);
 
-            Assert.Equal<Uri>(test, rel);
+            Assert.Equal(test, rel);
 
             Assert.True(Uri.IsWellFormedUriString(rel.ToString(), UriKind.Absolute), "Not well formed: " + rel);
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<Uri>(result, test);
+            Assert.Equal(result, test);
         }
 
         [Fact]
@@ -261,13 +249,13 @@ namespace System.PrivateUri.Tests
             Uri test = new Uri(@"http://host2/path/", UriKind.Absolute);
             Uri rel = baseUri.MakeRelativeUri(test);
 
-            Assert.Equal<Uri>(test, rel);
+            Assert.Equal(test, rel);
 
             Assert.True(Uri.IsWellFormedUriString(rel.ToString(), UriKind.Absolute), "Not well formed: " + rel);
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<Uri>(result, test);
+            Assert.Equal(result, test);
         }
 
         [Fact]
@@ -277,13 +265,13 @@ namespace System.PrivateUri.Tests
             Uri test = new Uri(@"http://host:2/path/", UriKind.Absolute);
             Uri rel = baseUri.MakeRelativeUri(test);
 
-            Assert.Equal<Uri>(test, rel);
+            Assert.Equal(test, rel);
 
             Assert.True(Uri.IsWellFormedUriString(rel.ToString(), UriKind.Absolute), "Not well formed: " + rel);
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<Uri>(result, test);
+            Assert.Equal(result, test);
         }
 
         [Fact]

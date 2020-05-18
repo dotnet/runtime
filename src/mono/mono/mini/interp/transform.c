@@ -2482,6 +2482,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 		} else if (calli) {
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
+#ifdef TARGET_X86
+			/* Windows not tested/supported yet */
+			if (td->last_ins->opcode == MINT_CALLI_NAT)
+				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
+#endif
+
 			if (op != -1) {
 				td->last_ins->data[1] = op;
 				if (td->last_ins->opcode == MINT_CALLI_NAT_FAST)
@@ -4610,7 +4616,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					/* public ByReference(ref T value) */
 					g_assert (csignature->hasthis && csignature->param_count == 1);
 					interp_add_ins (td, MINT_INTRINS_BYREFERENCE_CTOR);
-					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				} else if (klass != mono_defaults.string_class &&
 						!mono_class_is_marshalbyref (klass) &&
 						!mono_class_has_finalizer (klass) &&
@@ -6498,12 +6503,6 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 			*push = 1;
 			break;
 		}
-		case MINT_INTRINS_BYREFERENCE_CTOR: {
-			InterpMethod *imethod = (InterpMethod*) td->data_items [ins->data [0]];
-			*pop = imethod->param_count;
-			*push = 1;
-			break;
-		}
 		default:
 			g_assert_not_reached ();
 		}
@@ -7222,6 +7221,10 @@ retry:
 					}
 
 					if (sp->ins) {
+						// If the top of stack is not pushed by a ldloc, we are introducing a
+						// new dependency on the src_local since we are adding a movloc from it.
+						if (!MINT_IS_LDLOC (sp->ins->opcode))
+							local_ref_count [src_local]++;
 						interp_clear_ins (td, sp->ins);
 						interp_clear_ins (td, ins);
 
@@ -7638,7 +7641,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	generate_compacted_code (td);
 
 	if (td->verbose_level) {
-		g_print ("Runtime method: %s %p, VT stack size: %d\n", mono_method_full_name (method, TRUE), rtm, td->max_vt_sp);
+		g_print ("Runtime method: %s %p\n", mono_method_full_name (method, TRUE), rtm);
+		g_print ("Locals size %d, VT stack size: %d\n", td->total_locals_size, td->max_vt_sp);
 		g_print ("Calculated stack size: %d, stated size: %d\n", td->max_stack_height, header->max_stack);
 		dump_mint_code (td->new_code, td->new_code_end);
 	}
