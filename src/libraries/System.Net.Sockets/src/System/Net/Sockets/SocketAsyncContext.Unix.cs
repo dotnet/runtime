@@ -482,6 +482,7 @@ namespace System.Net.Sockets
                 {
                     if (!SetReceivedFlags && SocketAddress == null)
                     {
+                        ReceivedFlags = SocketFlags.None;
                         return SocketPal.TryCompleteReceive(context._socket, Buffer.Span, Flags, out BytesTransferred, out ErrorCode);
                     }
                     else
