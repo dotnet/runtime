@@ -54,6 +54,21 @@ namespace System.Net.Http
             return encoding.GetBytes(content);
         }
 
+        protected override void SerializeToStream(Stream stream, TransportContext? context,
+            CancellationToken cancellationToken)
+        {
+            // Only skip the original protected virtual SerializeToStream if this
+            // isn't a derived type that may have overridden the behavior.
+            if (GetType() != typeof(StringContent))
+            {
+                base.SerializeToStream(stream, context, cancellationToken);
+            }
+            else
+            {
+                SerializeToStreamCore(stream, context, cancellationToken);
+            }
+        }
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.

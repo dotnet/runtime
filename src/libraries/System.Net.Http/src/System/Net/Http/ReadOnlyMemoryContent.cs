@@ -15,15 +15,13 @@ namespace System.Net.Http
         public ReadOnlyMemoryContent(ReadOnlyMemory<byte> content) =>
             _content = content;
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            stream.WriteAsync(_content).AsTask();
-
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
-            cancellationToken.ThrowIfCancellationRequested();
             stream.Write(_content.Span);
         }
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            stream.WriteAsync(_content).AsTask();
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             stream.WriteAsync(_content, cancellationToken).AsTask();

@@ -337,6 +337,11 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            if (request.Version.Major >= 2)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_sync_not_supported, GetType()));
+            }
+
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 

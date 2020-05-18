@@ -22,7 +22,7 @@ namespace System.Net.Http
         // Unfortunately we cannot force everyone to implement so in such case we throw NSE.
         protected internal virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            throw new NotSupportedException(SR.Format(SR.net_http_missing_sync_implementation, typeof(HttpMessageHandler), GetType(), nameof(Send)));
+            throw new NotSupportedException(SR.Format(SR.net_http_missing_sync_implementation, GetType(), nameof(HttpMessageHandler), nameof(Send)));
         }
 
         protected internal abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);

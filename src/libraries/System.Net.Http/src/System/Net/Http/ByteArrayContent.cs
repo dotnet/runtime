@@ -47,6 +47,23 @@ namespace System.Net.Http
             _count = count;
         }
 
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            // Only skip the original protected virtual SerializeToStream if this
+            // isn't a derived type that may have overridden the behavior.
+            if (GetType() != typeof(ByteArrayContent))
+            {
+                base.SerializeToStream(stream, context, cancellationToken);
+            }
+            else
+            {
+                SerializeToStreamCore(stream, context, cancellationToken);
+            }
+        }
+
+        private protected void SerializeToStreamCore(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            stream.Write(_content, _offset, _count);
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, default);
 
@@ -58,18 +75,6 @@ namespace System.Net.Http
 
         private protected Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken) =>
             stream.WriteAsync(_content, _offset, _count, cancellationToken);
-
-        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
-        {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
-            cancellationToken.ThrowIfCancellationRequested();
-            stream.Write(_content, _offset, _count);
-        }
 
         protected internal override bool TryComputeLength(out long length)
         {

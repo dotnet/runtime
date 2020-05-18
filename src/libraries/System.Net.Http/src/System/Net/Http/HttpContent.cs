@@ -321,7 +321,7 @@ namespace System.Net.Http
         // Unfortunately we cannot force everyone to implement so in such case we throw NSE.
         protected virtual void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            throw new NotSupportedException(SR.Format(SR.net_http_missing_sync_implementation, typeof(HttpContent), GetType(), nameof(SerializeToStream)));
+            throw new NotSupportedException(SR.Format(SR.net_http_missing_sync_implementation, GetType(), nameof(HttpContent), nameof(SerializeToStream)));
         }
 
         protected virtual Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
