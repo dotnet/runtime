@@ -334,7 +334,7 @@ namespace System.Net.Quic.Tests
             var lostLabel = lost ? " (Lost)" : "";
             long milliseconds = Timestamp.GetMilliseconds(flight.TimeSent - _startTimestamp);
 
-            Output.WriteLine($"\n{(milliseconds > 0 ? $"[{milliseconds}]" : "")}{sender}{lostLabel}:");
+            Output.WriteLine($"\n{(milliseconds > 0 ? $"[{milliseconds}] " : "")}{sender}{lostLabel}:");
             foreach (PacketBase packet in flight.Packets)
             {
                 Output.WriteLine(packet.ToString());

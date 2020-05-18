@@ -16,6 +16,8 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
+        private const int RequiredCongestionWindowSizeForSending = 50;
+
         private readonly SingleEventValueTaskSource _connectTcs = new SingleEventValueTaskSource();
 
         private readonly SingleEventValueTaskSource _closeTcs = new SingleEventValueTaskSource();
@@ -23,7 +25,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Timestamp when last <see cref="ConnectionCloseFrame"/> was sent, or 0 if no such frame was sent yet.
         /// </summary>
-        private long _lastConnectionCloseSent;
+        private long _lastConnectionCloseSentTimestamp;
 
         private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[3]
         {
@@ -37,15 +39,15 @@ namespace System.Net.Quic.Implementations.Managed
 
         /// <summary>
         ///     If true, the connection is in draining state. The connection MUST not send packets in such state. The
-        ///     The connection transitions to closed at <see cref="_closingPeriodEnd"/> at the latest.
+        ///     The connection transitions to closed at <see cref="_closingPeriodEndTimestamp"/> at the latest.
         /// </summary>
         private bool _isDraining;
 
         /// <summary>
         ///     If true, the connection is in closing or draining state and will be considered close at
-        ///     <see cref="_closingPeriodEnd"/> at the latest.
+        ///     <see cref="_closingPeriodEndTimestamp"/> at the latest.
         /// </summary>
-        private bool IsClosing => _closingPeriodEnd != null;
+        private bool IsClosing => _closingPeriodEndTimestamp != null;
 
         /// <summary>
         ///     Timestamp when the connection close will be initiated due to lack of packets from peer.
@@ -55,12 +57,12 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     True if an ack-eliciting packet has been sent since last receiving an ack-eliciting packet.
         /// </summary>
-        private bool _ackElicitingSentSinceLastReceive;
+        private bool _ackElicitingWasSentSinceLastReceive;
 
         /// <summary>
         ///     Timestamp when the closing period will be end and the connection will be considered closed.
         /// </summary>
-        private long? _closingPeriodEnd;
+        private long? _closingPeriodEndTimestamp;
 
         /// <summary>
         ///     True if the connection is in closed state.
@@ -153,7 +155,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Flow control limits set by the peer for this endpoint for the entire connection.
         /// </summary>
-        private ConnectionFlowControlLimits _peerLimits;
+        private ConnectionFlowControlLimits _peerLimits = default;
 
         /// <summary>
         ///     QUIC transport parameters requested by peer endpoint.
@@ -174,6 +176,11 @@ namespace System.Net.Quic.Implementations.Managed
         ///     Version of the QUIC protocol used for this connection.
         /// </summary>
         private readonly QuicVersion version = QuicVersion.Draft27;
+
+        /// <summary>
+        ///     Timer when at the latest the next ACK frame should be sent.
+        /// </summary>
+        private long _nextAckTimer = long.MaxValue;
 
         /// <summary>
         ///     True if PING frame should be sent during next flight.
@@ -252,10 +259,36 @@ namespace System.Net.Quic.Implementations.Managed
         {
             long timer = Recovery.LossRecoveryTimer;
 
-            if (_closingPeriodEnd != null)
-                timer = Math.Min(timer, _closingPeriodEnd.Value);
+            // do not incorporate next ack timer if we cannot send ack anyway
+            if (Recovery.GetAvailableCongestionWindowBytes() >= RequiredCongestionWindowSizeForSending)
+            {
+                timer = Math.Min(timer, _nextAckTimer);
+            }
+
+            if (_closingPeriodEndTimestamp != null)
+                timer = Math.Min(timer, _closingPeriodEndTimestamp.Value);
 
             return Math.Min(timer, _idleTimeout);
+        }
+
+        internal void OnTimeout(long timestamp)
+        {
+            if (timestamp >= _closingPeriodEndTimestamp)
+            {
+                SignalConnectionClose();
+                return;
+            }
+
+            if (timestamp >= _idleTimeout)
+            {
+                // TODO-RZ: Force close the connection with error
+                SignalConnectionClose();
+            }
+
+            if (timestamp >= Recovery.LossRecoveryTimer)
+            {
+                Recovery.OnLossDetectionTimeout(_tls.IsHandshakeComplete, timestamp);
+            }
         }
 
         /// <summary>
@@ -318,7 +351,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Gets <see cref="EncryptionLevel"/> at which the next packet should be sent.
         /// </summary>
-        private EncryptionLevel GetWriteLevel()
+        internal EncryptionLevel GetWriteLevel(long timestamp)
         {
             // if there is a probe waiting to be sent on any level, send it.
             // Because probe packets are not limited by congestion window, this avoids a live-lock in
@@ -339,6 +372,12 @@ namespace System.Net.Quic.Implementations.Managed
             if (Recovery.GetPacketNumberSpace(probeSpace).RemainingLossProbes > 0)
             {
                 return (EncryptionLevel)probeSpace;
+            }
+
+            if (Recovery.GetAvailableCongestionWindowBytes() < RequiredCongestionWindowSizeForSending)
+            {
+                // can't send anything anyway
+                return EncryptionLevel.None;
             }
 
             // if pending errors, send them in appropriate epoch,
@@ -364,13 +403,23 @@ namespace System.Net.Quic.Implementations.Managed
                 if (pnSpace.CryptoOutboundStream.IsFlushable ||
                     // resend lost data
                     recoverySpace.LostPackets.Count > 0 ||
-                    // send acknowledgements
-                    pnSpace.AckElicited)
+                    // send acknowledgement if needed, prefer sending acks in Initial and Handshake
+                    // immediately since there is a great chance of coalescing with next level
+                    (i < 3 ? pnSpace.AckElicited : pnSpace.NextAckTimer <= timestamp))
                     return level;
             }
 
-            // else we send stream/application data
-            return EncryptionLevel.Application;
+            // otherwise check if we have something to send.
+            // TODO-RZ: this list may be incomplete
+            if (_pingWanted ||
+                _streams.HasFlushableStreams ||
+                _streams.HasUpdateableStreams)
+            {
+                return EncryptionLevel.Application;
+            }
+
+            // otherwise we have no data to send.
+            return EncryptionLevel.None;
         }
 
         private static PacketSpace GetPacketSpace(PacketType packetType)
@@ -644,11 +693,14 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            Recovery.DropUnackedData(space, sentPacketPool);
+            Recovery.DropUnackedData(space, _tls.IsHandshakeComplete, sentPacketPool);
 
             // drop protection keys
             pnSpace.SendCryptoSeal = null;
             pnSpace.RecvCryptoSeal = null;
+
+            pnSpace.NextAckTimer = long.MaxValue;
+            ResetAckTimer();
         }
 
         internal void SignalConnectionClose() => _closeTcs.TryComplete();
@@ -660,12 +712,12 @@ namespace System.Net.Quic.Implementations.Managed
         /// <param name="error">Error which led to connection closing.</param>
         private void StartClosing(long now, QuicError error)
         {
-            Debug.Assert(_closingPeriodEnd == null);
+            Debug.Assert(_closingPeriodEndTimestamp == null);
             Debug.Assert(error != null);
 
             // The closing and draining states SHOULD exists for at least three times the current PTO interval
             // Note: this is to properly discard reordered/delayed packets.
-            _closingPeriodEnd = now + 3 * Recovery.GetProbeTimeoutInterval();
+            _closingPeriodEndTimestamp = now + 3 * Recovery.GetProbeTimeoutInterval();
 
             if (error.ErrorCode == TransportErrorCode.NoError)
             {

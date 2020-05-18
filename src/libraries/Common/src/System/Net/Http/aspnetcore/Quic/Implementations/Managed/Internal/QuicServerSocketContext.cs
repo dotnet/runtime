@@ -81,7 +81,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 if (connection.GetNextTimerTimestamp() <= now)
                 {
-                    UpdateAsync(connection);
+                    var origState = connection.ConnectionState;
+                    connection.OnTimeout(now);
+                    UpdateAsync(connection, origState);
                 }
 
                 nextTimeout = Math.Min(nextTimeout, connection.GetNextTimerTimestamp());

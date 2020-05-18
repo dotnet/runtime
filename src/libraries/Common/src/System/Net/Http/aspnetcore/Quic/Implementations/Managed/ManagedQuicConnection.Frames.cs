@@ -86,6 +86,8 @@ namespace System.Net.Quic.Implementations.Managed
         /// <param name="context">Contextual data for the current receive operation.</param>
         private ProcessPacketResult ProcessFrames(QuicReader reader, PacketType packetType, QuicSocketContext.RecvContext context)
         {
+            bool ackEliciting = false;
+
             while (reader.BytesLeft > 0)
             {
                 var frameType = reader.PeekFrameType();
@@ -95,10 +97,7 @@ namespace System.Net.Quic.Implementations.Managed
                     return CloseConnection(TransportErrorCode.ProtocolViolation, QuicError.FrameNotAllowed, frameType);
                 }
 
-                if (IsAckEliciting(frameType))
-                {
-                    GetPacketNumberSpace(GetEncryptionLevel(packetType)).AckElicited = true;
-                }
+                ackEliciting |= IsAckEliciting(frameType);
 
                 ProcessPacketResult result = frameType switch
                 {
@@ -142,6 +141,33 @@ namespace System.Net.Quic.Implementations.Managed
                 return result;
             }
 
+            if (ackEliciting)
+            {
+                var pnSpace = GetPacketNumberSpace(GetEncryptionLevel(packetType));
+                pnSpace.AckElicited = true;
+
+                // also set ack timer if wasn't set before
+                if (pnSpace.NextAckTimer == long.MaxValue)
+                {
+                    pnSpace.NextAckTimer = context.Timestamp + Timestamp.FromMilliseconds(_localTransportParameters.MaxAckDelay) -
+                                           RecoveryController.TimerGranularity;
+
+                    // also reset global ack timer
+                    ResetAckTimer();
+                }
+                else
+                {
+                    // TODO-RZ: RFC: An ACK frame SHOULD be generated for at least every second ack-
+                    // eliciting packet.  This recommendation is in keeping with standard practice
+                    // for TCP [RFC5681].
+
+                    // if timer is set, then we received a second ack-eliciting frame without
+                    // sending an ack back. set timer to fire immediately to ensure ack is sent as
+                    // soon as possible to the peer.
+                    pnSpace.NextAckTimer = context.Timestamp;
+                }
+            }
+
             // advance handshake to set encryption secrets (to be able to process coalesced packets)
             if (context.HandshakeWanted && _outboundError == null)
             {
@@ -149,6 +175,12 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             return ProcessPacketResult.Ok;
+        }
+
+        private void ResetAckTimer()
+        {
+            _nextAckTimer = Math.Min(_pnSpaces[0].NextAckTimer,
+                Math.Min(_pnSpaces[1].NextAckTimer, _pnSpaces[2].NextAckTimer));
         }
 
         // TODO-RZ: remove this once all frame types are supported
@@ -508,7 +540,7 @@ namespace System.Net.Quic.Implementations.Managed
                 _inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.ReasonPhrase,
                     frame.FrameType, frame.IsQuicError);
 
-                if (_closingPeriodEnd == null)
+                if (_closingPeriodEndTimestamp == null)
                 {
                     StartClosing(context.Timestamp, _inboundError);
                 }
@@ -630,8 +662,9 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ other frames
 
             // start by non ack-eliciting frames
-            WriteAckFrame(writer, pnSpace, context);
             WriteConnectionCloseFrame(writer, context);
+            if (_outboundError != null) return;
+            WriteAckFrame(writer, pnSpace, context);
 
             // we can simply track if this packet by tracking the written offset.
             int writtenAfterNonAckEliciting = writer.BytesWritten;
@@ -682,7 +715,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            if (_closingPeriodEnd == null)
+            if (_closingPeriodEndTimestamp == null)
             {
                 // After sending a CONNECTION_CLOSE frame, an endpoint immediately enters the closing state.
                 StartClosing(context.Timestamp, _outboundError);
@@ -691,7 +724,7 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
             // containing a CONNECTION_CLOSE frame. For instance, wait progressively increasing number of packets or
             // amount of time before responding.
-            if (_lastConnectionCloseSent >= context.Timestamp)
+            if (_lastConnectionCloseSentTimestamp >= context.Timestamp)
             {
                 return;
             }
@@ -708,7 +741,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             ConnectionCloseFrame.Write(writer, frame);
-            _lastConnectionCloseSent = context.Timestamp;
+            _lastConnectionCloseSentTimestamp = context.Timestamp;
 
             if (_inboundError != null)
             {
@@ -746,12 +779,11 @@ namespace System.Net.Quic.Implementations.Managed
                 return; // no need for ack now
             }
 
-            if (!pnSpace.AckElicited && context.Timestamp - pnSpace.LastAckSent <= Recovery.LatestRtt / 2)
-            {
-                return;
-            }
+            pnSpace.LastAckSentTimestamp = context.Timestamp;
 
-            pnSpace.LastAckSent = context.Timestamp;
+            // reset ack timer
+            pnSpace.NextAckTimer = long.MaxValue;
+            ResetAckTimer();
 
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
             Debug.Assert(pnSpace.LargestReceivedPacketTimestamp != 0);

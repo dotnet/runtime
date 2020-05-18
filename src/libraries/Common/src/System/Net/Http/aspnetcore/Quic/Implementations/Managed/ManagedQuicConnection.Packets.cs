@@ -40,7 +40,7 @@ namespace System.Net.Quic.Implementations.Managed
                     case ProcessPacketResult.Ok:
                         // An endpoint restarts its idle timer when a packet from its peer is
                         // received and processed successfully.
-                        _ackElicitingSentSinceLastReceive = false;
+                        _ackElicitingWasSentSinceLastReceive = false;
                         RestartIdleTimer(ctx.Timestamp);
                         break;
                 }
@@ -324,6 +324,7 @@ namespace System.Net.Quic.Implementations.Managed
             reader.Reset(originalSegment.Slice(originalBytesRead, length));
 
             var result = ProcessFrames(reader, packetType, context);
+
             reader.Reset(originalSegment);
             return result;
         }
@@ -332,18 +333,6 @@ namespace System.Net.Quic.Implementations.Managed
         {
             receiver = _remoteEndpoint;
 
-            if (ctx.Timestamp > _closingPeriodEnd)
-            {
-                SignalConnectionClose();
-                return;
-            }
-
-            if (ctx.Timestamp > _idleTimeout)
-            {
-                // TODO-RZ: Force close the connection with error
-                SignalConnectionClose();
-            }
-
             if (_isDraining)
             {
                 // While otherwise identical to the closing state, an endpoint in the draining state MUST NOT
@@ -351,16 +340,11 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            if (ctx.Timestamp >= Recovery.LossRecoveryTimer)
-            {
-                Recovery.OnLossDetectionTimeout(_tls.IsHandshakeComplete, ctx.Timestamp);
-            }
-
-            var level = GetWriteLevel();
+            var level = GetWriteLevel(ctx.Timestamp);
             var origMemory = writer.Buffer;
             int written = 0;
 
-            while (true)
+            while (level != EncryptionLevel.None)
             {
                 if (GetPacketNumberSpace(level).SendCryptoSeal == null)
                 {
@@ -386,7 +370,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (level == EncryptionLevel.Application)
                     break;
 
-                var nextLevel = GetWriteLevel();
+                var nextLevel = GetWriteLevel(ctx.Timestamp);
 
                 // only coalesce packets in ascending encryption level
                 if (nextLevel <= level)
@@ -541,10 +525,10 @@ namespace System.Net.Quic.Implementations.Managed
             pnSpace.NextPacketNumber++;
             NetEventSource.PacketSent(this, context.SentPacket.BytesSent);
 
-            if (context.SentPacket.AckEliciting && !_ackElicitingSentSinceLastReceive)
+            if (context.SentPacket.AckEliciting && !_ackElicitingWasSentSinceLastReceive)
             {
                 RestartIdleTimer(context.Timestamp);
-                _ackElicitingSentSinceLastReceive = true;
+                _ackElicitingWasSentSinceLastReceive = true;
             }
 
             if (!_isServer && packetType == PacketType.Handshake)

@@ -19,12 +19,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override void OnSignal()
         {
-            UpdateConnectionAndTimout();
+            UpdateAsync(_connection);
+            UpdateTimeout(_connection.GetNextTimerTimestamp());
         }
 
         protected override void OnTimeout()
         {
-            UpdateConnectionAndTimout();
+            var now = Timestamp.Now;
+            // Debug.Assert(now >= _connection.GetNextTimerTimestamp());
+            var origState = _connection.ConnectionState;
+            _connection.OnTimeout(now);
+            UpdateAsync(_connection, origState);
+            UpdateTimeout(_connection.GetNextTimerTimestamp());
         }
 
         protected override void OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
@@ -50,12 +56,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private bool _stop;
 
         protected override bool ShouldContinue => !_stop;
-
-        private void UpdateConnectionAndTimout()
-        {
-            UpdateAsync(_connection);
-            UpdateTimeout(_connection.GetNextTimerTimestamp());
-        }
 
         protected override void DetachConnection(ManagedQuicConnection connection)
         {

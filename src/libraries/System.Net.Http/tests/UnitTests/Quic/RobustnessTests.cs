@@ -17,7 +17,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(1, 100)]
         [InlineData(2, 100)]
-        [InlineData(3, 50)]
+        [InlineData(4, 50)]
         public void EstablishConnectionInGreatLossyEnvironment(int seed, int rtt)
         {
             // no reordering yet
@@ -80,6 +80,7 @@ namespace System.Net.Quic.Tests
                 else if (timeoutConnection.GetNextTimerTimestamp() < long.MaxValue)
                 {
                     CurrentTimestamp = timeoutConnection.GetNextTimerTimestamp();
+                    timeoutConnection.OnTimeout(CurrentTimestamp);
 
                     // maxValue here would lead to deadlock during connection establishment
                     CollectPackets(timeoutConnection);

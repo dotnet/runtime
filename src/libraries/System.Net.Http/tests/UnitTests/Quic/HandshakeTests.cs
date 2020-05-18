@@ -44,6 +44,7 @@ namespace System.Net.Quic.Tests
             Assert.NotEqual(long.MaxValue, Client.GetNextTimerTimestamp());
 
             CurrentTimestamp = Client.GetNextTimerTimestamp();
+            Client.OnTimeout(CurrentTimestamp);
             var flight = GetFlightToSend(Client);
             var packet = Assert.IsType<InitialPacket>(Assert.Single(flight.Packets));
 

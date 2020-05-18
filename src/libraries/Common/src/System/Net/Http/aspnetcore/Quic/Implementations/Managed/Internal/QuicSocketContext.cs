@@ -95,7 +95,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _signalTcs.TrySetResult(0);
         }
 
-        private void UpdateAsync(ManagedQuicConnection connection, QuicConnectionState previousState)
+        protected void UpdateAsync(ManagedQuicConnection connection, QuicConnectionState previousState)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -173,7 +173,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 var previousState = connection.ConnectionState;
                 _recvContext.Timestamp = Timestamp.Now;
                 connection.ReceiveData(reader, sender, _recvContext);
-                UpdateAsync(connection, previousState);
+
+                if (connection.GetWriteLevel(_recvContext.Timestamp) != EncryptionLevel.None)
+                {
+                    UpdateAsync(connection, previousState);
+                }
+                else
+                {
+                    var newState = connection.ConnectionState;
+                    if (newState != previousState)
+                    {
+                        OnConnectionStateChanged(connection, newState);
+                    }
+                }
+
                 UpdateTimeout(connection.GetNextTimerTimestamp());
             }
 
@@ -222,6 +235,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             var shutdownTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             _waitingTasks[0] = socketReceiveTask;
+            // _waitingTasks[0] = _infiniteTimeoutTask;
             _waitingTasks[1] = _signalTcs.Task;
             _waitingTasks[2] = _timeoutTask;
             _waitingTasks[3] = shutdownTcs.Task;
@@ -240,12 +254,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         shouldWait = false;
                     }
 
+
                     if (socketReceiveTask.IsCompleted)
                     {
-                        if (socketReceiveTask.IsCompletedSuccessfully)
+                        // if (socketReceiveTask.IsCompletedSuccessfully)
                         {
                             var result = await socketReceiveTask.ConfigureAwait(false);
-
+                    
                             // process only datagrams big enough to contain valid QUIC packets
                             if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
                             {
@@ -253,24 +268,27 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                                 DoReceive(_reader, (IPEndPoint)result.RemoteEndPoint);
                             }
                         }
-
+                    
                         // receive also all following packets
-                        while (_socket.Poll(0, SelectMode.SelectRead))
-                        {
-                            EndPoint remoteEp = _listenEndpoint;
-                            var result = _socket.ReceiveFrom(_recvBuffer, ref remoteEp);
-
-                            // process only datagrams big enough to contain valid QUIC packets
-                            if (result >= QuicConstants.MinimumPacketSize)
-                            {
-                                _reader.Reset(_recvBuffer.AsMemory(0, result));
-                                DoReceive(_reader, (IPEndPoint)remoteEp);
-                            }
-                        }
+                        // while (_socket.Poll(0, SelectMode.SelectRead) &&
+                        //        !_timeoutTask.IsCompleted &&
+                        //        !_signalTcs.Task.IsCompleted)
+                        // {
+                        //     EndPoint remoteEp = _listenEndpoint;
+                        //     var result = _socket.ReceiveFrom(_recvBuffer, ref remoteEp);
+                        //     
+                        //     // process only datagrams big enough to contain valid QUIC packets
+                        //     if (result >= QuicConstants.MinimumPacketSize)
+                        //     {
+                        //         _reader.Reset(_recvBuffer.AsMemory(0, result));
+                        //         DoReceive(_reader, (IPEndPoint)remoteEp);
+                        //     }
+                        // }
 
                         // start new receiving task
                         _waitingTasks[0] = socketReceiveTask =
                             _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
+
                         shouldWait = false;
                     }
 

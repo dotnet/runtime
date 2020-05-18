@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Timer granularity in ticks. The value is system-dependent, but SHOULD be at least 1ms.
         /// </summary>
-        internal static readonly long TimerGranularity = Timestamp.FromMilliseconds(15);
+        internal static readonly long TimerGranularity = Timestamp.FromMilliseconds(5);
 
         /// <summary>
         ///     The RTT used before an RTT sample is taken in ticks. the RECOMMENDED value is 500ms.
@@ -459,6 +459,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             pnSpace = GetEarliestSpace(isHandshakeComplete,
                 PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer);
 
+            Debug.Assert(pnSpace.TimeOfLastAckElicitingPacketSent != long.MaxValue);
+
             pnSpace.RemainingLossProbes = 2;
             PtoCount++;
 
@@ -522,8 +524,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Drops all unacked data from given packet space.
         /// </summary>
         /// <param name="space">Packet space to drop.</param>
+        /// <param name="isHandshakeComplete">True if handshake is complete</param>
         /// <param name="sentPacketPool">Object pool to which instances of <see cref="SentPacket"/> shoudl be returned.</param>
-        internal void DropUnackedData(PacketSpace space, ObjectPool<SentPacket> sentPacketPool)
+        internal void DropUnackedData(PacketSpace space, bool isHandshakeComplete,
+            ObjectPool<SentPacket> sentPacketPool)
         {
             var pnSpace = GetPacketNumberSpace(space);
 
@@ -549,6 +553,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             pnSpace.Reset();
+            SetLossDetectionTimer(isHandshakeComplete);
         }
     }
 }

@@ -218,7 +218,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(data, frame.StreamData);
         }
 
-        [Fact]
+        [Fact(Skip = "Sending of MaxStreamData frames has been reduced")]
         public void ReceiverSendsMaxDataAfterReadingFromStream()
         {
             byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
@@ -258,10 +258,14 @@ namespace System.Net.Quic.Tests
             Assert.NotNull(receiverStream);
             receiverStream.Read(recvBuf);
 
-            Intercept1RttFrame<MaxStreamDataFrame>(Server, Client, frame =>
+            Server.Ping();
+            Intercept1Rtt(Server, Client, packet =>
             {
                 // make sure the id above the client-specified limit
-                frame.StreamId = ClientOptions.MaxUnidirectionalStreams * 4 + 1;
+                packet.Frames.Add(new MaxStreamDataFrame()
+                {
+                    StreamId = ClientOptions.MaxUnidirectionalStreams * 4 + 1,
+                });
             });
 
             Send1Rtt(Client, Server)

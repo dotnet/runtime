@@ -72,6 +72,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Timestamp when last ack frame was sent.
         /// </summary>
-        internal long LastAckSent { get; set; }
+        internal long LastAckSentTimestamp { get; set; }
+
+        /// <summary>
+        ///     Timestamp when the next ACK frame should be sent.
+        /// </summary>
+        internal long NextAckTimer { get; set; } = long.MaxValue;
     }
 }

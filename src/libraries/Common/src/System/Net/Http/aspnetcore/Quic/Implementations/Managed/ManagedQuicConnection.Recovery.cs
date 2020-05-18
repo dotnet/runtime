@@ -66,7 +66,9 @@ namespace System.Net.Quic.Implementations.Managed
         {
             NetEventSource.PacketLost(this, packet.BytesSent);
 
-            if (packet.AckEliciting || packet.TimeSent == pnSpace.LastAckSent)
+            // if we lost acks, make sure we send them again.
+            // if the timestamps do not match, then we already sent the same ack ranges in some other packet
+            if (packet.AckedRanges.Count > 0 && pnSpace.LastAckSentTimestamp == packet.TimeSent)
             {
                 pnSpace.AckElicited = true;
             }
