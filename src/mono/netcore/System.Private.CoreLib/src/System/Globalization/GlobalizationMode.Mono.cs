@@ -6,14 +6,18 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
+        private static bool GetInvariantSwitchValue() =>
+            GetSwitchValue("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
 
-        private static bool GetInvariantSwitchValue()
+        private static bool GetSwitchValue(string envVariable)
         {
-            string? val = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-            if (val != null)
-                return bool.IsTrueStringIgnoreCase(val) || val.Equals("1");
-            return false;
+            bool ret = false;
+            string? switchValue = Environment.GetEnvironmentVariable(envVariable);
+            if (switchValue != null)
+            {
+                ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
+            }
+            return ret;
         }
     }
 }

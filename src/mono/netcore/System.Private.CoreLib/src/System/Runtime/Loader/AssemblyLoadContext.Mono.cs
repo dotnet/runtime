@@ -130,7 +130,13 @@ namespace System.Runtime.Loader
         // Invoked by Mono to resolve requests to load satellite assemblies.
         private static Assembly? MonoResolveUsingResolveSatelliteAssembly(IntPtr gchALC, string assemblyName)
         {
-            return ResolveSatelliteAssembly(gchALC, new AssemblyName(assemblyName));
+            AssemblyLoadContext context;
+            // This check exists because the function can be called early in startup, before the default ALC is initialized
+            if (gchALC == IntPtr.Zero)
+                context = Default;
+            else
+                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 
         private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext)
