@@ -14,15 +14,11 @@
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</CoreClrFileName>
     <CoreClrFileName Condition="'$(CoreClrFileName)' == ''">libcoreclr.so</CoreClrFileName>
-    <MonoFileName Condition="'$(TargetsiOS)' == 'true'">libmono.dylib</MonoFileName>
-    <MonoFileName Condition="'$(TargetstvOS)' == 'true'">libmono.dylib</MonoFileName>
+    <MonoFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">libmonosgen-2.0.dylib</MonoFileName>
     <MonoFileName Condition="'$(TargetsAndroid)' == 'true'">libmonosgen-2.0.so</MonoFileName>
-    <MonoStaticFileName Condition="'$(TargetsiOS)' == 'true'">libmono.a</MonoStaticFileName>
-    <MonoStaticFileName Condition="'$(TargetstvOS)' == 'true'">libmono.a</MonoStaticFileName>
-    <MonoStaticFileName Condition="'$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
-    <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">libmono.a</MonoFileName>
-    <MonoStaticFileName Condition="'$(TargetsBrowser)' == 'true'">libmono.a</MonoStaticFileName>
+    <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">libmonosgen-2.0.a</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(CoreClrFileName)</MonoFileName>
+    <MonoStaticFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$(ArtifactsDir)tests\coreclr\$(TargetOS).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root</CoreClrTestCoreRoot>
