@@ -2621,8 +2621,10 @@ public:
                                                  var_types      baseType,
                                                  unsigned       size);
 
-    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
-        var_types type, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
+                                                   NamedIntrinsic hwIntrinsicID,
+                                                   var_types      baseType,
+                                                   unsigned       size)
     {
         GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, hwIntrinsicID, baseType, size);
         node->gtFlags |= GTF_SIMDASHW_OP;

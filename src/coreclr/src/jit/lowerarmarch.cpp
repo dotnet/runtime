@@ -588,10 +588,8 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     unsigned       simdSize    = node->gtSIMDSize;
     var_types      simdType    = Compiler::getSIMDTypeForSize(simdSize);
 
-    assert((intrinsicId == NI_Vector64_op_Equality) ||
-           (intrinsicId == NI_Vector64_op_Inequality) ||
-           (intrinsicId == NI_Vector128_op_Equality) ||
-           (intrinsicId == NI_Vector128_op_Inequality));
+    assert((intrinsicId == NI_Vector64_op_Equality) || (intrinsicId == NI_Vector64_op_Inequality) ||
+           (intrinsicId == NI_Vector128_op_Equality) || (intrinsicId == NI_Vector128_op_Inequality));
 
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(baseType));
@@ -651,7 +649,8 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         GenTree* insCns = comp->gtNewIconNode(cmpOp == GT_EQ ? -1 : 0, TYP_INT);
         BlockRange().InsertAfter(idxCns, insCns);
 
-        GenTree* tmp = comp->gtNewSimdAsHWIntrinsicNode(simdType, cmp, idxCns, insCns, NI_AdvSimd_Insert, TYP_INT, simdSize);
+        GenTree* tmp =
+            comp->gtNewSimdAsHWIntrinsicNode(simdType, cmp, idxCns, insCns, NI_AdvSimd_Insert, TYP_INT, simdSize);
         BlockRange().InsertAfter(insCns, tmp);
         LowerNode(tmp);
 

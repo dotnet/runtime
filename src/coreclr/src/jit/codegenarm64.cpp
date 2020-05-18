@@ -4323,8 +4323,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicAdd || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMul || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDiv ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual);
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     GenTree*  op2       = simdNode->gtGetOp2();

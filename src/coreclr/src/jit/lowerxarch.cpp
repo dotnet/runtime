@@ -1120,10 +1120,8 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     unsigned       simdSize    = node->gtSIMDSize;
     var_types      simdType    = Compiler::getSIMDTypeForSize(simdSize);
 
-    assert((intrinsicId == NI_Vector128_op_Equality) ||
-           (intrinsicId == NI_Vector128_op_Inequality) ||
-           (intrinsicId == NI_Vector256_op_Equality) ||
-           (intrinsicId == NI_Vector256_op_Inequality));
+    assert((intrinsicId == NI_Vector128_op_Equality) || (intrinsicId == NI_Vector128_op_Inequality) ||
+           (intrinsicId == NI_Vector256_op_Equality) || (intrinsicId == NI_Vector256_op_Inequality));
 
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(baseType));
