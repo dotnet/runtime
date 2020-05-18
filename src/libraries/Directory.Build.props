@@ -106,7 +106,7 @@
     <_runtimeOS Condition="'$(_runtimeOS)' == 'tizen.5.0.0'">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
     <ToolRuntimeRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_runtimeOS)-x64</ToolRuntimeRID>
-    <ToolRuntimeRID Condition="'$(ToolRuntimeID)' == ''">$(_runtimeOS)-$(HostArch)</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(ToolRuntimeRID)' == ''">$(_runtimeOS)-$(HostArch)</ToolRuntimeRID>
     <!-- We build linux-musl-arm on a ubuntu container, so we can't use the toolset build for alpine runtime. We need to use portable linux RID for our toolset in order to be able to use it. -->
     <ToolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' and $(TargetArchitecture.StartsWith('arm')) and !$(HostArch.StartsWith('arm'))">linux-x64</ToolRuntimeRID>
 

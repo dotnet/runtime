@@ -436,7 +436,7 @@ namespace System
 
             uriString = serializationInfo.GetString("RelativeUri");  // Do not rename (binary serialization)
             if ((object?)uriString == null)
-                throw new ArgumentNullException(nameof(uriString));
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "RelativeUri"), nameof(serializationInfo));
 
             CreateThis(uriString, false, UriKind.Relative);
             DebugSetLeftCtor();
@@ -1504,7 +1504,7 @@ namespace System
             (uint)(digit - '0') <= '9' - '0' ? digit - '0' :
             (uint)(digit - 'A') <= 'F' - 'A' ? digit - 'A' + 10 :
             (uint)(digit - 'a') <= 'f' - 'a' ? digit - 'a' + 10 :
-            throw new ArgumentException(nameof(digit));
+            throw new ArgumentException(null, nameof(digit));
 
         public override int GetHashCode()
         {

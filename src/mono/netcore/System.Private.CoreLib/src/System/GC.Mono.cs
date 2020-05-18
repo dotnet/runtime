@@ -113,7 +113,7 @@ namespace System
         {
             object? obj = wo.Target;
             if (obj == null)
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(wo));
             return GetGeneration(obj);
         }
 

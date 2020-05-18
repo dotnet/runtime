@@ -7,6 +7,7 @@
 #include "pal_io.h"
 #include "pal_safecrt.h"
 #include "pal_utilities.h"
+#include <pal_networking_common.h>
 #include <fcntl.h>
 
 #include <stdlib.h>
@@ -1566,29 +1567,7 @@ int32_t SystemNative_Listen(intptr_t socket, int32_t backlog)
 
 int32_t SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown)
 {
-    int fd = ToFileDescriptor(socket);
-
-    int how;
-    switch (socketShutdown)
-    {
-        case SocketShutdown_SHUT_READ:
-            how = SHUT_RD;
-            break;
-
-        case SocketShutdown_SHUT_WRITE:
-            how = SHUT_WR;
-            break;
-
-        case SocketShutdown_SHUT_BOTH:
-            how = SHUT_RDWR;
-            break;
-
-        default:
-            return Error_EINVAL;
-    }
-
-    int err = shutdown(fd, how);
-    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    return Common_Shutdown(socket, socketShutdown);
 }
 
 int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)

@@ -247,6 +247,7 @@ jobs:
     - tvOS_x64
     - tvOS_arm64
     - iOS_x64
+    - iOS_x86
     - iOS_arm
     - iOS_arm64
     - OSX_x64
@@ -284,6 +285,7 @@ jobs:
     - tvOS_x64
     - tvOS_arm64
     - iOS_x64
+    - iOS_x86
     - iOS_arm
     - iOS_arm64
     - Linux_x64
@@ -488,6 +490,7 @@ jobs:
     - Android_arm64
     - tvOS_x64
     - iOS_arm64
+    - iOS_x86
     - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: debug
@@ -600,6 +603,7 @@ jobs:
     - Android_arm64
     - tvOS_x64
     - iOS_arm64
+    - iOS_x86
     - OSX_x64
     - Linux_x64
     - Browser_wasm
@@ -799,28 +803,6 @@ jobs:
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
-# Mono CoreCLR runtime Test executions using live libraries
-# Only when Mono is changed
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: release
-    runtimeFlavor: mono
-    platforms:
-    - OSX_x64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      liveRuntimeBuildConfig: release
-      runtimeVariant: 'Interpreter'
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #

@@ -106,7 +106,7 @@
       <Rule Id="CA2200" Action="Warning" />          <!-- Rethrow to preserve stack details. -->
       <Rule Id="CA2201" Action="None" />             <!-- Do not raise reserved exception types -->
       <Rule Id="CA2207" Action="Warning" />          <!-- Initialize value type static fields inline -->
-      <Rule Id="CA2208" Action="None" />             <!-- Instantiate argument exceptions correctly -->
+      <Rule Id="CA2208" Action="Info" />             <!-- Instantiate argument exceptions correctly -->
       <Rule Id="CA2211" Action="None" />             <!-- Non-constant fields should not be visible -->
       <Rule Id="CA2213" Action="None" />             <!-- Disposable fields should be disposed -->
       <Rule Id="CA2214" Action="None" />             <!-- Do not call overridable methods in constructors -->

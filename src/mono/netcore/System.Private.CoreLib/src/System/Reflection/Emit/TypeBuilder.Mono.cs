@@ -261,7 +261,7 @@ namespace System.Reflection.Emit
             if (interfaceType == null)
                 throw new ArgumentNullException(nameof(interfaceType));
             if (interfaceType.IsByRef)
-                throw new ArgumentException(nameof(interfaceType));
+                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
             check_not_created();
 
             if (interfaces != null)
@@ -479,7 +479,7 @@ namespace System.Reflection.Emit
             if (IsInterface)
                 throw new InvalidOperationException();
             if ((attributes & (MethodAttributes.Static | MethodAttributes.Virtual)) > 0)
-                throw new ArgumentException(nameof(attributes));
+                throw new ArgumentException(SR.Arg_NoStaticVirtual);
 
             if (parent != null)
                 parent_type = parent;
@@ -1515,7 +1515,7 @@ namespace System.Reflection.Emit
         {
             check_name(nameof(name), name);
             if (eventtype == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(eventtype));
             check_not_created();
             if (eventtype.IsByRef)
                 throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
@@ -1597,7 +1597,7 @@ namespace System.Reflection.Emit
             else
             {
                 if (parent.IsInterface)
-                    throw new ArgumentException(nameof(parent));
+                    throw new ArgumentException(SR.Argument_CannotSetParentToInterface);
                 this.parent = parent;
             }
             this.parent = ResolveUserType(this.parent);
@@ -1878,7 +1878,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
 
             if (field.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("field declaring type is not the generic type definition of type", "method");
+                throw new ArgumentException("field declaring type is not the generic type definition of type", nameof(field));
 
             FieldInfo res = type.GetField(field);
             if (res == null)

@@ -306,7 +306,7 @@ namespace System.Drawing
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
                 // it to GDI+ is likely to cause an AV.
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(lf));
             }
 
             // Now that we know the marshalled size is the same as LOGFONT, copy in the data
