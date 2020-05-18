@@ -1138,9 +1138,8 @@ namespace System.Net.Sockets
                 return handle.AsyncContext.Receive(new Memory<byte>(buffer, offset, count), socketFlags, handle.ReceiveTimeout, out bytesTransferred);
             }
 
-            int socketAddressLen = 0;
             SocketError errorCode;
-            bool completed = TryCompleteReceiveFrom(handle, new Span<byte>(buffer, offset, count), socketFlags, null, ref socketAddressLen, out bytesTransferred, out socketFlags, out errorCode);
+            bool completed = TryCompleteReceive(handle, new Span<byte>(buffer, offset, count), socketFlags, out bytesTransferred, out errorCode);
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
@@ -1151,9 +1150,8 @@ namespace System.Net.Sockets
                 return handle.AsyncContext.Receive(buffer, socketFlags, handle.ReceiveTimeout, out bytesTransferred);
             }
 
-            int socketAddressLen = 0;
             SocketError errorCode;
-            bool completed = TryCompleteReceiveFrom(handle, buffer, socketFlags, null, ref socketAddressLen, out bytesTransferred, out socketFlags, out errorCode);
+            bool completed = TryCompleteReceive(handle, buffer, socketFlags, out bytesTransferred, out errorCode);
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
