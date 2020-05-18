@@ -41,12 +41,12 @@ namespace System.Net.Security
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
 
-        internal SecureChannel(SslAuthenticationOptions sslAuthenticationOptions)
+        internal SecureChannel(SslAuthenticationOptions sslAuthenticationOptions, SslStream sslStream)
         {
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Enter(this, sslAuthenticationOptions.TargetHost, sslAuthenticationOptions.ClientCertificates);
-                NetEventSource.Log.SecureChannelCtor(this, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
+                NetEventSource.Log.SecureChannelCtor(this, sslStream, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
             }
 
             SslStreamPal.VerifyPackageInfo();

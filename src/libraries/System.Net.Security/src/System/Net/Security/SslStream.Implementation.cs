@@ -72,7 +72,7 @@ namespace System.Net.Security
                 {
                     _sslAuthenticationOptions.TargetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);
                 }
-                _context = new SecureChannel(_sslAuthenticationOptions);
+                _context = new SecureChannel(_sslAuthenticationOptions, this);
             }
             catch (Win32Exception e)
             {
@@ -99,7 +99,7 @@ namespace System.Net.Security
 
             try
             {
-                _context = new SecureChannel(_sslAuthenticationOptions);
+                _context = new SecureChannel(_sslAuthenticationOptions, this);
             }
             catch (Win32Exception e)
             {
@@ -130,6 +130,9 @@ namespace System.Net.Security
         //
         private void CloseInternal()
         {
+            if (NetEventSource.IsEnabled)
+                NetEventSource.Enter(this);
+
             _exception = s_disposedSentinel;
             _context?.Close();
 
@@ -154,6 +157,9 @@ namespace System.Net.Security
                 // Suppress finalizer if the read buffer was returned.
                 GC.SuppressFinalize(this);
             }
+
+            if (NetEventSource.IsEnabled)
+                NetEventSource.Exit(this);
         }
 
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
