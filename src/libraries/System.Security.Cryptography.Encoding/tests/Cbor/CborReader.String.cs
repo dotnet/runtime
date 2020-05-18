@@ -14,7 +14,7 @@ namespace System.Formats.Cbor
     {
         // Implements major type 2,3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
-        // stores a reusable List allocation for keeping ranges in the buffer
+        // stores a reusable List allocation for storing indefinite length string chunk offsets
         private List<(int Offset, int Length)>? _indefiniteLengthStringRangeAllocation = null;
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace System.Formats.Cbor
                     throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
-                return ReadChunkedByteStringConcatenated();
+                return ReadIndefiniteLengthByteStringConcatenated();
             }
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
@@ -85,7 +85,7 @@ namespace System.Formats.Cbor
                     throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
-                return TryReadChunkedByteStringConcatenated(destination, out bytesWritten);
+                return TryReadIndefiniteLengthByteStringConcatenated(destination, out bytesWritten);
             }
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
@@ -180,7 +180,7 @@ namespace System.Formats.Cbor
                     throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
-                return ReadChunkedTextStringConcatenated();
+                return ReadIndefiniteLengthTextStringConcatenated();
             }
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
@@ -235,7 +235,7 @@ namespace System.Formats.Cbor
                     throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
-                return TryReadChunkedTextStringConcatenated(destination, out charsWritten);
+                return TryReadIndefiniteLengthTextStringConcatenated(destination, out charsWritten);
             }
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
@@ -309,9 +309,30 @@ namespace System.Formats.Cbor
             AdvanceBuffer(1);
         }
 
-        private bool TryReadChunkedByteStringConcatenated(Span<byte> destination, out int bytesWritten)
+        private byte[] ReadIndefiniteLengthByteStringConcatenated()
         {
-            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
+            List<(int Offset, int Length)> ranges = ReadIndefiniteLengthStringChunkRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
+            var output = new byte[concatenatedBufferSize];
+
+            ReadOnlySpan<byte> source = GetRemainingBytes();
+            Span<byte> target = output;
+
+            foreach ((int o, int l) in ranges)
+            {
+                source.Slice(o, l).CopyTo(target);
+                target = target.Slice(l);
+            }
+
+            Debug.Assert(target.IsEmpty);
+            AdvanceBuffer(encodingLength);
+            AdvanceDataItemCounters();
+            ReturnIndefiniteLengthStringRangeList(ranges);
+            return output;
+        }
+
+        private bool TryReadIndefiniteLengthByteStringConcatenated(Span<byte> destination, out int bytesWritten)
+        {
+            List<(int Offset, int Length)> ranges = ReadIndefiniteLengthStringChunkRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
 
             if (concatenatedBufferSize > destination.Length)
             {
@@ -334,12 +355,48 @@ namespace System.Formats.Cbor
             return true;
         }
 
-        private bool TryReadChunkedTextStringConcatenated(Span<char> destination, out int charsWritten)
+        private string ReadIndefiniteLengthTextStringConcatenated()
         {
-            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int _);
+            List<(int Offset, int Length)> ranges = ReadIndefiniteLengthStringChunkRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+
+            // calculate the string character length
+            int concatenatedStringSize = 0;
+            foreach ((int o, int l) in ranges)
+            {
+                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l), utf8Encoding);
+            }
+
+            // build the string using range data
+            string output = string.Create(concatenatedStringSize, (ranges, _data.Slice(_offset), utf8Encoding), BuildString);
+
+            AdvanceBuffer(encodingLength);
+            AdvanceDataItemCounters();
+            ReturnIndefiniteLengthStringRangeList(ranges);
+            return output;
+
+            static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source, Encoding utf8Encoding) input)
+            {
+                ReadOnlySpan<byte> source = input.source.Span;
+
+                foreach ((int o, int l) in input.ranges)
+                {
+                    int charsWritten = input.utf8Encoding.GetChars(source.Slice(o, l), target);
+                    target = target.Slice(charsWritten);
+                }
+
+                Debug.Assert(target.IsEmpty);
+            }
+        }
+
+        private bool TryReadIndefiniteLengthTextStringConcatenated(Span<char> destination, out int charsWritten)
+        {
+            List<(int Offset, int Length)> ranges = ReadIndefiniteLengthStringChunkRanges(CborMajorType.TextString, out int encodingLength, out int _);
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
             Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
 
+            // calculate the string character length
             int concatenatedStringSize = 0;
             foreach ((int o, int l) in ranges)
             {
@@ -365,79 +422,26 @@ namespace System.Formats.Cbor
             return true;
         }
 
-        private byte[] ReadChunkedByteStringConcatenated()
-        {
-            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
-            var output = new byte[concatenatedBufferSize];
-
-            ReadOnlySpan<byte> source = GetRemainingBytes();
-            Span<byte> target = output;
-
-            foreach ((int o, int l) in ranges)
-            {
-                source.Slice(o, l).CopyTo(target);
-                target = target.Slice(l);
-            }
-
-            Debug.Assert(target.IsEmpty);
-            AdvanceBuffer(encodingLength);
-            AdvanceDataItemCounters();
-            ReturnIndefiniteLengthStringRangeList(ranges);
-            return output;
-        }
-
-        private string ReadChunkedTextStringConcatenated()
-        {
-            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
-            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
-            ReadOnlySpan<byte> buffer = GetRemainingBytes();
-            int concatenatedStringSize = 0;
-
-            foreach ((int o, int l) in ranges)
-            {
-                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l), utf8Encoding);
-            }
-
-            string output = string.Create(concatenatedStringSize, (ranges, _data.Slice(_offset), utf8Encoding), BuildString);
-
-            AdvanceBuffer(encodingLength);
-            AdvanceDataItemCounters();
-            ReturnIndefiniteLengthStringRangeList(ranges);
-            return output;
-
-            static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source, Encoding utf8Encoding) input)
-            {
-                ReadOnlySpan<byte> source = input.source.Span;
-
-                foreach ((int o, int l) in input.ranges)
-                {
-                    int charsWritten = input.utf8Encoding.GetChars(source.Slice(o, l), target);
-                    target = target.Slice(charsWritten);
-                }
-
-                Debug.Assert(target.IsEmpty);
-            }
-        }
-
-        // reads a buffer starting with an indefinite-length string,
-        // performing validation and returning a list of ranges containing the individual chunk payloads
-        private List<(int Offset, int Length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
+        // Reads a buffer starting with an indefinite-length string,
+        // performing validation and returning a list of ranges
+        // containing the individual chunk payloads
+        private List<(int Offset, int Length)> ReadIndefiniteLengthStringChunkRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
             List<(int Offset, int Length)> ranges = AcquireIndefiniteLengthStringRangeList();
-            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            ReadOnlySpan<byte> data = GetRemainingBytes();
             concatenatedBufferSize = 0;
 
             int i = 1; // skip the indefinite-length initial byte
-            CborInitialByte nextInitialByte = ReadNextInitialByte(buffer.Slice(i), type);
+            CborInitialByte nextInitialByte = ReadNextInitialByte(data.Slice(i), type);
 
             while (nextInitialByte.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
             {
-                int chunkLength = DecodeDefiniteLength(nextInitialByte, buffer.Slice(i), out int bytesRead);
+                int chunkLength = DecodeDefiniteLength(nextInitialByte, data.Slice(i), out int bytesRead);
                 ranges.Add((i + bytesRead, chunkLength));
                 i += bytesRead + chunkLength;
                 concatenatedBufferSize += chunkLength;
 
-                nextInitialByte = ReadNextInitialByte(buffer.Slice(i), type);
+                nextInitialByte = ReadNextInitialByte(data.Slice(i), type);
             }
 
             encodingLength = i + 1; // include the break byte
