@@ -1,6 +1,7 @@
 <Project>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReaderState.cs" Link="Common\System\Formats\Cbor\Reader\CborReaderState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborReader.SkipValue.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.SkipValue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborReader.Simple.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Simple.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborReader.Tag.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Tag.cs" />

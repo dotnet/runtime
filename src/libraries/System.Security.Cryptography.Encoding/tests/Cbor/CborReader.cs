@@ -8,33 +8,9 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
-    public enum CborReaderState
-    {
-        Unknown = 0,
-        UnsignedInteger,
-        NegativeInteger,
-        ByteString,
-        TextString,
-        StartTextString,
-        StartByteString,
-        StartArray,
-        StartMap,
-        EndTextString,
-        EndByteString,
-        EndArray,
-        EndMap,
-        Tag,
-        Null,
-        Boolean,
-        HalfPrecisionFloat,
-        SinglePrecisionFloat,
-        DoublePrecisionFloat,
-        SpecialValue,
-        Finished,
-        EndOfData,
-        FormatError,
-    }
-
+    /// <summary>
+    ///   A stateful, forward-only reader for CBOR encoded data.
+    /// </summary>
     public partial class CborReader
     {
         private readonly ReadOnlyMemory<byte> _data;
@@ -56,8 +32,8 @@ namespace System.Formats.Cbor
         // e.g. during a skip operation over nonconforming encodings.
         private bool _isConformanceLevelCheckEnabled = true;
 
-        // keeps a cached copy of the reader state; 'Unknown' denotes uncomputed state
-        private CborReaderState _cachedState = CborReaderState.Unknown;
+        // keeps a cached copy of the reader state; 'None' denotes uncomputed state
+        private CborReaderState _cachedState = CborReaderState.None;
 
         public CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
         {
@@ -77,7 +53,7 @@ namespace System.Formats.Cbor
 
         public CborReaderState PeekState()
         {
-            if (_cachedState == CborReaderState.Unknown)
+            if (_cachedState == CborReaderState.None)
             {
                 _cachedState = PeekStateCore(false);
             }
@@ -216,7 +192,7 @@ namespace System.Formats.Cbor
                     case CborAdditionalInfo.Additional64BitData:
                         return CborReaderState.DoublePrecisionFloat;
                     default:
-                        return CborReaderState.SpecialValue;
+                        return CborReaderState.SimpleValue;
                 }
             }
         }
@@ -386,7 +362,7 @@ namespace System.Formats.Cbor
 
             _offset += length;
             // invalidate the state cache
-            _cachedState = CborReaderState.Unknown;
+            _cachedState = CborReaderState.None;
         }
 
         private void ResetBuffer(int position)
@@ -395,7 +371,7 @@ namespace System.Formats.Cbor
 
             _offset = position;
             // invalidate the state cache
-            _cachedState = CborReaderState.Unknown;
+            _cachedState = CborReaderState.None;
         }
 
         private void EnsureReadCapacity(int length)
@@ -458,7 +434,7 @@ namespace System.Formats.Cbor
             // without necessarily needing to advance the buffer
             // (e.g. we're at the end of a definite-length collection).
             // We therefore need to invalidate the cache here.
-            _cachedState = CborReaderState.Unknown;
+            _cachedState = CborReaderState.None;
         }
 
         // Struct containing checkpoint data for rolling back reader state in the event of a failure
@@ -543,7 +519,7 @@ namespace System.Formats.Cbor
             _itemsWritten = checkpoint.ItemsWritten;
             _previousKeyEncodingRange = checkpoint.PreviousKeyEncodingRange;
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
-            _cachedState = CborReaderState.Unknown;
+            _cachedState = CborReaderState.None;
 
             Debug.Assert(Depth == checkpoint.Depth);
         }
