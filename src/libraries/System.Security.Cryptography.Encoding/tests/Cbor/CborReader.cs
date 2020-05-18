@@ -125,7 +125,7 @@ namespace System.Formats.Cbor
             if (_definiteLength - _itemsWritten == 0)
             {
                 // is at the end of a definite-length context
-                if (_currentMajorType == null)
+                if (_currentMajorType is null)
                 {
                     return CborReaderState.Finished;
                 }
