@@ -12,17 +12,18 @@ namespace System.IO.MemoryMappedFiles
     public partial class MemoryMappedFile
     {
 
-        // This will verify file access and return file size. fileSize will -1 for special devices.
-        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream fileStream, string? createdFile)
+        // This will verify file access and return file size.
+        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream fileStream)
         {
             if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
             {
-                if (createdFile != null)
-                {
-                    CleanupFile(fileStream, true, createdFile);
-                }
-
                 throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
+            }
+
+            // one can always create a small view if they do not want to map an entire file
+            if (fileStream.Length > capacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
         }
 
@@ -33,7 +34,7 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
         private static SafeMemoryMappedFileHandle CreateCore(
             FileStream? fileStream, string? mapName, HandleInheritability inheritability,
-            MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity, string? createdFile = null)
+            MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity)
         {
             SafeFileHandle? fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
@@ -41,7 +42,7 @@ namespace System.IO.MemoryMappedFiles
 
             if (fileStream != null)
             {
-                VerifyMemoryMappedFileAccess(access, capacity, fileStream, createdFile);
+                VerifyMemoryMappedFileAccess(access, capacity, fileStream);
             }
 
             SafeMemoryMappedFileHandle handle = fileHandle != null ?

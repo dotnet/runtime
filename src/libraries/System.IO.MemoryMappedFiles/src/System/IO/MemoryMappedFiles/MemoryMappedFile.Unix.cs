@@ -10,7 +10,7 @@ namespace System.IO.MemoryMappedFiles
     {
 
         // This will verify file access and return file size. fileSize will return -1 for special devices.
-        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream? fileStream, string? createdFile, out long fileSize)
+        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream? fileStream, out long fileSize)
         {
             bool isRegularFile = true;
             fileSize = -1;
@@ -34,11 +34,13 @@ namespace System.IO.MemoryMappedFiles
                     fileSize = status.Size;
                     if (access == MemoryMappedFileAccess.Read && capacity > status.Size)
                     {
-                        if (createdFile != null)
-                        {
-                            CleanupFile(fileStream, true, createdFile);
-                        }
                         throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
+                    }
+
+                    // one can always create a small view if they do not want to map an entire file
+                    if (fileStream.Length > capacity)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
                     }
 
                     if (access == MemoryMappedFileAccess.Write)
@@ -57,9 +59,9 @@ namespace System.IO.MemoryMappedFiles
         private static unsafe SafeMemoryMappedFileHandle CreateCore(
             FileStream? fileStream, string? mapName,
             HandleInheritability inheritability, MemoryMappedFileAccess access,
-            MemoryMappedFileOptions options, long capacity, string? createdFile = null)
+            MemoryMappedFileOptions options, long capacity)
         {
-            VerifyMemoryMappedFileAccess(access, capacity, fileStream, createdFile, out long fileSize);
+            VerifyMemoryMappedFileAccess(access, capacity, fileStream, out long fileSize);
 
             if (mapName != null)
             {

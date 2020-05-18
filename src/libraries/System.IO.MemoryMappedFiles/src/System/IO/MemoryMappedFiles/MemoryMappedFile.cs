@@ -159,18 +159,11 @@ namespace System.IO.MemoryMappedFiles
                 capacity = fileStream.Length;
             }
 
-            // one can always create a small view if they do not want to map an entire file
-            if (fileStream.Length > capacity)
-            {
-                CleanupFile(fileStream, existed, path);
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
-            }
-
             SafeMemoryMappedFileHandle? handle = null;
             try
             {
                 handle = CreateCore(fileStream, mapName, HandleInheritability.None,
-                    access, MemoryMappedFileOptions.None, capacity, existed ? null : path);
+                    access, MemoryMappedFileOptions.None, capacity);
             }
             catch
             {
@@ -229,12 +222,6 @@ namespace System.IO.MemoryMappedFiles
             if (capacity == DefaultSize)
             {
                 capacity = fileStream.Length;
-            }
-
-            // one can always create a small view if they do not want to map an entire file
-            if (fileStream.Length > capacity)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
             SafeMemoryMappedFileHandle handle = CreateCore(fileStream, mapName, inheritability,
