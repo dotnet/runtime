@@ -43,8 +43,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public void TlsFrameHelper_ValidData_Ok()
         {
-            TlsFrameHelper.TlsFrameHandshakeInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetHandshakeInfo(s_validClientHello, ref info));
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_validClientHello, ref info));
 
             Assert.Equal(SslProtocols.Tls12, info.Header.Version);
             Assert.Equal(203, info.Header.Length);
@@ -55,8 +55,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public void TlsFrameHelper_Tls12ClientHello_Ok()
         {
-            TlsFrameHelper.TlsFrameHandshakeInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetHandshakeInfo(s_Tls12ClientHello, ref info));
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ClientHello, ref info));
 
             Assert.Equal(SslProtocols.Tls, info.Header.Version);
             Assert.Equal(SslProtocols.Tls|SslProtocols.Tls12, info.SupportedVersions);
@@ -66,8 +66,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public void TlsFrameHelper_Tls13ClientHello_Ok()
         {
-            TlsFrameHelper.TlsFrameHandshakeInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetHandshakeInfo(s_Tls13ClientHello, ref info));
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls13ClientHello, ref info));
 
             Assert.Equal(SslProtocols.Tls, info.Header.Version);
             Assert.Equal(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13, info.SupportedVersions);
@@ -77,8 +77,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public void TlsFrameHelper_Tls12ServerHello_Ok()
         {
-            TlsFrameHelper.TlsFrameHandshakeInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetHandshakeInfo(s_Tls12ServerHello, ref info));
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ServerHello, ref info));
 
             Assert.Equal(SslProtocols.Tls12, info.Header.Version);
             Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);

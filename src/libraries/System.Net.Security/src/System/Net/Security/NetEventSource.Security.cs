@@ -315,28 +315,40 @@ namespace System.Net
             WriteEvent(RemoteCertificateInvalidId, secureChannelHash);
 
         [NonEvent]
-        public void SentFrame(SslStream sslStream, string frameInfo)
+        public void SentFrame(SslStream sslStream, ReadOnlySpan<byte> frame)
         {
             if (IsEnabled())
             {
-                SentFrame(GetHashCode(sslStream), frameInfo);
+               TlsFrameHelper.TlsFrameInfo info = default;
+               bool isComplete = TlsFrameHelper.TryGetFrameInfo(frame, ref info);
+               SentFrame(IdOf(sslStream), info.ToString(), isComplete ? 1 : 0);
             }
         }
         [Event(SentFrameId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
-        private void SentFrame(int  sslStreamHash, string frameInfo) =>
-            WriteEvent(SentFrameId, sslStreamHash, frameInfo);
+        private void SentFrame(string sslStream, string tlsFrame, int isComplete) =>
+            WriteEvent(SentFrameId, sslStream, tlsFrame, isComplete);
 
         [NonEvent]
-        public void ReceivedFrame(SslStream sslStream, string frameInfo)
+        public void ReceivedFrame(SslStream sslStream, TlsFrameHelper.TlsFrameInfo frameInfo)
         {
             if (IsEnabled())
             {
-                ReceivedFrame(GetHashCode(sslStream), frameInfo);
+                ReceivedFrame(IdOf(sslStream), frameInfo.ToString(), 1);
+            }
+        }
+        [NonEvent]
+        public void ReceivedFrame(SslStream sslStream, ReadOnlySpan<byte> frame)
+        {
+            if (IsEnabled())
+            {
+                TlsFrameHelper.TlsFrameInfo info = default;
+                bool isComplete = TlsFrameHelper.TryGetFrameInfo(frame, ref info);
+                ReceivedFrame(IdOf(sslStream), info.ToString(), isComplete ? 1 : 0);
             }
         }
         [Event(ReceivedFrameId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
-        private void ReceivedFrame(int  sslStreamHash, string frameInfo) =>
-            WriteEvent(ReceivedFrameId, sslStreamHash, frameInfo);
+        private void ReceivedFrame(string sslStream, string tlsFrame, int isComplete) =>
+            WriteEvent(ReceivedFrameId, sslStream, tlsFrame, isComplete);
 
         static partial void AdditionalCustomizedToString<T>(T value, ref string? result)
         {

@@ -116,32 +116,40 @@ namespace System.Net.Security
             Other = 128
         }
 
-        public struct TlsFrameHandshakeInfo
+        public struct TlsFrameInfo
         {
             public TlsFrameHeader Header;
             public TlsHandshakeType HandshakeType;
             public SslProtocols SupportedVersions;
             public string TargetName;
             public ApplicationProtocolInfo ApplicationProtocols;
+            public TlsAlertDescription AlertDescription;
 
             public override string ToString()
             {
-                if (HandshakeType == TlsHandshakeType.ClientHello)
+                if (Header.Type == TlsContentType.Handshake)
                 {
-                    return $"{Header.Version}:{HandshakeType}[{Header.Length}] TargetName='{TargetName}' SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}'";
-                }
-                else if (HandshakeType == TlsHandshakeType.ServerHello)
-                {
-                    return $"{Header.Version}:{HandshakeType}[{Header.Length}] SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}'";
+                    if (HandshakeType == TlsHandshakeType.ClientHello)
+                    {
+                        return $"{Header.Version}:{HandshakeType}[{Header.Length}] TargetName='{TargetName}' SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}'";
+                    }
+                    else if (HandshakeType == TlsHandshakeType.ServerHello)
+                    {
+                        return $"{Header.Version}:{HandshakeType}[{Header.Length}] SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}'";
+                    }
+                    else
+                    {
+                        return $"{Header.Version}:{HandshakeType}[{Header.Length}] SupportedVersion='{SupportedVersions}'";
+                    }
                 }
                 else
                 {
-                    return $"{Header.Version}:{HandshakeType}[{Header.Length}] SupportedVersion='{SupportedVersions}'";
+                    return $"{Header.Version}:{Header.Type}[{Header.Length}]";
                 }
             }
         }
 
-        public delegate bool HelloExtensionCallback(ref TlsFrameHandshakeInfo info, ExtensionType type, ReadOnlySpan<byte> extensionsData);
+        public delegate bool HelloExtensionCallback(ref TlsFrameInfo info, ExtensionType type, ReadOnlySpan<byte> extensionsData);
 
         private static byte[] s_protocolMismatch13 = new byte[] { (byte)TlsContentType.Alert, 3, 4, 0, 2, 2, 70 };
         private static byte[] s_protocolMismatch12 = new byte[] { (byte)TlsContentType.Alert, 3, 3, 0, 2, 2, 70 };
@@ -204,14 +212,14 @@ namespace System.Net.Security
 
         // This function will try to parse TLS hello frame and fill details in provided info structure.
         // If frame was fully processed without any error, function returns true.
-        // Otherwise it returns false and info may have partical data.
+        // Otherwise it returns false and info may have partial data.
         // It is OK to call it again if more data becomes available.
         // It is also possible to limit what information is processed.
         // If callback delegate is provided, it will be called on ALL extensions.
-        public static bool TryGetHandshakeInfo(ReadOnlySpan<byte> frame, ref TlsFrameHandshakeInfo info, ProcessingOptions options = ProcessingOptions.All, HelloExtensionCallback? callback = null)
+        public static bool TryGetFrameInfo(ReadOnlySpan<byte> frame, ref TlsFrameInfo info, ProcessingOptions options = ProcessingOptions.All, HelloExtensionCallback? callback = null)
         {
             const int HandshakeTypeOffset = 5;
-            if (frame.Length < HeaderSize || frame[0] != (byte)TlsContentType.Handshake)
+            if (frame.Length < HeaderSize)
             {
                 return false;
             }
@@ -221,6 +229,19 @@ namespace System.Net.Security
             Debug.Assert(gotHeader);
 
             info.SupportedVersions = info.Header.Version;
+
+            if (info.Header.Type == TlsContentType.Alert)
+            {
+                TlsAlertLevel level = default;
+                TlsAlertDescription description = default;
+                if (TryGetAlertInfo(frame, ref level, ref description))
+                {
+                    info.AlertDescription = description;
+                    return true;
+                }
+
+                return false;
+            }
 
             if (info.Header.Type != TlsContentType.Handshake || frame.Length <= HandshakeTypeOffset)
             {
@@ -244,12 +265,12 @@ namespace System.Net.Security
             return isComplete;
         }
 
-        // This is similar to TryGetHandshakeInfo but it will only process SNI.
-        // It returns TargetName as string or NULL if SNI is missing or parsing error happend.
+        // This is similar to TryGetFrameInfo but it will only process SNI.
+        // It returns TargetName as string or NULL if SNI is missing or parsing error happened.
         public static string? GetServerName(ReadOnlySpan<byte> frame)
         {
-            TlsFrameHandshakeInfo info = default;
-            if (!TryGetHandshakeInfo(frame, ref info, ProcessingOptions.ServerName))
+            TlsFrameInfo info = default;
+            if (!TryGetFrameInfo(frame, ref info, ProcessingOptions.ServerName))
             {
                 return null;
             }
@@ -257,7 +278,7 @@ namespace System.Net.Security
             return info.TargetName;
         }
 
-        // This function will parse TLS Alert merssage and it will return aler level and description.
+        // This function will parse TLS Alert message and it will return alert level and description.
         public static bool TryGetAlertInfo(ReadOnlySpan<byte> frame, ref TlsAlertLevel level, ref TlsAlertDescription description)
         {
             if (frame.Length < 7 || frame[0] != (byte)TlsContentType.Alert)
@@ -313,7 +334,7 @@ namespace System.Net.Security
             return Array.Empty<byte>();
         }
 
-        private static bool TryParseHelloFrame(ReadOnlySpan<byte> sslHandshake, ref TlsFrameHandshakeInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
+        private static bool TryParseHelloFrame(ReadOnlySpan<byte> sslHandshake, ref TlsFrameInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
         {
             // https://tools.ietf.org/html/rfc6101#section-5.6
             // struct {
@@ -357,7 +378,7 @@ namespace System.Net.Security
                         TryParseServerHello(helloData.Slice(0, helloLength), ref info, options, callback);
         }
 
-        private static bool TryParseClientHello(ReadOnlySpan<byte> clientHello, ref TlsFrameHandshakeInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
+        private static bool TryParseClientHello(ReadOnlySpan<byte> clientHello, ref TlsFrameInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
         {
             // Basic structure: https://tools.ietf.org/html/rfc6101#section-5.6.1.2
             // Extended structure: https://tools.ietf.org/html/rfc3546#section-2.1
@@ -398,7 +419,7 @@ namespace System.Net.Security
             return TryParseHelloExtensions(p, ref info, options, callback);
         }
 
-        private static bool TryParseServerHello(ReadOnlySpan<byte> serverHello, ref TlsFrameHandshakeInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
+        private static bool TryParseServerHello(ReadOnlySpan<byte> serverHello, ref TlsFrameInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
         {
             // Basic structure: https://tools.ietf.org/html/rfc6101#section-5.6.1.3
             // Extended structure: https://tools.ietf.org/html/rfc3546#section-2.2
@@ -436,8 +457,8 @@ namespace System.Net.Security
             return TryParseHelloExtensions(p, ref info, options, callback);
         }
 
-        // This is commong for ClientHello and ServerHello.
-        private static bool TryParseHelloExtensions(ReadOnlySpan<byte> extensions, ref TlsFrameHandshakeInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
+        // This is common for ClientHello and ServerHello.
+        private static bool TryParseHelloExtensions(ReadOnlySpan<byte> extensions, ref TlsFrameInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
         {
             const int ExtensionHeader = 4;
             bool isComplete = true;
