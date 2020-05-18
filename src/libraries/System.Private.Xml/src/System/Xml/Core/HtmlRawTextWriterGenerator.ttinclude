@@ -19,8 +19,8 @@ namespace System.Xml
 {
     internal class <#= ClassName #> : <#= BaseClassName #>
     {
-        protected ByteStack elementScope;
-        protected ElementProperties currentElementProperties;
+        protected ByteStack _elementScope;
+        protected ElementProperties _currentElementProperties;
         private AttributeProperties _currentAttributeProperties;
 
         private bool _endsWithAmpersand;
@@ -29,8 +29,8 @@ namespace System.Xml
         private string _mediaType;
         private bool _doNotEscapeUriAttributes;
 
-        protected static TernaryTreeReadOnly elementPropertySearch;
-        protected static TernaryTreeReadOnly attributePropertySearch;
+        protected static TernaryTreeReadOnly _elementPropertySearch;
+        protected static TernaryTreeReadOnly _attributePropertySearch;
 
         private const int StackIncrement = 10;
 <# if (WriterType == RawTextWriterType.Encoded) { #>
@@ -108,7 +108,7 @@ namespace System.Xml
         {
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
 
-            elementScope.Push((byte)currentElementProperties);
+            _elementScope.Push((byte)_currentElementProperties);
 
             if (ns.Length == 0)
             {
@@ -116,7 +116,7 @@ namespace System.Xml
 
 #><#= SetTextContentMark(4, false) #>
 
-                currentElementProperties = (ElementProperties)elementPropertySearch.FindCaseInsensitiveString(localName);
+                _currentElementProperties = (ElementProperties)_elementPropertySearch.FindCaseInsensitiveString(localName);
                 base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'<';
                 base.RawText(localName);
                 base.attrEndPos = bufPos;
@@ -125,7 +125,7 @@ namespace System.Xml
             {
                 // Since the HAS_NS has no impact to the ElementTextBlock behavior,
                 // we don't need to push it into the stack.
-                currentElementProperties = ElementProperties.HAS_NS;
+                _currentElementProperties = ElementProperties.HAS_NS;
                 base.WriteStartElement(prefix, localName, ns);
             }
         }
@@ -138,7 +138,7 @@ namespace System.Xml
             // Detect whether content is output
             contentPos = bufPos;
 
-            if ((currentElementProperties & ElementProperties.HEAD) != 0)
+            if ((_currentElementProperties & ElementProperties.HEAD) != 0)
             {
                 WriteMetaElement();
             }
@@ -156,7 +156,7 @@ namespace System.Xml
 
 #><#= SetTextContentMark(4, false) #>
 
-                if ((currentElementProperties & ElementProperties.EMPTY) == 0)
+                if ((_currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
                     <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'<';
                     <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'/';
@@ -170,7 +170,7 @@ namespace System.Xml
                 base.WriteEndElement(prefix, localName, ns);
             }
 
-            currentElementProperties = (ElementProperties)elementScope.Pop();
+            _currentElementProperties = (ElementProperties)_elementScope.Pop();
         }
 
         internal override void WriteFullEndElement(string prefix, string localName, string ns)
@@ -181,7 +181,7 @@ namespace System.Xml
 
 #><#= SetTextContentMark(4, false) #>
 
-                if ((currentElementProperties & ElementProperties.EMPTY) == 0)
+                if ((_currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
                     <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'<';
                     <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'/';
@@ -195,7 +195,7 @@ namespace System.Xml
                 base.WriteFullEndElement(prefix, localName, ns);
             }
 
-            currentElementProperties = (ElementProperties)elementScope.Pop();
+            _currentElementProperties = (ElementProperties)_elementScope.Pop();
         }
 
         // 1. How the outputBooleanAttribute(fBOOL) and outputHtmlUriText(fURI) being set?
@@ -311,10 +311,10 @@ namespace System.Xml
                 }
                 base.RawText(localName);
 
-                if ((currentElementProperties & (ElementProperties.BOOL_PARENT | ElementProperties.URI_PARENT | ElementProperties.NAME_PARENT)) != 0)
+                if ((_currentElementProperties & (ElementProperties.BOOL_PARENT | ElementProperties.URI_PARENT | ElementProperties.NAME_PARENT)) != 0)
                 {
-                    _currentAttributeProperties = (AttributeProperties)attributePropertySearch.FindCaseInsensitiveString(localName) &
-                                                 (AttributeProperties)currentElementProperties;
+                    _currentAttributeProperties = (AttributeProperties)_attributePropertySearch.FindCaseInsensitiveString(localName) &
+                                                 (AttributeProperties)_currentElementProperties;
 
                     if ((_currentAttributeProperties & AttributeProperties.BOOLEAN) != 0)
                     {
@@ -451,16 +451,16 @@ namespace System.Xml
             Debug.Assert((int)ElementProperties.BOOL_PARENT == (int)AttributeProperties.BOOLEAN);
             Debug.Assert((int)ElementProperties.NAME_PARENT == (int)AttributeProperties.NAME);
 
-            if (elementPropertySearch == null)
+            if (_elementPropertySearch == null)
             {
-                //elementPropertySearch should be init last for the mutli thread safe situation.
-                attributePropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlAttributes);
-                elementPropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlElements);
+                //_elementPropertySearch should be init last for the mutli thread safe situation.
+                _attributePropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlAttributes);
+                _elementPropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlElements);
             }
 
-            elementScope = new ByteStack(StackIncrement);
+            _elementScope = new ByteStack(StackIncrement);
             _uriEscapingBuffer = new byte[5];
-            currentElementProperties = ElementProperties.DEFAULT;
+            _currentElementProperties = ElementProperties.DEFAULT;
 
             _mediaType = settings.MediaType;
             _doNotEscapeUriAttributes = settings.DoNotEscapeUriAttributes;
@@ -493,7 +493,7 @@ namespace System.Xml
         // only the top of the stack is the real E1 element properties.
         protected unsafe void WriteHtmlElementTextBlock(char* pSrc, char* pSrcEnd)
         {
-            if ((currentElementProperties & ElementProperties.NO_ENTITIES) != 0)
+            if ((_currentElementProperties & ElementProperties.NO_ENTITIES) != 0)
             {
                 base.RawText(pSrc, pSrcEnd);
             }
@@ -522,7 +522,7 @@ namespace System.Xml
                     WriteHtmlAttributeText(pSrc, pSrcEnd);
                 }
             }
-            else if ((currentElementProperties & ElementProperties.HAS_NS) != 0)
+            else if ((_currentElementProperties & ElementProperties.HAS_NS) != 0)
             {
                 base.WriteAttributeTextBlock(pSrc, pSrcEnd);
             }
@@ -844,15 +844,15 @@ namespace System.Xml
 
 #><#= SetTextContentMark(3, false) #>
 
-            base.elementScope.Push((byte)base.currentElementProperties);
+            base._elementScope.Push((byte)base._currentElementProperties);
 
             if (ns.Length == 0)
             {
                 Debug.Assert(prefix.Length == 0);
 
-                base.currentElementProperties = (ElementProperties)elementPropertySearch.FindCaseInsensitiveString(localName);
+                base._currentElementProperties = (ElementProperties)_elementPropertySearch.FindCaseInsensitiveString(localName);
 
-                if (_endBlockPos == base.bufPos && (base.currentElementProperties & ElementProperties.BLOCK_WS) != 0)
+                if (_endBlockPos == base.bufPos && (base._currentElementProperties & ElementProperties.BLOCK_WS) != 0)
                 {
                     WriteIndent();
                 }
@@ -862,7 +862,7 @@ namespace System.Xml
             }
             else
             {
-                base.currentElementProperties = ElementProperties.HAS_NS | ElementProperties.BLOCK_WS;
+                base._currentElementProperties = ElementProperties.HAS_NS | ElementProperties.BLOCK_WS;
 
                 if (_endBlockPos == base.bufPos)
                 {
@@ -888,13 +888,13 @@ namespace System.Xml
             // Detect whether content is output
             base.contentPos = base.bufPos;
 
-            if ((currentElementProperties & ElementProperties.HEAD) != 0)
+            if ((_currentElementProperties & ElementProperties.HEAD) != 0)
             {
                 WriteIndent();
                 WriteMetaElement();
                 _endBlockPos = base.bufPos;
             }
-            else if ((base.currentElementProperties & ElementProperties.BLOCK_WS) != 0)
+            else if ((base._currentElementProperties & ElementProperties.BLOCK_WS) != 0)
             {
                 // store the element block position
                 _endBlockPos = base.bufPos;
@@ -909,7 +909,7 @@ namespace System.Xml
             _indentLevel--;
 
             // If this element has block whitespace properties,
-            isBlockWs = (base.currentElementProperties & ElementProperties.BLOCK_WS) != 0;
+            isBlockWs = (base._currentElementProperties & ElementProperties.BLOCK_WS) != 0;
             if (isBlockWs)
             {
                 // And if the last node to be output had block whitespace properties,
