@@ -33,15 +33,15 @@ namespace System.Formats.Cbor
             {
                 ReadOnlySpan<byte> buffer = GetRemainingBytes();
 
-                ulong mapSize = ReadUnsignedInteger(buffer, header, out int additionalBytes);
+                int mapSize = DecodeDefiniteLength(header, buffer, out int additionalBytes);
 
-                if (mapSize > int.MaxValue || 2 * mapSize > (ulong)buffer.Length)
+                if (2 * (ulong)mapSize > (ulong)(buffer.Length - additionalBytes))
                 {
                     throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }
 
                 AdvanceBuffer(1 + additionalBytes);
-                PushDataItem(CborMajorType.Map, 2 * (int)mapSize);
+                PushDataItem(CborMajorType.Map, 2 * mapSize);
                 length = (int)mapSize;
             }
 

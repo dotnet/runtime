@@ -126,7 +126,7 @@ namespace System.Formats.Cbor
         public ulong ReadCborNegativeIntegerEncoding()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
-            ulong value = ReadUnsignedInteger(GetRemainingBytes(), header, out int additionalBytes);
+            ulong value = DecodeUnsignedInteger(header, GetRemainingBytes(), out int additionalBytes);
             AdvanceBuffer(1 + additionalBytes);
             AdvanceDataItemCounters();
             return value;
@@ -139,7 +139,7 @@ namespace System.Formats.Cbor
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    ulong value = ReadUnsignedInteger(GetRemainingBytes(), header, out additionalBytes);
+                    ulong value = DecodeUnsignedInteger(header, GetRemainingBytes(), out additionalBytes);
                     return value;
 
                 case CborMajorType.NegativeInteger:
@@ -158,11 +158,11 @@ namespace System.Formats.Cbor
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    value = checked((long)ReadUnsignedInteger(GetRemainingBytes(), header, out additionalBytes));
+                    value = checked((long)DecodeUnsignedInteger(header, GetRemainingBytes(), out additionalBytes));
                     return value;
 
                 case CborMajorType.NegativeInteger:
-                    value = checked(-1 - (long)ReadUnsignedInteger(GetRemainingBytes(), header, out additionalBytes));
+                    value = checked(-1 - (long)DecodeUnsignedInteger(header, GetRemainingBytes(), out additionalBytes));
                     return value;
 
                 default:
@@ -170,63 +170,77 @@ namespace System.Formats.Cbor
             }
         }
 
+        // Peek definite length for given data item
+        private int DecodeDefiniteLength(CborInitialByte header, ReadOnlySpan<byte> data, out int additionalBytes)
+        {
+            ulong length = DecodeUnsignedInteger(header, data, out additionalBytes);
+
+            // conservative check: ensure the buffer has the minimum required length for declared definite length.
+            if (length > (ulong)(data.Length - additionalBytes))
+            {
+                throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
+            }
+
+            return (int)length;
+        }
+
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1
-        private ulong ReadUnsignedInteger(ReadOnlySpan<byte> buffer, CborInitialByte header, out int additionalBytes)
+        private ulong DecodeUnsignedInteger(CborInitialByte header, ReadOnlySpan<byte> data, out int bytesRead)
         {
             ulong result;
 
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo x when (x < CborAdditionalInfo.Additional8BitData):
-                    additionalBytes = 0;
+                    bytesRead = 0;
                     return (ulong)x;
 
                 case CborAdditionalInfo.Additional8BitData:
-                    EnsureReadCapacity(buffer, 2);
-                    result = buffer[1];
+                    EnsureReadCapacity(data, 2);
+                    result = data[1];
 
                     if (result < (int)CborAdditionalInfo.Additional8BitData)
                     {
                         ValidateIsNonStandardIntegerRepresentationSupported();
                     }
 
-                    additionalBytes = 1;
+                    bytesRead = 1;
                     return result;
 
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureReadCapacity(buffer, 3);
-                    result = BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(1));
+                    EnsureReadCapacity(data, 3);
+                    result = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(1));
 
                     if (result <= byte.MaxValue)
                     {
                         ValidateIsNonStandardIntegerRepresentationSupported();
                     }
 
-                    additionalBytes = 2;
+                    bytesRead = 2;
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
-                    EnsureReadCapacity(buffer, 5);
-                    result = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(1));
+                    EnsureReadCapacity(data, 5);
+                    result = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(1));
 
                     if (result <= ushort.MaxValue)
                     {
                         ValidateIsNonStandardIntegerRepresentationSupported();
                     }
 
-                    additionalBytes = 4;
+                    bytesRead = 4;
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
-                    EnsureReadCapacity(buffer, 9);
-                    result = BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
+                    EnsureReadCapacity(data, 9);
+                    result = BinaryPrimitives.ReadUInt64BigEndian(data.Slice(1));
 
                     if (result <= uint.MaxValue)
                     {
                         ValidateIsNonStandardIntegerRepresentationSupported();
                     }
 
-                    additionalBytes = 8;
+                    bytesRead = 8;
                     return result;
 
                 default:

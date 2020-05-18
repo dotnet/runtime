@@ -46,7 +46,7 @@ namespace System.Formats.Cbor
         private CborTag PeekTagCore(out int additionalBytes)
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Tag);
-            return (CborTag)ReadUnsignedInteger(GetRemainingBytes(), header, out additionalBytes);
+            return (CborTag)DecodeUnsignedInteger(header, GetRemainingBytes(), out additionalBytes);
         }
 
         // Additional tagged type support

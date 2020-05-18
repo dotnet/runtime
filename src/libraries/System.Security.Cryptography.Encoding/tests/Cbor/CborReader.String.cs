@@ -31,7 +31,7 @@ namespace System.Formats.Cbor
             }
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
-            int length = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            int length = DecodeDefiniteLength(header, buffer, out int additionalBytes);
             EnsureReadCapacity(1 + additionalBytes + length);
             byte[] result = new byte[length];
             buffer.Slice(1 + additionalBytes, length).CopyTo(result);
@@ -55,7 +55,7 @@ namespace System.Formats.Cbor
             }
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
-            int length = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            int length = DecodeDefiniteLength(header, buffer, out int additionalBytes);
             EnsureReadCapacity(1 + additionalBytes + length);
 
             if (length > destination.Length)
@@ -88,7 +88,7 @@ namespace System.Formats.Cbor
             }
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
-            int length = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            int length = DecodeDefiniteLength(header, buffer, out int additionalBytes);
             EnsureReadCapacity(1 + additionalBytes + length);
             ReadOnlySpan<byte> encodedString = buffer.Slice(1 + additionalBytes, length);
             Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
@@ -123,7 +123,7 @@ namespace System.Formats.Cbor
             }
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
-            int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            int byteLength = DecodeDefiniteLength(header, buffer, out int additionalBytes);
             EnsureReadCapacity(1 + additionalBytes + byteLength);
 
             Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
@@ -319,13 +319,10 @@ namespace System.Formats.Cbor
 
             while (nextInitialByte.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
             {
-                checked
-                {
-                    int chunkLength = (int)ReadUnsignedInteger(buffer.Slice(i), nextInitialByte, out int additionalBytes);
-                    ranges.Add((i + 1 + additionalBytes, chunkLength));
-                    i += 1 + additionalBytes + chunkLength;
-                    concatenatedBufferSize += chunkLength;
-                }
+                int chunkLength = DecodeDefiniteLength(nextInitialByte, buffer.Slice(i), out int additionalBytes);
+                ranges.Add((i + 1 + additionalBytes, chunkLength));
+                i += 1 + additionalBytes + chunkLength;
+                concatenatedBufferSize += chunkLength;
 
                 nextInitialByte = ReadNextInitialByte(buffer.Slice(i), type);
             }
@@ -355,7 +352,7 @@ namespace System.Formats.Cbor
             CborInitialByte header = PeekInitialByte(expectedType: type);
 
             ReadOnlySpan<byte> buffer = GetRemainingBytes();
-            int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            int byteLength = DecodeDefiniteLength(header, buffer, out int additionalBytes);
             EnsureReadCapacity(1 + additionalBytes + byteLength);
 
             // if conformance level requires it, validate the utf-8 encoding that is being skipped
