@@ -19,18 +19,35 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override void OnSignal()
         {
-            UpdateAsync(_connection);
+            Update(_connection);
             UpdateTimeout(_connection.GetNextTimerTimestamp());
         }
 
-        protected override void OnTimeout()
+        protected override void OnTimeout(long now)
         {
-            var now = Timestamp.Now;
-            // Debug.Assert(now >= _connection.GetNextTimerTimestamp());
-            var origState = _connection.ConnectionState;
-            _connection.OnTimeout(now);
-            UpdateAsync(_connection, origState);
-            UpdateTimeout(_connection.GetNextTimerTimestamp());
+            long oldTimeout = _connection.GetNextTimerTimestamp();
+
+            // timout may have changed since have set it
+            if (oldTimeout <= now)
+            {
+                var origState = _connection.ConnectionState;
+                _connection.OnTimeout(now);
+
+                // the connection may have data to send
+                Update(_connection, origState);
+
+                long newTimeout = _connection.GetNextTimerTimestamp();
+                if (newTimeout == oldTimeout)
+                {
+                    Debug.Assert(newTimeout != oldTimeout);
+                }
+                UpdateTimeout(newTimeout);
+            }
+            else
+            {
+                // set timer to the current value
+                UpdateTimeout(oldTimeout);
+            }
         }
 
         protected override void OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)

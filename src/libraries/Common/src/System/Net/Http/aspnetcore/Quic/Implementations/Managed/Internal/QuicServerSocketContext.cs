@@ -64,29 +64,36 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             foreach (var (_, connection) in _connectionsByEndpoint)
             {
-                UpdateAsync(connection);
+                Update(connection);
                 nextTimeout = Math.Min(nextTimeout, connection.GetNextTimerTimestamp());
             }
 
             UpdateTimeout(nextTimeout);
         }
 
-        protected override void OnTimeout()
+        protected override void OnTimeout(long now)
         {
-            long now = Timestamp.Now;
-
             long nextTimeout = long.MaxValue;
 
             foreach (var (_, connection) in _connectionsByEndpoint)
             {
-                if (connection.GetNextTimerTimestamp() <= now)
+                long oldTimeout = connection.GetNextTimerTimestamp();
+                if (now < oldTimeout)
                 {
-                    var origState = connection.ConnectionState;
-                    connection.OnTimeout(now);
-                    UpdateAsync(connection, origState);
+                    // do not fire yet
+                    nextTimeout = Math.Min(nextTimeout, oldTimeout);
+                    continue;
                 }
 
-                nextTimeout = Math.Min(nextTimeout, connection.GetNextTimerTimestamp());
+                var origState = connection.ConnectionState;
+                connection.OnTimeout(now);
+
+                // the connection may have data to send
+                Update(connection, origState);
+
+                long newTimeout = connection.GetNextTimerTimestamp();
+                Debug.Assert(newTimeout != oldTimeout);
+                nextTimeout = Math.Min(nextTimeout, newTimeout);
             }
 
             UpdateTimeout(nextTimeout);
@@ -130,7 +137,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected override void DetachConnection(ManagedQuicConnection connection)
         {
             Debug.Assert(connection.IsClosed);
-            Debug.Assert(ImmutableInterlocked.TryRemove(ref _connectionsByEndpoint, connection.RemoteEndPoint, out _));
+            bool removed = ImmutableInterlocked.TryRemove(ref _connectionsByEndpoint, connection.RemoteEndPoint, out _);
+            Debug.Assert(removed);
         }
     }
 }

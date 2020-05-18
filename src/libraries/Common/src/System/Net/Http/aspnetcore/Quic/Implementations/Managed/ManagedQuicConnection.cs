@@ -257,7 +257,19 @@ namespace System.Net.Quic.Implementations.Managed
         /// <returns>Timestamp in ticks of the next timer or long.MaxValue if no timer is needed.</returns>
         internal long GetNextTimerTimestamp()
         {
-            long timer = Recovery.LossRecoveryTimer;
+            if (_closeTcs.IsSet)
+            {
+                // connection already closed, no timer needed
+                return long.MaxValue;
+            }
+
+            long timer = _idleTimeout;
+
+            if (_closingPeriodEndTimestamp != null)
+            {
+                // no other timer besides idle timeout and closing period makes sense when closing.
+                return Math.Min(timer, _closingPeriodEndTimestamp.Value);
+            }
 
             // do not incorporate next ack timer if we cannot send ack anyway
             if (Recovery.GetAvailableCongestionWindowBytes() >= RequiredCongestionWindowSizeForSending)
@@ -265,17 +277,17 @@ namespace System.Net.Quic.Implementations.Managed
                 timer = Math.Min(timer, _nextAckTimer);
             }
 
-            if (_closingPeriodEndTimestamp != null)
-                timer = Math.Min(timer, _closingPeriodEndTimestamp.Value);
-
-            return Math.Min(timer, _idleTimeout);
+            return Math.Min(timer, Recovery.LossRecoveryTimer);
         }
 
         internal void OnTimeout(long timestamp)
         {
-            if (timestamp >= _closingPeriodEndTimestamp)
+            if (_closingPeriodEndTimestamp.HasValue)
             {
-                SignalConnectionClose();
+                if (timestamp >= _closingPeriodEndTimestamp)
+                {
+                    SignalConnectionClose();
+                }
                 return;
             }
 
@@ -718,6 +730,9 @@ namespace System.Net.Quic.Implementations.Managed
             // The closing and draining states SHOULD exists for at least three times the current PTO interval
             // Note: this is to properly discard reordered/delayed packets.
             _closingPeriodEndTimestamp = now + 3 * Recovery.GetProbeTimeoutInterval();
+
+            // disable ack timer
+            _nextAckTimer = long.MaxValue;
 
             if (error.ErrorCode == TransportErrorCode.NoError)
             {
