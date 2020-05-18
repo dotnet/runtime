@@ -96,7 +96,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        private static unsafe int Receive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, out Interop.Error errno)
+        private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, out Interop.Error errno)
         {
             int received = 0;
 
@@ -118,7 +118,7 @@ namespace System.Net.Sockets
             return received;
         }
 
-        private static unsafe int Receive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
+        private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null || socketAddressLen == 0, $"Unexpected values: socketAddress={socketAddress}, socketAddressLen={socketAddressLen}");
 
@@ -159,7 +159,7 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int Send(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
+        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
         {
             int sent;
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
@@ -185,7 +185,7 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe int Send(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
+        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
             int sent;
             fixed (byte* sockAddr = socketAddress)
@@ -225,7 +225,7 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe int Send(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, byte[]? socketAddress, int socketAddressLen, out Interop.Error errno)
+        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, byte[]? socketAddress, int socketAddressLen, out Interop.Error errno)
         {
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
@@ -322,7 +322,7 @@ namespace System.Net.Sockets
             return bytesSent;
         }
 
-        private static unsafe int Receive(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
+        private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
             int available = 0;
             errno = Interop.Sys.GetBytesAvailable(socket, &available);
@@ -421,7 +421,7 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int ReceiveMessageFrom(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
+        private static unsafe int SysReceiveMessageFrom(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
@@ -471,7 +471,7 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int ReceiveMessageFrom(
+        private static unsafe int SysReceiveMessageFrom(
             SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers,
             byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6,
             out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
@@ -679,7 +679,7 @@ namespace System.Net.Sockets
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
                     // synchronously. As such, we treat 0 specially, and perform a 1-byte peek.
                     byte oneBytePeekBuffer;
-                    received = Receive(socket, flags | SocketFlags.Peek, new Span<byte>(&oneBytePeekBuffer, 1), out errno);
+                    received = SysReceive(socket, flags | SocketFlags.Peek, new Span<byte>(&oneBytePeekBuffer, 1), out errno);
                     if (received > 0)
                     {
                         // Peeked for 1-byte, but the actual request was for 0.
@@ -689,7 +689,7 @@ namespace System.Net.Sockets
                 else
                 {
                     // Receive > 0 bytes into a single buffer
-                    received = Receive(socket, flags, buffer, out errno);
+                    received = SysReceive(socket, flags, buffer, out errno);
                 }
 
                 if (received != -1)
@@ -729,7 +729,7 @@ namespace System.Net.Sockets
                 if (buffers != null)
                 {
                     // Receive into a set of buffers
-                    received = Receive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = SysReceive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
                 else if (buffer.Length == 0)
                 {
@@ -738,7 +738,7 @@ namespace System.Net.Sockets
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
                     // synchronously. As such, we treat 0 specially, and perform a 1-byte peek.
                     byte oneBytePeekBuffer;
-                    received = Receive(socket, flags | SocketFlags.Peek, new Span<byte>(&oneBytePeekBuffer, 1), socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = SysReceive(socket, flags | SocketFlags.Peek, new Span<byte>(&oneBytePeekBuffer, 1), socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                     if (received > 0)
                     {
                         // Peeked for 1-byte, but the actual request was for 0.
@@ -748,7 +748,7 @@ namespace System.Net.Sockets
                 else
                 {
                     // Receive > 0 bytes into a single buffer
-                    received = Receive(socket, flags, buffer, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = SysReceive(socket, flags, buffer, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
 
                 if (received != -1)
@@ -786,8 +786,8 @@ namespace System.Net.Sockets
                 Interop.Error errno;
 
                 int received = buffers == null ?
-                    ReceiveMessageFrom(socket, flags, buffer, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno) :
-                    ReceiveMessageFrom(socket, flags, buffers, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
+                    SysReceiveMessageFrom(socket, flags, buffer, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno) :
+                    SysReceiveMessageFrom(socket, flags, buffers, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
 
                 if (received != -1)
                 {
@@ -848,9 +848,9 @@ namespace System.Net.Sockets
                 try
                 {
                     sent = buffers != null ?
-                        Send(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno) :
-                        socketAddress == null ? Send(socket, flags, buffer, ref offset, ref count, out errno) :
-                                                Send(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
+                        SysSend(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno) :
+                        socketAddress == null ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
+                                                SysSend(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
                 }
                 catch (ObjectDisposedException)
                 {
