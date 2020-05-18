@@ -786,30 +786,6 @@ namespace Mono.Linker.Steps
 			{
 				var instrs = body.Instructions;
 
-				if (body.HasExceptionHandlers) {
-					foreach (var handler in body.ExceptionHandlers) {
-						if (unreachableExceptionHandlers?.Contains (handler) == true)
-							continue;
-
-						// Cecil TryEnd is off by 1 instruction
-						var handlerEnd = handler.TryEnd.Previous;
-
-						switch (handlerEnd.OpCode.Code) {
-						case Code.Leave:
-						case Code.Leave_S:
-							//
-							// Keep original leave to correctly mark handler exit
-							//
-							int index = instrs.IndexOf (handlerEnd);
-							reachable[index] = true;
-							break;
-						default:
-							Debug.Fail ("Exception handler without leave instruction");
-							return false;
-						}
-					}
-				}
-
 				//
 				// Reusing same reachable map and altering it at indexes which
 				// which will remain same during replacement processing
