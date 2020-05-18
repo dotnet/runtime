@@ -700,6 +700,7 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_arm64
+    - Linux_arm32
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -721,6 +722,7 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_arm64
+    - Linux_arm32
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
