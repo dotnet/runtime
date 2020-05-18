@@ -17,7 +17,5 @@ namespace Mono
 #pragma warning restore 169
 
         public event UnhandledExceptionEventHandler? UnhandledException;
-
-        public event EventHandler? ProcessExit;
     }
 }
