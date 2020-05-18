@@ -5018,10 +5018,7 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoClassField *field;
-	MonoDomain *current_domain, *root_domain;
-	MonoObjectHandle current_appdomain_delegate = MONO_HANDLE_NEW (MonoObject, NULL);
-
+	MonoDomain *current_domain = mono_domain_get ();
 	MonoClass *klass = mono_handle_class (exc);
 	/*
 	 * AppDomainUnloadedException don't behave like unhandled exceptions unless thrown from 
@@ -5037,10 +5034,21 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 	if (no_event)
 		return;
 
-	field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "UnhandledException", NULL);
-	g_assert (field);
+	MONO_STATIC_POINTER_INIT (MonoClassField, field)
 
-	current_domain = mono_domain_get ();
+#ifndef ENABLE_NETCORE
+		field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "UnhandledException", NULL);
+#else
+		field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+#endif
+		g_assert (field);
+
+	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
+
+#ifndef ENABLE_NETCORE
+	MonoDomain *root_domain;
+	MonoObjectHandle current_appdomain_delegate = MONO_HANDLE_NEW (MonoObject, NULL);
+
 	root_domain = mono_get_root_domain ();
 
 	MonoObjectHandle root_appdomain_delegate = MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (root_domain, field, (MonoObject*) root_domain->domain, error)); /* FIXME use handles for mono_field_get_value_object_checked */
@@ -5061,6 +5069,34 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 			call_unhandled_exception_delegate (current_domain, current_appdomain_delegate, exc);
 		mono_threads_end_abort_protected_block ();
 	}
+#else
+	MonoObject *delegate = NULL;
+	MonoObjectHandle delegate_handle;
+	MonoVTable *vt = mono_class_vtable_checked (current_domain, mono_defaults.appcontext_class, error);
+	goto_if_nok (error, leave);
+
+	// TODO: use handles directly
+	mono_field_static_get_value_checked (vt, field, &delegate, MONO_HANDLE_NEW (MonoString, NULL), error);
+	goto_if_nok (error, leave);
+	delegate_handle = MONO_HANDLE_NEW (MonoObject, delegate);
+
+	// Unhandled exception callbacks must not be aborted
+	mono_threads_begin_abort_protected_block ();
+
+	if (MONO_HANDLE_IS_NULL (delegate_handle)) {
+		mono_print_unhandled_exception_internal (MONO_HANDLE_RAW (exc)); // TODO: use handles
+	} else {
+		gpointer args [2];
+		args [0] = current_domain->domain;
+		args [1] = MONO_HANDLE_RAW (create_unhandled_exception_eventargs (exc, error));
+		mono_error_assert_ok (error);
+		mono_runtime_delegate_try_invoke_handle (delegate_handle, args, error);
+	}
+
+	mono_threads_end_abort_protected_block ();
+
+leave:
+#endif
 
 	/* set exitcode only if we will abort the process */
 	if ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)

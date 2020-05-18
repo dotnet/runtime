@@ -4,7 +4,6 @@
 		<!-- domain.c: mono_defaults.appdomain_class -->
 		<type fullname="Mono.MonoDomain">
 			<field name="_mono_app_domain"/>
-			<field name="UnhandledException"/>
 		</type>
 
 		<!-- appdomain.c: mono_runtime_init -->
@@ -738,6 +737,8 @@
 			<method name="OnProcessExit"/>
 			<!-- appdomain.c: get_app_context_base_directory -->
 			<method name="get_BaseDirectory"/>
+			<!-- object.c: mono_unhandled_exception_checked -->
+			<field name="UnhandledException"/>
 		</type>
 
 		<type fullname="Mono.NullByRefReturnException">
