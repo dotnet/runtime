@@ -1595,7 +1595,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint}");
 
             int bytesTransferred;
-            errorCode = SocketPal.Receive(_handle, buffers, ref socketFlags, out bytesTransferred);
+            errorCode = SocketPal.Receive(_handle, buffers, socketFlags, out bytesTransferred);
 
 #if TRACE_VERBOSE
             if (NetEventSource.IsEnabled)

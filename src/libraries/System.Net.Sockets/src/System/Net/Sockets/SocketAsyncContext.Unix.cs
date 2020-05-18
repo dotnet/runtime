@@ -1473,13 +1473,13 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Receive(Memory<byte> buffer, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(Memory<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
             int socketAddressLen = 0;
             return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
         }
 
-        public SocketError Receive(Span<byte> buffer, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(Span<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
             int socketAddressLen = 0;
             return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
@@ -1621,7 +1621,7 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Receive(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(IList<ArraySegment<byte>> buffers, SocketFlags flags, int timeout, out int bytesReceived)
         {
             return ReceiveFrom(buffers, ref flags, null, 0, timeout, out bytesReceived);
         }

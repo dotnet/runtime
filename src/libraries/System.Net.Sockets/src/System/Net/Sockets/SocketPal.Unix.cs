@@ -1112,12 +1112,12 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public static SocketError Receive(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, ref SocketFlags socketFlags, out int bytesTransferred)
+        public static SocketError Receive(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
             SocketError errorCode;
             if (!handle.IsNonBlocking)
             {
-                errorCode = handle.AsyncContext.Receive(buffers, ref socketFlags, handle.ReceiveTimeout, out bytesTransferred);
+                errorCode = handle.AsyncContext.Receive(buffers, socketFlags, handle.ReceiveTimeout, out bytesTransferred);
             }
             else
             {
@@ -1135,7 +1135,7 @@ namespace System.Net.Sockets
         {
             if (!handle.IsNonBlocking)
             {
-                return handle.AsyncContext.Receive(new Memory<byte>(buffer, offset, count), ref socketFlags, handle.ReceiveTimeout, out bytesTransferred);
+                return handle.AsyncContext.Receive(new Memory<byte>(buffer, offset, count), socketFlags, handle.ReceiveTimeout, out bytesTransferred);
             }
 
             int socketAddressLen = 0;
@@ -1148,7 +1148,7 @@ namespace System.Net.Sockets
         {
             if (!handle.IsNonBlocking)
             {
-                return handle.AsyncContext.Receive(buffer, ref socketFlags, handle.ReceiveTimeout, out bytesTransferred);
+                return handle.AsyncContext.Receive(buffer, socketFlags, handle.ReceiveTimeout, out bytesTransferred);
             }
 
             int socketAddressLen = 0;
