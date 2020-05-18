@@ -59,7 +59,7 @@ internal class Xcode
         {
             string libName = Path.GetFileNameWithoutExtension(lib);
             // libmono must always be statically linked, for other librarires we can use dylibs
-            bool dylibExists = libName != "libmono" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
+            bool dylibExists = libName != "libmonosgen-2.0" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
 
             if (!preferDylibs || !dylibExists)
             {
