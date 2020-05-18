@@ -44,7 +44,7 @@ namespace System.ComponentModel.Design.Serialization
                 // and not the other as the main constructor performs argument validation.
                 if (source.Owner == null)
                 {
-                    throw new ArgumentNullException(nameof(MemberRelationship.Owner));
+                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Owner"), nameof(source));
                 }
 
                 Debug.Assert(source.Member != null);
@@ -57,7 +57,7 @@ namespace System.ComponentModel.Design.Serialization
                 // and not the other as the main constructor performs argument validation.
                 if (source.Owner == null)
                 {
-                    throw new ArgumentNullException(nameof(MemberRelationship.Owner));
+                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Owner"), nameof(source));
                 }
 
                 Debug.Assert(source.Member != null);

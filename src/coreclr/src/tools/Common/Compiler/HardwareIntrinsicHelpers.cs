@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace ILCompiler
 {
-    public static class HardwareIntrinsicHelpers
+    public static partial class HardwareIntrinsicHelpers
     {
         /// <summary>
         /// Gets a value indicating whether this is a hardware intrinsic on the platform that we're compiling for.

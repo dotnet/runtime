@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(framework))
             {
-                throw new ArgumentException(nameof(framework));
+                throw new ArgumentException(null, nameof(framework));
             }
 
             Framework = framework;

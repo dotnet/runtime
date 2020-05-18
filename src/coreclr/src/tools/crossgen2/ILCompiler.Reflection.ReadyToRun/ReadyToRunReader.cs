@@ -31,6 +31,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         FreeBSD = 0xADC4,
         Linux = 0x7B79,
         NetBSD = 0x1993,
+        SunOS = 0x1992,
         Windows = 0,
         Unknown = -1
     }
@@ -410,14 +411,20 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 if ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
                 {
-                    throw new BadImageFormatException("The file is not a ReadyToRun image");
+                    if (!TryLocateNativeReadyToRunHeader())
+                        throw new BadImageFormatException("The file is not a ReadyToRun image");
+
+                    Debug.Assert(Composite);
+                }
+                else
+                {
+                    _assemblyCache.Add(metadata);
+
+                    DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
+                    _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
+                    Debug.Assert(!Composite);
                 }
 
-                _assemblyCache.Add(metadata);
-
-                DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
-                _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
-                Debug.Assert(!Composite);
             }
             else if (!TryLocateNativeReadyToRunHeader())
             {

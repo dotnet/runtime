@@ -260,7 +260,7 @@ namespace System.Threading
             get;
         }
 
-        private static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object? state,

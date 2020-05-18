@@ -74,23 +74,32 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 
     if (addr->isContained())
     {
-        assert(addr->OperGet() == GT_LEA);
-        GenTreeAddrMode* lea = addr->AsAddrMode();
-        index                = lea->Index();
-        cns                  = lea->Offset();
+        if (addr->OperGet() == GT_LEA)
+        {
+            GenTreeAddrMode* lea = addr->AsAddrMode();
+            index                = lea->Index();
+            cns                  = lea->Offset();
 
-        // On ARM we may need a single internal register
-        // (when both conditions are true then we still only need a single internal register)
-        if ((index != nullptr) && (cns != 0))
+            // On ARM we may need a single internal register
+            // (when both conditions are true then we still only need a single internal register)
+            if ((index != nullptr) && (cns != 0))
+            {
+                // ARM does not support both Index and offset so we need an internal register
+                buildInternalIntRegisterDefForNode(indirTree);
+            }
+            else if (!emitter::emitIns_valid_imm_for_ldst_offset(cns, emitTypeSize(indirTree)))
+            {
+                // This offset can't be contained in the ldr/str instruction, so we need an internal register
+                buildInternalIntRegisterDefForNode(indirTree);
+            }
+        }
+#ifdef TARGET_ARM64
+        else if (addr->OperGet() == GT_CLS_VAR_ADDR)
         {
-            // ARM does not support both Index and offset so we need an internal register
+            // Reserve int to load constant from memory (IF_LARGELDC)
             buildInternalIntRegisterDefForNode(indirTree);
         }
-        else if (!emitter::emitIns_valid_imm_for_ldst_offset(cns, emitTypeSize(indirTree)))
-        {
-            // This offset can't be contained in the ldr/str instruction, so we need an internal register
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
+#endif // TARGET_ARM64
     }
 
 #ifdef FEATURE_SIMD
@@ -126,9 +135,9 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool            hasMultiRegRetVal = false;
-    ReturnTypeDesc* retTypeDesc       = nullptr;
-    regMaskTP       dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal = false;
+    const ReturnTypeDesc* retTypeDesc       = nullptr;
+    regMaskTP             dstCandidates     = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;

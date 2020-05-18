@@ -127,10 +127,12 @@ namespace System.Security.Cryptography
             {
                 if (keyParameters.X == null)
                 {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                     // .NET Framework compat when a 3rd party type lets X be null when
                     // includePrivateParameters is true
                     // (the exception would have been from Convert.ToBase64String)
                     throw new ArgumentNullException("inArray");
+#pragma warning restore CA2208
                 }
 
                 XmlKeyHelper.WriteCryptoBinary(nameof(DSAParameters.X), keyParameters.X, builder);

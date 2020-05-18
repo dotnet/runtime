@@ -14,8 +14,10 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslClientAuthenticationOptionsTest
+    public abstract class SslClientAuthenticationOptionsTestBase
     {
+        protected abstract bool TestAuthenticateAsync { get; }
+
         [Fact]
         public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication()
         {
@@ -74,9 +76,9 @@ namespace System.Net.Security.Tests
                     };
 
                     // Authenticate
-                    Task clientTask = client.AuthenticateAsClientAsync(clientOptions, default);
-                    Task serverTask = server.AuthenticateAsServerAsync(serverOptions, default);
-                    await new[] { clientTask, serverTask }.WhenAllOrAnyFailed();
+                    Task clientTask = client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
+                    Task serverTask = server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
+                    await new[] {clientTask, serverTask}.WhenAllOrAnyFailed();
 
                     // Validate that client options are unchanged
                     Assert.Equal(clientAllowRenegotiation, clientOptions.AllowRenegotiation);
@@ -104,5 +106,15 @@ namespace System.Net.Security.Tests
                 }
             }
         }
+    }
+
+    public sealed class SslClientAuthenticationOptionsTestBase_Sync : SslClientAuthenticationOptionsTestBase
+    {
+        protected override bool TestAuthenticateAsync => false;
+    }
+
+    public sealed class SslClientAuthenticationOptionsTestBase_Async : SslClientAuthenticationOptionsTestBase
+    {
+        protected override bool TestAuthenticateAsync => true;
     }
 }

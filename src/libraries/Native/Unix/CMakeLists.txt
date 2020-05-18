@@ -215,7 +215,7 @@ elseif(CLR_CMAKE_TARGET_TVOS)
 elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
     add_subdirectory(System.Globalization.Native)
     #add_subdirectory(System.Net.Security.Native) # TODO: reenable
-    if (NOT "$ENV{AndroidOpenSslHeaders}" STREQUAL "")
+    if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
         add_subdirectory(System.Security.Cryptography.Native)
     endif()
 else()
