@@ -77,6 +77,7 @@ stages:
       - tvOS_x64
       - tvOS_arm64
       - iOS_x64
+      - iOS_x86
       - iOS_arm
       - iOS_arm64
       - OSX_x64
@@ -131,6 +132,7 @@ stages:
       - tvOS_x64
       - tvOS_arm64
       - iOS_x64
+      - iOS_x86
       - iOS_arm
       - iOS_arm64
       - Browser_wasm
@@ -196,6 +198,7 @@ stages:
       - iOS_arm
       - iOS_arm64
       - iOS_x64
+      - iOS_x86
       - Android_arm
       - Android_arm64
       - Android_x64
