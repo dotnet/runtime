@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (dataExtKey == null)
                         {
-                            jsonPropertyInfo.SetValueAsObject(obj, propValue);
+                            jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, propValue);
                         }
                         else
                         {
@@ -454,41 +454,19 @@ namespace System.Text.Json.Serialization.Converters
 
             ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
 
-            if (!state.Current.JsonClassInfo.TryGetParameter(unescapedPropertyName, ref state.Current, out jsonParameterInfo))
-            {
-                return false;
-            }
+            jsonParameterInfo = state.Current.JsonClassInfo.GetParameter(
+                unescapedPropertyName,
+                ref state.Current,
+                out byte[] utf8PropertyName);
 
-            Debug.Assert(jsonParameterInfo != null);
-
-            // Increment ConstructorParameterIndex so GetProperty() starts with the next parameter the next time this function is called.
+            // Increment ConstructorParameterIndex so GetParameter() checks the next parameter first when called again.
             state.Current.CtorArgumentState!.ParameterIndex++;
 
-            // Support JsonException.Path.
-            Debug.Assert(
-                jsonParameterInfo.JsonPropertyName == null ||
-                options.PropertyNameCaseInsensitive ||
-                unescapedPropertyName.SequenceEqual(jsonParameterInfo.JsonPropertyName));
-
-            if (jsonParameterInfo.JsonPropertyName == null)
-            {
-                byte[] propertyNameArray = unescapedPropertyName.ToArray();
-                if (options.PropertyNameCaseInsensitive)
-                {
-                    // Each payload can have a different name here; remember the value on the temporary stack.
-                    state.Current.JsonPropertyName = propertyNameArray;
-                }
-                else
-                {
-                    //Prevent future allocs by caching globally on the JsonPropertyInfo which is specific to a Type+PropertyName
-                    // so it will match the incoming payload except when case insensitivity is enabled(which is handled above).
-                    jsonParameterInfo.JsonPropertyName = propertyNameArray;
-                }
-            }
+            // For case insensitive and missing property support of JsonPath, remember the value on the temporary stack.
+            state.Current.JsonPropertyName = utf8PropertyName;
 
             state.Current.CtorArgumentState.JsonParameterInfo = jsonParameterInfo;
-
-            return true;
+            return jsonParameterInfo != null;
         }
 
         internal override bool ConstructorIsParameterized => true;

@@ -89,50 +89,6 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
     return baseType;
 }
 
-//------------------------------------------------------------------------
-// impUnsupportedHWIntrinsic: returns a node for an unsupported HWIntrinsic
-//
-// Arguments:
-//    helper     - JIT helper ID for the exception to be thrown
-//    method     - method handle of the intrinsic function.
-//    sig        - signature of the intrinsic call
-//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
-//
-// Return Value:
-//    a gtNewMustThrowException if mustExpand is true; otherwise, nullptr
-//
-GenTree* Compiler::impUnsupportedHWIntrinsic(unsigned              helper,
-                                             CORINFO_METHOD_HANDLE method,
-                                             CORINFO_SIG_INFO*     sig,
-                                             bool                  mustExpand)
-{
-    // We've hit some error case and may need to return a node for the given error.
-    //
-    // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
-    // scenario, we need to return `nullptr` so that a GT_CALL to the intrinsic is emitted instead. This is to
-    // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
-    // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
-    // match that).
-    //
-    // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
-    // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
-    // `nullptr` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
-
-    if (mustExpand)
-    {
-        for (unsigned i = 0; i < sig->numArgs; i++)
-        {
-            impPopStack();
-        }
-
-        return gtNewMustThrowException(helper, JITtype2varType(sig->retType), sig->retTypeClass);
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType)
 {
     if (simdType == TYP_SIMD16)
@@ -628,6 +584,40 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 }
 
 //------------------------------------------------------------------------
+// isSupportedBaseType
+//
+// Arguments:
+//    intrinsicId - HW intrinsic id
+//    baseType - Base type of the intrinsic.
+//
+// Return Value:
+//    returns true if the baseType is supported for given intrinsic.
+//
+static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
+{
+    // We don't actually check the intrinsic outside of the false case as we expect
+    // the exposed managed signatures are either generic and support all types
+    // or they are explicit and support the type indicated.
+    if (varTypeIsArithmetic(baseType))
+    {
+        return true;
+    }
+
+#ifdef TARGET_XARCH
+    assert((intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
+           (intrinsic >= NI_Vector128_get_AllBitsSet && intrinsic <= NI_Vector128_ToVector256Unsafe) ||
+           (intrinsic >= NI_Vector256_As && intrinsic <= NI_Vector256_AsUInt64) ||
+           (intrinsic >= NI_Vector256_get_AllBitsSet && intrinsic <= NI_Vector256_ToScalar));
+#else
+    assert((intrinsic >= NI_Vector64_AsByte && intrinsic <= NI_Vector64_AsUInt32) ||
+           (intrinsic >= NI_Vector64_get_AllBitsSet && intrinsic <= NI_Vector64_ToScalar) ||
+           (intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
+           (intrinsic >= NI_Vector128_get_AllBitsSet && intrinsic <= NI_Vector128_ToScalar));
+#endif
+    return false;
+}
+
+//------------------------------------------------------------------------
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
@@ -658,9 +648,38 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
         retType  = getSIMDTypeForSize(sizeBytes);
         assert(sizeBytes != 0);
+
+        // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+        // rather than deferring the decision after getting the baseType of arg.
+        if (!isSupportedBaseType(intrinsic, baseType))
+        {
+            return nullptr;
+        }
     }
 
-    baseType          = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+    baseType = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+
+    if (baseType == TYP_UNKNOWN)
+    {
+        if (category != HW_Category_Scalar)
+        {
+            unsigned int sizeBytes;
+            baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
+            assert((category == HW_Category_Special) || (sizeBytes != 0));
+        }
+        else
+        {
+            baseType = retType;
+        }
+    }
+
+    // Immediately return if the category is other than scalar/special and this is not a supported base type.
+    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) &&
+        !isSupportedBaseType(intrinsic, baseType))
+    {
+        return nullptr;
+    }
+
     unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
 
     GenTree* immOp = nullptr;
@@ -880,7 +899,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         return retNode;
     }
 
-    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig);
+    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig, baseType, retType, simdSize);
 }
 
 #endif // FEATURE_HW_INTRINSICS

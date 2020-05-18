@@ -525,7 +525,7 @@ namespace System.Drawing.Tests
                 var icon = Icon.FromHandle(source.Handle);
                 icon.Dispose();
 
-                AssertExtensions.Throws<ArgumentNullException>("dataStream", () => icon.Save(null));
+                AssertExtensions.Throws<ArgumentNullException>("outputStream", "dataStream", () => icon.Save(null));
             }
         }
 

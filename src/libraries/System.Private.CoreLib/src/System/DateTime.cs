@@ -581,9 +581,7 @@ namespace System
         {
             if (value < -10000 || value > 10000)
             {
-                // DateTimeOffset.AddYears(int years) is implemented on top of DateTime.AddYears(int value). Use the more appropriate
-                // parameter name out of the two for the exception.
-                throw new ArgumentOutOfRangeException("years", SR.ArgumentOutOfRange_DateTimeBadYears);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_DateTimeBadYears);
             }
             return AddMonths(value * 12);
         }

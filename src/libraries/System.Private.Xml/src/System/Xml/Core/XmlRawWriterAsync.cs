@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Diagnostics;
@@ -60,7 +61,7 @@ namespace System.Xml
             throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
-        public override Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string subset)
         {
             return Task.CompletedTask;
         }
@@ -101,7 +102,7 @@ namespace System.Xml
         }
 
         // Raw writers do not have to verify QName values.
-        public override Task WriteQualifiedNameAsync(string localName, string ns)
+        public override Task WriteQualifiedNameAsync(string localName, string? ns)
         {
             throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
@@ -200,6 +201,7 @@ namespace System.Xml
                 await WriteStringAsync(prefix).ConfigureAwait(false);
                 await WriteStringAsync(":").ConfigureAwait(false);
             }
+
             await WriteStringAsync(localName).ConfigureAwait(false);
         }
 
@@ -224,6 +226,7 @@ namespace System.Xml
         internal virtual Task WriteEndBase64Async()
         {
             // The Flush will call WriteRaw to write out the rest of the encoded characters
+            Debug.Assert(base64Encoder != null);
             return base64Encoder.FlushAsync();
         }
 

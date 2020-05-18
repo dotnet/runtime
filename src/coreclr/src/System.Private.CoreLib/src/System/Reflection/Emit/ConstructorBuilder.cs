@@ -19,7 +19,7 @@ namespace System.Reflection.Emit
             m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null,
                 parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type);
 
-            type.m_listMethods.Add(m_methodBuilder);
+            type.m_listMethods!.Add(m_methodBuilder);
 
             m_methodBuilder.GetMethodSignature().InternalGetSignature(out _);
 

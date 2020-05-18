@@ -1453,17 +1453,17 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError Poll(SafeSocketHandle handle, int microseconds, SelectMode mode, out bool status)
         {
-            Interop.Sys.PollEvents inEvent = Interop.Sys.PollEvents.POLLNONE;
+            Interop.PollEvents inEvent = Interop.PollEvents.POLLNONE;
             switch (mode)
             {
-                case SelectMode.SelectRead: inEvent = Interop.Sys.PollEvents.POLLIN; break;
-                case SelectMode.SelectWrite: inEvent = Interop.Sys.PollEvents.POLLOUT; break;
-                case SelectMode.SelectError: inEvent = Interop.Sys.PollEvents.POLLPRI; break;
+                case SelectMode.SelectRead: inEvent = Interop.PollEvents.POLLIN; break;
+                case SelectMode.SelectWrite: inEvent = Interop.PollEvents.POLLOUT; break;
+                case SelectMode.SelectError: inEvent = Interop.PollEvents.POLLPRI; break;
             }
 
             int milliseconds = microseconds == -1 ? -1 : microseconds / 1000;
 
-            Interop.Sys.PollEvents outEvents;
+            Interop.PollEvents outEvents;
             Interop.Error err = Interop.Sys.Poll(handle, inEvent, milliseconds, out outEvents);
             if (err != Interop.Error.SUCCESS)
             {
@@ -1473,9 +1473,9 @@ namespace System.Net.Sockets
 
             switch (mode)
             {
-                case SelectMode.SelectRead: status = (outEvents & (Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP)) != 0; break;
-                case SelectMode.SelectWrite: status = (outEvents & Interop.Sys.PollEvents.POLLOUT) != 0; break;
-                case SelectMode.SelectError: status = (outEvents & (Interop.Sys.PollEvents.POLLERR | Interop.Sys.PollEvents.POLLPRI)) != 0; break;
+                case SelectMode.SelectRead: status = (outEvents & (Interop.PollEvents.POLLIN | Interop.PollEvents.POLLHUP)) != 0; break;
+                case SelectMode.SelectWrite: status = (outEvents & Interop.PollEvents.POLLOUT) != 0; break;
+                case SelectMode.SelectError: status = (outEvents & (Interop.PollEvents.POLLERR | Interop.PollEvents.POLLPRI)) != 0; break;
                 default: status = false; break;
             }
             return SocketError.Success;
@@ -1498,7 +1498,7 @@ namespace System.Net.Sockets
             const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
             if (count < StackThreshold)
             {
-                Interop.Sys.PollEvent* eventsOnStack = stackalloc Interop.Sys.PollEvent[count];
+                Interop.PollEvent* eventsOnStack = stackalloc Interop.PollEvent[count];
                 return SelectViaPoll(
                     checkRead, checkReadInitialCount,
                     checkWrite, checkWriteInitialCount,
@@ -1507,8 +1507,8 @@ namespace System.Net.Sockets
             }
             else
             {
-                var eventsOnHeap = new Interop.Sys.PollEvent[count];
-                fixed (Interop.Sys.PollEvent* eventsOnHeapPtr = &eventsOnHeap[0])
+                var eventsOnHeap = new Interop.PollEvent[count];
+                fixed (Interop.PollEvent* eventsOnHeapPtr = &eventsOnHeap[0])
                 {
                     return SelectViaPoll(
                         checkRead, checkReadInitialCount,
@@ -1523,7 +1523,7 @@ namespace System.Net.Sockets
             IList? checkRead, int checkReadInitialCount,
             IList? checkWrite, int checkWriteInitialCount,
             IList? checkError, int checkErrorInitialCount,
-            Interop.Sys.PollEvent* events, int eventsLength,
+            Interop.PollEvent* events, int eventsLength,
             int microseconds)
         {
             // Add each of the list's contents to the events array
@@ -1534,9 +1534,9 @@ namespace System.Net.Sockets
             {
                 // In case we can't increase the reference count for each Socket,
                 // we'll unref refAdded Sockets in the finally block ordered: [checkRead, checkWrite, checkError].
-                AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP, ref refsAdded);
-                AddToPollArray(events, eventsLength, checkWrite, ref offset, Interop.Sys.PollEvents.POLLOUT, ref refsAdded);
-                AddToPollArray(events, eventsLength, checkError, ref offset, Interop.Sys.PollEvents.POLLPRI, ref refsAdded);
+                AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.PollEvents.POLLIN | Interop.PollEvents.POLLHUP, ref refsAdded);
+                AddToPollArray(events, eventsLength, checkWrite, ref offset, Interop.PollEvents.POLLOUT, ref refsAdded);
+                AddToPollArray(events, eventsLength, checkError, ref offset, Interop.PollEvents.POLLPRI, ref refsAdded);
                 Debug.Assert(offset == eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
                 Debug.Assert(refsAdded == eventsLength, $"Invalid ref adds. refsAdded={refsAdded}, eventsLength={eventsLength}.");
 
@@ -1562,9 +1562,9 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    FilterPollList(checkRead, events, checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP, ref refsAdded);
-                    FilterPollList(checkWrite, events, checkWriteInitialCount + checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLOUT, ref refsAdded);
-                    FilterPollList(checkError, events, checkErrorInitialCount + checkWriteInitialCount + checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLERR | Interop.Sys.PollEvents.POLLPRI, ref refsAdded);
+                    FilterPollList(checkRead, events, checkReadInitialCount - 1, Interop.PollEvents.POLLIN | Interop.PollEvents.POLLHUP, ref refsAdded);
+                    FilterPollList(checkWrite, events, checkWriteInitialCount + checkReadInitialCount - 1, Interop.PollEvents.POLLOUT, ref refsAdded);
+                    FilterPollList(checkError, events, checkErrorInitialCount + checkWriteInitialCount + checkReadInitialCount - 1, Interop.PollEvents.POLLERR | Interop.PollEvents.POLLPRI, ref refsAdded);
                 }
 
                 return SocketError.Success;
@@ -1580,7 +1580,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static unsafe void AddToPollArray(Interop.Sys.PollEvent* arr, int arrLength, IList? socketList, ref int arrOffset, Interop.Sys.PollEvents events, ref int refsAdded)
+        private static unsafe void AddToPollArray(Interop.PollEvent* arr, int arrLength, IList? socketList, ref int arrOffset, Interop.PollEvents events, ref int refsAdded)
         {
             if (socketList == null)
                 return;
@@ -1603,12 +1603,12 @@ namespace System.Net.Sockets
                 bool success = false;
                 socket.InternalSafeHandle.DangerousAddRef(ref success);
                 int fd = (int)socket.InternalSafeHandle.DangerousGetHandle();
-                arr[arrOffset++] = new Interop.Sys.PollEvent { Events = events, FileDescriptor = fd };
+                arr[arrOffset++] = new Interop.PollEvent { Events = events, FileDescriptor = fd };
                 refsAdded++;
             }
         }
 
-        private static unsafe void FilterPollList(IList? socketList, Interop.Sys.PollEvent* arr, int arrEndOffset, Interop.Sys.PollEvents desiredEvents, ref int refsAdded)
+        private static unsafe void FilterPollList(IList? socketList, Interop.PollEvent* arr, int arrEndOffset, Interop.PollEvents desiredEvents, ref int refsAdded)
         {
             if (socketList == null)
                 return;

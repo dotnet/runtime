@@ -60,16 +60,16 @@ namespace System.Drawing.Text
         {
             if (_nativeFontCollection == IntPtr.Zero)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                 // This is the default behavior on Desktop. The ArgumentException originates from GdipPrivateAddFontFile which would
                 // refuse the null pointer.
                 throw new ArgumentException();
+#pragma warning restore CA2208
             }
 
             if (filename == null)
             {
-                // This is the default behavior on Desktop. The name "path" originates from Path.GetFullPath or similar which would refuse
-                // a null value.
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(filename));
             }
 
             // this ensure the filename is valid (or throw the correct exception)

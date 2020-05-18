@@ -111,17 +111,6 @@ namespace System.Text.Json
                                     continue;
                                 }
 
-                                if (IsNonPublicProperty(propertyInfo))
-                                {
-                                    if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
-                                    {
-                                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, currentType);
-                                    }
-
-                                    // Non-public properties should not be included for (de)serialization.
-                                    continue;
-                                }
-
                                 // For now we only support public getters\setters
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
@@ -149,6 +138,15 @@ namespace System.Text.Json
                                         // else ignore jsonPropertyInfo since it has [JsonIgnore] or it's hidden by a new slot.
                                     }
                                 }
+                                else
+                                {
+                                    if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
+                                    {
+                                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, currentType);
+                                    }
+
+                                    // Non-public properties should not be included for (de)serialization.
+                                }
                             }
                         }
 
@@ -168,15 +166,23 @@ namespace System.Text.Json
                             cacheArray = new JsonPropertyInfo[cache.Count];
                         }
 
-                        // Set fields when finished to avoid concurrency issues.
-                        PropertyCache = cache;
+                        // Copy the dictionary cache to the array cache.
                         cache.Values.CopyTo(cacheArray, 0);
+
+                        // Set the array cache field at this point since it is completely initialized.
+                        // It can now be safely accessed by other threads.
                         PropertyCacheArray = cacheArray;
 
+                        // Allow constructor parameter logic to remove items from the dictionary since the JSON
+                        // property values will be passed to the constructor and do not call a property setter.
                         if (converter.ConstructorIsParameterized)
                         {
-                            InitializeConstructorParameters(converter.ConstructorInfo!);
+                            InitializeConstructorParameters(cache, converter.ConstructorInfo!);
                         }
+
+                        // Set the dictionary cache field at this point since it is completely initialized.
+                        // It can now be safely accessed by other threads.
+                        PropertyCache = cache;
                     }
                     break;
                 case ClassType.Enumerable:
@@ -203,19 +209,10 @@ namespace System.Text.Json
             }
         }
 
-        private static bool IsNonPublicProperty(PropertyInfo propertyInfo)
-        {
-            MethodInfo? getMethod = propertyInfo.GetMethod;
-            MethodInfo? setMethod = propertyInfo.SetMethod;
-            return !((getMethod != null && getMethod.IsPublic) || (setMethod != null && setMethod.IsPublic));
-        }
-
-        private void InitializeConstructorParameters(ConstructorInfo constructorInfo)
+        private void InitializeConstructorParameters(Dictionary<string, JsonPropertyInfo> propertyCache, ConstructorInfo constructorInfo)
         {
             ParameterInfo[] parameters = constructorInfo!.GetParameters();
             Dictionary<string, JsonParameterInfo> parameterCache = CreateParameterCache(parameters.Length, Options);
-
-            Dictionary<string, JsonPropertyInfo> propertyCache = PropertyCache!;
 
             foreach (ParameterInfo parameterInfo in parameters)
             {
@@ -251,7 +248,7 @@ namespace System.Text.Json
 
                         // One object property cannot map to multiple constructor
                         // parameters (ConvertName above can't return multiple strings).
-                        parameterCache.Add(jsonParameterInfo.NameAsString, jsonParameterInfo);
+                        parameterCache.Add(jsonPropertyInfo.NameAsString!, jsonParameterInfo);
 
                         // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
                         propertyCache.Remove(jsonPropertyInfo.NameAsString!);

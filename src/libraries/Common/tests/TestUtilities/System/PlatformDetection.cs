@@ -63,6 +63,7 @@ namespace System
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsSsl3 => GetSsl3Support();
+        public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
 #if NETCOREAPP
         public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
@@ -112,7 +113,7 @@ namespace System
             ((!IsOSX && !IsWindows) &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
-        public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && PlatformDetection.OSXVersion > new Version(10, 12));
+        public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && Environment.OSVersion.Version > new Version(10, 12));
 
         // OpenSSL 1.1.1 and above.
         public static bool SupportsTls13 => GetTls13Support();
@@ -141,7 +142,7 @@ namespace System
             }
             else if (IsOSX)
             {
-                return "OSX Version=" + m_osxProductVersion.Value.ToString();
+                return "OSX Version=" + Environment.OSVersion.Version.ToString();
             }
             else
             {

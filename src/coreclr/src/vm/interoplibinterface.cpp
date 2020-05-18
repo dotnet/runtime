@@ -470,7 +470,7 @@ namespace
         args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_2]  = PTR_TO_ARGHOLDER(externalComObject);
         args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
-        CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
+        CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
 
         return retObjRef;
     }
@@ -1385,8 +1385,7 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
 
 void QCALLTYPE GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling()
 {
-    // QCALL contracts are not used here because the managed declaration
-    // uses the SuppressGCTransition attribute
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     _ASSERTE(!g_IsGlobalComWrappersRegisteredForMarshalling);
     g_IsGlobalComWrappersRegisteredForMarshalling = true;
@@ -1455,8 +1454,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
 
 void QCALLTYPE GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport()
 {
-    // QCALL contracts are not used here because the managed declaration
-    // uses the SuppressGCTransition attribute
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     _ASSERTE(!g_IsGlobalComWrappersRegisteredForTrackerSupport);
     g_IsGlobalComWrappersRegisteredForTrackerSupport = true;

@@ -7,6 +7,7 @@ trigger:
   branches:
     include:
     - master
+    - dev/infrastructure
     - release/*.*
   paths:
     include:
@@ -14,6 +15,7 @@ trigger:
     - docs/manpages/*
     exclude:
     - eng/Version.Details.xml
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -27,6 +29,7 @@ pr:
   branches:
     include:
     - master
+    - dev/infrastructure
     - release/*.*
   paths:
     include:
@@ -34,6 +37,7 @@ pr:
     - docs/manpages/*
     exclude:
     - eng/Version.Details.xml
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -243,6 +247,7 @@ jobs:
     - tvOS_x64
     - tvOS_arm64
     - iOS_x64
+    - iOS_x86
     - iOS_arm
     - iOS_arm64
     - OSX_x64
@@ -280,6 +285,7 @@ jobs:
     - tvOS_x64
     - tvOS_arm64
     - iOS_x64
+    - iOS_x86
     - iOS_arm
     - iOS_arm64
     - Linux_x64
@@ -421,7 +427,7 @@ jobs:
     - Android_x64
     - Android_arm
     - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -436,6 +442,7 @@ jobs:
     - Android_arm64
     - tvOS_x64
     - iOS_arm64
+    - iOS_x86
     - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: debug
@@ -533,7 +540,7 @@ jobs:
     - Android_x64
     - Android_arm
     - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -548,6 +555,7 @@ jobs:
     - Android_arm64
     - tvOS_x64
     - iOS_arm64
+    - iOS_x86
     - OSX_x64
     - Linux_x64
     - Browser_wasm
@@ -691,7 +699,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
-    - arm
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -712,7 +720,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
-    - Linux_arm
+    - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -723,30 +731,6 @@ jobs:
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
-# Mono CoreCLR runtime Test executions using live libraries
-# Only when Mono is changed
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: release
-    runtimeFlavor: mono
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      liveRuntimeBuildConfig: release
-      runtimeMode: 'interpreter'
-      runtimeModeDisplayName: 'Interpreter'
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #

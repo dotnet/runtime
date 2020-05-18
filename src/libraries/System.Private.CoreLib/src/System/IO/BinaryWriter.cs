@@ -394,7 +394,7 @@ namespace System.IO
                     {
                         if (charStart < 0 || charCount < 0 || charStart > value.Length - charCount)
                         {
-                            throw new ArgumentOutOfRangeException(nameof(charCount));
+                            throw new ArgumentOutOfRangeException(nameof(value));
                         }
                         fixed (char* pChars = value)
                         {
