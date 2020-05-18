@@ -13,7 +13,7 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal class GCHeapHash
     {
-        private Array _data = null!;
+        private Array? _data;
         private int _count;
         private int _deletedCount;
     }

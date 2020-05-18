@@ -14,7 +14,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW", ExactSpelling = true)]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
@@ -23,7 +23,7 @@ internal static partial class Interop
             [Out] byte[]? lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW", ExactSpelling = true)]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
@@ -32,7 +32,7 @@ internal static partial class Interop
             ref int lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW", ExactSpelling = true)]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
@@ -41,7 +41,7 @@ internal static partial class Interop
             ref long lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW", ExactSpelling = true)]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,

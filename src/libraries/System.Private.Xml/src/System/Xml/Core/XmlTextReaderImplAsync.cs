@@ -975,7 +975,7 @@ namespace System.Xml
             _ps.bytePos = 0;
             while (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
             {
-                int read = await stream.ReadAsync(_ps.bytes, _ps.bytesUsed, _ps.bytes.Length - _ps.bytesUsed).ConfigureAwait(false);
+                int read = await stream.ReadAsync(_ps.bytes.AsMemory(_ps.bytesUsed)).ConfigureAwait(false);
                 if (read == 0)
                 {
                     _ps.isStreamEof = true;
@@ -1192,7 +1192,7 @@ namespace System.Xml
                     // read new bytes
                     if (_ps.bytePos == _ps.bytesUsed && _ps.bytes.Length - _ps.bytesUsed > 0)
                     {
-                        int read = await _ps.stream.ReadAsync(_ps.bytes, _ps.bytesUsed, _ps.bytes.Length - _ps.bytesUsed).ConfigureAwait(false);
+                        int read = await _ps.stream.ReadAsync(_ps.bytes.AsMemory(_ps.bytesUsed)).ConfigureAwait(false);
                         if (read == 0)
                         {
                             _ps.isStreamEof = true;
@@ -1214,7 +1214,7 @@ namespace System.Xml
             else if (_ps.textReader != null)
             {
                 // read chars
-                charsRead = await _ps.textReader.ReadAsync(_ps.chars, _ps.charsUsed, _ps.chars.Length - _ps.charsUsed - 1).ConfigureAwait(false);
+                charsRead = await _ps.textReader.ReadAsync(_ps.chars.AsMemory(_ps.charsUsed, _ps.chars.Length - _ps.charsUsed - 1)).ConfigureAwait(false);
                 _ps.charsUsed += charsRead;
             }
             else

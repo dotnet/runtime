@@ -330,6 +330,21 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(ObsoleteSmime3desWrap_Name, oid.FriendlyName);
         }
 
+        [Theory]
+        [InlineData("nistP256", "1.2.840.10045.3.1.7")]
+        [InlineData("secP256r1", "1.2.840.10045.3.1.7")]
+        [InlineData("x962P256v1", "1.2.840.10045.3.1.7")]
+        [InlineData("nistP384", "1.3.132.0.34")]
+        [InlineData("secP384r1", "1.3.132.0.34")]
+        [InlineData("nistP521", "1.3.132.0.35")]
+        [InlineData("secP521r1", "1.3.132.0.35")]
+        public static void LookupOidByFriendlyName_AdditionalNames(string friendlyName, string expectedOid)
+        {
+            Oid oid = Oid.FromFriendlyName(friendlyName, OidGroup.All);
+            Assert.Equal(friendlyName, oid.FriendlyName);
+            Assert.Equal(expectedOid, oid.Value);
+        }
+
         public static IEnumerable<object[]> ValidOidFriendlyNamePairs
         {
             get

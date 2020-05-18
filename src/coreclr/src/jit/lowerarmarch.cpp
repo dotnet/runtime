@@ -535,7 +535,254 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         node->gtType = TYP_SIMD16;
     }
 
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+
+    switch (intrinsicId)
+    {
+        case NI_Vector64_Create:
+        case NI_Vector128_Create:
+        {
+            // We don't directly support the Vector64.Create or Vector128.Create methods in codegen
+            // and instead lower them to other intrinsic nodes in LowerHWIntrinsicCreate so we expect
+            // that the node is modified to either not be a HWIntrinsic node or that it is no longer
+            // the same intrinsic as when it came in.
+
+            LowerHWIntrinsicCreate(node);
+            assert(!node->OperIsHWIntrinsic() || (node->gtHWIntrinsicId != intrinsicId));
+            LowerNode(node);
+            return;
+        }
+
+        default:
+            break;
+    }
+
     ContainCheckHWIntrinsic(node);
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCreate: Lowers a Vector64 or Vector128 Create call
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    var_types      simdType    = node->gtType;
+    var_types      baseType    = node->gtSIMDBaseType;
+    unsigned       simdSize    = node->gtSIMDSize;
+    VectorConstant vecCns      = {};
+
+    if ((simdSize == 8) && (simdType == TYP_DOUBLE))
+    {
+        simdType = TYP_SIMD8;
+    }
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(baseType));
+    assert(simdSize != 0);
+
+    GenTreeArgList* argList = nullptr;
+    GenTree*        op1     = node->gtGetOp1();
+    GenTree*        op2     = node->gtGetOp2();
+
+    // Spare GenTrees to be used for the lowering logic below
+    // Defined upfront to avoid naming conflicts, etc...
+    GenTree* idx  = nullptr;
+    GenTree* tmp1 = nullptr;
+    GenTree* tmp2 = nullptr;
+    GenTree* tmp3 = nullptr;
+
+    assert(op1 != nullptr);
+
+    unsigned argCnt    = 0;
+    unsigned cnsArgCnt = 0;
+
+    if (op1->OperIsList())
+    {
+        assert(op2 == nullptr);
+
+        for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
+        {
+            if (HandleArgForHWIntrinsicCreate(argList->Current(), argCnt, vecCns, baseType))
+            {
+                cnsArgCnt += 1;
+            }
+            argCnt += 1;
+        }
+    }
+    else
+    {
+        if (HandleArgForHWIntrinsicCreate(op1, argCnt, vecCns, baseType))
+        {
+            cnsArgCnt += 1;
+        }
+        argCnt += 1;
+
+        if (op2 != nullptr)
+        {
+            if (HandleArgForHWIntrinsicCreate(op2, argCnt, vecCns, baseType))
+            {
+                cnsArgCnt += 1;
+            }
+            argCnt += 1;
+        }
+        else if (cnsArgCnt == 1)
+        {
+            // These intrinsics are meant to set the same value to every element
+            // so we'll just specially handle it here and copy it into the remaining
+            // indices.
+
+            for (unsigned i = 1; i < simdSize / genTypeSize(baseType); i++)
+            {
+                HandleArgForHWIntrinsicCreate(op1, i, vecCns, baseType);
+            }
+        }
+    }
+    assert((argCnt == 1) || (argCnt == (simdSize / genTypeSize(baseType))));
+
+    if (argCnt == cnsArgCnt)
+    {
+        if (op1->OperIsList())
+        {
+            for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
+            {
+                BlockRange().Remove(argList->Current());
+            }
+        }
+        else
+        {
+            BlockRange().Remove(op1);
+
+            if (op2 != nullptr)
+            {
+                BlockRange().Remove(op2);
+            }
+        }
+
+        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, simdSize, emitDataAlignment::Required);
+        GenTree* clsVarAddr      = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+        BlockRange().InsertBefore(node, clsVarAddr);
+
+        node->ChangeOper(GT_IND);
+        node->gtOp1 = clsVarAddr;
+
+        // TODO-ARM64-CQ: We should be able to modify at least the paths that use Insert to trivially support partial
+        // vector constants. With this, we can create a constant if say 50% of the inputs are also constant and just
+        // insert the non-constant values which should still allow some gains.
+
+        return;
+    }
+    else if (argCnt == 1)
+    {
+        // We have the following (where simd is simd8 or simd16):
+        //          /--*  op1  T
+        //   node = *  HWINTRINSIC   simd   T Create
+
+        // We will be constructing the following parts:
+        //           /--*  op1  T
+        //   node  = *  HWINTRINSIC   simd   T DuplicateToVector
+
+        // This is roughly the following managed code:
+        //   return AdvSimd.Arm64.DuplicateToVector(op1);
+
+        if (varTypeIsLong(baseType) || (baseType == TYP_DOUBLE))
+        {
+            node->gtHWIntrinsicId =
+                (simdType == TYP_SIMD8) ? NI_AdvSimd_Arm64_DuplicateToVector64 : NI_AdvSimd_Arm64_DuplicateToVector128;
+        }
+        else
+        {
+            node->gtHWIntrinsicId =
+                (simdType == TYP_SIMD8) ? NI_AdvSimd_DuplicateToVector64 : NI_AdvSimd_DuplicateToVector128;
+        }
+        return;
+    }
+
+    // We have the following (where simd is simd8 or simd16):
+    //          /--*  op1 T
+    //          +--*  ... T
+    //          +--*  opN T
+    //   node = *  HWINTRINSIC   simd   T Create
+
+    if (op1->OperIsList())
+    {
+        argList = op1->AsArgList();
+        op1     = argList->Current();
+        argList = argList->Rest();
+    }
+
+    // We will be constructing the following parts:
+    //          /--*  op1  T
+    //   tmp1 = *  HWINTRINSIC   simd8  T CreateScalarUnsafe
+    //   ...
+
+    // This is roughly the following managed code:
+    //   var tmp1 = Vector64.CreateScalarUnsafe(op1);
+    //   ...
+
+    NamedIntrinsic createScalarUnsafe =
+        (simdType == TYP_SIMD8) ? NI_Vector64_CreateScalarUnsafe : NI_Vector128_CreateScalarUnsafe;
+
+    tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, createScalarUnsafe, baseType, simdSize);
+    BlockRange().InsertAfter(op1, tmp1);
+    LowerNode(tmp1);
+
+    unsigned N   = 0;
+    GenTree* opN = nullptr;
+
+    for (N = 1; N < argCnt - 1; N++)
+    {
+        // We will be constructing the following parts:
+        //   ...
+        //   idx  =    CNS_INT       int    N
+        //          /--*  tmp1 simd
+        //          +--*  idx  int
+        //          +--*  opN  T
+        //   tmp1 = *  HWINTRINSIC   simd   T Insert
+        //   ...
+
+        // This is roughly the following managed code:
+        //   ...
+        //   tmp1 = AdvSimd.Insert(tmp1, N, opN);
+        //   ...
+
+        opN = argList->Current();
+
+        idx = comp->gtNewIconNode(N, TYP_INT);
+        BlockRange().InsertBefore(opN, idx);
+
+        tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, baseType, simdSize);
+        BlockRange().InsertAfter(opN, tmp1);
+        LowerNode(tmp1);
+
+        argList = argList->Rest();
+    }
+
+    assert(N == (argCnt - 1));
+
+    // We will be constructing the following parts:
+    //   idx  =    CNS_INT       int    N
+    //          /--*  tmp1 simd
+    //          +--*  idx  int
+    //          +--*  opN  T
+    //   node = *  HWINTRINSIC   simd   T Insert
+
+    // This is roughly the following managed code:
+    //   ...
+    //   tmp1 = AdvSimd.Insert(tmp1, N, opN);
+    //   ...
+
+    opN = (argCnt == 2) ? op2 : argList->Current();
+
+    idx = comp->gtNewIconNode(N, TYP_INT);
+    BlockRange().InsertBefore(opN, idx);
+
+    node->gtOp1 = comp->gtNewArgList(tmp1, idx, opN);
+    node->gtOp2 = nullptr;
+
+    node->gtHWIntrinsicId = NI_AdvSimd_Insert;
 }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -610,10 +857,12 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     }
 #endif // FEATURE_SIMD
 
-    GenTree* addr          = indirNode->Addr();
-    bool     makeContained = true;
+    GenTree* addr = indirNode->Addr();
+
     if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
     {
+        bool makeContained = true;
+
 #ifdef TARGET_ARM
         // ARM floating-point load/store doesn't support a form similar to integer
         // ldr Rdst, [Rbase + Roffset] with offset in a register. The only supported
@@ -637,12 +886,23 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
                 }
             }
         }
-#endif
+#endif // TARGET_ARM
+
         if (makeContained)
         {
             MakeSrcContained(indirNode, addr);
         }
     }
+#ifdef TARGET_ARM64
+    else if (addr->OperGet() == GT_CLS_VAR_ADDR)
+    {
+        // These nodes go into an addr mode:
+        // - GT_CLS_VAR_ADDR turns into a constant.
+
+        // make this contained, it turns into a constant that goes into an addr mode
+        MakeSrcContained(indirNode, addr);
+    }
+#endif // TARGET_ARM64
 }
 
 //------------------------------------------------------------------------
@@ -900,6 +1160,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AdvSimd_DuplicateSelectedScalarToVector128:
         case NI_AdvSimd_Extract:
         case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+        case NI_Vector64_GetElement:
+        case NI_Vector128_GetElement:
             if (intrin.op2->IsCnsIntOrI())
             {
                 MakeSrcContained(node, intrin.op2);
@@ -933,12 +1195,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
-        case NI_Vector64_Create:
-        case NI_Vector128_Create:
         case NI_Vector64_CreateScalarUnsafe:
         case NI_Vector128_CreateScalarUnsafe:
         case NI_AdvSimd_DuplicateToVector64:
         case NI_AdvSimd_DuplicateToVector128:
+        case NI_AdvSimd_Arm64_DuplicateToVector64:
         case NI_AdvSimd_Arm64_DuplicateToVector128:
             if (intrin.op1->IsCnsIntOrI())
             {

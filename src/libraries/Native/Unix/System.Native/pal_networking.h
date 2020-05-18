@@ -7,6 +7,7 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 #include "pal_errno.h"
+#include <pal_networking_common.h>
 
 /**
  * These error values are different on every platform so make a
@@ -110,18 +111,6 @@ typedef enum
     MulticastOption_MULTICAST_DROP = 1, // IP{,V6}_DROP_MEMBERSHIP
     MulticastOption_MULTICAST_IF = 2    // IP_MULTICAST_IF
 } MulticastOption;
-
-/*
- * Socket shutdown modes.
- *
- * NOTE: these values are taken from System.Net.SocketShutdown.
- */
-typedef enum
-{
-    SocketShutdown_SHUT_READ = 0,  // SHUT_RD
-    SocketShutdown_SHUT_WRITE = 1, // SHUT_WR
-    SocketShutdown_SHUT_BOTH = 2,  // SHUT_RDWR
-} SockerShutdown;
 
 /*
  * Socket option levels.

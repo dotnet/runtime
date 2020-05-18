@@ -18,7 +18,7 @@ namespace System.IO.Tests
             FileNotFoundException exception = Assert.IsAssignableFrom<FileNotFoundException>(Marshal.GetExceptionForHR(hr, new IntPtr(-1)));
 
             // Don't validate the message.  Currently .NET Native does not produce HR-specific messages
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
         }
     }
 }
