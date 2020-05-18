@@ -101,13 +101,12 @@
   <Target Name="BuildHelixWorkItems"
           DependsOnTargets="CompressRuntimeDirectory">
 
-    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-      <HelixCorrelationPayload  Include="$(HelixCorrelationPayload)" />
+    <ItemGroup>
+      <HelixCorrelationPayload  Condition="'$(TargetsMobile)' != 'true'"
+                                Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
-    </ItemGroup>
-
-    <ItemGroup>
+    
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
