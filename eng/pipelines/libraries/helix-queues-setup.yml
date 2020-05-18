@@ -106,10 +106,6 @@ jobs:
       # NET472
       - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
         - Windows.10.Amd64.Client19H1.Open
-
-      # SourceBuild
-      - ${{ if eq(parameters.jobParameters.framework, 'sourceBuild') }}:
-        - RedHat.7.Amd64.Open
       
       # AllConfigurations
       - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
