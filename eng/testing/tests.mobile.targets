@@ -2,7 +2,8 @@
   <PropertyGroup>
     <!-- OutDir is not set early enough to set this property in .props file. -->
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
-    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+    <BundleBinDir>$([MSBuild]::NormalizeDirectory('$(BundleDir)', 'bin'))</BundleBinDir>
+    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleBinDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
   </PropertyGroup>
 
@@ -106,6 +107,19 @@
     <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
 
+  <!-- Overrides ArchiveTests in tests.targets -->
+  <Target Name="ArchiveTests"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
+          DependsOnTargets="GenerateRunScript">
+
+    <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
+
+    <MakeDir Directories="$(TestArchiveTestsDir)" />
+    <ZipDirectory SourceDirectory="$(BundleBinDir)"
+                  DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
+                  Overwrite="true" />
+  </Target>
+
   <Target Name="AddTestRunnersToPublishedFiles"
           AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
@@ -132,5 +146,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp" />
+          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;ArchiveTests" />
 </Project>

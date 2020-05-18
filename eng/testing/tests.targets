@@ -10,7 +10,7 @@
     <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(TargetOS)' != 'Windows_NT'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-
+    
     <RunScriptHostDir Condition="'$(TargetOS)' == 'Windows_NT'">%RUNTIME_PATH%\</RunScriptHostDir>
     <RunScriptHostDir Condition="'$(TargetOS)' != 'Windows_NT'">$RUNTIME_PATH/</RunScriptHostDir>
 
