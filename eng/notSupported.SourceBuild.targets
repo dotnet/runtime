@@ -5,8 +5,9 @@
                      ('$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != '')">
 
     <PropertyGroup>
-      <DotNetSourceBuildIntermediatePath>$(IntermediateOutputPath)</DotNetSourceBuildIntermediatePath>
-    </PropertyGroup>    
+      <DotNetSourceBuildIntermediatePath Condition="'$(DotNetSourceBuildIntermediatePath)' == '' and '$(ContinuousIntegrationBuild)' == 'true'">$(IntermediateOutputPath)</DotNetSourceBuildIntermediatePath>
+    </PropertyGroup>
+   
     <Error Condition="'$(DotNetSourceBuildIntermediatePath)' == ''" 
            Text="'DotNetSourceBuildIntermediatePath' must be specified when 'DotNetBuildFromSource' is true" />
 
