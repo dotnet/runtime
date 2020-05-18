@@ -72,7 +72,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
             byte firstByte = reader.ReadUInt8();
             Debug.Assert(HeaderHelpers.IsLongHeader(firstByte), "Trying to parse short packet header as long.");
 
-            if (!reader.TryReadInt32(out int version) ||
+            if (!reader.TryReadUInt32(out uint version) ||
                 !reader.TryReadUInt8(out byte dcidLen) ||
                 !reader.TryReadSpan(dcidLen, out var dcid) ||
                 !reader.TryReadUInt8(out byte scidLen) ||

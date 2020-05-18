@@ -441,7 +441,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return false;
             }
 
-            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(recoverySpace.LargestAckedPacketNumber);
+            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(recoverySpace.LargestTransportedPacketNumber);
             WritePacketHeader(writer, packetType, pnLength);
 
             // for non 1-RTT packets, we reserve 2 bytes which we will overwrite once total payload length is known

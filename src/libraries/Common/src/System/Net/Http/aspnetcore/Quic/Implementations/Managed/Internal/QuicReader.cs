@@ -45,9 +45,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return value;
         }
 
-        internal bool TryReadInt16(out short result)
+        internal bool TryReadUInt16(out ushort result)
         {
-            return BinaryPrimitives.TryReadInt16BigEndian(ReadSpan(sizeof(short)), out result);
+            return BinaryPrimitives.TryReadUInt16BigEndian(ReadSpan(sizeof(short)), out result);
         }
 
         internal short ReadInt16()
@@ -77,9 +77,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                    source[2];
         }
 
-        internal bool TryReadInt32(out int result)
+        internal bool TryReadUInt32(out uint result)
         {
-            return BinaryPrimitives.TryReadInt32BigEndian(ReadSpan(sizeof(uint)), out result);
+            return BinaryPrimitives.TryReadUInt32BigEndian(ReadSpan(sizeof(uint)), out result);
         }
 
         internal int ReadInt32()

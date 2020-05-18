@@ -70,6 +70,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             internal long LargestAckedPacketNumber { get; set; }
 
             /// <summary>
+            ///     The largest packet number known to be received by the peer.
+            /// </summary>
+            internal long LargestTransportedPacketNumber { get; set; }
+
+            /// <summary>
             ///     The time the most recent ack-eliciting packet was sent. MaxValue if no packet was sent yet.
             /// </summary>
             internal long TimeOfLastAckElicitingPacketSent { get; set; }
@@ -328,6 +333,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     CongestionController.OnPacketAcked(this, packet, now);
                 }
 
+                pnSpace.LargestTransportedPacketNumber = Math.Max(pn, pnSpace.LargestTransportedPacketNumber);
                 pnSpace.AckedPackets.Enqueue(packet);
                 toRemove++;
             }

@@ -38,9 +38,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal static bool Read(QuicReader reader, out PreferredAddress address)
         {
             if (!reader.TryReadSpan(4, out var ipv4) ||
-                !reader.TryReadInt16(out short ipv4Port) ||
+                !reader.TryReadUInt16(out ushort ipv4Port) ||
                 !reader.TryReadSpan(16, out var ipv6) ||
-                !reader.TryReadInt16(out short ipv6Port) ||
+                !reader.TryReadUInt16(out ushort ipv6Port) ||
                 !reader.TryReadUInt8(out byte cidLength) ||
                 !reader.TryReadSpan(cidLength, out var cid) ||
                 !reader.TryReadSpan(StatelessResetToken.Length, out var token))

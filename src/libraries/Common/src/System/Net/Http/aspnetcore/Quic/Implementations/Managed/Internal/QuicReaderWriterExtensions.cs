@@ -73,7 +73,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal static bool TryReadQuicVersion(this QuicReader reader, out QuicVersion version)
         {
-            if (!reader.TryReadInt32(out int ver))
+            if (!reader.TryReadUInt32(out uint ver))
             {
                 version = default;
                 return false;
@@ -92,7 +92,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             bool success;
 
-            int truncatedPn;
+            long truncatedPn;
 
             switch (length)
             {
@@ -104,7 +104,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
                 case 2:
                 {
-                    success = reader.TryReadInt16(out short res);
+                    success = reader.TryReadUInt16(out ushort res);
                     truncatedPn = res;
                     break;
                 }
@@ -116,7 +116,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
                 case 4:
                 {
-                    success = reader.TryReadInt32(out int res);
+                    success = reader.TryReadUInt32(out uint res);
                     truncatedPn = res;
                     break;
                 }
