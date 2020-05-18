@@ -61,13 +61,7 @@ jobs:
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
-      - ${{ if eq(parameters.runtimeVariant, 'interpreter') }}:
-        ### runtimeVariant affects build artifacts, but we want to use "normal" 
-        ### build artifacts for interpreter - there's no special interpreter 
-        ###artifact to download
-        - ${{ format('{0}__product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - ${{ if ne(parameters.runtimeVariant, 'interpreter') }}:
-        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 

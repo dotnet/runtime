@@ -71,10 +71,7 @@ jobs:
      
     # Build product defines what we are trying to build, either coreclr or mono
     - name: buildProductArtifactName
-      ${{ if eq(parameters.runtimeVariant, 'interpreter') }}:
-        value: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-      ${{ if ne(parameters.runtimeVariant, 'interpreter') }}:
-        value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
