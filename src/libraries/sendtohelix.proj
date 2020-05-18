@@ -41,6 +41,12 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <!-- Use helix feature to include dotnet CLI for every workitem and add it to the path -->
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want helixtype to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
@@ -83,7 +89,7 @@
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(BuildAllConfigurations)' != 'true'">
+          Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetsMobile)' != 'true'">
 
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
     <ZipDirectory SourceDirectory="$(TestHostRootPath)"
@@ -95,11 +101,13 @@
   <Target Name="BuildHelixWorkItems"
           DependsOnTargets="CompressRuntimeDirectory">
 
-    <ItemGroup>
-      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+      <HelixCorrelationPayload  Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+    </ItemGroup>
 
+    <ItemGroup>
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
