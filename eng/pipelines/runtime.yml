@@ -722,7 +722,7 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_arm64
-    - Linux_arm32
+    - Linux_arm
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -748,7 +748,7 @@ jobs:
     - Windows_NT_x64
     - OSX_x64
     - Linux_arm64
-    - Linux_x64
+    - Linux_arm
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
