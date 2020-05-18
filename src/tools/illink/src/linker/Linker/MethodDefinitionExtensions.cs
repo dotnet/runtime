@@ -71,6 +71,9 @@ namespace Mono.Linker
 			return method.IsConstructor && method.IsStatic;
 		}
 
+#if !FEATURE_ILLINK
+		// This implementation is wrong. It should return true if this is a virtual override
+		// of System.Object::Finalize, but that's not what this is doing. Do not use.
 		public static bool IsFinalizer (this MethodDefinition method)
 		{
 			if (method.Name != "Finalize" || method.ReturnType.MetadataType != MetadataType.Void)
@@ -81,6 +84,7 @@ namespace Mono.Linker
 
 			return true;
 		}
+#endif
 
 		public static void ClearDebugInformation (this MethodDefinition method)
 		{
