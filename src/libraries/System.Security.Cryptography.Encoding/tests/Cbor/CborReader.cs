@@ -35,27 +35,66 @@ namespace System.Formats.Cbor
         // keeps a cached copy of the reader state; 'None' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.None;
 
-        public CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
+        /// <summary>
+        ///   The <see cref="CborConformanceLevel"/> used by this reader.
+        /// </summary>
+        public CborConformanceLevel ConformanceLevel { get; }
+
+        /// <summary>
+        ///   Declares whether this reader allows multiple root-level CBOR data items.
+        /// </summary>
+        public bool AllowMultipleRootLevelValues { get; }
+
+        /// <summary>
+        ///   Gets the reader's current level of nestedness in the CBOR document.
+        /// </summary>
+        public int CurrentDepth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
+
+        /// <summary>
+        ///   Gets the total number of bytes that have been consumed by the reader.
+        /// </summary>
+        public int BytesRead => _offset;
+
+        /// <summary>
+        ///   Indicates whether or not the reader has remaining data available to process.
+        /// </summary>
+        public bool HasData => _offset != _data.Length;
+
+        /// <summary>
+        ///   Construct a <see cref="AsnValueReader"/> instance over <paramref name="data"/> with given configuration.
+        /// </summary>
+        /// <param name="data">The CBOR encoded data to read.</param>
+        /// <param name="conformanceLevel">
+        ///   Specifies a <see cref="CborConformanceLevel"/> guiding the conformance checks performed on the encoded data.
+        ///   Defaults to <see cref="CborConformanceLevel.Lax" /> conformance level.
+        /// </param>
+        /// <param name="allowMultipleRootLevelValues">
+        ///   Specify if multiple root-level values are to be supported by the reader.
+        ///   When set to <c>false</c>, the reader will throw an <see cref="InvalidOperationException"/>
+        ///   if trying to read beyond the scope of one root-level CBOR data item.
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="conformanceLevel"/> is not defined.
+        /// </exception>
+        public CborReader(ReadOnlyMemory<byte> data, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
-            _data = buffer;
+            _data = data;
             ConformanceLevel = conformanceLevel;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
         }
 
-        public CborConformanceLevel ConformanceLevel { get; }
-        public bool AllowMultipleRootLevelValues { get; }
-        public int Depth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
-        public int BytesRead => _offset;
-        public bool HasData => _offset != _data.Length;
 
+        /// <summary>
+        ///   Read the next CBOR token, without advancing the reader.
+        /// </summary>
         public CborReaderState PeekState()
         {
             if (_cachedState == CborReaderState.None)
             {
-                _cachedState = PeekStateCore(false);
+                _cachedState = PeekStateCore(throwOnFormatErrors:false);
             }
 
             return _cachedState;
@@ -471,7 +510,7 @@ namespace System.Formats.Cbor
         private Checkpoint CreateCheckpoint()
         {
             return new Checkpoint(
-                depth: Depth,
+                depth: CurrentDepth,
                 offset: _offset,
                 frameOffset: _frameOffset,
                 itemsWritten: _itemsWritten,
@@ -481,7 +520,7 @@ namespace System.Formats.Cbor
 
         private void RestoreCheckpoint(in Checkpoint checkpoint)
         {
-            int restoreHeight = Depth - checkpoint.Depth;
+            int restoreHeight = CurrentDepth - checkpoint.Depth;
             Debug.Assert(restoreHeight >= 0, "Attempting to restore checkpoint outside of its original context.");
 
             if (restoreHeight > 0)
@@ -521,7 +560,7 @@ namespace System.Formats.Cbor
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
             _cachedState = CborReaderState.None;
 
-            Debug.Assert(Depth == checkpoint.Depth);
+            Debug.Assert(CurrentDepth == checkpoint.Depth);
         }
     }
 }

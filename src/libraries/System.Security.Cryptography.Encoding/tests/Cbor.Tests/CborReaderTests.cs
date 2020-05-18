@@ -32,18 +32,18 @@ namespace System.Formats.Cbor.Tests
 
             for (int i = 0; i < depth; i++)
             {
-                Assert.Equal(i, reader.Depth);
+                Assert.Equal(i, reader.CurrentDepth);
                 reader.ReadStartArray();
             }
 
-            Assert.Equal(depth, reader.Depth);
+            Assert.Equal(depth, reader.CurrentDepth);
             reader.ReadInt32();
-            Assert.Equal(depth, reader.Depth);
+            Assert.Equal(depth, reader.CurrentDepth);
 
             for (int i = depth - 1; i >= 0; i--)
             {
                 reader.ReadEndArray();
-                Assert.Equal(i, reader.Depth);
+                Assert.Equal(i, reader.CurrentDepth);
             }
 
             Assert.Equal(CborReaderState.Finished, reader.PeekState());

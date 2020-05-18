@@ -22,7 +22,7 @@ namespace System.Formats.Cbor
 
         private void SkipToAncestor(int depth, bool validateConformance)
         {
-            Debug.Assert(0 <= depth && depth <= Depth);
+            Debug.Assert(0 <= depth && depth <= CurrentDepth);
             Checkpoint checkpoint = CreateCheckpoint();
             _isConformanceLevelCheckEnabled = validateConformance;
 
