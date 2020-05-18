@@ -790,6 +790,13 @@ namespace System.PrivateUri.Tests
             Assert.Equal(absolutePath, uri.AbsolutePath);
             Assert.Equal(absoluteUri, uri.AbsoluteUri);
             Assert.Equal(localPath, uri.LocalPath);
+
+            var uri2 = new Uri(uri.AbsoluteUri);
+
+            Assert.Equal(toString, uri2.ToString());
+            Assert.Equal(absolutePath, uri2.AbsolutePath);
+            Assert.Equal(absoluteUri, uri2.AbsoluteUri);
+            Assert.Equal(localPath, uri2.LocalPath);
         }
     }
 }
