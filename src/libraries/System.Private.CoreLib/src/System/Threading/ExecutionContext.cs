@@ -425,21 +425,23 @@ namespace System.Threading
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void RestoreDefaultContextThrowIfNeeded(Thread currentThread, SynchronizationContext? previousSyncCtx, ExceptionDispatchInfo? edi)
         {
             ExecutionContext? currentExecutionCtx = currentThread._executionContext;
 
             // Reset to Default
             currentThread._executionContext = null;
-            currentThread._synchronizationContext = previousSyncCtx;
+            if (currentThread._synchronizationContext != previousSyncCtx)
+            {
+                currentThread._synchronizationContext = previousSyncCtx;
+            }
 
             if (currentExecutionCtx != null && currentExecutionCtx.HasChangeNotifications)
             {
                 OnValuesChanged(currentExecutionCtx, nextExecutionCtx: null);
 
                 // Reset to defaults again without change notifications in case the Change handler changed the contexts
-                currentThread._synchronizationContext = null;
+                currentThread._synchronizationContext = previousSyncCtx;
                 currentThread._executionContext = null;
             }
 
