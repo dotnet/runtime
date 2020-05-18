@@ -1263,6 +1263,9 @@ namespace Mono.Linker.Steps
 				MarkMulticastDelegate (type);
 			}
 
+			if (type.IsClass && type.BaseType == null && type.Name == "Object")
+				MarkMethodIf (type.Methods, m => m.Name == "Finalize", new DependencyInfo (DependencyKind.MethodForSpecialType, type));
+
 			if (type.IsSerializable ())
 				MarkSerializable (type);
 
@@ -2238,7 +2241,7 @@ namespace Mono.Linker.Steps
 		protected virtual IEnumerable<MethodDefinition> GetRequiredMethodsForInstantiatedType (TypeDefinition type)
 		{
 			foreach (var method in type.Methods) {
-				if (method.IsFinalizer () || IsVirtualNeededByInstantiatedTypeDueToPreservedScope (method))
+				if (IsVirtualNeededByInstantiatedTypeDueToPreservedScope (method))
 					yield return method;
 			}
 		}
