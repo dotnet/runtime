@@ -23,7 +23,7 @@ namespace System.Formats.Cbor
         /// </exception>
         /// <exception cref="FormatException">
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the integer encoding is not valid under the current conformance level --OR--
         ///   the data item is located in an illegal context (e.g. an indefinite-length string)
         /// </exception>
         public int ReadInt32()
@@ -46,7 +46,7 @@ namespace System.Formats.Cbor
         /// </exception>
         /// <exception cref="FormatException">
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the integer encoding is not valid under the current conformance level --OR--
         ///   the data item is located in an illegal context (e.g. an indefinite-length string)
         /// </exception>
         public uint ReadUInt32()
@@ -69,7 +69,7 @@ namespace System.Formats.Cbor
         /// </exception>
         /// <exception cref="FormatException">
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the integer encoding is not valid under the current conformance level --OR--
         ///   the data item is located in an illegal context (e.g. an indefinite-length string)
         /// </exception>
         public long ReadInt64()
@@ -92,7 +92,7 @@ namespace System.Formats.Cbor
         /// </exception>
         /// <exception cref="FormatException">
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the integer encoding is not valid under the current conformance level --OR--
         ///   the data item is located in an illegal context (e.g. an indefinite-length string)
         /// </exception>
         public ulong ReadUInt64()
@@ -117,7 +117,7 @@ namespace System.Formats.Cbor
         /// </exception>
         /// <exception cref="FormatException">
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the length encoding is not valid under the current conformance level --OR--
+        ///   the integer encoding is not valid under the current conformance level --OR--
         ///   the data item is located in an illegal context (e.g. an indefinite-length string)
         /// </exception>
         /// <remarks>
