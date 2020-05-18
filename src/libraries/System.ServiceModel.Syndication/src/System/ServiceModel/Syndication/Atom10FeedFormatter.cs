@@ -137,11 +137,11 @@ namespace System.ServiceModel.Syndication
                     {
                         category.Name = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.SchemeTag && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == Atom10Constants.SchemeTag && reader.NamespaceURI == string.Empty)
                     {
                         category.Scheme = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.LabelTag && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == Atom10Constants.LabelTag && reader.NamespaceURI == string.Empty)
                     {
                         category.Label = reader.Value;
                     }
@@ -569,7 +569,7 @@ namespace System.ServiceModel.Syndication
             {
                 while (reader.MoveToNextAttribute())
                 {
-                    if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI.Length == 0)
+                    if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI == string.Empty)
                     {
                         continue;
                     }
@@ -664,11 +664,11 @@ namespace System.ServiceModel.Syndication
                 {
                     while (reader.MoveToNextAttribute())
                     {
-                        if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI.Length == 0)
+                        if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI == string.Empty)
                         {
                             continue;
                         }
-                        else if (reader.LocalName == Atom10Constants.SourceTag && reader.NamespaceURI.Length == 0)
+                        else if (reader.LocalName == Atom10Constants.SourceTag && reader.NamespaceURI == string.Empty)
                         {
                             continue;
                         }
@@ -919,23 +919,23 @@ namespace System.ServiceModel.Syndication
                     {
                         link.BaseUri = FeedUtils.CombineXmlBase(link.BaseUri, reader.Value);
                     }
-                    else if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == Atom10Constants.TypeTag && reader.NamespaceURI == string.Empty)
                     {
                         mediaType = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.RelativeTag && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == Atom10Constants.RelativeTag && reader.NamespaceURI == string.Empty)
                     {
                         relationship = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.TitleTag && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == Atom10Constants.TitleTag && reader.NamespaceURI == string.Empty)
                     {
                         title = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.LengthTag && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == Atom10Constants.LengthTag && reader.NamespaceURI == string.Empty)
                     {
                         lengthStr = reader.Value;
                     }
-                    else if (reader.LocalName == Atom10Constants.HrefTag && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == Atom10Constants.HrefTag && reader.NamespaceURI == string.Empty)
                     {
                         val = reader.Value;
                     }

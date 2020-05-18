@@ -363,7 +363,7 @@ namespace System.Xml.Schema
                 }
                 if (!v1Compat)
                 {
-                    if (o1._targetNamespace.Length == 0)
+                    if (o1._targetNamespace == string.Empty)
                     { // clause 6 - o1 is negation of absent
                         nslist = o2.Clone();
                     }

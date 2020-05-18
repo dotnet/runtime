@@ -179,11 +179,11 @@ namespace System.ServiceModel.Syndication
                     {
                         inlineCategories.Language = reader.Value;
                     }
-                    else if (reader.LocalName == App10Constants.Fixed && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == App10Constants.Fixed && reader.NamespaceURI == string.Empty)
                     {
                         inlineCategories.IsFixed = (reader.Value == "yes");
                     }
-                    else if (reader.LocalName == Atom10Constants.SchemeTag && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == Atom10Constants.SchemeTag && reader.NamespaceURI == string.Empty)
                     {
                         inlineCategories.Scheme = reader.Value;
                     }
@@ -256,7 +256,7 @@ namespace System.ServiceModel.Syndication
                     {
                         referencedCategories.Language = reader.Value;
                     }
-                    else if (reader.LocalName == App10Constants.Href && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == App10Constants.Href && reader.NamespaceURI == string.Empty)
                     {
                         continue;
                     }
@@ -362,7 +362,7 @@ namespace System.ServiceModel.Syndication
                     {
                         result.BaseUri = FeedUtils.CombineXmlBase(result.BaseUri, reader.Value);
                     }
-                    else if (reader.LocalName == App10Constants.Href && reader.NamespaceURI.Length == 0)
+                    else if (reader.LocalName == App10Constants.Href && reader.NamespaceURI == string.Empty)
                     {
                         result.Link = new Uri(reader.Value, UriKind.RelativeOrAbsolute);
                     }
