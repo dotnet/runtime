@@ -1011,11 +1011,6 @@ void EEStartupHelper()
 #endif // CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
-#ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_PERFTRACING
-        // DiagnosticServer::Initialize();
-#endif
-#endif
         g_EEStartupStatus = S_OK;
         hr = S_OK;
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Completed===================");
