@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <Target Name="CopyInteropNativeRuntimeDependencies"
-    BeforeTarget="CopyAllNativeProjectReferenceBinaries" >
+    BeforeTargets="CopyAllNativeProjectReferenceBinaries" >
     <!-- Required debug vcruntime and UCRT dlls -->
     <ItemGroup
       Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
