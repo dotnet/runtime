@@ -44,9 +44,13 @@ extern "C" {
    leaving some slack for future expansion.  Changing this value will
    require recompiling all users of this library.  Stack allocation is
    relatively cheap and unwind-state copying is relatively rare, so we
-   want to err on making it rather too big than too small.  */
+   want to err on making it rather too big than too small.
 
-#define UNW_TDEP_CURSOR_LEN     512
+   Calculation is regs used (64 + 34) * 2 + 40 (bytes of rest of
+   cursor) + padding
+*/
+
+#define UNW_TDEP_CURSOR_LEN     250
 
 typedef uint64_t unw_word_t;
 typedef int64_t unw_sword_t;
@@ -169,15 +173,46 @@ typedef struct unw_tdep_save_loc
 unw_tdep_save_loc_t;
 
 
-/* On AArch64, we can directly use ucontext_t as the unwind context.  */
-typedef ucontext_t unw_tdep_context_t;
+/* On AArch64, we can directly use ucontext_t as the unwind context,
+ * however, the __reserved struct is quite large: tune it down to only
+ * the necessary used fields.  */
+
+struct unw_sigcontext
+  {
+	uint64_t fault_address;
+	uint64_t regs[31];
+	uint64_t sp;
+	uint64_t pc;
+	uint64_t pstate;
+	uint8_t __reserved[(66 * 8)] __attribute__((__aligned__(16)));
+};
+
+typedef struct
+  {
+	unsigned long uc_flags;
+	struct ucontext *uc_link;
+	stack_t uc_stack;
+	__sigset_t uc_sigmask;
+	struct unw_sigcontext uc_mcontext;
+  } unw_tdep_context_t;
+
+typedef struct
+  {
+	uint32_t _ctx_magic;
+	uint32_t _ctx_size;
+	uint32_t fpsr;
+	uint32_t fpcr;
+	uint64_t vregs[64];
+  } unw_fpsimd_context_t;
+
+
 
 #include "libunwind-common.h"
 #include "libunwind-dynamic.h"
 
 #define unw_tdep_getcontext(uc) (({					\
   unw_tdep_context_t *unw_ctx = (uc);					\
-  register uint64_t *unw_base asm ("x0") = (uint64_t*) unw_ctx->uc_mcontext.regs;		\
+  register uint64_t *unw_base __asm__ ("x0") = (uint64_t*) unw_ctx->uc_mcontext.regs;		\
   __asm__ __volatile__ (						\
      "stp x0, x1, [%[base], #0]\n" \
      "stp x2, x3, [%[base], #16]\n" \
