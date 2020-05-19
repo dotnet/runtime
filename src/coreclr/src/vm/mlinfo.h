@@ -469,7 +469,7 @@ public:
     void GetItfMarshalInfo(ItfMarshalInfo* pInfo);
 
     // Helper functions used to map the specified type to its interface marshalling info.
-    static void GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispItf, MarshalScenario ms, ItfMarshalInfo *pInfo);
+    static void GetItfMarshalInfo(TypeHandle th, BOOL fDispItf, MarshalScenario ms, ItfMarshalInfo *pInfo);
     static HRESULT TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, ItfMarshalInfo *pInfo);
 
     VOID MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpecified);
@@ -526,10 +526,6 @@ private:
     UINT32          m_multiplier;     // multipler for "sizeis"
     UINT32          m_additive;       // additive for 'sizeis"
     UINT16          m_countParamIdx;  // index of "sizeis" parameter
-
-#ifdef FEATURE_COMINTEROP
-    MethodTable*    m_pDefaultItfMT;                    // default interface (if m_pMT is a class)
-#endif // FEATURE_COMINTEROP
 
     UINT16          m_nativeArgSize;
 
