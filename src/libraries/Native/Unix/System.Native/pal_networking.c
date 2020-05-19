@@ -1592,14 +1592,14 @@ int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)
     return Error_SUCCESS;
 }
 
-static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketOptionLevel, int* optLevel, int* optName)
+static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socketOptionName, int* optLevel, int* optName)
 {
-    switch (socketOptionName)
+    switch (socketOptionLevel)
     {
         case SocketOptionLevel_SOL_SOCKET:
             *optLevel = SOL_SOCKET;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_DEBUG:
                     *optName = SO_DEBUG;
@@ -1680,7 +1680,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_IP:
             *optLevel = IPPROTO_IP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_IP_OPTIONS:
                     *optName = IP_OPTIONS;
@@ -1759,7 +1759,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_IPV6:
             *optLevel = IPPROTO_IPV6;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_IPV6_HOPLIMIT:
                     *optName = IPV6_HOPLIMIT;
@@ -1793,7 +1793,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_TCP:
             *optLevel = IPPROTO_TCP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_TCP_NODELAY:
                     *optName = TCP_NODELAY;
@@ -1825,7 +1825,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_UDP:
             *optLevel = IPPROTO_UDP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 // case SocketOptionName_SO_UDP_NOCHECKSUM:
 
