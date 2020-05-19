@@ -107,8 +107,8 @@ jobs:
       - eng/pipelines/installer/*
     - subset: runtimetests
       include:
-      - /src/coreclr/tests/*
-      - /src/coreclr/build-test.sh
+      - src/coreclr/tests/*
+      - src/coreclr/build-test.sh
     - subset: installer
       include:
       - docs/manpages/*
