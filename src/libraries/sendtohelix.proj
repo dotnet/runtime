@@ -45,6 +45,7 @@
     <!-- Use helix feature to include dotnet CLI for every workitem and add it to the path -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
+    <DotNetCliVersion>3.1.201</DotNetCliVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
