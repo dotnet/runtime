@@ -71,6 +71,7 @@
       if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
     -->
     <HelixPreCommands Condition="'$(TargetsMobile)' == 'true'">"$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install xharness -g --version $(MicrosoftDotNetXHarnessTestsRunnersVersion)</HelixPreCommands>
+    <HelixPreCommands Condition="'$(TargetsMobile)' == 'true'">export PATH="$HELIX_CORRELATION_PAYLOAD"/xharness-cli:$PATH</HelixPreCommands>
     <HelixCommand Condition="'$(TargetOS)' == 'Windows_NT'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
     <HelixCommand Condition="'$(TargetOS)' != 'Windows_NT'">$(HelixCommand)./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
