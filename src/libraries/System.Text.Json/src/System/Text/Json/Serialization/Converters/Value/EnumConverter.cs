@@ -16,6 +16,8 @@ namespace System.Text.Json.Serialization.Converters
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly string? s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
 
+        private const string EnumValueSeparator = ", ";
+
         private readonly EnumConverterOptions _converterOptions;
         private readonly JsonNamingPolicy _namingPolicy;
         private readonly ConcurrentDictionary<string, string>? _nameCache;
@@ -166,7 +168,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (IsValidIdentifier(original))
                 {
-                    transformed = _namingPolicy.ConvertName(original);
+                    transformed = FormatEnumValue(original);
                     writer.WriteStringValue(transformed);
                     if (_nameCache != null)
                     {
@@ -211,6 +213,23 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                     break;
             }
+        }
+
+        private string FormatEnumValue(string value)
+        {
+            if (value.IndexOf(EnumValueSeparator) == -1)
+            {
+                return _namingPolicy.ConvertName(value);
+            }
+
+            string[] enumValues = value.Split(EnumValueSeparator);
+
+            for (int i = 0; i < enumValues.Length; i++)
+            {
+                enumValues[i] = _namingPolicy.ConvertName(enumValues[i]);
+            }
+
+            return string.Join(EnumValueSeparator, enumValues);
         }
     }
 }

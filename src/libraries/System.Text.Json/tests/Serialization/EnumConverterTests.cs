@@ -107,6 +107,21 @@ namespace System.Text.Json.Serialization.Tests
             options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((FileAttributes)(-1), options));
+
+            // Flag values honor naming policy correctly
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonStringEnumConverter(new SimpleSnakeCasePolicy()));
+
+            json = JsonSerializer.Serialize(
+                FileAttributes.Directory | FileAttributes.Compressed | FileAttributes.IntegrityStream,
+                options);
+            Assert.Equal(@"""directory, compressed, integrity_stream""", json);
+
+            json = JsonSerializer.Serialize(FileAttributes.Compressed & FileAttributes.Device, options);
+            Assert.Equal(@"0", json);
+
+            json = JsonSerializer.Serialize(FileAttributes.Directory & FileAttributes.Compressed | FileAttributes.IntegrityStream, options);
+            Assert.Equal(@"""integrity_stream""", json);
         }
 
         public class FileState
