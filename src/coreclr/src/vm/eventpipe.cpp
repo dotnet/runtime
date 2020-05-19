@@ -397,7 +397,7 @@ bool EventPipe::EnableInternal(
     // Enable tracing.
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-    // Enable the sample profiler
+    // Enable the sample profiler or defer until we can create threads
     if (enableSampleProfiler && s_CanStartThreads)
     {
         SampleProfiler::Enable();
@@ -998,6 +998,8 @@ bool EventPipe::IsLockOwnedByCurrentThread()
 }
 #endif
 
+// This method will block runtime bring-up IFF DOTNET_DiagnosticsMonitorAddress != nullptr and DOTNET_DiagnosticsMonitorStopOnStart!=0 (it's default state)
+// The s_ResumeRuntimeStartupEvent event will be signaled when the Diagnostics Monitor uses the ResumeRuntime Diagnostics IPC Command
 void EventPipe::PauseForTracingAgent()
 {
     CONTRACTL
@@ -1016,20 +1018,12 @@ void EventPipe::PauseForTracingAgent()
         const DWORD dwFiveSecondWait = s_ResumeRuntimeStartupEvent->Wait(5000, false);
         if (dwFiveSecondWait == WAIT_TIMEOUT)
         {
-            fprintf(stdout, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command.");
+            STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command.");
             const DWORD dwWait = s_ResumeRuntimeStartupEvent->Wait(INFINITE, false);
-            if (dwWait != WAIT_OBJECT_0)
-            {
-                // TODO
-            }
-        }
-        else
-        {
-            // TODO
         }
     }
 
-    s_enableSampleProfilerAtStartup = true;
+    // allow wait failures to fall through and the runtime to continue coming up
 }
 
 void EventPipe::ResumeRuntimeStartup()
