@@ -1199,12 +1199,6 @@ void ComCallMethodDesc::InitNativeInfo()
                     info.SetupArgumentSizes();
 
                     nativeArgSize += info.GetNativeArgSize();
-
-                    if (info.GetMarshalType() == MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY)
-                    {
-                        // count the hidden length
-                        nativeArgSize += info.GetHiddenLengthParamStackSize();
-                    }
                 }
 
                 ++iArg;

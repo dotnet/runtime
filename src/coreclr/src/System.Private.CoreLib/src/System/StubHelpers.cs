@@ -5,9 +5,6 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-#if FEATURE_COMINTEROP
-using System.Runtime.InteropServices.WindowsRuntime;
-#endif // FEATURE_COMINTEROP
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Internal.Runtime.CompilerServices;
