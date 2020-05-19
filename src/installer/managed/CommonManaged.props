@@ -25,11 +25,6 @@
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>git://github.com/dotnet/runtime</RepositoryUrl>
-  </PropertyGroup>
-
   <!-- Add required legal files to packages -->
   <ItemGroup>
     <Content Condition="Exists('$(NugetLicenseFile)')"
