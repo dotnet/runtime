@@ -70,7 +70,8 @@
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
       if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixPreCommands Condition="'$(TargetsMobile)' == 'true'">"$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install xharness -g --version $(MicrosoftDotNetXHarnessTestsRunnersVersion); export PATH="$HELIX_CORRELATION_PAYLOAD"/xharness-cli:$PATH</HelixPreCommands>
+    <HelixPreCommands Condition="'$(TargetsMobile)' == 'true'">"$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install --tool-path "$HELIX_CORRELATION_PAYLOAD"/xharness-cli --version $(MicrosoftDotNetXHarnessTestsRunnersVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI;</HelixPreCommands>
+    <HelixPreCommands Condition="'$(TargetsMobile)' == 'true'">$(HelixPreCommands) export PATH="$HELIX_CORRELATION_PAYLOAD"/xharness-cli:$PATH</HelixPreCommands>
     <HelixCommand Condition="'$(TargetOS)' == 'Windows_NT'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
     <HelixCommand Condition="'$(TargetOS)' != 'Windows_NT'">$(HelixCommand)./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
