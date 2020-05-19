@@ -549,6 +549,24 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
+# Libraries Sourcebuild Build
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_x64
+    jobParameters:
+      runTests: false
+      liveRuntimeBuildConfig: release
+      isSourceBuild: true
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
 # Installer Build and Test
 # These are always built since they only take like 15 minutes
 # we expect these to be done before we finish libraries or coreclr testing.
