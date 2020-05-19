@@ -1300,7 +1300,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     }
 
     GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, cmpIntrinsic, cmpType, simdSize);
-    BlockRange().InsertAfter(op2, cmp);
+    BlockRange().InsertBefore(node, cmp);
     LowerNode(cmp);
 
     GenTree* msk = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, mskIntrinsic, mskType, simdSize);
