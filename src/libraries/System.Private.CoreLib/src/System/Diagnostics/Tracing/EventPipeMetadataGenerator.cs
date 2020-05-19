@@ -122,8 +122,12 @@ namespace System.Diagnostics.Tracing
                         uint pMetadataLength;
                         if (!parameter.GetMetadataLengthV2(out pMetadataLength))
                         {
-                            // Give up if we can't parse the metadata
-                            return null;
+                            // We ran in to an unsupported type, return empty event metadata
+                            parameters = Array.Empty<EventParameterInfo>();
+                            v1MetadataLength = defaultV1MetadataLength;
+                            v2MetadataLength = 0;
+                            hasV2ParameterTypes = false;
+                            break;
                         }
 
                         v2MetadataLength += (uint)pMetadataLength;
@@ -133,8 +137,9 @@ namespace System.Diagnostics.Tracing
                 // Optional opcode length needs 1 byte for the opcode + 5 bytes for the tag (4 bytes size, 1 byte kind)
                 uint opcodeMetadataLength = opcode == EventOpcode.Info ? 0u : 6u;
                 // Optional V2 metadata needs the size of the params + 5 bytes for the tag (4 bytes size, 1 byte kind)
-                uint totalV2MetadataLength = v2MetadataLength == 0 ? 0 : v2MetadataLength + 5;
-                uint totalMetadataLength = v1MetadataLength + opcodeMetadataLength + totalV2MetadataLength;
+                uint v2MetadataPayloadLength = v2MetadataLength == 0 ? 0 : v2MetadataLength + 5;
+                uint totalV2MetadataLength = v2MetadataPayloadLength + opcodeMetadataLength;
+                uint totalMetadataLength = v1MetadataLength + totalV2MetadataLength;
                 metadata = new byte[totalMetadataLength];
 
                 // Write metadata: metadataHeaderLength, eventID, eventName, keywords, eventVersion, level,
@@ -165,9 +170,8 @@ namespace System.Diagnostics.Tracing
                         {
                             if (!parameter.GenerateMetadata(pMetadata, ref offset, totalMetadataLength))
                             {
-                                // If we fail to generate metadata for any parameter give up to prevent
-                                // returning corrupt metadata
-                                return null;
+                                // If we fail to generate metadata for any parameter, we should return the "default" metadata without any parameters
+                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, Array.Empty<EventParameterInfo>());
                             }
                         }
                     }
@@ -196,8 +200,8 @@ namespace System.Diagnostics.Tracing
                         {
                             if (!parameter.GenerateMetadataV2(pMetadata, ref offset, totalMetadataLength))
                             {
-                                // If we fail to generate metadata for any parameter fallback to the V1 metadata
-                                return null;
+                                // If we fail to generate metadata for any parameter, we should return the "default" metadata without any parameters
+                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, Array.Empty<EventParameterInfo>());
                             }
                         }
                     }
@@ -207,6 +211,9 @@ namespace System.Diagnostics.Tracing
             }
             catch
             {
+                // If a failure occurs during metadata generation, make sure that we don't return
+                // malformed metadata.  Instead, return a null metadata blob.
+                // Consumers can either build in knowledge of the event or skip it entirely.
                 metadata = null;
             }
 
