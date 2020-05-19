@@ -2987,13 +2987,18 @@ MethodTableBuilder::EnumerateClassMethods()
             if (hr == S_FALSE)
             {
 #ifdef FEATURE_COMINTEROP
-                if (fIsClassComImport
-                    || bmtProp->fComEventItfType
-                    )
+                if (fIsClassComImport || bmtProp->fComEventItfType)
                 {
                     // ComImport classes have methods which are just used
                     // for implementing all interfaces the class supports
                     type = METHOD_TYPE_COMINTEROP;
+
+                    // constructor is special
+                    if (IsMdRTSpecialName(dwMemberAttrs))
+                    {
+                        // Note: Method name (.ctor) will be checked in code:ValidateMethods
+                        type = METHOD_TYPE_FCALL;
+                    }
                 }
                 else
 #endif //FEATURE_COMINTEROP
