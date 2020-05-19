@@ -16,7 +16,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded integer value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="int"/>
@@ -39,7 +39,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded integer value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="uint"/>
@@ -62,7 +62,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded integer value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="long"/>
@@ -85,7 +85,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded integer value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="ulong"/>
@@ -110,7 +110,7 @@ namespace System.Formats.Cbor
         ///   An unsigned integer denoting -1 minus the integer.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="uint"/>

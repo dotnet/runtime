@@ -513,14 +513,27 @@ namespace System.Formats.Cbor.Tests
             select new object[] { l, v.value, v.hexEncoding };
 
         [Theory]
-        [MemberData(nameof(TaggedValuesAnyConformance))]
-        public static void PeekTag_UnsupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [MemberData(nameof(TaggedValuesSupportedConformance))]
+        public static void PeekTag_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), level);
             reader.PeekTag();
         }
 
-        public static IEnumerable<object[]> TaggedValuesAnyConformance =>
+        public static IEnumerable<object[]> TaggedValuesSupportedConformance =>
+            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Canonical }
+            from v in TaggedValues
+            select new object[] { l, v.hexEncoding };
+
+        [Theory]
+        [MemberData(nameof(TaggedValuesUnsupportedConformance))]
+        public static void PeekTag_UnsupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            Assert.Throws<FormatException>(() => reader.PeekTag());
+        }
+
+        public static IEnumerable<object[]> TaggedValuesUnsupportedConformance =>
             from l in new[] { CborConformanceLevel.Ctap2Canonical }
             from v in TaggedValues
             select new object[] { l, v.hexEncoding };
