@@ -938,28 +938,16 @@ namespace System.Threading
         internal static readonly bool s_enableWorkerTracking = GetEnableWorkerTracking();
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
-        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = new Action<object?>(Invoke.Instance.AsyncStateMachineBox);
-
-        private class Invoke
+        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = state =>
         {
-            // Invoking an instance method as a delegate is faster than a static method (statics need to go via a stub to handle `this`)
-            public static Invoke Instance { get; } = new Invoke();
-
-            private Invoke() { }
-
-            // Method used rather than lambda as it shows up more clearly in profiler and stack traces
-            public void AsyncStateMachineBox(object? state)
+            if (!(state is IAsyncStateMachineBox box))
             {
-                if (!(state is IAsyncStateMachineBox box))
-                {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
-                    return;
-                }
-
-                box.MoveNext();
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                return;
             }
-        }
 
+            box.MoveNext();
+        };
 
         [CLSCompliant(false)]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
