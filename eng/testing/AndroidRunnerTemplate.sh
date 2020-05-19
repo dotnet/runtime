@@ -18,6 +18,6 @@ while true; do
     fi
 done
 
-dotnet xharness android test -i="net.dot.MonoRunner" \
+xharness android test -i="net.dot.MonoRunner" \
     --package-name="net.dot.$TEST_NAME" \
     --app=$APK -o=$EXECUTION_DIR/TestResults -v
