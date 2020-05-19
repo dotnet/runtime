@@ -5,9 +5,8 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
-using System.Security.Cryptography.Pkcs.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
@@ -170,7 +169,8 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                using (AsnWriter contentsWriter = new AsnWriter(AsnEncodingRules.BER))
+                AsnWriter contentsWriter = new AsnWriter(AsnEncodingRules.BER);
+
                 using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
                 {
                     contentsWriter.PushSequence();
@@ -183,11 +183,15 @@ namespace System.Security.Cryptography.Pkcs
                     }
                     contentsWriter.PopSequence();
 
-                    ReadOnlySpan<byte> encodedSpan = contentsWriter.EncodeAsSpan();
+                    rentedAuthSafe = CryptoPool.Rent(contentsWriter.GetEncodedLength());
 
-                    rentedAuthSafe = CryptoPool.Rent(encodedSpan.Length);
-                    encodedSpan.CopyTo(rentedAuthSafe);
-                    authSafeSpan = rentedAuthSafe.AsSpan(0, encodedSpan.Length);
+                    if (!contentsWriter.TryEncode(rentedAuthSafe, out int written))
+                    {
+                        Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                        throw new InvalidOperationException();
+                    }
+
+                    authSafeSpan = rentedAuthSafe.AsSpan(0, written);
 
                     // Get an array of the proper size for the hash.
                     byte[] macKey = hasher.GetHashAndReset();
@@ -209,7 +213,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     using (IncrementalHash mac = IncrementalHash.CreateHMAC(hashAlgorithm, macKey))
                     {
-                        mac.AppendData(encodedSpan);
+                        mac.AppendData(authSafeSpan);
 
                         if (!mac.TryGetHashAndReset(macSpan, out int bytesWritten) || bytesWritten != macSpan.Length)
                         {
@@ -226,7 +230,7 @@ namespace System.Security.Cryptography.Pkcs
                 //   authSafe   ContentInfo,
                 //   macData    MacData OPTIONAL
                 // }
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
                 {
                     writer.PushSequence();
 
@@ -234,7 +238,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     writer.PushSequence();
                     {
-                        writer.WriteObjectIdentifier(Oids.Pkcs7Data);
+                        writer.WriteObjectIdentifierForCrypto(Oids.Pkcs7Data);
 
                         Asn1Tag contextSpecific0 = new Asn1Tag(TagClass.ContextSpecific, 0);
 
@@ -262,7 +266,7 @@ namespace System.Security.Cryptography.Pkcs
                         {
                             writer.PushSequence();
                             {
-                                writer.WriteObjectIdentifier(PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm));
+                                writer.WriteObjectIdentifierForCrypto(PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm));
                                 writer.PopSequence();
                             }
 
@@ -308,8 +312,8 @@ namespace System.Security.Cryptography.Pkcs
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 
-            using (AsnWriter contentsWriter = new AsnWriter(AsnEncodingRules.BER))
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            AsnWriter contentsWriter = new AsnWriter(AsnEncodingRules.BER);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
             {
                 contentsWriter.PushSequence();
                 if (_contents != null)
@@ -332,19 +336,15 @@ namespace System.Security.Cryptography.Pkcs
 
                 writer.WriteInteger(3);
 
-                writer.PushSequence();
+                using (writer.PushSequence())
                 {
-                    writer.WriteObjectIdentifier(Oids.Pkcs7Data);
+                    writer.WriteObjectIdentifierForCrypto(Oids.Pkcs7Data);
 
-                    Asn1Tag contextSpecific0 = new Asn1Tag(TagClass.ContextSpecific, 0);
-
-                    writer.PushSequence(contextSpecific0);
+                    using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
+                    using (writer.PushOctetString())
                     {
-                        writer.WriteOctetString(contentsWriter.EncodeAsSpan());
-                        writer.PopSequence(contextSpecific0);
+                        contentsWriter.CopyTo(writer);
                     }
-
-                    writer.PopSequence();
                 }
 
                 writer.PopSequence();

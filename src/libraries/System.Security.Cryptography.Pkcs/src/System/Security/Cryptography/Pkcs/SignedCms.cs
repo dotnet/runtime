@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
@@ -119,11 +120,9 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    _signedData.Encode(writer);
-                    return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Signed);
-                }
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                _signedData.Encode(writer);
+                return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Signed);
             }
             catch (CryptographicException) when (!Detached)
             {
@@ -140,19 +139,15 @@ namespace System.Security.Cryptography.Pkcs
                 copy.EncapContentInfo.Content = null;
                 Debug.Assert(_signedData.EncapContentInfo.Content != null);
 
-                using (AsnWriter detachedWriter = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    copy.Encode(detachedWriter);
-                    copy = SignedDataAsn.Decode(detachedWriter.Encode(), AsnEncodingRules.BER);
-                }
+                AsnWriter detachedWriter = new AsnWriter(AsnEncodingRules.DER);
+                copy.Encode(detachedWriter);
+                copy = SignedDataAsn.Decode(detachedWriter.Encode(), AsnEncodingRules.BER);
 
                 copy.EncapContentInfo.Content = _signedData.EncapContentInfo.Content;
 
-                using (AsnWriter attachedWriter = new AsnWriter(AsnEncodingRules.BER))
-                {
-                    copy.Encode(attachedWriter);
-                    return PkcsHelpers.EncodeContentInfo(attachedWriter.Encode(), Oids.Pkcs7Signed);
-                }
+                AsnWriter attachedWriter = new AsnWriter(AsnEncodingRules.BER);
+                copy.Encode(attachedWriter);
+                return PkcsHelpers.EncodeContentInfo(attachedWriter.Encode(), Oids.Pkcs7Signed);
             }
         }
 
@@ -243,14 +238,14 @@ namespace System.Security.Cryptography.Pkcs
             {
                 AsnReader reader = new AsnReader(wrappedContent, AsnEncodingRules.BER);
 
-                if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> inner))
+                if (reader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> inner))
                 {
                     return inner;
                 }
 
                 rented = CryptoPool.Rent(wrappedContent.Length);
 
-                if (!reader.TryCopyOctetStringBytes(rented, out bytesWritten))
+                if (!reader.TryReadOctetString(rented, out bytesWritten))
                 {
                     Debug.Fail($"TryCopyOctetStringBytes failed with an array larger than the encoded value");
                     throw new CryptographicException();
@@ -260,6 +255,10 @@ namespace System.Security.Cryptography.Pkcs
             }
             catch (Exception) when (contentType != Oids.Pkcs7Data)
             {
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
             finally
             {
@@ -343,12 +342,10 @@ namespace System.Security.Cryptography.Pkcs
                 // the copy of _heldContent or _contentType here if we're attached.
                 if (!Detached)
                 {
-                    using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                    {
-                        writer.WriteOctetString(content.Span);
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                    writer.WriteOctetString(content.Span);
 
-                        _signedData.EncapContentInfo.Content = writer.Encode();
-                    }
+                    _signedData.EncapContentInfo.Content = writer.Encode();
                 }
 
                 _hasData = true;
@@ -408,17 +405,30 @@ namespace System.Security.Cryptography.Pkcs
         {
             Debug.Assert(_heldContent.HasValue);
             ReadOnlyMemory<byte> content = _heldContent.Value;
+            ReadOnlySpan<byte> contentSpan = content.Span;
 
             if (!_hasPkcs7Content)
             {
-                return content.Span;
+                return contentSpan;
             }
 
             // In PKCS#7 compat, only return the contents within the outermost tag.
             // See https://tools.ietf.org/html/rfc5652#section-5.2.1
-            AsnReader reader = new AsnReader(content, AsnEncodingRules.BER);
-            // This span is safe to return because it's still bound under _heldContent.
-            return reader.PeekContentBytes().Span;
+            try
+            {
+                AsnDecoder.ReadEncodedValue(
+                    contentSpan,
+                    AsnEncodingRules.BER,
+                    out int contentOffset,
+                    out int contentLength,
+                    out _);
+
+                return contentSpan.Slice(contentOffset, contentLength);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal void Reencode()
