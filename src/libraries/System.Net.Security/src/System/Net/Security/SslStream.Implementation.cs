@@ -24,11 +24,11 @@ namespace System.Net.Security
 
         private enum Framing
         {
-            Unknown = 0,
-            BeforeSSL3,
-            SinceSSL3,
-            Unified,
-            Invalid
+            Unknown = 0,    // Initial before any frame is processd.
+            BeforeSSL3,     // SSlv2
+            SinceSSL3,      // SSlv3 & TLS
+            Unified,        // Intermediate on first frame until response is processes.
+            Invalid         // Somthing is wrong.
         }
 
         // This is set on the first packet to figure out the framing style.
@@ -352,12 +352,12 @@ namespace System.Net.Security
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            if (_framing == Framing.BeforeSSL3)
+            if (_framing != Framing.SinceSSL3)
             {
 #pragma warning disable 0618
                 _lastFrame.Header.Version = SslProtocols.Ssl2;
 #pragma warning restore 0618
-                _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+                _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan) - TlsFrameHelper.HeaderSize;
             }
             else
             {
@@ -409,25 +409,28 @@ namespace System.Net.Security
             // ActiveSpan will exclude the "discarded" data.
             _handshakeBuffer.Discard(frameSize);
 
-            // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
+            if (_framing == Framing.SinceSSL3)
             {
-                TlsFrameHeader nextHeader = default;
-
-                if (!TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref nextHeader))
+                // Often more TLS messages fit into same packet. Get as many complete frames as we can.
+                while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
                 {
-                    break;
-                }
+                    TlsFrameHeader nextHeader = default;
 
-                frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
-                if (nextHeader.Type == TlsContentType.AppData || frameSize > _handshakeBuffer.ActiveLength)
-                {
-                    // We don't have full frame left or we already have app data which needs to be processed by decrypt.
-                    break;
-                }
+                    if (!TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref nextHeader))
+                    {
+                        break;
+                    }
 
-                chunkSize += frameSize;
-                _handshakeBuffer.Discard(frameSize);
+                    frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
+                    if (nextHeader.Type == TlsContentType.AppData || frameSize > _handshakeBuffer.ActiveLength)
+                    {
+                        // We don't have full frame left or we already have app data which needs to be processed by decrypt.
+                        break;
+                    }
+
+                    chunkSize += frameSize;
+                    _handshakeBuffer.Discard(frameSize);
+                }
             }
 
             return _context!.NextMessage(availableData.Slice(0, chunkSize));
@@ -684,7 +687,7 @@ namespace System.Net.Security
                     Debug.Assert(_internalBufferCount >= SecureChannel.ReadHeaderSize);
 
                     // Parse the frame header to determine the payload size (which includes the header size).
-                    int payloadBytes = TlsFrameHelper.GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+                    int payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                     if (payloadBytes < 0)
                     {
                         throw new IOException(SR.net_frame_read_size);
