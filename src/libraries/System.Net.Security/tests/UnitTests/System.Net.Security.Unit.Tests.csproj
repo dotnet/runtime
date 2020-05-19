@@ -33,6 +33,8 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
+    <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
+             Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"
              Link="ProductionCode\System\Net\Security\SslStream.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslClientAuthenticationOptions.cs"
