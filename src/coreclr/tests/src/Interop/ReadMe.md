@@ -14,7 +14,7 @@ A common pattern for testing is using the `Assert` utilities. This class is part
 
 ### Managed
 
-Managed tests should be designed to use the [SDK style project](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj) system provided by [`dotnet-cli`](https://github.com/dotnet/cli). In addition to the using the SDK style project, all managed projects should include the following:
+Managed tests should be designed to use the [SDK style project](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj) system provided by [`dotnet-cli`](https://github.com/dotnet/cli).
 
 ### Native
 
