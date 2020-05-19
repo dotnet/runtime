@@ -262,7 +262,7 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == string.Empty)
+            if (path.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
@@ -284,7 +284,7 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == string.Empty)
+            if (path.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
@@ -306,7 +306,7 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == string.Empty)
+            if (path.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
@@ -331,12 +331,12 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == string.Empty)
+            if (sourceFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == string.Empty)
+            if (destinationFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
@@ -352,12 +352,12 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == string.Empty)
+            if (sourceFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == string.Empty)
+            if (destinationFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
@@ -393,12 +393,12 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == string.Empty)
+            if (sourceFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == string.Empty)
+            if (destinationFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
@@ -434,12 +434,12 @@ namespace System.IO.IsolatedStorage
             if (destinationDirectoryName == null)
                 throw new ArgumentNullException(nameof(destinationDirectoryName));
 
-            if (sourceDirectoryName == string.Empty)
+            if (sourceDirectoryName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceDirectoryName));
             }
 
-            if (destinationDirectoryName == string.Empty)
+            if (destinationDirectoryName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationDirectoryName));
             }

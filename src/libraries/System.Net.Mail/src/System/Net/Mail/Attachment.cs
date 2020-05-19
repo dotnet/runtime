@@ -75,7 +75,7 @@ namespace System.Net.Mail
                 throw new ArgumentNullException(nameof(fileName));
             }
 
-            if (fileName == string.Empty)
+            if (fileName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
             }
@@ -91,7 +91,7 @@ namespace System.Net.Mail
                 throw new ArgumentNullException(nameof(fileName));
             }
 
-            if (fileName == string.Empty)
+            if (fileName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
             }
@@ -154,7 +154,7 @@ namespace System.Net.Mail
                 _part.Stream.Close();
             }
 
-            if (mediaType == null || mediaType == string.Empty)
+            if (string.IsNullOrEmpty(mediaType))
             {
                 mediaType = MediaTypeNames.Text.Plain;
             }
@@ -340,7 +340,7 @@ namespace System.Net.Mail
         public Attachment(string fileName, ContentType contentType) :
             base(fileName, contentType)
         {
-            if (contentType.Name == null || contentType.Name == string.Empty)
+            if (string.IsNullOrEmpty(contentType.Name))
             {
                 Name = Path.GetFileName(fileName);
             }
