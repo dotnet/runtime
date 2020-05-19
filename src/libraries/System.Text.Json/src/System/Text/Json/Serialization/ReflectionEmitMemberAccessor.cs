@@ -92,11 +92,7 @@ namespace System.Text.Json.Serialization
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Ldc_I4_S, i);
                 generator.Emit(OpCodes.Ldelem_Ref);
-                generator.Emit(
-                    paramType.IsValueType
-                        ? OpCodes.Unbox_Any
-                        : OpCodes.Castclass,
-                    paramType);
+                generator.Emit(OpCodes.Unbox_Any, paramType);
             }
 
             generator.Emit(OpCodes.Newobj, constructor);
