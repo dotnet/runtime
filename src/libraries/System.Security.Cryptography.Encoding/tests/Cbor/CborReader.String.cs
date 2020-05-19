@@ -23,12 +23,12 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded byte array.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does not have the correct major type.
+        ///   the next date item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   string encoding not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public byte[] ReadByteString()
         {
@@ -67,12 +67,12 @@ namespace System.Formats.Cbor
         ///   length to receive the value, otherwise <c>false</c> and the reader does not advance.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does not have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   string encoding not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public bool TryReadByteString(Span<byte> destination, out int bytesWritten)
         {
@@ -107,16 +107,16 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Begin reading an indefinite-length byte string (major type 2)
+        ///   Reads the next data item as the start of an indefinite-length byte string (major type 2)
         /// </summary>
         /// <returns>The decoded byte array.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does not have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   indefinite-length strings not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public void ReadStartByteString()
         {
@@ -140,13 +140,11 @@ namespace System.Formats.Cbor
         ///   End reading an indefinite-length byte string (major type 2)
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does not have the correct major type --OR--
-        ///   the current context is not an indefinite-length string
+        ///   the current context is not an indefinite-length string --OR--
+        ///   the reader is not at the end of the string
         /// </exception>
         /// <exception cref="FormatException">
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   indefinite-length strings not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   unexpected end of CBOR encoding data
         /// </exception>
         public void ReadEndByteString()
         {
@@ -162,12 +160,12 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded string.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does not have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   string encoding not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public string ReadTextString()
         {
@@ -217,12 +215,12 @@ namespace System.Formats.Cbor
         ///   length to receive the value, otherwise <c>false</c> and the reader does not advance.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does not have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   string encoding not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public bool TryReadTextString(Span<char> destination, out int charsWritten)
         {
@@ -261,15 +259,15 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Begin reading an indefinite-length UTF-8 text string (major type 3)
+        ///   Reads the next data item as the start of an indefinite-length UTF-8 text string (major type 3)
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does not have the correct major type.
+        ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   indefinite-length strings not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public void ReadStartTextString()
         {
@@ -293,13 +291,11 @@ namespace System.Formats.Cbor
         ///   End reading an indefinite-length UTF-8 text string (major type 3)
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the next value does not have the correct major type --OR--
-        ///   the current context is not an indefinite-length string
+        ///   the current context is not an indefinite-length string --OR--
+        ///   the reader is not at the end of the string
         /// </exception>
         /// <exception cref="FormatException">
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   indefinite-length strings not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   unexpected end of CBOR encoding data
         /// </exception>
         public void ReadEndTextString()
         {
