@@ -105,7 +105,7 @@ namespace System.Formats.Cbor
 
                 try
                 {
-                    reader.SkipValue(validateConformance: true);
+                    reader.SkipValue(disableConformanceLevelChecks: false);
                 }
                 catch (FormatException e)
                 {

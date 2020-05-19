@@ -122,7 +122,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
 
-            reader.SkipValue(validateConformance: false);
+            reader.SkipValue(disableConformanceLevelChecks: true);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
@@ -157,7 +157,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding, CborConformanceLevel.Ctap2Canonical);
 
             reader.ReadStartArray();
-            reader.SkipValue(validateConformance: false);
+            reader.SkipValue(disableConformanceLevelChecks: true);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
         }
 
