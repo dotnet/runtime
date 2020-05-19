@@ -8995,6 +8995,10 @@ namespace System.Runtime.CompilerServices
         void MoveNext();
         void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine);
     }
+    public partial interface ICastableObject
+    {
+        System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType, bool throwIfNotFound);
+    }
     public partial interface ICriticalNotifyCompletion : System.Runtime.CompilerServices.INotifyCompletion
     {
         void UnsafeOnCompleted(System.Action continuation);
