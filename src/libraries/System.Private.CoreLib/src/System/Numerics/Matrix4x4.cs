@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+using Internal.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -1470,7 +1471,7 @@ namespace System.Numerics
 
             // Get the determinant
             vTemp2 = row1;
-            var det = Vector4.Dot(C0.AsVector4(), vTemp2.AsVector4());
+            float det = Vector4.Dot(C0.AsVector4(), vTemp2.AsVector4());
 
             // Check determinate is not zero
             if (MathF.Abs(det) < float.Epsilon)
@@ -1483,8 +1484,8 @@ namespace System.Numerics
             }
 
             // Create Vector128<float> copy of the determinant and invert them.
-            Vector128<float> vTemp = Vector128.Create(det, det, det, det);
             Vector128<float> ones = Vector128.Create(1.0f, 1.0f, 1.0f, 1.0f);
+            Vector128<float> vTemp = Vector128.Create(det, det, det, det);
             vTemp = Sse.Divide(ones, vTemp);
 
             row1 = Sse.Multiply(C0, vTemp);
@@ -1503,7 +1504,7 @@ namespace System.Numerics
             return true;
         }
 
-        public static bool SoftwareFallback(Matrix4x4 matrix, out Matrix4x4 result)
+        private static bool SoftwareFallback(Matrix4x4 matrix, out Matrix4x4 result)
         {
             //                                       -1
             // If you have matrix M, inverse Matrix M   can compute
