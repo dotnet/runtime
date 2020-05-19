@@ -114,7 +114,7 @@ namespace System.Formats.Cbor
             int initialOffset = _offset;
 
             // call skip to read and validate the next value
-            SkipValue(validateConformance: true);
+            SkipValue(disableConformanceLevelChecks: false);
 
             // return the slice corresponding to the consumed value
             return _data.Span.Slice(initialOffset, _offset - initialOffset);

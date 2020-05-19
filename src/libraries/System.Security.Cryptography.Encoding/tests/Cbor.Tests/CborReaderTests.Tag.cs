@@ -257,7 +257,7 @@ namespace System.Formats.Cbor.Tests
             reader.ReadInt32();
 
             Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
-            reader.SkipValue(validateConformance: true); // skip the failed value, should not complain about duplicate keys
+            reader.SkipValue(disableConformanceLevelChecks: false); // skip the failed value, should not complain about duplicate keys
 
             reader.ReadInt32();
             reader.ReadEndMap();

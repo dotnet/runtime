@@ -9,22 +9,58 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        public void SkipValue(bool validateConformance = true) => SkipToAncestor(0, validateConformance);
-        public void SkipToParent(bool validateConformance = true)
+        /// <summary>
+        ///   Reads the contents of the next value, discarding the result and advancing the reader.
+        /// </summary>
+        /// <param name="disableConformanceLevelChecks">
+        ///   Disable conformance level validation for the skipped value,
+        ///   equivalent to using <see cref="CborConformanceLevel.Lax"/>.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        ///   the reader is not at the start of new value.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
+        public void SkipValue(bool disableConformanceLevelChecks = false)
+        {
+            SkipToAncestor(0, disableConformanceLevelChecks);
+        }
+
+        /// <summary>
+        ///   Reads the remaining contents of the current value context,
+        ///   discarding results and advancing the reader to the next value
+        ///   in the parent context.
+        /// </summary>
+        /// <param name="disableConformanceLevelChecks">
+        ///   Disable conformance level validation for the skipped values,
+        ///   equivalent to using <see cref="CborConformanceLevel.Lax"/>.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        ///   the reader is at the root context
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
+        public void SkipToParent(bool disabledConformanceLevelChecks = false)
         {
             if (_currentMajorType is null)
             {
                 throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
             }
 
-            SkipToAncestor(1, validateConformance);
+            SkipToAncestor(1, disabledConformanceLevelChecks);
         }
 
-        private void SkipToAncestor(int depth, bool validateConformance)
+        private void SkipToAncestor(int depth, bool disableConformanceLevelChecks)
         {
             Debug.Assert(0 <= depth && depth <= CurrentDepth);
             Checkpoint checkpoint = CreateCheckpoint();
-            _isConformanceLevelCheckEnabled = validateConformance;
+            _isConformanceLevelCheckEnabled = !disableConformanceLevelChecks;
 
             try
             {
