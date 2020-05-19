@@ -13,6 +13,20 @@ namespace System.Formats.Cbor
         private KeyEncodingComparer? _keyEncodingComparer;
         private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeAllocations;
 
+        /// <summary>
+        ///   Reads the next data item as the start of a map (major type 5)
+        /// </summary>
+        /// <returns>
+        ///   The length of the definite-length map, or <c>null</c> if the array is indefinite-length.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public int? ReadStartMap()
         {
             int? length;
@@ -49,6 +63,19 @@ namespace System.Formats.Cbor
             return length;
         }
 
+
+        /// <summary>
+        ///   Reads the end of a map (major type 5)
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the current context is not a map --OR--
+        ///   the reader is not at the end of the map
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public void ReadEndMap()
         {
             if (_definiteLength is null)
@@ -75,6 +102,7 @@ namespace System.Formats.Cbor
         // Map decoding conformance
         //
 
+        // conformance book-keeping after a key data item has been read
         private void HandleMapKeyRead()
         {
             Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 == 0);
@@ -89,11 +117,13 @@ namespace System.Formats.Cbor
                 }
                 else if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
                 {
+                    // NB uniquess is validated separately in conformance levels requiring sorted keys
                     ValidateKeyUniqueness(currentKeyRange);
                 }
             }
         }
 
+        // conformance book-keeping after a value data item has been read
         private void HandleMapValueRead()
         {
             Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 != 0);
@@ -169,6 +199,7 @@ namespace System.Formats.Cbor
             }
         }
 
+        // Comparing buffer slices up to their binary content
         private class KeyEncodingComparer : IEqualityComparer<(int Offset, int Length)>
         {
             private readonly CborReader _reader;

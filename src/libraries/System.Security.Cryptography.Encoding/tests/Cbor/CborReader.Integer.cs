@@ -22,9 +22,9 @@ namespace System.Formats.Cbor
         ///   the encoded integer is out of range for <see cref="int"/>
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the integer encoding is not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public int ReadInt32()
         {
@@ -45,9 +45,9 @@ namespace System.Formats.Cbor
         ///   the encoded integer is out of range for <see cref="uint"/>
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the integer encoding is not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public uint ReadUInt32()
         {
@@ -68,9 +68,9 @@ namespace System.Formats.Cbor
         ///   the encoded integer is out of range for <see cref="long"/>
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the integer encoding is not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public long ReadInt64()
         {
@@ -91,9 +91,9 @@ namespace System.Formats.Cbor
         ///   the encoded integer is out of range for <see cref="ulong"/>
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the integer encoding is not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         public ulong ReadUInt64()
         {
@@ -116,9 +116,9 @@ namespace System.Formats.Cbor
         ///   the encoded integer is out of range for <see cref="uint"/>
         /// </exception>
         /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
         ///   unexpected end of CBOR encoding data --OR--
-        ///   the integer encoding is not valid under the current conformance level --OR--
-        ///   the data item is located in an illegal context (e.g. an indefinite-length string)
+        ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         /// <remarks>
         ///   Intended as an escape hatch in cases of valid CBOR negative integers exceeding primitive sizes.

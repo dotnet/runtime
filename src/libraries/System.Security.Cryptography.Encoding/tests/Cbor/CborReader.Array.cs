@@ -8,6 +8,20 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
+        /// <summary>
+        ///   Reads the next data item as the start of an array (major type 4)
+        /// </summary>
+        /// <returns>
+        ///   The length of the definite-length array, or <c>null</c> if the array is indefinite-length.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
@@ -29,11 +43,22 @@ namespace System.Formats.Cbor
                 int arrayLength = DecodeDefiniteLength(header, buffer, out int bytesRead);
 
                 AdvanceBuffer(bytesRead);
-                PushDataItem(CborMajorType.Array, (int)arrayLength);
-                return (int)arrayLength;
+                PushDataItem(CborMajorType.Array, arrayLength);
+                return arrayLength;
             }
         }
 
+        /// <summary>
+        ///   Reads the end of an array (major type 4)
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the current context is not an array --OR--
+        ///   the reader is not at the end of the array
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data
+        /// </exception>
         public void ReadEndArray()
         {
             if (_definiteLength is null)
