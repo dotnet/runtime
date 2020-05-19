@@ -302,23 +302,11 @@ namespace System.Threading
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
-        // The thread pool maintains a per-appdomain managed work queue.
-        // New thread pool entries are added in the managed queue.
-        // The VM is responsible for the actual growing/shrinking of
-        // threads.
-        private static void EnsureInitialized()
-        {
-            if (!ThreadPoolGlobals.threadPoolInitialized)
-            {
-                EnsureVMInitializedCore(); // separate out to help with inlining
-            }
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void EnsureVMInitializedCore()
+        internal static bool InitializeThreadPool()
         {
             InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
-            ThreadPoolGlobals.threadPoolInitialized = true;
+            return true;
         }
 
         // Native methods:

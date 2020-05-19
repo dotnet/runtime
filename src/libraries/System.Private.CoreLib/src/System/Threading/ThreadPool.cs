@@ -24,8 +24,8 @@ namespace System.Threading
 {
     internal static class ThreadPoolGlobals
     {
-        public static volatile bool threadPoolInitialized;
         public static bool enableWorkerTracking;
+        public static bool ThreadPoolInitialized { get; } = ThreadPool.InitializeThreadPool();
 
         public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
 
@@ -1070,6 +1070,19 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
         }
 
+        // The thread pool maintains a per-appdomain managed work queue.
+        // New thread pool entries are added in the managed queue.
+        // The VM is responsible for the actual growing/shrinking of
+        // threads.
+        private static void EnsureInitialized()
+        {
+            // Inspecting the readonly static ThreadPoolInitialized should initialize the ThreadPool
+            if (!ThreadPoolGlobals.ThreadPoolInitialized)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ThreadPoolNotInitialized();
+            }
+        }
+
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
             QueueUserWorkItem(callBack, null);
 
@@ -1193,7 +1206,7 @@ namespace System.Threading
         {
             Debug.Assert(null != workItem);
             return
-                ThreadPoolGlobals.threadPoolInitialized && // if not initialized, so there's no way this workitem was ever queued.
+                ThreadPoolGlobals.ThreadPoolInitialized && // if not initialized, so there's no way this workitem was ever queued.
                 ThreadPoolGlobals.workQueue.LocalFindAndPop(workItem);
         }
 
