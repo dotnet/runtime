@@ -6,14 +6,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    internal static partial class ThreadPoolGlobals
-    {
-        public const bool enableWorkerTracking = false;
-        public static bool ThreadPoolInitialized => true;
-    }
-
     public static partial class ThreadPool
     {
+        private static bool GetEnableWorkerTracking() => false;
+
         internal static void ReportThreadStatus(bool isWorking)
         {
         }

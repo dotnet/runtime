@@ -416,13 +416,6 @@ namespace System
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
         }
 
-        [DoesNotReturn]
-        internal static void ThrowInvalidOperationException_ThreadPoolNotInitialized()
-        {
-            // Should never occur at runtime.
-            throw new InvalidOperationException("ThreadPool Not Initialized");
-        }
-
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)

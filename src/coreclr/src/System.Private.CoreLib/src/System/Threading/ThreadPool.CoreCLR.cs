@@ -18,12 +18,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    internal static partial class ThreadPoolGlobals
-    {
-        public static bool enableWorkerTracking;
-        public static bool ThreadPoolInitialized { get; } = ThreadPool.InitializeThreadPool();
-    }
-
     //
     // This type is necessary because VS 2010's debugger looks for a method named _ThreadPoolWaitCallbacck.PerformWaitCallback
     // on the stack to determine if a thread is a ThreadPool thread or not.  We have a better way to do this for .NET 4.5, but
@@ -198,6 +192,13 @@ namespace System.Threading
         // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing work items before returning to the OS
         private const uint DispatchQuantum = 30;
 
+        private static bool GetEnableWorkerTracking()
+        {
+            bool enableWorkerTracking = false;
+            InitializeVMTp(ref enableWorkerTracking);
+            return enableWorkerTracking;
+        }
+
         internal static bool KeepDispatching(int startTickCount)
         {
             // Note: this function may incorrectly return false due to TickCount overflow
@@ -308,12 +309,6 @@ namespace System.Threading
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
-        internal static bool InitializeThreadPool()
-        {
-            InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
-            return true;
-        }
-
         // Native methods:
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -339,7 +334,6 @@ namespace System.Threading
 
         internal static void NotifyWorkItemProgress()
         {
-            EnsureInitialized();
             NotifyWorkItemProgressNative();
         }
 
