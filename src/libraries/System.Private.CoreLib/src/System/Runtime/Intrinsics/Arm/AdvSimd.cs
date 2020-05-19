@@ -643,6 +643,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) => Divide(left, right);
 
             /// <summary>
+            /// float64x2_t vdupq_laneq_f64 (float64x2_t vec, const int lane)
+            ///   A64: DUP Vd.2D, Vn.D[index]
+            /// </summary>
+            public static System.Runtime.Intrinsics.Vector128<double> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<double> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+
+            /// <summary>
+            /// int64x2_t vdupq_laneq_s64 (int64x2_t vec, const int lane)
+            ///   A64: DUP Vd.2D, Vn.D[index]
+            /// </summary>
+            public static System.Runtime.Intrinsics.Vector128<long> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<long> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+
+            /// <summary>
+            /// uint64x2_t vdupq_laneq_u64 (uint64x2_t vec, const int lane)
+            ///   A64: DUP Vd.2D, Vn.D[index]
+            /// </summary>
+            public static System.Runtime.Intrinsics.Vector128<ulong> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<ulong> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+
+            /// <summary>
+            /// float64x2_t vdupq_n_f64 (float64_t value)
+            ///   A64: DUP Vd.2D, Vn.D[0]
+            /// </summary>
+            public static Vector128<double> DuplicateToVector128(double value) => DuplicateToVector128(value);
+
+            /// <summary>
+            /// int64x2_t vdupq_n_s64 (int64_t value)
+            ///   A64: DUP Vd.2D, Rn
+            /// </summary>
+            public static Vector128<long> DuplicateToVector128(long value) => DuplicateToVector128(value);
+
+            /// <summary>
+            /// uint64x2_t vdupq_n_s64 (uint64_t value)
+            ///   A64: DUP Vd.2D, Rn
+            /// </summary>
+            public static Vector128<ulong> DuplicateToVector128(ulong value) => DuplicateToVector128(value);
+
+            /// <summary>
             /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
             ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -4202,6 +4238,300 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) => DivideScalar(left, right);
+
+        /// <summary>
+        /// uint8x8_t vdup_lane_u8 (uint8x8_t vec, const int lane)
+        ///   A32: VDUP.8 Dd, Dm[index]
+        ///   A64: DUP Vd.8B, Vn.B[index]
+        /// </summary>
+        public static Vector64<byte> DuplicateSelectedScalarToVector64(Vector64<byte> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// int16x4_t vdup_lane_s16 (int16x4_t vec, const int lane)
+        ///   A32: VDUP.16 Dd, Dm[index]
+        ///   A64: DUP Vd.4H, Vn.H[index]
+        /// </summary>
+        public static Vector64<short> DuplicateSelectedScalarToVector64(Vector64<short> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// int32x2_t vdup_lane_s32 (int32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<int> DuplicateSelectedScalarToVector64(Vector64<int> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// float32x2_t vdup_lane_f32 (float32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<float> DuplicateSelectedScalarToVector64(Vector64<float> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// int8x8_t vdup_lane_s8 (int8x8_t vec, const int lane)
+        ///   A32: VDUP.8 Dd, Dm[index]
+        ///   A64: DUP Vd.8B, Vn.B[index]
+        /// </summary>
+        public static Vector64<sbyte> DuplicateSelectedScalarToVector64(Vector64<sbyte> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// uint16x4_t vdup_lane_u16 (uint16x4_t vec, const int lane)
+        ///   A32: VDUP.16 Dd, Dm[index]
+        ///   A64: DUP Vd.4H, Vn.H[index]
+        /// </summary>
+        public static Vector64<ushort> DuplicateSelectedScalarToVector64(Vector64<ushort> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// uint32x2_t vdup_lane_u32 (uint32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<uint> DuplicateSelectedScalarToVector64(Vector64<uint> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// uint8x8_t vdup_laneq_u8 (uint8x16_t vec, const int lane)
+        ///   A32: VDUP.8 Dd, Dm[index]
+        ///   A64: DUP Vd.8B, Vn.B[index]
+        /// </summary>
+        public static Vector64<byte> DuplicateSelectedScalarToVector64(Vector128<byte> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// int16x4_t vdup_laneq_s16 (int16x8_t vec, const int lane)
+        ///   A32: VDUP.16 Dd, Dm[index]
+        ///   A64: DUP Vd.4H, Vn.H[index]
+        /// </summary>
+        public static Vector64<short> DuplicateSelectedScalarToVector64(Vector128<short> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// int32x2_t vdup_laneq_s32 (int32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<int> DuplicateSelectedScalarToVector64(Vector128<int> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// float32x2_t vdup_laneq_f32 (float32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<float> DuplicateSelectedScalarToVector64(Vector128<float> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// int8x8_t vdup_laneq_s8 (int8x16_t vec, const int lane)
+        ///   A32: VDUP.8 Dd, Dm[index]
+        ///   A64: DUP Vd.8B, Vn.B[index]
+        /// </summary>
+        public static Vector64<sbyte> DuplicateSelectedScalarToVector64(Vector128<sbyte> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// uint16x4_t vdup_laneq_u16 (uint16x8_t vec, const int lane)
+        ///   A32: VDUP.16 Dd, Dm[index]
+        ///   A64: DUP Vd.4H, Vn.H[index]
+        /// </summary>
+        public static Vector64<ushort> DuplicateSelectedScalarToVector64(Vector128<ushort> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// uint32x2_t vdup_laneq_u32 (uint32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Dd, Dm[index]
+        ///   A64: DUP Vd.2S, Vn.S[index]
+        /// </summary>
+        public static Vector64<uint> DuplicateSelectedScalarToVector64(Vector128<uint> value, byte index)=> DuplicateSelectedScalarToVector64(value, index);
+
+        /// <summary>
+        /// uint8x16_t vdupq_lane_u8 (uint8x8_t vec, const int lane)
+        ///   A32: VDUP.8 Qd, Dm[index]
+        ///   A64: DUP Vd.16B, Vn.B[index]
+        /// </summary>
+        public static Vector128<byte> DuplicateSelectedScalarToVector128(Vector64<byte> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// int16x8_t vdupq_lane_s16 (int16x4_t vec, const int lane)
+        ///   A32: VDUP.16 Qd, Dm[index]
+        ///   A64: DUP Vd.8H, Vn.H[index]
+        /// </summary>
+        public static Vector128<short> DuplicateSelectedScalarToVector128(Vector64<short> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// int32x4_t vdupq_lane_s32 (int32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<int> DuplicateSelectedScalarToVector128(Vector64<int> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// float32x4_t vdupq_lane_f32 (float32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<float> DuplicateSelectedScalarToVector128(Vector64<float> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// int8x16_t vdupq_lane_s8 (int8x8_t vec, const int lane)
+        ///   A32: VDUP.8 Qd, Dm[index]
+        ///   A64: DUP Vd.16B, Vn.B[index]
+        /// </summary>
+        public static Vector128<sbyte> DuplicateSelectedScalarToVector128(Vector64<sbyte> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// uint16x8_t vdupq_lane_u16 (uint16x4_t vec, const int lane)
+        ///   A32: VDUP.16 Qd, Dm[index]
+        ///   A64: DUP Vd.8H, Vn.H[index]
+        /// </summary>
+        public static Vector128<ushort> DuplicateSelectedScalarToVector128(Vector64<ushort> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// uint32x4_t vdupq_lane_u32 (uint32x2_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<uint> DuplicateSelectedScalarToVector128(Vector64<uint> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// uint8x16_t vdupq_lane_u8 (uint8x16_t vec, const int lane)
+        ///   A32: VDUP.8 Qd, Dm[index]
+        ///   A64: DUP Vd.16B, Vn.B[index]
+        /// </summary>
+        public static Vector128<byte> DuplicateSelectedScalarToVector128(Vector128<byte> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// int16x8_t vdupq_lane_s16 (int16x8_t vec, const int lane)
+        ///   A32: VDUP.16 Qd, Dm[index]
+        ///   A64: DUP Vd.8H, Vn.H[index]
+        /// </summary>
+        public static Vector128<short> DuplicateSelectedScalarToVector128(Vector128<short> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// int32x4_t vdupq_lane_s32 (int32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<int> DuplicateSelectedScalarToVector128(Vector128<int> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// float32x4_t vdupq_lane_f32 (float32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<float> DuplicateSelectedScalarToVector128(Vector128<float> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// int8x16_t vdupq_lane_s8 (int8x16_t vec, const int lane)
+        ///   A32: VDUP.8 Qd, Dm[index]
+        ///   A64: DUP Vd.16B, Vn.B[index]
+        /// </summary>
+        public static Vector128<sbyte> DuplicateSelectedScalarToVector128(Vector128<sbyte> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// uint16x8_t vdupq_lane_u16 (uint16x8_t vec, const int lane)
+        ///   A32: VDUP.16 Qd, Dm[index]
+        ///   A64: DUP Vd.8H, Vn.H[index]
+        /// </summary>
+        public static Vector128<ushort> DuplicateSelectedScalarToVector128(Vector128<ushort> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// uint32x4_t vdupq_lane_u32 (uint32x4_t vec, const int lane)
+        ///   A32: VDUP.32 Qd, Dm[index]
+        ///   A64: DUP Vd.4S, Vn.S[index]
+        /// </summary>
+        public static Vector128<uint> DuplicateSelectedScalarToVector128(Vector128<uint> value, byte index)=> DuplicateSelectedScalarToVector128(value, index);
+
+        /// <summary>
+        /// uint8x8_t vdup_n_u8 (uint8_t value)
+        ///   A32: VDUP.8 Dd, Rt
+        ///   A64: DUP Vd.8B, Rn
+        /// </summary>
+        public static Vector64<byte> DuplicateToVector64(byte value) => DuplicateToVector64(value);
+
+        /// <summary>
+        /// int16x4_t vdup_n_s16 (int16_t value)
+        ///   A32: VDUP.16 Dd, Rt
+        ///   A64: DUP Vd.4H, Rn
+        /// </summary>
+        public static Vector64<short> DuplicateToVector64(short value) => DuplicateToVector64(value);
+
+        /// <summary>
+        /// int32x2_t vdup_n_s32 (int32_t value)
+        ///   A32: VDUP.32 Dd, Rt
+        ///   A64: DUP Vd.2S, Rn
+        /// </summary>
+        public static Vector64<int> DuplicateToVector64(int value) => DuplicateToVector64(value);
+
+        /// <summary>
+        /// int8x8_t vdup_n_s8 (int8_t value)
+        ///   A32: VDUP.8 Dd, Rt
+        ///   A64: DUP Vd.8B, Rn
+        /// </summary>
+        public static Vector64<sbyte> DuplicateToVector64(sbyte value) => DuplicateToVector64(value);
+
+        /// <summary>
+        /// float32x2_t vdup_n_f32 (float32_t value)
+        ///   A32: VDUP Dd, Dm[0]
+        ///   A64: DUP Vd.2S, Vn.S[0]
+        /// </summary>
+        public static Vector64<float> DuplicateToVector64(float value) => DuplicateToVector64(value);
+
+        /// <summary>
+        /// uint16x4_t vdup_n_u16 (uint16_t value)
+        ///   A32: VDUP.16 Dd, Rt
+        ///   A64: DUP Vd.4H, Rn
+        /// </summary>
+        public static Vector64<ushort> DuplicateToVector64(ushort value) => DuplicateToVector64(value);
+
+        /// <summary>
+        /// uint32x2_t vdup_n_u32 (uint32_t value)
+        ///   A32: VDUP.32 Dd, Rt
+        ///   A64: DUP Vd.2S, Rn
+        /// </summary>
+        public static Vector64<uint> DuplicateToVector64(uint value) => DuplicateToVector64(value);
+
+        /// <summary>
+        /// uint8x16_t vdupq_n_u8 (uint8_t value)
+        ///   A32: VDUP.8 Qd, Rt
+        ///   A64: DUP Vd.16B, Rn
+        /// </summary>
+        public static Vector128<byte> DuplicateToVector128(byte value) => DuplicateToVector128(value);
+
+        /// <summary>
+        /// int16x8_t vdupq_n_s16 (int16_t value)
+        ///   A32: VDUP.16 Qd, Rt
+        ///   A64: DUP Vd.8H, Rn
+        /// </summary>
+        public static Vector128<short> DuplicateToVector128(short value) => DuplicateToVector128(value);
+
+        /// <summary>
+        /// int32x4_t vdupq_n_s32 (int32_t value)
+        ///   A32: VDUP.32 Qd, Rt
+        ///   A64: DUP Vd.4S, Rn
+        /// </summary>
+        public static Vector128<int> DuplicateToVector128(int value) => DuplicateToVector128(value);
+
+        /// <summary>
+        /// int8x16_t vdupq_n_s8 (int8_t value)
+        ///   A32: VDUP.8 Qd, Rt
+        ///   A64: DUP Vd.16B, Rn
+        /// </summary>
+        public static Vector128<sbyte> DuplicateToVector128(sbyte value) => DuplicateToVector128(value);
+
+        /// <summary>
+        /// float32x4_t vdupq_n_f32 (float32_t value)
+        ///   A32: VDUP Qd, Dm[0]
+        ///   A64: DUP Vd.4S, Vn.S[0]
+        /// </summary>
+        public static Vector128<float> DuplicateToVector128(float value) => DuplicateToVector128(value);
+
+        /// <summary>
+        /// uint16x8_t vdupq_n_u16 (uint16_t value)
+        ///   A32: VDUP.16 Qd, Rt
+        ///   A64: DUP Vd.8H, Rn
+        /// </summary>
+        public static Vector128<ushort> DuplicateToVector128(ushort value) => DuplicateToVector128(value);
+
+        /// <summary>
+        /// uint32x4_t vdupq_n_u32 (uint32_t value)
+        ///   A32: VDUP.32 Qd, Rt
+        ///   A64: DUP Vd.4S, Rn
+        /// </summary>
+        public static Vector128<uint> DuplicateToVector128(uint value) => DuplicateToVector128(value);
 
         /// <summary>
         /// uint8_t vget_lane_u8 (uint8x8_t v, const int lane)

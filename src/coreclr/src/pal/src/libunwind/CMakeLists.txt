@@ -13,10 +13,9 @@ elseif(CLR_CMAKE_HOST_ARCH_I386)
 endif()
 
 set(PKG_MAJOR "1")
-set(PKG_MINOR "3")
-set(PKG_EXTRA "-rc1")
+set(PKG_MINOR "5")
+set(PKG_EXTRA "-rc2")
 
 configure_file(include/libunwind-common.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libunwind-common.h)
 configure_file(include/libunwind.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libunwind.h)
 configure_file(include/tdep/libunwind_i.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/tdep/libunwind_i.h)
-

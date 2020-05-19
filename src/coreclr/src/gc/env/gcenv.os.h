@@ -66,8 +66,9 @@ struct VirtualReserveFlags
 // are run on process exit, potentially concurrently with other threads that may still be
 // operating on the static event. To avoid these sorts of unsafety, GCEvent chooses to
 // not have a destructor at all. The cost of this is leaking a small amount of memory, but
-// this is not a problem since a majority of the uses of GCEvent are static. See CoreCLR#11111
-// for more details on the hazards of static destructors.
+// this is not a problem since a majority of the uses of GCEvent are static.
+// See https://github.com/dotnet/runtime/issues/7919 for more details on the hazards of
+// static destructors.
 class GCEvent {
 private:
     class Impl;

@@ -325,7 +325,7 @@ namespace System.Reflection.Emit
 
         public override string ToString()
         {
-            return "ConstructorBuilder ['" + type.Name + "']";
+            return "Name: " + Name;
         }
 
         internal void fixup()

@@ -83,13 +83,10 @@ namespace System.Text.Json
             Debug.Assert(NameAsString != null);
 
             // At this point propertyName is valid UTF16, so just call the simple UTF16->UTF8 encoder.
-            Name = Encoding.UTF8.GetBytes(NameAsString);
+            NameAsUtf8Bytes = Encoding.UTF8.GetBytes(NameAsString);
 
             // Cache the escaped property name.
-            EscapedName = JsonEncodedText.Encode(Name, Options.Encoder);
-
-            ulong key = JsonClassInfo.GetKey(Name);
-            PropertyNameKey = key;
+            EscapedName = JsonEncodedText.Encode(NameAsString, NameAsUtf8Bytes, Options.Encoder);
         }
 
         private void DetermineSerializationCapabilities(JsonIgnoreCondition? ignoreCondition)
@@ -135,19 +132,24 @@ namespace System.Text.Json
 
                 if (ignoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenNull);
-                    IgnoreNullValues = true;
+                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenWritingDefault);
+                    IgnoreDefaultValuesOnWrite = true;
                 }
             }
-            else
+#pragma warning disable CS0618 // IgnoreNullValues is obsolete
+            else if (Options.IgnoreNullValues)
             {
-                IgnoreNullValues = Options.IgnoreNullValues;
+                Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
+                IgnoreDefaultValuesOnRead = true;
+                IgnoreDefaultValuesOnWrite = true;
             }
+            else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault)
+            {
+                Debug.Assert(!Options.IgnoreNullValues);
+                IgnoreDefaultValuesOnWrite = true;
+            }
+#pragma warning restore CS0618 // IgnoreNullValues is obsolete
         }
-
-        // The escaped name passed to the writer.
-        // Use a field here (not a property) to avoid value semantics.
-        public JsonEncodedText? EscapedName;
 
         public static TAttribute? GetAttribute<TAttribute>(PropertyInfo propertyInfo) where TAttribute : Attribute
         {
@@ -190,19 +192,37 @@ namespace System.Text.Json
             Options = options;
         }
 
-        public bool IgnoreNullValues { get; private set; }
+        public bool IgnoreDefaultValuesOnRead { get; private set; }
+        public bool IgnoreDefaultValuesOnWrite { get; private set; }
 
         public bool IsPropertyPolicy { get; protected set; }
 
-        // The name from a Json value. This is cached for performance on first deserialize.
-        public byte[]? JsonPropertyName { get; set; }
+        // There are 3 copies of the property name:
+        // 1) NameAsString. The unescaped property name.
+        // 2) NameAsUtf8Bytes. The Utf8 version of NameAsString. Used during during deserialization for property lookup.
+        // 3) EscapedName. The escaped verson of NameAsString and NameAsUtf8Bytes written during serialization. Internally shares
+        // the same instances of NameAsString and NameAsUtf8Bytes if there is no escaping.
 
-        // The name of the property with any casing policy or the name specified from JsonPropertyNameAttribute.
-        public byte[]? Name { get; private set; }
+        /// <summary>
+        /// The unescaped name of the property.
+        /// Is either the actual CLR property name,
+        /// the value specified in JsonPropertyNameAttribute,
+        /// or the value returned from PropertyNamingPolicy(clrPropertyName).
+        /// </summary>
         public string? NameAsString { get; private set; }
 
-        // Key for fast property name lookup.
-        public ulong PropertyNameKey { get; set; }
+        /// <summary>
+        /// Utf8 version of NameAsString.
+        /// </summary>
+        public byte[]? NameAsUtf8Bytes { get; private set; }
+
+        /// <summary>
+        /// The escaped name passed to the writer.
+        /// </summary>
+        /// <remarks>
+        /// JsonEncodedText is a value type so a field is used (not a property) to avoid unnecessary copies.
+        /// </remarks>
+        public JsonEncodedText? EscapedName;
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
         protected JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
@@ -297,7 +317,7 @@ namespace System.Text.Json
 
         public Type? RuntimePropertyType { get; private set; } = null;
 
-        public abstract void SetValueAsObject(object obj, object? value);
+        public abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
 
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }

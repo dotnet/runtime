@@ -1125,6 +1125,18 @@
     "any",
     "base"
   ],
+  "centos-arm64": [
+    "centos-arm64",
+    "centos",
+    "rhel-arm64",
+    "rhel",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "centos-x64": [
     "centos-x64",
     "centos",
@@ -1173,6 +1185,22 @@
     "any",
     "base"
   ],
+  "centos.8-arm64": [
+    "centos.8-arm64",
+    "centos.8",
+    "centos-arm64",
+    "rhel.8-arm64",
+    "centos",
+    "rhel.8",
+    "rhel-arm64",
+    "rhel",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "centos.8-x64": [
     "centos.8-x64",
     "centos.8",
@@ -1180,6 +1208,48 @@
     "rhel.8-x64",
     "centos",
     "rhel.8",
+    "rhel-x64",
+    "rhel",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "centos.9": [
+    "centos.9",
+    "centos",
+    "rhel.9",
+    "rhel",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "centos.9-arm64": [
+    "centos.9-arm64",
+    "centos.9",
+    "centos-arm64",
+    "rhel.9-arm64",
+    "centos",
+    "rhel.9",
+    "rhel-arm64",
+    "rhel",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "centos.9-x64": [
+    "centos.9-x64",
+    "centos.9",
+    "centos-x64",
+    "rhel.9-x64",
+    "centos",
+    "rhel.9",
     "rhel-x64",
     "rhel",
     "linux-x64",
@@ -1829,6 +1899,38 @@
     "any",
     "base"
   ],
+  "fedora.34": [
+    "fedora.34",
+    "fedora",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.34-arm64": [
+    "fedora.34-arm64",
+    "fedora.34",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.34-x64": [
+    "fedora.34-x64",
+    "fedora.34",
+    "fedora-x64",
+    "fedora",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "freebsd": [
     "freebsd",
     "unix",
@@ -1950,6 +2052,14 @@
     "any",
     "base"
   ],
+  "ios-x86": [
+    "ios-x86",
+    "ios",
+    "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
   "ios.10": [
     "ios.10",
     "ios.9",
@@ -1997,6 +2107,20 @@
     "ios-x64",
     "ios",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "ios.10-x86": [
+    "ios.10-x86",
+    "ios.10",
+    "ios.9-x86",
+    "ios.9",
+    "ios.8-x86",
+    "ios.8",
+    "ios-x86",
+    "ios",
+    "unix-x86",
     "unix",
     "any",
     "base"
@@ -2179,6 +2303,16 @@
     "any",
     "base"
   ],
+  "ios.8-x86": [
+    "ios.8-x86",
+    "ios.8",
+    "ios-x86",
+    "ios",
+    "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
   "ios.9": [
     "ios.9",
     "ios.8",
@@ -2219,6 +2353,18 @@
     "ios-x64",
     "ios",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "ios.9-x86": [
+    "ios.9-x86",
+    "ios.9",
+    "ios.8-x86",
+    "ios.8",
+    "ios-x86",
+    "ios",
+    "unix-x86",
     "unix",
     "any",
     "base"
@@ -3802,6 +3948,38 @@
     "rhel.8.0",
     "rhel.8-x64",
     "rhel.8",
+    "rhel-x64",
+    "rhel",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.9": [
+    "rhel.9",
+    "rhel",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.9-arm64": [
+    "rhel.9-arm64",
+    "rhel.9",
+    "rhel-arm64",
+    "rhel",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.9-x64": [
+    "rhel.9-x64",
+    "rhel.9",
     "rhel-x64",
     "rhel",
     "linux-x64",

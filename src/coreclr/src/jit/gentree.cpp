@@ -622,15 +622,12 @@ void GenTree::CopyReg(GenTree* from)
 //
 bool GenTree::gtHasReg() const
 {
-    bool hasReg;
+    bool hasReg = false;
 
     if (IsMultiRegCall())
     {
-        // Have to cast away const-ness because GetReturnTypeDesc() is a non-const method
-        GenTree*     tree     = const_cast<GenTree*>(this);
-        GenTreeCall* call     = tree->AsCall();
-        unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
-        hasReg                = false;
+        const GenTreeCall* call     = AsCall();
+        const unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
 
         // A Multi-reg call node is said to have regs, if it has
         // reg assigned to each of its result registers.
@@ -645,11 +642,9 @@ bool GenTree::gtHasReg() const
     }
     else if (IsCopyOrReloadOfMultiRegCall())
     {
-        GenTree*             tree         = const_cast<GenTree*>(this);
-        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-        unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
-        hasReg                            = false;
+        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
 
         // A Multi-reg copy or reload node is said to have regs,
         // if it has valid regs in any of the positions.
@@ -693,9 +688,7 @@ int GenTree::GetRegisterDstCount() const
     }
     else if (IsMultiRegCall())
     {
-        // temporarily cast away const-ness as AsCall() method is not declared const
-        GenTree* temp = const_cast<GenTree*>(this);
-        return temp->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+        return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
     else if (IsCopyOrReload())
     {
@@ -750,9 +743,8 @@ regMaskTP GenTree::gtGetRegMask() const
     if (IsMultiRegCall())
     {
         // temporarily cast away const-ness as AsCall() method is not declared const
-        resultMask    = genRegMask(GetRegNum());
-        GenTree* temp = const_cast<GenTree*>(this);
-        resultMask |= temp->AsCall()->GetOtherRegMask();
+        resultMask = genRegMask(GetRegNum());
+        resultMask |= AsCall()->GetOtherRegMask();
     }
     else if (IsCopyOrReloadOfMultiRegCall())
     {
@@ -760,10 +752,9 @@ regMaskTP GenTree::gtGetRegMask() const
         // positions that need to be copied or reloaded.  Hence we need
         // to consider only those registers for computing reg mask.
 
-        GenTree*             tree         = const_cast<GenTree*>(this);
-        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-        unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
 
         resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
@@ -778,9 +769,8 @@ regMaskTP GenTree::gtGetRegMask() const
 #if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
     {
-        GenTree*            tree     = const_cast<GenTree*>(this);
-        GenTreePutArgSplit* splitArg = tree->AsPutArgSplit();
-        unsigned            regCount = splitArg->gtNumRegs;
+        const GenTreePutArgSplit* splitArg = AsPutArgSplit();
+        const unsigned            regCount = splitArg->gtNumRegs;
 
         resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
@@ -6182,21 +6172,14 @@ GenTreeCall* Compiler::gtNewCallNode(
     // Initialize spill flags of gtOtherRegs
     node->ClearOtherRegFlags();
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    // Initialize the multi-reg long return info if necessary
+#if !defined(TARGET_64BIT)
     if (varTypeIsLong(node))
     {
-        // The return type will remain as the incoming long type
-        node->gtReturnType = node->gtType;
-
+        assert(node->gtReturnType == node->gtType);
         // Initialize Return type descriptor of call node
-        ReturnTypeDesc* retTypeDesc = node->GetReturnTypeDesc();
-        retTypeDesc->InitializeLongReturnType(this);
-
-        // must be a long returned in two registers
-        assert(retTypeDesc->GetReturnRegCount() == 2);
+        node->InitializeLongReturnType();
     }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
+#endif // !defined(TARGET_64BIT)
 
     return node;
 }
@@ -10217,8 +10200,8 @@ void Compiler::gtDispRegVal(GenTree* tree)
     {
         // 0th reg is GettRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg call node.
-        GenTreeCall* call     = tree->AsCall();
-        unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
+        const GenTreeCall* call     = tree->AsCall();
+        const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
         {
             printf(",%s", compRegVarName(call->GetRegNumByIdx(i)));
@@ -10226,9 +10209,9 @@ void Compiler::gtDispRegVal(GenTree* tree)
     }
     else if (tree->IsCopyOrReloadOfMultiRegCall())
     {
-        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        GenTreeCall*         call         = tree->gtGetOp1()->AsCall();
-        unsigned             regCount     = call->GetReturnTypeDesc()->TryGetReturnRegCount();
+        const GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
+        const GenTreeCall*         call         = tree->gtGetOp1()->AsCall();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
         {
             printf(",%s", compRegVarName(copyOrReload->GetRegNumByIdx(i)));
@@ -15315,9 +15298,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 #if FEATURE_MULTIREG_RET
     if (varTypeIsStruct(call))
     {
-        // Initialize Return type descriptor of call node.
-        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        retTypeDesc->InitializeStructReturnType(this, structType);
+        call->InitializeStructReturnType(this, structType);
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -16529,7 +16510,7 @@ bool GenTree::isContained() const
     else if (OperKind() & GTK_RELOP)
     {
         // We have to cast away const-ness since AsOp() method is non-const.
-        GenTree* childNode = const_cast<GenTree*>(this)->AsOp()->gtOp1;
+        const GenTree* childNode = AsOp()->gtGetOp1();
         assert((isMarkedContained == false) || childNode->IsSIMDEqualityOrInequality());
     }
 
@@ -18659,40 +18640,6 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3), hwIntrinsicID, TYP_UNKNOWN, 0);
 }
 
-//---------------------------------------------------------------------------------------
-// gtNewMustThrowException:
-//    create a throw node (calling into JIT helper) that must be thrown.
-//    The result would be a comma node: COMMA(jithelperthrow(void), x) where x's type should be specified.
-//
-// Arguments
-//    helper      -  JIT helper ID
-//    type        -  return type of the node
-//
-// Return Value
-//    pointer to the throw node
-//
-GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd)
-{
-    GenTreeCall* node = gtNewHelperCallNode(helper, TYP_VOID);
-    node->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-    if (type != TYP_VOID)
-    {
-        unsigned dummyTemp = lvaGrabTemp(true DEBUGARG("dummy temp of must thrown exception"));
-        if (type == TYP_STRUCT)
-        {
-            lvaSetStruct(dummyTemp, clsHnd, false);
-            type = lvaTable[dummyTemp].lvType; // struct type is normalized
-        }
-        else
-        {
-            lvaTable[dummyTemp].lvType = type;
-        }
-        GenTree* dummyNode = gtNewLclvNode(dummyTemp, type);
-        return gtNewOperNode(GT_COMMA, type, node, dummyNode);
-    }
-    return node;
-}
-
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
@@ -18781,6 +18728,40 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 }
 
 #endif // FEATURE_HW_INTRINSICS
+
+//---------------------------------------------------------------------------------------
+// gtNewMustThrowException:
+//    create a throw node (calling into JIT helper) that must be thrown.
+//    The result would be a comma node: COMMA(jithelperthrow(void), x) where x's type should be specified.
+//
+// Arguments
+//    helper      -  JIT helper ID
+//    type        -  return type of the node
+//
+// Return Value
+//    pointer to the throw node
+//
+GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd)
+{
+    GenTreeCall* node = gtNewHelperCallNode(helper, TYP_VOID);
+    node->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+    if (type != TYP_VOID)
+    {
+        unsigned dummyTemp = lvaGrabTemp(true DEBUGARG("dummy temp of must thrown exception"));
+        if (type == TYP_STRUCT)
+        {
+            lvaSetStruct(dummyTemp, clsHnd, false);
+            type = lvaTable[dummyTemp].lvType; // struct type is normalized
+        }
+        else
+        {
+            lvaTable[dummyTemp].lvType = type;
+        }
+        GenTree* dummyNode = gtNewLclvNode(dummyTemp, type);
+        return gtNewOperNode(GT_COMMA, type, node, dummyNode);
+    }
+    return node;
+}
 
 //---------------------------------------------------------------------------------------
 // InitializeStructReturnType:
@@ -18909,16 +18890,10 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
 // InitializeLongReturnType:
 //    Initialize the Return Type Descriptor for a method that returns a TYP_LONG
 //
-// Arguments
-//    comp        -  Compiler Instance
-//
-// Return Value
-//    None
-//
-void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
+void ReturnTypeDesc::InitializeLongReturnType()
 {
+    assert(!m_inited);
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-
     // Setups up a ReturnTypeDesc for returning a long using two registers
     //
     assert(MAX_RET_REG_COUNT >= 2);
@@ -18950,7 +18925,7 @@ void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
 //     x86 and ARM return long in multiple registers.
 //     ARM and ARM64 return HFA struct in multiple registers.
 //
-regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
+regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 {
     unsigned count = GetReturnRegCount();
     assert(idx < count);
@@ -19079,7 +19054,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 //    of return registers and wants to know the set of return registers.
 //
 // static
-regMaskTP ReturnTypeDesc::GetABIReturnRegs()
+regMaskTP ReturnTypeDesc::GetABIReturnRegs() const
 {
     regMaskTP resultMask = RBM_NONE;
 

@@ -380,17 +380,18 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new UriNullConverter_NullOptIn());
 
-            // Converter is not called.
+            // Converter is called - JsonIgnoreCondition.WhenWritingDefault does not apply to deserialization.
             ClassWithIgnoredUri obj = JsonSerializer.Deserialize<ClassWithIgnoredUri>(@"{""MyUri"":null}", options);
-            Assert.Equal(new Uri("https://microsoft.com"), obj.MyUri);
+            Assert.Equal(new Uri("https://default"), obj.MyUri);
 
             obj.MyUri = null;
+            // Converter is not called - value is ignored on serialization.
             Assert.Equal("{}", JsonSerializer.Serialize(obj, options));
         }
 
         private class ClassWithIgnoredUri
         {
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenNull)]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public Uri MyUri { get; set; } = new Uri("https://microsoft.com");
         }
 
@@ -503,6 +504,41 @@ namespace System.Text.Json.Serialization.Tests
 
                 throw new NotSupportedException();
             }
+
+            public override bool HandleNull => true;
+        }
+
+        [Fact]
+        public static void SetterCalledWhenConverterReturnsNull()
+        {
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                Converters = { new UriToNullConverter() }
+            };
+
+            // Baseline - null values ignored, converter is not called.
+            string json = @"{""MyUri"":null}";
+
+            ClassWithInitializedUri obj = JsonSerializer.Deserialize<ClassWithInitializedUri>(json, options);
+            Assert.Equal(new Uri("https://microsoft.com"), obj.MyUri);
+
+            // Test - setter is called if payload is not null and converter returns null.
+            json = @"{""MyUri"":""https://default""}";
+            obj = JsonSerializer.Deserialize<ClassWithInitializedUri>(json, options);
+            Assert.Null(obj.MyUri);
+        }
+
+        private class ClassWithInitializedUri
+        {
+            public Uri MyUri { get; set; } = new Uri("https://microsoft.com");
+        }
+
+        public class UriToNullConverter : JsonConverter<Uri>
+        {
+            public override Uri Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => null;
+
+            public override void Write(Utf8JsonWriter writer, Uri value, JsonSerializerOptions options) => throw new NotImplementedException();
 
             public override bool HandleNull => true;
         }

@@ -8,8 +8,10 @@ namespace System.Runtime.CompilerServices
     {
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            if (array == null || fldHandle.Value == IntPtr.Zero)
-                throw new ArgumentNullException();
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (fldHandle.Value == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(fldHandle));
 
             InitializeArray(array, fldHandle.Value);
         }

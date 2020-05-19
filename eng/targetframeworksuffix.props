@@ -62,6 +62,13 @@
         <PackageTargetRuntime>netbsd</PackageTargetRuntime>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'SunOS'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsSunOS>true</TargetsSunOS>
+        <PackageTargetRuntime>sunos</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'Browser'">
       <PropertyGroup>
         <TargetsLinux>true</TargetsLinux>

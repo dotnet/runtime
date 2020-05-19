@@ -56,14 +56,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public unsafe int Size => RSDSSize;
 
-        public NativeDebugDirectoryEntryNode(EcmaModule sourceModule)
-            : base(sourceModule)
-        { }
+        public NativeDebugDirectoryEntryNode(string pdbName)
+            : base(null)
+        {
+            _pdbName = pdbName;
+        }
+
+        private string _pdbName;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($"__NativeRvaBlob_{_module.Assembly.GetName().Name}");
+            sb.Append($"__NativeDebugDirectory_{_pdbName.Replace('.','_')}");
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -99,13 +103,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Age
                 writer.Write(1);
 
-                string pdbFileName = _module.Assembly.GetName().Name + ".ni.pdb";
+                string pdbFileName = _pdbName;
                 byte[] pdbFileNameBytes = Encoding.UTF8.GetBytes(pdbFileName);
                 writer.Write(pdbFileNameBytes);
 
                 Debug.Assert(rsdsEntry.Length <= RSDSSize);
                 return rsdsEntry.ToArray();
             }
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _pdbName.CompareTo(((NativeDebugDirectoryEntryNode)other)._pdbName);
         }
     }
 

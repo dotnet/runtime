@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (key == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
+                    ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
                 }
             }
 

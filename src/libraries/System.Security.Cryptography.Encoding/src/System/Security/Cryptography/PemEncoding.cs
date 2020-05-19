@@ -438,7 +438,7 @@ namespace System.Security.Cryptography
                 if (!success)
                 {
                     Debug.Fail("Convert.TryToBase64Chars failed with a pre-sized buffer");
-                    throw new ArgumentException();
+                    throw new ArgumentException(null, nameof(destination));
                 }
 
                 return base64Written;
@@ -528,7 +528,7 @@ namespace System.Security.Cryptography
             if (!TryWrite(label, data, buffer, out int charsWritten))
             {
                 Debug.Fail("TryWrite failed with a pre-sized buffer");
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(data));
             }
 
             Debug.Assert(charsWritten == encodedSize);

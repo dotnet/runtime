@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 //
-// AttributeTest.cs - NUnit Test Cases for the System.Attribute class
+// AttributeTest.cs - Unit Test Cases for the System.Attribute class
 //
 // Authors:
 //  Duco Fijma (duco@lorentz.xs4all.nl)
@@ -80,6 +80,12 @@ namespace System.Tests
             Assert.False(Attribute.IsDefined(pi, typeof(ComVisibleAttribute)));
             Assert.False(Attribute.IsDefined(pi, typeof(ComVisibleAttribute), false));
             Assert.False(Attribute.IsDefined(pi, typeof(ComVisibleAttribute), true));
+        }
+
+        [Fact]
+        public void IsDefined_Interface()
+        {
+            Assert.True(typeof(ExampleWithAttribute).IsDefined(typeof(INameable), false));
         }
     }
 
@@ -205,6 +211,12 @@ namespace System.Tests
         {
             Assert.Equal("System.Tests.MyCustomAttribute System.Tests.MyCustomAttribute", string.Join(" ", typeof(MultipleAttributes).GetCustomAttributes(inherit: false)));
             Assert.Equal("System.Tests.MyCustomAttribute System.Tests.MyCustomAttribute", string.Join(" ", typeof(MultipleAttributes).GetCustomAttributes(inherit: true)));
+        }
+
+        [Fact]
+        public static void GetCustomAttributes_Interface()
+        {
+            Assert.True(typeof(ExampleWithAttribute).GetCustomAttributes(typeof(INameable), inherit: false)[0] is NameableAttribute);
         }
     }
 
@@ -798,4 +810,18 @@ namespace System.Tests
     class MultipleAttributes
     {
     }
+
+    public interface INameable
+    {
+        string Name { get; }
+    }
+
+    [AttributeUsage (AttributeTargets.All, AllowMultiple = true)]
+    public class NameableAttribute : Attribute, INameable
+    {
+        string INameable.Name => "Nameable";
+    }
+
+    [Nameable]
+    public class ExampleWithAttribute { }
 }

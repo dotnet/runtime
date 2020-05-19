@@ -128,7 +128,17 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.ReceiveAsync(_buffer.Slice(_offset, _count), _socketFlags, out bytesReceived, out flags, TransferCompletionCallback, cancellationToken);
+                // TCP has no out-going receive flags. We can use different syscalls which give better performance.
+                bool noReceivedFlags = _currentSocket!.ProtocolType == ProtocolType.Tcp;
+                if (noReceivedFlags)
+                {
+                    errorCode = handle.AsyncContext.ReceiveAsync(_buffer.Slice(_offset, _count), _socketFlags, out bytesReceived, TransferCompletionCallback, cancellationToken);
+                    flags = SocketFlags.None;
+                }
+                else
+                {
+                    errorCode = handle.AsyncContext.ReceiveAsync(_buffer.Slice(_offset, _count), _socketFlags, out bytesReceived, out flags, TransferCompletionCallback, cancellationToken);
+                }
             }
             else
             {

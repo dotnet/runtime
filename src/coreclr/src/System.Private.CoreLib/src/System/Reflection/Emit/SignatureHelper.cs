@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection.Emit
 {
@@ -185,7 +186,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Private Data Members
-        private byte[] m_signature = null!;
+        private byte[] m_signature;
         private int m_currSig; // index into m_signature buffer for next available byte
         private int m_sizeLoc; // index into m_signature buffer to put m_argCount (will be NO_SIZE_IN_SIG if no arg count is needed)
         private ModuleBuilder? m_module;
@@ -225,6 +226,7 @@ namespace System.Reflection.Emit
             AddOneArgTypeHelper(type);
         }
 
+        [MemberNotNull(nameof(m_signature))]
         private void Init(Module? mod)
         {
             m_signature = new byte[32];
@@ -238,11 +240,13 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.NotSupported_MustBeModuleBuilder);
         }
 
+        [MemberNotNull(nameof(m_signature))]
         private void Init(Module? mod, MdSigCallingConvention callingConvention)
         {
             Init(mod, callingConvention, 0);
         }
 
+        [MemberNotNull(nameof(m_signature))]
         private void Init(Module? mod, MdSigCallingConvention callingConvention, int cGenericParam)
         {
             Init(mod);

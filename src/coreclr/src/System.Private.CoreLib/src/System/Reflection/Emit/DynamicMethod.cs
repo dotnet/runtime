@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -12,9 +13,9 @@ namespace System.Reflection.Emit
 {
     public sealed class DynamicMethod : MethodInfo
     {
-        private RuntimeType[] m_parameterTypes = null!;
+        private RuntimeType[] m_parameterTypes;
         internal IRuntimeMethodInfo? m_methodHandle;
-        private RuntimeType m_returnType = null!;
+        private RuntimeType m_returnType;
         private DynamicILGenerator? m_ilGenerator;
         private DynamicILInfo? m_DynamicILInfo;
         private bool m_fInitLocals;
@@ -28,7 +29,7 @@ namespace System.Reflection.Emit
         // If we allowed use of RTDynamicMethod, the creator of the DynamicMethod would
         // not be able to bound access to the DynamicMethod. Hence, we need to ensure that
         // we do not allow direct use of RTDynamicMethod.
-        private RTDynamicMethod m_dynMethod = null!;
+        private RTDynamicMethod m_dynMethod;
 
         // needed to keep the object alive during jitting
         // assigned by the DynamicResolver ctor
@@ -249,6 +250,9 @@ namespace System.Reflection.Emit
             return s_anonymouslyHostedDynamicMethodsModule;
         }
 
+        [MemberNotNull(nameof(m_parameterTypes))]
+        [MemberNotNull(nameof(m_returnType))]
+        [MemberNotNull(nameof(m_dynMethod))]
         private void Init(string name,
                                  MethodAttributes attributes,
                                  CallingConventions callingConvention,
