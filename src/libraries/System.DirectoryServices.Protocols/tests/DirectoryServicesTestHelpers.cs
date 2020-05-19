@@ -23,47 +23,23 @@ namespace System.DirectoryServices.Protocols.Tests
         {
             get
             {
+#if NETCOREAPP
                 if (!_isLibLdapInstalled.HasValue)
                 {
-                    try
+                    if (PlatformDetection.IsOSX)
                     {
-                        // Attempt PInvoking into libldap on Linux
-                        IntPtr handle = ber_alloc_Linux(1);
-                        ber_free_Linux(handle, 1);
-                        _isLibLdapInstalled = true;
+                        _isLibLdapInstalled = NativeLibrary.TryLoad("libldap.dylib", out _);
                     }
-                    catch (Exception)
+                    else
                     {
-                        try
-                        {
-                            // Attempt PInvoking into libldap on OSX
-                            IntPtr handle = ber_alloc_OSX(1);
-                            ber_free_OSX(handle, 1);
-                            _isLibLdapInstalled = true;
-                        }
-                        catch (Exception)
-                        {
-                            _isLibLdapInstalled = false;
-                        }
+                        _isLibLdapInstalled = NativeLibrary.TryLoad("libldap-2.4.so.2", out _);
                     }
                 }
                 return _isLibLdapInstalled.Value;
+#else // In .NET Framework ldap is always installed.
+                return true;
+#endif
             }
         }
-
-        internal const string OpenLdapLinux = "libldap-2.4.so.2";
-        internal const string OpenLdapOSX = "libldap";
-
-        [DllImport(OpenLdapLinux, EntryPoint = "ber_alloc_t", CharSet = CharSet.Ansi)]
-        internal static extern IntPtr ber_alloc_Linux(int option);
-
-        [DllImport(OpenLdapLinux, EntryPoint = "ber_free", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ber_free_Linux([In] IntPtr berelement, int option);
-
-        [DllImport(OpenLdapOSX, EntryPoint = "ber_alloc_t", CharSet = CharSet.Ansi)]
-        internal static extern IntPtr ber_alloc_OSX(int option);
-
-        [DllImport(OpenLdapOSX, EntryPoint = "ber_free", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ber_free_OSX([In] IntPtr berelement, int option);
     }
 }
