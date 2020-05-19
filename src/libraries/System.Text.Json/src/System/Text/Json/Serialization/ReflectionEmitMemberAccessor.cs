@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization
 
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate<JsonClassInfo.ConstructorDelegate>();
+            return (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ConstructorDelegate));
         }
 
         public override JsonClassInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
@@ -101,7 +101,7 @@ namespace System.Text.Json.Serialization
             generator.Emit(OpCodes.Newobj, constructor);
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate<JsonClassInfo.ParameterizedConstructorDelegate<T>>();
+            return (JsonClassInfo.ParameterizedConstructorDelegate<T>)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ParameterizedConstructorDelegate<T>));
         }
 
         public override JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
@@ -151,7 +151,9 @@ namespace System.Text.Json.Serialization
             generator.Emit(OpCodes.Newobj, constructor);
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate<JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>>();
+            return (JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>)
+                dynamicMethod.CreateDelegate(
+                    typeof(JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>));
         }
 
         public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
@@ -176,7 +178,7 @@ namespace System.Text.Json.Serialization
             generator.Emit(OpCodes.Callvirt, realMethod);
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate<Action<TCollection, object?>>();
+            return (Action<TCollection, object?>)dynamicMethod.CreateDelegate(typeof(Action<TCollection, object?>));
         }
 
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>()
@@ -197,7 +199,7 @@ namespace System.Text.Json.Serialization
             generator.Emit(OpCodes.Call, realMethod);
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate<Func<IEnumerable<TElement>, TCollection>>();
+            return (Func<IEnumerable<TElement>, TCollection>)dynamicMethod.CreateDelegate(typeof(Func<IEnumerable<TElement>, TCollection>));
         }
 
         public override Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TElement, TCollection>()
@@ -218,7 +220,7 @@ namespace System.Text.Json.Serialization
             generator.Emit(OpCodes.Call, realMethod);
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate<Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>>();
+            return (Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>)dynamicMethod.CreateDelegate(typeof(Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>));
         }
 
         public override Func<object?, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>

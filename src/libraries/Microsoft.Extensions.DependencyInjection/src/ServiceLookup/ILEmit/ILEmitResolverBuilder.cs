@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             return new GeneratedMethod()
             {
-                Lambda = dynamicMethod.CreateDelegate<Func<ServiceProviderEngineScope, object>>(runtimeContext),
+                Lambda = (Func<ServiceProviderEngineScope, object>)dynamicMethod.CreateDelegate(typeof(Func<ServiceProviderEngineScope, object>), runtimeContext),
                 Context = runtimeContext,
                 DynamicMethod = dynamicMethod
             };
