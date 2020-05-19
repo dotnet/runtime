@@ -130,8 +130,7 @@ namespace System.Net.Security
         //
         private void CloseInternal()
         {
-            if (NetEventSource.IsEnabled)
-                NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             _exception = s_disposedSentinel;
             _context?.Close();
@@ -158,8 +157,7 @@ namespace System.Net.Security
                 GC.SuppressFinalize(this);
             }
 
-            if (NetEventSource.IsEnabled)
-                NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)

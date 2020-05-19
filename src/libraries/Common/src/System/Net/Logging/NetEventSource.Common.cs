@@ -740,6 +740,109 @@ namespace System.Net
                 }
             }
         }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, string arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
+        {
+            if (IsEnabled())
+            {
+                if (arg1 == null) arg1 = "";
+
+                fixed (char* arg1Ptr = arg1)
+                {
+                    const int NumEventDatas = 8;
+                    var descrs = stackalloc EventData[NumEventDatas];
+
+                    descrs[0] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg1Ptr),
+                        Size = (arg1.Length + 1) * sizeof(char)
+                    };
+                    descrs[1] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg2),
+                        Size = sizeof(int)
+                    };
+                    descrs[2] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg3),
+                        Size = sizeof(int)
+                    };
+                    descrs[3] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg4),
+                        Size = sizeof(int)
+                    };
+                    descrs[4] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg5),
+                        Size = sizeof(int)
+                    };
+                    descrs[5] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg6),
+                        Size = sizeof(int)
+                    };
+                    descrs[6] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg7),
+                        Size = sizeof(int)
+                    };
+                    descrs[7] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg8),
+                        Size = sizeof(int)
+                    };
+
+                    WriteEventCore(eventId, NumEventDatas, descrs);
+                }
+            }
+        }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, string arg1, string arg2, int arg3, int arg4, int arg5)
+        {
+            if (IsEnabled())
+            {
+                if (arg1 == null) arg1 = "";
+                if (arg2 == null) arg2 = "";
+
+                fixed (char* arg1Ptr = arg1)
+                fixed (char* arg2Ptr = arg2)
+                {
+                    const int NumEventDatas = 5;
+                    var descrs = stackalloc EventData[NumEventDatas];
+
+                    descrs[0] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg1Ptr),
+                        Size = (arg1.Length + 1) * sizeof(char)
+                    };
+                    descrs[1] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg2Ptr),
+                        Size = (arg2.Length + 1) * sizeof(char)
+                    };
+                    descrs[2] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg3),
+                        Size = sizeof(int)
+                    };
+                    descrs[3] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg4),
+                        Size = sizeof(int)
+                    };
+                    descrs[4] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg5),
+                        Size = sizeof(int)
+                    };
+
+                    WriteEventCore(eventId, NumEventDatas, descrs);
+                }
+            }
+        }
         #endregion
     }
 }
