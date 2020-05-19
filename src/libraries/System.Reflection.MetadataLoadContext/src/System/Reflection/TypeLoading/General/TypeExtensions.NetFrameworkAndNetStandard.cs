@@ -9,7 +9,7 @@ namespace System.Reflection.TypeLoading
     // For code that have to interact with "Type" rather than "RoType", some handy extension methods that "add" the NetCore reflection apis to NetStandard.
     internal static class NetCoreApiEmulators
     {
-        // On NetStandard, have to do with slower emulations.
+        // On NetFramework and NetStandard, have to do with slower emulations.
 
         public static bool IsSignatureType(this Type type) => false;
         public static bool IsSZArray(this Type type) => type.IsArray && type.GetArrayRank() == 1 && type.Name.EndsWith("[]", StringComparison.Ordinal);
@@ -21,7 +21,7 @@ namespace System.Reflection.TypeLoading
     }
 
     /// <summary>
-    /// Another layer of base types. For NetCore, these base types are all but empty. For NetStandard, these base types add the NetCore apis to NetStandard
+    /// Another layer of base types. For NetCore, these base types are all but empty. For NetFramework and NetStandard, these base types add the NetCore apis
     /// so code interacting with "RoTypes" and friends can happily code to the full NetCore surface area.
     ///
     /// On NetStandard (and pre-2.2 NetCore), the TypeInfo constructor is not exposed so we cannot derive directly from TypeInfo.
@@ -89,7 +89,7 @@ namespace System.Reflection.TypeLoading
 
     internal abstract class LeveledCustomAttributeData : CustomAttributeData
     {
-        // On NetStandard, AttributeType is declared non-virtually so apps are stuck calling the slow version that builds a constructor.
+        // On NetFramework and NetStandard, AttributeType is declared non-virtually so apps are stuck calling the slow version that builds a constructor.
         public new abstract Type AttributeType { get; }
     }
 }

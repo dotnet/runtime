@@ -53,6 +53,7 @@ namespace System.Reflection
             }
         }
 
+        /// <inheritdoc/>
         public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
         {
             Debug.Assert(assemblyName.Name != null);

@@ -4,8 +4,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <!-- Only the netcoreapp version supports the new reflection apis (IsSZArray, etc.) -->
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -78,12 +79,12 @@
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataTable.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\HashHelpers.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Helpers.cs" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
     <Compile Include="System\Reflection\TypeLoading\General\MethodSig.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\RoAssemblyName.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Sentinels.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\TypeContext.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.Net.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.NetFrameworkAndNetStandard.cs" Condition="$(TargetFramework.StartsWith('net4')) or '$(TargetFramework)' == 'netstandard2.0'" />
     <Compile Include="System\Reflection\TypeLoading\General\TypeFactories.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Utf8Constants.cs" />
     <Compile Include="System\Reflection\TypeLoading\MethodBase\IMethodDecoder.cs" />
@@ -142,18 +143,25 @@
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.TypeClassification.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoWrappedType.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Collections.Immutable" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Reflection.Metadata" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Reflection.Metadata" />
+    <Reference Include="System.Collections.Immutable" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>
