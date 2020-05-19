@@ -52,6 +52,7 @@ namespace Tracing.Tests.ReverseValidation
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.Environment.Add("DOTNET_DiagnosticsMonitorAddress", serverName);
+                process.StartInfo.Environment.Add("DOTNET_DiagnosticsMonitorStopOnStart", "0");
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
                 process.StartInfo.Arguments = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath + " 0";
                 process.StartInfo.RedirectStandardOutput = true;
