@@ -63,6 +63,7 @@ namespace Tracing.Tests.Common
             return $"{{ Magic={Magic}; ClrInstanceId={RuntimeInstanceCookie}; ProcessId={ProcessId}; Unused={Unused}; }}";
         }
     }
+
     public class ReverseServer
     {
         public static string MakeServerAddress()
