@@ -9,48 +9,57 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
+        /// <summary>
+        ///   Reads the next data item as a semantic tag (major type 6)
+        /// </summary>
+        /// <returns>The decoded <see cref="CborTag"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public CborTag ReadTag()
         {
             CborTag tag = PeekTagCore(out int bytesRead);
-
-            if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
-            {
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
-            }
 
             AdvanceBuffer(bytesRead);
             _isTagContext = true;
             return tag;
         }
 
-        public void ReadTag(CborTag expectedTag)
-        {
-            CborTag tag = PeekTagCore(out int bytesRead);
-
-            if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
-            {
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
-            }
-
-            if (expectedTag != tag)
-            {
-                throw new InvalidOperationException(SR.Cbor_Reader_TagMismatch);
-            }
-
-            AdvanceBuffer(bytesRead);
-            _isTagContext = true;
-        }
-
+        /// <summary>
+        ///   Reads the next data item as a semantic tag (major type 6),
+        ///   without advancing the reader.
+        /// </summary>
+        /// <returns>The decoded <see cref="CborTag"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public CborTag PeekTag() => PeekTagCore(out int _);
 
-        private CborTag PeekTagCore(out int bytesRead)
-        {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Tag);
-            return (CborTag)DecodeUnsignedInteger(header, GetRemainingBytes(), out bytesRead);
-        }
-
-        // Additional tagged type support
-
+        /// <summary>
+        ///   Reads the next data item as a tagged date/time string,
+        ///   as described in RFC7049 section 2.4.1.
+        /// </summary>
+        /// <returns>The decoded <see cref="DateTimeOffset"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. --OR--
+        ///   the next date item does not have the correct semantic tag.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   invalid semantic date/time encoding --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public DateTimeOffset ReadDateTimeOffset()
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
@@ -59,7 +68,7 @@ namespace System.Formats.Cbor
 
             try
             {
-                ReadTag(expectedTag: CborTag.DateTimeString);
+                ReadExpectedTag(expectedTag: CborTag.DateTimeString);
 
                 switch (PeekState())
                 {
@@ -87,6 +96,21 @@ namespace System.Formats.Cbor
             }
         }
 
+        /// <summary>
+        ///   Reads the next data item as a tagged unix time in seconds,
+        ///   as described in RFC7049 section 2.4.1.
+        /// </summary>
+        /// <returns>The decoded <see cref="DateTimeOffset"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. --OR--
+        ///   the next date item does not have the correct semantic tag.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   invalid semantic date/time encoding --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public DateTimeOffset ReadUnixTimeSeconds()
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
@@ -95,7 +119,7 @@ namespace System.Formats.Cbor
 
             try
             {
-                ReadTag(expectedTag: CborTag.UnixTimeSeconds);
+                ReadExpectedTag(expectedTag: CborTag.UnixTimeSeconds);
 
                 switch (PeekState())
                 {
@@ -127,6 +151,21 @@ namespace System.Formats.Cbor
             }
         }
 
+        /// <summary>
+        ///   Reads the next data item as a tagged bignum encoding,
+        ///   as described in RFC7049 section 2.4.2.
+        /// </summary>
+        /// <returns>The decoded <see cref="BigInteger"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. --OR--
+        ///   the next date item does not have the correct semantic tag.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   invalid semantic bignum encoding --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public BigInteger ReadBigInteger()
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.2
@@ -162,6 +201,24 @@ namespace System.Formats.Cbor
             }
         }
 
+        /// <summary>
+        ///   Reads the next data item as a tagged decimal fraction encoding,
+        ///   as described in RFC7049 section 2.4.3.
+        /// </summary>
+        /// <returns>The decoded <see cref="decimal"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. --OR--
+        ///   the next date item does not have the correct semantic tag.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        ///   Decoded decimal fraction is either too large or too small for a <see cref="decimal"/> value.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   invalid CBOR encoding data --OR--
+        ///   unexpected end of CBOR encoding data --OR--
+        ///   invalid semantic decimal fraction encoding --OR--
+        ///   CBOR encoding not accepted under the current conformance level
+        /// </exception>
         public decimal ReadDecimal()
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.3
@@ -170,7 +227,7 @@ namespace System.Formats.Cbor
 
             try
             {
-                ReadTag(expectedTag: CborTag.DecimalFraction);
+                ReadExpectedTag(expectedTag: CborTag.DecimalFraction);
 
                 if (PeekState() != CborReaderState.StartArray || ReadStartArray() != 2)
                 {
@@ -228,6 +285,32 @@ namespace System.Formats.Cbor
                 RestoreCheckpoint(in checkpoint);
                 throw;
             }
+        }
+
+        private void ReadExpectedTag(CborTag expectedTag)
+        {
+            CborTag tag = PeekTagCore(out int bytesRead);
+
+            if (expectedTag != tag)
+            {
+                throw new InvalidOperationException(SR.Cbor_Reader_TagMismatch);
+            }
+
+            AdvanceBuffer(bytesRead);
+            _isTagContext = true;
+        }
+
+        private CborTag PeekTagCore(out int bytesRead)
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Tag);
+            CborTag result = (CborTag)DecodeUnsignedInteger(header, GetRemainingBytes(), out bytesRead);
+
+            if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            {
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
+            }
+
+            return result;
         }
     }
 }
