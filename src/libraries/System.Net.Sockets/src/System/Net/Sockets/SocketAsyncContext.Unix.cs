@@ -699,7 +699,7 @@ namespace System.Net.Sockets
             // If we successfully process all enqueued operations, then the state becomes Ready;
             // otherwise, the state becomes Waiting and we wait for another epoll notification.
 
-            private enum QueueState : byte
+            private enum QueueState : int
             {
                 Ready = 0,          // Indicates that data MAY be available on the socket.
                                     // Queue must be empty.
