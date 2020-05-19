@@ -218,15 +218,18 @@ namespace System.Net.Quic.Implementations.Managed
                 frame.LargestAcknowledged < frame.FirstAckRange) // acking negative PN
                 return CloseConnection(TransportErrorCode.ProtocolViolation, QuicError.InvalidAckRange, FrameType.Ack);
 
-            RangeSet ranges = new RangeSet();
-            ranges.Add(frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
+            Span<RangeSet.Range> ranges = frame.AckRangeCount < 16
+                ? stackalloc RangeSet.Range[(int) frame.AckRangeCount + 1]
+                : new RangeSet.Range[frame.AckRangeCount + 1];
+
+            ranges[^1] = new RangeSet.Range(frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
 
             int read = 0;
 
             long prevSmallestAcked = ranges[^1].Start;
 
-            // read the ranges in reverse order, so the `ranges` are in ascending order
-            for (int i = (int)frame.AckRangeCount; i > 0; i--)
+            // put ranges into the ranges[] in reverse order so that it is ascending.
+            for (int i = (int)frame.AckRangeCount - 1; i >= 0 ; i--)
             {
                 read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
                 read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long acked);
@@ -243,7 +246,7 @@ namespace System.Net.Quic.Implementations.Managed
                         QuicError.InvalidAckRange, frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack);
                 }
 
-                ranges.Add(nextSmallestAcked, nextLargestAcked);
+                ranges[i] = new RangeSet.Range(nextSmallestAcked, nextLargestAcked);
                 prevSmallestAcked = nextSmallestAcked;
             }
 

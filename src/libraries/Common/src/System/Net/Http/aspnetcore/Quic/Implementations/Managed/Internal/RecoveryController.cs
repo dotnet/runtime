@@ -245,10 +245,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        internal void OnAckReceived(PacketSpace space, RangeSet ranges, long ackDelay,
+        /// <summary>
+        ///     Instance of <see cref="SentPacket"/> to be used in binary search to avoid one per each call.
+        /// </summary>
+        internal readonly SentPacket _binarySearchPacket = new SentPacket();
+        internal void OnAckReceived(PacketSpace space, Span<RangeSet.Range> ranges, long ackDelay,
             in AckFrame frame, long now, bool isHandshakeComplete)
         {
-            Debug.Assert(ranges.Count > 0);
+            Debug.Assert(ranges.Length > 0);
 
             long largestAcked = ranges[^1].End;
             var pnSpace = GetPacketNumberSpace(space);
@@ -257,7 +261,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             SentPacket? largestAckedPacket = null;
             {
-                int index = pnSpace.SentPackets.BinarySearch(new SentPacket {PacketNumber = largestAcked}, SentPacket.PacketNumberComparer);
+                _binarySearchPacket.PacketNumber = largestAcked;
+                int index = pnSpace.SentPackets.BinarySearch(_binarySearchPacket, SentPacket.PacketNumberComparer);
                 if ((uint) index < pnSpace.SentPackets.Count)
                 {
                     largestAckedPacket = pnSpace.SentPackets[index];
@@ -289,7 +294,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             SetLossDetectionTimer(isHandshakeComplete);
         }
 
-        private bool ProcessNewlyAckedPackets(RangeSet ranges, PacketNumberSpace pnSpace,
+        private bool ProcessNewlyAckedPackets(Span<RangeSet.Range> ranges, PacketNumberSpace pnSpace,
             long now)
         {
             int rangeIndex = 0;
@@ -303,14 +308,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             while (toRemove + removeStart < sentPackets.Count)
             {
                 var packet = sentPackets[toRemove + removeStart];
-                var pn = packet.PacketNumber;
+                long pn = packet.PacketNumber;
 
-                while (rangeIndex < ranges.Count && ranges[rangeIndex].End < pn)
+                while (rangeIndex < ranges.Length && ranges[rangeIndex].End < pn)
                 {
                     rangeIndex++;
                 }
 
-                if (rangeIndex == ranges.Count)
+                if (rangeIndex == ranges.Length)
                 {
                     // all ranges processed
                     break;

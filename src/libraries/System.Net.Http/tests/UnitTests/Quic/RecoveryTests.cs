@@ -37,7 +37,11 @@ namespace System.Net.Quic.Tests
 
         private void ReceiveAck(long time, PacketSpace packetSpace, long ackDelay, params Range[] ranges) =>
             Recovery.OnAckReceived(packetSpace, ranges.Aggregate(new RangeSet(),
-                    (set, r) => { set.Add(r.Start.Value, r.End.Value); return set; }),
+                    (set, r) =>
+                    {
+                        set.Add(r.Start.Value, r.End.Value);
+                        return set;
+                    }).ToArray(),
                 ackDelay, new AckFrame(), time, false);
 
 

@@ -122,7 +122,7 @@ namespace System.Net.Quic.Tests.Frames
 
             // the data should be resent by now
             var resent = Get1RttToSend(Client).Frames
-                .OfType<StreamFrame>().SelectMany(f => f.StreamData.Select(i => (int)i));
+                .OfType<StreamFrame>().SelectMany(f => f.StreamData.Select(i => (int)i)).ToArray();
 
             Assert.Equal(lost, resent);
         }
