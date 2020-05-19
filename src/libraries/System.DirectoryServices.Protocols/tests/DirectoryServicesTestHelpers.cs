@@ -36,8 +36,9 @@ namespace System.DirectoryServices.Protocols.Tests
                     }
                 }
                 return _isLibLdapInstalled.Value;
-#else // In .NET Framework ldap is always installed.
-                return true;
+#else
+                _isLibLdapInstalled = true; // In .NET Framework ldap is always installed.
+                return _isLibLdapInstalled.Value;
 #endif
             }
         }
