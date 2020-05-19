@@ -7,6 +7,18 @@
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
   </PropertyGroup>
 
+  <ItemGroup>
+    <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
+  </ItemGroup>
+
+  <Target Name="GenerateRunScript">
+    <GenerateRunScript RunCommands="@(RunScriptCommands)"
+                       TemplatePath="$(RunScriptInputPath)"
+                       OutputPath="$(RunScriptOutputPath)" />
+
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+  </Target>
+
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"

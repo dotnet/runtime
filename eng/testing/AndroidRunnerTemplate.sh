@@ -1,10 +1,9 @@
 ﻿#!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-TEST_NAME=$1
-TARGET_ARCH=$2
+[[RunCommands]]
 
-APK=$EXECUTION_DIR/bin/$TEST_NAME.apk
+APK=$EXECUTION_DIR/$TEST_NAME.apk
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
 LOCKDIR=/tmp/androidtests.lock
