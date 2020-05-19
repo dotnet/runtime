@@ -70,7 +70,8 @@ namespace System.Net.Http
             get { return _statusCode; }
             set
             {
-                if (((int)value < 0) || ((int)value > 999))
+                var intValue = (int)value;
+                if (intValue < 0 || intValue > 999)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
@@ -145,7 +146,11 @@ namespace System.Net.Http
 
         public bool IsSuccessStatusCode
         {
-            get { return ((int)_statusCode >= 200) && ((int)_statusCode <= 299); }
+            get
+            {
+                var intStatusCode = (int)_statusCode;
+                return intStatusCode >= 200 && intStatusCode <= 299;
+            }
         }
 
         public HttpResponseMessage()
@@ -157,7 +162,8 @@ namespace System.Net.Http
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, statusCode);
 
-            if (((int)statusCode < 0) || ((int)statusCode > 999))
+            var intStatusCode = (int)statusCode;
+            if (intStatusCode < 0 || intStatusCode > 999)
             {
                 throw new ArgumentOutOfRangeException(nameof(statusCode));
             }
