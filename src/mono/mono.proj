@@ -886,16 +886,9 @@
 
   <Import Project="Directory.Build.targets" />
 
-  <!-- Need to publish this since it references System.Reflection.MetadataLoadContext -->
-  <Target Name="BuildWasmAppBuilder" Condition="'$(TargetsBrowser)' == 'true'">
-    <MSBuild Projects="$(MonoProjectRoot)msbuild\WasmAppBuilder\WasmAppBuilder.csproj"
-             Properties="Configuration=$(Configuration);"
-             Targets="Restore;Build;Publish"/>
-  </Target>
-
   <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildWasmAppBuilder;">
+  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
