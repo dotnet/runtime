@@ -164,15 +164,12 @@ namespace System.Net.Sockets
             int sent;
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
             {
-                int bytesSent = 0;
                 errno = Interop.Sys.Send(
                     socket,
                     &b[offset],
                     count,
                     flags,
-                    &bytesSent);
-
-                sent = bytesSent;
+                    &sent);
             }
 
             if (errno != Interop.Error.SUCCESS)
