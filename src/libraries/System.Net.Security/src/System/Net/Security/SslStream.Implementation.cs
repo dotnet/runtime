@@ -196,11 +196,11 @@ namespace System.Net.Security
 
             if (isAsync)
             {
-                result = ForceAuthenticationAsync(new AsyncSslIOAdapter(this, cancellationToken), _context!.IsServer, null, isApm);
+                result = ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm);
             }
             else
             {
-                ForceAuthenticationAsync(new SyncSslIOAdapter(this), _context!.IsServer, null).GetAwaiter().GetResult();
+                ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null).GetAwaiter().GetResult();
                 result = null;
             }
 
@@ -211,7 +211,7 @@ namespace System.Net.Security
         // This is used to reply on re-handshake when received SEC_I_RENEGOTIATE on Read().
         //
         private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, byte[]? buffer)
-            where TIOAdapter : ISslIOAdapter
+            where TIOAdapter : IReadWriteAdapter
         {
             try
             {
@@ -226,7 +226,7 @@ namespace System.Net.Security
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
         private async Task ForceAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false)
-             where TIOAdapter : ISslIOAdapter
+             where TIOAdapter : IReadWriteAdapter
         {
             ProtocolToken message;
             bool handshakeCompleted = false;
@@ -339,7 +339,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(TIOAdapter adapter)
-                 where TIOAdapter : ISslIOAdapter
+                 where TIOAdapter : IReadWriteAdapter
         {
             int readBytes = await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
             if (readBytes == 0)
@@ -486,7 +486,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask WriteAsyncChunked<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, ISslIOAdapter
+            where TIOAdapter : struct, IReadWriteAdapter
         {
             do
             {
@@ -497,7 +497,7 @@ namespace System.Net.Security
         }
 
         private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, ISslIOAdapter
+            where TIOAdapter : struct, IReadWriteAdapter
         {
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
             byte[] outBuffer = rentedBuffer;
@@ -643,7 +643,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
-            where TIOAdapter : ISslIOAdapter
+            where TIOAdapter : IReadWriteAdapter
         {
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
@@ -790,7 +790,7 @@ namespace System.Net.Security
         // If we have enough data, it returns synchronously. If not, it will try to read
         // remaining bytes from given stream.
         private ValueTask<int> FillHandshakeBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
-             where TIOAdapter : ISslIOAdapter
+             where TIOAdapter : IReadWriteAdapter
         {
             if (_handshakeBuffer.ActiveLength >= minSize)
             {
@@ -840,7 +840,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int numBytesRequired)
-            where TIOAdapter : ISslIOAdapter
+            where TIOAdapter : IReadWriteAdapter
         {
             Debug.Assert(_internalBufferCount > 0);
             Debug.Assert(_internalBufferCount < numBytesRequired);
@@ -858,7 +858,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask WriteAsyncInternal<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, ISslIOAdapter
+            where TIOAdapter : struct, IReadWriteAdapter
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 

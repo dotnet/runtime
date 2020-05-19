@@ -43,19 +43,13 @@ namespace System.Net.Security
         private static byte[] GssWrap(
             SafeGssContextHandle? context,
             bool encrypt,
-            byte[] buffer,
-            int offset,
-            int count)
+            ReadOnlySpan<byte> buffer)
         {
-            Debug.Assert((buffer != null) && (buffer.Length > 0), "Invalid input buffer passed to Encrypt");
-            Debug.Assert((offset >= 0) && (offset < buffer.Length), "Invalid input offset passed to Encrypt");
-            Debug.Assert((count >= 0) && (count <= (buffer.Length - offset)), "Invalid input count passed to Encrypt");
-
-            Interop.NetSecurityNative.GssBuffer encryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
+            Interop.NetSecurityNative.GssBuffer encryptedBuffer = default;
             try
             {
                 Interop.NetSecurityNative.Status minorStatus;
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.WrapBuffer(out minorStatus, context, encrypt, buffer, offset, count, ref encryptedBuffer);
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.WrapBuffer(out minorStatus, context, encrypt, buffer, ref encryptedBuffer);
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
@@ -555,16 +549,14 @@ namespace System.Net.Security
 
         internal static int Encrypt(
             SafeDeleteContext securityContext,
-            byte[] buffer,
-            int offset,
-            int count,
+            ReadOnlySpan<byte> buffer,
             bool isConfidential,
             bool isNtlm,
-            ref byte[]? output,
+            [NotNull] ref byte[]? output,
             uint sequenceNumber)
         {
             SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext) securityContext;
-            byte[] tempOutput = GssWrap(gssContext.GssContext, isConfidential, buffer, offset, count);
+            byte[] tempOutput = GssWrap(gssContext.GssContext, isConfidential, buffer);
 
             // Create space for prefixing with the length
             const int prefixLength = 4;
@@ -628,7 +620,7 @@ namespace System.Net.Security
         internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
         {
             SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext)securityContext;
-            byte[] tempOutput = GssWrap(gssContext.GssContext, false, buffer, offset, count);
+            byte[] tempOutput = GssWrap(gssContext.GssContext, false, new ReadOnlySpan<byte>(buffer, offset, count));
             // Create space for prefixing with the length
             const int prefixLength = 4;
             output = new byte[tempOutput.Length + prefixLength];
