@@ -1348,6 +1348,34 @@ static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
            ((platformFlags & MSG_CTRUNC) == 0 ? 0 : SocketFlags_MSG_CTRUNC);
 }
 
+int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received)
+{
+    if (buffer == NULL || bufferLen < 0 || received == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+    int socketFlags;
+    if (!ConvertSocketFlagsPalToPlatform(flags, &socketFlags))
+    {
+        return Error_ENOTSUP;
+    }
+
+    ssize_t res;
+    while ((res = recv(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
+
+    if (res != -1)
+    {
+        *received = (int32_t)res;
+        return Error_SUCCESS;
+    }
+
+    *received = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
 int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received)
 {
     if (messageHeader == NULL || received == NULL || messageHeader->SocketAddressLen < 0 ||
@@ -1391,6 +1419,38 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     return SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
+int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)
+{
+    if (buffer == NULL || bufferLen < 0 || sent == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+    int socketFlags;
+    if (!ConvertSocketFlagsPalToPlatform(flags, &socketFlags))
+    {
+        return Error_ENOTSUP;
+    }
+
+    ssize_t res;
+#if defined(__APPLE__) && __APPLE__
+    // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+#else
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
+#endif
+    if (res != -1)
+    {
+        *sent = (int32_t)res;
+        return Error_SUCCESS;
+    }
+
+    *sent = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
 int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent)
 {
     if (messageHeader == NULL || sent == NULL || messageHeader->SocketAddressLen < 0 ||
@@ -1412,7 +1472,7 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 
     ssize_t res;
 #if defined(__APPLE__) && __APPLE__
-    // possible OSX kernel bug:  #31927
+    // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
 #else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
