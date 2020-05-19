@@ -2664,12 +2664,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // Generate a direct call to a non-virtual user defined or helper method
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
         assert(call->gtEntryPoint.accessType == IAT_PVALUE);
+        assert(call->gtControlExpr == nullptr);
 
         regNumber tmpReg = call->GetSingleTempReg();
         GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, REG_R2R_INDIRECT_PARAM);
 
-        // We have already generated code for gtControlExpr evaluating it into a register.
-        // We just need to emit "call reg" in this case.
+        // We have now generated code for gtControlExpr evaluating it into `tmpReg`.
+        // We just need to emit "call tmpReg" in this case.
         //
         assert(genIsValidIntReg(tmpReg));
 
