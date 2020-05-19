@@ -22,11 +22,8 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    internal static class ThreadPoolGlobals
+    internal static partial class ThreadPoolGlobals
     {
-        public static bool enableWorkerTracking;
-        public static bool ThreadPoolInitialized { get; } = ThreadPool.InitializeThreadPool();
-
         public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>

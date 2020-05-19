@@ -18,6 +18,12 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
+    internal static partial class ThreadPoolGlobals
+    {
+        public static bool enableWorkerTracking;
+        public static bool ThreadPoolInitialized { get; } = ThreadPool.InitializeThreadPool();
+    }
+
     //
     // This type is necessary because VS 2010's debugger looks for a method named _ThreadPoolWaitCallbacck.PerformWaitCallback
     // on the stack to determine if a thread is a ThreadPool thread or not.  We have a better way to do this for .NET 4.5, but
@@ -302,7 +308,6 @@ namespace System.Threading
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static bool InitializeThreadPool()
         {
             InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
