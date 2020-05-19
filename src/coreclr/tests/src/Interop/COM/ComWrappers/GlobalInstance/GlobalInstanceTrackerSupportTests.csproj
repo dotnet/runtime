@@ -12,7 +12,6 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
     <Compile Include="GlobalInstance.cs" />
     <Compile Include="GlobalInstance.TrackerSupport.cs" />

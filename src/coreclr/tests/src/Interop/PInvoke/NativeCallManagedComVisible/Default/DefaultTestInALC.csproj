@@ -11,5 +11,4 @@
     <ProjectReference Include="..\CMakeLists.txt" />
     <ProjectReference Include="DefaultTest.csproj" />
   </ItemGroup>
-  <Import Project="../../../Interop.settings.targets" />
 </Project>

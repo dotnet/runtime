@@ -16,10 +16,6 @@ A common pattern for testing is using the `Assert` utilities. This class is part
 
 Managed tests should be designed to use the [SDK style project](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj) system provided by [`dotnet-cli`](https://github.com/dotnet/cli). In addition to the using the SDK style project, all managed projects should include the following:
 
-`<Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />`
-
-The above import allows all managed projects to be maintained in a unified way.
-
 ### Native
 
 Native test assets use [CMake](https://cmake.org/) and can leverage any of the product build assets. In addition to the use of CMake projects, all native projects should include the following:

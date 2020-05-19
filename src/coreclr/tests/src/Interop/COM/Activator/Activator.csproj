@@ -8,7 +8,6 @@
     <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>

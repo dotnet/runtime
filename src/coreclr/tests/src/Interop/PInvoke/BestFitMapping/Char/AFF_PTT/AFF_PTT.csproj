@@ -7,7 +7,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
-  <Import Project="../../../../Interop.settings.targets" />
   <ItemGroup>
     <ProjectReference Include="..\CMakeLists.txt" />
   </ItemGroup>
