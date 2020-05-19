@@ -103,7 +103,7 @@ namespace System.Runtime.CompilerServices
                     return (CallSite)method.Invoke(null, new object[] { binder })!;
                 }
 
-                ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
+                ctor = method.CreateDelegate<Func<CallSiteBinder, CallSite>>();
                 ctors.Add(delegateType, ctor);
             }
 

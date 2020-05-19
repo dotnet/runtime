@@ -605,7 +605,7 @@ namespace System.Linq.Expressions
                     return (LambdaExpression)create.Invoke(null, new object?[] { body, name, tailCall, parameters })!;
                 }
 
-                factories[delegateType] = fastPath = (Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)create.CreateDelegate(typeof(Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
+                factories[delegateType] = fastPath = create.CreateDelegate<Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>();
             }
 
             return fastPath(body, name, tailCall, parameters);

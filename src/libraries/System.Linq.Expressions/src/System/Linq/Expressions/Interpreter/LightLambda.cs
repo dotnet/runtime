@@ -259,7 +259,7 @@ namespace System.Linq.Expressions.Interpreter
                     name = "Make" + name + paramInfos.Length;
 
                     MethodInfo ctorMethod = typeof(LightLambda).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static).MakeGenericMethod(paramTypes);
-                    return _runCache[delegateType] = (Func<LightLambda, Delegate>)ctorMethod.CreateDelegate(typeof(Func<LightLambda, Delegate>));
+                    return _runCache[delegateType] = ctorMethod.CreateDelegate<Func<LightLambda, Delegate>>();
                 }
 #endif
 

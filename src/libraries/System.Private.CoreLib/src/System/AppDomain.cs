@@ -402,7 +402,7 @@ namespace System
                             // Don't throw PNSE if null like for WindowsPrincipal as UnauthenticatedPrincipal should
                             // be available on all platforms.
                             Volatile.Write(ref s_getUnauthenticatedPrincipal,
-                                (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
+                                mi.CreateDelegate<Func<IPrincipal>>());
                         }
 
                         principal = s_getUnauthenticatedPrincipal();
@@ -418,7 +418,7 @@ namespace System
                                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);
                             }
                             Volatile.Write(ref s_getWindowsPrincipal,
-                                (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
+                                mi.CreateDelegate<Func<IPrincipal>>());
                         }
 
                         principal = s_getWindowsPrincipal();

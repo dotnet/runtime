@@ -176,7 +176,7 @@ namespace System.Reflection.Internal
             {
                 try
                 {
-                    return (Encoding_GetString)getStringInfo.CreateDelegate(typeof(Encoding_GetString), null);
+                    return getStringInfo.CreateDelegate<Encoding_GetString>(null);
                 }
                 catch (MemberAccessException)
                 {
