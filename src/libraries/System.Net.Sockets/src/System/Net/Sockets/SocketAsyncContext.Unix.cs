@@ -480,8 +480,10 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    if (!SetReceivedFlags && SocketAddress == null)
+                    if (!SetReceivedFlags)
                     {
+                        Debug.Assert(SocketAddress == null);
+
                         ReceivedFlags = SocketFlags.None;
                         return SocketPal.TryCompleteReceive(context._socket, Buffer.Span, Flags, out BytesTransferred, out ErrorCode);
                     }
