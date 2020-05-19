@@ -721,7 +721,7 @@ jobs:
     - Linux_arm
     jobParameters:
       testGroup: innerloop
-      liveLibrariesBuildConfig: release
+      liveLibrariesBuildConfig: Release
       liveRuntimeBuildConfig: release
       condition: >-
         or(
@@ -766,7 +766,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: innerloop
-      liveLibrariesBuildConfig: release
+      liveLibrariesBuildConfig: Release
       liveRuntimeBuildConfig: release
       condition: >-
         or(
