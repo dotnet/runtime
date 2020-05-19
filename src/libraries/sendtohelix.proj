@@ -76,6 +76,11 @@
     <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
   </ItemGroup>
 
+  <ItemGroup>
+    <HelixProperties Condition="'$(BUILD_BUILDURI)' != ''" Include="build" Value="$(BUILD_BUILDURI)" />
+    <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
+  </ItemGroup>
+
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
