@@ -461,51 +461,34 @@ namespace Mono.Linker.Dataflow
 					|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty: {
 
 						reflectionContext.AnalyzingPattern ();
-						DynamicallyAccessedMemberTypes? memberKind = null;
 						BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-
-						switch (getRuntimeMember) {
-						case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
-							memberKind = DynamicallyAccessedMemberTypes.PublicEvents;
-							break;
-
-						case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
-							memberKind = DynamicallyAccessedMemberTypes.PublicFields;
-							break;
-
-						case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
-							memberKind = DynamicallyAccessedMemberTypes.PublicMethods;
-							break;
-
-						case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
-							memberKind = DynamicallyAccessedMemberTypes.PublicProperties;
-							break;
-
-						default:
-							throw new InternalErrorException ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
-						}
-
-						if (memberKind == null)
-							break;
+						DynamicallyAccessedMemberTypes requiredMemberTypes = getRuntimeMember switch
+						{
+							IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent => DynamicallyAccessedMemberTypes.PublicEvents,
+							IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField => DynamicallyAccessedMemberTypes.PublicFields,
+							IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod => DynamicallyAccessedMemberTypes.PublicMethods,
+							IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty => DynamicallyAccessedMemberTypes.PublicProperties,
+							_ => throw new InternalErrorException ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type."),
+						};
 
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue systemTypeValue) {
 								foreach (var stringParam in methodParams[1].UniqueValues ()) {
 									if (stringParam is KnownStringValue stringValue) {
-										switch (memberKind) {
-										case DynamicallyAccessedMemberTypes.PublicEvents:
+										switch (getRuntimeMember) {
+										case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
 											MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, e => e.Name == stringValue.Contents, bindingFlags);
 											reflectionContext.RecordHandledPattern ();
 											break;
-										case DynamicallyAccessedMemberTypes.PublicFields:
+										case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
 											MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, f => f.Name == stringValue.Contents, bindingFlags);
 											reflectionContext.RecordHandledPattern ();
 											break;
-										case DynamicallyAccessedMemberTypes.PublicMethods:
+										case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
 											MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
 											reflectionContext.RecordHandledPattern ();
 											break;
-										case DynamicallyAccessedMemberTypes.PublicProperties:
+										case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
 											MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, p => p.Name == stringValue.Contents, bindingFlags);
 											reflectionContext.RecordHandledPattern ();
 											break;
@@ -513,16 +496,15 @@ namespace Mono.Linker.Dataflow
 											throw new InternalErrorException ($"Error processing reflection call '{calledMethod.FullName}' inside {callingMethodBody.Method.FullName}. Unexpected member kind.");
 										}
 									} else {
-										RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberTypes) memberKind, value, calledMethod.Parameters[0]);
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, value, calledMethod.Parameters[0]);
 									}
 								}
 							} else {
-								RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberTypes) memberKind, value, calledMethod.Parameters[0]);
+								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, value, calledMethod.Parameters[0]);
 							}
 						}
 					}
 					break;
-
 				//
 				// System.Linq.Expressions.Expression
 				// 
