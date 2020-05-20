@@ -179,7 +179,7 @@ public class AppleAppBuilderTask : Task
         return true;
     }
 
-    static void GenerateLinkAllFile(IEnumerable<string> asmFiles, string outputFile)
+    private static void GenerateLinkAllFile(IEnumerable<string> asmFiles, string outputFile)
     {
         //  Generates 'modules.m' in order to register all managed libraries
         //
