@@ -20,9 +20,11 @@ namespace System.Formats.Cbor
             WriteUnsignedInteger(CborMajorType.ByteString, (ulong)value.Length);
             EnsureWriteCapacity(value.Length);
 
-            if (!EncodeIndefiniteLengths && _currentMajorType == CborMajorType.ByteString)
+            if (ConvertIndefiniteLengthEncodings && _currentMajorType == CborMajorType.ByteString)
             {
                 // operation is writing chunk of an indefinite-length string
+                // the string will be converted to a definite-length encoding later,
+                // so we need to record the ranges of each chunk
                 Debug.Assert(_currentIndefiniteLengthStringRanges != null);
                 _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
             }
@@ -50,9 +52,11 @@ namespace System.Formats.Cbor
             WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
             EnsureWriteCapacity(length);
 
-            if (!EncodeIndefiniteLengths && _currentMajorType == CborMajorType.TextString)
+            if (ConvertIndefiniteLengthEncodings && _currentMajorType == CborMajorType.TextString)
             {
                 // operation is writing chunk of an indefinite-length string
+                // the string will be converted to a definite-length encoding later,
+                // so we need to record the ranges of each chunk
                 Debug.Assert(_currentIndefiniteLengthStringRanges != null);
                 _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
             }
@@ -64,7 +68,12 @@ namespace System.Formats.Cbor
 
         public void WriteStartByteString()
         {
-            if (!EncodeIndefiniteLengths)
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+            }
+
+            if (ConvertIndefiniteLengthEncodings)
             {
                 // Writer does not allow indefinite-length encodings.
                 // We need to keep track of chunk offsets to convert to
@@ -85,7 +94,12 @@ namespace System.Formats.Cbor
 
         public void WriteStartTextString()
         {
-            if (!EncodeIndefiniteLengths)
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+            }
+
+            if (ConvertIndefiniteLengthEncodings)
             {
                 // Writer does not allow indefinite-length encodings.
                 // We need to keep track of chunk offsets to convert to

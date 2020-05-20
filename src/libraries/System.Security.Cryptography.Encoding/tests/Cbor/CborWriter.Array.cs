@@ -22,6 +22,11 @@ namespace System.Formats.Cbor
 
         public void WriteStartArray()
         {
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+            }
+
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Array, definiteLength: null);

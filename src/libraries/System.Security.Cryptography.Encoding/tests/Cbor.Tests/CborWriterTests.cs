@@ -132,6 +132,13 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(CborConformanceLevel.Lax, writer.ConformanceLevel);
         }
 
+        [Fact]
+        public static void ConvertIndefiniteLengthEncodings_DefaultValue_ShouldEqualFalse()
+        {
+            var writer = new CborWriter();
+            Assert.False(writer.ConvertIndefiniteLengthEncodings);
+        }
+
         [Theory]
         [MemberData(nameof(EncodedValueInputs))]
         public static void WriteEncodedValue_RootValue_HappyPath(string hexEncodedValue)
@@ -211,11 +218,11 @@ namespace System.Formats.Cbor.Tests
         [InlineData(new object[] { Map, 42, new object[] { Enc, "8101" } }, true, "a1182a8101")]
         [InlineData(new object[] { Map, 42, new object[] { Enc, "8101" } }, false, "bf182a8101ff")]
 
-        public static void WriteEncodedValue_ContextScenaria_HappyPath(object value, bool useDefiniteLength, string hexExpectedEncoding)
+        public static void WriteEncodedValue_ContextScenaria_HappyPath(object value, bool useDefiniteLengthEncoding, string hexExpectedEncoding)
         {
-            var writer = new CborWriter(encodeIndefiniteLengths: !useDefiniteLength);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: useDefiniteLengthEncoding);
 
-            Helpers.WriteValue(writer, value, useDefiniteLengthCollections: useDefiniteLength);
+            Helpers.WriteValue(writer, value, useDefiniteLengthCollections: useDefiniteLengthEncoding);
 
             string hexEncoding = writer.Encode().ByteArrayToHex().ToLower();
             Assert.Equal(hexExpectedEncoding, hexEncoding);
@@ -224,7 +231,7 @@ namespace System.Formats.Cbor.Tests
         [Fact]
         public static void WriteEncodedValue_IndefiniteLengthTextString_HappyPath()
         {
-            var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: false);
 
             writer.WriteStartTextString();
             writer.WriteTextString("foo");
@@ -238,7 +245,7 @@ namespace System.Formats.Cbor.Tests
         [Fact]
         public static void WriteEncodedValue_IndefiniteLengthByteString_HappyPath()
         {
-            var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: false);
 
             writer.WriteStartByteString();
             writer.WriteByteString(new byte[] { 1, 1, 1 });
@@ -286,14 +293,6 @@ namespace System.Formats.Cbor.Tests
         public static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceLevel: level));
-        }
-
-        [Theory]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void EncodeIndefiniteLengths_UnsupportedConformanceLevel_ShouldThrowArgumentException(CborConformanceLevel level)
-        {
-            Assert.Throws<ArgumentException>(() => new CborWriter(level, encodeIndefiniteLengths: true));
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });

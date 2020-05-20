@@ -28,6 +28,11 @@ namespace System.Formats.Cbor
 
         public void WriteStartMap()
         {
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+            }
+
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Map, definiteLength: null);
