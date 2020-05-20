@@ -636,7 +636,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     }
 
     GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, cmpIntrinsic, baseType, simdSize);
-    BlockRange().InsertAfter(op2, cmp);
+    BlockRange().InsertBefore(node, cmp);
     LowerNode(cmp);
 
     if ((baseType == TYP_FLOAT) && (simdSize == 12))
@@ -676,6 +676,16 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     node->gtType = TYP_INT;
     node->gtOp1  = val;
     node->gtOp2  = zroCns;
+
+    // The CompareEqual will set (condition is true) or clear (condition is false) all bits of the respective element
+    // The MinAcross then ensures we get either all bits set (all conditions are true) or clear (any condition is false)
+    // So, we need to invert the condition from the operation since we compare against zero
+
+    GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::NE : GenCondition::EQ;
+    GenTree*     cc     = LowerNodeCC(node, cmpCnd);
+
+    node->gtType = TYP_VOID;
+    node->ClearUnusedValue();
 
     LowerNode(node);
 }
