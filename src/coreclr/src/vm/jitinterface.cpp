@@ -102,6 +102,7 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 uint64_t g_cbILJitted = 0;
 uint32_t g_cMethodsJitted = 0;
 
+#ifndef CROSSGEN_COMPILE
 FCIMPL0(INT64, GetJittedBytes)
 {
     FCALL_CONTRACT;
@@ -117,6 +118,7 @@ FCIMPL0(INT32, GetJittedMethodsCount)
     return g_cMethodsJitted;
 }
 FCIMPLEND
+#endif
 
 /*********************************************************************/
 
