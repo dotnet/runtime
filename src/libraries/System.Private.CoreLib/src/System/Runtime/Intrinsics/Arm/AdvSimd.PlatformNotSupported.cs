@@ -1201,6 +1201,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> ReciprocalStepScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// int16_t vqrshlh_s16 (int16_t a, int16_t b)
+            ///   A64: SQRSHL Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<short> ShiftArithmeticRoundedSaturateScalar(Vector64<short> value, Vector64<short> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqrshls_s32 (int32_t a, int32_t b)
+            ///   A64: SQRSHL Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<int> ShiftArithmeticRoundedSaturateScalar(Vector64<int> value, Vector64<int> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vqrshlb_s8 (int8_t a, int8_t b)
+            ///   A64: SQRSHL Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<sbyte> ShiftArithmeticRoundedSaturateScalar(Vector64<sbyte> value, Vector64<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
@@ -7280,6 +7298,13 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: SQRSHL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> ShiftArithmeticRoundedSaturate(Vector128<sbyte> value, Vector128<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x1_t vqrshl_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VQRSHL.S64 Dd, Dn, Dm
+        ///   A64: SQRSHL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> ShiftArithmeticRoundedSaturateScalar(Vector64<long> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
