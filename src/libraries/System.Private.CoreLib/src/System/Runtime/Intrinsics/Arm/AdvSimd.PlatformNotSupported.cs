@@ -8564,6 +8564,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> ShiftRightArithmeticRounded(Vector128<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int16x4_t vrsra_n_s16 (int16x4_t a, int16x4_t b, const int n)
+        ///   A32: VRSRA.S16 Dd, Dm, #n
+        ///   A64: SRSRA Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightArithmeticRoundedAdd(Vector64<short> addend, Vector64<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vrsra_n_s32 (int32x2_t a, int32x2_t b, const int n)
+        ///   A32: VRSRA.S32 Dd, Dm, #n
+        ///   A64: SRSRA Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightArithmeticRoundedAdd(Vector64<int> addend, Vector64<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vrsra_n_s8 (int8x8_t a, int8x8_t b, const int n)
+        ///   A32: VRSRA.S8 Dd, Dm, #n
+        ///   A64: SRSRA Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightArithmeticRoundedAdd(Vector64<sbyte> addend, Vector64<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vrsraq_n_s16 (int16x8_t a, int16x8_t b, const int n)
+        ///   A32: VRSRA.S16 Qd, Qm, #n
+        ///   A64: SRSRA Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmeticRoundedAdd(Vector128<short> addend, Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vrsraq_n_s32 (int32x4_t a, int32x4_t b, const int n)
+        ///   A32: VRSRA.S32 Qd, Qm, #n
+        ///   A64: SRSRA Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmeticRoundedAdd(Vector128<int> addend, Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vrsraq_n_s64 (int64x2_t a, int64x2_t b, const int n)
+        ///   A32: VRSRA.S64 Qd, Qm, #n
+        ///   A64: SRSRA Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightArithmeticRoundedAdd(Vector128<long> addend, Vector128<long> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vrsraq_n_s8 (int8x16_t a, int8x16_t b, const int n)
+        ///   A32: VRSRA.S8 Qd, Qm, #n
+        ///   A64: SRSRA Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmeticRoundedAdd(Vector128<sbyte> addend, Vector128<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
