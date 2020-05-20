@@ -93,14 +93,14 @@
 //       file:threads.h#SuspendingTheRuntime and file:../../Documentation/botr/threading.md
 //   * Garbage collection - file:gc.cpp#Overview and file:../../Documentation/botr/garbage-collection.md
 //   * code:AppDomain - The managed version of a process.
-//   * Calling Into the runtime (FCALLs QCalls) file:../../Documentation/botr/mscorlib.md
+//   * Calling Into the runtime (FCALLs QCalls) file:../../Documentation/botr/corelib.md
 //   * Exceptions - file:../../Documentation/botr/exceptions.md. The most important routine to start
 //       with is code:COMPlusFrameHandler which is the routine that we hook up to get called when an unmanaged
 //       exception happens.
 //   * Assembly Loading file:../../Documentation/botr/type-loader.md
 //   * Profiling file:../../Documentation/botr/profiling.md and file:../../Documentation/botr/profilability.md
 //   * FCALLS QCALLS (calling into the runtime from managed code)
-//       file:../../Documentation/botr/mscorlib.md
+//       file:../../Documentation/botr/corelib.md
 //   * Event Tracing for Windows
 //     * file:../inc/eventtrace.h#EventTracing -
 //     * This is the main file dealing with event tracing in CLR

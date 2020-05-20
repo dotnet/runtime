@@ -76,6 +76,11 @@
         <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
+      <RuntimeFiles Condition="'$(TargetsBrowser)' == 'true'"
+        Include="@(WasmDistFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/wasm/runtimes/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
+
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
         <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
       </CoreCLRCrossTargetFiles>
@@ -94,12 +99,12 @@
 
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
-      <LibrariesRefAssemblies TargetPath="ref/$(NETCoreAppFramework)" />
+      <LibrariesRefAssemblies TargetPath="ref/$(NetCoreAppCurrent)" />
       <Reference Include="@(LibrariesRefAssemblies)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(PackageRID)' != ''">
-      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NETCoreAppFramework)" />
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)" />
       <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="runtimes/$(PackageRID)/native" />
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>

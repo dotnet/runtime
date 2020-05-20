@@ -147,6 +147,8 @@ namespace System.Net.Http.Headers
             _containsTrailingHeaders = containsTrailingHeaders;
         }
 
+        internal bool ContainsTrailingHeaders => _containsTrailingHeaders;
+
         internal override void AddHeaders(HttpHeaders sourceHeaders)
         {
             base.AddHeaders(sourceHeaders);

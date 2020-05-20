@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -192,8 +193,8 @@
   <data name="net_value_cannot_be_negative" xml:space="preserve">
     <value>The specified value cannot be negative.</value>
   </data>
-  <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
-    <value>Argument must be between {0} and {1}.</value>
+  <data name="ArgumentOutOfRange_Bounds_Lower_Upper_Named" xml:space="preserve">
+    <value>Argument '{2}' must be between {0} and {1}.</value>
   </data>
   <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">
     <value>Sockets on this platform are invalid for use after a failed connection attempt.</value>
@@ -257,5 +258,8 @@
   </data>
   <data name="net_sockets_asyncoperations_notallowed" xml:space="preserve">
     <value>Asynchronous operations are not allowed on this socket. The underlying OS handle might have been already bound to an IO completion port.</value>
+  </data>
+  <data name="InvalidNullArgument" xml:space="preserve">
+    <value>Null is not a valid value for {0}.</value>
   </data>
 </root>

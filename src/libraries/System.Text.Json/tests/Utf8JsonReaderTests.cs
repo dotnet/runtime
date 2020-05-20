@@ -4380,7 +4380,6 @@ namespace System.Text.Json.Tests
                     new object[] {"+0", 0, 0},
                     new object[] {"+1", 0, 0},
                     new object[] {"0e", 0, 2},
-                    new object[] {"0.", 0, 2},
                     new object[] {"0.1e", 0, 4},
                     new object[] {"01", 0, 1},
                     new object[] {"1a", 0, 1},

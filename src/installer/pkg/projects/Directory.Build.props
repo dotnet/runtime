@@ -81,9 +81,9 @@
       null-refs when this isn't set and an analyzer is in the packages
     -->
     <Language>unused</Language>
-    <NuGetTargetMoniker>$(NETCoreAppFrameworkMoniker)</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>$(NETCoreAppFramework)</NuGetTargetMonikerShort>
-    <PackageTargetFramework>$(NETCoreAppFramework)</PackageTargetFramework>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
+    <PackageTargetFramework>$(NetCoreAppCurrent)</PackageTargetFramework>
     <CrossGenOutputPath>$(CrossGenRootPath)$(MSBuildProjectName)\</CrossGenOutputPath>
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <RidSpecificAssets Condition="'$(RuntimeIdentifier)' != ''">true</RidSpecificAssets>
@@ -92,7 +92,7 @@
 
   <PropertyGroup>
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(PackageTargetFramework)</TargetFramework>
-    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NETCoreAppFramework)</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
   <!-- Add required legal files to packages -->

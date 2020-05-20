@@ -133,10 +133,12 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
+      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\cross\*.*" />
-      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
+      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
+      <WasmDistFiles Condition="'$(TargetOS)' == 'Browser'"
+        Include="$(MonoArtifactsPath)\wasm\runtimes\**\*.*" />
     </ItemGroup>
 
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />

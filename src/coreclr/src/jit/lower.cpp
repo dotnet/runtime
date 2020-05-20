@@ -3063,7 +3063,12 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             LowerRetStructLclVar(ret);
             break;
 
+#ifdef FEATURE_SIMD
         case GT_SIMD:
+#endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+#endif // FEATURE_HW_INTRINSICS
         case GT_LCL_FLD:
         {
             GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), retVal, nullptr);
@@ -3282,11 +3287,19 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
-            // Non-virtual direct calls to addresses accessed by
-            // a single indirection.
-            GenTree* cellAddr = AddrGen(addr);
-            GenTree* indir    = Ind(cellAddr);
-            result            = indir;
+            bool isR2RRelativeIndir = false;
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+            isR2RRelativeIndir = call->IsR2RRelativeIndir();
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+
+            if (!isR2RRelativeIndir)
+            {
+                // Non-virtual direct calls to addresses accessed by
+                // a single indirection.
+                GenTree* cellAddr = AddrGen(addr);
+                GenTree* indir    = Ind(cellAddr);
+                result            = indir;
+            }
             break;
         }
 

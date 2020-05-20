@@ -71,7 +71,7 @@
 
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
-      <Architectures>arm</Architectures>
+      <Architectures>arm;x86</Architectures>
       <Versions>8;9;10</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="ios">

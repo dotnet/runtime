@@ -83,26 +83,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_LCL_VAR:
-            // Because we do containment analysis before we redo dataflow and identify register
-            // candidates, the containment analysis only uses !lvDoNotEnregister to estimate register
-            // candidates.
-            // If there is a lclVar that is estimated to be register candidate but
-            // is not, if they were marked regOptional they should now be marked contained instead.
-            // TODO-XArch-CQ: When this is being called while RefPositions are being created,
-            // use lvLRACandidate here instead.
-            if (tree->IsRegOptional())
-            {
-                if (!compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvTracked ||
-                    compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvDoNotEnregister)
-                {
-                    tree->ClearRegOptional();
-                    tree->SetContained();
-                    return 0;
-                }
-            }
-            __fallthrough;
-
-        case GT_LCL_FLD:
         {
             // We handle tracked variables differently from non-tracked ones.  If it is tracked,
             // we will simply add a use of the tracked variable at its parent/consumer.
@@ -113,11 +93,27 @@ int LinearScan::BuildNode(GenTree* tree)
             // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
             // to a call or an orphaned dead node.
             //
-            LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-            if (isCandidateVar(varDsc))
+            // Because we do containment analysis before we redo dataflow and identify register
+            // candidates, the containment analysis only uses !lvDoNotEnregister to estimate register
+            // candidates.
+            // If there is a lclVar that is estimated to be register candidate but
+            // is not, if they were marked regOptional they should now be marked contained instead.
+            bool isCandidate = compiler->lvaGetDesc(tree->AsLclVar())->lvLRACandidate;
+            if (tree->IsRegOptional() && !isCandidate)
+            {
+                tree->ClearRegOptional();
+                tree->SetContained();
+                return 0;
+            }
+            if (isCandidate)
             {
                 return 0;
             }
+        }
+            __fallthrough;
+
+        case GT_LCL_FLD:
+        {
             srcCount = 0;
 #ifdef FEATURE_SIMD
             // Need an additional register to read upper 4 bytes of Vector3.
@@ -1033,11 +1029,11 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool            hasMultiRegRetVal = false;
-    ReturnTypeDesc* retTypeDesc       = nullptr;
-    int             srcCount          = 0;
-    int             dstCount          = 0;
-    regMaskTP       dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal = false;
+    const ReturnTypeDesc* retTypeDesc       = nullptr;
+    int                   srcCount          = 0;
+    int                   dstCount          = 0;
+    regMaskTP             dstCandidates     = RBM_NONE;
 
     assert(!call->isContained());
     if (call->TypeGet() != TYP_VOID)
@@ -2666,16 +2662,31 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     srcCount += BuildAddrUses(op2->gtGetOp1());
                 }
-                else if (isRMW && !op2->isContained())
+                else if (isRMW)
                 {
-                    if (HWIntrinsicInfo::IsCommutative(intrinsicId))
+                    if (!op2->isContained() && HWIntrinsicInfo::IsCommutative(intrinsicId))
                     {
+                        // When op2 is not contained and we are commutative, we can set op2
+                        // to also be a tgtPrefUse. Codegen will then swap the operands.
+
                         tgtPrefUse2 = BuildUse(op2);
                         srcCount += 1;
                     }
+                    else if (!op2->isContained() || varTypeIsArithmetic(intrinsicTree->TypeGet()))
+                    {
+                        // When op2 is not contained or if we are producing a scalar value
+                        // we need to mark it as delay free because the operand and target
+                        // exist in the same register set.
+
+                        srcCount += BuildDelayFreeUses(op2);
+                    }
                     else
                     {
-                        srcCount += BuildDelayFreeUses(op2);
+                        // When op2 is contained and we are not producing a scalar value we
+                        // have no concerns of overwriting op2 because they exist in different
+                        // register sets.
+
+                        srcCount += BuildOperandUses(op2);
                     }
                 }
                 else

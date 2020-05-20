@@ -2052,6 +2052,14 @@
     "any",
     "base"
   ],
+  "ios-x86": [
+    "ios-x86",
+    "ios",
+    "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
   "ios.10": [
     "ios.10",
     "ios.9",
@@ -2099,6 +2107,20 @@
     "ios-x64",
     "ios",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "ios.10-x86": [
+    "ios.10-x86",
+    "ios.10",
+    "ios.9-x86",
+    "ios.9",
+    "ios.8-x86",
+    "ios.8",
+    "ios-x86",
+    "ios",
+    "unix-x86",
     "unix",
     "any",
     "base"
@@ -2281,6 +2303,16 @@
     "any",
     "base"
   ],
+  "ios.8-x86": [
+    "ios.8-x86",
+    "ios.8",
+    "ios-x86",
+    "ios",
+    "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
   "ios.9": [
     "ios.9",
     "ios.8",
@@ -2321,6 +2353,18 @@
     "ios-x64",
     "ios",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "ios.9-x86": [
+    "ios.9-x86",
+    "ios.9",
+    "ios.8-x86",
+    "ios.8",
+    "ios-x86",
+    "ios",
+    "unix-x86",
     "unix",
     "any",
     "base"

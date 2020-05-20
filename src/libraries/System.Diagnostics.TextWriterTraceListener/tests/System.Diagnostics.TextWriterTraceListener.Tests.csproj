@@ -4,15 +4,13 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TestTraceFilter.cs" />
     <Compile Include="CommonUtilities.cs" />
+    <Compile Include="ConsoleTraceListenerTests.cs" />
     <Compile Include="CtorsDelimiterTests.cs" />
-    <Compile Include="TextWriterTraceListener_WriteTests.cs" />
     <Compile Include="CtorsStreamTests.cs" />
     <Compile Include="DelimiterWriteMethodTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Compile Include="ConsoleTraceListenerTests.cs" />
+    <Compile Include="TestTraceFilter.cs" />
+    <Compile Include="TextWriterTraceListener_WriteTests.cs" />
     <Compile Include="XmlWriterTraceListenerTests.cs" />
   </ItemGroup>
 </Project>

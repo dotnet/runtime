@@ -651,6 +651,7 @@ namespace System.Xml
             {
                 reader = new XsdValidatingReader(reader, GetXmlResolver_CheckConfig(), this);
             }
+
             return reader;
         }
 

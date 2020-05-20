@@ -22,11 +22,14 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_get_IsValueType,
     NI_System_Type_IsAssignableFrom,
 
-#ifdef FEATURE_HW_INTRINSICS
+    // These are used by HWIntrinsics but are defined more generally
+    // to allow dead code optimization and handle the recursion case
+
     NI_IsSupported_True,
     NI_IsSupported_False,
     NI_Throw_PlatformNotSupportedException,
 
+#ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \

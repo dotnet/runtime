@@ -233,7 +233,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             storeArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
-            storeArgs.Add($"/p:NETCoreAppFramework={Framework}");
+            storeArgs.Add($"/p:NetCoreAppCurrent={Framework}");
 
             // Ensure the project's OutputType isn't 'Exe', since that causes issues with 'dotnet store'
             storeArgs.Add("/p:OutputType=Library");
@@ -286,7 +286,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("--framework");
                 publishArgs.Add(framework);
-                publishArgs.Add($"/p:NETCoreAppFramework={framework}");
+                publishArgs.Add($"/p:NetCoreAppCurrent={framework}");
             }
 
             if (selfContained != null)
@@ -333,7 +333,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             restoreArgs.Add("--disable-parallel");
 
             restoreArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
-            restoreArgs.Add($"/p:NETCoreAppFramework={Framework}");
+            restoreArgs.Add($"/p:NetCoreAppCurrent={Framework}");
 
             if (extraMSBuildProperties != null)
             {
