@@ -317,7 +317,7 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        internal const bool s_enableWorkerTracking = false;
+        internal static readonly bool s_enableWorkerTracking = false;
 
         internal static void InitializeForThreadPoolThread() { }
 
