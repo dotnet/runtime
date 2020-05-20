@@ -220,7 +220,7 @@ namespace System.Net.Http
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
 
-                HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), status.Status.ToString()));
+                HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
 
                 bool streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
 
