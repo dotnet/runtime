@@ -22,5 +22,4 @@
     <ProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
     <ProjectReference Include="../ijwhostmock/CMakeLists.txt" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
 </Project>

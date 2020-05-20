@@ -1,8 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- Properties for all Interop managed test assets -->
-  <PropertyGroup>
-    <InteropCommonDir>$(MSBuildThisFileDirectory)common/</InteropCommonDir>
-  </PropertyGroup>
+  <!-- SDK Style projects auto-magically include this file. -->
+  <Import Project="..\Directory.Build.targets" />
 
   <!-- Add the CoreCLRTestLibrary dependency -->
   <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' != 'true')">
@@ -18,12 +16,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\HostPolicyMock.cs" Condition="'$(RequiresMockHostPolicy)' == 'true'"/>
   </ItemGroup>
 
-  <!-- Required debug vcruntime and UCRT dlls -->
-  <ItemGroup
+  <Target Name="CopyInteropNativeRuntimeDependencies"
+    BeforeTargets="CopyAllNativeProjectReferenceBinaries"
     Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
-
-    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" CopyToOutputDirectory="Always" />
-  </ItemGroup>
+    <!-- Required debug vcruntime and UCRT dlls -->
+    <ItemGroup>
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(InteropNativeRuntimeDependencies)" DestinationFolder="$(OutputPath)" />
+  </Target>
 </Project>

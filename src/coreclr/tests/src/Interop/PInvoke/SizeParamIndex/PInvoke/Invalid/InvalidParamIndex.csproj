@@ -5,5 +5,4 @@
   <ItemGroup>
     <Compile Include="InvalidParamIndex.cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
 </Project>
