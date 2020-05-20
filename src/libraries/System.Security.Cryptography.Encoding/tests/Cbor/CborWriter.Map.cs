@@ -10,10 +10,23 @@ namespace System.Formats.Cbor
 {
     public partial class CborWriter
     {
+        // Implements major type 5 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
+
         private KeyEncodingComparer? _keyEncodingComparer;
         private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;
         private Stack<List<KeyValuePairEncodingRange>>? _pooledKeyValuePairEncodingRangeLists;
 
+        /// <summary>
+        ///   Writes the start of a definite-length map (major type 5)
+        /// </summary>
+        /// <param name="definiteLength">The definite length of the map.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   The <paramref name="definiteLength"/> parameter cannot be negative.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   Writing a new value exceeds the definite length of the parent data item --OR--
+        ///   The major type of the encoded value is not permitted in the parent data item
+        /// </exception>
         public void WriteStartMap(int definiteLength)
         {
             if (definiteLength < 0 || definiteLength > int.MaxValue / 2)
@@ -26,6 +39,19 @@ namespace System.Formats.Cbor
             _currentKeyOffset = _offset;
         }
 
+        /// <summary>
+        ///   Writes the start of an indefinite-length map (major type 5)
+        /// </summary>
+        /// <param name="definiteLength">The definite length of the map.</param>
+        /// <exception cref="InvalidOperationException">
+        ///   Writing a new value exceeds the definite length of the parent data item --OR--
+        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   The written data is not accepted under the current conformance level
+        /// </exception>
+        /// <remarks>
+        ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
+        ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
+        /// </remarks>
         public void WriteStartMap()
         {
             if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
@@ -39,6 +65,12 @@ namespace System.Formats.Cbor
             _currentKeyOffset = _offset;
         }
 
+        /// <summary>
+        ///   Writes the end of a map (major type 5)
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   The written data is not accepted under the current conformance level
+        /// </exception>
         public void WriteEndMap()
         {
             if (_itemsWritten % 2 == 1)
