@@ -10,34 +10,37 @@
  * valid behaviour.
  */
 
-
-
-
 using System;
 using System.Diagnostics;
 using System.Security;
 using System.Runtime.InteropServices;
 
-public class Dummy
+public class AddMemoryPressureDummy
 {
+    private const long HeavyPressure = Int32.MaxValue;
+    private const int HeavyPressureCount = 2;
+
     private long _pressure = 0;
     private int _numTimes = 0;
 
-    public Dummy(bool heavy)
+    public AddMemoryPressureDummy(bool heavy)
     {
         if (heavy)
         {
-            _pressure = Int32.MaxValue;
-            _numTimes = 2;
+            _pressure = HeavyPressure;
+            _numTimes = HeavyPressureCount;
             for (int i = 0; i < _numTimes; i++)
                 GC.AddMemoryPressure(_pressure);
         }
     }
 
-    ~Dummy()
+    public static void RemovePressure(bool heavy)
     {
-        for (int i = 0; i < _numTimes; i++)
-            GC.RemoveMemoryPressure(_pressure);
+        if (heavy)
+        {
+            for (int i = 0; i < HeavyPressureCount; i++)
+                GC.RemoveMemoryPressure(HeavyPressure);
+        }
     }
 }
 
@@ -47,12 +50,6 @@ public class AddMemoryPressureTest
 
     private long[] _negValues = { 0, -1, Int32.MinValue - (long)1, Int64.MinValue / (long)2, Int64.MinValue };
     private long[] _largeValues = { Int32.MaxValue + (long)1, Int64.MaxValue };
-
-
-    private AddMemoryPressureTest()
-    {
-    }
-
 
     public bool TooSmallTest()
     {
@@ -84,7 +81,6 @@ public class AddMemoryPressureTest
             Console.WriteLine("TooSmallTest Passed");
         return retVal;
     }
-
 
     public bool TooLargeTest()
     {
@@ -132,7 +128,6 @@ public class AddMemoryPressureTest
         return retVal;
     }
 
-
     public bool StressTest()
     {
         TestCount++;
@@ -140,24 +135,18 @@ public class AddMemoryPressureTest
         Console.WriteLine("StressTest Started...");
 
         int gcCount1 = createDummies(true);
-
-
         int gcCount2 = createDummies(false);
 
         Console.WriteLine("{0} {1}", gcCount1, gcCount2);
         if (gcCount1 > gcCount2)
         {
-            Console.WriteLine("StressTest Passed");
-            Console.WriteLine();
+            Console.WriteLine("StressTest Passed\n");
             return true;
         }
 
-        Console.WriteLine("StressTest Failed");
-
-        Console.WriteLine();
+        Console.WriteLine($"StressTest Failed: {gcCount1} {gcCount2}\n");
         return false;
     }
-
 
     private int createDummies(bool heavy)
     {
@@ -165,17 +154,13 @@ public class AddMemoryPressureTest
 
         for (int i = 0; i < 100; i++)
         {
-            Dummy dummy = new Dummy(heavy);
-            int gen = GC.GetGeneration(dummy);
-            if (gen != 0)
-            {
-                Console.WriteLine("Warning: newly-allocated dummy ended up in gen {0}", gen);
-            }
+            AddMemoryPressureDummy dummy = new AddMemoryPressureDummy(heavy);
+            GC.GetGeneration(dummy);
+            AddMemoryPressureDummy.RemovePressure(heavy);
         }
 
         return GC.CollectionCount(0) - gcCount;
     }
-
 
     public bool RunTest()
     {
@@ -192,7 +177,6 @@ public class AddMemoryPressureTest
 
         return (passCount == TestCount);
     }
-
 
     public static int Main()
     {
