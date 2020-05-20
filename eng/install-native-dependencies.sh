@@ -10,6 +10,7 @@ if [ "$1" = "Linux" ]; then
         exit 1;
     fi
 elif [ "$1" = "OSX" ]; then
+    brew deps --tree --installed
     brew update
     brew upgrade
     if [ "$?" != "0" ]; then
