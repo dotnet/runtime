@@ -2818,6 +2818,7 @@ public:
                 //
                 ValueNumStore* vnStore = m_pCompiler->vnStore;
                 cse                    = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+                cse->SetDoNotCSE();
 
                 // Assign the ssa num for the use. Note it may be the reserved num.
                 cse->AsLclVarCommon()->SetSsaNum(cseSsaNum);
@@ -3005,6 +3006,7 @@ public:
                 /* Create a reference to the CSE temp */
                 GenTree* ref  = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
                 ref->gtVNPair = val->gtVNPair; // The new 'ref' is the same as 'val'
+                ref->SetDoNotCSE();
 
                 // Assign the ssa num for the ref use. Note it may be the reserved num.
                 ref->AsLclVarCommon()->SetSsaNum(cseSsaNum);
