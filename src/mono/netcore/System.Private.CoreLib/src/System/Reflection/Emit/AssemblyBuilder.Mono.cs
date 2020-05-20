@@ -222,7 +222,6 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
-
         [PreserveDependency("RuntimeResolve", "System.Reflection.Emit.ModuleBuilder")]
         internal AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
         {
@@ -409,8 +408,10 @@ namespace System.Reflection.Emit
             /*
             Only update the native list of custom attributes if we're adding one that is known to change dynamic execution behavior.
             */
-            if (customBuilder.Ctor != null && customBuilder.Ctor.DeclaringType == typeof(System.Runtime.CompilerServices.RuntimeCompatibilityAttribute))
-                UpdateNativeCustomAttributes(this);
+            //if (customBuilder.Ctor != null && customBuilder.Ctor.DeclaringType == typeof(System.Runtime.CompilerServices.RuntimeCompatibilityAttribute))
+            UpdateNativeCustomAttributes(this);
+
+            ModuleBuilder.build_metadata(manifest_module);
         }
 
         [ComVisible(true)]

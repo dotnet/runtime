@@ -2126,8 +2126,6 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb, MonoError *error
 	return TRUE;
 }
 
-#ifndef DISABLE_REFLECTION_EMIT_SAVE
-
 /*
  * Insert into the metadata tables all the info about the TypeBuilder tb.
  * Data in the tables is inserted in a predefined order, since some tables need to be sorted.
@@ -2312,7 +2310,6 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	return TRUE;
 }
 
-
 /*
  * mono_image_build_metadata() will fill the info in all the needed metadata tables
  * for the modulebuilder @moduleb.
@@ -2482,16 +2479,6 @@ leave:
 
 	return is_ok (error);
 }
-
-#else /* DISABLE_REFLECTION_EMIT_SAVE */
-
-gboolean
-mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb, MonoError *error)
-{
-	g_error ("This mono runtime was configured with --enable-minimal=reflection_emit_save, so saving of dynamic assemblies is not supported.");
-}
-
-#endif /* DISABLE_REFLECTION_EMIT_SAVE */
 
 #ifndef DISABLE_REFLECTION_EMIT_SAVE
 

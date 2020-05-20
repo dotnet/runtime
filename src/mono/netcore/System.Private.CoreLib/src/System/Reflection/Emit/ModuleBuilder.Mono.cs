@@ -82,6 +82,9 @@ namespace System.Reflection.Emit
         private static extern void basic_init(ModuleBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void build_metadata(ModuleBuilder mb);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void set_wrappers_type(ModuleBuilder mb, Type? ab);
 
         internal ModuleBuilder(AssemblyBuilder assb, string name, bool emitSymbolInfo)

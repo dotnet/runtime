@@ -381,7 +381,6 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 		return;
 
 	ainfo = mono_custom_attrs_from_builders (image, image, cattrs);
-
 	mono_loader_lock ();
 	tmp = (MonoCustomAttrInfo *)mono_image_property_lookup (image, obj, MONO_PROP_DYNAMIC_CATTR);
 	if (tmp)
@@ -437,6 +436,7 @@ mono_reflection_resolution_scope_from_image (MonoDynamicImage *assembly, MonoIma
 		mono_metadata_decode_row (&image->tables [MONO_TABLE_ASSEMBLY], 0, cols, MONO_ASSEMBLY_SIZE);
 	}
 
+	printf("updating assemblyref for %s (adding %s)\n", assembly->image.assembly_name, image->assembly_name);
 	table = &assembly->tables [MONO_TABLE_ASSEMBLYREF];
 	token = table->next_idx ++;
 	table->rows ++;
@@ -450,6 +450,7 @@ mono_reflection_resolution_scope_from_image (MonoDynamicImage *assembly, MonoIma
 	values [MONO_ASSEMBLYREF_FLAGS] = 0;
 	values [MONO_ASSEMBLYREF_CULTURE] = 0;
 	values [MONO_ASSEMBLYREF_HASH_VALUE] = 0;
+	printf("now assemblyref counts is %d\n", table->rows);
 
 	if (strcmp ("", image->assembly->aname.culture)) {
 		values [MONO_ASSEMBLYREF_CULTURE] = string_heap_insert (&assembly->sheap,
@@ -4634,13 +4635,13 @@ ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilderHandle mb, HANDL
 {
 	mono_image_create_pefile (MONO_HANDLE_RAW (mb), file, error);
 }
+#endif
 
 void
 ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilderHandle mb, MonoError* error)
 {
 	mono_image_build_metadata (MONO_HANDLE_RAW (mb), error);
 }
-#endif
 
 void
 ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, guint32 token, MonoError *error)
