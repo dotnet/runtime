@@ -9294,6 +9294,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> ShiftRightLogicalRoundedAdd(Vector128<ulong> addend, Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedAdd(addend, value, count);
 
         /// <summary>
+        /// uint64x1_t vrsra_n_u64 (uint64x1_t a, uint64x1_t b, const int n)
+        ///   A32: VRSRA.U64 Dd, Dm, #n
+        ///   A64: URSRA Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightLogicalRoundedAddScalar(Vector64<long> addend, Vector64<long> value, byte count) => ShiftRightLogicalRoundedAddScalar(addend, value, count);
+
+        /// <summary>
+        /// uint64x1_t vrsra_n_u64 (uint64x1_t a, uint64x1_t b, const int n)
+        ///   A32: VRSRA.U64 Dd, Dm, #n
+        ///   A64: URSRA Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftRightLogicalRoundedAddScalar(Vector64<ulong> addend, Vector64<ulong> value, byte count) => ShiftRightLogicalRoundedAddScalar(addend, value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
