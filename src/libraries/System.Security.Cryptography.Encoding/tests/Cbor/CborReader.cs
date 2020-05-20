@@ -295,7 +295,7 @@ namespace System.Formats.Cbor
                         break;
                     }
 
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, nextByte.MajorType));
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, (int)nextByte.MajorType));
             }
 
             return nextByte;
@@ -307,7 +307,7 @@ namespace System.Formats.Cbor
 
             if (expectedType != result.MajorType)
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, result.MajorType));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, (int)result.MajorType));
             }
 
             return result;
@@ -360,7 +360,7 @@ namespace System.Formats.Cbor
 
             if (expectedType != _currentMajorType)
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, _currentMajorType.Value));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)_currentMajorType.Value));
             }
 
             if (_definiteLength - _itemsWritten > 0)

@@ -270,7 +270,14 @@ namespace System.Formats.Cbor
             // Validate that the pop operation can be performed
             if (typeToPop != _currentMajorType)
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, _currentMajorType));
+                if (_currentMajorType.HasValue)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)_currentMajorType));
+                }
+                else
+                {
+                    throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
+                }
             }
 
             Debug.Assert(_nestedDataItems?.Count > 0); // implied by previous check
@@ -278,7 +285,7 @@ namespace System.Formats.Cbor
             if (_isTagContext)
             {
                 // writer expecting value after a tag data item , cannot pop the current context
-                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, CborMajorType.Tag));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)CborMajorType.Tag));
             }
 
             if (_definiteLength - _itemsWritten > 0)
