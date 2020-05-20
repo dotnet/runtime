@@ -1399,6 +1399,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> ShiftRightArithmeticNarrowingSaturateUnsignedScalar(Vector64<long> value, byte count) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// int16_t vqrshrns_n_s32 (int32_t a, const int n)
+            ///   A64: SQRSHRN Hd, Sn, #n
+            /// </summary>
+            public static Vector64<short> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqrshrnd_n_s64 (int64_t a, const int n)
+            ///   A64: SQRSHRN Sd, Dn, #n
+            /// </summary>
+            public static Vector64<int> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<long> value, byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vqrshrnh_n_s16 (int16_t a, const int n)
+            ///   A64: SQRSHRN Bd, Hn, #n
+            /// </summary>
+            public static Vector64<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateScalar(Vector64<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
