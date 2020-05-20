@@ -226,7 +226,13 @@ namespace System.Text.Json.Serialization.Converters
             else
             {
                 // todo: optimize implementation here by leveraging https://github.com/dotnet/runtime/issues/934.
-                string[] enumValues = value.Split(ValueSeparator);
+                string[] enumValues = value.Split(
+#if BUILDING_INBOX_LIBRARY
+                    ValueSeparator
+#else
+                    new string[] { ValueSeparator }, StringSplitOptions.None
+#endif
+                    );
 
                 for (int i = 0; i < enumValues.Length; i++)
                 {
