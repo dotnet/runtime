@@ -8615,6 +8615,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> ShiftRightArithmeticRoundedAdd(Vector128<sbyte> addend, Vector128<sbyte> value, byte count) => ShiftRightArithmeticRoundedAdd(addend, value, count);
 
         /// <summary>
+        /// int64x1_t vrsra_n_s64 (int64x1_t a, int64x1_t b, const int n)
+        ///   A32: VRSRA.S64 Dd, Dm, #n
+        ///   A64: SRSRA Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightArithmeticRoundedAddScalar(Vector64<long> addend, Vector64<long> value, byte count) => ShiftRightArithmeticRoundedAddScalar(addend, value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
