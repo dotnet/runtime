@@ -18,8 +18,6 @@
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
-    <!-- Upgrade compiler version to work around build failures: https://github.com/dotnet/runtime/issues/34417. -->
-    <MicrosoftNetCompilersToolsetVersion>3.7.0-2.20258.1</MicrosoftNetCompilersToolsetVersion>
     <!-- Blob storage container that has the "Latest" channel to publish to. -->
     <ContainerName>dotnet</ContainerName>
     <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
