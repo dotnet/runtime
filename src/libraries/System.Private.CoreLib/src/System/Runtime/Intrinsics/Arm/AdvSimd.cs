@@ -8972,6 +8972,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<uint> ShiftRightLogicalNarrowingLower(Vector128<ulong> value, byte count) => ShiftRightLogicalNarrowingLower(value, count);
 
         /// <summary>
+        /// uint8x8_t vqshrn_n_u16 (uint16x8_t a, const int n)
+        ///   A32: VQSHRN.U16 Dd, Qm, #n
+        ///   A64: UQSHRN Vd.8B, Vn.8H, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalNarrowingSaturateLower(Vector128<ushort> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+
+        /// <summary>
+        /// uint16x4_t vqshrn_n_u32 (uint32x4_t a, const int n)
+        ///   A32: VQSHRN.U32 Dd, Qm, #n
+        ///   A64: UQSHRN Vd.4H, Vn.4S, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightLogicalNarrowingSaturateLower(Vector128<int> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+
+        /// <summary>
+        /// uint32x2_t vqshrn_n_u64 (uint64x2_t a, const int n)
+        ///   A32: VQSHRN.U64 Dd, Qm, #n
+        ///   A64: UQSHRN Vd.2S, Vn.2D, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightLogicalNarrowingSaturateLower(Vector128<long> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+
+        /// <summary>
+        /// uint8x8_t vqshrn_n_u16 (uint16x8_t a, const int n)
+        ///   A32: VQSHRN.U16 Dd, Qm, #n
+        ///   A64: UQSHRN Vd.8B, Vn.8H, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogicalNarrowingSaturateLower(Vector128<short> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+
+        /// <summary>
+        /// uint16x4_t vqshrn_n_u32 (uint32x4_t a, const int n)
+        ///   A32: VQSHRN.U32 Dd, Qm, #n
+        ///   A64: UQSHRN Vd.4H, Vn.4S, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalNarrowingSaturateLower(Vector128<uint> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+
+        /// <summary>
+        /// uint32x2_t vqshrn_n_u64 (uint64x2_t a, const int n)
+        ///   A32: VQSHRN.U64 Dd, Qm, #n
+        ///   A64: UQSHRN Vd.2S, Vn.2D, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalNarrowingSaturateLower(Vector128<ulong> value, byte count) => ShiftRightLogicalNarrowingSaturateLower(value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
