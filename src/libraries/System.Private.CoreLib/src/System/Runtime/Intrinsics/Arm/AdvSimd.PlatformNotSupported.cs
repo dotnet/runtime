@@ -8431,6 +8431,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<long> ShiftRightArithmeticAddScalar(Vector64<long> addend, Vector64<long> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int16x4_t vqshrn_n_s32 (int32x4_t a, const int n)
+        ///   A32: VQSHRN.S32 Dd, Qm, #n
+        ///   A64: SQSHRN Vd.4H, Vn.4S, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightArithmeticNarrowingSaturateLower(Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqshrn_n_s64 (int64x2_t a, const int n)
+        ///   A32: VQSHRN.S64 Dd, Qm, #n
+        ///   A64: SQSHRN Vd.2S, Vn.2D, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightArithmeticNarrowingSaturateLower(Vector128<long> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vqshrn_n_s16 (int16x8_t a, const int n)
+        ///   A32: VQSHRN.S16 Dd, Qm, #n
+        ///   A64: SQSHRN Vd.8B, Vn.8H, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightArithmeticNarrowingSaturateLower(Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
