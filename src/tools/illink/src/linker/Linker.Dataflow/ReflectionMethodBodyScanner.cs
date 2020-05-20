@@ -21,21 +21,46 @@ namespace Mono.Linker.Dataflow
 		readonly MarkStep _markStep;
 		readonly FlowAnnotations _flowAnnotations;
 
-		public static bool RequiresReflectionMethodBodyScanner (FlowAnnotations flowAnnotations, MethodReference method)
+		public static bool RequiresReflectionMethodBodyScannerForCallSite (LinkContext context, FlowAnnotations flowAnnotations, MethodReference calledMethod)
 		{
-			MethodDefinition methodDefinition = method.Resolve ();
+			MethodDefinition methodDefinition = calledMethod.Resolve ();
 			if (methodDefinition != null) {
-				return GetIntrinsicIdForMethod (methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel || flowAnnotations.RequiresDataFlowAnalysis (methodDefinition);
+				return
+					GetIntrinsicIdForMethod (methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
+					flowAnnotations.RequiresDataFlowAnalysis (methodDefinition) ||
+					context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (methodDefinition);
 			}
 
 			return false;
 		}
 
-		public static bool RequiresReflectionMethodBodyScanner (FlowAnnotations flowAnnotations, FieldReference field)
+		public static bool RequiresReflectionMethodBodyScannerForMethodBody (FlowAnnotations flowAnnotations, MethodReference method)
+		{
+			MethodDefinition methodDefinition = method.Resolve ();
+			if (methodDefinition != null) {
+				return
+					GetIntrinsicIdForMethod (methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
+					flowAnnotations.RequiresDataFlowAnalysis (methodDefinition);
+			}
+
+			return false;
+		}
+
+		public static bool RequiresReflectionMethodBodyScannerForAccess (FlowAnnotations flowAnnotations, FieldReference field)
 		{
 			FieldDefinition fieldDefinition = field.Resolve ();
 			if (fieldDefinition != null)
 				return flowAnnotations.RequiresDataFlowAnalysis (fieldDefinition);
+
+			return false;
+		}
+
+		public static bool AutomaticallySuppressReflectionMethodBodyScannerForMethod (LinkContext context, MethodReference method)
+		{
+			MethodDefinition methodDefinition = method.Resolve ();
+			if (methodDefinition != null) {
+				return context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (methodDefinition);
+			}
 
 			return false;
 		}
@@ -406,7 +431,6 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			try {
-
 
 				bool requiresDataFlowAnalysis = _flowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
 				returnValueDynamicallyAccessedMemberKinds = requiresDataFlowAnalysis ?
@@ -973,6 +997,18 @@ namespace Mono.Linker.Dataflow
 						}
 
 						reflectionContext.RecordHandledPattern ();
+					}
+
+					if (_context.Annotations.TryGetLinkerAttribute (calledMethodDefinition, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode)) {
+						string message =
+							$"Calling '{calledMethodDefinition}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
+							$"{requiresUnreferencedCode.Message}.";
+
+						if (requiresUnreferencedCode.Url != null) {
+							message += " " + requiresUnreferencedCode.Url;
+						}
+
+						_context.LogMessage (MessageContainer.CreateWarningMessage (message, 2026, origin: MessageOrigin.TryGetOrigin (callingMethodBody.Method, operation.Offset)));
 					}
 
 					// To get good reporting of errors we need to track the origin of the value for all method calls

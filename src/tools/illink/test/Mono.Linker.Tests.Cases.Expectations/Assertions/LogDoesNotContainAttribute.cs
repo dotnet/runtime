@@ -2,7 +2,10 @@
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+	[AttributeUsage (
+		AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Field,
+		AllowMultiple = true,
+		Inherited = false)]
 	public class LogDoesNotContainAttribute : EnableLoggerAttribute
 	{
 		public LogDoesNotContainAttribute (string message)

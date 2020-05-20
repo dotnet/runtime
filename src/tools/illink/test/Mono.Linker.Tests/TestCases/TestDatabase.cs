@@ -168,6 +168,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("DataFlow");
 		}
 
+		public static IEnumerable<TestCaseData> RequiresCapabilityTests ()
+		{
+			return NUnitCasesBySuiteName ("RequiresCapability");
+		}
+
 		public static IEnumerable<TestCaseData> LoggingTests ()
 		{
 			return NUnitCasesBySuiteName ("Logging");

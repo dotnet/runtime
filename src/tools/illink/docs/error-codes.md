@@ -158,3 +158,15 @@ error and warning codes.
 #### `IL2025`: Duplicate preserve of 'member' in 'XML document location'
 
 - The XML descriptor marks for preservation the member or type 'member' more than once.
+
+#### `IL2026`: Calling method annotated with `RequiresUnreferencedCodeAttribute`
+
+- The linker found a call to a method which is annotated with 'RequiresUnreferencedCodeAttribute' which can break functionality of a trimmed application.
+
+#### `IL2027`: Attribute 'attribute' should only be used once on 'method'.
+
+- The linker found multiple instances of attribute 'attribute' on 'method'. This attribute is only allowed to have one instance, linker will only use the fist instance and ignore the rest.
+
+#### `IL2028`: Attribute 'attribute' on 'method' doesn't have a required constructor argument.
+
+- The linker found an instance of attribute 'attribute' on 'method' but it lacks a required constructor argument. Linker will ignore this attribute.

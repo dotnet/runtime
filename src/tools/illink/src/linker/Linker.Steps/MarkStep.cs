@@ -2460,9 +2460,13 @@ namespace Mono.Linker.Steps
 				if (eh.HandlerType == ExceptionHandlerType.Catch)
 					MarkType (eh.CatchType, new DependencyInfo (DependencyKind.CatchType, body.Method));
 
-			bool requiresReflectionMethodBodyScanner = ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, body.Method);
+			bool requiresReflectionMethodBodyScanner =
+				ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (_flowAnnotations, body.Method);
 			foreach (Instruction instruction in body.Instructions)
 				MarkInstruction (instruction, body.Method, ref requiresReflectionMethodBodyScanner);
+
+			if (ReflectionMethodBodyScanner.AutomaticallySuppressReflectionMethodBodyScannerForMethod (_context, body.Method))
+				requiresReflectionMethodBodyScanner = false;
 
 			MarkInterfacesNeededByBodyStack (body);
 
@@ -2503,7 +2507,8 @@ namespace Mono.Linker.Steps
 				case Code.Stsfld:
 				case Code.Ldflda: // Field address loads (as those can be used to store values to annotated field and thus must be checked)
 				case Code.Ldsflda:
-					requiresReflectionMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, (FieldReference) instruction.Operand);
+					requiresReflectionMethodBodyScanner |=
+						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess (_flowAnnotations, (FieldReference) instruction.Operand);
 					break;
 
 				default: // Other field operations are not interesting as they don't need to be checked
@@ -2523,7 +2528,8 @@ namespace Mono.Linker.Steps
 						Code.Ldftn => DependencyKind.Ldftn,
 						_ => throw new Exception ($"unexpected opcode {instruction.OpCode}")
 					};
-					requiresReflectionMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, (MethodReference) instruction.Operand);
+					requiresReflectionMethodBodyScanner |=
+						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (_context, _flowAnnotations, (MethodReference) instruction.Operand);
 					MarkMethod ((MethodReference) instruction.Operand, new DependencyInfo (dependencyKind, method));
 					break;
 				}

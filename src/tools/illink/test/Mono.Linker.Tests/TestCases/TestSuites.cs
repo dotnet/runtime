@@ -212,6 +212,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.RequiresCapabilityTests))]
+		public void RequiresCapabilityTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		protected virtual void Run (TestCase testCase)
 		{
 			var runner = new TestRunner (new ObjectFactory ());
