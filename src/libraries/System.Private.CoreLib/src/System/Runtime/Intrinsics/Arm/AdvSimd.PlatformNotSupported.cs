@@ -9523,6 +9523,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<short> SignExtendWideningLower(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int32x4_t vmovl_high_s16 (int16x8_t a)
+        ///   A32: VMOVL.S16 Qd, Dm+1
+        ///   A64: SXTL2 Vd.4S, Vn.8H
+        /// </summary>
+        public static Vector128<int> SignExtendWideningUpper(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmovl_high_s32 (int32x4_t a)
+        ///   A32: VMOVL.S32 Qd, Dm+1
+        ///   A64: SXTL2 Vd.2D, Vn.4S
+        /// </summary>
+        public static Vector128<long> SignExtendWideningUpper(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmovl_high_s8 (int8x16_t a)
+        ///   A32: VMOVL.S8 Qd, Dm+1
+        ///   A64: SXTL2 Vd.8H, Vn.16B
+        /// </summary>
+        public static Vector128<short> SignExtendWideningUpper(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
