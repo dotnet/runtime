@@ -4969,6 +4969,24 @@ call:;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_NEWOBJ_STRING) {
+			frame->ip = ip;
+
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
+
+			const int param_count = ip [2];
+			if (param_count) {
+				sp -= param_count;
+				memmove (sp + 2, sp, param_count * sizeof (stackval));
+			}
+
+			retval = sp;
+			++sp;
+			sp->data.p = NULL; // first parameter
+			is_void = TRUE;
+			ip += 3;
+			goto call;
+		}
 		MINT_IN_CASE(MINT_NEWOBJ_FAST) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [3]];
 			INIT_VTABLE (vtable);
@@ -5090,15 +5108,6 @@ call_newobj:
 			 */
 
 			g_assert (!m_class_is_valuetype (newobj_class));
-
-			// This branch could be avoided. Move it to transform, and use a new opcode NEWOBJ_STRING.
-			if (newobj_class == mono_defaults.string_class) {
-				retval = sp;
-				++sp;
-				sp->data.p = NULL; // first parameter
-				is_void = TRUE;
-				goto call;
-			}
 
 			MonoDomain* const domain = frame->imethod->domain;
 			MonoVTable *vtable = mono_class_vtable_checked (domain, newobj_class, error);
