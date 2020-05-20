@@ -8713,6 +8713,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<long> ShiftRightArithmeticRoundedScalar(Vector64<long> value, byte count) => ShiftRightArithmeticRoundedScalar(value, count);
 
         /// <summary>
+        /// int64x1_t vshr_n_s64 (int64x1_t a, const int n)
+        ///   A32: VSHR.S64 Dd, Dm, #n
+        ///   A64: SSHR Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightArithmeticScalar(Vector64<long> value, byte count) => ShiftRightArithmeticScalar(value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
