@@ -10502,5 +10502,47 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UXTL Vd.2D, Vn.2S
         /// </summary>
         public static Vector128<ulong> ZeroExtendWideningLower(Vector64<uint> value) => ZeroExtendWideningLower(value);
+
+        /// <summary>
+        /// uint16x8_t vmovl_high_u8 (uint8x16_t a)
+        ///   A32: VMOVL.U8 Qd, Dm+1
+        ///   A64: UXTL2 Vd.8H, Vn.16B
+        /// </summary>
+        public static Vector128<ushort> ZeroExtendWideningUpper(Vector128<byte> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// uint32x4_t vmovl_high_u16 (uint16x8_t a)
+        ///   A32: VMOVL.U16 Qd, Dm+1
+        ///   A64: UXTL2 Vd.4S, Vn.8H
+        /// </summary>
+        public static Vector128<int> ZeroExtendWideningUpper(Vector128<short> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// uint64x2_t vmovl_high_u32 (uint32x4_t a)
+        ///   A32: VMOVL.U32 Qd, Dm+1
+        ///   A64: UXTL2 Vd.2D, Vn.4S
+        /// </summary>
+        public static Vector128<long> ZeroExtendWideningUpper(Vector128<int> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// uint16x8_t vmovl_high_u8 (uint8x16_t a)
+        ///   A32: VMOVL.U8 Qd, Dm+1
+        ///   A64: UXTL2 Vd.8H, Vn.16B
+        /// </summary>
+        public static Vector128<short> ZeroExtendWideningUpper(Vector128<sbyte> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// uint32x4_t vmovl_high_u16 (uint16x8_t a)
+        ///   A32: VMOVL.U16 Qd, Dm+1
+        ///   A64: UXTL2 Vd.4S, Vn.8H
+        /// </summary>
+        public static Vector128<uint> ZeroExtendWideningUpper(Vector128<ushort> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// uint64x2_t vmovl_high_u32 (uint32x4_t a)
+        ///   A32: VMOVL.U32 Qd, Dm+1
+        ///   A64: UXTL2 Vd.2D, Vn.4S
+        /// </summary>
+        public static Vector128<ulong> ZeroExtendWideningUpper(Vector128<uint> value) => ZeroExtendWideningUpper(value);
     }
 }
