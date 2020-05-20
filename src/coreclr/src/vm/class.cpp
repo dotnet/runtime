@@ -975,6 +975,29 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
     RETURN;
 }
 
+// Checks if two types are compatible according to compatible-with as described in ECMA 335 I.8.7.1
+// Most of the checks are performed by the CanCastTo, but with some cases pre-filtered out.
+//
+/*static*/
+bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
+{
+    // Structs can be casted to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
+    bool isCastFromValueTypeToReferenceType = hType2.IsValueType() && !hType1.IsValueType();
+    if (isCastFromValueTypeToReferenceType)
+    {
+        return false;
+    }
+
+    // Nullable<T> can be casted to T, but this is not compatible according to ECMA I.8.7.1
+    bool isCastFromNullableOfTtoT = hType1.GetMethodTable()->IsNullable() && hType2.IsEquivalentTo(hType1.GetMethodTable()->GetInstantiation()[0]);
+    if (isCastFromNullableOfTtoT)
+    {
+        return false;
+    }
+
+    return hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), NULL);
+}
+
 /*static*/
 void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
 {
@@ -1067,10 +1090,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         {
             GCX_COOP();
 
-            // Structs can be casted to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
-            bool isCastFromValueTypeToReferenceType = hType2.IsValueType() && !hType1.IsValueType();
-
-            if (isCastFromValueTypeToReferenceType || !hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), NULL))
+            if (!IsCompatibleWith(hType1, hType2))
             {
                 SString strAssemblyName;
                 pMD->GetAssembly()->GetDisplayName(strAssemblyName);

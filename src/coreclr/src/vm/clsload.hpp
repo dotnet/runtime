@@ -975,6 +975,8 @@ private:
 
     static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
 
+    static bool IsCompatibleWith(TypeHandle hType1, TypeHandle hType2);
+
     // Create a non-canonical instantiation of a generic type based off the canonical instantiation
     // (For example, MethodTable for List<string> is based on the MethodTable for List<__Canon>)
     static TypeHandle CreateTypeHandleForNonCanonicalGenericInstantiation(TypeKey *pTypeKey,
