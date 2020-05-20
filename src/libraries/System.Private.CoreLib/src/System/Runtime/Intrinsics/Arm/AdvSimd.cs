@@ -9476,6 +9476,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> ShiftRightLogicalRoundedNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedNarrowingUpper(lower, value, count);
 
         /// <summary>
+        /// uint64x1_t vrshr_n_u64 (uint64x1_t a, const int n)
+        ///   A32: VRSHR.U64 Dd, Dm, #n
+        ///   A64: URSHR Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightLogicalRoundedScalar(Vector64<long> value, byte count) => ShiftRightLogicalRoundedScalar(value, count);
+
+        /// <summary>
+        /// uint64x1_t vrshr_n_u64 (uint64x1_t a, const int n)
+        ///   A32: VRSHR.U64 Dd, Dm, #n
+        ///   A64: URSHR Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftRightLogicalRoundedScalar(Vector64<ulong> value, byte count) => ShiftRightLogicalRoundedScalar(value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
