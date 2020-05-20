@@ -8916,6 +8916,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> ShiftRightLogicalAdd(Vector128<ulong> addend, Vector128<ulong> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
 
         /// <summary>
+        /// uint64x1_t vsra_n_u64 (uint64x1_t a, uint64x1_t b, const int n)
+        ///   A32: VSRA.U64 Dd, Dm, #n
+        ///   A64: USRA Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightLogicalAddScalar(Vector64<long> addend, Vector64<long> value, byte count) => ShiftRightLogicalAddScalar(addend, value, count);
+
+        /// <summary>
+        /// uint64x1_t vsra_n_u64 (uint64x1_t a, uint64x1_t b, const int n)
+        ///   A32: VSRA.U64 Dd, Dm, #n
+        ///   A64: USRA Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftRightLogicalAddScalar(Vector64<ulong> addend, Vector64<ulong> value, byte count) => ShiftRightLogicalAddScalar(addend, value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
