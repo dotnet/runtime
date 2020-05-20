@@ -595,8 +595,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			string allMessages = string.Join (Environment.NewLine, logger.Messages.Select (mc => mc.Message));
 
-			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
-				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes) {
+			foreach (var testType in original.AllDefinedTypes ()) {
+				foreach (var attr in testType.CustomAttributes.Concat (testType.AllMembers ().SelectMany (m => m.CustomAttributes))) {
 					if (attr.AttributeType.Resolve ().Name == nameof (LogContainsAttribute)) {
 						var expectedMessage = (string) attr.ConstructorArguments[0].Value;
 

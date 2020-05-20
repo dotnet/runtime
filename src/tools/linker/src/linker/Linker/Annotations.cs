@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -54,6 +55,7 @@ namespace Mono.Linker
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
+		readonly Dictionary<MethodDefinition, LinkerAttributesInformation> method_linker_attributes = new Dictionary<MethodDefinition, LinkerAttributesInformation> ();
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
@@ -425,6 +427,40 @@ namespace Mono.Linker
 		public bool SetPreservedStaticCtor (TypeDefinition type)
 		{
 			return marked_types_with_cctor.Add (type);
+		}
+
+		public bool HasLinkerAttribute<T> (MethodDefinition method) where T : Attribute
+		{
+			if (!method_linker_attributes.TryGetValue (method, out var linkerAttributeInformation)) {
+				linkerAttributeInformation = new LinkerAttributesInformation (context, method);
+				method_linker_attributes.Add (method, linkerAttributeInformation);
+			}
+
+			return linkerAttributeInformation.HasAttribute<T> ();
+		}
+
+		public IEnumerable<T> GetLinkerAttributes<T> (MethodDefinition method) where T : Attribute
+		{
+			if (!method_linker_attributes.TryGetValue (method, out var linkerAttributeInformation)) {
+				linkerAttributeInformation = new LinkerAttributesInformation (context, method);
+				method_linker_attributes.Add (method, linkerAttributeInformation);
+			}
+
+			return linkerAttributeInformation.GetAttributes<T> ();
+		}
+
+		public bool TryGetLinkerAttribute<T> (MethodDefinition method, out T attribute) where T : Attribute
+		{
+			var attributes = GetLinkerAttributes<T> (method);
+			if (attributes.Count () > 1) {
+				context.LogMessage (MessageContainer.CreateWarningMessage (
+					$"Attribute '{typeof (T).FullName}' should only be used once on '{method}'.",
+					2027,
+					origin: MessageOrigin.TryGetOrigin (method, 0)));
+			}
+
+			attribute = attributes.FirstOrDefault ();
+			return attribute != null;
 		}
 	}
 }

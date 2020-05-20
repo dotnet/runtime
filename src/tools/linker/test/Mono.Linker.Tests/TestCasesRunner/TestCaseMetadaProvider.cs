@@ -77,7 +77,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (_testCaseTypeDefinition.CustomAttributes.Any (attr =>
-				attr.AttributeType.Name == nameof (LogContainsAttribute) || attr.AttributeType.Name == nameof (LogDoesNotContainAttribute))) {
+				attr.AttributeType.Name == nameof (LogContainsAttribute) || attr.AttributeType.Name == nameof (LogDoesNotContainAttribute)) ||
+				_testCaseTypeDefinition.AllMembers ().Any (method => method.CustomAttributes.Any (attr =>
+				attr.AttributeType.Name == nameof (LogContainsAttribute) || attr.AttributeType.Name == nameof (LogDoesNotContainAttribute)))) {
 				tclo.AdditionalArguments.Add (new KeyValuePair<string, string[]> ("--verbose", new string[] { }));
 			}
 
@@ -103,7 +105,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private bool ValidatesReflectionAccessPatterns (TypeDefinition testCaseTypeDefinition)
+		bool ValidatesReflectionAccessPatterns (TypeDefinition testCaseTypeDefinition)
 		{
 			if (testCaseTypeDefinition.HasNestedTypes) {
 				var nestedTypes = new Queue<TypeDefinition> (testCaseTypeDefinition.NestedTypes.ToList ());

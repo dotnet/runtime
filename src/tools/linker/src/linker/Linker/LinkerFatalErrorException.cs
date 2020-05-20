@@ -7,6 +7,18 @@ namespace Mono.Linker
 		public MessageContainer MessageContainer { get; }
 
 		/// <summary>
+		/// Represents an internal error that occured during link time which is not solvable by the user.
+		/// </summary>
+		/// <param name="internalErrorMessage">The additional message to attach to the error.
+		/// The main error message will be about internal error and make it clear this is not a user error.</param>
+		public LinkerFatalErrorException (string internalErrorMessage)
+			: this (MessageContainer.CreateErrorMessage (
+				"IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues \n" + internalErrorMessage,
+				1012))
+		{
+		}
+
+		/// <summary>
 		/// Represents a known error that occurred during link time which is solvable by the user.
 		/// </summary>
 		/// <param name="message">Error message with a description of what went wrong</param>
