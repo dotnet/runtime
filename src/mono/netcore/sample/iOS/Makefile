@@ -1,21 +1,20 @@
-MONO_CONFIG=Debug
-MONO_ARCH=x64
+MONO_CONFIG=Release
+MONO_ARCH=arm64
 DOTNET := ../../../../.././dotnet.sh
-USE_LLVM=True
+USE_LLVM=False
 
-# usage example:
-# 'make all MONO_ARCH=x64 MONO_CONFIG=Release' to build the app for simulator
-all: bundle
+all: runtimepack app
 
-program:
-	$(DOTNET) build -c $(MONO_CONFIG) Program.csproj
+TOOLS_DIR=../../../../../tools-local/tasks/mobile.tasks
+appbuilder:
+	$(DOTNET) build -c Release $(TOOLS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
+	$(DOTNET) build -c Release $(TOOLS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
 
-bundle: clean program
-	$(DOTNET) msbuild /t:BuildAppBundle /p:Configuration=$(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=$(USE_LLVM)
+runtimepack:
+	../../../../.././build.sh Mono+Libs -os iOS -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
-deploy-sim:
-	$(DOTNET) msbuild /t:IosDeployToSimulator /p:Configuration=$(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH)
+run: clean appbuilder
+	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH)
 
 clean:
 	rm -rf bin

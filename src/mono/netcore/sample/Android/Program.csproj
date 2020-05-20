@@ -4,8 +4,8 @@
     <OutputPath>bin</OutputPath>
     <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
-    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AndroidAppBuilderDir>
+    <RuntimePackDir>$(ArtifactsBinDir)lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
+    <AndroidAppBuilderDir>$(ArtifactsBinDir)AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)</AndroidAppBuilderDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <PublishTrimmed>true</PublishTrimmed>
     <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
