@@ -8515,6 +8515,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> ShiftRightArithmeticNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int16x4_t vrshr_n_s16 (int16x4_t a, const int n)
+        ///   A32: VRSHR.S16 Dd, Dm, #n
+        ///   A64: SRSHR Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightArithmeticRounded(Vector64<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vrshr_n_s32 (int32x2_t a, const int n)
+        ///   A32: VRSHR.S32 Dd, Dm, #n
+        ///   A64: SRSHR Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightArithmeticRounded(Vector64<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vrshr_n_s8 (int8x8_t a, const int n)
+        ///   A32: VRSHR.S8 Dd, Dm, #n
+        ///   A64: SRSHR Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightArithmeticRounded(Vector64<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vrshrq_n_s16 (int16x8_t a, const int n)
+        ///   A32: VRSHR.S16 Qd, Qm, #n
+        ///   A64: SRSHR Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmeticRounded(Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vrshrq_n_s32 (int32x4_t a, const int n)
+        ///   A32: VRSHR.S32 Qd, Qm, #n
+        ///   A64: SRSHR Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmeticRounded(Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vrshrq_n_s64 (int64x2_t a, const int n)
+        ///   A32: VRSHR.S64 Qd, Qm, #n
+        ///   A64: SRSHR Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightArithmeticRounded(Vector128<long> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vrshrq_n_s8 (int8x16_t a, const int n)
+        ///   A32: VRSHR.S8 Qd, Qm, #n
+        ///   A64: SRSHR Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmeticRounded(Vector128<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
