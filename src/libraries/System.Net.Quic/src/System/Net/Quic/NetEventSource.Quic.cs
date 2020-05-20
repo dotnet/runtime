@@ -115,7 +115,7 @@ namespace System.Net
         [NonEvent]
         public static void DatagramReceived(ManagedQuicConnection connection, ReadOnlySpan<byte> datagram)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled(EventLevel.Verbose, Keywords.Debug))
             {
                 Log.DatagramReceived(IdOf(connection), datagram.ToArray());
             }
@@ -130,7 +130,7 @@ namespace System.Net
         [NonEvent]
         public static void DatagramSent(ManagedQuicConnection connection, ReadOnlySpan<byte> datagram)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled(EventLevel.Verbose, Keywords.Debug))
             {
                 Log.DatagramSent(IdOf(connection), datagram.ToArray());
             }
