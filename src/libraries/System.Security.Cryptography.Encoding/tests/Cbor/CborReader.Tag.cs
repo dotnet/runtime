@@ -278,7 +278,7 @@ namespace System.Formats.Cbor
 
                 ReadEndArray();
 
-                return DecimalHelpers.Reconstruct(mantissa, exponent);
+                return CborWriter.DecimalHelpers.Reconstruct(mantissa, exponent);
             }
             catch
             {
