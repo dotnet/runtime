@@ -68,6 +68,7 @@
 #include "mini-gc.h"
 #include "mini-llvm.h"
 #include "mini-runtime.h"
+#include "interp/interp.h"
 
 static MonoMethod*
 try_get_method_nofail (MonoClass *klass, const char *method_name, int param_count, int flags)
@@ -8608,7 +8609,7 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 	if (gsharedvt_out && g_hash_table_lookup (acfg->gsharedvt_out_signatures, sig))
 		add_out = FALSE;
 
-	if (!add_in && !add_out)
+	if (!add_in && !add_out && !interp_in)
 		return;
 
 	if (mini_is_gsharedvt_variable_signature (sig))
@@ -8637,7 +8638,6 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 	if (interp_in) {
 		wrapper = mini_get_interp_in_wrapper (sig);
 		add_extra_method (acfg, wrapper);
-		//printf ("X: %s\n", mono_method_full_name (wrapper, 1));
 	}
 #endif
 }
@@ -8965,7 +8965,16 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		for (l = cfg->interp_in_signatures; l; l = l->next) {
 			MonoMethodSignature *sig = mono_metadata_signature_dup ((MonoMethodSignature*)l->data);
 
-			add_gsharedvt_wrappers (acfg, sig, TRUE, FALSE, FALSE);
+			/*
+			 * Interpreter methods in llvmonly+interp mode are called using gsharedvt_in wrappers,
+			 * since we already generate those in llvmonly mode. But methods with a large
+			 * number of arguments need special processing (see interp_create_method_pointer_llvmonly),
+			 * which only interp_in wrappers do.
+			 */
+			if (sig->param_count > MAX_INTERP_ENTRY_ARGS)
+				add_gsharedvt_wrappers (acfg, sig, FALSE, FALSE, TRUE);
+			else
+				add_gsharedvt_wrappers (acfg, sig, TRUE, FALSE, FALSE);
 		}
 	} else if (mono_aot_mode_is_full (&acfg->aot_opts) && mono_aot_mode_is_interp (&acfg->aot_opts)) {
 		/* The interpreter uses these wrappers to call aot-ed code */
