@@ -432,9 +432,9 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     char symbolVersion[MaxICUVersionStringWithSuffixLength + 1]="";
     char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
 
-    if (strlen(version) > MaxICUVersionStringLength)
+    if (strlen(version) > (size_t)MaxICUVersionStringLength)
     {
-        fprintf(stderr, "The resolved version \"%s\" from System.Globalization.AppLocalIcu switch has to be < %d chars long.\n", version, MaxICUVersionStringLength);
+        fprintf(stderr, "The resolved version \"%s\" from System.Globalization.AppLocalIcu switch has to be < %zu chars long.\n", version, (size_t)MaxICUVersionStringLength);
         abort();
     }
 
@@ -442,10 +442,10 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
     if (suffix != NULL)
     {
-        int suffixAllowedSize = SYMBOL_CUSTOM_SUFFIX_SIZE - 2; // SYMBOL_CUSTOM_SUFFIX_SIZE considers `_` and `\0`.
+        size_t suffixAllowedSize = SYMBOL_CUSTOM_SUFFIX_SIZE - 2; // SYMBOL_CUSTOM_SUFFIX_SIZE considers `_` and `\0`.
         if (strlen(suffix) > suffixAllowedSize)
         {
-            fprintf(stderr, "The resolved suffix \"%s\" from System.Globalization.AppLocalIcu switch has to be < %d chars long.\n", suffix, suffixAllowedSize);
+            fprintf(stderr, "The resolved suffix \"%s\" from System.Globalization.AppLocalIcu switch has to be < %zu chars long.\n", suffix, suffixAllowedSize);
             abort();
         }
 
