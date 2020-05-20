@@ -9392,6 +9392,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
+        /// uint8x16_t vqrshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
+        ///   A32: VQRSHRN.U16 Dd+1, Dn, #n
+        ///   A64: UQRSHRN2 Vd.16B, Vn.8H, #n
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<byte> lower, Vector128<ushort> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+
+        /// <summary>
+        /// uint16x8_t vqrshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
+        ///   A32: VQRSHRN.U32 Dd+1, Dn, #n
+        ///   A64: UQRSHRN2 Vd.8H, Vn.4S, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+
+        /// <summary>
+        /// uint32x4_t vqrshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
+        ///   A32: VQRSHRN.U64 Dd+1, Dn, #n
+        ///   A64: UQRSHRN2 Vd.4S, Vn.2D, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+
+        /// <summary>
+        /// uint8x16_t vqrshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
+        ///   A32: VQRSHRN.U16 Dd+1, Dn, #n
+        ///   A64: UQRSHRN2 Vd.16B, Vn.8H, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+
+        /// <summary>
+        /// uint16x8_t vqrshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
+        ///   A32: VQRSHRN.U32 Dd+1, Dn, #n
+        ///   A64: UQRSHRN2 Vd.8H, Vn.4S, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<ushort> lower, Vector128<uint> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+
+        /// <summary>
+        /// uint32x4_t vqrshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
+        ///   A32: VQRSHRN.U64 Dd+1, Dn, #n
+        ///   A64: UQRSHRN2 Vd.4S, Vn.2D, #n
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) => ShiftRightLogicalRoundedNarrowingSaturateUpper(lower, value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
