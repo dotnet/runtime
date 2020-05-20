@@ -1273,9 +1273,8 @@ void QCALLTYPE GCInterface::_AddMemoryPressure(UINT64 bytesAllocated)
 {
     QCALL_CONTRACT;
 
-    // AddMemoryPressure could cause a GC, so we need a frame
     BEGIN_QCALL;
-    AddMemoryPressure(bytesAllocated);
+    NewAddMemoryPressure(bytesAllocated);
     END_QCALL;
 }
 
@@ -1475,7 +1474,7 @@ void QCALLTYPE GCInterface::_RemoveMemoryPressure(UINT64 bytesAllocated)
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    RemoveMemoryPressure(bytesAllocated);
+    NewRemoveMemoryPressure(bytesAllocated);
     END_QCALL;
 }
 
