@@ -4267,6 +4267,7 @@ VOID EtwCallbackCommon(
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
+        ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
     }
 
     if (
@@ -7611,6 +7612,11 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
         GC_NOTRIGGER;
     }
     CONTRACTL_END
+
+    if (!Context.EventPipeProvider.IsEnabled)
+    {
+        return false;
+    }
 
     if (Level <= Context.EventPipeProvider.Level || Context.EventPipeProvider.Level == 0)
     {

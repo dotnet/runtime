@@ -434,6 +434,15 @@ void EventPipe::Disable(EventPipeSessionID id)
         if (s_numberOfSessions > 0)
             DisableInternal(id, pEventPipeProviderCallbackDataQueue);
     });
+
+#ifdef DEBUG
+    if (s_numberOfSessions == 0)
+    {
+        _ASSERTE(!MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+        _ASSERTE(!MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+        _ASSERTE(!MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+    }
+#endif
 }
 
 static void LogProcessInformationEvent(EventPipeEventSource &eventSource)
