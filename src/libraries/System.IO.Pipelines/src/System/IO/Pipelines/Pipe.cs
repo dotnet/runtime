@@ -440,6 +440,7 @@ namespace System.IO.Pipelines
 
             CompletionData completionData = default;
 
+            bool success;
             lock (_sync)
             {
                 var examinedEverything = false;
@@ -538,10 +539,13 @@ namespace System.IO.Pipelines
                     _readerAwaitable.SetUncompleted();
                 }
 
-                _operationState.EndRead();
+                success = _operationState.TryEndRead();
             }
 
-            TrySchedule(_writerScheduler, completionData);
+            if (!success)
+            {
+                TrySchedule(_writerScheduler, completionData);
+            }
 
             if (returnStart != null && returnStart != returnEnd)
             {
@@ -565,6 +569,12 @@ namespace System.IO.Pipelines
                     } while (returnStart != null && returnStart != returnEnd);
                 }
             }
+
+            // Return the memory blocks before throwing the exception.
+            if (!success)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoReadToComplete();
+            }
         }
 
         internal void CompleteReader(Exception? exception)
@@ -578,7 +588,10 @@ namespace System.IO.Pipelines
                 // If we're reading, treat clean up that state before continuting
                 if (_operationState.IsReadingActive)
                 {
-                    _operationState.EndRead();
+                    if (!_operationState.TryEndRead())
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_NoReadToComplete();
+                    }
                 }
 
                 // REVIEW: We should consider cleaning up all of the allocated memory
