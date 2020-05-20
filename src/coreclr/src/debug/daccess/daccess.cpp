@@ -6604,7 +6604,7 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEFile *peFile,
 
 #if defined(FEATURE_CORESYSTEM)
 /* static */
-// We extract "ni.dll from the NGEM image name to obtain the IL image name.
+// We extract "ni.dll from the NGEN image name to obtain the IL image name.
 // In the end we add given ilExtension.
 // This dependecy is based on Apollo installer behavior.
 bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
