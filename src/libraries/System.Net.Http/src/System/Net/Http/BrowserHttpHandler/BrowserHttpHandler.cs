@@ -12,11 +12,11 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-using JSObject = Interop.JavaScript.JSObject;
-using JSException = Interop.JavaScript.JSException;
-using HostObject = Interop.JavaScript.HostObject;
-using Uint8Array = Interop.JavaScript.Uint8Array;
-using Function = Interop.JavaScript.Function;
+using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
+using JSException = System.Runtime.InteropServices.JavaScript.JSException;
+using HostObject = System.Runtime.InteropServices.JavaScript.HostObject;
+using Uint8Array = System.Runtime.InteropServices.JavaScript.Uint8Array;
+using Function = System.Runtime.InteropServices.JavaScript.Function;
 
 namespace System.Net.Http
 {
@@ -30,8 +30,8 @@ namespace System.Net.Http
     internal sealed class BrowserHttpHandler : HttpMessageHandler
     {
         // This partial implementation contains members common to Browser WebAssembly running on .NET Core.
-        private static readonly JSObject? s_fetch = (JSObject)Interop.Runtime.GetGlobalObject("fetch");
-        private static readonly JSObject? s_window = (JSObject)Interop.Runtime.GetGlobalObject("window");
+        private static readonly JSObject? s_fetch = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("fetch");
+        private static readonly JSObject? s_window = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("window");
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -202,7 +202,7 @@ namespace System.Net.Http
                     abortCts.Dispose();
                 }));
 
-                var args = new Interop.JavaScript.Array();
+                var args = new System.Runtime.InteropServices.JavaScript.Array();
                 if (request.RequestUri != null)
                 {
                     args.Push(request.RequestUri.ToString());
@@ -248,7 +248,7 @@ namespace System.Net.Http
                                 nextResult = (JSObject)entriesIterator.Invoke("next");
                                 while (!(bool)nextResult.GetObjectProperty("done"))
                                 {
-                                    using (var resultValue = (Interop.JavaScript.Array)nextResult.GetObjectProperty("value"))
+                                    using (var resultValue = (System.Runtime.InteropServices.JavaScript.Array)nextResult.GetObjectProperty("value"))
                                     {
                                         var name = (string)resultValue[0];
                                         var value = (string)resultValue[1];
@@ -347,7 +347,7 @@ namespace System.Net.Http
                     return _data;
                 }
 
-                using (Interop.JavaScript.ArrayBuffer dataBuffer = (Interop.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
+                using (System.Runtime.InteropServices.JavaScript.ArrayBuffer dataBuffer = (System.Runtime.InteropServices.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
                 {
                     using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
                     {

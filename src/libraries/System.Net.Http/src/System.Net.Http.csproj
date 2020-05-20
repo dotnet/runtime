@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
@@ -733,34 +733,8 @@
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
 
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
-
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs"
-             Link="Common\Interop\Browser\Interop.Runtime.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.Bridge.cs"
-             Link="Common\Interop\Browser\Interop.Runtime.Bridge.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSException.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.JSException.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSObject.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.JSObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8Array.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.TypedArray.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.TypedArray.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Array.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.Array.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.ArrayBuffer.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.ArrayBuffer.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.CoreObject.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.CoreObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.HostObject.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.HostObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Function.cs"
-             Link="Common\Interop\Browser\Interop.JavaScript.Function.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.AnyRef.cs"
-             Link="Common\Interop\Browser\Interop.Runtime.AnyRef.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>  
 </Project>
