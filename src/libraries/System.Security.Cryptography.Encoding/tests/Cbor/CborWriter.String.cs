@@ -21,8 +21,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item --OR--
+        ///   The major type of the encoded value is not permitted in the parent data item --OR--
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteByteString(ReadOnlySpan<byte> value)
@@ -48,8 +48,8 @@ namespace System.Formats.Cbor
         ///   Writes the start of an indefinite-length byte string (major type 2)
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item --OR--
+        ///   The major type of the encoded value is not permitted in the parent data item --OR--
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
@@ -93,8 +93,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item --OR--
+        ///   The major type of the encoded value is not permitted in the parent data item --OR--
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteTextString(ReadOnlySpan<char> value)
@@ -132,8 +132,8 @@ namespace System.Formats.Cbor
         ///   Writes the start of an indefinite-length UTF-8 string (major type 3)
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item --OR--
+        ///   The major type of the encoded value is not permitted in the parent data item --OR--
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
@@ -172,6 +172,7 @@ namespace System.Formats.Cbor
             AdvanceDataItemCounters();
         }
 
+        // perform an in-place conversion of an indefinite-length encoding into an equivalent definite-length
         private void PatchIndefiniteLengthString(CborMajorType type)
         {
             Debug.Assert(type == CborMajorType.ByteString || type == CborMajorType.TextString);
