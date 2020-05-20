@@ -281,6 +281,17 @@ namespace System.Formats.Cbor.Tests
             Assert.Throws<ArgumentException>(() => writer.WriteEncodedValue(encodedInput));
         }
 
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict, "a201010101")] // duplicate key encodings
+        [InlineData(CborConformanceLevel.Canonical, "9f01ff")]  // indefinite-length array
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "a280800101")]  // unsorted key encodings
+        public static void WriteEncodedValue_InvalidConformance_ShouldThrowArgumentException(CborConformanceLevel conformanceLevel, string hexEncodedInput)
+        {
+            byte[] encodedInput = hexEncodedInput.HexToByteArray();
+            var writer = new CborWriter(conformanceLevel);
+            Assert.Throws<ArgumentException>(() => writer.WriteEncodedValue(encodedInput));
+        }
+
         [Fact]
         public static void WriteEncodedValue_ValidPayloadWithTrailingBytes_ShouldThrowArgumentException()
         {
