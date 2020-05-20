@@ -8150,6 +8150,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<ulong> ShiftLogicalRoundedSaturateScalar(Vector64<ulong> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint64x1_t vrshl_u64 (uint64x1_t a, int64x1_t b)
+        ///   A32: VRSHL.U64 Dd, Dn, Dm
+        ///   A64: URSHL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> ShiftLogicalRoundedScalar(Vector64<long> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vrshl_u64 (uint64x1_t a, int64x1_t b)
+        ///   A32: VRSHL.U64 Dd, Dn, Dm
+        ///   A64: URSHL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> ShiftLogicalRoundedScalar(Vector64<ulong> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
