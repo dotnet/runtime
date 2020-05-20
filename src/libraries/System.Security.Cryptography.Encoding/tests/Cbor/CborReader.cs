@@ -281,24 +281,21 @@ namespace System.Formats.Cbor
 
             var nextByte = new CborInitialByte(_data.Span[_offset]);
 
-            if (_currentMajorType != null)
+            switch (_currentMajorType)
             {
-                switch (_currentMajorType.Value)
-                {
-                    case CborMajorType.ByteString:
-                    case CborMajorType.TextString:
-                        // Indefinite-length string contexts allow two possible data items:
-                        // 1) Definite-length string chunks of the same major type OR
-                        // 2) a break byte denoting the end of the indefinite-length string context.
-                        if (nextByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte ||
-                            nextByte.MajorType == _currentMajorType.Value &&
-                            nextByte.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
-                        {
-                            break;
-                        }
+                case CborMajorType.ByteString:
+                case CborMajorType.TextString:
+                    // Indefinite-length string contexts allow two possible data items:
+                    // 1) Definite-length string chunks of the same major type OR
+                    // 2) a break byte denoting the end of the indefinite-length string context.
+                    if (nextByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte ||
+                        nextByte.MajorType == _currentMajorType.Value &&
+                        nextByte.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
+                    {
+                        break;
+                    }
 
-                        throw new FormatException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, nextByte.MajorType));
-                }
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, nextByte.MajorType));
             }
 
             return nextByte;

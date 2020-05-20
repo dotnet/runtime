@@ -54,7 +54,7 @@ namespace System.Formats.Cbor
         // Map encoding conformance
         //
 
-        private void HandleKeyWritten()
+        private void HandleMapKeyWritten()
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
 
@@ -78,7 +78,7 @@ namespace System.Formats.Cbor
             _currentValueOffset = _offset;
         }
 
-        private void HandleValueWritten()
+        private void HandleMapValueWritten()
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
