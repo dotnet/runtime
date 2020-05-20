@@ -7235,6 +7235,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> ShiftArithmeticRounded(Vector128<sbyte> value, Vector128<sbyte> count) => ShiftArithmeticRounded(value, count);
 
         /// <summary>
+        /// int16x4_t vqrshl_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VQRSHL.S16 Dd, Dn, Dm
+        ///   A64: SQRSHL Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> ShiftArithmeticRoundedSaturate(Vector64<short> value, Vector64<short> count) => ShiftArithmeticRoundedSaturate(value, count);
+
+        /// <summary>
+        /// int32x2_t vqrshl_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VQRSHL.S32 Dd, Dn, Dm
+        ///   A64: SQRSHL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> ShiftArithmeticRoundedSaturate(Vector64<int> value, Vector64<int> count) => ShiftArithmeticRoundedSaturate(value, count);
+
+        /// <summary>
+        /// int8x8_t vqrshl_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VQRSHL.S8 Dd, Dn, Dm
+        ///   A64: SQRSHL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> ShiftArithmeticRoundedSaturate(Vector64<sbyte> value, Vector64<sbyte> count) => ShiftArithmeticRoundedSaturate(value, count);
+
+        /// <summary>
+        /// int16x8_t vqrshlq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VQRSHL.S16 Qd, Qn, Qm
+        ///   A64: SQRSHL Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> ShiftArithmeticRoundedSaturate(Vector128<short> value, Vector128<short> count) => ShiftArithmeticRoundedSaturate(value, count);
+
+        /// <summary>
+        /// int32x4_t vqrshlq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VQRSHL.S32 Qd, Qn, Qm
+        ///   A64: SQRSHL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> ShiftArithmeticRoundedSaturate(Vector128<int> value, Vector128<int> count) => ShiftArithmeticRoundedSaturate(value, count);
+
+        /// <summary>
+        /// int64x2_t vqrshlq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VQRSHL.S64 Qd, Qn, Qm
+        ///   A64: SQRSHL Vd.2D, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<long> ShiftArithmeticRoundedSaturate(Vector128<long> value, Vector128<long> count) => ShiftArithmeticRoundedSaturate(value, count);
+
+        /// <summary>
+        /// int8x16_t vqrshlq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VQRSHL.S8 Qd, Qn, Qm
+        ///   A64: SQRSHL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> ShiftArithmeticRoundedSaturate(Vector128<sbyte> value, Vector128<sbyte> count) => ShiftArithmeticRoundedSaturate(value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
