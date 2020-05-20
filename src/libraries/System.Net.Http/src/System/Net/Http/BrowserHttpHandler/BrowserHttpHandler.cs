@@ -27,7 +27,7 @@ namespace System.Net.Http
     // remoted back to the main thread.  Most APIs only work on the main browser thread.
     // During discussions the concensus has been that it will not matter right now which value is used for ConfigureAwait
     // we should put this in place now.
-    internal partial class BrowserHttpHandler : HttpMessageHandler
+    internal sealed class BrowserHttpHandler : HttpMessageHandler
     {
         // This partial implementation contains members common to Browser WebAssembly running on .NET Core.
         private static readonly JSObject? s_fetch = (JSObject)Interop.Runtime.GetGlobalObject("fetch");
