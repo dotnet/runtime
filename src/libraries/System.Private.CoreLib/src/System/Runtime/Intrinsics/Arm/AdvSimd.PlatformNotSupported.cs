@@ -10458,5 +10458,47 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> Xor(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmovl_u8 (uint8x8_t a)
+        ///   A32: VMOVL.U8 Qd, Dm
+        ///   A64: UXTL Vd.8H, Vn.8B
+        /// </summary>
+        public static Vector128<ushort> ZeroExtendWideningLower(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmovl_u16 (uint16x4_t a)
+        ///   A32: VMOVL.U16 Qd, Dm
+        ///   A64: UXTL Vd.4S, Vn.4H
+        /// </summary>
+        public static Vector128<int> ZeroExtendWideningLower(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmovl_u32 (uint32x2_t a)
+        ///   A32: VMOVL.U32 Qd, Dm
+        ///   A64: UXTL Vd.2D, Vn.2S
+        /// </summary>
+        public static Vector128<long> ZeroExtendWideningLower(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmovl_u8 (uint8x8_t a)
+        ///   A32: VMOVL.U8 Qd, Dm
+        ///   A64: UXTL Vd.8H, Vn.8B
+        /// </summary>
+        public static Vector128<short> ZeroExtendWideningLower(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmovl_u16 (uint16x4_t a)
+        ///   A32: VMOVL.U16 Qd, Dm
+        ///   A64: UXTL Vd.4S, Vn.4H
+        /// </summary>
+        public static Vector128<uint> ZeroExtendWideningLower(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmovl_u32 (uint32x2_t a)
+        ///   A32: VMOVL.U32 Qd, Dm
+        ///   A64: UXTL Vd.2D, Vn.2S
+        /// </summary>
+        public static Vector128<ulong> ZeroExtendWideningLower(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
     }
 }
