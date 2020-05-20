@@ -16,7 +16,7 @@ namespace System.Formats.Cbor.Tests
         public static byte[] ExportECDsaPublicKey(ECDsa ecDsa, HashAlgorithmName? hashAlgName)
         {
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
-            var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
+            var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
             WriteECParametersAsCosePublicKey(writer, ecParams, hashAlgName);
             return writer.Encode();
         }
@@ -30,7 +30,7 @@ namespace System.Formats.Cbor.Tests
 
         private static void WriteECParametersAsCosePublicKey(CborWriter writer, ECParameters ecParams, HashAlgorithmName? algorithmName)
         {
-            Debug.Assert(writer.ConformanceLevel == CborConformanceLevel.Ctap2Canonical);
+            Debug.Assert(writer.ConformanceLevel == CborConformanceLevel.Ctap2Canonical && writer.ConvertIndefiniteLengthEncodings);
 
             if (ecParams.Q.X is null || ecParams.Q.Y is null)
             {

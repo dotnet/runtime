@@ -53,7 +53,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_NoPatching_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: false);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -66,7 +66,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_NoPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: false);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -80,7 +80,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_WithPatching_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            var writer = new CborWriter();
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: true);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_WithPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            var writer = new CborWriter();
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: true);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -107,7 +107,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_WithPatching_Ctap2Sorting_HappyPath(object[] values, string expectedHexEncoding)
     {
         byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-        var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
+        var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
         Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
         byte[] actualEncoding = writer.Encode();
         AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -378,6 +378,15 @@ namespace System.Formats.Cbor.Tests
 
             writer.WriteStartArray(definiteLength: 0);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndMap());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void WriteStartMap_IndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        {
+            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartMap());
         }
     }
 }

@@ -10,6 +10,9 @@ using System.Threading;
 
 namespace System.Formats.Cbor
 {
+    /// <summary>
+    ///   A writer for CBOR encoded data.
+    /// </summary>
     public partial class CborWriter
     {
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
@@ -31,23 +34,35 @@ namespace System.Formats.Cbor
         private List<KeyValuePairEncodingRange>? _keyValuePairEncodingRanges = null; // all key/value pair encoding ranges
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges = null; // all key encoding ranges up to encoding equality
 
-        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool encodeIndefiniteLengths = false, bool allowMultipleRootLevelValues = false)
+        /// <summary>
+        ///   Create a new <see cref="CborWriter"/> instance with given configuration.
+        /// </summary>
+        /// <param name="conformanceLevel">
+        ///   Specifies a <see cref="CborConformanceLevel"/> guiding the conformance checks performed on the encoded data.
+        ///   Defaults to <see cref="CborConformanceLevel.Lax" /> conformance level.
+        /// </param>
+        /// <param name="convertIndefiniteLengthEncodings">
+        ///   Enables automatically converting indefinite-length encodings into definite-length equivalents.
+        ///   Allows use of indefinite-length write APIs in conformance levels that otherwise do not permit it.
+        ///   Defaults to <c>false</c>.
+        /// </param>
+        /// <param name="allowMultipleRootLevelValues">
+        ///   Specify if multiple root-level values are to be supported by the writer.
+        ///   When set to <c>false</c>, the reader will throw an <see cref="InvalidOperationException"/>
+        ///   if trying to write beyond the scope of one root-level CBOR data item.
+        /// </param>
+        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
-            if (encodeIndefiniteLengths && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(conformanceLevel))
-            {
-                throw new ArgumentException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, conformanceLevel), nameof(encodeIndefiniteLengths));
-            }
-
             ConformanceLevel = conformanceLevel;
-            EncodeIndefiniteLengths = encodeIndefiniteLengths;
+            ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
         }
 
         public CborConformanceLevel ConformanceLevel { get; }
-        public bool EncodeIndefiniteLengths { get; }
+        public bool ConvertIndefiniteLengthEncodings { get; }
         public bool AllowMultipleRootLevelValues { get; }
         public int Depth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
         public int BytesWritten => _offset;
@@ -286,7 +301,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_definiteLength == null);
 
-            if (EncodeIndefiniteLengths)
+            if (!ConvertIndefiniteLengthEncodings)
             {
                 // using indefinite-length encoding, append a break byte to the existing encoding
                 EnsureWriteCapacity(1);

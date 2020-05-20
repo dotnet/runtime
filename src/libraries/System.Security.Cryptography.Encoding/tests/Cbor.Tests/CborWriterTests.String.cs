@@ -36,7 +36,7 @@ namespace System.Formats.Cbor.Tests
             byte[][] chunkInputs = hexChunkInputs.Select(ch => ch.HexToByteArray()).ToArray();
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
 
-            var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: false);
             Helpers.WriteChunkedByteString(writer, chunkInputs);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
@@ -51,7 +51,7 @@ namespace System.Formats.Cbor.Tests
             byte[][] chunkInputs = hexChunkInputs.Select(ch => ch.HexToByteArray()).ToArray();
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
 
-            var writer = new CborWriter();
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: true);
             Helpers.WriteChunkedByteString(writer, chunkInputs);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
@@ -80,7 +80,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteTextString_IndefiniteLength_NoPatching_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: false);
             Helpers.WriteChunkedTextString(writer, chunkInputs);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteTextString_IndefiniteLength_WithPatching_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            var writer = new CborWriter(encodeIndefiniteLengths: false);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: true);
             Helpers.WriteChunkedTextString(writer, chunkInputs);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
@@ -175,6 +175,24 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             writer.WriteStartByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void WriteStartByteString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        {
+            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartByteString());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void WriteStartTextString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        {
+            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartTextString());
         }
     }
 }
