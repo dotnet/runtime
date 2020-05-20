@@ -2531,8 +2531,6 @@ copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, guchar *vt_sp_sta
  * this/static * ret/void * 16 arguments -> 64 functions.
  */
 
-#define MAX_INTERP_ENTRY_ARGS 8
-
 #define INTERP_ENTRY_BASE(_method, _this_arg, _res) \
 	InterpEntryData data; \
 	(data).rmethod = (_method); \
@@ -2819,8 +2817,14 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	 * to use a ftndesc. The caller uses a normal signature, while the
 	 * entry functions use a gsharedvt_in signature, so wrap the entry function in
 	 * a gsharedvt_in_sig wrapper.
+	 * We use a gsharedvt_in_sig wrapper instead of an interp_in wrapper, because they
+	 * are mostly the same, and they are already generated. The exception is the
+	 * wrappers for methods with more than 8 arguments, those are different.
 	 */
-	wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
+	if (sig->param_count > MAX_INTERP_ENTRY_ARGS)
+		wrapper = mini_get_interp_in_wrapper (sig);
+	else
+		wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
 
 	entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
 	mono_error_assertf_ok (error, "couldn't compile wrapper \"%s\" for \"%s\"",
@@ -2828,8 +2832,7 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 			mono_method_get_name_full (method,  TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
 
 	if (sig->param_count > MAX_INTERP_ENTRY_ARGS) {
-		g_assert_not_reached ();
-		//entry_func = (gpointer)interp_entry_general;
+		entry_func = (gpointer)interp_entry_general;
 	} else if (sig->hasthis) {
 		if (sig->ret->type == MONO_TYPE_VOID)
 			entry_func = entry_funcs_instance [sig->param_count];
