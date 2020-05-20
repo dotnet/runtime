@@ -178,7 +178,6 @@ namespace System.Net.Http
             return sslStream;
         }
 
-#if !BROWSER_DOES_NOT_SUPPORT_QUIC
         public static async ValueTask<QuicConnection> ConnectQuicAsync(string host, int port, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
             IPAddress[] addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
@@ -208,7 +207,7 @@ namespace System.Net.Http
             // TODO: find correct exception to throw here.
             throw new HttpRequestException("No host found.");
         }
-#endif
+
         private static Exception CreateWrappedException(Exception error, CancellationToken cancellationToken)
         {
             return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
