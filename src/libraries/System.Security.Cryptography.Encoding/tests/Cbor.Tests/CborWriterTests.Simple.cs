@@ -79,5 +79,14 @@ namespace System.Formats.Cbor.Tests
             writer.WriteSimpleValue(input);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
+
+        [Theory]
+        [InlineData((CborSimpleValue)24)]
+        [InlineData((CborSimpleValue)31)]
+        public static void WriteSimpleValue_UnassignedValues_ShouldThrowArgumentOutOfRangeException(CborSimpleValue input)
+        {
+            var writer = new CborWriter();
+            Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteSimpleValue(input));
+        }
     }
 }

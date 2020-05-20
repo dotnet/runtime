@@ -330,4 +330,7 @@
   <data name="Cbor_Writer_DecimalOverflow" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
   </data>
+  <data name="Cbor_Writer_InvalidSimpleValueRange" xml:space="preserve">
+    <value>Simple values in the 24-31 range are not permitted.</value>
+  </data>
 </root>

@@ -124,7 +124,6 @@ namespace System.Formats.Cbor
         /// </exception>
         public void WriteDecimal(decimal value)
         {
-            // implements https://tools.ietf.org/html/rfc7049#section-2.4.3
             DecimalHelpers.Deconstruct(value, out decimal mantissa, out byte scale);
 
             WriteTag(CborTag.DecimalFraction);
