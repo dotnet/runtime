@@ -9096,6 +9096,104 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> ShiftRightLogicalNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x8_t vrshr_n_u8 (uint8x8_t a, const int n)
+        ///   A32: VRSHR.U8 Dd, Dm, #n
+        ///   A64: URSHR Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalRounded(Vector64<byte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vrshr_n_u16 (uint16x4_t a, const int n)
+        ///   A32: VRSHR.U16 Dd, Dm, #n
+        ///   A64: URSHR Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightLogicalRounded(Vector64<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vrshr_n_u32 (uint32x2_t a, const int n)
+        ///   A32: VRSHR.U32 Dd, Dm, #n
+        ///   A64: URSHR Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightLogicalRounded(Vector64<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vrshr_n_u8 (uint8x8_t a, const int n)
+        ///   A32: VRSHR.U8 Dd, Dm, #n
+        ///   A64: URSHR Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogicalRounded(Vector64<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vrshr_n_u16 (uint16x4_t a, const int n)
+        ///   A32: VRSHR.U16 Dd, Dm, #n
+        ///   A64: URSHR Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalRounded(Vector64<ushort> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vrshr_n_u32 (uint32x2_t a, const int n)
+        ///   A32: VRSHR.U32 Dd, Dm, #n
+        ///   A64: URSHR Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalRounded(Vector64<uint> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vrshrq_n_u8 (uint8x16_t a, const int n)
+        ///   A32: VRSHR.U8 Qd, Qm, #n
+        ///   A64: URSHR Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalRounded(Vector128<byte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vrshrq_n_u16 (uint16x8_t a, const int n)
+        ///   A32: VRSHR.U16 Qd, Qm, #n
+        ///   A64: URSHR Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightLogicalRounded(Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vrshrq_n_u32 (uint32x4_t a, const int n)
+        ///   A32: VRSHR.U32 Qd, Qm, #n
+        ///   A64: URSHR Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightLogicalRounded(Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vrshrq_n_u64 (uint64x2_t a, const int n)
+        ///   A32: VRSHR.U64 Qd, Qm, #n
+        ///   A64: URSHR Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightLogicalRounded(Vector128<long> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vrshrq_n_u8 (uint8x16_t a, const int n)
+        ///   A32: VRSHR.U8 Qd, Qm, #n
+        ///   A64: URSHR Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalRounded(Vector128<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vrshrq_n_u16 (uint16x8_t a, const int n)
+        ///   A32: VRSHR.U16 Qd, Qm, #n
+        ///   A64: URSHR Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalRounded(Vector128<ushort> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vrshrq_n_u32 (uint32x4_t a, const int n)
+        ///   A32: VRSHR.U32 Qd, Qm, #n
+        ///   A64: URSHR Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalRounded(Vector128<uint> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vrshrq_n_u64 (uint64x2_t a, const int n)
+        ///   A32: VRSHR.U64 Qd, Qm, #n
+        ///   A64: URSHR Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftRightLogicalRounded(Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
