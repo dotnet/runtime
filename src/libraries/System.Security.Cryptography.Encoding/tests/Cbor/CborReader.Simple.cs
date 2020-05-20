@@ -8,6 +8,8 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
+        private const int SizeOfHalf = 2; // the size in bytes of an IEEE 754 Half-Precision float
+
         /// <summary>
         ///   Reads the next data item as a single-precision floating point number (major type 7)
         /// </summary>
@@ -31,16 +33,16 @@ namespace System.Formats.Cbor
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureReadCapacity(buffer, 3);
+                    EnsureReadCapacity(buffer, 1 + SizeOfHalf);
                     result = (float)ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(3);
+                    AdvanceBuffer(1 + SizeOfHalf);
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
-                    EnsureReadCapacity(buffer, 5);
+                    EnsureReadCapacity(buffer, 1 + sizeof(float));
                     result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(5);
+                    AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
 
@@ -75,23 +77,23 @@ namespace System.Formats.Cbor
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureReadCapacity(buffer, 3);
+                    EnsureReadCapacity(buffer, 1 + SizeOfHalf);
                     result = ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(3);
+                    AdvanceBuffer(1 + SizeOfHalf);
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
-                    EnsureReadCapacity(buffer, 5);
+                    EnsureReadCapacity(buffer, 1 + sizeof(float));
                     result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(5);
+                    AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
-                    EnsureReadCapacity(buffer, 9);
+                    EnsureReadCapacity(buffer, 1 + sizeof(double));
                     result = BinaryPrimitives.ReadDoubleBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(9);
+                    AdvanceBuffer(1 + sizeof(double));
                     AdvanceDataItemCounters();
                     return result;
 
@@ -175,7 +177,7 @@ namespace System.Formats.Cbor
 
             switch (header.AdditionalInfo)
             {
-                case CborAdditionalInfo info when (byte)info < 24:
+                case CborAdditionalInfo info when info < CborAdditionalInfo.Additional8BitData:
                     AdvanceBuffer(1);
                     AdvanceDataItemCounters();
                     return (CborSimpleValue)header.AdditionalInfo;
@@ -183,7 +185,7 @@ namespace System.Formats.Cbor
                     EnsureReadCapacity(2);
                     byte value = _data.Span[_offset + 1];
 
-                    if (value < 32)
+                    if (value <= (byte)CborAdditionalInfo.IndefiniteLength)
                     {
                         throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidSimpleValueEncoding);
                     }
