@@ -23,7 +23,7 @@ namespace System.Reflection
     /// </remarks>
     public class PathAssemblyResolver : MetadataAssemblyResolver
     {
-        private readonly Dictionary<string, List<string>> _fileToPaths = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        protected readonly Dictionary<string, List<string>> fileToPaths = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="System.Reflection.PathAssemblyResolver"/> class.
@@ -45,9 +45,9 @@ namespace System.Reflection
                     throw new ArgumentException(SR.Format(SR.Arg_InvalidPath, path), nameof(assemblyPaths));
 
                 List<string>? paths;
-                if (!_fileToPaths.TryGetValue(file, out paths))
+                if (!fileToPaths.TryGetValue(file, out paths))
                 {
-                    _fileToPaths.Add(file, paths = new List<string>());
+                    fileToPaths.Add(file, paths = new List<string>());
                 }
                 paths.Add(path);
             }
@@ -56,39 +56,41 @@ namespace System.Reflection
         public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
         {
             Debug.Assert(assemblyName.Name != null);
+            if (!fileToPaths.TryGetValue(assemblyName.Name, out List<string>? paths))
+            {
+                return null;
+            }
+            
             Assembly? candidateWithSamePkt = null;
             Assembly? candidateIgnoringPkt = null;
-            if (_fileToPaths.TryGetValue(assemblyName.Name, out List<string>? paths))
+            ReadOnlySpan<byte> pktFromName = assemblyName.GetPublicKeyToken();
+
+            foreach (string path in paths)
             {
-                ReadOnlySpan<byte> pktFromName = assemblyName.GetPublicKeyToken();
-
-                foreach (string path in paths)
+                Assembly assemblyFromPath = context.LoadFromAssemblyPath(path);
+                AssemblyName assemblyNameFromPath = assemblyFromPath.GetName();
+                if (assemblyName.Name.Equals(assemblyNameFromPath.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    Assembly assemblyFromPath = context.LoadFromAssemblyPath(path);
-                    AssemblyName assemblyNameFromPath = assemblyFromPath.GetName();
-                    if (assemblyName.Name.Equals(assemblyNameFromPath.Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        ReadOnlySpan<byte> pktFromAssembly = assemblyNameFromPath.GetPublicKeyToken();
+                    ReadOnlySpan<byte> pktFromAssembly = assemblyNameFromPath.GetPublicKeyToken();
 
-                        // Find exact match on PublicKeyToken including treating no PublicKeyToken as its own entry.
-                        if (pktFromName.SequenceEqual(pktFromAssembly))
+                    // Find exact match on PublicKeyToken including treating no PublicKeyToken as its own entry.
+                    if (pktFromName.SequenceEqual(pktFromAssembly))
+                    {
+                        // Pick the highest version.
+                        if (candidateWithSamePkt == null || assemblyNameFromPath.Version > candidateWithSamePkt.GetName().Version)
                         {
-                            // Pick the highest version.
-                            if (candidateWithSamePkt == null || assemblyNameFromPath.Version > candidateWithSamePkt.GetName().Version)
-                            {
-                                candidateWithSamePkt = assemblyFromPath;
-                            }
+                            candidateWithSamePkt = assemblyFromPath;
                         }
-                        // If assemblyName does not specify a PublicKeyToken, or assemblyName is marked 'Retargetable',
-                        // then still consider those with a PublicKeyToken and take the highest version available.
-                        else if ((candidateWithSamePkt == null && pktFromName.IsEmpty) ||
-                            ((assemblyName.Flags & AssemblyNameFlags.Retargetable) != 0))
+                    }
+                    // If assemblyName does not specify a PublicKeyToken, or assemblyName is marked 'Retargetable',
+                    // then still consider those with a PublicKeyToken and take the highest version available.
+                    else if ((candidateWithSamePkt == null && pktFromName.IsEmpty) ||
+                        ((assemblyName.Flags & AssemblyNameFlags.Retargetable) != 0))
+                    {
+                        // Pick the highest version.
+                        if (candidateIgnoringPkt == null || assemblyNameFromPath.Version > candidateIgnoringPkt.GetName().Version)
                         {
-                            // Pick the highest version.
-                            if (candidateIgnoringPkt == null || assemblyNameFromPath.Version > candidateIgnoringPkt.GetName().Version)
-                            {
-                                candidateIgnoringPkt = assemblyFromPath;
-                            }
+                            candidateIgnoringPkt = assemblyFromPath;
                         }
                     }
                 }
