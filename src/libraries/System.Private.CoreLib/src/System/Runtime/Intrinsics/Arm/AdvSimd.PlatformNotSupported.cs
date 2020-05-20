@@ -1273,6 +1273,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> ShiftLeftLogicalSaturateScalar(Vector64<uint> value, byte count) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// uint16_t vqshluh_n_s16 (int16_t a, const int n)
+            ///   A64: SQSHLU Hd, Hn, #n
+            /// </summary>
+            public static Vector64<ushort> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vqshlus_n_s32 (int32_t a, const int n)
+            ///   A64: SQSHLU Sd, Sn, #n
+            /// </summary>
+            public static Vector64<uint> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vqshlub_n_s8 (int8_t a, const int n)
+            ///   A64: SQSHLU Bd, Bn, #n
+            /// </summary>
+            public static Vector64<byte> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
@@ -7681,6 +7699,13 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: SQSHLU Vd.16B, Vn.16B, #n
         /// </summary>
         public static Vector128<byte> ShiftLeftLogicalSaturateUnsigned(Vector128<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vqshlu_n_s64 (int64x1_t a, const int n)
+        ///   A32: VQSHLU.S64 Dd, Dm, #n
+        ///   A64: SQSHLU Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<long> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
