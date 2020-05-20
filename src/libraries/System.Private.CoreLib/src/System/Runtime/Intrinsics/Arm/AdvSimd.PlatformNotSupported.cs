@@ -9488,6 +9488,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<ulong> ShiftRightLogicalRoundedScalar(Vector64<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint64x1_t vshr_n_u64 (uint64x1_t a, const int n)
+        ///   A32: VSHR.U64 Dd, Dm, #n
+        ///   A64: USHR Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightLogicalScalar(Vector64<long> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vshr_n_u64 (uint64x1_t a, const int n)
+        ///   A32: VSHR.U64 Dd, Dm, #n
+        ///   A64: USHR Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftRightLogicalScalar(Vector64<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
