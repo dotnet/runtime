@@ -441,7 +441,7 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
                                                                        // when possible.
 #else
-CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 0) // Allow Jit to retype structs as primitive types
+CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
                                                                        // when possible.
 #endif
 
