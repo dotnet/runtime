@@ -633,6 +633,12 @@ public:
         assert(_gtRegNum == reg);
     }
 
+    void ClearRegNum()
+    {
+        _gtRegNum = REG_NA;
+        INDEBUG(gtRegTag  = GT_REGTAG_NONE;)
+    }
+
     // Copy the _gtRegNum/gtRegTag fields
     void CopyReg(GenTree* from);
     bool gtHasReg() const;

@@ -615,10 +615,6 @@ void GenTree::CopyReg(GenTree* from)
 //    GT_COPY/GT_RELOAD is considered having a reg if it
 //    has a reg assigned to any of its positions.
 //
-// Assumption:
-//    In order for this to work properly, gtClearReg must be called
-//    prior to setting the register value.
-//
 bool GenTree::gtHasReg() const
 {
     bool hasReg = false;
