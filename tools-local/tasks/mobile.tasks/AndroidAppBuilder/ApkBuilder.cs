@@ -140,7 +140,8 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
         string runtimeAndroidSrc = Utils.GetEmbeddedResource("runtime-android.c")
-            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
+            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)
+            .Replace("%RID%", GetRid(abi)));
         File.WriteAllText(Path.Combine(OutputDir, "runtime-android.c"), runtimeAndroidSrc);
         
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
@@ -236,6 +237,14 @@ public class ApkBuilder
 
         return (alignedApk, packageId);
     }
+
+    private static string GetRid(string abi) => abi switch 
+        {
+            "arm64-v8a" => "android-arm64",
+            "armeabi-v7a" => "android-arm",
+            "x86_64" => "android-x64",
+            _ => "android-" + abi
+        };
     
     /// <summary>
     /// Scan android SDK for build tools (ignore preview versions)

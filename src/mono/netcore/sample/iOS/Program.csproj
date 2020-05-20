@@ -35,7 +35,7 @@
   <ItemGroup>
     <AppAssemblies Include="$(OutputPath)\*.dll"/>
     <BclAssemblies Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.dll;$(RuntimePackDir)\native\System.Private.CoreLib.dll" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-    <MonoRuntimeBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\System.Private.CoreLib.dll;$(RuntimePackDir)\native\libmono.dylib" />
+    <MonoRuntimeBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\System.Private.CoreLib.dll;$(RuntimePackDir)\native\libmonosgen-2.0.dylib" />
   </ItemGroup>
 
   <Import Project="$(MonoAOTCompilerProjDirectory)MonoAOTCompiler.props" />

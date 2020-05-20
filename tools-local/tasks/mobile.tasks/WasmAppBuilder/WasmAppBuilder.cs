@@ -28,6 +28,7 @@ public class WasmAppBuilder : Task
     public string? MainJS { get; set; }
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
+    public ITaskItem[]? ExtraAssemblies { get; set; }
 
     Dictionary<string, Assembly>? Assemblies;
     Resolver? Resolver;
@@ -54,6 +55,13 @@ public class WasmAppBuilder : Task
         var mainAssembly = mlc.LoadFromAssemblyPath (MainAssembly);
         Add (mlc, mainAssembly);
 
+        if (ExtraAssemblies != null) {
+            foreach (var item in ExtraAssemblies) {
+                var refAssembly = mlc.LoadFromAssemblyPath (item.ItemSpec);
+                Add (mlc, refAssembly);
+            }
+        }
+
         // Create app
         Directory.CreateDirectory (AppDir!);
         Directory.CreateDirectory (Path.Join (AppDir, "managed"));
@@ -78,7 +86,7 @@ public class WasmAppBuilder : Task
         }
 
         using (var sw = File.CreateText (Path.Join (AppDir, "run-v8.sh"))) {
-            sw.WriteLine ("v8 --expose_wasm runtime.js -- --run " + Path.GetFileName (MainAssembly));
+            sw.WriteLine ("v8 --expose_wasm runtime.js -- --enable-gc --run " + Path.GetFileName (MainAssembly) + " $*");
         }
 
         return true;
