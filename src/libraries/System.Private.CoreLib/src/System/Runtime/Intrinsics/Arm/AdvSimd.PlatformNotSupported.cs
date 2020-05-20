@@ -7307,6 +7307,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<long> ShiftArithmeticRoundedSaturateScalar(Vector64<long> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int64x1_t vrshl_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VRSHL.S64 Dd, Dn, Dm
+        ///   A64: SRSHL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> ShiftArithmeticRoundedScalar(Vector64<long> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
