@@ -1,7 +1,7 @@
-MONO_CONFIG=Release
-MONO_ARCH=arm64
+MONO_CONFIG=Debug
+MONO_ARCH=x64
 DOTNET := ../../../../.././dotnet.sh
-USE_LLVM=False
+USE_LLVM=True
 
 all: runtimepack app
 
@@ -14,7 +14,7 @@ runtimepack:
 	../../../../.././build.sh Mono+Libs -os iOS -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
 run: clean appbuilder
-	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH)
+	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH) /p:UseLLVM=$(USE_LLVM)
 
 clean:
 	rm -rf bin
