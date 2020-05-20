@@ -9348,6 +9348,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x8_t vqrshrn_n_u16 (uint16x8_t a, const int n)
+        ///   A32: VQRSHRN.U16 Dd, Qm, #n
+        ///   A64: UQRSHRN Vd.8B, Vn.8H, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ushort> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vqrshrn_n_u32 (uint32x4_t a, const int n)
+        ///   A32: VQRSHRN.U32 Dd, Qm, #n
+        ///   A64: UQRSHRN Vd.4H, Vn.4S, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vqrshrn_n_u64 (uint64x2_t a, const int n)
+        ///   A32: VQRSHRN.U64 Dd, Qm, #n
+        ///   A64: UQRSHRN Vd.2S, Vn.2D, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<long> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vqrshrn_n_u16 (uint16x8_t a, const int n)
+        ///   A32: VQRSHRN.U16 Dd, Qm, #n
+        ///   A64: UQRSHRN Vd.8B, Vn.8H, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vqrshrn_n_u32 (uint32x4_t a, const int n)
+        ///   A32: VQRSHRN.U32 Dd, Qm, #n
+        ///   A64: UQRSHRN Vd.4H, Vn.4S, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<uint> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vqrshrn_n_u64 (uint64x2_t a, const int n)
+        ///   A32: VQRSHRN.U64 Dd, Qm, #n
+        ///   A64: UQRSHRN Vd.2S, Vn.2D, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
