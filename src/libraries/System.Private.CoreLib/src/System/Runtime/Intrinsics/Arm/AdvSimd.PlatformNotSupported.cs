@@ -1291,6 +1291,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<byte> ShiftLeftLogicalSaturateUnsignedScalar(Vector64<sbyte> value, byte count) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// uint8_t vqrshlb_u8 (uint8_t a, int8_t b)
+            ///   A64: UQRSHL Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<byte> ShiftLogicalRoundedSaturateScalar(Vector64<byte> value, Vector64<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vqrshlh_u16 (uint16_t a, int16_t b)
+            ///   A64: UQRSHL Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<short> ShiftLogicalRoundedSaturateScalar(Vector64<short> value, Vector64<short> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vqrshls_u32 (uint32_t a, int32_t b)
+            ///   A64: UQRSHL Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<int> ShiftLogicalRoundedSaturateScalar(Vector64<int> value, Vector64<int> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vqrshlb_u8 (uint8_t a, int8_t b)
+            ///   A64: UQRSHL Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<sbyte> ShiftLogicalRoundedSaturateScalar(Vector64<sbyte> value, Vector64<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vqrshlh_u16 (uint16_t a, int16_t b)
+            ///   A64: UQRSHL Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<ushort> ShiftLogicalRoundedSaturateScalar(Vector64<ushort> value, Vector64<short> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vqrshls_u32 (uint32_t a, int32_t b)
+            ///   A64: UQRSHL Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<uint> ShiftLogicalRoundedSaturateScalar(Vector64<uint> value, Vector64<int> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
@@ -8098,6 +8134,20 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UQRSHL Vd.2D, Vn.2D, Vm.2D
         /// </summary>
         public static Vector128<ulong> ShiftLogicalRoundedSaturate(Vector128<ulong> value, Vector128<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vqrshl_u64 (uint64x1_t a, int64x1_t b)
+        ///   A32: VQRSHL.U64 Dd, Dn, Dm
+        ///   A64: UQRSHL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> ShiftLogicalRoundedSaturateScalar(Vector64<long> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vqrshl_u64 (uint64x1_t a, int64x1_t b)
+        ///   A32: VQRSHL.U64 Dd, Dn, Dm
+        ///   A64: UQRSHL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> ShiftLogicalRoundedSaturateScalar(Vector64<ulong> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
