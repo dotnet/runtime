@@ -171,11 +171,15 @@ namespace System.Formats.Cbor
 
                 if (_definiteLength is null)
                 {
-                    // root context cannot be indefinite-length
-                    Debug.Assert(_currentMajorType != null);
-
-                    switch (_currentMajorType.Value)
+                    switch (_currentMajorType)
                     {
+                        case null:
+                            // found a break byte at the end of a root-level data item sequence
+                            Debug.Assert(AllowMultipleRootLevelValues);
+                            return throwOnFormatErrors ?
+                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte) :
+                                CborReaderState.FormatError;
+
                         case CborMajorType.ByteString: return CborReaderState.EndByteString;
                         case CborMajorType.TextString: return CborReaderState.EndTextString;
                         case CborMajorType.Array: return CborReaderState.EndArray;

@@ -134,6 +134,20 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
+        public static void CborReader_MultipleRootValuesAllowed_RootLevelBreakByte_ShouldReportAsFormatError()
+        {
+            string hexEncoding = "018101ff";
+            var reader = new CborReader(hexEncoding.HexToByteArray(), allowMultipleRootLevelValues: true);
+
+            reader.ReadInt32();
+            reader.ReadStartArray();
+            reader.ReadInt32();
+            reader.ReadEndArray();
+
+            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
+        }
+
+        [Fact]
         public static void CborReader_MultipleRootValuesAllowed_ReadingBeyondEndOfBuffer_ShouldThrowInvalidOperationException()
         {
             string hexEncoding = "810102";
