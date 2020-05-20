@@ -223,6 +223,7 @@ const int policy_expand  = 2;
 #define JOIN_LOG (MIN_CUSTOM_LOG_LEVEL + 6)
 #define SPINLOCK_LOG (MIN_CUSTOM_LOG_LEVEL + 7)
 #define SNOOP_LOG (MIN_CUSTOM_LOG_LEVEL + 8)
+#define COMMIT_ACCOUNTING_LOG (MIN_CUSTOM_LOG_LEVEL + 9)
 
 // NOTE! This is for HEAP_BALANCE_INSTRUMENTATION
 // This particular one is special and needs to be well formatted because we
@@ -397,6 +398,17 @@ enum gc_tuning_point
     tuning_deciding_promote_ephemeral = 4,
     tuning_deciding_short_on_seg = 5
 };
+
+enum gc_oh_num
+{
+    soh = 0,
+    loh = 1,
+    poh = 2,
+    none = 3,
+    total_oh_count = 4
+};
+
+gc_oh_num gen_to_oh (int gen);
 
 #if defined(TRACE_GC) && defined(BACKGROUND_GC)
 static const char * const str_bgc_state[] =
@@ -1138,6 +1150,7 @@ public:
     static
     heap_segment* make_heap_segment (uint8_t* new_pages,
                                      size_t size,
+                                     gc_oh_num oh,
                                      int h_number);
 
     static
@@ -1269,6 +1282,11 @@ public:
 #endif // FEATURE_BASICFREEZE
 
 protected:
+    PER_HEAP_ISOLATED
+    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p);
+
+    PER_HEAP_ISOLATED
+    void destroy_initial_memory();
 
     PER_HEAP_ISOLATED
     void walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p);
@@ -1631,7 +1649,9 @@ protected:
     PER_HEAP
     heap_segment* soh_get_segment_to_expand();
     PER_HEAP
-    heap_segment* get_segment (size_t size, BOOL loh_p);
+    heap_segment* get_segment (size_t size, gc_oh_num oh);
+    PER_HEAP_ISOLATED
+    void release_segment (heap_segment* sg);
     PER_HEAP_ISOLATED
     void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
     PER_HEAP_ISOLATED
@@ -1661,9 +1681,11 @@ protected:
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
+    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED
-    bool virtual_decommit (void* address, size_t size, int h_number=-1);
+    bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
+    PER_HEAP_ISOLATED
+    void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP
     void clear_gen0_bricks();
 #ifdef BACKGROUND_GC
@@ -3367,6 +3389,9 @@ public:
     PER_HEAP_ISOLATED
     size_t current_total_committed;
 
+    PER_HEAP_ISOLATED
+    size_t committed_by_oh[total_oh_count];
+
     // This is what GC uses for its own bookkeeping.
     PER_HEAP_ISOLATED
     size_t current_total_committed_bookkeeping;
@@ -4788,6 +4813,22 @@ inline
 BOOL heap_segment_uoh_p (heap_segment * inst)
 {
     return !!(inst->flags & (heap_segment_flags_loh | heap_segment_flags_poh));
+}
+
+inline gc_oh_num heap_segment_oh (heap_segment * inst)
+{
+    if ((inst->flags & heap_segment_flags_loh) != 0)
+    {
+        return gc_oh_num::loh;
+    }
+    else if ((inst->flags & heap_segment_flags_poh) != 0)
+    {
+        return gc_oh_num::poh;
+    }
+    else
+    {
+        return gc_oh_num::soh;
+    }
 }
 
 #ifdef BACKGROUND_GC
