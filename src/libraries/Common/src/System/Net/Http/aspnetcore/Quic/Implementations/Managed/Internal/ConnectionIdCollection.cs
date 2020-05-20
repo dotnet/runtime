@@ -8,32 +8,43 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal class ConnectionIdCollection
     {
-        // _lookup of connection ids based on the sequence number
-        private ImmutableDictionary<long, ConnectionId> _connectionIds;
+        // array of connection ids kept sorted by sequence number
+        private ImmutableArray<ConnectionId> _connectionIds;
 
         public ConnectionIdCollection()
         {
-            _connectionIds = ImmutableDictionary<long, ConnectionId>.Empty;
+            _connectionIds = ImmutableArray<ConnectionId>.Empty;
         }
 
         public void Add(ConnectionId connectionId)
         {
-            var originalValue = Volatile.Read(ref _connectionIds);
-            foreach (var (_, id) in originalValue)
+            var originalValue = _connectionIds;
+            for (int i = 0; i < originalValue.Length; i++)
             {
-                if (id.Data.AsSpan().StartsWith(connectionId.Data))
+                if (originalValue[i].Data.AsSpan().StartsWith(connectionId.Data))
                 {
                     throw new InvalidOperationException("New connection id must not be a prefix of an existing one");
                 }
             }
 
-            ImmutableInterlocked.TryAdd(ref _connectionIds, connectionId.SequenceNumber, connectionId);
+            bool success;
+            do
+            {
+                int index = originalValue.BinarySearch(connectionId, ConnectionId.SequenceNumberComparer);
+                Debug.Assert(index < 0);
+                var newValue = originalValue.Insert(~index, connectionId);
+                var interlockedResult =
+                    ImmutableInterlocked.InterlockedCompareExchange(ref _connectionIds, newValue, originalValue);
+                success = interlockedResult == originalValue;
+                originalValue = interlockedResult;
+            } while (!success);
         }
 
         public ConnectionId? FindBySequenceNumber(long sequenceNumber)
         {
-            _connectionIds.TryGetValue(sequenceNumber, out var connectionId);
-            return connectionId;
+            var ids = _connectionIds;
+            int index = ids.BinarySearch(new ConnectionId(Array.Empty<byte>(), sequenceNumber, new StatelessResetToken()), ConnectionId.SequenceNumberComparer);
+            return index < 0 ? null : ids[index];
         }
 
         /// <summary>
@@ -44,8 +55,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         public ConnectionId? Find(in ReadOnlySpan<byte> dcidSpan)
         {
             // TODO-RZ Aho-Corassick might be more efficient here
-            foreach (var (_, connectionId) in _connectionIds)
+            var ids = _connectionIds;
+            for (int i = 0; i < ids.Length; i++)
             {
+                var connectionId = ids[i];
                 if (dcidSpan.StartsWith(connectionId.Data))
                 {
                     return connectionId;
@@ -57,8 +70,23 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public void Remove(ConnectionId connectionId)
         {
-            ImmutableInterlocked.TryRemove(ref _connectionIds, connectionId.SequenceNumber, out var removed);
-            Debug.Assert(removed.Equals(connectionId));
+            var originalValue = _connectionIds;
+
+            bool success;
+            do
+            {
+                int index = originalValue.BinarySearch(connectionId, ConnectionId.SequenceNumberComparer);
+                if (index < 0)
+                {
+                    return;
+                }
+
+                var newValue = originalValue.RemoveAt(index);
+                var interlockedResult =
+                    ImmutableInterlocked.InterlockedCompareExchange(ref _connectionIds, newValue, originalValue);
+                success = interlockedResult == originalValue;
+                originalValue = interlockedResult;
+            } while (!success);
         }
     }
 }

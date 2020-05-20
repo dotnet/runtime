@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -99,14 +100,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal bool TryReadVarInt(out long result)
         {
-            int bytes =  QuicPrimitives.TryReadVarInt(PeekSpan(BytesLeft), out result);
+            int bytes =  QuicPrimitives.TryReadVarInt(PeekRestOfBuffer(), out result);
             Advance(bytes);
             return bytes > 0;
         }
 
         internal long PeekVarInt()
         {
-            QuicPrimitives.TryReadVarInt(PeekSpan(BytesLeft), out long result);
+            QuicPrimitives.TryReadVarInt(PeekRestOfBuffer(), out long result);
             return result;
         }
 
@@ -151,6 +152,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return span;
         }
 
+        private ReadOnlySpan<byte> PeekRestOfBuffer()
+        {
+            return _buffer.Span.Slice(_consumed);
+        }
+
         internal ReadOnlySpan<byte> PeekSpan(int length)
         {
             CheckSizeAvailable(length);
@@ -162,9 +168,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return _buffer.Span[_consumed];
         }
 
+        [Conditional("DEBUG")]
         private void CheckSizeAvailable(int size)
         {
-            if (BytesLeft < size) throw new InvalidOperationException("Buffer too small");
+            Debug.Assert(BytesLeft >= size);
         }
     }
 }

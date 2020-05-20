@@ -61,12 +61,29 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return 1 << logLength;
         }
 
+        private static int TryReadVarIntFast(ReadOnlySpan<byte> source, out long result)
+        {
+            Debug.Assert(source.Length >= 8);
+            ulong raw = BinaryPrimitives.ReadUInt64BigEndian(source);
+
+            // decode length from the 2 most significant bits
+            int length = (1 << (int) (raw >> 62));
+            result = (long)((raw & 0x3fff_ffff_ffff_ffff) >> (64 - 8 * length));
+            return length;
+        }
+
         internal static int TryReadVarInt(ReadOnlySpan<byte> source, out long result)
         {
             if (source.Length == 0)
             {
                 result = 0;
                 return 0;
+            }
+
+            if (source.Length >= 8)
+            {
+                // we can use more optimized version
+                return TryReadVarIntFast(source, out result);
             }
 
             // first two bits give logarithm of size
