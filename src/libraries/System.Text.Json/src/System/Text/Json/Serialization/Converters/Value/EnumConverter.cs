@@ -16,11 +16,11 @@ namespace System.Text.Json.Serialization.Converters
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly string? s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
 
-        private const string EnumValueSeparator = ", ";
+        private const string ValueSeparator = ", ";
 
         private readonly EnumConverterOptions _converterOptions;
         private readonly JsonNamingPolicy _namingPolicy;
-        private readonly ConcurrentDictionary<string, string>? _nameCache;
+        private readonly ConcurrentDictionary<string, JsonEncodedText>? _nameCache;
 
         public override bool CanConvert(Type type)
         {
@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             _converterOptions = options;
             if (namingPolicy != null)
             {
-                _nameCache = new ConcurrentDictionary<string, string>();
+                _nameCache = new ConcurrentDictionary<string, JsonEncodedText>();
             }
             else
             {
@@ -160,7 +160,7 @@ namespace System.Text.Json.Serialization.Converters
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
                 string original = value.ToString();
-                if (_nameCache != null && _nameCache.TryGetValue(original, out string? transformed))
+                if (_nameCache != null && _nameCache.TryGetValue(original, out JsonEncodedText transformed))
                 {
                     writer.WriteStringValue(transformed);
                     return;
@@ -215,21 +215,28 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private string FormatEnumValue(string value)
+        private JsonEncodedText FormatEnumValue(string value)
         {
-            if (value.IndexOf(EnumValueSeparator) == -1)
+            string converted;
+
+            if (!value.Contains(ValueSeparator))
             {
-                return _namingPolicy.ConvertName(value);
+                converted = _namingPolicy.ConvertName(value);
+            }
+            else
+            {
+                // todo: optimize implementation here by leveraging https://github.com/dotnet/runtime/issues/934.
+                string[] enumValues = value.Split(ValueSeparator);
+
+                for (int i = 0; i < enumValues.Length; i++)
+                {
+                    enumValues[i] = _namingPolicy.ConvertName(enumValues[i]);
+                }
+
+                converted = string.Join(ValueSeparator, enumValues);
             }
 
-            string[] enumValues = value.Split(EnumValueSeparator);
-
-            for (int i = 0; i < enumValues.Length; i++)
-            {
-                enumValues[i] = _namingPolicy.ConvertName(enumValues[i]);
-            }
-
-            return string.Join(EnumValueSeparator, enumValues);
+            return JsonEncodedText.Encode(converted);
         }
     }
 }
