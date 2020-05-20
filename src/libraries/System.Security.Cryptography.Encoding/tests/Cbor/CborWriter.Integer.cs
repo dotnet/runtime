@@ -11,22 +11,24 @@ namespace System.Formats.Cbor
         // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>
-        ///   Writes an <see cref="int"/> value as a CBOR signed integer encoding (major types 0,1)
+        ///   Writes an <see cref="int"/> value as a signed integer encoding (major types 0,1)
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context
+        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteInt32(int value) => WriteInt64(value);
 
         /// <summary>
-        ///   Writes a <see cref="long"/> value as a CBOR signed integer encoding (major types 0,1)
+        ///   Writes a <see cref="long"/> value as a signed integer encoding (major types 0,1)
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context
+        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteInt64(long value)
         {
@@ -44,22 +46,24 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes an <see cref="uint"/> value as a CBOR unsigned integer encoding (major type 0)
+        ///   Writes an <see cref="uint"/> value as an unsigned integer encoding (major type 0)
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context
+        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteUInt32(uint value) => WriteUInt64(value);
 
         /// <summary>
-        ///   Writes an <see cref="ulong"/> value as a CBOR unsigned integer encoding (major type 0)
+        ///   Writes an <see cref="ulong"/> value as an unsigned integer encoding (major type 0)
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context
+        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteUInt64(ulong value)
         {
@@ -68,12 +72,13 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes a <see cref="ulong"/> value as a CBOR negative integer encoding (major type 1).
+        ///   Writes a <see cref="ulong"/> value as a negative integer encoding (major type 1).
         /// </summary>
         /// <param name="value">An unsigned integer denoting -1 minus the integer.</param>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the current data item context --OR--
-        ///   The major type of the encoded value is not permitted in the current data item context
+        ///   The major type of the encoded value is not permitted in the current data item context --OR--
+        ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
         ///   Intended as an escape hatch in cases of valid CBOR negative integers exceeding available primitive sizes.
