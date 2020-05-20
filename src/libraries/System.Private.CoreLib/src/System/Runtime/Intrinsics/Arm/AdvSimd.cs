@@ -8720,6 +8720,104 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<long> ShiftRightArithmeticScalar(Vector64<long> value, byte count) => ShiftRightArithmeticScalar(value, count);
 
         /// <summary>
+        /// uint8x8_t vshr_n_u8 (uint8x8_t a, const int n)
+        ///   A32: VSHR.U8 Dd, Dm, #n
+        ///   A64: USHR Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogical(Vector64<byte> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint16x4_t vshr_n_u16 (uint16x4_t a, const int n)
+        ///   A32: VSHR.U16 Dd, Dm, #n
+        ///   A64: USHR Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightLogical(Vector64<short> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint32x2_t vshr_n_u32 (uint32x2_t a, const int n)
+        ///   A32: VSHR.U32 Dd, Dm, #n
+        ///   A64: USHR Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightLogical(Vector64<int> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint8x8_t vshr_n_u8 (uint8x8_t a, const int n)
+        ///   A32: VSHR.U8 Dd, Dm, #n
+        ///   A64: USHR Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogical(Vector64<sbyte> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint16x4_t vshr_n_u16 (uint16x4_t a, const int n)
+        ///   A32: VSHR.U16 Dd, Dm, #n
+        ///   A64: USHR Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogical(Vector64<ushort> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint32x2_t vshr_n_u32 (uint32x2_t a, const int n)
+        ///   A32: VSHR.U32 Dd, Dm, #n
+        ///   A64: USHR Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogical(Vector64<uint> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint8x16_t vshrq_n_u8 (uint8x16_t a, const int n)
+        ///   A32: VSHR.U8 Qd, Qm, #n
+        ///   A64: USHR Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogical(Vector128<byte> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint16x8_t vshrq_n_u16 (uint16x8_t a, const int n)
+        ///   A32: VSHR.U16 Qd, Qm, #n
+        ///   A64: USHR Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightLogical(Vector128<short> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint32x4_t vshrq_n_u32 (uint32x4_t a, const int n)
+        ///   A32: VSHR.U32 Qd, Qm, #n
+        ///   A64: USHR Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightLogical(Vector128<int> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint64x2_t vshrq_n_u64 (uint64x2_t a, const int n)
+        ///   A32: VSHR.U64 Qd, Qm, #n
+        ///   A64: USHR Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightLogical(Vector128<long> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint8x16_t vshrq_n_u8 (uint8x16_t a, const int n)
+        ///   A32: VSHR.U8 Qd, Qm, #n
+        ///   A64: USHR Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogical(Vector128<sbyte> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint16x8_t vshrq_n_u16 (uint16x8_t a, const int n)
+        ///   A32: VSHR.U16 Qd, Qm, #n
+        ///   A64: USHR Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint32x4_t vshrq_n_u32 (uint32x4_t a, const int n)
+        ///   A32: VSHR.U32 Qd, Qm, #n
+        ///   A64: USHR Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// uint64x2_t vshrq_n_u64 (uint64x2_t a, const int n)
+        ///   A32: VSHR.U64 Qd, Qm, #n
+        ///   A64: USHR Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, byte count) => ShiftRightLogical(value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
