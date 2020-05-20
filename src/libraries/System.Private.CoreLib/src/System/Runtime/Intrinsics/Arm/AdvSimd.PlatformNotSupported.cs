@@ -7314,6 +7314,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<long> ShiftArithmeticRoundedScalar(Vector64<long> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int16x4_t vqshl_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VQSHL.S16 Dd, Dn, Dm
+        ///   A64: SQSHL Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> ShiftArithmeticSaturate(Vector64<short> value, Vector64<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqshl_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VQSHL.S32 Dd, Dn, Dm
+        ///   A64: SQSHL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> ShiftArithmeticSaturate(Vector64<int> value, Vector64<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vqshl_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VQSHL.S8 Dd, Dn, Dm
+        ///   A64: SQSHL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> ShiftArithmeticSaturate(Vector64<sbyte> value, Vector64<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqshlq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VQSHL.S16 Qd, Qn, Qm
+        ///   A64: SQSHL Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> ShiftArithmeticSaturate(Vector128<short> value, Vector128<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqshlq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VQSHL.S32 Qd, Qn, Qm
+        ///   A64: SQSHL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> ShiftArithmeticSaturate(Vector128<int> value, Vector128<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqshlq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VQSHL.S64 Qd, Qn, Qm
+        ///   A64: SQSHL Vd.2D, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<long> ShiftArithmeticSaturate(Vector128<long> value, Vector128<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vqshlq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VQSHL.S8 Qd, Qn, Qm
+        ///   A64: SQSHL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> ShiftArithmeticSaturate(Vector128<sbyte> value, Vector128<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
