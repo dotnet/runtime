@@ -1060,7 +1060,7 @@ protected:
         // Returns true after the last call to EmitCaseEnd() (i.e. this signals that code generation is done).
         bool Done() const
         {
-            return immValue == immUpperBound;
+            return (immValue == immUpperBoundExcl);
         }
 
         // Returns a value of the immediate operand that should be used for a case.
@@ -1081,7 +1081,7 @@ protected:
         bool TestImmOpZeroOrOne() const
         {
             assert(NonConstImmOp());
-            return immUpperBound == 2;
+            return (immLowerBoundIncl == 0) && (immUpperBoundExcl == 2);
         }
 
         emitter* GetEmitter() const
@@ -1093,7 +1093,8 @@ protected:
         BasicBlock*    endLabel;
         BasicBlock*    nonZeroLabel;
         int            immValue;
-        int            immUpperBound;
+        int            immLowerBoundIncl;
+        int            immUpperBoundExcl;
         regNumber      nonConstImmReg;
         regNumber      branchTargetReg;
     };
