@@ -1329,6 +1329,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> ShiftLogicalRoundedSaturateScalar(Vector64<uint> value, Vector64<int> count) => ShiftLogicalRoundedSaturateScalar(value, count);
 
             /// <summary>
+            /// uint8_t vqshlb_u8 (uint8_t a, int8_t b)
+            ///   A64: UQSHL Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<byte> ShiftLogicalSaturateScalar(Vector64<byte> value, Vector64<sbyte> count) => ShiftLogicalSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint16_t vqshlh_u16 (uint16_t a, int16_t b)
+            ///   A64: UQSHL Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<short> ShiftLogicalSaturateScalar(Vector64<short> value, Vector64<short> count) => ShiftLogicalSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint32_t vqshls_u32 (uint32_t a, int32_t b)
+            ///   A64: UQSHL Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<int> ShiftLogicalSaturateScalar(Vector64<int> value, Vector64<int> count) => ShiftLogicalSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint8_t vqshlb_u8 (uint8_t a, int8_t b)
+            ///   A64: UQSHL Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<sbyte> ShiftLogicalSaturateScalar(Vector64<sbyte> value, Vector64<sbyte> count) => ShiftLogicalSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint16_t vqshlh_u16 (uint16_t a, int16_t b)
+            ///   A64: UQSHL Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<ushort> ShiftLogicalSaturateScalar(Vector64<ushort> value, Vector64<short> count) => ShiftLogicalSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint32_t vqshls_u32 (uint32_t a, int32_t b)
+            ///   A64: UQSHL Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<uint> ShiftLogicalSaturateScalar(Vector64<uint> value, Vector64<int> count) => ShiftLogicalSaturateScalar(value, count);
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
@@ -8262,6 +8298,20 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UQSHL Vd.2D, Vn.2D, Vm.2D
         /// </summary>
         public static Vector128<ulong> ShiftLogicalSaturate(Vector128<ulong> value, Vector128<long> count) => ShiftLogicalSaturate(value, count);
+
+        /// <summary>
+        /// uint64x1_t vqshl_u64 (uint64x1_t a, int64x1_t b)
+        ///   A32: VQSHL.U64 Dd, Dn, Dm
+        ///   A64: UQSHL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> ShiftLogicalSaturateScalar(Vector64<long> value, Vector64<long> count) => ShiftLogicalSaturateScalar(value, count);
+
+        /// <summary>
+        /// uint64x1_t vqshl_u64 (uint64x1_t a, int64x1_t b)
+        ///   A32: VQSHL.U64 Dd, Dn, Dm
+        ///   A64: UQSHL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> ShiftLogicalSaturateScalar(Vector64<ulong> value, Vector64<long> count) => ShiftLogicalSaturateScalar(value, count);
 
         /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
