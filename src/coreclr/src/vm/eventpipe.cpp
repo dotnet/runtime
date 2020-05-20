@@ -112,13 +112,18 @@ void EventPipe::FinishInitialize()
 {
     STANDARD_VM_CONTRACT;
 
+    CrstHolder _crst(GetLock());
+
     s_CanStartThreads = true;
 
     while (s_rgDeferredEventPipeSessionIds.Size() > 0)
     {
         EventPipeSessionID id = s_rgDeferredEventPipeSessionIds.Pop();
-        EventPipeSession *pSession = reinterpret_cast<EventPipeSession*>(id);
-        pSession->StartStreaming();
+        if (IsSessionIdInCollection(id))
+        {
+            EventPipeSession *pSession = reinterpret_cast<EventPipeSession*>(id);
+            pSession->StartStreaming();
+        }
     }
 
     if (s_enableSampleProfilerAtStartup)
@@ -1000,7 +1005,13 @@ bool EventPipe::IsLockOwnedByCurrentThread()
 // The s_ResumeRuntimeStartupEvent event will be signaled when the Diagnostics Monitor uses the ResumeRuntime Diagnostics IPC Command
 void EventPipe::PauseForTracingAgent()
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+      NOTHROW;
+      GC_NOTRIGGER;
+      MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     CLRConfigStringHolder pDotnetDiagnosticsMonitorAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorAddress);
     if (pDotnetDiagnosticsMonitorAddress != nullptr)
