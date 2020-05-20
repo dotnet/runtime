@@ -8706,6 +8706,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUpper(lower, value, count);
 
         /// <summary>
+        /// int64x1_t vrshr_n_s64 (int64x1_t a, const int n)
+        ///   A32: VRSHR.S64 Dd, Dm, #n
+        ///   A64: SRSHR Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightArithmeticRoundedScalar(Vector64<long> value, byte count) => ShiftRightArithmeticRoundedScalar(value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
