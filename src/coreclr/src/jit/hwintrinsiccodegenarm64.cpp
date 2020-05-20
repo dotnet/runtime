@@ -618,7 +618,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
 
             case NI_Vector64_ToVector128:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
+                break;
+
             case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_GetLower:
                 if (op1Reg != targetReg)
                 {
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
