@@ -743,12 +743,15 @@ namespace System.Net.Sockets
             }
 
             // IsReady returns whether an operation can be executed immediately without queueing it.
-            // When IsReady returns true, the observedSequenceNumber is set.
-            // This ensures the sequence number is read, before executing the operation.
-            // When the operation can't complete, StartAsyncOperation compares against the current
-            // sequence number to see if the operation should be tried again.
+            // observedSequenceNumber must be passed to StartAsyncOperation.
             public bool IsReady(SocketAsyncContext context, out int? observedSequenceNumber)
             {
+                // It is safe to read _state and _sequence without using Lock.
+                // - The return value is soly based on Volatile.Read of _state.
+                // - The Volatile.Read of _sequenceNumber ensures we read a value before executing the operation.
+                //   This is needed to retry the operation in StartAsyncOperation in case the _sequenceNumber incremented.
+                // - Because no Lock is taken, it is possible we observe a sequence number increment before the state
+                //   becomes Ready. When that happens, observedSequenceNumber is null, and StartAsyncOperation will execute the operation.
                 QueueState state = (QueueState)Volatile.Read(ref Unsafe.As<QueueState, int>(ref _state));
                 bool isReady = state == QueueState.Ready || state == QueueState.Stopped;
                 observedSequenceNumber = isReady ? Volatile.Read(ref _sequenceNumber) : default;
