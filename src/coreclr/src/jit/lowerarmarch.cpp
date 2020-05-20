@@ -1376,7 +1376,39 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AdvSimd_DuplicateSelectedScalarToVector64:
         case NI_AdvSimd_DuplicateSelectedScalarToVector128:
         case NI_AdvSimd_Extract:
+        case NI_AdvSimd_ShiftLeftLogical:
+        case NI_AdvSimd_ShiftLeftLogicalSaturate:
+        case NI_AdvSimd_ShiftLeftLogicalSaturateScalar:
+        case NI_AdvSimd_ShiftLeftLogicalSaturateUnsigned:
+        case NI_AdvSimd_ShiftLeftLogicalSaturateUnsignedScalar:
+        case NI_AdvSimd_ShiftLeftLogicalScalar:
+        case NI_AdvSimd_ShiftLeftLogicalWideningLower:
+        case NI_AdvSimd_ShiftLeftLogicalWideningUpper:
+        case NI_AdvSimd_ShiftRightArithmetic:
+        case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateLower:
+        case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedLower:
+        case NI_AdvSimd_ShiftRightArithmeticRounded:
+        case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateLower:
+        case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower:
+        case NI_AdvSimd_ShiftRightArithmeticRoundedScalar:
+        case NI_AdvSimd_ShiftRightArithmeticScalar:
+        case NI_AdvSimd_ShiftRightLogical:
+        case NI_AdvSimd_ShiftRightLogicalNarrowingLower:
+        case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateLower:
+        case NI_AdvSimd_ShiftRightLogicalRounded:
+        case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingLower:
+        case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateLower:
+        case NI_AdvSimd_ShiftRightLogicalRoundedScalar:
+        case NI_AdvSimd_ShiftRightLogicalScalar:
         case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+        case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateScalar:
+        case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateUnsignedScalar:
+        case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateScalar:
+        case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateUnsignedScalar:
+        case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateScalar:
+        case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar:
+        case NI_AdvSimd_Arm64_ShiftRightLogicalNarrowingSaturateScalar:
+        case NI_AdvSimd_Arm64_ShiftRightLogicalRoundedNarrowingSaturateScalar:
         case NI_Vector64_GetElement:
         case NI_Vector128_GetElement:
             if (intrin.op2->IsCnsIntOrI())
@@ -1387,6 +1419,22 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_AdvSimd_ExtractVector64:
         case NI_AdvSimd_ExtractVector128:
+        case NI_AdvSimd_ShiftRightArithmeticAdd:
+        case NI_AdvSimd_ShiftRightArithmeticAddScalar:
+        case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedUpper:
+        case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUpper:
+        case NI_AdvSimd_ShiftRightArithmeticRoundedAdd:
+        case NI_AdvSimd_ShiftRightArithmeticRoundedAddScalar:
+        case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper:
+        case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUpper:
+        case NI_AdvSimd_ShiftRightLogicalAdd:
+        case NI_AdvSimd_ShiftRightLogicalAddScalar:
+        case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateUpper:
+        case NI_AdvSimd_ShiftRightLogicalNarrowingUpper:
+        case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
+        case NI_AdvSimd_ShiftRightLogicalRoundedAddScalar:
+        case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateUpper:
+        case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingUpper:
             if (intrin.op3->IsCnsIntOrI())
             {
                 MakeSrcContained(node, intrin.op3);
