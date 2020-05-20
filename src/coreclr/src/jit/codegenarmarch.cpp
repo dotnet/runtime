@@ -2523,6 +2523,27 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
                     retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, target->GetRegNum());
     }
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+    else if (call->IsR2RRelativeIndir())
+    {
+        // Generate a direct call to a non-virtual user defined or helper method
+        assert(callType == CT_HELPER || callType == CT_USER_FUNC);
+        assert(call->gtEntryPoint.accessType == IAT_PVALUE);
+        assert(call->gtControlExpr == nullptr);
+
+        regNumber tmpReg = call->GetSingleTempReg();
+        GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, REG_R2R_INDIRECT_PARAM);
+
+        // We have now generated code for gtControlExpr evaluating it into `tmpReg`.
+        // We just need to emit "call tmpReg" in this case.
+        //
+        assert(genIsValidIntReg(tmpReg));
+
+        genEmitCall(emitter::EC_INDIR_R, methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
+                    retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, tmpReg);
+    }
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
     else
     {
         // Generate a direct call to a non-virtual user defined or helper method

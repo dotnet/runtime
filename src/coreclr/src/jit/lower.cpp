@@ -3287,11 +3287,19 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
-            // Non-virtual direct calls to addresses accessed by
-            // a single indirection.
-            GenTree* cellAddr = AddrGen(addr);
-            GenTree* indir    = Ind(cellAddr);
-            result            = indir;
+            bool isR2RRelativeIndir = false;
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+            isR2RRelativeIndir = call->IsR2RRelativeIndir();
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+
+            if (!isR2RRelativeIndir)
+            {
+                // Non-virtual direct calls to addresses accessed by
+                // a single indirection.
+                GenTree* cellAddr = AddrGen(addr);
+                GenTree* indir    = Ind(cellAddr);
+                result            = indir;
+            }
             break;
         }
 
