@@ -1894,6 +1894,11 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
         ItfType = ifDual;
     }
 
+    if (ItfType == ifInspectable)
+    {
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
+    }
+
     // Cache the interface type
     g_IBCLogger.LogEEClassCOWTableAccess(this);
     GetClass_NoLogging()->SetComInterfaceType(ItfType);

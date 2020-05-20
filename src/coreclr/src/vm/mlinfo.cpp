@@ -3231,9 +3231,6 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, BOOL fDispItf, MarshalScenari
                         case ifDual:
                             pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
                             break;
-
-                        case ifInspectable:
-                            COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
                     }
                     break;
                 }
@@ -3291,10 +3288,6 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, BOOL fDispItf, MarshalScenari
             case ifDispatch:
             case ifDual:
                 pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
-                break;
-
-            case ifInspectable:
-                COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
                 break;
         }
 

@@ -41,12 +41,6 @@ namespace ComWrappersTests.GlobalInstance
                 [MarshalAs(UnmanagedType.IDispatch)] out object ret);
 
             [DllImport(nameof(MockReferenceTrackerRuntime))]
-            extern public static int UpdateTestObjectAsIInspectable(
-                [MarshalAs(UnmanagedType.IInspectable)] object testObj,
-                int i,
-                [MarshalAs(UnmanagedType.IInspectable)] out object ret);
-
-            [DllImport(nameof(MockReferenceTrackerRuntime))]
             extern public static int UpdateTestObjectAsInterface(
                 [MarshalAs(UnmanagedType.Interface)] ITest testObj,
                 int i,
@@ -339,9 +333,6 @@ namespace ComWrappersTests.GlobalInstance
             {
                 Console.WriteLine($" -- Validate MarshalAs IDispatch...");
                 ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIDispatch, shouldSucceed: true, new TestEx(IID_IDISPATCH));
-
-                Console.WriteLine($" -- Validate MarshalAs IInspectable...");
-                ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIInspectable, shouldSucceed: true, new TestEx(IID_IINSPECTABLE));
             }
 
             Console.WriteLine($" -- Validate MarshalAs Interface...");

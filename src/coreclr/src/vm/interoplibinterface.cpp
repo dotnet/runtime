@@ -803,7 +803,7 @@ namespace
 
 namespace
 {
-    BOOL g_isGlobalPeggingOn;
+    BOOL g_isGlobalPeggingOn = TRUE;
 }
 
 namespace InteropLibImports
@@ -985,7 +985,7 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
-        return (g_isGlobalPeggingOn != FALSE);
+        return (VolatileLoad(&g_isGlobalPeggingOn) != FALSE);
     }
 
     void SetGlobalPeggingState(_In_ bool state) noexcept

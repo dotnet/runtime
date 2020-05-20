@@ -2997,7 +2997,7 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
 
         // If the requested interface is IEnumerable then we need to check to see if the
         // COM object implements IDispatch and has a member with DISPID_NEWENUM.
-        if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
+        if (pItfMT == MscorlibBinder::GetClass(CLASS__IENUMERABLE))
         {
             SafeComHolder<IDispatch> pDisp = GetIDispatch();
             if (pDisp)

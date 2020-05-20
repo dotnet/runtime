@@ -361,14 +361,6 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIDispatch(IDispatc
     return UpdateTestObjectAsIUnknown(obj, i, (IUnknown**)out);
 }
 
-extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIInspectable(IInspectable * obj, int i, IInspectable **out)
-{
-    if (obj == nullptr)
-        return E_POINTER;
-
-    return UpdateTestObjectAsIUnknown(obj, i, (IUnknown **)out);
-}
-
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsInterface(ITest *obj, int i, ITest **out)
 {
     if (obj == nullptr)

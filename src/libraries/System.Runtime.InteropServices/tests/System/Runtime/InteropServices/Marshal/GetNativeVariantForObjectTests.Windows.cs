@@ -100,8 +100,6 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new DualComObject[] { new DualComObject() } };
             yield return new object[] { new IUnknownComObject[] { new IUnknownComObject(), null } };
             yield return new object[] { new IDispatchComObject[] { new IDispatchComObject(), null } };
-            yield return new object[] { new IInspectableComObject[] { new IInspectableComObject(), null } };
-
             yield return new object[] { new NonDualComObject[] { new NonDualComObject(), null } };
             yield return new object[] { new AutoDispatchComObject[] { new AutoDispatchComObject(), null } };
             yield return new object[] { new AutoDualComObject[] { new AutoDualComObject(), null } };
