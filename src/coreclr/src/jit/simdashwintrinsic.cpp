@@ -173,43 +173,34 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 {
     assert(!mustExpand);
 
-    CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
-
     if (!featureSIMD)
     {
         // We can't support SIMD intrinsics if the JIT doesn't support the feature
         return nullptr;
     }
 
-    var_types retType  = JITtype2varType(sig->retType);
-    var_types baseType = TYP_UNKNOWN;
-    var_types simdType = TYP_UNKNOWN;
-    unsigned  simdSize = 0;
+    CORINFO_CLASS_HANDLE argClass         = NO_CLASS_HANDLE;
+    var_types            retType          = JITtype2varType(sig->retType);
+    var_types            baseType         = TYP_UNKNOWN;
+    var_types            simdType         = TYP_UNKNOWN;
+    unsigned             simdSize         = 0;
+    unsigned             numArgs          = sig->numArgs;
+    bool                 isInstanceMethod = false;
 
     // We want to resolve and populate the handle cache for this type even
     // if it isn't the basis for anything carried on the node.
     baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
-
-    if (simdSize == 0)
-    {
-        // We get here for a devirtualization of IEquatable`1.Equals
-        assert(!isSIMDClass(clsHnd));
-        return nullptr;
-    }
 
     if (retType == TYP_STRUCT)
     {
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);
         retType  = getSIMDTypeForSize(simdSize);
     }
-    else
+    else if (numArgs != 0)
     {
         argClass = info.compCompHnd->getArgClass(sig, sig->args);
         baseType = getBaseTypeAndSizeOfSIMDType(argClass, &simdSize);
     }
-
-    unsigned numArgs          = sig->numArgs;
-    bool     isInstanceMethod = false;
 
     if (sig->hasThis())
     {
@@ -219,11 +210,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         isInstanceMethod = true;
         argClass         = clsHnd;
     }
-
-    if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0))
+    else if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0))
     {
-        assert(!isInstanceMethod);
-
         // We need to fixup the clsHnd in the case we are an intrinsic on Vector
         // The first argument will be the appropriate Vector<T> handle to use
         clsHnd = info.compCompHnd->getArgClass(sig, sig->args);
@@ -235,14 +223,15 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
     }
 
-    simdType = getSIMDTypeForSize(simdSize);
-    assert(varTypeIsSIMD(simdType));
-
-    if (!varTypeIsArithmetic(baseType))
+    if (!varTypeIsArithmetic(baseType) || (simdSize == 0))
     {
-        // We only support intrinsics on the 10 primitive arithmetic types
+        // We get here for a devirtualization of IEquatable`1.Equals
+        // or if the user tries to use Vector<T> with an unsupported type
         return nullptr;
     }
+
+    simdType = getSIMDTypeForSize(simdSize);
+    assert(varTypeIsSIMD(simdType));
 
     NamedIntrinsic hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType);
 
@@ -392,6 +381,38 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
     switch (numArgs)
     {
+        case 0:
+        {
+            switch (intrinsic)
+            {
+#if defined(TARGET_XARCH)
+                case NI_VectorT128_get_Count:
+                case NI_VectorT256_get_Count:
+                {
+                    GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, baseType), TYP_INT);
+                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+                    return countNode;
+                }
+#elif defined(TARGET_ARM64)
+                case NI_VectorT128_get_Count:
+                {
+                    GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, baseType), TYP_INT);
+                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+                    return countNode;
+                }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                default:
+                {
+                    // Some platforms warn about unhandled switch cases
+                    // We handle it more generally via the assert and nullptr return below.
+                    break;
+                }
+            }
+        }
+
         case 1:
         {
             bool isOpExplicit = (intrinsic == NI_VectorT128_op_Explicit);
