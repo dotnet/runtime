@@ -9432,6 +9432,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x16_t vrshrn_high_n_u16 (uint8x8_t r, uint16x8_t a, const int n)
+        ///   A32: VRSHRN.I16 Dd+1, Qm, #n
+        ///   A64: RSHRN2 Vd.16B, Vn.8H, #n
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vrshrn_high_n_s32 (int16x4_t r, int32x4_t a, const int n)
+        ///   A32: VRSHRN.I32 Dd+1, Qm, #n
+        ///   A64: RSHRN2 Vd.8H, Vn.4S, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingUpper(Vector64<short> lower, Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vrshrn_high_n_s64 (int32x2_t r, int64x2_t a, const int n)
+        ///   A32: VRSHRN.I64 Dd+1, Qm, #n
+        ///   A64: RSHRN2 Vd.4S, Vn.2D, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingUpper(Vector64<int> lower, Vector128<long> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vrshrn_high_n_s16 (int8x8_t r, int16x8_t a, const int n)
+        ///   A32: VRSHRN.I16 Dd+1, Qm, #n
+        ///   A64: RSHRN2 Vd.16B, Vn.8H, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vrshrn_high_n_u32 (uint16x4_t r, uint32x4_t a, const int n)
+        ///   A32: VRSHRN.I32 Dd+1, Qm, #n
+        ///   A64: RSHRN2 Vd.8H, Vn.4S, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vrshrn_high_n_u64 (uint32x2_t r, uint64x2_t a, const int n)
+        ///   A32: VRSHRN.I64 Dd+1, Qm, #n
+        ///   A64: RSHRN2 Vd.4S, Vn.2D, #n
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
