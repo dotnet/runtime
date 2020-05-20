@@ -17,14 +17,14 @@
   </ItemGroup>
 
   <Target Name="CopyInteropNativeRuntimeDependencies"
-    BeforeTargets="CopyAllNativeProjectReferenceBinaries" >
+    BeforeTargets="CopyAllNativeProjectReferenceBinaries"
+    Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
     <!-- Required debug vcruntime and UCRT dlls -->
-    <ItemGroup
-      Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
-
-      <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-      <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-      <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" CopyToOutputDirectory="Always" />
+    <ItemGroup>
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" />
     </ItemGroup>
+    <Copy SourceFiles="@(InteropNativeRuntimeDependencies)" DestinationFolder="$(OutputPath)" />
   </Target>
 </Project>
