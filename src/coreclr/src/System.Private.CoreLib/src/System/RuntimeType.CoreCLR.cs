@@ -244,14 +244,17 @@ namespace System
                     switch (cacheType)
                     {
                         case CacheType.Method:
-                            list = (T[])(object)new RuntimeMethodInfo[1] {
-                            new RuntimeMethodInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null)
-                        };
+                            list = (T[])(object)new RuntimeMethodInfo[1]
+                            {
+                                new RuntimeMethodInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null)
+                            };
                             break;
+
                         case CacheType.Constructor:
-                            list = (T[])(object)new RuntimeConstructorInfo[1] {
-                            new RuntimeConstructorInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags)
-                        };
+                            list = (T[])(object)new RuntimeConstructorInfo[1]
+                            {
+                                new RuntimeConstructorInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags)
+                            };
                             break;
                     }
 
@@ -2752,7 +2755,7 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
@@ -2788,7 +2791,7 @@ namespace System
 
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
@@ -2851,7 +2854,7 @@ namespace System
 
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
-            if (fullname is null) throw new ArgumentNullException();
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -2885,7 +2888,7 @@ namespace System
 
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            if (fullname is null) throw new ArgumentNullException();
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             bindingAttr &= ~BindingFlags.Static;
             string name, ns;
@@ -2913,7 +2916,7 @@ namespace System
 
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
@@ -4062,7 +4065,7 @@ namespace System
 
             // Handle arguments that are passed as ByRef and those
             // arguments that need to be wrapped.
-            ParameterModifier[] aParamMod = null!;
+            ParameterModifier[]? aParamMod = null;
             if (cArgs > 0)
             {
                 ParameterModifier paramMod = new ParameterModifier(cArgs);
@@ -4087,7 +4090,7 @@ namespace System
             for (int i = 0; i < cArgs; i++)
             {
                 // Determine if the parameter is ByRef.
-                if (aParamMod[0][i] && aArgs[i] != null)
+                if (aParamMod![0][i] && aArgs[i] != null)
                 {
                     Type argType = aArgsTypes[i];
                     if (!ReferenceEquals(argType, aArgs[i].GetType()))

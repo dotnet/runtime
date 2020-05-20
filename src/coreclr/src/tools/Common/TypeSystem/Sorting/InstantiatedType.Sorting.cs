@@ -14,20 +14,28 @@ namespace Internal.TypeSystem
         protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             var otherType = (InstantiatedType)other;
+            // Sort by instantiation before sorting by associated method definition
+            // The goal of this is to keep methods which work with the same types near
+            // to each other. This is a better heuristic than sorting by method definition
+            // then by instantiation.
+            //
+            // The goal is to sort classes like SomeClass<UserStruct>, 
+            // near SomeOtherClass<UserStruct, int>
 
-            int result = comparer.Compare(_typeDef, otherType._typeDef);
-            if (result == 0)
+            int result = 0;
+            // Sort instantiations of the same type together
+            for (int i = 0; i < _instantiation.Length; i++)
             {
-                Debug.Assert(_instantiation.Length == otherType._instantiation.Length);
-                for (int i = 0; i < _instantiation.Length; i++)
-                {
-                    result = comparer.Compare(_instantiation[i], otherType._instantiation[i]);
-                    if (result != 0)
-                        break;
-                }
+                if (i >= otherType._instantiation.Length)
+                    return 1;
+                result = comparer.Compare(_instantiation[i], otherType._instantiation[i]);
+                if (result != 0)
+                    return result;
             }
+            if (_instantiation.Length < otherType._instantiation.Length)
+                return -1;
 
-            return result;
+            return comparer.Compare(_typeDef, otherType._typeDef);
         }
     }
 }

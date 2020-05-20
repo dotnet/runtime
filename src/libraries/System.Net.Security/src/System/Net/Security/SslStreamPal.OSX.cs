@@ -237,9 +237,8 @@ namespace System.Net.Security
                     sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                     context = sslContext;
 
-                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost))
+                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
                     {
-                        Debug.Assert(!sslAuthenticationOptions.IsServer, "targetName should not be set for server-side handshakes");
                         Interop.AppleCrypto.SslSetTargetName(sslContext.SslContext, sslAuthenticationOptions.TargetHost);
                     }
 

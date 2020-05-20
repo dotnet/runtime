@@ -18,6 +18,7 @@ using Internal.Runtime.CompilerServices;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 using Internal.CorConstants;
 
 using ILCompiler;
@@ -1758,23 +1759,10 @@ namespace Internal.JitInterface
         {
             var type = HandleToObject(cls);
 
-            switch (type.Category)
-            {
-                case TypeFlags.Byte:
-                case TypeFlags.SByte:
-                case TypeFlags.UInt16:
-                case TypeFlags.Int16:
-                case TypeFlags.UInt32:
-                case TypeFlags.Int32:
-                case TypeFlags.UInt64:
-                case TypeFlags.Int64:
-                case TypeFlags.Single:
-                case TypeFlags.Double:
-                    return asCorInfoType(type);
+            if (type.IsPrimitiveNumeric)
+                return asCorInfoType(type);
 
-                default:
-                    return CorInfoType.CORINFO_TYPE_UNDEF;
-            }
+            return CorInfoType.CORINFO_TYPE_UNDEF;
         }
 
         private bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
@@ -2205,7 +2193,7 @@ namespace Internal.JitInterface
             var type = (DefType)HandleToObject(hClass);
 
             // For 8-byte vectors return CORINFO_TYPE_DOUBLE, which is mapped by JIT to SIMD8.
-            // Otherwise, return CORINFO_TYPE_VALUECLASS, which is mapped by JIT to SIMD16.
+            // For 16-byte vectors return CORINFO_TYPE_VALUECLASS, which is mapped by JIT to SIMD16.
             // See MethodTable::GetHFAType and Compiler::GetHfaType.
             return (type.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
             {
@@ -2213,7 +2201,6 @@ namespace Internal.JitInterface
                 ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
                 ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
                 ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoType.CORINFO_TYPE_VALUECLASS,
-                ValueTypeShapeCharacteristics.Vector256Aggregate => CorInfoType.CORINFO_TYPE_VALUECLASS,
                 _ => CorInfoType.CORINFO_TYPE_UNDEF
             };
         }
@@ -2564,7 +2551,7 @@ namespace Internal.JitInterface
 
         private byte[] _roData;
 
-        private SettableReadOnlyDataBlob _roDataBlob;
+        private MethodReadOnlyDataNode _roDataBlob;
         private int _roDataAlignment;
 
         private int _numFrameInfos;
@@ -2610,8 +2597,7 @@ namespace Internal.JitInterface
 
                 _roData = new byte[roDataSize];
 
-                _roDataBlob = _compilation.NodeFactory.SettableReadOnlyDataBlob(
-                    "__readonlydata_" + _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled));
+                _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
 
                 roDataBlock = (void*)GetPin(_roData);
             }
@@ -2933,6 +2919,22 @@ namespace Internal.JitInterface
                     throw new RequiresRuntimeJitException("ReadyToRun: Methods with UnmanagedCallersOnlyAttribute not implemented");
                 }
 #endif
+
+                // Validate UnmanagedCallersOnlyAttribute usage
+                if (!this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, this.MethodBeingCompiled);
+                }
+
+                if (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation) // No generics involved
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
+                }
+
+                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
+                }
 
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
             }

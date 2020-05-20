@@ -5,9 +5,9 @@
 using System.Diagnostics;
 using System.Numerics;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter
+    public partial class CborWriter
     {
         public void WriteTag(CborTag tag)
         {

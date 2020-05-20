@@ -5,9 +5,6 @@
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
     <NoWarn>$(NoWarn);1698;0436</NoWarn>
-    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
-    <DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp'))">$(DefineConstants);FEATURE_APPX</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard1.0;netstandard1.2;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
@@ -16,8 +13,11 @@
   <PropertyGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
+    <DefineConstants Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">$(DefineConstants);FEATURE_APPX</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.cs" />
@@ -75,13 +75,13 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
     <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" PrivateAssets="all" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />

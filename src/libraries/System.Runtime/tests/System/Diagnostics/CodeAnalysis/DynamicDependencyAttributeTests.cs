@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Diagnostics.CodeAnalysis.Tests
 {
-    public class DynamicDependencyAttributeTestsTests
+    public class DynamicDependencyAttributeTests
     {
         [Theory]
         [InlineData("Foo()")]

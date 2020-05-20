@@ -431,7 +431,7 @@ namespace System.Xml
         /// </summary>
         public override void WriteValue(object value)
         {
-            WriteString(XmlUntypedConverter.Untyped.ToString(value, this.resolver));
+            WriteString(XmlUntypedConverter.Untyped.ToString(value, this._resolver));
         }
 
         public override void WriteValue(string value)

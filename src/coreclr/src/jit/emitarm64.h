@@ -187,7 +187,7 @@ union byteShiftedImm {
 
 static emitter::byteShiftedImm emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL);
 
-static INT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
+static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
 
 /************************************************************************
 *

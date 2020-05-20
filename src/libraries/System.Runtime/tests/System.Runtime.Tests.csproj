@@ -70,7 +70,7 @@
     <Compile Include="System\EntryPointNotFoundExceptionTests.cs" />
     <Compile Include="System\EnumTests.cs" />
     <Compile Include="System\ExceptionTests.cs" />
-    <Compile Include="System\Exceptions.Utility.cs" />
+    <Compile Include="System\Exception.Helpers.cs" />
     <Compile Include="System\ExecutionEngineExceptionTests.cs" />
     <Compile Include="System\ExternalExceptionTests.cs" />
     <Compile Include="System\EventArgsTests.cs" />
@@ -156,6 +156,7 @@
     <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttributeTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.InteropTests.cs" />

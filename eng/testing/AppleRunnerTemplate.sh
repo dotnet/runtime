@@ -25,7 +25,7 @@ fi
 
 # "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
 
-APP_BUNDLE=$EXECUTION_DIR/Bundle/$TEST_NAME/$SCHEME_SDK/$TEST_NAME.app
+APP_BUNDLE=$EXECUTION_DIR/$TEST_NAME/$SCHEME_SDK/$TEST_NAME.app
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
 LOCKDIR=/tmp/runonsim.lock
@@ -39,10 +39,14 @@ while true; do
     fi
 done
 
-XHARNESS_OUT="$EXECUTION_DIR/Bundle/xharness-output"
+XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
 dotnet xharness ios test --app="$APP_BUNDLE" \
     --targets=$TARGET \
     --output-directory=$XHARNESS_OUT
 
+_exitCode=$?
+
 echo "Xharness artifacts: $XHARNESS_OUT"
+
+exit $_exitCode

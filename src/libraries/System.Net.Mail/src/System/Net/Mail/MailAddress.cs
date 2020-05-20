@@ -124,7 +124,7 @@ namespace System.Net.Mail
             {
                 throw new ArgumentNullException(nameof(address));
             }
-            if (address == string.Empty)
+            if (address.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
             }

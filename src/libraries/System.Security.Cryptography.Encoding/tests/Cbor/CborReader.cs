@@ -5,11 +5,10 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal enum CborReaderState
+    public enum CborReaderState
     {
         Unknown = 0,
         UnsignedInteger,
@@ -37,7 +36,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         FormatError,
     }
 
-    internal partial class CborReader
+    public partial class CborReader
     {
         private readonly ReadOnlyMemory<byte> _originalBuffer;
         private ReadOnlyMemory<byte> _buffer;
@@ -62,7 +61,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // keeps a cached copy of the reader state; 'Unknown' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.Unknown;
 
-        internal CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
+        public CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
@@ -368,7 +367,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             if (_currentKeyOffset != null) // is map context
             {
-                if(_currentItemIsKey)
+                if (_currentItemIsKey)
                 {
                     HandleMapKeyRead();
                 }
@@ -505,7 +504,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 Debug.Assert(
                     (stackOffset == 0) ?
                     _frameOffset == checkpoint.FrameOffset :
-                    _nestedDataItems.Skip(stackOffset - 1).FirstOrDefault().FrameOffset == checkpoint.FrameOffset,
+                    _nestedDataItems.ToArray()[stackOffset - 1].FrameOffset == checkpoint.FrameOffset,
                     "Attempting to restore checkpoint outside of its original context.");
 
                 // pop any nested data items introduced after the checkpoint

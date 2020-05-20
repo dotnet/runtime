@@ -43,6 +43,15 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Equal(ParameterAttributes.In, parameters[0].Attributes);
             Assert.Equal(ParameterAttributes.Out, parameters[1].Attributes);
+
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/36271")]
+            {
+                Assert.Empty(parameters[0].GetRequiredCustomModifiers());
+                Assert.Empty(parameters[1].GetRequiredCustomModifiers());
+
+                Assert.Empty(parameters[0].GetOptionalCustomModifiers());
+                Assert.Empty(parameters[1].GetOptionalCustomModifiers());
+            }
         }
     }
 }

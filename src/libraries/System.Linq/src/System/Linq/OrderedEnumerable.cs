@@ -74,40 +74,6 @@ namespace System.Linq
             new OrderedEnumerable<TElement, TKey>(_source, keySelector, comparer, @descending, this);
 
         [return: MaybeNull]
-        public TElement TryGetFirst(Func<TElement, bool> predicate, out bool found)
-        {
-            CachingComparer<TElement> comparer = GetComparer();
-            using (IEnumerator<TElement> e = _source.GetEnumerator())
-            {
-                TElement value;
-                do
-                {
-                    if (!e.MoveNext())
-                    {
-                        found = false;
-                        return default!;
-                    }
-
-                    value = e.Current;
-                }
-                while (!predicate(value));
-
-                comparer.SetElement(value);
-                while (e.MoveNext())
-                {
-                    TElement x = e.Current;
-                    if (predicate(x) && comparer.Compare(x, true) < 0)
-                    {
-                        value = x;
-                    }
-                }
-
-                found = true;
-                return value;
-            }
-        }
-
-        [return: MaybeNull]
         public TElement TryGetLast(Func<TElement, bool> predicate, out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();

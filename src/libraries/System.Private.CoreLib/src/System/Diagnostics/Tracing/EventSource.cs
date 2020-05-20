@@ -691,7 +691,7 @@ namespace System.Diagnostics.Tracing
                 uint eventVersion = m_eventData[i].Descriptor.Version;
                 uint level = m_eventData[i].Descriptor.Level;
 
-                fixed (byte* pMetadata = metadata)
+                fixed (byte *pMetadata = metadata)
                 {
                     IntPtr eventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(
                         eventID,
@@ -2221,12 +2221,13 @@ namespace System.Diagnostics.Tracing
                                     string eventName = "EventSourceMessage";
                                     EventParameterInfo paramInfo = default(EventParameterInfo);
                                     paramInfo.SetInfo("message", typeof(string));
-                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, new EventParameterInfo[] { paramInfo });
+                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, EventOpcode.Info, new EventParameterInfo[] { paramInfo });
                                     uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 
                                     fixed (byte* pMetadata = metadata)
                                     {
-                                        m_writeEventStringEventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(0, eventName, keywords, 0, (uint)level, pMetadata, metadataLength);
+                                        m_writeEventStringEventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(0, eventName, keywords, 0, (uint)level,
+                                                                            pMetadata, metadataLength);
                                     }
                                 }
                             }

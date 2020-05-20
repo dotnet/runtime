@@ -974,7 +974,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 #ifndef FEATURE_REDHAWK
     }
     EX_CATCH { }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 #endif // FEATURE_REDHAWK
 
     return hr;
@@ -1752,7 +1752,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
         return -1;
 
@@ -1791,7 +1791,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
             return -1;
     }
@@ -1811,7 +1811,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 return -1;
         }
@@ -1850,7 +1850,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 return -1;
         }
@@ -1888,7 +1888,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         // won't have a name in it.
         pVal->sName.Clear();
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 
     // Now that we know the full size of this type's data, see if it fits in our
     // batch or whether we need to flush
@@ -1986,7 +1986,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSyst
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
         return;
 
@@ -2551,7 +2551,7 @@ VOID ETW::GCLog::SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj)
         EX_CATCH
         {
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
     }
 }
 
@@ -2977,7 +2977,7 @@ BOOL ETW::TypeSystemLog::AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule 
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 
     return fSucceeded;
 }
@@ -3384,7 +3384,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -3422,7 +3422,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
     {
         *pfCreatedNew = FALSE;
@@ -3518,7 +3518,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
             {
                 *pfCreatedNew = FALSE;
@@ -3550,7 +3550,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -4239,9 +4239,6 @@ VOID EtwCallbackCommon(
     static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
     static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
 #endif // !defined(HOST_UNIX)
-    GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-    GCEventLevel level = static_cast<GCEventLevel>(Level);
-    GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
 
     DOTNET_TRACE_CONTEXT * ctxToUpdate;
     switch(ProviderIndex)
@@ -4270,6 +4267,26 @@ VOID EtwCallbackCommon(
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
+    }
+
+    if (
+#if !defined(HOST_UNIX)
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
+#endif
+        (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
+    {
+#if !defined(HOST_UNIX)
+        // On Windows, consolidate level and keywords across event pipe and ETW contexts -
+        // ETW may still want to see events that event pipe doesn't care about and vice versa
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask |
+                                                              ctxToUpdate->EtwProvider->MatchAnyKeyword);
+        GCEventLevel level = static_cast<GCEventLevel>(max(ctxToUpdate->EventPipeProvider.Level,
+                                                           ctxToUpdate->EtwProvider->Level));
+#else
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
+        GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
+#endif
+        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -4489,10 +4506,6 @@ extern "C"
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
 
-        GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-        GCEventLevel level = static_cast<GCEventLevel>(Level);
-        GCHeapUtilities::RecordEventStateChange(!!bIsPublicTraceHandle, keywords, level);
-
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
         CallbackProviderIndex providerIndex = DotNETRuntime;
@@ -4628,7 +4641,6 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
-        bIsCSE = (pExInfo->GetCorruptionSeverity() == ProcessCorrupting);
         bIsCLSCompliant = IsException((gc.exceptionObj)->GetMethodTable()) &&
                           ((gc.exceptionObj)->GetMethodTable() != MscorlibBinder::GetException(kRuntimeWrappedException));
 
@@ -4643,7 +4655,6 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         exceptionFlags = ((bHasInnerException ? ETW::ExceptionLog::ExceptionStructs::HasInnerException : 0) |
                           (bIsNestedException ? ETW::ExceptionLog::ExceptionStructs::IsNestedException : 0) |
                           (bIsReThrownException ? ETW::ExceptionLog::ExceptionStructs::IsReThrownException : 0) |
-                          (bIsCSE ? ETW::ExceptionLog::ExceptionStructs::IsCSE : 0) |
                           (bIsCLSCompliant ? ETW::ExceptionLog::ExceptionStructs::IsCLSCompliant : 0));
 
         if (pCf->IsFrameless())
@@ -6266,7 +6277,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 goto done;      
 

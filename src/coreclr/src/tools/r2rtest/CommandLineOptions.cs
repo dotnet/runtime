@@ -19,7 +19,8 @@ namespace R2RTest
                 .AddCommand(CompileSubtree())
                 .AddCommand(CompileFramework())
                 .AddCommand(CompileNugetPackages())
-                .AddCommand(CompileCrossgenRsp());
+                .AddCommand(CompileCrossgenRsp())
+                .AddCommand(CompileSerp());
 
             return parser;
 
@@ -147,6 +148,20 @@ namespace R2RTest
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileFromCrossgenRspCommand.CompileFromCrossgenRsp));
 
+            Command CompileSerp() =>
+                new Command("compile-serp", "Compile existing application",
+                    new Symbol[]
+                    {
+                        InputDirectory(),
+                        OutputDirectory(),
+                        DegreeOfParallelism(),
+                        CoreRootDirectory(),
+                        AspNetPath(),
+                        Composite(),
+                        PartialComposite(),
+                    },
+                    handler: CommandHandler.Create<BuildOptions>(CompileSerpCommand.CompileSerpAssemblies));
+
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
             Option InputDirectory() =>
@@ -247,6 +262,15 @@ namespace R2RTest
             //
             Option PackageList() =>
                 new Option(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line", new Argument<FileInfo>().ExistingOnly());
+
+            //
+            // compile-serp specific options
+            //
+            Option AspNetPath() =>
+                new Option(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder", new Argument<DirectoryInfo>().ExistingOnly());
+
+            Option PartialComposite() =>
+                new Option(new[] { "--partial-composite", "-pc" }, "Add references to framework and asp.net instead of unrooted inputs", new Argument<bool>());
         }
     }
 }

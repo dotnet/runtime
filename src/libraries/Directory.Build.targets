@@ -2,13 +2,6 @@
   <PropertyGroup>
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>  
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
-    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
-  </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.targets" />
 
@@ -30,7 +23,6 @@
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisDirectory)intellisense.targets" Condition="'$(DesignTimeBuild)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
@@ -96,11 +88,11 @@
     <!-- Setup the runtime pack structure for mobile platforms (for testing and installer) -->
     <!-- Corresponding assemblies are added to lib -->
     <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <RuntimePath>$(NETCoreAppRuntimePackLibPath)</RuntimePath>
+      <RuntimePath>$(RuntimePackLibDir)</RuntimePath>
     </BinPlaceTargetFrameworks>
     <!-- Corresponding libMono and system.native libraries are added to native -->
     <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <RuntimePath>$(NETCoreAppRuntimePackNativePath)</RuntimePath>
+      <RuntimePath>$(RuntimePackNativeDir)</RuntimePath>
       <ItemName>NativeBinPlaceItem</ItemName>
     </BinPlaceTargetFrameworks>
     <!-- Corresponding libMono and system.native libraries are added to testhost shared framework -->
@@ -137,9 +129,10 @@
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
-  <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.targets" />
   <Import Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" Condition="'$(DisableProjectRestore)' == 'true'" />
@@ -154,27 +147,23 @@
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <Target Name="GenerateReferenceSource">
+  <Target Name="SetGenApiProperties"
+          BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
-      <_RefSourceFileOutputPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</_RefSourceFileOutputPath>
       <_ExcludeAPIList>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', 'ReferenceSourceExcludeApi.txt'))</_ExcludeAPIList>
       <_ExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAttributesList>
-      <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
+      <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath> 
+      <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
+      <GenAPIAdditionalParameters>$(GenAPIAdditionalParameters) --exclude-attributes-list "$(_ExcludeAttributesList)"</GenAPIAdditionalParameters>
+      <GenAPIAdditionalParameters Condition="Exists('$(_ExcludeAPIList)')">$(GenAPIAdditionalParameters) --exclude-api-list "$(_ExcludeAPIList)"</GenAPIAdditionalParameters>
+      <GenAPIAdditionalParameters>$(GenAPIAdditionalParameters) --header-file "$(_LicenseHeaderTxtPath)"</GenAPIAdditionalParameters>
+      <GenAPIAdditionalParameters Condition="'$(LangVersion)' != ''">$(GenAPIAdditionalParameters) --lang-version "$(LangVersion)"</GenAPIAdditionalParameters>  
+      <GenAPIAdditionalParameters Condition="'@(ReferenceFromRuntime)' != ''">$(GenAPIAdditionalParameters) --follow-type-forwards</GenAPIAdditionalParameters>
     </PropertyGroup>
+  </Target>
 
-    <PropertyGroup>
-      <_GenAPICmd>$(_GenAPICommand)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) "@(IntermediateAssembly)"</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath.Trim('\/'))"</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAttributesList)"</_GenAPICmd>
-      <_GenAPICmd Condition="Exists('$(_ExcludeAPIList)')">$(_GenAPICmd) --exclude-api-list "$(_ExcludeAPIList)"</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
-      <_GenAPICmd Condition="'$(LangVersion)' != ''">$(_GenAPICmd) --lang-version "$(LangVersion)"</_GenAPICmd>
-    </PropertyGroup>
-
-    <Exec Command="$(_GenAPICmd)" />
-    <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
+  <Target Name="GenerateReferenceSource" DependsOnTargets="GenerateReferenceAssemblySource">
+    <Message Text="This is a deprecated target. It will be replaced by GenerateReferenceAssemblySource in next infra rollout changes." Importance="high" />
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />

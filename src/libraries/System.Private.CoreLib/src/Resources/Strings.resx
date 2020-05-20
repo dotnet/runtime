@@ -1343,7 +1343,7 @@
     <value>The specified object must not be an instance of a generic type.</value>
   </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
-    <value>The specified Type must not be a generic type definition.</value>
+    <value>The specified Type must not be a generic type.</value>
   </data>
   <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
     <value>The specified Type must be a struct containing no references.</value>
@@ -2916,6 +2916,9 @@
   </data>
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
+  </data>
+  <data name="InvalidOperation_FunctionMissingUnmanagedCallersOnly" xml:space="preserve">
+    <value>Function not marked with UnmanagedCallersOnlyAttribute.</value>
   </data>
   <data name="InvalidProgram_NonBlittableTypes" xml:space="preserve">
     <value>Non-blittable parameter types are invalid for UnmanagedCallersOnly methods.</value>

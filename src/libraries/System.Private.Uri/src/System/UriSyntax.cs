@@ -6,6 +6,9 @@
 // only internal implementation of UriParser type
 
 using System.Collections;
+using System.Diagnostics;
+using System.Threading;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -266,7 +269,12 @@ namespace System
 
         internal void InternalValidate(Uri thisUri, out UriFormatException? parsingError)
         {
+            thisUri.DebugAssertInCtor();
             InitializeAndValidate(thisUri, out parsingError);
+
+            // InitializeAndValidate should not be called outside of the constructor
+            Debug.Assert(sizeof(Uri.Flags) == sizeof(ulong));
+            Interlocked.Or(ref Unsafe.As<Uri.Flags, ulong>(ref thisUri._flags), (ulong)Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
         }
 
         internal string? InternalResolve(Uri thisBaseUri, Uri uriLink, out UriFormatException? parsingError)

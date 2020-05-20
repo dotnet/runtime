@@ -490,6 +490,7 @@ uint32_t uloc_getLCID(const char * localeID);
 int32_t uloc_getName(const char * localeID, char * name, int32_t nameCapacity, UErrorCode * err);
 int32_t uloc_getParent(const char * localeID, char * parent, int32_t parentCapacity, UErrorCode * err);
 int32_t uloc_setKeywordValue(const char * keywordName, const char * keywordValue, char * buffer, int32_t bufferCapacity, UErrorCode * status);
+void ulocdata_getCLDRVersion(UVersionInfo versionArray, UErrorCode * status);
 UMeasurementSystem ulocdata_getMeasurementSystem(const char * localeID, UErrorCode * status);
 const UNormalizer2 * unorm2_getNFCInstance(UErrorCode * pErrorCode);
 const UNormalizer2 * unorm2_getNFDInstance(UErrorCode * pErrorCode);

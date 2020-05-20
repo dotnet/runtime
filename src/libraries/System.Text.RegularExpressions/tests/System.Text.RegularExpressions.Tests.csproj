@@ -4,8 +4,6 @@
     <NoWarn>$(NoWarn);xUnit2008</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
     <Compile Include="CaptureCollectionTests.cs" />
@@ -34,7 +32,7 @@
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs"
              Link="System\Text\RegularExpressions\RegexParseError.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
     <Compile Include="CaptureCollectionTests2.cs" />
     <Compile Include="GroupCollectionTests2.cs" />

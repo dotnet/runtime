@@ -34,6 +34,8 @@ namespace ILCompiler.DependencyAnalysis.X64
                 case TargetOS.Linux:
                 case TargetOS.OSX:
                 case TargetOS.FreeBSD:
+                case TargetOS.SunOS:
+                case TargetOS.NetBSD:
                     Arg0 = Register.RDI;
                     Arg1 = Register.RSI;
                     Arg2 = Register.RDX;

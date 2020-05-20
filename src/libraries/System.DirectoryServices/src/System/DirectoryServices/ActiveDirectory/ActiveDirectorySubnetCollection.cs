@@ -68,7 +68,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (s == null)
                 {
-                    throw new ArgumentException(nameof(subnets));
+                    throw new ArgumentException(null, nameof(subnets));
                 }
             }
 
@@ -263,7 +263,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySubnet))
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
 
             if (!((ActiveDirectorySubnet)value).existing)
                 throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted, ((ActiveDirectorySubnet)value).Name));

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -23,8 +24,10 @@ namespace System.Xml
         {
             if ((int)_validationState < 0)
             {
+                Debug.Assert(_cachedNode != null);
                 return Task.FromResult(_cachedNode.RawValue);
             }
+
             return _coreReader.GetValueAsync();
         }
 
@@ -44,8 +47,9 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsString));
             }
+
             object typedValue = await InternalReadContentAsObjectAsync().ConfigureAwait(false);
-            XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
+            XmlSchemaType? xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
             try
             {
                 if (xmlType != null)
@@ -54,7 +58,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    return typedValue as string;
+                    return (typedValue as string)!;
                 }
             }
             catch (InvalidCastException e)
@@ -77,6 +81,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAs));
             }
+
             string originalStringValue;
 
             var tuple_0 = await InternalReadContentAsObjectTupleAsync(false).ConfigureAwait(false);
@@ -84,7 +89,7 @@ namespace System.Xml
 
             object typedValue = tuple_0.Item2;
 
-            XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
+            XmlSchemaType? xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
             try
             {
                 if (xmlType != null)
@@ -95,6 +100,7 @@ namespace System.Xml
                     {
                         typedValue = originalStringValue;
                     }
+
                     return xmlType.ValueConverter.ChangeType(typedValue, returnType);
                 }
                 else
@@ -134,12 +140,13 @@ namespace System.Xml
             {
                 throw CreateReadElementContentAsException(nameof(ReadElementContentAsString));
             }
+
             XmlSchemaType xmlType;
 
-            var tuple_9 = await InternalReadElementContentAsObjectAsync().ConfigureAwait(false);
-            xmlType = tuple_9.Item1;
+            var content = await InternalReadElementContentAsObjectAsync().ConfigureAwait(false);
+            xmlType = content.Item1;
 
-            object typedValue = tuple_9.Item2;
+            object typedValue = content.Item2;
 
             try
             {
@@ -149,6 +156,7 @@ namespace System.Xml
                 }
                 else
                 {
+                    Debug.Assert(false, $"{nameof(typedValue)} should never be null");
                     return typedValue as string;
                 }
             }
@@ -172,14 +180,15 @@ namespace System.Xml
             {
                 throw CreateReadElementContentAsException(nameof(ReadElementContentAs));
             }
+
             XmlSchemaType xmlType;
             string originalStringValue;
 
-            var tuple_10 = await InternalReadElementContentAsObjectTupleAsync(false).ConfigureAwait(false);
-            xmlType = tuple_10.Item1;
-            originalStringValue = tuple_10.Item2;
+            var content = await InternalReadElementContentAsObjectTupleAsync(false).ConfigureAwait(false);
+            xmlType = content.Item1;
+            originalStringValue = content.Item2;
 
-            object typedValue = tuple_10.Item3;
+            object typedValue = content.Item3;
 
             try
             {
@@ -191,6 +200,7 @@ namespace System.Xml
                     {
                         typedValue = originalStringValue;
                     }
+
                     return xmlType.ValueConverter.ChangeType(typedValue, returnType, namespaceResolver);
                 }
                 else
@@ -227,6 +237,7 @@ namespace System.Xml
                     {
                         _validationState = ValidatingReaderState.EOF;
                     }
+
                     return AsyncHelper.DoneTaskFalse;
                 }
             }
@@ -250,6 +261,7 @@ namespace System.Xml
                 {
                     _validationState = ValidatingReaderState.EOF;
                 }
+
                 return false;
             }
         }
@@ -302,19 +314,21 @@ namespace System.Xml
                         goto case ValidatingReaderState.Read;
                     }
 
-                case ValidatingReaderState.ReadAhead: //Will enter here on calling Skip()
+                case ValidatingReaderState.ReadAhead: // Will enter here on calling Skip()
                     ClearAttributesInfo();
                     Task task = ProcessReaderEventAsync();
                     return ReadAsync_ReadAhead(task);
 
                 case ValidatingReaderState.OnReadBinaryContent:
                     _validationState = _savedState;
+                    Debug.Assert(_readBinaryHelper != null);
                     return _readBinaryHelper.FinishAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
 
                 case ValidatingReaderState.Init:
                     _validationState = ValidatingReaderState.Read;
                     if (_coreReader.ReadState == ReadState.Interactive)
-                    { //If the underlying reader is already positioned on a ndoe, process it
+                    {
+                        // If the underlying reader is already positioned on a ndoe, process it
                         return ProcessReaderEventAsync().ReturnTrueTaskWhenFinishAsync();
                     }
                     else
@@ -342,26 +356,29 @@ namespace System.Xml
                     {
                         break;
                     }
+
                     bool callSkipToEndElem = true;
-                    //If union and unionValue has been parsed till EndElement, then validator.ValidateEndElement has been called
-                    //Hence should not call SkipToEndElement as the current context has already been popped in the validator
+                    // If union and unionValue has been parsed till EndElement, then validator.ValidateEndElement has been called
+                    // Hence should not call SkipToEndElement as the current context has already been popped in the validator
                     if ((_xmlSchemaInfo.IsUnionType || _xmlSchemaInfo.IsDefault) && _coreReader is XsdCachingReader)
                     {
                         callSkipToEndElem = false;
                     }
+
                     await _coreReader.SkipAsync().ConfigureAwait(false);
                     _validationState = ValidatingReaderState.ReadAhead;
                     if (callSkipToEndElem)
                     {
                         _validator.SkipToEndElement(_xmlSchemaInfo);
                     }
+
                     break;
 
                 case XmlNodeType.Attribute:
                     MoveToElement();
                     goto case XmlNodeType.Element;
             }
-            //For all other NodeTypes Skip() same as Read()
+            // For all other NodeTypes Skip() same as Read()
             await ReadAsync().ConfigureAwait(false);
             return;
         }
@@ -384,6 +401,7 @@ namespace System.Xml
             _validationState = _savedState;
 
             // call to the helper
+            Debug.Assert(_readBinaryHelper != null);
             int readCount = await _readBinaryHelper.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
 
             // set OnReadBinaryContent state again and return
@@ -410,6 +428,7 @@ namespace System.Xml
             _validationState = _savedState;
 
             // call to the helper
+            Debug.Assert(_readBinaryHelper != null);
             int readCount = await _readBinaryHelper.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
 
             // set OnReadBinaryContent state again and return
@@ -436,6 +455,7 @@ namespace System.Xml
             _validationState = _savedState;
 
             // call to the helper
+            Debug.Assert(_readBinaryHelper != null);
             int readCount = await _readBinaryHelper.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
 
             // set OnReadBinaryContent state again and return
@@ -462,6 +482,7 @@ namespace System.Xml
             _validationState = _savedState;
 
             // call to the helper
+            Debug.Assert(_readBinaryHelper != null);
             int readCount = await _readBinaryHelper.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
 
             // set OnReadBinaryContent state again and return
@@ -473,11 +494,13 @@ namespace System.Xml
         private Task ProcessReaderEventAsync()
         {
             if (_replayCache)
-            { //if in replay mode, do nothing since nodes have been validated already
-                //If NodeType == XmlNodeType.EndElement && if manageNamespaces, may need to pop namespace scope, since scope is not popped in ReadAheadForMemberType
+            {
+                // if in replay mode, do nothing since nodes have been validated already
+                // If NodeType == XmlNodeType.EndElement && if manageNamespaces, may need to pop namespace scope, since scope is not popped in ReadAheadForMemberType
 
                 return Task.CompletedTask;
             }
+
             switch (_coreReader.NodeType)
             {
                 case XmlNodeType.Element:
@@ -523,7 +546,8 @@ namespace System.Xml
                 _xmlSchemaInfo.Clear();
                 _attributeCount = _coreReaderAttributeCount = _coreReader.AttributeCount;
                 if (!_coreReader.IsEmptyElement)
-                { //If its not empty schema, then parse else ignore
+                {
+                    // If its not empty schema, then parse else ignore
                     _inlineSchemaParser = new Parser(SchemaType.XSD, _coreReaderNameTable, _validator.SchemaSet.GetSchemaNames(_coreReaderNameTable), _validationEvent);
                     await _inlineSchemaParser.StartParsingAsync(_coreReader, null).ConfigureAwait(false);
                     _inlineSchemaParser.ParseReaderNode();
@@ -535,21 +559,25 @@ namespace System.Xml
                 }
             }
             else
-            { //Validate element
-                //Clear previous data
+            {
+                // Validate element
+                // Clear previous data
                 _atomicValue = null;
                 _originalAtomicValueString = null;
                 _xmlSchemaInfo.Clear();
 
                 if (_manageNamespaces)
                 {
+                    Debug.Assert(_nsManager != null);
                     _nsManager.PushScope();
                 }
-                //Find Xsi attributes that need to be processed before validating the element
-                string xsiSchemaLocation = null;
-                string xsiNoNamespaceSL = null;
-                string xsiNil = null;
-                string xsiType = null;
+
+                // Find Xsi attributes that need to be processed before validating the element
+                string? xsiSchemaLocation = null;
+                string? xsiNoNamespaceSL = null;
+                string? xsiNil = null;
+                string? xsiType = null;
+
                 if (_coreReader.MoveToFirstAttribute())
                 {
                     do
@@ -575,13 +603,16 @@ namespace System.Xml
                                 xsiNil = _coreReader.Value;
                             }
                         }
+
                         if (_manageNamespaces && Ref.Equal(_coreReader.NamespaceURI, _nsXmlNs))
                         {
+                            Debug.Assert(_nsManager != null);
                             _nsManager.AddNamespace(_coreReader.Prefix.Length == 0 ? string.Empty : _coreReader.LocalName, _coreReader.Value);
                         }
                     } while (_coreReader.MoveToNextAttribute());
                     _coreReader.MoveToElement();
                 }
+
                 _validator.ValidateElement(_coreReader.LocalName, _coreReader.NamespaceURI, _xmlSchemaInfo, xsiType, xsiNil, xsiSchemaLocation, xsiNoNamespaceSL);
                 ValidateAttributes();
                 _validator.ValidateEndOfAttributes(_xmlSchemaInfo);
@@ -589,6 +620,7 @@ namespace System.Xml
                 {
                     await ProcessEndElementEventAsync().ConfigureAwait(false);
                 }
+
                 _validationState = ValidatingReaderState.ClearAttributes;
             }
         }
@@ -598,10 +630,12 @@ namespace System.Xml
             _atomicValue = _validator.ValidateEndElement(_xmlSchemaInfo);
             _originalAtomicValueString = GetOriginalAtomicValueStringOfElement();
             if (_xmlSchemaInfo.IsDefault)
-            { //The atomicValue returned is a default value
+            {
+                // The atomicValue returned is a default value
                 Debug.Assert(_atomicValue != null);
                 int depth = _coreReader.Depth;
                 _coreReader = GetCachingReader();
+                Debug.Assert(_cachingReader != null);
                 _cachingReader.RecordTextNode(_xmlSchemaInfo.XmlType.ValueConverter.ToString(_atomicValue), _originalAtomicValueString, depth + 1, 0, 0);
                 _cachingReader.RecordEndElementNode();
                 await _cachingReader.SetToReplayModeAsync().ConfigureAwait(false);
@@ -609,6 +643,7 @@ namespace System.Xml
             }
             else if (_manageNamespaces)
             {
+                Debug.Assert(_nsManager != null);
                 _nsManager.PopScope();
             }
         }
@@ -623,9 +658,11 @@ namespace System.Xml
                     _attributeCount = _coreReaderAttributeCount = _coreReader.AttributeCount;
                 }
                 else
-                { //Clear attributes info if nodeType is not element
+                {
+                    // Clear attributes info if nodeType is not element
                     ClearAttributesInfo();
                 }
+
                 if (!_inlineSchemaParser.ParseReaderNode())
                 {
                     _inlineSchemaParser.FinishParsing();
@@ -644,9 +681,8 @@ namespace System.Xml
 
         private async Task<object> InternalReadContentAsObjectAsync(bool unwrapTypedValue)
         {
-            var tuple_11 = await InternalReadContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
-
-            return tuple_11.Item2;
+            var content = await InternalReadContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
+            return content.Item2;
         }
 
         private async Task<Tuple<string, object>> InternalReadContentAsObjectTupleAsync(bool unwrapTypedValue)
@@ -666,11 +702,12 @@ namespace System.Xml
                         originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue;
                     }
 
-                    tuple = new Tuple<string, object>(originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType, unwrapTypedValue));
+                    tuple = new Tuple<string, object>(originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType, unwrapTypedValue)!);
                     return tuple;
                 }
                 else
-                { //return string value
+                {
+                    // return string value
                     tuple = new Tuple<string, object>(originalStringValue, this.Value);
                     return tuple;
                 }
@@ -679,6 +716,7 @@ namespace System.Xml
             {
                 if (_atomicValue != null)
                 {
+                    Debug.Assert(_originalAtomicValueString != null);
                     originalStringValue = _originalAtomicValueString;
 
                     tuple = new Tuple<string, object>(originalStringValue, _atomicValue);
@@ -693,10 +731,15 @@ namespace System.Xml
                 }
             }
             else
-            { //Positioned on text, CDATA, PI, Comment etc
+            {
+                // Positioned on text, CDATA, PI, Comment etc
                 if (_validator.CurrentContentType == XmlSchemaContentType.TextOnly)
-                {  //if current element is of simple type
-                    object value = ReturnBoxedValue(await ReadTillEndElementAsync().ConfigureAwait(false), _xmlSchemaInfo.XmlType, unwrapTypedValue);
+                {
+                    // if current element is of simple type
+                    object? value = ReturnBoxedValue(await ReadTillEndElementAsync().ConfigureAwait(false), _xmlSchemaInfo.XmlType, unwrapTypedValue)!;
+                    Debug.Assert(value != null);
+
+                    Debug.Assert(_originalAtomicValueString != null);
                     originalStringValue = _originalAtomicValueString;
 
                     tuple = new Tuple<string, object>(originalStringValue, value);
@@ -704,7 +747,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    XsdCachingReader cachingReader = _coreReader as XsdCachingReader;
+                    XsdCachingReader? cachingReader = _coreReader as XsdCachingReader;
                     if (cachingReader != null)
                     {
                         originalStringValue = cachingReader.ReadOriginalContentAsString();
@@ -727,71 +770,77 @@ namespace System.Xml
 
         private async Task<Tuple<XmlSchemaType, object>> InternalReadElementContentAsObjectAsync(bool unwrapTypedValue)
         {
-            var tuple_13 = await InternalReadElementContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
+            var content = await InternalReadElementContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
 
-            return new Tuple<XmlSchemaType, object>(tuple_13.Item1, tuple_13.Item3);
+            return new Tuple<XmlSchemaType, object>(content.Item1, content.Item3);
         }
 
         private async Task<Tuple<XmlSchemaType, string, object>> InternalReadElementContentAsObjectTupleAsync(bool unwrapTypedValue)
         {
-            Tuple<XmlSchemaType, string, object> tuple;
-            XmlSchemaType xmlType;
+            XmlSchemaType? xmlType = null;
             string originalString;
 
             Debug.Assert(this.NodeType == XmlNodeType.Element);
-            object typedValue = null;
-            xmlType = null;
-            //If its an empty element, can have default/fixed value
+            object typedValue;
+            // If its an empty element, can have default/fixed value
             if (this.IsEmptyElement)
             {
                 if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                 {
-                    typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType, unwrapTypedValue);
+                    typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType, unwrapTypedValue)!;
                 }
                 else
                 {
-                    typedValue = _atomicValue;
+                    typedValue = _atomicValue!;
                 }
+
+                Debug.Assert(_originalAtomicValueString != null);
                 originalString = _originalAtomicValueString;
-                xmlType = ElementXmlType; //Set this for default values
+                xmlType = ElementXmlType; // Set this for default values
                 await this.ReadAsync().ConfigureAwait(false);
 
-                tuple = new Tuple<XmlSchemaType, string, object>(xmlType, originalString, typedValue);
-                return tuple;
+                return new Tuple<XmlSchemaType, string, object>(xmlType, originalString, typedValue);
             }
+
             // move to content and read typed value
             await this.ReadAsync().ConfigureAwait(false);
 
             if (this.NodeType == XmlNodeType.EndElement)
-            { //If IsDefault is true, the next node will be EndElement
+            {
+                // If IsDefault is true, the next node will be EndElement
                 if (_xmlSchemaInfo.IsDefault)
                 {
                     if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                     {
-                        typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType, unwrapTypedValue);
+                        typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType, unwrapTypedValue)!;
                     }
                     else
-                    { //anyType has default value
-                        typedValue = _atomicValue;
+                    {
+                        // anyType has default value
+                        typedValue = _atomicValue!;
                     }
+
+                    Debug.Assert(_originalAtomicValueString != null);
                     originalString = _originalAtomicValueString;
                 }
                 else
-                { //Empty content
+                {
+                    // Empty content
                     typedValue = string.Empty;
                     originalString = string.Empty;
                 }
             }
             else if (this.NodeType == XmlNodeType.Element)
-            { //the first child is again element node
+            {
+                // the first child is again element node
                 throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
             }
             else
             {
-                var tuple_14 = await InternalReadContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
-                originalString = tuple_14.Item1;
+                var content = await InternalReadContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
+                originalString = content.Item1;
 
-                typedValue = tuple_14.Item2;
+                typedValue = content.Item2;
 
                 // ReadElementContentAsXXX cannot be called on mixed content, if positioned on node other than EndElement, Error
                 if (this.NodeType != XmlNodeType.EndElement)
@@ -799,25 +848,27 @@ namespace System.Xml
                     throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
                 }
             }
-            xmlType = ElementXmlType; //Set this as we are moving ahead to the next node
+
+            xmlType = ElementXmlType; // Set this as we are moving ahead to the next node
 
             // move to next node
             await this.ReadAsync().ConfigureAwait(false);
 
-            tuple = new Tuple<XmlSchemaType, string, object>(xmlType, originalString, typedValue);
-            return tuple;
+            return new Tuple<XmlSchemaType, string, object>(xmlType, originalString, typedValue);
         }
 
-        private async Task<object> ReadTillEndElementAsync()
+        private async Task<object?> ReadTillEndElementAsync()
         {
             if (_atomicValue == null)
             {
                 while (await _coreReader.ReadAsync().ConfigureAwait(false))
                 {
                     if (_replayCache)
-                    { //If replaying nodes in the cache, they have already been validated
+                    {
+                        // If replaying nodes in the cache, they have already been validated
                         continue;
                     }
+
                     switch (_coreReader.NodeType)
                     {
                         case XmlNodeType.Element:
@@ -843,23 +894,30 @@ namespace System.Xml
                             _originalAtomicValueString = GetOriginalAtomicValueStringOfElement();
                             if (_manageNamespaces)
                             {
+                                Debug.Assert(_nsManager != null);
                                 _nsManager.PopScope();
                             }
+
                             goto breakWhile;
                     }
+
                     continue;
                 breakWhile:
                     break;
                 }
             }
             else
-            { //atomicValue != null, meaning already read ahead - Switch reader
+            {
+                // atomicValue != null, meaning already read ahead - Switch reader
                 if (_atomicValue == this)
-                { //switch back invalid marker; dont need it since coreReader moved to endElement
+                {
+                    // switch back invalid marker; dont need it since coreReader moved to endElement
                     _atomicValue = null;
                 }
+
                 SwitchReader();
             }
+
             return _atomicValue;
         }
     }

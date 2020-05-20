@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (base.Oid == null || base.Oid.Value == null)
                 throw new ArgumentNullException(nameof(oid));
             if (base.Oid.Value.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyOrNullString, "oid.Value");
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
             Critical = critical;
         }
 

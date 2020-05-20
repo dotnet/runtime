@@ -5,9 +5,8 @@
 ### .NET Runtime
 - An implementation of the Common Language Infrastructure [ECMA 335]
   - Supports multiple languages, including C#, F# and VB
-- Sources are mostly shared between the "desktop" version and the open-source coreclr implementation:
-    http://www.github.com/dotnet/runtime/src/coreclr
 - RyuJIT is the "next generation" just in time compiler for .NET
+- Sources are at https://github.com/dotnet/runtime/tree/master/src/coreclr/src/jit
 
 #### Notes
 For context, the .NET runtime has been around since about the turn of the millennium. It is a virtual machine that supports the execution of a number of languages, primarily C#, Visual Basic, and F#.
@@ -19,7 +18,6 @@ RyuJIT is the re-architected JIT for .NET.
 ### Why "RyuJIT"?
 - Ryujin is a Japanese Sea Dragon
 
-We came up with the code name "RyuJIT" because our original code name had possible issues.
 We wanted something with "JIT" in the name, and the idea of a dragon came to mind because of the Dragon book that we all know and love.
 So – we just adapted the name of the Japanese sea dragon, Ryujin.
 

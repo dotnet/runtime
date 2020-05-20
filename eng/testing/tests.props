@@ -20,10 +20,17 @@
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
 
-  <!-- Set env variable to use the local netfx assemblies instead of the ones in the GAC. -->
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <!-- Test runners are built as part of libs.pretest so we need to use libraries configuration -->
+    <MobileRunnersDirSuffix>$(NetCoreAppCurrent)-$(Configuration)</MobileRunnersDirSuffix>
+    <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileRunnersDirSuffix)'))</AppleTestRunnerDir>
+    <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileRunnersDirSuffix)'))</AndroidTestRunnerDir>
+
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <PlatformManifestFile />
+  </PropertyGroup>
 
   <!--
     Unit/Functional/Integration test support.

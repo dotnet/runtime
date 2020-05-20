@@ -4,9 +4,9 @@
 
 using System.Buffers.Binary;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter
+    public partial class CborWriter
     {
         // Implements major type 0 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void WriteUInt64(ulong value)

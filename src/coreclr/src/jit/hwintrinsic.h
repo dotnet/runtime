@@ -258,10 +258,11 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*   comp,
-                                   const char* className,
-                                   const char* methodName,
-                                   const char* enclosingClassName);
+    static NamedIntrinsic lookupId(Compiler*         comp,
+                                   CORINFO_SIG_INFO* sig,
+                                   const char*       className,
+                                   const char*       methodName,
+                                   const char*       enclosingClassName);
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
@@ -304,7 +305,7 @@ struct HWIntrinsicInfo
     }
 
 #ifdef TARGET_XARCH
-    static int lookupIval(NamedIntrinsic id)
+    static int lookupIval(NamedIntrinsic id, bool opportunisticallyDependsOnAVX)
     {
         switch (id)
         {
@@ -321,6 +322,22 @@ struct HWIntrinsicInfo
             case NI_SSE_CompareScalarGreaterThan:
             case NI_SSE2_CompareGreaterThan:
             case NI_SSE2_CompareScalarGreaterThan:
+            case NI_AVX_CompareGreaterThan:
+            {
+                if (opportunisticallyDependsOnAVX)
+                {
+                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
+                }
+
+                // CompareGreaterThan is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareGreaterThan);
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
+            }
+
             case NI_SSE_CompareLessThan:
             case NI_SSE_CompareScalarLessThan:
             case NI_SSE2_CompareLessThan:
@@ -334,6 +351,22 @@ struct HWIntrinsicInfo
             case NI_SSE_CompareScalarGreaterThanOrEqual:
             case NI_SSE2_CompareGreaterThanOrEqual:
             case NI_SSE2_CompareScalarGreaterThanOrEqual:
+            case NI_AVX_CompareGreaterThanOrEqual:
+            {
+                if (opportunisticallyDependsOnAVX)
+                {
+                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
+                }
+
+                // CompareGreaterThanOrEqual is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareGreaterThanOrEqual);
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
+            }
+
             case NI_SSE_CompareLessThanOrEqual:
             case NI_SSE_CompareScalarLessThanOrEqual:
             case NI_SSE2_CompareLessThanOrEqual:
@@ -356,6 +389,22 @@ struct HWIntrinsicInfo
             case NI_SSE_CompareScalarNotGreaterThan:
             case NI_SSE2_CompareNotGreaterThan:
             case NI_SSE2_CompareScalarNotGreaterThan:
+            case NI_AVX_CompareNotGreaterThan:
+            {
+                if (opportunisticallyDependsOnAVX)
+                {
+                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
+                }
+
+                // CompareNotGreaterThan is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareNotGreaterThan);
+                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
+            }
+
             case NI_SSE_CompareNotLessThan:
             case NI_SSE_CompareScalarNotLessThan:
             case NI_SSE2_CompareNotLessThan:
@@ -369,6 +418,22 @@ struct HWIntrinsicInfo
             case NI_SSE_CompareScalarNotGreaterThanOrEqual:
             case NI_SSE2_CompareNotGreaterThanOrEqual:
             case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+            case NI_AVX_CompareNotGreaterThanOrEqual:
+            {
+                if (opportunisticallyDependsOnAVX)
+                {
+                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
+                }
+
+                // CompareNotGreaterThanOrEqual is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareNotGreaterThanOrEqual);
+                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
+            }
+
             case NI_SSE_CompareNotLessThanOrEqual:
             case NI_SSE_CompareScalarNotLessThanOrEqual:
             case NI_SSE2_CompareNotLessThanOrEqual:
@@ -435,26 +500,6 @@ struct HWIntrinsicInfo
             case NI_AVX_RoundToZero:
             {
                 return static_cast<int>(FloatRoundingMode::ToZero);
-            }
-
-            case NI_AVX_CompareGreaterThan:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
-            }
-
-            case NI_AVX_CompareGreaterThanOrEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
-            }
-
-            case NI_AVX_CompareNotGreaterThan:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
-            }
-
-            case NI_AVX_CompareNotGreaterThanOrEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
             }
 
             default:

@@ -59,7 +59,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public ActiveDirectorySchedule(ActiveDirectorySchedule schedule) : this()
         {
             if (schedule == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(schedule));
 
             bool[] tmpSchedule = schedule._scheduleArray;
             for (int i = 0; i < 672; i++)

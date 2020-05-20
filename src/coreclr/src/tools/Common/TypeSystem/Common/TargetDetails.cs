@@ -31,6 +31,7 @@ namespace Internal.TypeSystem
         OSX,
         FreeBSD,
         NetBSD,
+        SunOS,
         WebAssembly,
     }
 

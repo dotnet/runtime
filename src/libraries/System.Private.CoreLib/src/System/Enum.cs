@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 #if CORERT
-using CorElementType = System.Runtime.RuntimeImports.RhCorElementType;
 using RuntimeType = System.Type;
 using EnumInfo = Internal.Runtime.Augments.EnumInfo;
 #endif
