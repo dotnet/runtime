@@ -9502,6 +9502,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<ulong> ShiftRightLogicalScalar(Vector64<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int32x4_t vmovl_s16 (int16x4_t a)
+        ///   A32: VMOVL.S16 Qd, Dm
+        ///   A64: SXTL Vd.4S, Vn.4H
+        /// </summary>
+        public static Vector128<int> SignExtendWideningLower(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmovl_s32 (int32x2_t a)
+        ///   A32: VMOVL.S32 Qd, Dm
+        ///   A64: SXTL Vd.2D, Vn.2S
+        /// </summary>
+        public static Vector128<long> SignExtendWideningLower(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmovl_s8 (int8x8_t a)
+        ///   A32: VMOVL.S8 Qd, Dm
+        ///   A64: SXTL Vd.8H, Vn.8B
+        /// </summary>
+        public static Vector128<short> SignExtendWideningLower(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
