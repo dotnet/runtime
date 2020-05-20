@@ -16,20 +16,21 @@
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.Bridge.cs" Link="Common\Interop\Browser\Interop.Runtime.Bridge.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSException.cs" Link="Common\Interop\Browser\Interop.JavaScript.JSException.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSObject.cs" Link="Common\Interop\Browser\Interop.JavaScript.JSObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8Array.cs" Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs" Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.TypedArray.cs" Link="Common\Interop\Browser\Interop.JavaScript.TypedArray.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Array.cs" Link="Common\Interop\Browser\Interop.JavaScript.Array.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.ArrayBuffer.cs" Link="Common\Interop\Browser\Interop.JavaScript.ArrayBuffer.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs" Link="Common\Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.CoreObject.cs" Link="Common\Interop\Browser\Interop.JavaScript.CoreObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.HostObject.cs" Link="Common\Interop\Browser\Interop.JavaScript.HostObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Function.cs" Link="Common\Interop\Browser\Interop.JavaScript.Function.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.AnyRef.cs" Link="Common\Interop\Browser\Interop.Runtime.AnyRef.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\Runtime.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\JSException.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\JSObject.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\Uint8Array.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\Uint8ClampedArray.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\TypedArray.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\Array.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\ArrayBuffer.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\SharedArrayBuffer.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\CoreObject.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\HostObject.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\Function.cs" />
+    <Compile Include="System/Runtime\InteropServices\JavaScript\AnyRef.cs" />
   </ItemGroup>    
-  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+  <!-- <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="Runtime.cs" />
-  </ItemGroup>
+  </ItemGroup> -->
 </Project>

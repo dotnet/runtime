@@ -9,8 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-using JSObject = Interop.JavaScript.JSObject;
-using JSException = Interop.JavaScript.JSException;
+using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
+using JSException = System.Runtime.InteropServices.JavaScript.JSException;
 
 internal static partial class Interop
 {
@@ -67,12 +67,12 @@ internal static partial class Interop
             return res;
         }
 
-        public static Interop.JavaScript.Function? CompileFunction(string snippet)
+        public static System.Runtime.InteropServices.JavaScript.Function? CompileFunction(string snippet)
         {
             object res = CompileFunction(snippet, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
-            return res as Interop.JavaScript.Function;
+            return res as System.Runtime.InteropServices.JavaScript.Function;
         }
 
         public static int New<T>(params object[] parms)

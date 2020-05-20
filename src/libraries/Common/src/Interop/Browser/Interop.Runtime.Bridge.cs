@@ -9,8 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-using JSObject = Interop.JavaScript.JSObject;
-using JSException = Interop.JavaScript.JSException;
+using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
+using JSException = System.Runtime.InteropServices.JavaScript.JSException;
 
 internal static partial class Interop
 {
