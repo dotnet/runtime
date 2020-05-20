@@ -14311,6 +14311,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 assert(pFldAddr == nullptr);
 
                                 op1 = impImportStaticReadOnlyField(fldAddr, lclTyp);
+
+                                // Widen small types since we're propagating the value
+                                // instead of producing an indir.
+                                //
+                                op1->gtType = genActualType(lclTyp);
+
                                 goto FIELD_DONE;
                             }
                         }
@@ -14328,7 +14334,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INTRINSIC_ZERO:
                     {
                         assert(aflags & CORINFO_ACCESS_GET);
-                        op1 = gtNewIconNode(0, lclTyp);
+                        // Widen to stack type
+                        lclTyp = genActualType(lclTyp);
+                        op1    = gtNewIconNode(0, lclTyp);
                         goto FIELD_DONE;
                     }
                     break;
@@ -14347,6 +14355,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
                     {
                         assert(aflags & CORINFO_ACCESS_GET);
+                        // Widen to stack type
+                        lclTyp = genActualType(lclTyp);
 #if BIGENDIAN
                         op1 = gtNewIconNode(0, lclTyp);
 #else
