@@ -60,7 +60,7 @@ namespace System.Reflection
             {
                 return null;
             }
-            
+
             Assembly? candidateWithSamePkt = null;
             Assembly? candidateIgnoringPkt = null;
             ReadOnlySpan<byte> pktFromName = assemblyName.GetPublicKeyToken();
