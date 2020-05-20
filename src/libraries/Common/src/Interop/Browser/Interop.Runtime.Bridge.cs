@@ -345,7 +345,7 @@ internal static partial class Interop
         internal static double GetDateValue(object dtv)
         {
             if (dtv == null)
-                throw new ArgumentNullException(nameof(dtv), "Value can not be null");
+                throw new ArgumentNullException(nameof(dtv));
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
             if (dt.Kind == DateTimeKind.Local)
