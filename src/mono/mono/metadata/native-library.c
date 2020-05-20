@@ -1272,7 +1272,7 @@ retry_with_libcoreclr:
 			new_scope = g_strdup ("libcoreclr.dylib");
 #else			
 #if defined(TARGET_ANDROID)
-			new_scope = g_strdup ("libmonosgen-2.0.so");
+			new_scope = g_strdup ("libruntime-android.so");
 #else
 			new_scope = g_strdup ("libcoreclr.so");
 #endif
