@@ -111,12 +111,12 @@ namespace System.Formats.Cbor.Tests
 
             // End set up
 
-            Assert.Equal(11, writer.Depth);
+            Assert.Equal(11, writer.CurrentDepth);
             Assert.True(writer.BytesWritten > 11, "must have written a nontrivial number of bytes to the buffer");
 
             writer.Reset();
 
-            Assert.Equal(0, writer.Depth);
+            Assert.Equal(0, writer.CurrentDepth);
             Assert.Equal(0, writer.BytesWritten);
 
             // Write an object from scratch and validate that it is correct
