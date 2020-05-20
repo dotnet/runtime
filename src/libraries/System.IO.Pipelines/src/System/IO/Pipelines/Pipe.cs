@@ -32,6 +32,7 @@ namespace System.IO.Pipelines
 
         // This sync objects protects the shared state between the writer and reader (most of this class)
         private readonly object _sync = new object();
+        private readonly object _segmentSync = new object();
 
         private readonly MemoryPool<byte>? _pool;
         private readonly int _minimumSegmentSize;
@@ -221,7 +222,7 @@ namespace System.IO.Pipelines
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
-            BufferSegment newSegment = CreateSegmentUnsynchronized();
+            BufferSegment newSegment = CreateSegmentSynchronized();
 
             if (_pool is null || sizeHint > _pool.MaxBufferSize)
             {
@@ -249,11 +250,14 @@ namespace System.IO.Pipelines
             return adjustedToMaximumSize;
         }
 
-        private BufferSegment CreateSegmentUnsynchronized()
+        private BufferSegment CreateSegmentSynchronized()
         {
-            if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
+            lock (_segmentSync)
             {
-                return segment;
+                if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
+                {
+                    return segment;
+                }
             }
 
             return new BufferSegment();
@@ -542,7 +546,7 @@ namespace System.IO.Pipelines
                 success = _operationState.TryEndRead();
             }
 
-            if (!success)
+            if (success)
             {
                 TrySchedule(_writerScheduler, completionData);
             }
@@ -559,7 +563,7 @@ namespace System.IO.Pipelines
                 } while (next != null && next != returnEnd);
 
                 // Return the segments inside the lock
-                lock (_sync)
+                lock (_segmentSync)
                 {
                     do
                     {

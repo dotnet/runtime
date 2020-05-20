@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.IO.Pipelines
 {
@@ -61,20 +62,27 @@ namespace System.IO.Pipelines
 
         public void ResetMemory()
         {
-            if (_memoryOwner is IMemoryOwner<byte> owner)
+            object? memoryOwner = Interlocked.Exchange(ref _memoryOwner, null);
+            if (memoryOwner is null)
+            {
+                // Already returned block; this can happen from benign race between Advance and Complete
+                // as block return is done outside a lock.
+                return;
+            }
+
+            if (memoryOwner is IMemoryOwner<byte> owner)
             {
                 owner.Dispose();
             }
             else
             {
-                Debug.Assert(_memoryOwner is byte[]);
-                byte[] poolArray = (byte[])_memoryOwner;
+                Debug.Assert(memoryOwner is byte[]);
+                byte[] poolArray = (byte[])memoryOwner;
                 ArrayPool<byte>.Shared.Return(poolArray);
             }
 
             RunningIndex = 0;
             Memory = default;
-            _memoryOwner = null;
             _end = 0;
             AvailableMemory = default;
         }
@@ -86,7 +94,7 @@ namespace System.IO.Pipelines
             Debug.Assert(_end == 0);
             Debug.Assert(RunningIndex == 0);
 
-            Next = null;
+            NextSegment = null;
         }
 
         // Exposed for testing
