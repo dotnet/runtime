@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="..\..\System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="..\..\System.Threading\ref\System.Threading.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />
@@ -30,7 +31,4 @@
     <Compile Include="System/Runtime\InteropServices\JavaScript\Function.cs" />
     <Compile Include="System/Runtime\InteropServices\JavaScript\AnyRef.cs" />
   </ItemGroup>    
-  <!-- <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <Compile Include="Runtime.cs" />
-  </ItemGroup> -->
 </Project>
