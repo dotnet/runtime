@@ -4265,6 +4265,11 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
 
     copyOfCondStmt->SetCompilerAdded();
 
+    if (condTree->gtFlags & GTF_CALL)
+    {
+        block->bbFlags |= BBF_HAS_CALL; // Record that the block has a call
+    }
+ 
     if (opts.compDbgInfo)
     {
         copyOfCondStmt->SetILOffsetX(condStmt->GetILOffsetX());
