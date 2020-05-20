@@ -608,9 +608,9 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
 
 #ifdef TARGET_XARCH
     assert((intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
-           (intrinsic >= NI_Vector128_get_AllBitsSet && intrinsic <= NI_Vector128_ToVector256Unsafe) ||
+           (intrinsic >= NI_Vector128_get_AllBitsSet && intrinsic <= NI_Vector128_WithElement) ||
            (intrinsic >= NI_Vector256_As && intrinsic <= NI_Vector256_AsUInt64) ||
-           (intrinsic >= NI_Vector256_get_AllBitsSet && intrinsic <= NI_Vector256_ToScalar));
+           (intrinsic >= NI_Vector256_get_AllBitsSet && intrinsic <= NI_Vector256_WithElement));
 #else
     assert((intrinsic >= NI_Vector64_AsByte && intrinsic <= NI_Vector64_AsUInt32) ||
            (intrinsic >= NI_Vector64_get_AllBitsSet && intrinsic <= NI_Vector64_ToScalar) ||
