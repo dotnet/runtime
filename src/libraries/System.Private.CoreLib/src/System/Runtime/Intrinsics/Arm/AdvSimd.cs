@@ -7724,6 +7724,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<ulong> ShiftLeftLogicalScalar(Vector64<ulong> value, byte count) => ShiftLeftLogicalScalar(value, count);
 
         /// <summary>
+        /// uint16x8_t vshll_n_u8 (uint8x8_t a, const int n)
+        ///   A32: VSHLL.U8 Qd, Dm, #n
+        ///   A64: USHLL Vd.8H, Vn.8B, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftLeftLogicalWideningLower(Vector64<byte> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+
+        /// <summary>
+        /// int32x4_t vshll_n_s16 (int16x4_t a, const int n)
+        ///   A32: VSHLL.S16 Qd, Dm, #n
+        ///   A64: SSHLL Vd.4S, Vn.4H, #n
+        /// </summary>
+        public static Vector128<int> ShiftLeftLogicalWideningLower(Vector64<short> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+
+        /// <summary>
+        /// int64x2_t vshll_n_s32 (int32x2_t a, const int n)
+        ///   A32: VSHLL.S32 Qd, Dm, #n
+        ///   A64: SSHLL Vd.2D, Vn.2S, #n
+        /// </summary>
+        public static Vector128<long> ShiftLeftLogicalWideningLower(Vector64<int> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+
+        /// <summary>
+        /// int16x8_t vshll_n_s8 (int8x8_t a, const int n)
+        ///   A32: VSHLL.S8 Qd, Dm, #n
+        ///   A64: SSHLL Vd.8H, Vn.8B, #n
+        /// </summary>
+        public static Vector128<short> ShiftLeftLogicalWideningLower(Vector64<sbyte> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+
+        /// <summary>
+        /// uint32x4_t vshll_n_u16 (uint16x4_t a, const int n)
+        ///   A32: VSHLL.U16 Qd, Dm, #n
+        ///   A64: USHLL Vd.4S, Vn.4H, #n
+        /// </summary>
+        public static Vector128<uint> ShiftLeftLogicalWideningLower(Vector64<ushort> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+
+        /// <summary>
+        /// uint64x2_t vshll_n_u32 (uint32x2_t a, const int n)
+        ///   A32: VSHLL.U32 Qd, Dm, #n
+        ///   A64: USHLL Vd.2D, Vn.2S, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftLeftLogicalWideningLower(Vector64<uint> value, byte count) => ShiftLeftLogicalWideningLower(value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
