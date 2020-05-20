@@ -348,7 +348,7 @@ internal static partial class Interop
                                 // cgroup v2: Find the first entry that matches the cgroup v2 hierarchy:
                                 //     0::$PATH
 
-                                if ((lineParts[0] == "0") && (lineParts[1] == string.Empty))
+                                if ((lineParts[0] == "0") && (lineParts[1].Length == 0))
                                 {
                                     path = lineParts[2];
                                     return true;

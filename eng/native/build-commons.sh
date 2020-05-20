@@ -56,7 +56,7 @@ check_prereqs()
     local cmake_version="$(cmake --version | awk '/^cmake.* version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
 
     if [[ "$(version "$cmake_version")" -lt "$(version 3.14.2)" ]]; then
-        echo "Please install CMake 3.14.2 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
+        echo "Please install CMake 3.14.2 or newer from https://cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
     fi
 
     if [[ "$__HostOS" == "OSX" ]]; then

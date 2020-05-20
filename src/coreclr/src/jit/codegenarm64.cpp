@@ -1839,7 +1839,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !tree->IsMultiReg() && !(tree->gtFlags & GTF_SPILLED))
     {
         // targetType must be a normal scalar type and not a TYP_STRUCT
         assert(targetType != TYP_STRUCT);
@@ -1929,7 +1929,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // case is handled separately.
     if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
     {
-        genMultiRegCallStoreToLocal(tree);
+        genMultiRegStoreToLocal(tree);
     }
     else
     {

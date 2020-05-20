@@ -2489,11 +2489,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 
 			if (op != -1) {
-				td->last_ins->data[1] = op;
-				if (td->last_ins->opcode == MINT_CALLI_NAT_FAST)
-					td->last_ins->data[2] = save_last_error;
-			} else if (op == -1 && td->last_ins->opcode == MINT_CALLI_NAT) {
-				td->last_ins->data[1] = save_last_error;
+				g_assert (td->last_ins->opcode == MINT_CALLI_NAT_FAST);
+				td->last_ins->data [1] = op;
+				td->last_ins->data [2] = save_last_error;
+			} else if (native) {
+				g_assert (td->last_ins->opcode == MINT_CALLI_NAT);
+				td->last_ins->data [1] = save_last_error;
 			}
 		} else {
 			InterpMethod *imethod = mono_interp_get_imethod (domain, target_method, error);
@@ -4610,6 +4611,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, MINT_NEWOBJ_ARRAY);
 					td->last_ins->data [0] = get_data_item_index (td, m->klass);
 					td->last_ins->data [1] = csignature->param_count;
+				} else if (klass == mono_defaults.string_class) {
+					interp_add_ins (td, MINT_NEWOBJ_STRING);
+					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+					td->last_ins->data [1] = csignature->param_count;
 				} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 						!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
 						!strcmp (m->name, ".ctor")) {
@@ -6489,6 +6494,7 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 			break;
 		}
 		case MINT_NEWOBJ_ARRAY:
+		case MINT_NEWOBJ_STRING:
 			*pop = ins->data [1];
 			*push = 1;
 			break;

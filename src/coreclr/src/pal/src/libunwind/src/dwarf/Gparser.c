@@ -440,8 +440,15 @@ fetch_proc_info (struct dwarf_cursor *c, unw_word_t ip)
      continue, and it's important we get this right, as 'ip' could be
      right at the function entry and hence FDE edge, or at instruction
      that manipulates CFA (push/pop). */
+
   if (c->use_prev_instr)
-    --ip;
+    {
+#if defined(__arm__)
+      /* On arm, the least bit denotes thumb/arm mode, clear it. */
+      ip &= ~(unw_word_t)0x1;
+#endif
+      --ip;
+    }
 
   memset (&c->pi, 0, sizeof (c->pi));
 
@@ -734,7 +741,7 @@ create_state_record_for (struct dwarf_cursor *c, dwarf_state_record_t *sr,
 }
 
 static inline int
-eval_location_expr (struct dwarf_cursor *c, unw_addr_space_t as,
+eval_location_expr (struct dwarf_cursor *c, unw_word_t stack_val, unw_addr_space_t as,
                     unw_accessors_t *a, unw_word_t addr,
                     dwarf_loc_t *locp, void *arg)
 {
@@ -746,7 +753,7 @@ eval_location_expr (struct dwarf_cursor *c, unw_addr_space_t as,
     return ret;
 
   /* evaluate the expression: */
-  if ((ret = dwarf_eval_expr (c, &addr, len, &val, &is_register)) < 0)
+  if ((ret = dwarf_eval_expr (c, stack_val, &addr, len, &val, &is_register)) < 0)
     return ret;
 
   if (is_register)
@@ -804,7 +811,10 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
       assert (rs->reg.where[DWARF_CFA_REG_COLUMN] == DWARF_WHERE_EXPR);
 
       addr = rs->reg.val[DWARF_CFA_REG_COLUMN];
-      if ((ret = eval_location_expr (c, as, a, addr, &cfa_loc, arg)) < 0)
+      /* The dwarf standard doesn't specify an initial value to be pushed on */
+      /* the stack before DW_CFA_def_cfa_expression evaluation. We push on a */
+      /* dummy value (0) to keep the eval_location_expr function consistent. */
+      if ((ret = eval_location_expr (c, 0, as, a, addr, &cfa_loc, arg)) < 0)
         return ret;
       /* the returned location better be a memory location... */
       if (DWARF_IS_REG_LOC (cfa_loc))
@@ -831,18 +841,30 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
           break;
 
         case DWARF_WHERE_REG:
-          new_loc[i] = DWARF_REG_LOC (c, dwarf_to_unw_regnum (rs->reg.val[i]));
+#ifdef __s390x__
+          /* GPRs can be saved in FPRs on s390x */
+          if (unw_is_fpreg (dwarf_to_unw_regnum (rs->reg.val[i])))
+            {
+              new_loc[i] = DWARF_FPREG_LOC (c, dwarf_to_unw_regnum (rs->reg.val[i]));
+              break;
+            }
+#endif
+          new_loc[i] = new_loc[rs->reg.val[i]];
           break;
 
         case DWARF_WHERE_EXPR:
           addr = rs->reg.val[i];
-          if ((ret = eval_location_expr (c, as, a, addr, new_loc + i, arg)) < 0)
+          /* The dwarf standard requires the current CFA to be pushed on the */
+          /* stack before DW_CFA_expression evaluation. */
+          if ((ret = eval_location_expr (c, cfa, as, a, addr, new_loc + i, arg)) < 0)
             return ret;
           break;
 
         case DWARF_WHERE_VAL_EXPR:
           addr = rs->reg.val[i];
-          if ((ret = eval_location_expr (c, as, a, addr, new_loc + i, arg)) < 0)
+          /* The dwarf standard requires the current CFA to be pushed on the */
+          /* stack before DW_CFA_val_expression evaluation. */
+          if ((ret = eval_location_expr (c, cfa, as, a, addr, new_loc + i, arg)) < 0)
             return ret;
           new_loc[i] = DWARF_VAL_LOC (c, DWARF_GET_LOC (new_loc[i]));
           break;
@@ -924,7 +946,6 @@ find_reg_state (struct dwarf_cursor *c, dwarf_state_record_t *sr)
   unsigned short index = -1;
   if (cache)
     {
-      put_rs_cache (c->as, cache, &saved_mask);
       if (rs)
 	{
 	  index = rs - cache->buckets;
@@ -932,6 +953,7 @@ find_reg_state (struct dwarf_cursor *c, dwarf_state_record_t *sr)
 	  cache->links[c->prev_rs].hint = index + 1;
 	  c->prev_rs = index;
 	}
+      put_rs_cache (c->as, cache, &saved_mask);
     }
   if (ret < 0)
       return ret;

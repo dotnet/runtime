@@ -7844,6 +7844,15 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree, unsigned addFlag
 
     copy->CopyOtherRegFlags(tree);
 
+    // We keep track of the number of no return calls, so if we've cloned
+    // one of these, update the tracking.
+    //
+    if (tree->IsNoReturn())
+    {
+        assert(copy->IsNoReturn());
+        setMethodHasNoReturnCalls();
+    }
+
     return copy;
 }
 

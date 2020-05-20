@@ -83,26 +83,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_LCL_VAR:
-            // Because we do containment analysis before we redo dataflow and identify register
-            // candidates, the containment analysis only uses !lvDoNotEnregister to estimate register
-            // candidates.
-            // If there is a lclVar that is estimated to be register candidate but
-            // is not, if they were marked regOptional they should now be marked contained instead.
-            // TODO-XArch-CQ: When this is being called while RefPositions are being created,
-            // use lvLRACandidate here instead.
-            if (tree->IsRegOptional())
-            {
-                if (!compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvTracked ||
-                    compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvDoNotEnregister)
-                {
-                    tree->ClearRegOptional();
-                    tree->SetContained();
-                    return 0;
-                }
-            }
-            __fallthrough;
-
-        case GT_LCL_FLD:
         {
             // We handle tracked variables differently from non-tracked ones.  If it is tracked,
             // we will simply add a use of the tracked variable at its parent/consumer.
@@ -113,11 +93,27 @@ int LinearScan::BuildNode(GenTree* tree)
             // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
             // to a call or an orphaned dead node.
             //
-            LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-            if (isCandidateVar(varDsc))
+            // Because we do containment analysis before we redo dataflow and identify register
+            // candidates, the containment analysis only uses !lvDoNotEnregister to estimate register
+            // candidates.
+            // If there is a lclVar that is estimated to be register candidate but
+            // is not, if they were marked regOptional they should now be marked contained instead.
+            bool isCandidate = compiler->lvaGetDesc(tree->AsLclVar())->lvLRACandidate;
+            if (tree->IsRegOptional() && !isCandidate)
+            {
+                tree->ClearRegOptional();
+                tree->SetContained();
+                return 0;
+            }
+            if (isCandidate)
             {
                 return 0;
             }
+        }
+            __fallthrough;
+
+        case GT_LCL_FLD:
+        {
             srcCount = 0;
 #ifdef FEATURE_SIMD
             // Need an additional register to read upper 4 bytes of Vector3.
