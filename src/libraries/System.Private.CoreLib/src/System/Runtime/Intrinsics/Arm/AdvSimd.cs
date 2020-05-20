@@ -1365,6 +1365,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> ShiftLogicalSaturateScalar(Vector64<uint> value, Vector64<int> count) => ShiftLogicalSaturateScalar(value, count);
 
             /// <summary>
+            /// int16_t vqshrns_n_s32 (int32_t a, const int n)
+            ///   A64: SQSHRN Hd, Sn, #n
+            /// </summary>
+            public static Vector64<short> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<int> value, byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
+
+            /// <summary>
+            /// int32_t vqshrnd_n_s64 (int64_t a, const int n)
+            ///   A64: SQSHRN Sd, Dn, #n
+            /// </summary>
+            public static Vector64<int> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<long> value, byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
+
+            /// <summary>
+            /// int8_t vqshrnh_n_s16 (int16_t a, const int n)
+            ///   A64: SQSHRN Bd, Hn, #n
+            /// </summary>
+            public static Vector64<sbyte> ShiftRightArithmeticNarrowingSaturateScalar(Vector64<short> value, byte count) => ShiftRightArithmeticNarrowingSaturateScalar(value, count);
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
