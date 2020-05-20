@@ -145,7 +145,7 @@ namespace System.Formats.Cbor
                     throw new OverflowException();
 
                 default:
-                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, header.MajorType));
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, (int)header.MajorType));
             }
         }
 
@@ -165,7 +165,7 @@ namespace System.Formats.Cbor
                     return value;
 
                 default:
-                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, header.MajorType));
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, (int)header.MajorType));
             }
         }
 
