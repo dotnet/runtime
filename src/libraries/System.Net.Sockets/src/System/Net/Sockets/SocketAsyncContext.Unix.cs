@@ -742,7 +742,7 @@ namespace System.Net.Sockets
                 _sequenceNumber = 0;
             }
 
-            // IsReady returns whether an operation can be executed immediately without queueing it.
+            // IsReady returns whether an operation can be executed immediately.
             // observedSequenceNumber must be passed to StartAsyncOperation.
             public bool IsReady(SocketAsyncContext context, out int? observedSequenceNumber)
             {
