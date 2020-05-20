@@ -10,6 +10,7 @@
     <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
     <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -46,7 +47,7 @@
     </ItemGroup>
 
     <MonoAOTCompiler
-        Condition="'$(IosSimulator)' == ''"
+        Condition="'$(IosSimulator)' == '' or '$(UseAotForSimulator)' == 'true'"
         CompilerBinaryPath="$(RuntimePackDir)\native\cross\mono-aot-cross"
         Mode="Full"
         OutputType="AsmOnly"
@@ -66,7 +67,8 @@
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(AppDir)"
-        Optimized="False"
+        Optimized="$(Optimized)"
+        UseAotForSimulator="$(UseAotForSimulator)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
@@ -78,7 +80,7 @@
     <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
     <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl boot &quot;$(IosSimulator)&quot;" />
     <Exec Condition="'$(IosSimulator)' != ''" Command="open -a Simulator" />
-    <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl install &quot;$(IosSimulator)&quot; $(ApkDir)/HelloiOS/Debug-iphonesimulator/HelloiOS.app" />
+    <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl install &quot;$(IosSimulator)&quot; $(AppBundlePath)" />
     <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
   </Target>
 </Project>
