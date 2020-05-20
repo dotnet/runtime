@@ -8,8 +8,6 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
-        private static bool GetEnableWorkerTracking() => false;
-
         internal static void ReportThreadStatus(bool isWorking)
         {
         }

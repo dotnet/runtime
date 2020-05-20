@@ -935,7 +935,6 @@ namespace System.Threading
     public static partial class ThreadPool
     {
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
-        internal static readonly bool s_enableWorkerTracking = GetEnableWorkerTracking();
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
         internal static readonly Action<object?> s_invokeAsyncStateMachineBox = state =>
