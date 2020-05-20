@@ -120,7 +120,7 @@ namespace System.Formats.Cbor
         ///   CBOR encoding not accepted under the current conformance level
         /// </exception>
         /// <remarks>
-        ///   Intended as an escape hatch in cases of valid CBOR negative integers exceeding primitive sizes.
+        ///   Intended as an escape hatch in cases of valid CBOR negative integers exceeding available primitive sizes.
         /// </remarks>
         public ulong ReadCborNegativeIntegerEncoding()
         {
