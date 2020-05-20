@@ -8818,6 +8818,104 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, byte count) => ShiftRightLogical(value, count);
 
         /// <summary>
+        /// uint8x8_t vsra_n_u8 (uint8x8_t a, uint8x8_t b, const int n)
+        ///   A32: VSRA.U8 Dd, Dm, #n
+        ///   A64: USRA Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalAdd(Vector64<byte> addend, Vector64<byte> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint16x4_t vsra_n_u16 (uint16x4_t a, uint16x4_t b, const int n)
+        ///   A32: VSRA.U16 Dd, Dm, #n
+        ///   A64: USRA Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightLogicalAdd(Vector64<short> addend, Vector64<short> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint32x2_t vsra_n_u32 (uint32x2_t a, uint32x2_t b, const int n)
+        ///   A32: VSRA.U32 Dd, Dm, #n
+        ///   A64: USRA Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightLogicalAdd(Vector64<int> addend, Vector64<int> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint8x8_t vsra_n_u8 (uint8x8_t a, uint8x8_t b, const int n)
+        ///   A32: VSRA.U8 Dd, Dm, #n
+        ///   A64: USRA Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogicalAdd(Vector64<sbyte> addend, Vector64<sbyte> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint16x4_t vsra_n_u16 (uint16x4_t a, uint16x4_t b, const int n)
+        ///   A32: VSRA.U16 Dd, Dm, #n
+        ///   A64: USRA Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalAdd(Vector64<ushort> addend, Vector64<ushort> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint32x2_t vsra_n_u32 (uint32x2_t a, uint32x2_t b, const int n)
+        ///   A32: VSRA.U32 Dd, Dm, #n
+        ///   A64: USRA Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalAdd(Vector64<uint> addend, Vector64<uint> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint8x16_t vsraq_n_u8 (uint8x16_t a, uint8x16_t b, const int n)
+        ///   A32: VSRA.U8 Qd, Qm, #n
+        ///   A64: USRA Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalAdd(Vector128<byte> addend, Vector128<byte> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint16x8_t vsraq_n_u16 (uint16x8_t a, uint16x8_t b, const int n)
+        ///   A32: VSRA.U16 Qd, Qm, #n
+        ///   A64: USRA Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightLogicalAdd(Vector128<short> addend, Vector128<short> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint32x4_t vsraq_n_u32 (uint32x4_t a, uint32x4_t b, const int n)
+        ///   A32: VSRA.U32 Qd, Qm, #n
+        ///   A64: USRA Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightLogicalAdd(Vector128<int> addend, Vector128<int> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint64x2_t vsraq_n_u64 (uint64x2_t a, uint64x2_t b, const int n)
+        ///   A32: VSRA.U64 Qd, Qm, #n
+        ///   A64: USRA Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightLogicalAdd(Vector128<long> addend, Vector128<long> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint8x16_t vsraq_n_u8 (uint8x16_t a, uint8x16_t b, const int n)
+        ///   A32: VSRA.U8 Qd, Qm, #n
+        ///   A64: USRA Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalAdd(Vector128<sbyte> addend, Vector128<sbyte> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint16x8_t vsraq_n_u16 (uint16x8_t a, uint16x8_t b, const int n)
+        ///   A32: VSRA.U16 Qd, Qm, #n
+        ///   A64: USRA Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalAdd(Vector128<ushort> addend, Vector128<ushort> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint32x4_t vsraq_n_u32 (uint32x4_t a, uint32x4_t b, const int n)
+        ///   A32: VSRA.U32 Qd, Qm, #n
+        ///   A64: USRA Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalAdd(Vector128<uint> addend, Vector128<uint> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
+        /// uint64x2_t vsraq_n_u64 (uint64x2_t a, uint64x2_t b, const int n)
+        ///   A32: VSRA.U64 Qd, Qm, #n
+        ///   A64: USRA Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftRightLogicalAdd(Vector128<ulong> addend, Vector128<ulong> value, byte count) => ShiftRightLogicalAdd(addend, value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
