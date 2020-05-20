@@ -68,7 +68,7 @@ internal static partial class Interop
 
                 object setPropResult = Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
                 if (exception != 0)
-                    throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' mono '{(IntPtr)Handle} raw '{RawObject != null})");
+                    throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{(IntPtr)Handle} raw '{RawObject != null})");
 
             }
 
@@ -100,7 +100,7 @@ internal static partial class Interop
             {
                 Runtime.ReleaseHandle(JSHandle, out int exception);
                 if (exception != 0)
-                    throw new JSException($"Error releasing handle on (js-obj js '{JSHandle}' mono '{(IntPtr)Handle} raw '{RawObject != null})");
+                    throw new JSException($"Error releasing handle on (js-obj js '{JSHandle}' .NET '{(IntPtr)Handle} raw '{RawObject != null})");
             }
 
             public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
@@ -147,7 +147,7 @@ internal static partial class Interop
 
             public override string ToString()
             {
-                return $"(js-obj js '{JSHandle}' mono '{(IntPtr)Handle} raw '{RawObject != null})";
+                return $"(js-obj js '{JSHandle}' .NET '{(IntPtr)Handle} raw '{RawObject != null})";
             }
 
         }

@@ -121,7 +121,7 @@ internal static partial class Interop
                     int exception;
                     ReleaseHandle(obj.JSHandle, out exception);
                     if (exception != 0)
-                        throw new JSException($"Error releasing handle on (js-obj js '{obj.JSHandle}' mono '{(IntPtr)obj.Handle} raw '{obj.RawObject != null})");
+                        throw new JSException($"Error releasing handle on (js-obj js '{obj.JSHandle}' .NET '{(IntPtr)obj.Handle} raw '{obj.RawObject != null})");
 
                     // Calling Release Handle above only removes the reference from the JavaScript side but does not
                     // release the bridged JSObject associated with the raw object so we have to do that ourselves.
@@ -178,7 +178,7 @@ internal static partial class Interop
             }
         }
 
-        internal static object? GetMonoObject(int gcHandle)
+        internal static object? GetDotNetObject(int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? o = h.Target as JSObject;
