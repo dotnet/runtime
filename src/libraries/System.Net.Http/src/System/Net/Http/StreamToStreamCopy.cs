@@ -27,7 +27,15 @@ namespace System.Net.Http
             Debug.Assert(destination != null);
             Debug.Assert(bufferSize >= 0);
 
-            source.CopyTo(destination, bufferSize);
+            if (bufferSize == 0)
+            {
+                source.CopyTo(destination);
+            }
+            else
+            {
+                source.CopyTo(destination, bufferSize);
+            }
+
             if (disposeSource)
             {
                 DisposeSource(source);
