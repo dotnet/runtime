@@ -110,21 +110,18 @@
              AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(MonoConfiguration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll" />
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
-    <PropertyGroup>
-      <AppDir>$(OutDir)\app</AppDir>
-    </PropertyGroup>
 	<ItemGroup>
       <AssemblySearchPaths Include="$(PublishDir)"/>
     </ItemGroup>
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
-      AppDir="$(AppDir)"
+      AppDir="$(BundleDir)"
       RuntimePackDir="$(RuntimePackRidDir)"
       MainAssembly="$(PublishDir)\xunit-runner.dll"
       MainJS="$(RuntimePackRidDir)\native\wasm\runtime-test.js"
       ExtraAssemblies="$(PublishDir)\System.Numerics.Vectors.Tests.dll"
       AssemblySearchPaths="@(AssemblySearchPaths)"/>
-    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+    <Exec Command="chmod a+x $(BundleDir)/run-v8.sh" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
