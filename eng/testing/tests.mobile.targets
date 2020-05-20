@@ -117,13 +117,11 @@
       <AssemblySearchPaths Include="$(PublishDir)"/>
     </ItemGroup>
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
-    <!-- FIXME: -->
-    <Copy SourceFiles="$(MonoProjectRoot)\netcore\sample\wasm\runtime.js" DestinationFolder="$(PublishDir)"/>
     <WasmAppBuilder
       AppDir="$(AppDir)"
       RuntimePackDir="$(RuntimePackRidDir)"
       MainAssembly="$(PublishDir)\xunit-runner.dll"
-      MainJS="$(PublishDir)\runtime.js"
+      MainJS="$(RuntimePackRidDir)\native\wasm\runtime-test.js"
       ExtraAssemblies="$(PublishDir)\System.Numerics.Vectors.Tests.dll"
       AssemblySearchPaths="@(AssemblySearchPaths)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
