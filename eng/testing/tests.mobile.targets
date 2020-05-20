@@ -106,6 +106,29 @@
     <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
 
+  <UsingTask TaskName="WasmAppBuilder"
+             AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(MonoConfiguration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll" />
+
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
+    <PropertyGroup>
+      <AppDir>$(OutDir)\app</AppDir>
+    </PropertyGroup>
+	<ItemGroup>
+      <AssemblySearchPaths Include="$(PublishDir)"/>
+    </ItemGroup>
+    <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
+    <!-- FIXME: -->
+    <Copy SourceFiles="$(MonoProjectRoot)\netcore\sample\wasm\runtime.js" DestinationFolder="$(PublishDir)"/>
+    <WasmAppBuilder
+      AppDir="$(AppDir)"
+      RuntimePackDir="$(RuntimePackRidDir)"
+      MainAssembly="$(PublishDir)\xunit-runner.dll"
+      MainJS="$(PublishDir)\runtime.js"
+      ExtraAssemblies="$(PublishDir)\System.Numerics.Vectors.Tests.dll"
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+  </Target>
+
   <Target Name="AddTestRunnersToPublishedFiles"
           AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
@@ -132,5 +155,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp" />
+          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp" />
 </Project>
