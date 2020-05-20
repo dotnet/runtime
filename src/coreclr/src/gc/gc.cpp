@@ -31866,7 +31866,7 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
         decommit_size = max (decommit_size, (ptrdiff_t)(100 * OS_PAGE_SIZE));
 
         // but don't try to do more than what's actually committed in the segment
-        decommit_size = min ((heap_segment_committed (ephemeral_heap_segment) - heap_segment_mem (ephemeral_heap_segment)),
+        decommit_size = min ((heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)),
                              decommit_size);
 
         // figure out where the new committed should be
