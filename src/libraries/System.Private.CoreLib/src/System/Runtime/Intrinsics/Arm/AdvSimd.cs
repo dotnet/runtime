@@ -8377,6 +8377,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> value, byte count) => ShiftRightArithmetic(value, count);
 
         /// <summary>
+        /// int16x4_t vsra_n_s16 (int16x4_t a, int16x4_t b, const int n)
+        ///   A32: VSRA.S16 Dd, Dm, #n
+        ///   A64: SSRA Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightArithmeticAdd(Vector64<short> addend, Vector64<short> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+
+        /// <summary>
+        /// int32x2_t vsra_n_s32 (int32x2_t a, int32x2_t b, const int n)
+        ///   A32: VSRA.S32 Dd, Dm, #n
+        ///   A64: SSRA Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightArithmeticAdd(Vector64<int> addend, Vector64<int> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+
+        /// <summary>
+        /// int8x8_t vsra_n_s8 (int8x8_t a, int8x8_t b, const int n)
+        ///   A32: VSRA.S8 Dd, Dm, #n
+        ///   A64: SSRA Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightArithmeticAdd(Vector64<sbyte> addend, Vector64<sbyte> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+
+        /// <summary>
+        /// int16x8_t vsraq_n_s16 (int16x8_t a, int16x8_t b, const int n)
+        ///   A32: VSRA.S16 Qd, Qm, #n
+        ///   A64: SSRA Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmeticAdd(Vector128<short> addend, Vector128<short> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+
+        /// <summary>
+        /// int32x4_t vsraq_n_s32 (int32x4_t a, int32x4_t b, const int n)
+        ///   A32: VSRA.S32 Qd, Qm, #n
+        ///   A64: SSRA Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmeticAdd(Vector128<int> addend, Vector128<int> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+
+        /// <summary>
+        /// int64x2_t vsraq_n_s64 (int64x2_t a, int64x2_t b, const int n)
+        ///   A32: VSRA.S64 Qd, Qm, #n
+        ///   A64: SSRA Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightArithmeticAdd(Vector128<long> addend, Vector128<long> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+
+        /// <summary>
+        /// int8x16_t vsraq_n_s8 (int8x16_t a, int8x16_t b, const int n)
+        ///   A32: VSRA.S8 Qd, Qm, #n
+        ///   A64: SSRA Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmeticAdd(Vector128<sbyte> addend, Vector128<sbyte> value, byte count) => ShiftRightArithmeticAdd(addend, value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
