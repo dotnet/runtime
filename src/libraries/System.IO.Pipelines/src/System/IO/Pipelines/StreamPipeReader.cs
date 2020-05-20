@@ -150,7 +150,6 @@ namespace System.IO.Pipelines
             while (returnStart != returnEnd)
             {
                 BufferSegment next = returnStart.NextSegment!;
-                returnStart.ResetMemory();
                 ReturnSegmentUnsynchronized(returnStart);
                 returnStart = next;
             }
@@ -178,6 +177,7 @@ namespace System.IO.Pipelines
                 BufferSegment returnSegment = segment;
                 segment = segment.NextSegment;
 
+                // Return the Memory to the Pool.
                 returnSegment.ResetMemory();
             }
 
@@ -352,8 +352,13 @@ namespace System.IO.Pipelines
             Debug.Assert(segment != _readHead, "Returning _readHead segment that's in use!");
             Debug.Assert(segment != _readTail, "Returning _readTail segment that's in use!");
 
+            // Always return the Memory.
+            segment.ResetMemory();
+
             if (_bufferSegmentPool.Count < MaxSegmentPoolSize)
             {
+                // Reset the segment if we are pooling it.
+                segment.ResetSegmentLinks();
                 _bufferSegmentPool.Push(segment);
             }
         }

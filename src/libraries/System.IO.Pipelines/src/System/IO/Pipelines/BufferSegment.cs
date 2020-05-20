@@ -72,15 +72,21 @@ namespace System.IO.Pipelines
                 ArrayPool<byte>.Shared.Return(poolArray);
             }
 
-            // Order of below field clears is significant as it clears in a sequential order
-            // https://github.com/dotnet/corefx/pull/35256#issuecomment-462800477
-            Next = null;
             RunningIndex = 0;
             Memory = default;
             _memoryOwner = null;
-            _next = null;
             _end = 0;
             AvailableMemory = default;
+        }
+
+        public void ResetSegmentLinks()
+        {
+            // Memory should have already been reset
+            Debug.Assert(_memoryOwner == null);
+            Debug.Assert(_end == 0);
+            Debug.Assert(RunningIndex == 0);
+
+            Next = null;
         }
 
         // Exposed for testing

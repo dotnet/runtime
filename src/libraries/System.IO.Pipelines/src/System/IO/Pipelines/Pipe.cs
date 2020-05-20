@@ -267,6 +267,7 @@ namespace System.IO.Pipelines
 
             if (_bufferSegmentPool.Count < MaxSegmentPoolSize)
             {
+                segment.ResetSegmentLinks();
                 _bufferSegmentPool.Push(segment);
             }
         }
@@ -537,18 +538,33 @@ namespace System.IO.Pipelines
                     _readerAwaitable.SetUncompleted();
                 }
 
-                while (returnStart != null && returnStart != returnEnd)
-                {
-                    BufferSegment? next = returnStart.NextSegment;
-                    returnStart.ResetMemory();
-                    ReturnSegmentUnsynchronized(returnStart);
-                    returnStart = next;
-                }
-
                 _operationState.EndRead();
             }
 
             TrySchedule(_writerScheduler, completionData);
+
+            if (returnStart != null && returnStart != returnEnd)
+            {
+                // Reset and recycle the memory blocks outside the lock;
+                // the Pool has its own synchronization and resetting the memory is slower.
+                BufferSegment? next = returnStart;
+                do
+                {
+                    next.ResetMemory();
+                    next = next.NextSegment;
+                } while (next != null && next != returnEnd);
+
+                // Return the segments inside the lock
+                lock (_sync)
+                {
+                    do
+                    {
+                        next = returnStart.NextSegment;
+                        ReturnSegmentUnsynchronized(returnStart);
+                        returnStart = next;
+                    } while (returnStart != null && returnStart != returnEnd);
+                }
+            }
         }
 
         internal void CompleteReader(Exception? exception)
@@ -772,6 +788,7 @@ namespace System.IO.Pipelines
 
         private void CompletePipe()
         {
+            BufferSegment? segment;
             lock (_sync)
             {
                 if (_disposed)
@@ -783,19 +800,19 @@ namespace System.IO.Pipelines
                 // Return all segments
                 // if _readHead is null we need to try return _commitHead
                 // because there might be a block allocated for writing
-                BufferSegment? segment = _readHead ?? _readTail;
-                while (segment != null)
-                {
-                    BufferSegment returnSegment = segment;
-                    segment = segment.NextSegment;
-
-                    returnSegment.ResetMemory();
-                }
+                segment = _readHead ?? _readTail;
 
                 _writingHead = null;
                 _readHead = null;
                 _readTail = null;
                 _lastExaminedIndex = -1;
+            }
+
+            while (segment != null)
+            {
+                // Return the blocks to the pool
+                segment.ResetMemory();
+                segment = segment.NextSegment;
             }
         }
 

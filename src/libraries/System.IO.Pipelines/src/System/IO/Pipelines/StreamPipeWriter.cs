@@ -190,8 +190,13 @@ namespace System.IO.Pipelines
 
         private void ReturnSegmentUnsynchronized(BufferSegment segment)
         {
+            // Always return the Memory.
+            segment.ResetMemory();
+
             if (_bufferSegmentPool.Count < MaxSegmentPoolSize)
             {
+                // Reset the segment if we are pooling it.
+                segment.ResetSegmentLinks();
                 _bufferSegmentPool.Push(segment);
             }
         }
@@ -296,7 +301,6 @@ namespace System.IO.Pipelines
                             await InnerStream.WriteAsync(returnSegment.Memory, localToken).ConfigureAwait(false);
                         }
 
-                        returnSegment.ResetMemory();
                         ReturnSegmentUnsynchronized(returnSegment);
 
                         // Update the head segment after we return the current segment
@@ -363,7 +367,6 @@ namespace System.IO.Pipelines
 #endif
                 }
 
-                returnSegment.ResetMemory();
                 ReturnSegmentUnsynchronized(returnSegment);
 
                 // Update the head segment after we return the current segment
