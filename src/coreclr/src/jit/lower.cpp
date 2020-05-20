@@ -258,7 +258,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             if (node->AsBlk()->Data()->IsCall())
             {
                 assert(!comp->compDoOldStructRetyping());
-                LowerStructBlockStore(node->AsBlk());
+                LowerStoreCallStruct(node->AsBlk());
                 break;
             }
             __fallthrough;
@@ -3045,24 +3045,11 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 else
                 {
                     assert(!comp->compDoOldStructRetyping());
-                    switch (layout->GetSize())
-                    {
-                        case 1:
-                        case 2:
-                        case 4:
-                        case 8:
-                        case 16:
-                            assert(regType != TYP_UNDEF);
-                            break;
-                        case 3:
-                        case 5:
-                        case 6:
-                        case 7:
-                            assert(regType == TYP_UNDEF);
-                            break;
-                        default:
-                            unreached();
-                    }
+                    unsigned size = layout->GetSize();
+                    assert((size <= 8) || (size == 16));
+                    bool isPowerOf2    = (((size - 1) & size) == 0);
+                    bool isTypeDefined = (regType != TYP_UNDEF);
+                    assert(isPowerOf2 == isTypeDefined);
                 }
             }
 #endif // !TARGET_XARCH || UNIX_AMD64_ABI
@@ -3071,6 +3058,8 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #if !defined(WINDOWS_AMD64_ABI)
             if (!call->HasMultiRegRetVal() && (regType == TYP_UNDEF))
             {
+                // If we have a single return register,
+                // but we can't retype it as a primitive type, we must spill it.
                 GenTreeLclVar* spilledCall = SpillStructCallResult(call);
                 lclStore->gtOp1            = spilledCall;
                 src                        = lclStore->gtOp1;
@@ -3270,7 +3259,9 @@ void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
 // Arguments:
 //     call - The call node to lower.
 //
-// Note: it skips multiReg return, it transforms the call's user for `GT_STOREIND`.
+// Notes:
+//    - this handles only single-register returns;
+//    - it transforms the call's user for `GT_STOREIND`.
 //
 void Lowering::LowerCallStruct(GenTreeCall* call)
 {
@@ -3331,7 +3322,16 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 #endif // !TARGET_ARMARCH
 }
 
-void Lowering::LowerStructBlockStore(GenTreeBlk* store)
+//----------------------------------------------------------------------------------------------
+// LowerStoreCallStruct: Lowers a store block where source is a struct typed call.
+//
+// Arguments:
+//     store - The store node to lower.
+//
+// Notes:
+//    - it spills the call's result if it can be retyped as a primitive type.
+//
+void Lowering::LowerStoreCallStruct(GenTreeBlk* store)
 {
     assert(!comp->compDoOldStructRetyping());
     assert(varTypeIsStruct(store));
@@ -3381,7 +3381,7 @@ void Lowering::LowerStructBlockStore(GenTreeBlk* store)
 //
 GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
 {
-    // TODO-1stClassStructs: we can support that in codegen for `GT_STORE_BLK` without new temps.
+    // TODO-1stClassStructs: we can support this in codegen for `GT_STORE_BLK` without new temps.
     const unsigned       spillNum = comp->lvaGrabTemp(true DEBUGARG("Return value temp for an odd struct return size"));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     comp->lvaSetStruct(spillNum, retClsHnd, false);
