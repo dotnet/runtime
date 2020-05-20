@@ -141,11 +141,16 @@ namespace System
 
         private class UriInfo
         {
-            public string? Host;
-            public string? ScopeId;        //only IP v6 may need this
-            public string? String;
             public Offset Offset;
-            public string? DnsSafeHost;    // stores dns safe host when idn is on and we have unicode or idn host
+            public string? String;
+            public string? Host;
+            public string? IdnHost;
+            public string? PathAndQuery;
+
+            /// <summary>
+            /// Only IP v6 may need this
+            /// </summary>
+            public string? ScopeId;
 
             private MoreInfo? _moreInfo;
             public MoreInfo MoreInfo
@@ -321,8 +326,9 @@ namespace System
 
         private void EnsureHostString(bool allowDnsOptimization)
         {
-            EnsureUriInfo();
-            if ((object?)_info.Host == null)
+            UriInfo info = EnsureUriInfo();
+
+            if (info.Host is null)
             {
                 if (allowDnsOptimization && InFact(Flags.CanonicalDnsHost))
                 {
@@ -838,16 +844,23 @@ namespace System
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                string result = GetParts(UriComponents.PathAndQuery, UriFormat.UriEscaped);
-                //
-                // Compatibility:
-                // Remove the first slash from a Dos Path if it's present
-                //
-                if (IsDosPath && result[0] == '/')
+                UriInfo info = EnsureUriInfo();
+
+                if (info.PathAndQuery is null)
                 {
-                    result = result.Substring(1);
+                    string result = GetParts(UriComponents.PathAndQuery, UriFormat.UriEscaped);
+
+                    // Compatibility:
+                    // Remove the first slash from a Dos Path if it's present
+                    if (IsDosPath && result[0] == '/')
+                    {
+                        result = result.Substring(1);
+                    }
+
+                    info.PathAndQuery = result;
                 }
-                return result;
+
+                return info.PathAndQuery;
             }
         }
 
@@ -1129,44 +1142,15 @@ namespace System
 
                 EnsureHostString(false);
 
-                if (_info.DnsSafeHost != null)
+                Flags hostType = HostType;
+                if (hostType == Flags.IPv6HostType || (hostType == Flags.BasicHostType && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical)))
                 {
-                    // Cached
-                    return _info.DnsSafeHost;
+                    return IdnHost;
                 }
-                else if (_info.Host!.Length == 0)
+                else
                 {
-                    // Empty host, no possible processing
-                    return string.Empty;
+                    return _info.Host!;
                 }
-
-                // Special case, will include ScopeID and strip [] around IPv6
-                // This will also unescape the host string
-                string ret = _info.Host;
-
-                if (HostType == Flags.IPv6HostType)
-                {
-                    ret = _info.ScopeId != null ?
-                        string.Concat(ret.AsSpan(1, ret.Length - 2), _info.ScopeId) :
-                        ret.Substring(1, ret.Length - 2);
-                }
-                // Validate that this basic host qualifies as Dns safe,
-                // It has looser parsing rules that might allow otherwise.
-                // It might be a registry-based host from RFC 2396 Section 3.2.1
-                else if (HostType == Flags.BasicHostType
-                    && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
-                {
-                    // Unescape everything
-                    char[] dest = new char[ret.Length];
-                    int count = 0;
-                    UriHelper.UnescapeString(ret, 0, ret.Length, dest, ref count, c_DummyChar, c_DummyChar,
-                        c_DummyChar, UnescapeMode.Unescape | UnescapeMode.UnescapeAll, _syntax, false);
-                    ret = new string(dest, 0, count);
-                }
-
-                _info.DnsSafeHost = ret;
-
-                return ret;
             }
         }
 
@@ -1175,14 +1159,48 @@ namespace System
         {
             get
             {
-                string host = this.DnsSafeHost;
-
-                if (HostType == Flags.DnsHostType)
+                if (IsNotAbsoluteUri)
                 {
-                    host = DomainNameHelper.IdnEquivalent(host);
+                    throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                return host;
+                if (_info?.IdnHost is null)
+                {
+                    EnsureHostString(false);
+
+                    string host = _info!.Host!;
+
+                    Flags hostType = HostType;
+                    if (hostType == Flags.DnsHostType)
+                    {
+                        host = DomainNameHelper.IdnEquivalent(host);
+                    }
+                    else if (hostType == Flags.IPv6HostType)
+                    {
+                        host = _info.ScopeId != null ?
+                            string.Concat(host.AsSpan(1, host.Length - 2), _info.ScopeId) :
+                            host.Substring(1, host.Length - 2);
+                    }
+                    // Validate that this basic host qualifies as Dns safe,
+                    // It has looser parsing rules that might allow otherwise.
+                    // It might be a registry-based host from RFC 2396 Section 3.2.1
+                    else if (hostType == Flags.BasicHostType && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
+                    {
+                        // Unescape everything
+                        ValueStringBuilder dest = new ValueStringBuilder(stackalloc char[256]);
+
+                        UriHelper.UnescapeString(host, 0, host.Length, ref dest,
+                            c_DummyChar, c_DummyChar, c_DummyChar,
+                            UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                            _syntax, isQuery: false);
+
+                        host = dest.ToString();
+                    }
+
+                    _info.IdnHost = host;
+                }
+
+                return _info.IdnHost;
             }
         }
 

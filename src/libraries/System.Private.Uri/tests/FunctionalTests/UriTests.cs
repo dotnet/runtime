@@ -711,6 +711,27 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        public static void Uri_CachesIdnHost()
+        {
+            var uri = new Uri("https://\u00FCnicode/foo");
+            Assert.Same(uri.IdnHost, uri.IdnHost);
+        }
+
+        [Fact]
+        public static void Uri_CachesPathAndQuery()
+        {
+            var uri = new Uri("https://foo/bar?one=two");
+            Assert.Same(uri.PathAndQuery, uri.PathAndQuery);
+        }
+
+        [Fact]
+        public static void Uri_CachesDnsSafeHost()
+        {
+            var uri = new Uri("https://[::]/bar");
+            Assert.Same(uri.DnsSafeHost, uri.DnsSafeHost);
+        }
+
+        [Fact]
         public static void Uri_DoesNotLockOnString()
         {
             // Don't intern the string we lock on
