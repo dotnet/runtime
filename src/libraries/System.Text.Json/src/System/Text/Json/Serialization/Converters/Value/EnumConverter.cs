@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -19,8 +20,8 @@ namespace System.Text.Json.Serialization.Converters
         private const string ValueSeparator = ", ";
 
         private readonly EnumConverterOptions _converterOptions;
-        private readonly JsonNamingPolicy _namingPolicy;
-        private readonly ConcurrentDictionary<string, JsonEncodedText>? _nameCache;
+        private readonly JsonNamingPolicy? _namingPolicy;
+        private readonly ConcurrentDictionary<T, JsonEncodedText> _nameCache = new ConcurrentDictionary<T, JsonEncodedText>();
 
         public override bool CanConvert(Type type)
         {
@@ -35,14 +36,6 @@ namespace System.Text.Json.Serialization.Converters
         public EnumConverter(EnumConverterOptions options, JsonNamingPolicy? namingPolicy)
         {
             _converterOptions = options;
-            if (namingPolicy != null)
-            {
-                _nameCache = new ConcurrentDictionary<string, JsonEncodedText>();
-            }
-            else
-            {
-                namingPolicy = JsonNamingPolicy.Default;
-            }
             _namingPolicy = namingPolicy;
         }
 
@@ -159,21 +152,21 @@ namespace System.Text.Json.Serialization.Converters
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
-                string original = value.ToString();
-                if (_nameCache != null && _nameCache.TryGetValue(original, out JsonEncodedText transformed))
+                if (_nameCache.TryGetValue(value, out JsonEncodedText transformed))
                 {
                     writer.WriteStringValue(transformed);
                     return;
                 }
 
+                string original = value.ToString();
                 if (IsValidIdentifier(original))
                 {
-                    transformed = FormatEnumValue(original);
+                    transformed = _namingPolicy == null
+                        ? JsonEncodedText.Encode(original, options.Encoder)
+                        : FormatEnumValue(original, options);
+
                     writer.WriteStringValue(transformed);
-                    if (_nameCache != null)
-                    {
-                        _nameCache.TryAdd(original, transformed);
-                    }
+                    _nameCache.TryAdd(value, transformed);
                     return;
                 }
             }
@@ -215,8 +208,9 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private JsonEncodedText FormatEnumValue(string value)
+        private JsonEncodedText FormatEnumValue(string value, JsonSerializerOptions options)
         {
+            Debug.Assert(_namingPolicy != null);
             string converted;
 
             if (!value.Contains(ValueSeparator))
@@ -242,7 +236,7 @@ namespace System.Text.Json.Serialization.Converters
                 converted = string.Join(ValueSeparator, enumValues);
             }
 
-            return JsonEncodedText.Encode(converted);
+            return JsonEncodedText.Encode(converted, options.Encoder);
         }
     }
 }
