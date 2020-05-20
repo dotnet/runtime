@@ -1437,6 +1437,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(Vector64<long> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar(value, count);
 
             /// <summary>
+            /// uint8_t vqshrnh_n_u16 (uint16_t a, const int n)
+            ///   A64: UQSHRN Bd, Hn, #n
+            /// </summary>
+            public static Vector64<byte> ShiftRightLogicalNarrowingSaturateScalar(Vector64<ushort> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint16_t vqshrns_n_u32 (uint32_t a, const int n)
+            ///   A64: UQSHRN Hd, Sn, #n
+            /// </summary>
+            public static Vector64<short> ShiftRightLogicalNarrowingSaturateScalar(Vector64<int> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint32_t vqshrnd_n_u64 (uint64_t a, const int n)
+            ///   A64: UQSHRN Sd, Dn, #n
+            /// </summary>
+            public static Vector64<int> ShiftRightLogicalNarrowingSaturateScalar(Vector64<long> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint8_t vqshrnh_n_u16 (uint16_t a, const int n)
+            ///   A64: UQSHRN Bd, Hn, #n
+            /// </summary>
+            public static Vector64<sbyte> ShiftRightLogicalNarrowingSaturateScalar(Vector64<short> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint16_t vqshrns_n_u32 (uint32_t a, const int n)
+            ///   A64: UQSHRN Hd, Sn, #n
+            /// </summary>
+            public static Vector64<ushort> ShiftRightLogicalNarrowingSaturateScalar(Vector64<uint> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+
+            /// <summary>
+            /// uint32_t vqshrnd_n_u64 (uint64_t a, const int n)
+            ///   A64: UQSHRN Sd, Dn, #n
+            /// </summary>
+            public static Vector64<uint> ShiftRightLogicalNarrowingSaturateScalar(Vector64<ulong> value, byte count) => ShiftRightLogicalNarrowingSaturateScalar(value, count);
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
