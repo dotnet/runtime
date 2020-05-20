@@ -17,6 +17,15 @@ while true; do
     fi
 done
 
-xharness android test -i="net.dot.MonoRunner" \
-    --package-name="net.dot.$TEST_NAME" \
-    --app=$APK -o=$EXECUTION_DIR/TestResults -v
+if [ -x "$(command -v xharness)" ]
+then
+    xharness android test -i="net.dot.MonoRunner" \
+        --package-name="net.dot.$TEST_NAME" \
+        --app=$APK -o=$HELIX_WORKITEM_UPLOAD_ROOT -v
+    
+    cp $HELIX_WORKITEM_UPLOAD_ROOT/*.xml ./
+else
+    dotnet xharness android test -i="net.dot.MonoRunner" \
+        --package-name="net.dot.$TEST_NAME" \
+        --app=$APK -o=$EXECUTION_DIR/TestResults -v
+fi
