@@ -141,16 +141,16 @@ namespace System
 
         private class UriInfo
         {
-            public string? Host;
-            public string? ScopeId;        //only IP v6 may need this
-            public string? String;
-            public string? PathAndQuery;
             public Offset Offset;
+            public string? String;
+            public string? Host;
+            public string? IdnHost;
+            public string? PathAndQuery;
 
             /// <summary>
-            /// If DnsSafeHost is different from the host, DnsSafeHost will be the same as IdnHost.
+            /// Only IP v6 may need this
             /// </summary>
-            public string? IdnHost;
+            public string? ScopeId;
 
             private MoreInfo? _moreInfo;
             public MoreInfo MoreInfo

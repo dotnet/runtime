@@ -725,7 +725,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public static void Uri_CachesDnsSafeHostIfSameAsIdnHost()
+        public static void Uri_CachesDnsSafeHost()
         {
             var uri = new Uri("https://[::]/bar");
             Assert.Same(uri.DnsSafeHost, uri.DnsSafeHost);
