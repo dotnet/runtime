@@ -8643,6 +8643,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, count);
 
         /// <summary>
+        /// uint8x8_t vqrshrun_n_s16 (int16x8_t a, const int n)
+        ///   A32: VQRSHRUN.S16 Dd, Qm, #n
+        ///   A64: SQRSHRUN Vd.8B, Vn.8H, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<short> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
+
+        /// <summary>
+        /// uint16x4_t vqrshrun_n_s32 (int32x4_t a, const int n)
+        ///   A32: VQRSHRUN.S32 Dd, Qm, #n
+        ///   A64: SQRSHRUN Vd.4H, Vn.4S, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<int> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
+
+        /// <summary>
+        /// uint32x2_t vqrshrun_n_s64 (int64x2_t a, const int n)
+        ///   A32: VQRSHRUN.S64 Dd, Qm, #n
+        ///   A64: SQRSHRUN Vd.2S, Vn.2D, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<long> value, byte count) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, count);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
