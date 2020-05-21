@@ -1402,7 +1402,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
         // Insert pieces in reverse order
         for (int i = regCount - 1; i >= 0; --i)
         {
-            var_types type = op1->GetRegTypeByIndex(i);
+            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
             regNumber reg  = op1->GetRegByIndex(i);
             if (op1->IsCopyOrReload())
             {
@@ -1444,7 +1444,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
     {
         for (unsigned i = 0; i < regCount; ++i)
         {
-            var_types type = op1->GetRegTypeByIndex(i);
+            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
             regNumber reg  = op1->GetRegByIndex(i);
             if (op1->IsCopyOrReload())
             {
