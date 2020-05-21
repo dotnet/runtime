@@ -80,6 +80,7 @@ public class ApkBuilder
         Directory.CreateDirectory(OutputDir);
         Directory.CreateDirectory(Path.Combine(OutputDir, "bin"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
+        Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         
         var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
@@ -90,7 +91,7 @@ public class ApkBuilder
         }
 
         // Copy AppDir to OutputDir/assets (ignore native files)
-        Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets"), file =>
+        Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
         {
             string fileName = Path.GetFileName(file);
             string extension = Path.GetExtension(file);
@@ -124,6 +125,10 @@ public class ApkBuilder
         string keytool = "keytool";
         string javac = "javac";
         string cmake = "cmake";
+        string zip = "zip";
+
+        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-r ../assets/assets.zip .");
+        Directory.Delete(Path.Combine(OutputDir, "assets-tozip"));
         
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
