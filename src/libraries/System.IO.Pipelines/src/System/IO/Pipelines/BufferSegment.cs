@@ -8,9 +8,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO.Pipelines
 {
-    internal sealed partial class BufferSegment : ReadOnlySequenceSegment<byte>
+    internal sealed class BufferSegment : ReadOnlySequenceSegment<byte>
     {
-        private object? _memoryOwner;
+        private IMemoryOwner<byte>? _memoryOwner;
+        private byte[]? _array;
         private BufferSegment? _next;
         private int _end;
 
@@ -55,12 +56,35 @@ namespace System.IO.Pipelines
 
         public void SetOwnedMemory(byte[] arrayPoolBuffer)
         {
-            _memoryOwner = arrayPoolBuffer;
+            _array = arrayPoolBuffer;
             AvailableMemory = arrayPoolBuffer;
         }
 
+        public void ResetMemory()
+        {
+            IMemoryOwner<byte>? memoryOwner = _memoryOwner;
+            if (memoryOwner != null)
+            {
+                _memoryOwner = null;
+                memoryOwner.Dispose();
+            }
+            else
+            {
+                Debug.Assert(_array != null);
+                ArrayPool<byte>.Shared.Return(_array);
+                _array = null;
+            }
+
+            Next = null;
+            RunningIndex = 0;
+            Memory = default;
+            _next = null;
+            _end = 0;
+            AvailableMemory = default;
+        }
+
         // Exposed for testing
-        internal object? MemoryOwner => _memoryOwner;
+        internal object? MemoryOwner => (object?)_memoryOwner ?? _array;
 
         public Memory<byte> AvailableMemory { get; private set; }
 
@@ -100,6 +124,5 @@ namespace System.IO.Pipelines
         {
             return (endSegment.RunningIndex + (uint)endIndex) - startPosition;
         }
-
     }
 }
