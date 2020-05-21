@@ -511,13 +511,17 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
 //    intrinsic     -- intrinsic ID
 //    immOp         -- the immediate operand of the intrinsic
 //    mustExpand    -- true if the compiler is compiling the fallback(GT_CALL) of this intrinsics
-//    immUpperBound -- upper bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
+//    immLowerBoundIncl -- lower inclusive bound for a value of the immediate operand (for a non-full-range
+//    imm-intrinsic)
+//    immUpperBoundExcl -- upper exclusive bound for a value of the immediate operand (for a non-full-range
+//    imm-intrinsic)
 //
 // Return Value:
 //     add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
 //     when the imm-argument is not in the valid range
 //
-GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immUpperBound)
+GenTree* Compiler::addRangeCheckIfNeeded(
+    NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBoundIncl, int immUpperBoundExcl)
 {
     assert(immOp != nullptr);
     // Full-range imm-intrinsics do not need the range-check
@@ -531,8 +535,12 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immO
             )
     {
         assert(!immOp->IsCnsIntOrI());
-        GenTree* upperBoundNode = gtNewIconNode(immUpperBound, TYP_INT);
-        GenTree* index          = nullptr;
+        assert(immLowerBoundIncl < immUpperBoundExcl);
+
+        ssize_t  adjustedUpperBound = (ssize_t)immUpperBoundExcl - (ssize_t)immLowerBoundIncl;
+        GenTree* upperBoundNode     = gtNewIconNode(adjustedUpperBound, TYP_INT);
+        GenTree* index              = nullptr;
+
         if ((immOp->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
             index = fgInsertCommaFormTemp(&immOp);
@@ -541,9 +549,16 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immO
         {
             index = gtCloneExpr(immOp);
         }
+
+        if (immLowerBoundIncl != 0)
+        {
+            index = gtNewOperNode(GT_SUB, TYP_INT, index, gtNewIconNode(immLowerBoundIncl, TYP_INT));
+        }
+
         GenTreeBoundsChk* hwIntrinsicChk = new (this, GT_HW_INTRINSIC_CHK)
             GenTreeBoundsChk(GT_HW_INTRINSIC_CHK, TYP_VOID, index, upperBoundNode, SCK_RNGCHK_FAIL);
         hwIntrinsicChk->gtThrowKind = SCK_ARG_RNG_EXCPN;
+
         return gtNewOperNode(GT_COMMA, immOp->TypeGet(), hwIntrinsicChk, immOp);
     }
     else
@@ -749,14 +764,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         var_types               argType  = TYP_UNKNOWN;
         CORINFO_CLASS_HANDLE    argClass;
 
-        int immUpperBound = 0;
+        int immLowerBoundIncl = 0;
+        int immUpperBoundExcl = 0;
 
         if (immOp != nullptr)
         {
 #if defined(TARGET_XARCH)
-            immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
+            immUpperBoundExcl = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
 #elif defined(TARGET_ARM64)
-            immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdSize, baseType);
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, baseType, &immLowerBoundIncl, &immUpperBoundExcl);
 #endif
         }
 
@@ -808,7 +824,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2     = getArgForHWIntrinsic(argType, argClass);
 
-                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immUpperBound);
+                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBoundIncl, immUpperBoundExcl);
 
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
                 op1     = getArgForHWIntrinsic(argType, argClass);
@@ -859,12 +875,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
                 if (intrinsic == NI_AdvSimd_Insert)
                 {
-                    op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immUpperBound);
+                    op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBoundIncl, immUpperBoundExcl);
                 }
                 else
 #endif
                 {
-                    op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immUpperBound);
+                    op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBoundIncl, immUpperBoundExcl);
                 }
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
