@@ -133,7 +133,7 @@ namespace System.Net.Quic.Implementations.Managed
                 ? param.MaxStreamsBidi
                 : param.MaxStreamsUni;
 
-            if (index > limit)
+            if (index >= limit)
             {
                 stream = null;
                 return false;

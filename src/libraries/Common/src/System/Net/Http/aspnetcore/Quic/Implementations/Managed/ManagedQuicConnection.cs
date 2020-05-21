@@ -145,12 +145,12 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Flow control limits set by this endpoint for the peer for the entire connection.
         /// </summary>
-        private ConnectionFlowControlLimits _localLimits = default;
+        private ConnectionFlowControlLimits _localLimits;
 
         /// <summary>
         ///     Values of <see cref="_localLimits"/> that peer has confirmed received.
         /// </summary>
-        private ConnectionFlowControlLimits _peerReceivedLocalLimits = default;
+        private ConnectionFlowControlLimits _peerReceivedLocalLimits;
 
         /// <summary>
         ///     Flow control limits set by the peer for this endpoint for the entire connection.
@@ -226,6 +226,11 @@ namespace System.Net.Quic.Implementations.Managed
 
             // generate first Crypto frames
             _tls.DoHandshake();
+
+            _localLimits.UpdateMaxData(_localTransportParameters.InitialMaxData);
+            _localLimits.UpdateMaxStreamsBidi(_localTransportParameters.InitialMaxStreamsBidi);
+            _localLimits.UpdateMaxStreamsUni(_localTransportParameters.InitialMaxStreamsUni);
+            _peerReceivedLocalLimits = _localLimits;
         }
 
         // server constructor
@@ -239,6 +244,11 @@ namespace System.Net.Quic.Implementations.Managed
 
             _gcHandle = GCHandle.Alloc(this);
             _tls = new Tls(_gcHandle, options, _localTransportParameters);
+
+            _localLimits.UpdateMaxData(_localTransportParameters.InitialMaxData);
+            _localLimits.UpdateMaxStreamsBidi(_localTransportParameters.InitialMaxStreamsBidi);
+            _localLimits.UpdateMaxStreamsUni(_localTransportParameters.InitialMaxStreamsUni);
+            _peerReceivedLocalLimits = _localLimits;
         }
 
         /// <summary>
