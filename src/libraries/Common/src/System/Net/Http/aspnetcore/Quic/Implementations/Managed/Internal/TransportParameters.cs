@@ -38,7 +38,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 InitialMaxStreamDataUni = DefaultMaxStreamData,
                 InitialMaxStreamDataBidiLocal = DefaultMaxStreamData,
                 InitialMaxStreamDataBidiRemote = DefaultMaxStreamData,
-                MaxPacketSize = 1452,
+                MaxPacketSize = 1252,
             };
         }
 

@@ -435,7 +435,8 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: this list may be incomplete
             if (_pingWanted ||
                 _streams.HasFlushableStreams ||
-                _streams.HasUpdateableStreams)
+                _streams.HasUpdateableStreams ||
+                _outboundError != null)
             {
                 return EncryptionLevel.Application;
             }
@@ -510,6 +511,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             await CloseAsync((long)TransportErrorCode.NoError).ConfigureAwait(false);
 
+            // TODO-RZ: this may be dangerous, since _tls is accessed from background thread.
             _tls.Dispose();
             _gcHandle.Free();
 
