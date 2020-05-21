@@ -4,6 +4,7 @@ include_directories(../unixcoreruncommon)
 
 set(CORERUN_SOURCES
     corerun.cpp
+    ../unixcoreruncommon/coreruncommon.cpp
 )
 
 _add_executable(corerun
@@ -19,10 +20,6 @@ endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 
 # Libc turns locks into no-ops if pthread was not loaded into process yet. Loading
 # pthread by the process executable ensures that all locks are initialized properly.
-target_link_libraries(corerun
-    unixcoreruncommon
-)
-
 # Android implements pthread natively
 if(NOT CLR_CMAKE_TARGET_ANDROID)
   target_link_libraries(corerun
