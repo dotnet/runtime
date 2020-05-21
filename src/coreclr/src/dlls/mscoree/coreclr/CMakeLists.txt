@@ -65,6 +65,11 @@ add_library_clr(coreclr
     ${CLR_SOURCES}
 )
 
+add_library_clr(coreclr_static
+    STATIC
+    ${CLR_SOURCES}
+)
+
 add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
 add_dependencies(coreclr coreclr_exports)
 
@@ -84,13 +89,17 @@ endif(FEATURE_MERGE_JIT_AND_ENGINE)
 # library.
 set(CORECLR_LIBRARIES
     utilcode
-    ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     cordbee_wks
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
     v3binder
-    ${END_LIBRARY_GROUP} # End group of libraries that have circular references
+
+    # Intentionally duplicated to ensure symbols are properly defined
+    cordbee_wks
+    debug-pal
+    ${LIB_UNWINDER}
+
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
@@ -160,6 +169,7 @@ if(FEATURE_EVENT_TRACE)
 endif(FEATURE_EVENT_TRACE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES})
+target_link_libraries(coreclr_static ${CORECLR_LIBRARIES})
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.

@@ -15,6 +15,7 @@
 #include "shimload.h"
 #include "metadataexports.h"
 #include "ex.h"
+#include <configuration.h>
 
 #include <dbgenginemetrics.h>
 
@@ -325,6 +326,12 @@ STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
 
+    LPCWSTR systemPath = Configuration::GetKnobStringValue(W("OVERRIDE_SYSTEM_PATH"));
+    if (systemPath != nullptr)
+    {
+        pBuffer.Set(systemPath);
+        return hr;
+    }
 
 #ifdef CROSSGEN_COMPILE
 
