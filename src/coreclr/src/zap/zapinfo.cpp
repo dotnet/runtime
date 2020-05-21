@@ -502,6 +502,8 @@ void ZapInfo::CompileMethod()
     ULONG cCode;
 
 #ifdef ALLOW_SXS_JIT_NGEN
+    bool expectedAltJitFailure = false;
+
     if (m_zapper->m_alternateJit)
     {
         res = m_zapper->m_alternateJit->compileMethod( this,
@@ -509,43 +511,52 @@ void ZapInfo::CompileMethod()
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      &pCode,
                                                      &cCode);
+        if ((res == CORJIT_SKIPPED) || SUCCEEDED(res))
+        {
+            expectedAltJitFailure = true;
+        }
         if (FAILED(res))
         {
             // We will fall back to the "main" JIT on failure.
             ResetForJitRetry();
         }
     }
+    if (!expectedAltJitFailure)
 #endif // ALLOW_SXS_JIT_NGEN
-
-    if (FAILED(res))
     {
-        ICorJitCompiler * pCompiler = m_zapper->m_pJitCompiler;
-        res = pCompiler->compileMethod(this,
-                                    &m_currentMethodInfo,
-                                    CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
-                                    &pCode,
-                                    &cCode);
-
         if (FAILED(res))
         {
-            ThrowExceptionForJitResult(res);
+            ICorJitCompiler* pCompiler = m_zapper->m_pJitCompiler;
+            res = pCompiler->compileMethod(this,
+                &m_currentMethodInfo,
+                CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
+                &pCode,
+                &cCode);
+
+            if (FAILED(res))
+            {
+                ThrowExceptionForJitResult(res);
+            }
         }
     }
 
     MethodCompileComplete(m_currentMethodInfo.ftn);
 
-#ifdef TARGET_X86
-    // The x86 JIT over estimates the code size. Trim the blob size down to
-    // the actual size.
-    // We can do this only for non-split code. Adjusting the code size for split
-    // methods would hose offsets in GC info.
-    if (m_pColdCode == NULL)
+    if (!expectedAltJitFailure)
     {
-        m_pCode->AdjustBlobSize(cCode);
-    }
+#ifdef TARGET_X86
+        // The x86 JIT over estimates the code size. Trim the blob size down to
+        // the actual size.
+        // We can do this only for non-split code. Adjusting the code size for split
+        // methods would hose offsets in GC info.
+        if (m_pColdCode == NULL)
+        {
+            m_pCode->AdjustBlobSize(cCode);
+        }
 #endif
 
-    PublishCompiledMethod();
+        PublishCompiledMethod();
+    }
 }
 
 #ifndef FEATURE_FULL_NGEN
