@@ -12644,7 +12644,14 @@ void emitter::emitDispIns(
             }
             else
             {
-                elemsize = optGetElemsize(id->idInsOpt());
+                if ((ins == INS_saddlv) || (ins == INS_uaddlv))
+                {
+                    elemsize = optGetElemsize(optWidenDstArrangement(id->idInsOpt()));
+                }
+                else
+                {
+                    elemsize = optGetElemsize(id->idInsOpt());
+                }
                 emitDispReg(id->idReg1(), elemsize, true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
