@@ -99,7 +99,7 @@ if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs
 
 if /i "%1" == "ci"                    (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "skipstressdependencies"(set __SkipStressDependencies=1&shift&goto Arg_Loop)
+if /i "%1" == "skipstressdependencies" (set __SkipStressDependencies=1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
