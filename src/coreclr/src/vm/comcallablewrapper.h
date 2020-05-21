@@ -1753,7 +1753,8 @@ private:
 
     DWORD                           m_flags;
 
-    // This maintains both COM ref in 64-bit
+    // This maintains the 32-bit COM refcount in 64-bits
+    // to enable also tracking the Cleanup sentinel. See code:CLEANUP_SENTINEL
     LONGLONG                        m_llRefCount;
  };
 
