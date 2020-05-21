@@ -128,7 +128,7 @@ public class ApkBuilder
         string zip = "zip";
 
         Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-r ../assets/assets.zip .");
-        Directory.Delete(Path.Combine(OutputDir, "assets-tozip"));
+        Directory.Delete(Path.Combine(OutputDir, "assets-tozip"), true);
         
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
