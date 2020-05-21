@@ -677,13 +677,15 @@ void EEStartupHelper()
 
         DiagnosticServer::Initialize();
 
-        EventPipe::PauseForTracingAgent();
-
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
+
+#ifdef FEATURE_PERFTRACING
+        DiagnosticServer::PauseForDiagnosticsMonitor();
+#endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_GDBJIT
         // Initialize gdbjit

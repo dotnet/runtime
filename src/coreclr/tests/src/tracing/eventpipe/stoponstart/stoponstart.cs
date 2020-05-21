@@ -32,10 +32,11 @@ namespace Tracing.Tests.StopOnStartValidation
                     Stream stream = await server.AcceptAsync();
                     IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                     Logger.logger.Log(advertise.ToString());
-                    // send ResumeRuntime command (2=EventPipeCommandSet, 4=ResumeRuntime commandid)
-                    var message = new IpcMessage(2,4);
+                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
+                    var message = new IpcMessage(0xFF,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
                     IpcMessage response = IpcClient.SendMessage(stream, message);
-                    Logger.logger.Log(response.ToString());
+                    Logger.logger.Log($"received: {response.ToString()}");
                 }
             );
 
@@ -69,11 +70,12 @@ namespace Tracing.Tests.StopOnStartValidation
                     Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
                     Task readerTask = eventStream.CopyToAsync(memoryStream);
                     
-                    // send ResumeRuntime command (2=EventPipeCommandSet, 4=ResumeRuntime commandid)
                     Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
-                    var message = new IpcMessage(2,4);
+                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
+                    var message = new IpcMessage(0xFF,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
                     IpcMessage response = IpcClient.SendMessage(stream, message);
-                    Logger.logger.Log(response.ToString());
+                    Logger.logger.Log($"received: {response.ToString()}");
 
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     Logger.logger.Log("Stopping EventPipeSession over standard connection");

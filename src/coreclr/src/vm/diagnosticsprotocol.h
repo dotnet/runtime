@@ -77,8 +77,9 @@ namespace DiagnosticsIpc
 
     enum class DiagnosticServerCommandId : uint8_t
     {
-        OK    = 0x00,
-        Error = 0xFF,
+        OK            = 0x00,
+        ResumeRuntime = 0x01,
+        Error         = 0xFF,
     };
 
     struct MagicVersion

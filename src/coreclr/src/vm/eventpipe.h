@@ -153,9 +153,6 @@ public:
         return 0xFFFFFFFF;
     }
 
-    NOINLINE static void PauseForTracingAgent();
-    static void ResumeRuntimeStartup();
-
 private:
     static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
 
@@ -228,8 +225,6 @@ private:
     static bool s_CanStartThreads;
 
     static CQuickArrayList<EventPipeSessionID> s_rgDeferredEventPipeSessionIds;
-
-    static CLREventStatic *s_ResumeRuntimeStartupEvent;
 
     //! Bitmask tracking EventPipe active sessions.
     // in all groups preceding it. For example if there are three groups with sizes:

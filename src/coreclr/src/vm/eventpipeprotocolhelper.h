@@ -21,7 +21,6 @@ enum class EventPipeCommandId : uint8_t
     StopTracing     = 0x01,
     CollectTracing  = 0x02,
     CollectTracing2 = 0x03,
-    ResumeStartup   = 0x04,
     // future
 };
 
@@ -80,7 +79,6 @@ public:
     static void StopTracing(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
     static void CollectTracing(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream); // `dotnet-trace collect`
     static void CollectTracing2(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
-    static void ResumeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
     static bool TryParseProviderConfiguration(uint8_t *&bufferCursor, uint32_t &bufferLen, CQuickArray<EventPipeProviderConfiguration> &result);
 
 private:

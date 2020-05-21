@@ -40,7 +40,6 @@ unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
 Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
 bool EventPipe::s_enableSampleProfilerAtStartup = false;
-CLREventStatic *EventPipe::s_ResumeRuntimeStartupEvent = nullptr;
 CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
 bool EventPipe::s_CanStartThreads = false;
 
@@ -1000,44 +999,5 @@ bool EventPipe::IsLockOwnedByCurrentThread()
     return GetLock()->OwnedByCurrentThread();
 }
 #endif
-
-// This method will block runtime bring-up IFF DOTNET_DiagnosticsMonitorAddress != nullptr and DOTNET_DiagnosticsMonitorStopOnStart!=0 (it's default state)
-// The s_ResumeRuntimeStartupEvent event will be signaled when the Diagnostics Monitor uses the ResumeRuntime Diagnostics IPC Command
-void EventPipe::PauseForTracingAgent()
-{
-    CONTRACTL
-    {
-      NOTHROW;
-      GC_NOTRIGGER;
-      MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    CLRConfigStringHolder pDotnetDiagnosticsMonitorAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorAddress);
-    if (pDotnetDiagnosticsMonitorAddress != nullptr)
-    {
-        DWORD dwDotnetDiagnosticsMonitorStopOnStart = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorStopOnStart);
-        if (dwDotnetDiagnosticsMonitorStopOnStart != 0)
-        {
-            s_ResumeRuntimeStartupEvent = new CLREventStatic();
-            s_ResumeRuntimeStartupEvent->CreateManualEvent(false);
-            const DWORD dwFiveSecondWait = s_ResumeRuntimeStartupEvent->Wait(5000, false);
-            if (dwFiveSecondWait == WAIT_TIMEOUT)
-            {
-                STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command.");
-                const DWORD dwWait = s_ResumeRuntimeStartupEvent->Wait(INFINITE, false);
-            }
-        }
-    }
-
-    // allow wait failures to fall through and the runtime to continue coming up
-}
-
-void EventPipe::ResumeRuntimeStartup()
-{
-    LIMITED_METHOD_CONTRACT;
-    if (s_ResumeRuntimeStartupEvent != nullptr && s_ResumeRuntimeStartupEvent->IsValid())
-        s_ResumeRuntimeStartupEvent->Set();
-}
 
 #endif // FEATURE_PERFTRACING
