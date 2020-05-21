@@ -13,7 +13,7 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Reads the next data item as a single-precision floating point number (major type 7)
         /// </summary>
-        /// <returns>The decoded <see cref="float"/> value.</returns>
+        /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type --OR--
         ///   the next simple value is not a floating-point number encoding --OR--
