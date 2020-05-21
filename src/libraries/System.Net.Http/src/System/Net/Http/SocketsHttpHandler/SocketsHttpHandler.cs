@@ -345,7 +345,25 @@ namespace System.Net.Http
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
-            return handler.SendAsync(request, cancellationToken);
+            if (HttpTelemetry.IsEnabled && request.RequestUri != null)
+            {
+                // Wrap the task for event activity-id threading.
+                HttpTelemetry.Log.RequestStart(request.RequestUri.IdnHost, request.RequestUri.Port);
+                Task<HttpResponseMessage> task = handler.SendAsync(request, cancellationToken);
+                task.ContinueWith(
+                    t => HttpTelemetry.Log.RequestAbort(),
+                    cancellationToken,
+                    TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                task.ContinueWith(
+                    t => HttpTelemetry.Log.RequestStop(request.RequestUri.IdnHost, request.RequestUri.Port),
+                    cancellationToken,
+                    TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                return task;
+            }
+            else
+            {
+                return handler.SendAsync(request, cancellationToken);
+            }
         }
 
         private Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
