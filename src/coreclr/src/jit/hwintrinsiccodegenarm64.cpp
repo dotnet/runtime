@@ -360,6 +360,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_Aes_PolynomialMultiplyWideningLower:
+                ins = INS_pmull;
+                opt = INS_OPTS_1D;
+                break;
+
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
                 break;
@@ -397,6 +402,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Crc32_ComputeCrc32C:
             case NI_Crc32_Arm64_ComputeCrc32:
             case NI_Crc32_Arm64_ComputeCrc32C:
+            case NI_Aes_PolynomialMultiplyWideningLower:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
