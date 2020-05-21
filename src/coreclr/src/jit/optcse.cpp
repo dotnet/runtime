@@ -401,10 +401,24 @@ void Compiler::optValnumCSE_Init()
 //
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
-    size_t   key;
+    ssize_t  key;
     unsigned hash;
     unsigned hval;
     CSEdsc*  hashDsc;
+    bool     isIntConstHash = false;
+    bool     enableConstCSE = false;
+
+#if defined(TARGET_ARM64)
+    if (JitConfig.JitDisableConstCSE() != 1)
+    {
+        enableConstCSE = true;
+    }
+#else
+    if (JitConfig.JitDisableConstCSE() == -1)
+    {
+        enableConstCSE = true;
+    }
+#endif
 
     // We use the liberal Value numbers when building the set of CSE
     ValueNum vnLib     = tree->GetVN(VNK_Liberal);
@@ -446,11 +460,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         if (vnOp2Lib != vnLib)
         {
-            key = (size_t)vnLib; // include the exc set in the hash key
+            key = (ssize_t)vnLib; // include the exc set in the hash key
         }
         else
         {
-            key = (size_t)vnLibNorm;
+            key = (ssize_t)vnLibNorm;
         }
 
         // If we didn't do the above we would have op1 as the CSE def
@@ -459,9 +473,26 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         assert(vnLibNorm == vnStore->VNNormalValue(vnOp2Lib));
     }
-    else // Not a GT_COMMA
+    else if (enableConstCSE && (tree->OperGet() == GT_CNS_INT) && vnStore->IsVNConstant(vnLibNorm))
     {
-        key = (size_t)vnLibNorm;
+        key = vnStore->CoercedConstantValue<ssize_t>(vnLibNorm);
+
+        // We can't share small offset constants when we require a reloc
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) &&
+            (JitConfig.JitDisableConstCSE() != 2))
+        {
+            // This will zero the upper 12 bits
+            key =(ssize_t) (((size_t) key) >> 12);
+        }
+        assert(key > 0);
+
+        // We use negative values for 'key' as the flag
+        // that we are hashing constants (with a 12-bit offset)
+        key = -key;
+    }
+    else // Not a GT_COMMA or a GT_CNS_INT
+    {
+        key = (ssize_t)vnLibNorm;
     }
 
     // Compute the hash value for the expression
@@ -481,7 +512,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
     for (hashDsc = optCSEhash[hval]; hashDsc; hashDsc = hashDsc->csdNextInBucket)
     {
-        if (hashDsc->csdHashKey == (INT64) key)
+        if (hashDsc->csdHashKey == (ssize_t) key)
         {
             treeStmtLst* newElem;
 
@@ -587,7 +618,9 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         {
             hashDsc = new (this, CMK_CSE) CSEdsc;
 
-            hashDsc->csdHashKey        = (INT64) key;
+            hashDsc->csdHashKey        = (ssize_t) key;
+            hashDsc->csdConstDefValue  = 0;
+            hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
             hashDsc->csdIndex          = 0;
             hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
@@ -648,8 +681,17 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nCSE candidate #%02u, vn=", CSEindex);
-            vnPrint((ValueNum) key, 0);
+            printf("\nCSE candidate #%02u, key=", CSEindex);
+            if (key >= 0)
+            {
+                vnPrint((unsigned)key, 0);
+            }
+            else
+            {
+                INT64 kVal = (-key) << 12;
+                printf("K_%012I64x", kVal);
+            }
+
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
             gtDispTree(tree);
         }
@@ -704,15 +746,17 @@ unsigned Compiler::optValnumCSE_Locate()
                     continue;
                 }
 
-                // Don't CSE constant values, instead let the Value Number
-                // based Assertion Prop phase handle them.  Here, unlike
-                // the rest of optCSE, we use the conservative value number
+                // We want to CSE simple constant leaf nodes, but we don't want to
+                // CSE non-leaf trees that compute CSE constant values.
+                // Instead we let the Value Number based Assertion Prop phase handle them.
+                //
+                // Here, unlike the rest of optCSE, we use the conservative value number
                 // rather than the liberal one, since the conservative one
                 // is what the Value Number based Assertion Prop will use
                 // and the point is to avoid optimizing cases that it will
                 // handle.
                 //
-                if (vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)))
+                if (!tree->OperIsLeaf() && vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)))
                 {
                     continue;
                 }
@@ -1897,9 +1941,19 @@ public:
                     cost = dsc->csdTree->GetCostEx();
                 }
 
-                printf("CSE #%02u, {$%-3x, $%-3x} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ",
-                       dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
-                       dsc->csdLiveAcrossCall ? ", call" : "      ");
+                if (dsc->csdHashKey >= 0)
+                {
+                    printf("CSE #%02u, {$%-3x, $%-3x} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ",
+                           dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
+                           dsc->csdLiveAcrossCall ? ", call" : "      ");
+                }
+                else
+                {
+                    INT64 kVal = (-dsc->csdHashKey) >> 12;
+                    printf("CSE #%02u, {K_%012I64x} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ",
+                        dsc->csdIndex, kVal, dsc->csdUseCount, def, use, cost,
+                        dsc->csdLiveAcrossCall ? ", call" : "      ");
+                }
 
                 m_pCompiler->gtDispTree(expr, nullptr, nullptr, true);
             }
@@ -2688,6 +2742,10 @@ public:
         ValueNum currVN;
         bool     setRefCnt = true;
         bool     allSame = true;
+        bool     isConstCSE = (dsc->csdHashKey < 0);
+
+        BasicBlock::weight_t  maxWeight = 0;
+        dsc->csdConstDefValue = -1;
 
         lst = dsc->csdTreeList;
         while (lst != nullptr)
@@ -2706,6 +2764,17 @@ public:
                 else if (currVN != firstVN)
                 {
                     allSame = false;
+                }
+
+                if (isConstCSE)
+                {
+                    BasicBlock::weight_t  curWeight = lst->tslBlock->getBBWeight(m_pCompiler);
+                    if ((curWeight > maxWeight) || (dsc->csdConstDefValue == -1))
+                    {
+                        maxWeight = curWeight;
+                        dsc->csdConstDefValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+                        dsc->csdConstDefVN = currVN;
+                    }
                 }
 
                 BasicBlock* blk = lst->tslBlock;
@@ -2734,7 +2803,7 @@ public:
         }
 
 #ifdef DEBUG
-        if (!allSame)
+        if (!allSame && !isConstCSE)
         {
             lst                = dsc->csdTreeList;
             GenTree* firstTree = lst->tslTree;
@@ -2788,7 +2857,9 @@ public:
 
             // The cseLclVarType must be a compatible with expTyp
             //
-            noway_assert(IsCompatibleType(cseLclVarTyp, expTyp));
+            ValueNumStore* vnStore = m_pCompiler->vnStore;
+            noway_assert(IsCompatibleType(cseLclVarTyp, expTyp) || (dsc->csdConstDefVN != vnStore->VNForNull()));
+
 
             // This will contain the replacement tree for exp
             // It will either be the CSE def or CSE ref
@@ -2816,12 +2887,27 @@ public:
                 // We will replace the CSE ref with a new tree
                 // this is typically just a simple use of the new CSE LclVar
                 //
-                ValueNumStore* vnStore = m_pCompiler->vnStore;
-                cse                    = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
-                cse->SetDoNotCSE();
 
-                // Assign the ssa num for the use. Note it may be the reserved num.
-                cse->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+                // Create a reference to the CSE temp
+                GenTree* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+                cseLclVar->gtVNPair.SetBoth(dsc->csdConstDefVN);
+
+                // Assign the ssa num for the lclvar use. Note it may be the reserved num.
+                cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+
+                cse = cseLclVar;
+                if (isConstCSE)
+                {
+                    ValueNum currVN   = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+                    ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+                    ssize_t  delta    = curValue - dsc->csdConstDefValue;
+                    if (delta != 0)
+                    {
+                        GenTree* deltaNode = m_pCompiler->gtNewIconNode(delta, cseLclVarTyp);
+                        cse = m_pCompiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cseLclVar, deltaNode);
+                        cse->SetDoNotCSE();
+                    }
+                }
 
                 // assign the proper ValueNumber, A CSE use discards any exceptions
                 cse->gtVNPair = vnStore->VNPNormalPair(exp->gtVNPair);
@@ -2907,7 +2993,6 @@ public:
 
                     GenTree*       cseVal         = cse;
                     GenTree*       curSideEff     = sideEffList;
-                    ValueNumStore* vnStore        = m_pCompiler->vnStore;
                     ValueNumPair   exceptions_vnp = ValueNumStore::VNPForEmptyExcSet();
 
                     while ((curSideEff->OperGet() == GT_COMMA) || (curSideEff->OperGet() == GT_ASG))
@@ -2963,6 +3048,17 @@ public:
                 exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
                 GenTree* val = exp;
+                if (isConstCSE)
+                {
+                    ValueNum currVN = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+                    ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+                    ssize_t  delta = curValue - dsc->csdConstDefValue;
+                    if (delta != 0)
+                    {
+                        val = m_pCompiler->gtNewIconNode(dsc->csdConstDefValue, cseLclVarTyp);
+                        val->gtVNPair.SetBoth(dsc->csdConstDefVN);
+                    }
+                }
 
                 /* Create an assignment of the value to the temp */
                 GenTree* asg     = m_pCompiler->gtNewTempAssign(cseLclVarNum, val);
@@ -3004,16 +3100,30 @@ public:
                 }
 
                 /* Create a reference to the CSE temp */
-                GenTree* ref  = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
-                ref->gtVNPair = val->gtVNPair; // The new 'ref' is the same as 'val'
-                ref->SetDoNotCSE();
+                GenTree* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+                cseLclVar->gtVNPair.SetBoth(dsc->csdConstDefVN);
 
-                // Assign the ssa num for the ref use. Note it may be the reserved num.
-                ref->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+                // Assign the ssa num for the lclvar use. Note it may be the reserved num.
+                cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+
+                GenTree* cseUse = cseLclVar;
+                if (isConstCSE)
+                {
+                    ValueNum currVN = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+                    ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+                    ssize_t  delta = curValue - dsc->csdConstDefValue;
+                    if (delta != 0)
+                    {
+                        GenTree* deltaNode = m_pCompiler->gtNewIconNode(delta, cseLclVarTyp);
+                        cseUse = m_pCompiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cseLclVar, deltaNode);
+                        cseUse->SetDoNotCSE();
+                    }
+                }
+                cseUse->gtVNPair = val->gtVNPair; // The 'cseUse' is equal to 'val'
 
                 /* Create a comma node for the CSE assignment */
-                cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, ref);
-                cse->gtVNPair = ref->gtVNPair; // The comma's value is the same as 'val'
+                cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, cseUse);
+                cse->gtVNPair = cseUse->gtVNPair; // The comma's value is the same as 'val'
                                                // as the assignment to the CSE LclVar
                                                // cannot add any new exceptions
             }
@@ -3100,9 +3210,19 @@ public:
 #ifdef DEBUG
             if (m_pCompiler->verbose)
             {
-                printf("\nConsidering CSE #%02u {$%-3x, $%-3x} [def=%3u, use=%3u, cost=%3u%s]\n", candidate.CseIndex(),
-                       dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(), candidate.UseCount(),
-                       candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
+                if (dsc->csdHashKey >= 0)
+                {
+                    printf("\nConsidering CSE #%02u {$%-3x, $%-3x} [def=%3u, use=%3u, cost=%3u%s]\n", candidate.CseIndex(),
+                           dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(), candidate.UseCount(),
+                           candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
+                }
+                else
+                {
+                    INT64 kVal = (-dsc->csdHashKey) >> 12;
+                    printf("\nConsidering CSE #%02u {K_%012I64x} [def=%3u, use=%3u, cost=%3u%s]\n", candidate.CseIndex(),
+                        kVal, candidate.DefCount(), candidate.UseCount(),
+                        candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
+                }
                 printf("CSE Expression : \n");
                 m_pCompiler->gtDispTree(candidate.Expr());
                 printf("\n");
