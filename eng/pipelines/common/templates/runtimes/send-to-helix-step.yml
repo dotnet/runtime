@@ -3,7 +3,7 @@ parameters:
   condition: ''
   archType: ''
   osGroup: ''
-  osSubGroup: ''
+  osSubgroup: ''
   buildConfig: ''
   creator: ''
   publishTestResults: ''
@@ -40,7 +40,7 @@ steps:
       condition: ${{ parameters.condition }}
     env:
       __BuildArch: ${{ parameters.archType }}
-      __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubGroup }}
+      __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
       __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
@@ -82,7 +82,7 @@ steps:
       condition: ${{ parameters.condition }}
     env:
       __BuildArch: ${{ parameters.archType }}
-      __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubGroup }}
+      __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
       __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
