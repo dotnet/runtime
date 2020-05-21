@@ -15,10 +15,11 @@ namespace System.Net.Sockets
         // Socket continuations are dispatched to the ThreadPool from the event thread.
         // This avoids continuations blocking the event handling.
         // Setting DOTNET_SYSTEM_NET_SOCKETS_INLINE_CONTINUATIONS to '1'
-        // runs continuations directly on the event thread.
+        // allows continuations to run directly on the event thread by setting
+        // Socket.PreferInlineCompletions to true.
         // This removes the overhead of context switching to the ThreadPool,
         // at the risk of potentially blocking the event thread.
-        internal static readonly bool InlineSocketContinuations = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_CONTINUATIONS") == "1";
+        internal static readonly bool InlineSocketContinuationsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_CONTINUATIONS") == "1";
 
         //
         // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.
@@ -84,7 +85,7 @@ namespace System.Net.Sockets
             }
 
             // // When inlining continuations, we default to ProcessorCount to make sure event threads cannot be a bottleneck.
-            if (InlineSocketContinuations)
+            if (InlineSocketContinuationsEnabled)
             {
                 return Environment.ProcessorCount;
             }
@@ -311,7 +312,7 @@ namespace System.Net.Sockets
                 Interop.Sys.SocketEvent* buffer = _buffer;
                 ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
                 ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-                bool inlineSocketContinuations = InlineSocketContinuations;
+                bool inlineSocketContinuationsEnabled = InlineSocketContinuationsEnabled;
                 IntPtr shutdownHandle = ShutdownHandle;
                 SocketAsyncContext? context = null;
                 while (!shutdown)
@@ -335,18 +336,25 @@ namespace System.Net.Sockets
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
 
-                            Interop.Sys.SocketEvents events = inlineSocketContinuations ? context.HandleSyncAndInlineEvents(socketEvent.Events) :
-                                                                                          context.HandleSyncEventsSpeculatively(socketEvent.Events);
-                            if (events != Interop.Sys.SocketEvents.None)
+                            if (inlineSocketContinuationsEnabled && context.PreferInlineCompletions)
                             {
-                                var ev = new SocketIOEvent(context, events);
-                                eventQueue.Enqueue(ev);
-                                enqueuedEvent = true;
+                                context.HandleEventsInline(socketEvent.Events);
+                            }
+                            else
+                            {
+                                Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
 
-                                // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                                // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                                // such code may keep the stack location live for longer than necessary
-                                ev = default;
+                                if (events != Interop.Sys.SocketEvents.None)
+                                {
+                                    var ev = new SocketIOEvent(context, events);
+                                    eventQueue.Enqueue(ev);
+                                    enqueuedEvent = true;
+
+                                    // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                                    // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                                    // such code may keep the stack location live for longer than necessary
+                                    ev = default;
+                                }
                             }
 
                             // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,

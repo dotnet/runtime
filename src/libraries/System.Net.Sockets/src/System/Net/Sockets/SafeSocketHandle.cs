@@ -43,6 +43,8 @@ namespace System.Net.Sockets
 
         internal bool OwnsHandle { get; }
 
+        internal bool PreferInlineCompletions { get; set; } = true;
+
         private bool TryOwnClose()
         {
             return OwnsHandle && Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;

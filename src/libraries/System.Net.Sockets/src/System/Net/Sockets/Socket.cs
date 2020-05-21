@@ -238,6 +238,12 @@ namespace System.Net.Sockets
 
         #region Properties
 
+        internal bool PreferInlineCompletions
+        {
+            get => _handle.PreferInlineCompletions;
+            set => _handle.PreferInlineCompletions = value;
+        }
+
         // The CLR allows configuration of these properties, separately from whether the OS supports IPv4/6.  We
         // do not provide these config options, so SupportsIPvX === OSSupportsIPvX.
         [Obsolete("SupportsIPv4 is obsoleted for this type, please use OSSupportsIPv4 instead. https://go.microsoft.com/fwlink/?linkid=14202")]

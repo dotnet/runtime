@@ -843,7 +843,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false, bool inlineAsyncEvents = true)
+            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false, bool processAsyncEvents = true)
             {
                 AsyncOperation op;
                 using (Lock())
@@ -864,7 +864,7 @@ namespace System.Net.Sockets
                             Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
                             if (skipAsyncEvents && !_isNextOperationSynchronous)
                             {
-                                Debug.Assert(!inlineAsyncEvents);
+                                Debug.Assert(!processAsyncEvents);
                                 // Return the operation to indicate that the async operation was not processed, without making
                                 // any state changes because async operations are being skipped
                                 return op;
@@ -902,7 +902,7 @@ namespace System.Net.Sockets
                 {
                     // Async operation.  The caller will figure out how to process the IO.
                     Debug.Assert(!skipAsyncEvents);
-                    if (inlineAsyncEvents)
+                    if (processAsyncEvents)
                     {
                         op.Process();
                         return null;
@@ -1193,6 +1193,13 @@ namespace System.Net.Sockets
 
             _receiveQueue.Init();
             _sendQueue.Init();
+        }
+
+        public bool PreferInlineCompletions
+        {
+            [PreserveDependency("get_PreferInlineCompletions", "System.Net.Sockets.Socket")]
+            [PreserveDependency("set_PreferInlineCompletions", "System.Net.Sockets.Socket")]
+            get => _socket.PreferInlineCompletions;
         }
 
         private void Register()
@@ -2030,7 +2037,7 @@ namespace System.Net.Sockets
         }
 
         // Called on the epoll thread.
-        public Interop.Sys.SocketEvents HandleSyncAndInlineEvents(Interop.Sys.SocketEvents events)
+        public void HandleEventsInline(Interop.Sys.SocketEvents events)
         {
             if ((events & Interop.Sys.SocketEvents.Error) != 0)
             {
@@ -2040,19 +2047,15 @@ namespace System.Net.Sockets
                 events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
             }
 
-            if ((events & Interop.Sys.SocketEvents.Read) != 0 &&
-                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, inlineAsyncEvents: true) == null)
+            if ((events & Interop.Sys.SocketEvents.Read) != 0)
             {
-                events ^= Interop.Sys.SocketEvents.Read;
+                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, processAsyncEvents: true);
             }
 
-            if ((events & Interop.Sys.SocketEvents.Write) != 0 &&
-                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, inlineAsyncEvents: true) == null)
+            if ((events & Interop.Sys.SocketEvents.Write) != 0)
             {
-                events ^= Interop.Sys.SocketEvents.Write;
+                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, processAsyncEvents: true);
             }
-
-            return events;
         }
 
         // Called on ThreadPool thread.
