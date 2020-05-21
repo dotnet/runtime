@@ -4529,7 +4529,11 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
         else
         {
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+            result = nullptr;
+#else
             result = Ind(addr);
+#endif // defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
         }
     }
 

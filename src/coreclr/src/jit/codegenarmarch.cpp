@@ -2521,11 +2521,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, target->GetRegNum());
     }
 #if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
-    else if (call->IsR2RRelativeIndir())
+    else if (call->IsR2RRelativeIndir() || call->IsVirtualStubRelativeIndir())
     {
         // Generate a direct call to a non-virtual user defined or helper method
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
-        assert(call->gtEntryPoint.accessType == IAT_PVALUE);
+        assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+               ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
         assert(call->gtControlExpr == nullptr);
 
         regNumber tmpReg = call->GetSingleTempReg();

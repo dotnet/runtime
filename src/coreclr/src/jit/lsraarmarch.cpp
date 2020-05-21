@@ -183,7 +183,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 #if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
-    else if (call->IsR2RRelativeIndir())
+    else if (call->IsR2RRelativeIndir() || call->IsVirtualStubRelativeIndir())
     {
         buildInternalIntRegisterDefForNode(call);
     }
