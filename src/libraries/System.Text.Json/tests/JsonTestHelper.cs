@@ -867,8 +867,15 @@ namespace System.Text.Json
                 case JsonValueKind.String:
                     Assert.Equal(expected.GetString(), actual.GetString());
                     break;
+                case JsonValueKind.Number:
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                case JsonValueKind.Null:
+                    Assert.Equal(expected.GetRawText(), actual.GetRawText());
+                    break;
                 default:
-                    throw new NotImplementedException();
+                    Debug.Fail($"Unexpected JsonValueKind: JsonValueKind.{valueKind}.");
+                    break;
             }
         }
     }

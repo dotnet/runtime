@@ -49,7 +49,8 @@ private:
 
     // Only EventPipeProvider can create events.
     // The provider is responsible for allocating and freeing events.
-    EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
+    EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack,
+        BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
 
 public:
     ~EventPipeEvent();

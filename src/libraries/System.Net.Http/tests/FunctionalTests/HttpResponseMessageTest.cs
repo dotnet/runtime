@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Net.Http.Headers;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -22,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, rm.StatusCode);
                 Assert.Equal("OK", rm.ReasonPhrase);
                 Assert.Equal(new Version(1, 1), rm.Version);
-                Assert.Null(rm.Content);
+                Assert.NotNull(rm.Content);
                 Assert.Null(rm.RequestMessage);
             }
         }
@@ -35,7 +32,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.Accepted, rm.StatusCode);
                 Assert.Equal("Accepted", rm.ReasonPhrase);
                 Assert.Equal(new Version(1, 1), rm.Version);
-                Assert.Null(rm.Content);
+                Assert.NotNull(rm.Content);
                 Assert.Null(rm.RequestMessage);
             }
         }
@@ -232,8 +229,15 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var rm = new HttpResponseMessage())
             {
+                HttpContent c1 = rm.Content;
+                Assert.Same(c1, rm.Content);
+
                 rm.Content = null;
-                Assert.Null(rm.Content);
+
+                HttpContent c2 = rm.Content;
+                Assert.Same(c2, rm.Content);
+
+                Assert.NotSame(c1, c2);
             }
         }
 
@@ -247,6 +251,35 @@ namespace System.Net.Http.Functional.Tests
                 x = 1000;
                 Assert.Throws<ArgumentOutOfRangeException>(() => { rm.StatusCode = (HttpStatusCode)x; });
             }
+        }
+
+        [Fact]
+        public async Task DefaultContent_ReadableNotWritable_Success()
+        {
+            var resp = new HttpResponseMessage();
+
+            HttpContent c = resp.Content;
+            Assert.NotNull(c);
+            Assert.Same(c, resp.Content);
+            Assert.NotSame(resp.Content, new HttpResponseMessage().Content);
+
+            Assert.Equal(0, c.Headers.ContentLength);
+
+            Task<Stream> t = c.ReadAsStreamAsync();
+            Assert.Equal(TaskStatus.RanToCompletion, t.Status);
+
+            Stream s = await t;
+            Assert.NotNull(s);
+
+            Assert.Equal(-1, s.ReadByte());
+            Assert.Equal(0, s.Read(new byte[1], 0, 1));
+            Assert.Equal(0, await s.ReadAsync(new byte[1], 0, 1));
+            Assert.Equal(0, await s.ReadAsync(new Memory<byte>(new byte[1])));
+
+            Assert.Throws<NotSupportedException>(() => s.WriteByte(0));
+            Assert.Throws<NotSupportedException>(() => s.Write(new byte[1], 0, 1));
+            await Assert.ThrowsAsync<NotSupportedException>(() => s.WriteAsync(new byte[1], 0, 1));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await s.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])));
         }
 
         [Fact]

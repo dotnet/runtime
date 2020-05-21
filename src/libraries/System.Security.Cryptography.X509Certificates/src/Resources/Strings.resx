@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -66,6 +67,9 @@
   <data name="Arg_EmptyOrNullString" xml:space="preserve">
     <value>String cannot be empty or null.</value>
   </data>
+  <data name="Arg_EmptyOrNullString_Named" xml:space="preserve">
+    <value>The '{0}' string cannot be empty or null.</value>
+  </data>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}.</value>
   </data>
@@ -74,7 +78,7 @@
   </data>
   <data name="Arg_InvalidType" xml:space="preserve">
     <value>Invalid type.</value>
-  </data>  
+  </data>
   <data name="Arg_OutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
@@ -223,7 +227,7 @@
     <value>The provided hash value is not the expected size for the specified hash algorithm.</value>
   </data>
   <data name="Cryptography_Unix_X509_DisallowedStoreNotEmpty" xml:space="preserve">
-   <value>The Disallowed store is not supported on this platform, but already has data. All files under '{0}' must be removed.</value>
+    <value>The Disallowed store is not supported on this platform, but already has data. All files under '{0}' must be removed.</value>
   </data>
   <data name="Cryptography_Unix_X509_MachineStoresReadOnly" xml:space="preserve">
     <value>Unix LocalMachine X509Stores are read-only for all users.</value>
@@ -235,7 +239,7 @@
     <value>The Disallowed store is not supported on this platform.</value>
   </data>
   <data name="Cryptography_Unix_X509_PropertyNotSettable" xml:space="preserve">
-      <value>The {0} value cannot be set on Unix.</value>
+    <value>The {0} value cannot be set on Unix.</value>
   </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
@@ -286,7 +290,7 @@
     <value>The X509 certificate store is read-only.</value>
   </data>
   <data name="Cryptography_X509_StoreCannotCreate" xml:space="preserve">
-      <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
+    <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
   </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>

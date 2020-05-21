@@ -67,19 +67,20 @@ namespace ILCompiler.DependencyAnalysis
             _markingComplete = true;
         }
 
-        public IMethodNode CompiledMethodNode(MethodDesc method)
-        {
-            EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
-            ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
+        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
 
-            return CreateMethodEntrypointNodeHelper(new MethodWithToken(method, moduleToken, constrainedType: null));
+        public MethodWithGCInfo CompiledMethodNode(MethodDesc method)
+        {
+            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(method, false));
+            Debug.Assert(method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            return _localMethodCache.GetOrAdd(method);
         }
 
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
 
         public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
         {
-            return _allMethodsOnType.GetOrAdd(type);
+            return _allMethodsOnType.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
@@ -94,13 +95,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
-        }
-
-        private NodeCache<Utf8String, SettableReadOnlyDataBlob> _readOnlyDataBlobs;
-
-        public SettableReadOnlyDataBlob SettableReadOnlyDataBlob(Utf8String name)
-        {
-            return _readOnlyDataBlobs.GetOrAdd(name);
         }
 
         private struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
@@ -139,11 +133,13 @@ namespace ILCompiler.DependencyAnalysis
                 Module = module;
             }
 
-            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && Module.Equals(other.Module);
+            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && ((Module == null && other.Module == null) || Module.Equals(other.Module));
             public override bool Equals(object obj) => obj is ModuleAndIntValueKey && Equals((ModuleAndIntValueKey)obj);
             public override int GetHashCode()
             {
                 int hashCode = IntValue * 0x5498341 + 0x832424;
+                if (Module == null)
+                    return hashCode;
                 return hashCode * 23 + Module.GetHashCode();
             }
         }
@@ -211,11 +207,6 @@ namespace ILCompiler.DependencyAnalysis
                         (TypeDesc)helperKey.Target));
             });
 
-            _readOnlyDataBlobs = new NodeCache<Utf8String, SettableReadOnlyDataBlob>(key =>
-            {
-                return new SettableReadOnlyDataBlob(key, ObjectNodeSection.ReadOnlyDataSection);
-            });
-
             _constructedHelpers = new NodeCache<ReadyToRunHelper, Import>(helperId =>
             {
                 return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
@@ -266,9 +257,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _debugDirectoryEntries = new NodeCache<ModuleAndIntValueKey, DebugDirectoryEntryNode>(key =>
             {
-                if (key.IntValue < 0)
-                    return new NativeDebugDirectoryEntryNode(key.Module);
-                else
                     return new CopiedDebugDirectoryEntryNode(key.Module, key.IntValue);
             });
 
@@ -362,7 +350,8 @@ namespace ILCompiler.DependencyAnalysis
             bool isUnboxingStub = key.IsUnboxingStub;
             bool isInstantiatingStub = key.IsInstantiatingStub;
             bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
-            if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
+            MethodDesc compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (CompilationModuleGroup.ContainsMethodBody(compilableMethod, false))
             {
                 if (isPrecodeImportRequired)
                 {
@@ -370,7 +359,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method),
+                        CompiledMethodNode(compilableMethod),
                         isUnboxingStub,
                         isInstantiatingStub);
                 }
@@ -380,7 +369,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method),
+                        CompiledMethodNode(compilableMethod),
                         isUnboxingStub,
                         isInstantiatingStub);
                 }
@@ -401,15 +390,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, isPrecodeImportRequired);
             return _importMethods.GetOrAdd(key);
-        }
-
-        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
-
-        private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod)
-        {
-            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
-
-            return _localMethodCache.GetOrAdd(targetMethod.Method);
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
@@ -676,10 +656,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
-            if (!CompilationModuleGroup.IsCompositeBuildMode)
-            {
-                graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated for single-file R2R files");
-            }
+            graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated for R2R files");
             graph.AddRoot(DebugDirectoryNode, "Debug Directory will always contain at least one entry");
 
             if (Win32ResourcesNode != null)

@@ -9,6 +9,7 @@ parameters:
   runtimeFlavor: 'coreclr'
   timeoutInMinutes: 150
   pool: ''
+  runtimeVariant: ''
   testScope: ''
   helixQueues: []
   dependsOnTestBuildConfiguration: Debug
@@ -27,6 +28,7 @@ jobs:
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: '' # we just send to helix, no need to use a container.
       condition: ${{ parameters.condition }}
@@ -47,7 +49,7 @@ jobs:
         - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ format('libraries_test_build_{0}_{1}_{2}_{3}', parameters.framework, parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
       - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}

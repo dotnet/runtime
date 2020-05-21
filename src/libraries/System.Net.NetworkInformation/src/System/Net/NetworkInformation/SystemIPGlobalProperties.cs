@@ -380,7 +380,7 @@ namespace System.Net.NetworkInformation
         public override async Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
             // Wait for the address table to stabilize.
-            var tcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
             {
                 await tcs.Task.ConfigureAwait(false);

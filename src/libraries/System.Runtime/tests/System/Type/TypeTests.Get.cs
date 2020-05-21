@@ -71,7 +71,7 @@ namespace System.Tests
         [Fact]
         public void GetInterface_NullName_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => typeof(int).GetInterface(null));
+            AssertExtensions.Throws<ArgumentNullException>("fullname", () => typeof(int).GetInterface(null));
         }
 
         [Fact]
@@ -90,12 +90,6 @@ namespace System.Tests
         public void GetInterface_MixedCaseAmbiguity_ThrowsAmbiguousMatchException()
         {
             Assert.Throws<AmbiguousMatchException>(() => typeof(ClassWithMixedCaseInterfaces).GetInterface("mixedinterface", ignoreCase: true));
-        }
-
-        [Fact]
-        public void GetCustomAttributes_Interface()
-        {
-            Assert.True(typeof(ExampleWithAttribute).GetCustomAttributes(typeof(INameable), inherit: false)[0] is NameableAttribute);
         }
     }
 
@@ -122,20 +116,6 @@ namespace System.Tests
         public interface Interface2 { }
         public interface Interface3 { }
     }
-
-    public interface INameable
-    {
-        string Name { get; }
-    }
-
-    [AttributeUsage (AttributeTargets.All, AllowMultiple=true)]
-    public class NameableAttribute : Attribute, INameable
-    {
-        string INameable.Name => "Nameable";
-    }
-
-    [Nameable]
-    public class ExampleWithAttribute { }
 }
 
 public interface Interface1 { }

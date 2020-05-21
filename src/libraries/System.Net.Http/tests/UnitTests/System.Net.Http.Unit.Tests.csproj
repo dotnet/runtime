@@ -70,6 +70,8 @@
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpBaseStream.cs"
+             Link="ProductionCode\System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs"
              Link="ProductionCode\System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\ClientCertificateOption.cs"
@@ -80,6 +82,10 @@
              Link="ProductionCode\System\IO\DelegatingStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\ByteArrayHelpers.cs"
              Link="ProductionCode\System\Net\Http\ByteArrayHelpers.cs" />
+    <Compile Include="..\..\src\System\Net\Http\EmptyContent.cs"
+             Link="ProductionCode\System\Net\Http\EmptyContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\EmptyReadStream.cs"
+         Link="ProductionCode\System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs"
              Link="ProductionCode\System\Net\Http\FormUrlEncodedContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderParser.cs"

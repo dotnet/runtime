@@ -401,7 +401,8 @@ namespace
     Volatile<ExtObjCxtCache*> ExtObjCxtCache::g_Instance;
 
     // Indicator for if a ComWrappers implementation is globally registered
-    bool g_IsGlobalComWrappersRegistered;
+    bool g_IsGlobalComWrappersRegisteredForMarshalling;
+    bool g_IsGlobalComWrappersRegisteredForTrackerSupport;
 
     // Defined handle types for the specific object uses.
     const HandleType InstanceHandleType{ HNDTYPE_STRONG };
@@ -469,7 +470,7 @@ namespace
         args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_2]  = PTR_TO_ARGHOLDER(externalComObject);
         args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
-        CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
+        CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
 
         return retObjRef;
     }
@@ -1384,18 +1385,17 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
 
 void QCALLTYPE GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling()
 {
-    // QCALL contracts are not used here because the managed declaration
-    // uses the SuppressGCTransition attribute
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    _ASSERTE(!g_IsGlobalComWrappersRegistered);
-    g_IsGlobalComWrappersRegistered = true;
+    _ASSERTE(!g_IsGlobalComWrappersRegisteredForMarshalling);
+    g_IsGlobalComWrappersRegisteredForMarshalling = true;
 }
 
 bool GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(
     _In_ OBJECTREF instance,
     _Outptr_ void** wrapperRaw)
 {
-    if (!g_IsGlobalComWrappersRegistered)
+    if (!g_IsGlobalComWrappersRegisteredForMarshalling)
         return false;
 
     // Switch to Cooperative mode since object references
@@ -1420,7 +1420,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     _In_ INT32 objFromComIPFlags,
     _Out_ OBJECTREF* objRef)
 {
-    if (!g_IsGlobalComWrappersRegistered)
+    if (!g_IsGlobalComWrappersRegisteredForMarshalling)
         return false;
 
     // Determine the true identity of the object
@@ -1450,6 +1450,109 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
             NULL /*wrapperMaybe*/,
             objRef);
     }
+}
+
+void QCALLTYPE GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    _ASSERTE(!g_IsGlobalComWrappersRegisteredForTrackerSupport);
+    g_IsGlobalComWrappersRegisteredForTrackerSupport = true;
+}
+
+bool GlobalComWrappersForTrackerSupport::TryGetOrCreateComInterfaceForObject(
+    _In_ OBJECTREF instance,
+    _Outptr_ void** wrapperRaw)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if (!g_IsGlobalComWrappersRegisteredForTrackerSupport)
+        return false;
+
+    // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
+    return TryGetOrCreateComInterfaceForObjectInternal(
+        NULL,
+        instance,
+        CreateComInterfaceFlags::CreateComInterfaceFlags_TrackerSupport,
+        ComWrappersScenario::TrackerSupportGlobalInstance,
+        wrapperRaw);
+}
+
+bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
+    _In_ IUnknown* externalComObject,
+    _Out_ OBJECTREF* objRef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if (!g_IsGlobalComWrappersRegisteredForTrackerSupport)
+        return false;
+
+    // Determine the true identity of the object
+    SafeComHolder<IUnknown> identity;
+    {
+        GCX_PREEMP();
+
+        HRESULT hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
+        _ASSERTE(hr == S_OK);
+    }
+
+    // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
+    return TryGetOrCreateObjectForComInstanceInternal(
+        NULL /*comWrappersImpl*/,
+        identity,
+        CreateObjectFlags::CreateObjectFlags_TrackerObject,
+        ComWrappersScenario::TrackerSupportGlobalInstance,
+        NULL /*wrapperMaybe*/,
+        objRef);
+}
+
+IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(objectPROTECTED));
+    }
+    CONTRACTL_END;
+
+    ASSERT_PROTECTED(objectPROTECTED);
+
+    SyncBlock* syncBlock = (*objectPROTECTED)->PassiveGetSyncBlock();
+    if (syncBlock == nullptr)
+    {
+        return nullptr;
+    }
+
+    InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfoNoCreate();
+    if (interopInfo == nullptr)
+    {
+        return nullptr;
+    }
+
+    void* context;
+    if (interopInfo->TryGetExternalComObjectContext(&context))
+    {
+        IUnknown* identity = reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
+        GCX_PREEMP();
+        IUnknown* result;
+        if (SUCCEEDED(identity->QueryInterface(riid, (void**)&result)))
+        {
+            return result;
+        }
+    }
+    return nullptr;
 }
 
 #endif // FEATURE_COMWRAPPERS

@@ -126,11 +126,6 @@ HRESULT EEConfig::Init()
     fJitMinOpts = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // By default, there is not pre-V4 CSE policy
-    fLegacyCorruptedStateExceptionsPolicy = false;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
     fNgenBindOptimizeNonGac = false;
     fStressLog = false;
     fProbeForStackOverflow = true;

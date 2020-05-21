@@ -14,6 +14,8 @@
     <CoreCLRTargetOS Condition="'$(TargetsAndroid)' == 'true'">Android</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsBrowser)' == 'true'">Browser</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsNetBSD)' == 'true'">NetBSD</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsSunOS)' == 'true'">SunOS</CoreCLRTargetOS>
     <LibrariesTargetOS>$(CoreCLRTargetOS)</LibrariesTargetOS>
   </PropertyGroup>
 

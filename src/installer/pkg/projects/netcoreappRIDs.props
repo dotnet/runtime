@@ -11,6 +11,8 @@
     <OfficialBuildRID Include="osx-x64" />
     <!-- Not currently built by CoreFX. -->
     <!-- <OfficialBuildRID Include="freebsd-x64" /> -->
+    <!-- <OfficialBuildRID Include="netbsd-x64" /> -->
+    <!-- <OfficialBuildRID Include="sunos-x64" /> -->
     <OfficialBuildRID Include="win-x86">
       <Platform>x86</Platform>
     </OfficialBuildRID>

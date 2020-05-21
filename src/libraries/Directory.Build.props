@@ -20,8 +20,6 @@
     <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
     <BuildTargetFramework>$(NetCoreAppCurrent)</BuildTargetFramework>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
-    <!-- TargetOS can be removed after renaming the property in arcade repo-->
-    <BuildOS>$(TargetOS)</BuildOS>
     <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-NetBSD;$(NetCoreAppCurrent)-FreeBSD</AdditionalBuildTargetFrameworks>
     <!-- Remove once is fixed: https://github.com/dotnet/roslyn/issues/42344 -->
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
@@ -41,9 +39,9 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
 
-    <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly/iOS/Android we need to let
-         the build system to use webassembly/ios/android as the RuntimeOS for produced package RIDs. -->
-    <RuntimeOS Condition="'$(TargetOS)' == 'Browser' or '$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
+    <!-- RuntimeOS is calculated based on the build system OS, however if building for Browser/iOS/Android we need to let
+         the build system to use browser/ios/android as the RuntimeOS for produced package RIDs. -->
+    <RuntimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
@@ -106,7 +104,7 @@
     <_runtimeOS Condition="'$(_runtimeOS)' == 'tizen.5.0.0'">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
     <ToolRuntimeRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_runtimeOS)-x64</ToolRuntimeRID>
-    <ToolRuntimeRID Condition="'$(ToolRuntimeID)' == ''">$(_runtimeOS)-$(HostArch)</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(ToolRuntimeRID)' == ''">$(_runtimeOS)-$(HostArch)</ToolRuntimeRID>
     <!-- We build linux-musl-arm on a ubuntu container, so we can't use the toolset build for alpine runtime. We need to use portable linux RID for our toolset in order to be able to use it. -->
     <ToolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' and $(TargetArchitecture.StartsWith('arm')) and !$(HostArch.StartsWith('arm'))">linux-x64</ToolRuntimeRID>
 
@@ -171,7 +169,7 @@
     <BaseOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>    
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisDirectory)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />
 
   <PropertyGroup>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
@@ -272,9 +270,10 @@
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
-    <NETCoreAppRuntimePackPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'lib-runtime-packs'))</NETCoreAppRuntimePackPath>
-    <NETCoreAppRuntimePackLibPath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackPath)', 'runtimes', '$(PackageRID)', 'lib', '$(NETCoreAppFramework)'))</NETCoreAppRuntimePackLibPath>
-    <NETCoreAppRuntimePackNativePath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackPath)', 'runtimes', '$(PackageRID)', 'native'))</NETCoreAppRuntimePackNativePath>
+    <RuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'lib-runtime-packs', '$(BuildSettings)'))</RuntimePackDir>
+    <RuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(RuntimePackDir)', 'runtimes', '$(PackageRID)'))</RuntimePackRidDir>
+    <RuntimePackLibDir>$([MSBuild]::NormalizeDirectory('$(RuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</RuntimePackLibDir>
+    <RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(RuntimePackRidDir)', 'native'))</RuntimePackNativeDir>
     <RuntimePackTargetFrameworkPath>runtimes/$(PackageRID)</RuntimePackTargetFrameworkPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
@@ -326,7 +325,9 @@
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <EnableTestSupport>true</EnableTestSupport>
-    <EnableCoverageSupport>true</EnableCoverageSupport>
+    <!-- TODO: Remove these conditions when VSTest is used in CI. -->
+    <EnableRunSettingsSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableRunSettingsSupport>
+    <EnableCoverageSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableCoverageSupport>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

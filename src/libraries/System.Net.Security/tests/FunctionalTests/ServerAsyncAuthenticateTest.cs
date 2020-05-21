@@ -23,9 +23,9 @@ namespace System.Net.Security.Tests
         private readonly ITestOutputHelper _logVerbose;
         private readonly X509Certificate2 _serverCertificate;
 
-        public ServerAsyncAuthenticateTest()
+        public ServerAsyncAuthenticateTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
             _logVerbose = VerboseTestLogging.GetInstance();
             _serverCertificate = Configuration.Certificates.GetServerCertificate();
         }
@@ -44,7 +44,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29642")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36192", TestPlatforms.AnyUnix)]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols serverProtocol,
             SslProtocols clientProtocol,
@@ -73,17 +73,24 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> ProtocolMismatchData()
         {
+            if (PlatformDetection.SupportsSsl3)
+            {
 #pragma warning disable 0618
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
-            yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
+                yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
+                if (PlatformDetection.SupportsSsl2)
+                {
+                    yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
+                    yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
+                }
 #pragma warning restore 0618
+            }
+
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(TimeoutException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(TimeoutException) };
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(TimeoutException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
         }
 
         #region Helpers

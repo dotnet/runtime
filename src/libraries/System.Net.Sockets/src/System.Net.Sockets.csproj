@@ -51,8 +51,6 @@
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <!-- Logging -->
-    <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs"
-             Link="Common\System\Net\Logging\DebugThreadTracking.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
@@ -272,10 +270,16 @@
              Link="Common\Interop\Unix\System.Native\Interop.MulticastOption.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs"
              Link="Common\Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Receive.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Receive.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReceiveMessage.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ReceiveMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Send.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Send.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SendMessage.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SendMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSockOpt.cs"

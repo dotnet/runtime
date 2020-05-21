@@ -626,6 +626,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
+                // For Vector256.Create and similar cases
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
@@ -1549,7 +1551,7 @@ namespace Internal.JitInterface
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
                                 isUnboxingStub: false,
-                                _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
+                                MethodBeingCompiled));
                         }
                     break;
 

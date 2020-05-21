@@ -3290,6 +3290,9 @@ public:
     uint32_t v_high_memory_load_th;
 
     PER_HEAP_ISOLATED
+    bool is_restricted_physical_mem;
+
+    PER_HEAP_ISOLATED
     uint64_t mem_one_percent;
 
     PER_HEAP_ISOLATED

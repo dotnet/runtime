@@ -6,13 +6,6 @@ using System.Diagnostics;
 
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System
 {
     internal static partial class SpanHelpers
@@ -348,14 +341,14 @@ namespace System
 
             for (; pointerSizeLength >= 8; pointerSizeLength -= 8)
             {
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -1) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -2) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -3) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -4) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -5) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -6) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -7) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -8) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -1) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -2) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -3) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -4) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -5) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -6) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -7) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -8) = default;
             }
 
             Debug.Assert(pointerSizeLength <= 7);
@@ -396,15 +389,15 @@ namespace System
             // Write first four and last three.
             Unsafe.Add(ref ip, 2) = default;
             Unsafe.Add(ref ip, 3) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -3) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -2) = default;
+            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -3) = default;
+            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -2) = default;
 
         Write2To3:
             Debug.Assert(pointerSizeLength >= 2);
 
             // Write first two and last one.
             Unsafe.Add(ref ip, 1) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -1) = default;
+            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -1) = default;
 
         Write1:
             Debug.Assert(pointerSizeLength >= 1);

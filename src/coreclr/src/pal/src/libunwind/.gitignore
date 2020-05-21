@@ -75,5 +75,7 @@ tests/[GL]ia64-test-readonly
 tests/[GL]ia64-test-stack
 tests/ia64-test-dyn1
 tests/ia64-test-sig
+tests/[GL]x64-test-dwarf-expressions
+tests/x64-unwind-badjmp-signal-frame
 tests/*.log
 tests/*.trs

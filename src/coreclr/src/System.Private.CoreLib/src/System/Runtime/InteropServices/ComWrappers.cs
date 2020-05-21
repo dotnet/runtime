@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices
         {
             IntPtr ptr;
             if (!TryGetOrCreateComInterfaceForObjectInternal(this, instance, flags, out ptr))
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(instance));
 
             return ptr;
         }
@@ -215,7 +215,7 @@ namespace System.Runtime.InteropServices
         {
             object? obj;
             if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, null, out obj))
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(externalComObject));
 
             return obj!;
         }
@@ -271,7 +271,7 @@ namespace System.Runtime.InteropServices
 
             object? obj;
             if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, wrapper, out obj))
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(externalComObject));
 
             return obj!;
         }
@@ -331,7 +331,14 @@ namespace System.Runtime.InteropServices
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
             }
+
+            SetGlobalInstanceRegisteredForTrackerSupport();
         }
+
+
+        [DllImport(RuntimeHelpers.QCall)]
+        [SuppressGCTransition]
+        private static extern void SetGlobalInstanceRegisteredForTrackerSupport();
 
         /// <summary>
         /// Register a <see cref="ComWrappers" /> instance to be used as the global instance for marshalling in the runtime.

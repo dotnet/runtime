@@ -1839,7 +1839,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !tree->IsMultiReg() && !(tree->gtFlags & GTF_SPILLED))
     {
         // targetType must be a normal scalar type and not a TYP_STRUCT
         assert(targetType != TYP_STRUCT);
@@ -1929,7 +1929,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // case is handled separately.
     if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
     {
-        genMultiRegCallStoreToLocal(tree);
+        genMultiRegStoreToLocal(tree);
     }
     else
     {
@@ -1953,17 +1953,31 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         genConsumeRegs(data);
 
         regNumber dataReg = REG_NA;
-        if (data->isContainedIntOrIImmed())
+        if (data->isContained())
         {
             // This is only possible for a zero-init.
-            assert(data->IsIntegralConst(0));
+            assert(data->IsIntegralConst(0) || data->IsSIMDZero());
 
             if (varTypeIsSIMD(targetType))
             {
-                assert(targetType == TYP_SIMD16);
-                assert(targetReg != REG_NA);
-                emit->emitIns_R_I(INS_movi, EA_16BYTE, targetReg, 0x00, INS_OPTS_16B);
-                genProduceReg(tree);
+                if (targetReg != REG_NA)
+                {
+                    emit->emitIns_R_I(INS_movi, emitActualTypeSize(targetType), targetReg, 0x00, INS_OPTS_16B);
+                    genProduceReg(tree);
+                }
+                else
+                {
+                    if (targetType == TYP_SIMD16)
+                    {
+                        GetEmitter()->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, REG_ZR, REG_ZR, varNum, 0);
+                    }
+                    else
+                    {
+                        assert(targetType == TYP_SIMD8);
+                        GetEmitter()->emitIns_S_R(INS_str, EA_8BYTE, REG_ZR, varNum, 0);
+                    }
+                    genUpdateLife(tree);
+                }
                 return;
             }
 
@@ -5019,7 +5033,20 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     }
 
     GenTree* op1 = treeNode->AsOp()->gtOp1;
-    assert(!op1->isContained());
+
+    if (op1->isContained())
+    {
+        // This is only possible for a zero-init.
+        assert(op1->IsIntegralConst(0) || op1->IsSIMDZero());
+
+        // store lower 8 bytes
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, REG_ZR, varNum, offs);
+
+        // Store upper 4 bytes
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, REG_ZR, varNum, offs + 8);
+
+        return;
+    }
     regNumber operandReg = genConsumeReg(op1);
 
     // Need an addtional integer register to extract upper 4 bytes from data.

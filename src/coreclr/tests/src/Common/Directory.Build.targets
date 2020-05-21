@@ -58,26 +58,37 @@
       <RunTimeArtifactsIncludeFolders Include="IL/" />
 
       <!-- Used for Crossgen2 R2R tests -->
-      <RunTimeArtifactsIncludeFolders Include="crossgen2/" />
+      <RunTimeArtifactsIncludeFolders Include="crossgen2/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
 
       <!-- Used for capturing symbolic stack traces using Watson -->
       <RunTimeArtifactsIncludeFolders Include="PDB/" />
 
       <!-- Used by the coreroot_determinism test -->
-      <RunTimeArtifactsIncludeFolders Include="R2RTest/" />
+      <RunTimeArtifactsIncludeFolders Include="R2RTest/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
     </ItemGroup>
 
     <ItemGroup>
       <!-- Add binary dependencies to copy-local items -->
       <RunTimeDependencyCopyLocal
+          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' != 'True'"
           Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)*"
+          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
+
+      <RunTimeDependencyCopyLocal
+          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' == 'True'"
+          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
     </ItemGroup>
 
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"
-      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(Filename)%(Extension)')"
+      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"

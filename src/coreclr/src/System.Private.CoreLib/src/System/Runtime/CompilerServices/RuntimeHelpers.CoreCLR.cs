@@ -7,13 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
@@ -348,31 +341,31 @@ namespace System.Runtime.CompilerServices
                                                              | 0x40000000 // enum_flag_ComObject
                                                              | 0x00400000;// enum_flag_ICastable;
 
-        private const int ParentMethodTableOffset = 0x10
+        private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG
-        + sizeof(nuint)   // adjust for debug_m_szClassName
+#if TARGET_64BIT
+            8
+#else
+            4
 #endif
-        ;
+#else
+            0
+#endif
+            ;
+
+        private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
 
 #if TARGET_64BIT
-        private const int ElementTypeOffset = 0x30
+        private const int ElementTypeOffset = 0x30 + DebugClassNamePtr;
 #else
-        private const int ElementTypeOffset = 0x20
+        private const int ElementTypeOffset = 0x20 + DebugClassNamePtr;
 #endif
-#if DEBUG
-        + sizeof(nuint)   // adjust for debug_m_szClassName
-#endif
-        ;
 
 #if TARGET_64BIT
-        private const int InterfaceMapOffset = 0x38
+        private const int InterfaceMapOffset = 0x38 + DebugClassNamePtr;
 #else
-        private const int InterfaceMapOffset = 0x24
+        private const int InterfaceMapOffset = 0x24 + DebugClassNamePtr;
 #endif
-#if DEBUG
-        + sizeof(nuint)   // adjust for debug_m_szClassName
-#endif
-        ;
 
         public bool HasComponentSize
         {

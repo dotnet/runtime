@@ -95,6 +95,16 @@ namespace System.Runtime.Loader
         }
 #endif
 
+        // This method is invoked by the VM to resolve a satellite assembly reference
+        // after trying assembly resolution via Load override without success.
+        private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        {
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+
+            // Invoke the ResolveSatelliteAssembly method
+            return context.ResolveSatelliteAssembly(assemblyName);
+        }
+
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)

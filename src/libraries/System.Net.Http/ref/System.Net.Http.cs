@@ -99,7 +99,7 @@ namespace System.Net.Http
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } }
         public System.Net.CookieContainer CookieContainer { get { throw null; } set { } }
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
-        public static System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2, System.Security.Cryptography.X509Certificates.X509Chain, System.Net.Security.SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get { throw null; } }
+        public static System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2?, System.Security.Cryptography.X509Certificates.X509Chain?, System.Net.Security.SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get { throw null; } }
         public System.Net.ICredentials? DefaultProxyCredentials { get { throw null; } set { } }
         public int MaxAutomaticRedirections { get { throw null; } set { } }
         public int MaxConnectionsPerServer { get { throw null; } set { } }
@@ -209,7 +209,8 @@ namespace System.Net.Http
     {
         public HttpResponseMessage() { }
         public HttpResponseMessage(System.Net.HttpStatusCode statusCode) { }
-        public System.Net.Http.HttpContent? Content { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public System.Net.Http.HttpContent Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpResponseHeaders Headers { get { throw null; } }
         public bool IsSuccessStatusCode { get { throw null; } }
         public string? ReasonPhrase { get { throw null; } set { } }
