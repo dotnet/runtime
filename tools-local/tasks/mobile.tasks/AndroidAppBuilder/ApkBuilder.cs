@@ -90,7 +90,8 @@ public class ApkBuilder
             extensionsToIgnore.Add(".dbg");
         }
 
-        // Copy AppDir to OutputDir/assets (ignore native files)
+        // Copy AppDir to OutputDir/assets-tozip (ignore native files)
+        // these files then will be zipped and copied to apk/assets/assets.zip
         Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
         {
             string fileName = Path.GetFileName(file);
