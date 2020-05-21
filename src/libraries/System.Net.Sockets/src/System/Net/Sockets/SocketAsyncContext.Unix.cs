@@ -322,7 +322,7 @@ namespace System.Net.Sockets
 
             internal virtual bool TryBatch(SocketAsyncContext context, int id, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
 
-            internal virtual void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
+            internal virtual void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock, bool inline)
             {
                 Debug.Fail("Expected to be implemented only by types overriding TryAsBatch");
                 throw new InvalidOperationException();
@@ -543,7 +543,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
+            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock, bool inline)
             {
                 PinHandle.Dispose();
 
@@ -570,7 +570,7 @@ namespace System.Net.Sockets
                     SetComplete();
                 }
 
-                AssociatedContext.ProcessBatchWriteOperation(this);
+                AssociatedContext.ProcessBatchWriteOperation(this, inline);
             }
         }
 
@@ -632,7 +632,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
+            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock, bool inline)
             {
                 if (ioControlBlock.Res < 0)
                 {
@@ -657,7 +657,7 @@ namespace System.Net.Sockets
                     SetComplete();
                 }
 
-                AssociatedContext.ProcessBatchWriteOperation(this);
+                AssociatedContext.ProcessBatchWriteOperation(this, inline);
             }
         }
 
@@ -741,7 +741,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
+            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock, bool inline)
             {
                 PinHandle.Dispose();
 
@@ -766,7 +766,7 @@ namespace System.Net.Sockets
                     SetComplete();
                 }
 
-                AssociatedContext.ProcessBatchReadOperation(this);
+                AssociatedContext.ProcessBatchReadOperation(this, inline);
             }
         }
 
@@ -824,7 +824,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
+            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock, bool inline)
             {
                 if (ioControlBlock.Res < 0)
                 {
@@ -847,7 +847,7 @@ namespace System.Net.Sockets
                     SetComplete();
                 }
 
-                AssociatedContext.ProcessBatchReadOperation(this);
+                AssociatedContext.ProcessBatchReadOperation(this, inline);
             }
         }
 
@@ -1405,7 +1405,7 @@ namespace System.Net.Sockets
                 return (wasCompleted ? OperationResult.Completed : OperationResult.Cancelled);
             }
 
-            public void ProcessBatchedOperation(TOperation op)
+            public void ProcessBatchedOperation(TOperation op, bool inline)
             {
                 AsyncOperation? nextOp = null;
                 using (Lock())
@@ -1447,8 +1447,16 @@ namespace System.Net.Sockets
                     }
                 }
 
-                // schedule the continuation
-                op.Schedule();
+                // run the continuation
+                if (inline)
+                {
+                    op.CancellationRegistration.Dispose();
+                    op.InvokeCallback(allowPooling: true);
+                }
+                else
+                {
+                    op.Schedule();
+                }
                 // dispatch next operation (if there was any)
                 nextOp?.Dispatch();
             }
@@ -1744,9 +1752,9 @@ namespace System.Net.Sockets
 
         private void ProcessAsyncWriteOperation(WriteOperation op) => _sendQueue.ProcessAsyncOperation(op);
 
-        private void ProcessBatchReadOperation(ReadOperation op) => _receiveQueue.ProcessBatchedOperation(op);
+        private void ProcessBatchReadOperation(ReadOperation op, bool inline) => _receiveQueue.ProcessBatchedOperation(op, inline);
 
-        private void ProcessBatchWriteOperation(WriteOperation op) => _sendQueue.ProcessBatchedOperation(op);
+        private void ProcessBatchWriteOperation(WriteOperation op, bool inline) => _sendQueue.ProcessBatchedOperation(op, inline);
 
         public SocketError Accept(byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd)
         {

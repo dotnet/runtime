@@ -555,7 +555,7 @@ namespace System.Net.Sockets
                 ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(aioEventsSegment, currentBatchSize);
                 for (int i = 0; i < events.Length; i++)
                 {
-                    batchedOperations[(int)events[i].Data - currentBatchIndex].HandleBatchEvent(in events[i]);
+                    batchedOperations[(int)events[i].Data - currentBatchIndex].HandleBatchEvent(in events[i], inline: i == events.Length - 1);
                 }
 
                 ioControlBlocksSegment.Clear();
