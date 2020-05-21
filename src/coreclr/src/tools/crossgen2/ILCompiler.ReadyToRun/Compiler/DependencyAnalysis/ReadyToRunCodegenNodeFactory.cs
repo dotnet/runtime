@@ -72,7 +72,6 @@ namespace ILCompiler.DependencyAnalysis
         public MethodWithGCInfo CompiledMethodNode(MethodDesc method)
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(method, false));
-            Debug.Assert(method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
             return _localMethodCache.GetOrAdd(method);
         }
 
@@ -351,7 +350,11 @@ namespace ILCompiler.DependencyAnalysis
             bool isUnboxingStub = key.IsUnboxingStub;
             bool isInstantiatingStub = key.IsInstantiatingStub;
             bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
-            MethodDesc compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc compilableMethod = method.Method;
+            if (!isInstantiatingStub)
+            {
+                compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            }
             if (CompilationModuleGroup.ContainsMethodBody(compilableMethod, false))
             {
                 if (isPrecodeImportRequired)
