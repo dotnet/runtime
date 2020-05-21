@@ -24,7 +24,6 @@
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslStream.Implementation.cs" />
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
-    <Compile Include="Fakes\FakeLazyAsyncResult.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
              Link="CommonTest\System\Net\SslProtocolSupport.cs" />
@@ -45,8 +44,8 @@
              Link="ProductionCode\System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslConnectionInfo.cs"
              Link="ProductionCode\System\Net\Security\SslConnectionInfo.cs" />
-    <Compile Include="..\..\src\System\Net\Security\SslStream.Implementation.Adapters.cs"
-             Link="ProductionCode\System\Net\Security\SslStream.Implementation.Adapters.cs" />
+    <Compile Include="..\..\src\System\Net\Security\ReadWriteAdapter.cs"
+             Link="ProductionCode\System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs"
              Link="ProductionCode\System\Net\SslStreamContext.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"

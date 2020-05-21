@@ -213,28 +213,37 @@ namespace System.Xml
         {
             if (_stream == null)
                 return false;
-            DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
-            int newOffsetMax = _offset + count;
-            if (newOffsetMax < _offsetMax)
-                return true;
-            DiagnosticUtility.DebugAssert(newOffsetMax <= _windowOffsetMax, "");
-            if (newOffsetMax > _buffer.Length)
+
+            // The data could be coming from an untrusted source, so we use a standard
+            // "multiply by 2" growth algorithm to avoid overly large memory utilization.
+            // Constant value of 256 comes from MemoryStream implementation.
+
+            do
             {
-                byte[] newBuffer = new byte[Math.Max(newOffsetMax, _buffer.Length * 2)];
-                System.Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _offsetMax);
-                _buffer = newBuffer;
-                _streamBuffer = newBuffer;
-            }
-            int needed = newOffsetMax - _offsetMax;
-            while (needed > 0)
-            {
-                int actual = _stream.Read(_buffer, _offsetMax, needed);
-                if (actual == 0)
-                    return false;
-                _offsetMax += actual;
-                needed -= actual;
-            }
-            return true;
+                DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
+                int newOffsetMax = _offset + count;
+                if (newOffsetMax <= _offsetMax)
+                    return true;
+                DiagnosticUtility.DebugAssert(newOffsetMax <= _windowOffsetMax, "");
+                if (newOffsetMax > _buffer.Length)
+                {
+                    byte[] newBuffer = new byte[Math.Max(256, _buffer.Length * 2)];
+                    System.Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _offsetMax);
+                    newOffsetMax = Math.Min(newOffsetMax, newBuffer.Length);
+                    _buffer = newBuffer;
+                    _streamBuffer = newBuffer;
+                }
+                int needed = newOffsetMax - _offsetMax;
+                DiagnosticUtility.DebugAssert(needed > 0, "");
+                do
+                {
+                    int actual = _stream.Read(_buffer, _offsetMax, needed);
+                    if (actual == 0)
+                        return false;
+                    _offsetMax += actual;
+                    needed -= actual;
+                } while (needed > 0);
+            } while (true);
         }
 
         public void Advance(int count)

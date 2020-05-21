@@ -182,6 +182,16 @@ internal static partial class Interop
             return Marshal.PtrToStringAnsi((IntPtr)message)!;
         }
 
+#if SERIAL_PORTS
+        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPlatformToPal")]
+        internal static extern Error ConvertErrorPlatformToPal(int platformErrno);
+
+        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPalToPlatform")]
+        internal static extern int ConvertErrorPalToPlatform(Error error);
+
+        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_StrErrorR")]
+        private static extern unsafe byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
+#else
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPlatformToPal")]
         internal static extern Error ConvertErrorPlatformToPal(int platformErrno);
 
@@ -190,6 +200,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_StrErrorR")]
         private static extern unsafe byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
+#endif
     }
 }
 

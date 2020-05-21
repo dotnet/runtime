@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (dataExtKey == null)
                         {
-                            jsonPropertyInfo.SetValueAsObject(obj, propValue);
+                            jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, propValue);
                         }
                         else
                         {

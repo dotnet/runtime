@@ -4,7 +4,7 @@
       <Rule Id="CA1001" Action="None" />             <!-- Types that own disposable fields should be disposable -->
       <Rule Id="CA1003" Action="None" />             <!-- Use generic event handler instances -->
       <Rule Id="CA1008" Action="None" />             <!-- Enums should have zero value -->
-      <Rule Id="CA1010" Action="None" />             <!-- Collections should implement generic interface -->
+      <Rule Id="CA1010" Action="None" />             <!-- Generic interface should also be implemented -->
       <Rule Id="CA1012" Action="None" />             <!-- Abstract types should not have constructors -->
       <Rule Id="CA1014" Action="None" />             <!-- Mark assemblies with CLSCompliant -->
       <Rule Id="CA1016" Action="None" />             <!-- Mark assemblies with assembly version -->
@@ -106,7 +106,7 @@
       <Rule Id="CA2200" Action="Warning" />          <!-- Rethrow to preserve stack details. -->
       <Rule Id="CA2201" Action="None" />             <!-- Do not raise reserved exception types -->
       <Rule Id="CA2207" Action="Warning" />          <!-- Initialize value type static fields inline -->
-      <Rule Id="CA2208" Action="None" />             <!-- Instantiate argument exceptions correctly -->
+      <Rule Id="CA2208" Action="Info" />             <!-- Instantiate argument exceptions correctly -->
       <Rule Id="CA2211" Action="None" />             <!-- Non-constant fields should not be visible -->
       <Rule Id="CA2213" Action="None" />             <!-- Disposable fields should be disposed -->
       <Rule Id="CA2214" Action="None" />             <!-- Do not call overridable methods in constructors -->
@@ -210,6 +210,7 @@
       <Rule Id="CA5401" Action="None" />             <!-- Do not use CreateEncryptor with non-default IV -->
       <Rule Id="CA5402" Action="None" />             <!-- Use CreateEncryptor with the default IV  -->
       <Rule Id="CA5403" Action="None" />             <!-- Do not hard-code certificate -->
+      <Rule Id="CA9999" Action="Warning" />          <!-- Analyzer version mismatch -->
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" /> <!-- Analyzer threw an exception -->

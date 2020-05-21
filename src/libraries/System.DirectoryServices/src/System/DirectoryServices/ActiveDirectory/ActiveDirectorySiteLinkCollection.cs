@@ -226,7 +226,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySiteLink))
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
 
             if (!((ActiveDirectorySiteLink)value).existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, ((ActiveDirectorySiteLink)value).Name));

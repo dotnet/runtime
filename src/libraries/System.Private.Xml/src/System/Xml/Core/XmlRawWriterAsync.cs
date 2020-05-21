@@ -81,12 +81,12 @@ namespace System.Xml
         // By default, convert base64 value to string and call WriteString.
         public override Task WriteBase64Async(byte[] buffer, int index, int count)
         {
-            if (base64Encoder == null)
+            if (_base64Encoder == null)
             {
-                base64Encoder = new XmlRawWriterBase64Encoder(this);
+                _base64Encoder = new XmlRawWriterBase64Encoder(this);
             }
             // Encode will call WriteRaw to write out the encoded characters
-            return base64Encoder.EncodeAsync(buffer, index, count);
+            return _base64Encoder.EncodeAsync(buffer, index, count);
         }
 
         // Raw writers do not have to verify NmToken values.
@@ -226,8 +226,8 @@ namespace System.Xml
         internal virtual Task WriteEndBase64Async()
         {
             // The Flush will call WriteRaw to write out the rest of the encoded characters
-            Debug.Assert(base64Encoder != null);
-            return base64Encoder.FlushAsync();
+            Debug.Assert(_base64Encoder != null);
+            return _base64Encoder.FlushAsync();
         }
 
         internal virtual ValueTask DisposeAsyncCore(WriteState currentState)

@@ -21,18 +21,20 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamAlpnTests
+    public abstract class SslStreamAlpnTestBase
     {
         private static bool BackendSupportsAlpn => PlatformDetection.SupportsAlpn;
         private static bool ClientSupportsAlpn => PlatformDetection.SupportsClientAlpn;
         readonly ITestOutputHelper _output;
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
 
-        public SslStreamAlpnTests(ITestOutputHelper output)
+        // Whether AuthenticateAs(Client/Server) or AuthenticateAs(Client/Server)Async will be called
+        public abstract bool TestAuthenticateAsync { get; }
+
+        protected SslStreamAlpnTestBase(ITestOutputHelper output)
         {
             _output = output;
         }
-
 
         private async Task DoHandshakeWithOptions(SslStream clientSslStream, SslStream serverSslStream, SslClientAuthenticationOptions clientOptions, SslServerAuthenticationOptions serverOptions)
         {
@@ -42,8 +44,8 @@ namespace System.Net.Security.Tests
                 clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
                 serverOptions.ServerCertificate = certificate;
 
-                Task t1 = clientSslStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-                Task t2 = serverSslStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                Task t1 = clientSslStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
+                Task t2 = serverSslStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
             }
@@ -95,8 +97,8 @@ namespace System.Net.Security.Tests
                 serverOptions.ServerCertificate = certificate;
                 serverOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
 
-                Task t1 = Assert.ThrowsAsync<InvalidOperationException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
-                Task t2 = Assert.ThrowsAsync<InvalidOperationException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+                Task t1 = Assert.ThrowsAsync<InvalidOperationException>(() => client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
+                Task t2 = Assert.ThrowsAsync<InvalidOperationException>(() => server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions));
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
             }
@@ -163,11 +165,11 @@ namespace System.Net.Security.Tests
                         {
                             // schannel sends alert on ALPN failure, openssl does not.
                             Task t1 = Assert.ThrowsAsync(TestConfiguration.SupportsAlpnAlerts ? typeof(AuthenticationException) : typeof(IOException), () =>
-                                clientStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+                                clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
 
                             try
                             {
-                                await serverStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                                await serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
                                 Assert.True(false, "AuthenticationException was not thrown.");
                             }
                             catch (AuthenticationException) { server.Dispose(); }
@@ -176,8 +178,8 @@ namespace System.Net.Security.Tests
                         }
                         else
                         {
-                            Task t1 = clientStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-                            Task t2 = serverStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                            Task t1 = clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
+                            Task t2 = serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
 
                             await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
@@ -211,7 +213,7 @@ namespace System.Net.Security.Tests
                             TargetHost = server.Host
                         };
 
-                        await clientStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                        await clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
                         Assert.Equal("h2", clientStream.NegotiatedApplicationProtocol.ToString());
                     }
                 }
@@ -245,5 +247,21 @@ namespace System.Net.Security.Tests
                 yield return new object[] { null, null, default(SslApplicationProtocol) };
             }
         }
+    }
+
+    public sealed class SslStreamAlpnTest_Async : SslStreamAlpnTestBase
+    {
+        public override bool TestAuthenticateAsync => true;
+
+        public SslStreamAlpnTest_Async(ITestOutputHelper output)
+            : base (output) { }
+    }
+
+    public sealed class SslStreamAlpnTest_Sync : SslStreamAlpnTestBase
+    {
+        public override bool TestAuthenticateAsync => false;
+
+        public SslStreamAlpnTest_Sync(ITestOutputHelper output)
+            : base(output) { }
     }
 }
