@@ -946,12 +946,14 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
     {
         public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
-    }
-
-    public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
-    {
-        public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
     }*/
+
+    public sealed class SyncHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
+    {
+        protected override bool TestAsync => false;
+
+        public SyncHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+    }
 
     public sealed class SyncHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
     {

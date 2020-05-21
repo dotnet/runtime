@@ -89,11 +89,6 @@ namespace System.Net.Http.Functional.Tests
 
         public static readonly IEnumerable<object[]> RemoteServersMemberData = Configuration.Http.RemoteServersMemberData;
 
-        public static IEnumerable<object[]> AsyncRemoteServersMemberData() => 
-            from async in AsyncBoolValues
-            from remoteServer in Configuration.Http.RemoteServers
-            select new object[] { async, remoteServer };
-
         protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer)
         {
             return CreateHttpClientForRemoteServer(remoteServer, CreateHttpClientHandler());
