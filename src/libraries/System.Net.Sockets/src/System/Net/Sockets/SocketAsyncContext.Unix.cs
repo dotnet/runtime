@@ -1567,7 +1567,7 @@ namespace System.Net.Sockets
             SetNonBlocking();
 
             SocketError errorCode;
-            int observedSequenceNumber;
+            int? observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceive(_socket, buffer.Span, flags, out bytesReceived, out errorCode))
             {
