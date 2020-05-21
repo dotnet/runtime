@@ -17,7 +17,7 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as the start of a map (major type 5)
         /// </summary>
         /// <returns>
-        ///   The length of the definite-length map, or <c>null</c> if the array is indefinite-length.
+        ///   The number of key-value pairs in a definite-length map, or <c>null</c> if the map is indefinite-length.
         /// </returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
