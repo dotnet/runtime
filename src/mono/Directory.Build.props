@@ -10,7 +10,7 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(HostArch)</TargetArchitecture>
     <Platform>$(TargetArchitecture)</Platform>
 
-    <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
+    <PlatformConfigPathPart>$(TargetOS).$(Platform).$(MonoConfiguration)</PlatformConfigPathPart>
   </PropertyGroup>
 
   <!-- Common properties -->

@@ -51,7 +51,7 @@
           Condition="'$(TargetOS)' == 'Browser'"
           AfterTargets="Build">
     <MSBuild Projects="$(MonoProjectRoot)\wasm\wasm.proj"
-             Properties="Configuration=$(Configuration);TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)"/>
+             Properties="Configuration=$(Configuration);MonoConfiguration=$(MonoConfiguration);TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)"/>
   </Target>
 
 </Project>
