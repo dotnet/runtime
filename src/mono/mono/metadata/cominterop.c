@@ -2998,8 +2998,14 @@ mono_bstr_alloc (size_t str_byte_len)
 	size_t alloc_size = str_byte_len + SIZEOF_VOID_P;
 	alloc_size += (16 - 1);
 	alloc_size &= ~(16 - 1);
-	gpointer ret = g_malloc (alloc_size);
+	gpointer ret = g_malloc0 (alloc_size);
 	return ret ? (char *)ret + SIZEOF_VOID_P : NULL;
+}
+
+static void
+mono_bstr_set_length (gunichar2 *bstr, int slen)
+{
+	*((guint32 *)bstr - 1) = slen * sizeof (gunichar2);
 }
 
 /* PTR can be NULL */
@@ -3012,19 +3018,24 @@ mono_ptr_to_bstr (const gunichar2* ptr, int slen)
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
+		// In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform.
+		// Presumably this is due to the BStr documentation page, which indicates that behavior and then directs you to call
+		// SysAllocString on Windows to handle the allocation for you. Unfortunately, this is not actually how it works:
+		// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
+		// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
+		// netcore moving forward.
 #ifdef ENABLE_NETCORE
 		mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
 		if (s == NULL)
 			return NULL;
-#else // In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform
+#else
 		/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
 		guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + sizeof (guint32));
 		if (ret == NULL)
 			return NULL;
 		mono_bstr const s = (mono_bstr)(ret + 1);
 #endif
-		// Set the length
-		*((guint32 *)s - 1) = slen * sizeof (gunichar2);
+		mono_bstr_set_length (s, slen);
 		if (ptr)
 			memcpy (s, ptr, slen * sizeof (gunichar2));
 		s [slen] = 0;
