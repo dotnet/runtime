@@ -268,7 +268,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 if (value < 0)
-                    throw new ArgumentException(nameof(value));
+                    throw new ArgumentException(null, nameof(value));
 
                 try
                 {

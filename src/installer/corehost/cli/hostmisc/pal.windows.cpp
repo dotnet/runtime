@@ -553,6 +553,16 @@ bool pal::get_own_module_path(string_t* recv)
     return GetModuleFileNameWrapper(hmod, recv);
 }
 
+bool pal::get_method_module_path(string_t* recv, void* method)
+{
+    HMODULE hmod;
+    if (!GetModuleHandleFromAddress(method, &hmod))
+        return false;
+
+    return GetModuleFileNameWrapper(hmod, recv);
+}
+
+
 bool pal::get_module_path(dll_t mod, string_t* recv)
 {
     return GetModuleFileNameWrapper(mod, recv);

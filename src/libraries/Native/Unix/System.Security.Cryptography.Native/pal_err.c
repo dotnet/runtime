@@ -34,10 +34,48 @@ uint64_t CryptoNative_ErrPeekLastError()
 
 const char* CryptoNative_ErrReasonErrorString(uint64_t error)
 {
-    return ERR_reason_error_string((unsigned long)error);
+    const char* errStr = NULL;
+
+#ifdef NEED_OPENSSL_1_1
+    int result = pthread_mutex_lock(&g_err_mutex);
+    assert(!result && "Acquiring the error string table mutex failed.");
+
+    if (!g_err_unloaded)
+    {
+#endif
+        errStr = ERR_reason_error_string((unsigned long)error);
+#ifdef NEED_OPENSSL_1_1
+    }
+
+    result = pthread_mutex_unlock(&g_err_mutex);
+    assert(!result && "Releasing the error string table mutex failed.");
+#endif
+
+    return errStr;
 }
 
 void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len)
 {
-    ERR_error_string_n((unsigned long)e, buf, Int32ToSizeT(len));
+#ifdef NEED_OPENSSL_1_1
+    int result = pthread_mutex_lock(&g_err_mutex);
+    assert(!result && "Acquiring the error string table mutex failed.");
+
+    if (!g_err_unloaded)
+    {
+#endif
+        ERR_error_string_n((unsigned long)e, buf, Int32ToSizeT(len));
+#ifdef NEED_OPENSSL_1_1
+    }
+    else
+    {
+        // If there's no string table, just make it be the empty string.
+        if (buf != NULL && len > 0)
+        {
+            buf[0] = 0;
+        }
+    }
+
+    result = pthread_mutex_unlock(&g_err_mutex);
+    assert(!result && "Releasing the error string table mutex failed.");
+#endif
 }

@@ -92,7 +92,7 @@ private:
     void ContainCheckStoreIndir(GenTreeIndir* indirNode);
     void ContainCheckMul(GenTreeOp* node);
     void ContainCheckShiftRotate(GenTreeOp* node);
-    void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc);
+    void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const;
     void ContainCheckCast(GenTreeCast* node);
     void ContainCheckCompare(GenTreeOp* node);
     void ContainCheckBinary(GenTreeOp* node);
@@ -132,11 +132,14 @@ private:
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
-#if !FEATURE_MULTIREG_RET
+    void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void LowerRetStruct(GenTreeUnOp* ret);
     void LowerRetStructLclVar(GenTreeUnOp* ret);
     void LowerCallStruct(GenTreeCall* call);
-#endif
+    void LowerStoreCallStruct(GenTreeBlk* store);
+#if !defined(WINDOWS_AMD64_ABI)
+    GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
+#endif // WINDOWS_AMD64_ABI
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
@@ -459,7 +462,7 @@ public:
     // return true if 'childNode' is an immediate that can be contained
     //  by the 'parentNode' (i.e. folded into an instruction)
     //  for example small enough and non-relocatable
-    bool IsContainableImmed(GenTree* parentNode, GenTree* childNode);
+    bool IsContainableImmed(GenTree* parentNode, GenTree* childNode) const;
 
     // Return true if 'node' is a containable memory op.
     bool IsContainableMemoryOp(GenTree* node)
@@ -478,7 +481,7 @@ private:
     bool AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, GenTree* index);
 
     // Makes 'childNode' contained in the 'parentNode'
-    void MakeSrcContained(GenTree* parentNode, GenTree* childNode);
+    void MakeSrcContained(GenTree* parentNode, GenTree* childNode) const;
 
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);

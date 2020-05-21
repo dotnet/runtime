@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 //
-// AttributeTest.cs - NUnit Test Cases for the System.Attribute class
+// AttributeTest.cs - Unit Test Cases for the System.Attribute class
 //
 // Authors:
 //  Duco Fijma (duco@lorentz.xs4all.nl)

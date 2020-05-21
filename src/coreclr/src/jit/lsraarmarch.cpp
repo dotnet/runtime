@@ -135,9 +135,9 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool            hasMultiRegRetVal = false;
-    ReturnTypeDesc* retTypeDesc       = nullptr;
-    regMaskTP       dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal = false;
+    const ReturnTypeDesc* retTypeDesc       = nullptr;
+    regMaskTP             dstCandidates     = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;
@@ -182,6 +182,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_FASTTAILCALL_TARGET;
         }
     }
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+    else if (call->IsR2RRelativeIndir())
+    {
+        buildInternalIntRegisterDefForNode(call);
+    }
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
 #ifdef TARGET_ARM
     else
     {

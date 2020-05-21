@@ -15,6 +15,7 @@ pr:
     - docs/manpages/*
     - eng/pipelines/global-build.yml
     exclude:
+    - .github/*
     - docs/*
     - eng/pipelines/coreclr/*.*
     - eng/pipelines/libraries/*.*

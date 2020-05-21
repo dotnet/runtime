@@ -12,12 +12,12 @@
   </PropertyGroup>
 
   <Target Name="RebuildWasmAppBuilder">
-    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\WasmAppBuilder\WasmAppBuilder.csproj"
+    <MSBuild Projects="$(RepoRoot)\tools-local\tasks\mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj"
              Properties="Configuration=$(Configuration)" Targets="Restore;Build;Publish" />
   </Target>
 
   <UsingTask TaskName="WasmAppBuilder" 
-      AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(NetCoreAppCurrent)-$(Configuration)\publish\WasmAppBuilder.dll"/>
+      AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <ItemGroup>

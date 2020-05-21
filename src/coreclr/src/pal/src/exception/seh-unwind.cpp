@@ -111,6 +111,22 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     unwContext->regs[13] = winContext->Sp;
     unwContext->regs[14] = winContext->Lr;
     unwContext->regs[15] = winContext->Pc;
+#elif defined(HOST_ARM64)
+    unwContext->uc_mcontext.pc       = winContext->Pc;
+    unwContext->uc_mcontext.sp       = winContext->Sp;
+    unwContext->uc_mcontext.regs[29] = winContext->Fp;
+    unwContext->uc_mcontext.regs[30] = winContext->Lr;
+
+    unwContext->uc_mcontext.regs[19] = winContext->X19;
+    unwContext->uc_mcontext.regs[20] = winContext->X20;
+    unwContext->uc_mcontext.regs[21] = winContext->X21;
+    unwContext->uc_mcontext.regs[22] = winContext->X22;
+    unwContext->uc_mcontext.regs[23] = winContext->X23;
+    unwContext->uc_mcontext.regs[24] = winContext->X24;
+    unwContext->uc_mcontext.regs[25] = winContext->X25;
+    unwContext->uc_mcontext.regs[26] = winContext->X26;
+    unwContext->uc_mcontext.regs[27] = winContext->X27;
+    unwContext->uc_mcontext.regs[28] = winContext->X28;
 #endif
 }
 

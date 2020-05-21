@@ -152,7 +152,8 @@ EventPipeProviderCallbackData EventPipeProvider::UnsetConfiguration(
     return PrepareCallbackData(m_keywords, m_providerLevel, pFilterData);
 }
 
-EventPipeEvent *EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata, unsigned int metadataLength)
+EventPipeEvent *EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack,
+    BYTE *pMetadata, unsigned int metadataLength)
 {
     CONTRACTL
     {
@@ -172,7 +173,6 @@ EventPipeEvent *EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords
         needStack,
         pMetadata,
         metadataLength);
-
     // Add it to the list of events.
     AddEvent(*pEvent);
     return pEvent;
