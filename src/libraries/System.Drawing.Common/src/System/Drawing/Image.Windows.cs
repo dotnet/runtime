@@ -243,7 +243,7 @@ namespace System.Drawing
                 {
                     Gdip.CheckStatus(Gdip.GdipSaveImageToStream(
                         new HandleRef(this, nativeImage),
-                        new GPStream(stream, false),
+                        new GPStream(stream, makeSeekable: false),
                         ref g,
                         new HandleRef(encoderParams, encoderParamsMemory)));
                 }
