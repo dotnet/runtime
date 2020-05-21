@@ -74,7 +74,7 @@ namespace System.Net.Http.Functional.Tests
                     var request = new HttpRequestMessage(HttpMethod.Get, serverUrl) { Version = UseVersion };
                     request.Headers.Host = hostname;
                     request.Headers.Referrer = uri;
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);

@@ -2577,6 +2577,12 @@ namespace System.Net.Http.Functional.Tests
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }
 #endif
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync)
+            {
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
