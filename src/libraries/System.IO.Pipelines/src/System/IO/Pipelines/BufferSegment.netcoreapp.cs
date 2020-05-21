@@ -28,7 +28,7 @@ namespace System.IO.Pipelines
             // or following the interface mapping.
             if (memoryOwner.GetType() == typeof(byte[]))
             {
-                byte[] poolArray = Unsafe.As<byte[]>(memoryOwner);
+                byte[] poolArray = (byte[])memoryOwner;
                 ArrayPool<byte>.Shared.Return(poolArray);
             }
             else
