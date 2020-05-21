@@ -279,7 +279,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 }
                 m_argDescs[k].m_typeStackNormal = m_argDescs[k].m_type;
                 m_argDescs[k].m_nativeOffset = argOffsets_[k];
-                m_argDescs[k].m_directOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                m_argDescs[k].m_directOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
                 directOffset++;
                 k++;
             }
@@ -302,18 +302,18 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
 #endif // defined(HOST_ARM)
                 )
             {
-                directRetBuffOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directRetBuffOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
                 directOffset++;
             }
 #if defined(HOST_AMD64)
             if (GetFlag<Flag_isVarArg>())
             {
-                directVarArgOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directVarArgOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
                 directOffset++;
             }
             if (GetFlag<Flag_hasGenericsContextArg>())
             {
-                directTypeParamOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directTypeParamOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
                 directOffset++;
             }
 #endif
@@ -343,11 +343,11 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 // When invoking the interpreter directly, large value types are always passed by reference.
                 if (it.IsLargeStruct(comp))
                 {
-                    m_argDescs[k].m_directOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                    m_argDescs[k].m_directOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
                 }
                 else
                 {
-                    m_argDescs[k].m_directOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, it.Size(comp)));
+                    m_argDescs[k].m_directOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, it.Size(comp)));
                 }
                 argPtr = comp->getArgNext(argPtr);
                 directOffset++;
@@ -7888,16 +7888,16 @@ void Interpreter::LdElemWithType()
         else
         {
             T res = reinterpret_cast<Array<T>*>(a)->GetDirectConstPointerToNonObjectElements()[index];
-            if (cit == CORINFO_TYPE_INT)
+            /*if (cit == CORINFO_TYPE_INT)
             {
                 // Widen narrow types.
-                int ires = (int)res;
+                int ires = reinterpret_cast<int>(res);
                 OpStackSet<int>(arrInd, ires);
             }
             else
-            {
+            {*/
                 OpStackSet<T>(arrInd, res);
-            }
+            //}
         }
     }
     else
