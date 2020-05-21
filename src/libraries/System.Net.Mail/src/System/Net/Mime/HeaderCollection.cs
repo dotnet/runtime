@@ -31,7 +31,7 @@ namespace System.Net.Mime
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
             }
@@ -60,7 +60,7 @@ namespace System.Net.Mime
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
             }
@@ -87,7 +87,7 @@ namespace System.Net.Mime
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
             }
@@ -138,12 +138,12 @@ namespace System.Net.Mime
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
             }
 
-            if (value == string.Empty)
+            if (value.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(value)), nameof(value));
             }
@@ -187,11 +187,11 @@ namespace System.Net.Mime
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
             }
-            if (value == string.Empty)
+            if (value.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(value)), nameof(value));
             }

@@ -18,6 +18,8 @@ add_executable(
 
 %AotSources%
 
+%Defines%
+
 include_directories("%MonoInclude%")
 
 set_target_properties(%ProjectName% PROPERTIES

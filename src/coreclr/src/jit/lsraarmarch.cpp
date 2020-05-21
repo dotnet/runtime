@@ -182,6 +182,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_FASTTAILCALL_TARGET;
         }
     }
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+    else if (call->IsR2RRelativeIndir())
+    {
+        buildInternalIntRegisterDefForNode(call);
+    }
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
 #ifdef TARGET_ARM
     else
     {

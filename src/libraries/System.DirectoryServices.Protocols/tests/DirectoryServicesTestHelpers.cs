@@ -16,34 +16,31 @@ namespace System.DirectoryServices.Protocols.Tests
         // Cache the check once we have performed it once
         private static bool? _isLibLdapInstalled = null;
 
+        /// <summary>
+        /// Returns true if able to PInvoke into Linux or OSX, false otherwise
+        /// </summary>
         public static bool IsLibLdapInstalled
         {
             get
             {
+#if NETCOREAPP
                 if (!_isLibLdapInstalled.HasValue)
                 {
-                    try
+                    if (PlatformDetection.IsOSX)
                     {
-                        // Attempt PInvoking into libldap
-                        IntPtr handle = ber_alloc(1);
-                        ber_free(handle, 1);
-                        _isLibLdapInstalled = true;
+                        _isLibLdapInstalled = NativeLibrary.TryLoad("libldap.dylib", out _);
                     }
-                    catch (Exception)
+                    else
                     {
-                        _isLibLdapInstalled = false;
+                        _isLibLdapInstalled = NativeLibrary.TryLoad("libldap-2.4.so.2", out _);
                     }
                 }
                 return _isLibLdapInstalled.Value;
+#else
+                _isLibLdapInstalled = true; // In .NET Framework ldap is always installed.
+                return _isLibLdapInstalled.Value;
+#endif
             }
         }
-
-        internal const string OpenLdap = "libldap-2.4.so.2";
-
-        [DllImport(OpenLdap, EntryPoint = "ber_alloc_t", CharSet = CharSet.Ansi)]
-        internal static extern IntPtr ber_alloc(int option);
-
-        [DllImport(OpenLdap, EntryPoint = "ber_free", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ber_free([In] IntPtr berelement, int option);
     }
 }

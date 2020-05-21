@@ -4,7 +4,7 @@
   <Target Name="ReattachAllEnginesToBundles"
           BeforeTargets="RunArcadeSigning">
     <MSBuild
-      Projects="@(InstallerProject -> WithMetadataValue('SignPhase', 'BundleInstallerFiles'))"
+      Projects="@(ProjectToBuild -> WithMetadataValue('SignPhase', 'BundleInstallerFiles'))"
       Targets="ReattachEngineToBundle" />
   </Target>
 

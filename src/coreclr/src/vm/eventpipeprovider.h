@@ -76,7 +76,8 @@ public:
     INT64 ComputeEventEnabledMask(INT64 keywords, EventPipeEventLevel eventLevel) const;
 
     // Create a new event.
-    EventPipeEvent* AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
+    EventPipeEvent* AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack,
+        BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
 
 private:
 

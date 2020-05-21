@@ -98,6 +98,11 @@ public class AppleAppBuilderTask : Task
     public string AppBundlePath { get; set; } = ""!;
 
     /// <summary>
+    /// Prefer FullAOT mode for Simulator over JIT
+    /// </summary>
+    public bool UseAotForSimulator { get; set; }
+
+    /// <summary>
     /// Path to xcode project
     /// </summary>
     [Output]
@@ -145,7 +150,7 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        if (isDevice && !assemblerFiles.Any())
+        if ((isDevice || UseAotForSimulator) && !assemblerFiles.Any())
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
@@ -158,7 +163,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, NativeMainSource);
 
             if (BuildAppBundle)
             {
@@ -179,7 +184,7 @@ public class AppleAppBuilderTask : Task
         return true;
     }
 
-    static void GenerateLinkAllFile(IEnumerable<string> asmFiles, string outputFile)
+    private static void GenerateLinkAllFile(IEnumerable<string> asmFiles, string outputFile)
     {
         //  Generates 'modules.m' in order to register all managed libraries
         //
@@ -202,7 +207,7 @@ public class AppleAppBuilderTask : Task
             .AppendLine("#include <mono/jit/jit.h>")
             .AppendLine("#include <TargetConditionals.h>")
             .AppendLine()
-            .AppendLine("#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR")
+            .AppendLine("#if TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)")
             .AppendLine();
 
         var lsUsage = new StringBuilder();

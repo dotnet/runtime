@@ -188,13 +188,41 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Gets a value indicating whether this is one of the primitive types (boolean, char, void,
-        /// a floating point, or an integer type).
+        /// a floating-point, or an integer type).
         /// </summary>
         public bool IsPrimitive
         {
             get
             {
                 return GetTypeFlags(TypeFlags.CategoryMask) < TypeFlags.ValueType;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is one of the primitive numeric types
+        /// (a floating-point or an integer type).
+        /// </summary>
+        public bool IsPrimitiveNumeric
+        {
+            get
+            {
+                switch (GetTypeFlags(TypeFlags.CategoryMask))
+                {
+                    case TypeFlags.SByte:
+                    case TypeFlags.Byte:
+                    case TypeFlags.Int16:
+                    case TypeFlags.UInt16:
+                    case TypeFlags.Int32:
+                    case TypeFlags.UInt32:
+                    case TypeFlags.Int64:
+                    case TypeFlags.UInt64:
+                    case TypeFlags.Single:
+                    case TypeFlags.Double:
+                        return true;
+
+                    default:
+                        return false;
+                }
             }
         }
 

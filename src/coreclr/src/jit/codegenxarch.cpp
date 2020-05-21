@@ -1968,7 +1968,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
         {
-            var_types type = op1->GetRegTypeByIndex(i);
+            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
             regNumber reg  = op1->GetRegByIndex(i);
             if (op1->IsCopyOrReload())
             {

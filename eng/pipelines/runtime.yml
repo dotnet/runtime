@@ -107,8 +107,8 @@ jobs:
       - eng/pipelines/installer/*
     - subset: runtimetests
       include:
-      - /src/coreclr/tests/*
-      - /src/coreclr/build-test.sh
+      - src/coreclr/tests/*
+      - src/coreclr/build-test.sh
     - subset: installer
       include:
       - docs/manpages/*
@@ -543,6 +543,24 @@ jobs:
       framework: allConfigurations
       runTests: true
       liveRuntimeBuildConfig: release
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Libraries Sourcebuild Build
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_x64
+    jobParameters:
+      runTests: false
+      liveRuntimeBuildConfig: release
+      isSourceBuild: true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
