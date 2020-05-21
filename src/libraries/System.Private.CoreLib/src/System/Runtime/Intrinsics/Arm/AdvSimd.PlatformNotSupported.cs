@@ -2816,84 +2816,84 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VRADDHN.I16 Dd, Qn, Qm
         ///   A64: RADDHN Vd.8B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector64<byte> AddRoundedHighNarrowLower(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<byte> AddRoundedHighNarrowingLower(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vraddhn_s32 (int32x4_t a, int32x4_t b)
         ///   A32: VRADDHN.I32 Dd, Qn, Qm
         ///   A64: RADDHN Vd.4H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector64<short> AddRoundedHighNarrowLower(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<short> AddRoundedHighNarrowingLower(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x2_t vraddhn_s64 (int64x2_t a, int64x2_t b)
         ///   A32: VRADDHN.I64 Dd, Qn, Qm
         ///   A64: RADDHN Vd.2S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector64<int> AddRoundedHighNarrowLower(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<int> AddRoundedHighNarrowingLower(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vraddhn_s16 (int16x8_t a, int16x8_t b)
         ///   A32: VRADDHN.I16 Dd, Qn, Qm
         ///   A64: RADDHN Vd.8B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector64<sbyte> AddRoundedHighNarrowLower(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> AddRoundedHighNarrowingLower(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vraddhn_u32 (uint32x4_t a, uint32x4_t b)
         ///   A32: VRADDHN.I32 Dd, Qn, Qm
         ///   A64: RADDHN Vd.4H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector64<ushort> AddRoundedHighNarrowLower(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ushort> AddRoundedHighNarrowingLower(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vraddhn_u64 (uint64x2_t a, uint64x2_t b)
         ///   A32: VRADDHN.I64 Dd, Qn, Qm
         ///   A64: RADDHN Vd.2S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector64<uint> AddRoundedHighNarrowLower(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<uint> AddRoundedHighNarrowingLower(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vraddhn_high_u16 (uint8x8_t r, uint16x8_t a, uint16x8_t b)
         ///   A32: VRADDHN.I16 Dd+1, Qn, Qm
         ///   A64: RADDHN2 Vd.16B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector128<byte> AddRoundedHighNarrowUpper(Vector64<byte> lower, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> AddRoundedHighNarrowingUpper(Vector64<byte> lower, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vraddhn_high_s32 (int16x4_t r, int32x4_t a, int32x4_t b)
         ///   A32: VRADDHN.I32 Dd+1, Qn, Qm
         ///   A64: RADDHN2 Vd.8H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<short> AddRoundedHighNarrowUpper(Vector64<short> lower, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> AddRoundedHighNarrowingUpper(Vector64<short> lower, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vraddhn_high_s64 (int32x2_t r, int64x2_t a, int64x2_t b)
         ///   A32: VRADDHN.I64 Dd+1, Qn, Qm
         ///   A64: RADDHN2 Vd.4S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector128<int> AddRoundedHighNarrowUpper(Vector64<int> lower, Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> AddRoundedHighNarrowingUpper(Vector64<int> lower, Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x16_t vraddhn_high_s16 (int8x8_t r, int16x8_t a, int16x8_t b)
         ///   A32: VRADDHN.I16 Dd+1, Qn, Qm
         ///   A64: RADDHN2 Vd.16B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector128<sbyte> AddRoundedHighNarrowUpper(Vector64<sbyte> lower, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> AddRoundedHighNarrowingUpper(Vector64<sbyte> lower, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vraddhn_high_u32 (uint16x4_t r, uint32x4_t a, uint32x4_t b)
         ///   A32: VRADDHN.I32 Dd+1, Qn, Qm
         ///   A64: RADDHN2 Vd.8H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<ushort> AddRoundedHighNarrowUpper(Vector64<ushort> lower, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> AddRoundedHighNarrowingUpper(Vector64<ushort> lower, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vraddhn_high_u64 (uint32x2_t r, uint64x2_t a, uint64x2_t b)
         ///   A32: VRADDHN.I64 Dd+1, Qn, Qm
         ///   A64: RADDHN2 Vd.4S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector128<uint> AddRoundedHighNarrowUpper(Vector64<uint> lower, Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> AddRoundedHighNarrowingUpper(Vector64<uint> lower, Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vqadd_u8 (uint8x8_t a, uint8x8_t b)
