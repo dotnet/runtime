@@ -53,8 +53,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             _acceptNewConnections = false;
             _newConnections.TryComplete();
-            // awake the thread so that it exists
-            Ping();
+            if (_connectionsByEndpoint.IsEmpty)
+            {
+                // awake the thread so that it exists
+                Ping();
+                Stop();
+            }
         }
 
         protected override void OnSignal()
@@ -132,12 +136,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        protected override bool ShouldContinue => _acceptNewConnections || !_connectionsByEndpoint.IsEmpty;
-
         protected override void DetachConnection(ManagedQuicConnection connection)
         {
             Debug.Assert(connection.IsClosed);
             bool removed = ImmutableInterlocked.TryRemove(ref _connectionsByEndpoint, connection.RemoteEndPoint, out _);
+            if (_connectionsByEndpoint.IsEmpty && !_acceptNewConnections)
+            {
+                Ping();
+                Stop();
+            }
             Debug.Assert(removed);
         }
     }

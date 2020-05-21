@@ -20,6 +20,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private TaskCompletionSource<int> _signalTcs =
             new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private bool _signalWanted;
 
         private Task? _backgroundWorkerTask;
 
@@ -29,12 +30,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly SendContext _sendContext;
         private readonly RecvContext _recvContext;
 
-        private Task _timeoutTask;
-
         private long _currentTimeout = long.MaxValue;
-        private CancellationTokenSource _timeoutCts = new CancellationTokenSource();
-
-        private readonly Task[] _waitingTasks = new Task[4];
 
         private readonly Socket _socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
 
@@ -46,7 +42,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _listenEndpoint = listenEndpoint;
 
             _socketTaskCts = new CancellationTokenSource();
-            _timeoutTask = _infiniteTimeoutTask;
 
             _reader = new QuicReader(_recvBuffer);
             _writer = new QuicWriter(_sendBuffer);
@@ -66,6 +61,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             _socket.Bind(_listenEndpoint);
+            _socket.Blocking = false;
+
             if (_listenEndpoint.AddressFamily == AddressFamily.InterNetwork)
             {
                 _socket.DontFragment = true;
@@ -87,11 +84,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _backgroundWorkerTask = Task.Run(BackgroundWorker);
         }
 
+        protected void Stop()
+        {
+            _socketTaskCts.Cancel();
+        }
+
         /// <summary>
         ///     Used to signal the thread that one of the connections has data to send.
         /// </summary>
         internal void Ping()
         {
+            _signalWanted = true;
             _signalTcs.TrySetResult(0);
         }
 
@@ -136,44 +139,30 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected void UpdateTimeout(long timestamp)
         {
-            if (timestamp < _currentTimeout)
-            {
-                // we need to set timer for sooner
-                int milliseconds = (int)Timestamp.GetMilliseconds(timestamp - Timestamp.Now);
-
-                // create delay tasks only if actually waiting
-                if (milliseconds > 0)
-                {
-                    // cancel previous delay task so that it can be collected sooner
-                    _timeoutCts.Cancel();
-                    _timeoutCts = new CancellationTokenSource();
-
-                    _timeoutTask = Task.Delay(milliseconds, _timeoutCts.Token);
-                }
-                else
-                {
-                    _timeoutTask = Task.CompletedTask;
-                }
-
-                _waitingTasks[2] = _timeoutTask;
-                _currentTimeout = timestamp;
-            }
+            _currentTimeout = Math.Min(_currentTimeout, timestamp);
         }
 
         protected abstract ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender);
 
-        private void DoReceive(QuicReader reader, IPEndPoint sender)
+        private void DoReceive(Memory<byte> datagram, IPEndPoint sender)
         {
+            // process only datagrams big enough to contain valid QUIC packets
+            if (datagram.Length < QuicConstants.MinimumPacketSize)
+            {
+                return;
+            }
+
+            _reader.Reset(datagram);
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            var connection = FindConnection(reader, sender);
+            var connection = FindConnection(_reader, sender);
             if (connection != null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.DatagramReceived(connection, reader.Buffer.Span);
+                if (NetEventSource.IsEnabled) NetEventSource.DatagramReceived(connection, _reader.Buffer.Span);
 
                 var previousState = connection.ConnectionState;
                 _recvContext.Timestamp = Timestamp.Now;
-                connection.ReceiveData(reader, sender, _recvContext);
+                connection.ReceiveData(_reader, sender, _recvContext);
 
                 if (connection.GetWriteLevel(_recvContext.Timestamp) != EncryptionLevel.None)
                 {
@@ -200,8 +189,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            _signalTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _waitingTasks[1] = _signalTcs.Task;
+            _signalWanted = false;
             OnSignal();
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -220,8 +208,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             // clear previous timeout
             _currentTimeout = long.MaxValue;
-            _waitingTasks[2] = _timeoutTask = _infiniteTimeoutTask;
-
             OnTimeout(now);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -239,82 +225,75 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             var token = _socketTaskCts.Token;
 
-            Task<SocketReceiveFromResult> socketReceiveTask =
-                _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
-
-            var shutdownTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            _waitingTasks[0] = socketReceiveTask;
-            // _waitingTasks[0] = _infiniteTimeoutTask;
-            _waitingTasks[1] = _signalTcs.Task;
-            _waitingTasks[2] = _timeoutTask;
-            _waitingTasks[3] = shutdownTcs.Task;
-
-            await using var registration = token.Register(() => shutdownTcs.TrySetResult(0));
+            Task<SocketReceiveFromResult>? socketReceiveTask = null;
 
             // TODO-RZ: allow timers for multiple connections on server
+            long lastAction = Int64.MinValue;
             try
             {
-                while (ShouldContinue && !token.IsCancellationRequested)
+                while (!token.IsCancellationRequested)
                 {
-                    bool shouldWait = true;
-                    if (_timeoutTask.IsCompleted)
+                    bool doTimeout;
+                    long now;
+                    while (!(doTimeout = _currentTimeout <= (now = Timestamp.Now)) &&
+                           !_signalWanted)
                     {
-                        DoTimeout();
-                        shouldWait = false;
-                    }
-
-
-                    if (socketReceiveTask.IsCompleted)
-                    {
+                        if (socketReceiveTask != null && socketReceiveTask.IsCompleted)
                         {
-                            var result = await socketReceiveTask.ConfigureAwait(false);
-
-                            // process only datagrams big enough to contain valid QUIC packets
-                            if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
-                            {
-                                _reader.Reset(_recvBuffer.AsMemory(0, result.ReceivedBytes));
-                                DoReceive(_reader, (IPEndPoint)result.RemoteEndPoint);
-                            }
+                            var result = await socketReceiveTask!;
+                            DoReceive(_recvBuffer.AsMemory(0, result.ReceivedBytes), (IPEndPoint)result.RemoteEndPoint);
+                            lastAction = now;
+                            // discard the completed task.
+                            socketReceiveTask = null;
                         }
-
-                        // receive also a following if there is some
-                        if (!_timeoutTask.IsCompleted &&
-                               !_signalTcs.Task.IsCompleted &&
-                               _socket.Poll(0, SelectMode.SelectRead))
+                        if (socketReceiveTask == null && _socket.Poll(0, SelectMode.SelectRead))
                         {
                             EndPoint remoteEp = _listenEndpoint;
                             int result = _socket.ReceiveFrom(_recvBuffer, ref remoteEp);
-
-                            // process only datagrams big enough to contain valid QUIC packets
-                            if (result >= QuicConstants.MinimumPacketSize)
-                            {
-                                _reader.Reset(_recvBuffer.AsMemory(0, result));
-                                DoReceive(_reader, (IPEndPoint)remoteEp);
-                            }
+                            DoReceive(_recvBuffer.AsMemory(0, result), (IPEndPoint)remoteEp);
+                            lastAction = now;
                         }
-
-                        // start new receiving task
-                        _waitingTasks[0] = socketReceiveTask =
-                            _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
-
-                        shouldWait = false;
                     }
 
-                    if (_signalTcs.Task.IsCompleted)
+                    if (doTimeout)
+                    {
+                        DoTimeout();
+                        lastAction = now;
+                    }
+
+                    if (_signalWanted)
                     {
                         DoSignal();
-                        shouldWait = false;
+                        lastAction = now;
                     }
 
-                    if (shouldWait)
+                    const int asyncWaitThreshold = 5;
+                    if (Timestamp.GetMilliseconds(now - lastAction) > asyncWaitThreshold)
                     {
+                        // there has been no action for some time, stop consuming CPU and wait until an event wakes us
+
                         if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Wait");
-                        // use WaitAny instead of await Task.WhenAny() to reduce allocation
-                        Task.WaitAny(_waitingTasks);
+
+                        int timeoutLength = (int) Timestamp.GetMilliseconds(_currentTimeout - now);
+                        Task timeoutTask = _currentTimeout != long.MaxValue
+                            ? Task.Delay(timeoutLength, CancellationToken.None)
+                            : _infiniteTimeoutTask;
+
+                        // update the recv task only if there is no outstanding async recv
+                        socketReceiveTask ??= _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
+
+                        _signalTcs = new TaskCompletionSource<int>();
+                        Task signalTask = _signalTcs.Task;
+
+                        if (_signalWanted) // guard against race condition that would deadlock the wait
+                        {
+                            _signalTcs.TrySetResult(0);
+                        }
+
+                        await Task.WhenAny(timeoutTask, socketReceiveTask, signalTask);
+
                         if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Wait");
                     }
-
                 }
             }
             catch (Exception e)
@@ -329,8 +308,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
-
-        protected abstract bool ShouldContinue { get; }
 
         /// <summary>
         ///     Detaches the given connection from this context, the connection will no longer be updated from the

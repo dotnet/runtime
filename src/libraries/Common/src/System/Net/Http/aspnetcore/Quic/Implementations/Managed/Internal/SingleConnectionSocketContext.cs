@@ -70,16 +70,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        private bool _stop;
-
-        protected override bool ShouldContinue => !_stop;
-
         protected override void DetachConnection(ManagedQuicConnection connection)
         {
             Debug.Assert(connection.IsClosed);
             Debug.Assert(connection == _connection);
             // only one connection, so we can stop the background worker and free resources
-            _stop = true;
+            Stop();
         }
     }
 }
