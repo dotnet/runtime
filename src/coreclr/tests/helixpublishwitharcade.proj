@@ -67,7 +67,8 @@
   <PropertyGroup>
     <HelixRuntimeRid Condition="'$(TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Linux_musl'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOS)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
