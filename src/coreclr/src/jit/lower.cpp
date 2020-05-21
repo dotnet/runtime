@@ -1518,6 +1518,10 @@ GenTree* Lowering::AddrGen(void* addr)
 //
 void Lowering::LowerCall(GenTree* node)
 {
+    if (this->comp->compMethodID == 749)
+    {
+        printf("genCallInstruction : %s\n", this->comp->info.compMethodName);
+    }
     GenTreeCall* call = node->AsCall();
 
     JITDUMP("lowering call (before):\n");
