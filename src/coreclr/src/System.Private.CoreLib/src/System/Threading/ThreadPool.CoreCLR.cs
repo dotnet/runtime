@@ -192,7 +192,7 @@ namespace System.Threading
         // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing work items before returning to the OS
         private const uint DispatchQuantum = 30;
 
-        internal static readonly bool s_enableWorkerTracking = GetEnableWorkerTracking();
+        internal static readonly bool EnableWorkerTracking = GetEnableWorkerTracking();
 
         internal static bool KeepDispatching(int startTickCount)
         {

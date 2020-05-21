@@ -607,7 +607,8 @@ namespace System.Threading
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
-                    if (ThreadPool.s_enableWorkerTracking)
+#pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be constant false in some runtimes.
+                    if (ThreadPool.EnableWorkerTracking)
                     {
                         bool reportedStatus = false;
                         try
@@ -630,6 +631,7 @@ namespace System.Threading
                                 ThreadPool.ReportThreadStatus(isWorking: false);
                         }
                     }
+#pragma warning restore CS0162
                     else if (workItem is Task task)
                     {
                         // Check for Task first as it's currently faster to type check
