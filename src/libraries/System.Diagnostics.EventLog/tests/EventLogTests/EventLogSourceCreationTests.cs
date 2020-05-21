@@ -21,7 +21,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                if(EventLog.Exists(log))
+                if (EventLog.Exists(log))
                     Helpers.Retry(() => EventLog.Delete(log));
             }
 
