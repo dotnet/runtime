@@ -355,6 +355,7 @@ namespace System.Net.Sockets
                         return SocketError.ConnectionAborted;
                     case Interop.Error.ECONNREFUSED:
                         return SocketError.ConnectionRefused;
+                    case (Interop.Error)104:
                     case Interop.Error.ECONNRESET:
                         return SocketError.ConnectionReset;
                     case Interop.Error.EDESTADDRREQ:
