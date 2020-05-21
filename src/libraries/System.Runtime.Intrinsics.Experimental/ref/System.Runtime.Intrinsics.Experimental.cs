@@ -96,18 +96,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<float> Add(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> Add(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> Add(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> AddHighNarrowLower(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> AddHighNarrowLower(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> AddHighNarrowLower(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> AddHighNarrowLower(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> AddHighNarrowLower(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> AddHighNarrowLower(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> AddHighNarrowUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> AddHighNarrowUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<int> AddHighNarrowUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> AddHighNarrowUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<ushort> AddHighNarrowUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> AddHighNarrowUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> AddHighNarrowingLower(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> AddHighNarrowingLower(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> AddHighNarrowingLower(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> AddHighNarrowingLower(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> AddHighNarrowingLower(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> AddHighNarrowingLower(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> AddHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> AddHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> AddHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> AddHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> AddHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> AddHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> AddPairwise(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> AddPairwise(System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> AddPairwise(System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
@@ -139,18 +139,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<ulong> AddPairwiseWideningAndAddScalar(System.Runtime.Intrinsics.Vector64<ulong> addend, System.Runtime.Intrinsics.Vector64<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<long> AddPairwiseWideningScalar(System.Runtime.Intrinsics.Vector64<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ulong> AddPairwiseWideningScalar(System.Runtime.Intrinsics.Vector64<uint> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> AddRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> AddRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> AddRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> AddRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> AddRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> AddRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> AddRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> AddRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<int> AddRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> AddRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<ushort> AddRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> AddRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> AddRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> AddRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> AddRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> AddRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> AddRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> AddRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> AddRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> AddRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> AddRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> AddRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> AddRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> AddRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> AddSaturate(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> AddSaturate(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> AddSaturate(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
@@ -341,41 +341,34 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<uint> CompareTest(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> DivideScalar(System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> DivideScalar(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<byte> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<short> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<int> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<float> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<float> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<sbyte> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<ushort> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<uint> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<byte> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<short> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<int> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<float> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<float> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<sbyte> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<ushort> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<uint> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<byte> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<short> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<int> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<float> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<sbyte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<float> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<ushort> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<uint> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<byte> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<short> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<int> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<float> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<sbyte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<float> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<ushort> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<uint> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateToVector64(byte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> DuplicateToVector64(short value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> DuplicateToVector64(int value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateToVector64(sbyte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<float> DuplicateToVector64(float value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateToVector64(ushort value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateToVector64(uint value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<byte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<short> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<int> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<sbyte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<float> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<ushort> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<uint> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<byte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<short> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<int> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<sbyte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<float> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<ushort> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<uint> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> DuplicateToVector128(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> DuplicateToVector128(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> DuplicateToVector128(int value) { throw null; }
@@ -383,6 +376,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector128<float> DuplicateToVector128(float value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> DuplicateToVector128(ushort value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> DuplicateToVector128(uint value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateToVector64(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> DuplicateToVector64(short value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DuplicateToVector64(int value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateToVector64(sbyte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> DuplicateToVector64(float value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateToVector64(ushort value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateToVector64(uint value) { throw null; }
         public static byte Extract(System.Runtime.Intrinsics.Vector128<byte> vector, byte index) { throw null; }
         public static double Extract(System.Runtime.Intrinsics.Vector128<double> vector, byte index) { throw null; }
         public static short Extract(System.Runtime.Intrinsics.Vector128<short> vector, byte index) { throw null; }
@@ -400,18 +400,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static float Extract(System.Runtime.Intrinsics.Vector64<float> vector, byte index) { throw null; }
         public static ushort Extract(System.Runtime.Intrinsics.Vector64<ushort> vector, byte index) { throw null; }
         public static uint Extract(System.Runtime.Intrinsics.Vector64<uint> vector, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<int> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<ushort> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> ExtractAndNarrowLow(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> ExtractAndNarrowLow(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> ExtractAndNarrowLow(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> ExtractAndNarrowLow(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> ExtractAndNarrowLow(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> ExtractAndNarrowLow(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ExtractVector128(System.Runtime.Intrinsics.Vector128<byte> upper, System.Runtime.Intrinsics.Vector128<byte> lower, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ExtractVector128(System.Runtime.Intrinsics.Vector128<double> upper, System.Runtime.Intrinsics.Vector128<double> lower, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ExtractVector128(System.Runtime.Intrinsics.Vector128<short> upper, System.Runtime.Intrinsics.Vector128<short> lower, byte index) { throw null; }
@@ -786,30 +786,30 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<float> Subtract(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> Subtract(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> Subtract(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> SubtractHighNarrowLower(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> SubtractHighNarrowLower(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> SubtractHighNarrowLower(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> SubtractHighNarrowLower(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> SubtractHighNarrowLower(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> SubtractHighNarrowLower(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> SubtractHighNarrowUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> SubtractHighNarrowUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<int> SubtractHighNarrowUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> SubtractHighNarrowUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<ushort> SubtractHighNarrowUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> SubtractHighNarrowUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> SubtractRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> SubtractRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> SubtractRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> SubtractRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> SubtractRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> SubtractRoundedHighNarrowLower(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> SubtractRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> SubtractRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<int> SubtractRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> SubtractRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<ushort> SubtractRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> SubtractRoundedHighNarrowUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> SubtractHighNarrowingLower(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> SubtractHighNarrowingLower(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> SubtractHighNarrowingLower(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> SubtractHighNarrowingLower(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> SubtractHighNarrowingLower(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> SubtractHighNarrowingLower(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> SubtractHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> SubtractHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> SubtractHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> SubtractHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> SubtractHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> SubtractHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> SubtractRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> SubtractRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> SubtractRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> SubtractRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> SubtractRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> SubtractRoundedHighNarrowingLower(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> SubtractRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> SubtractRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> SubtractRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> SubtractRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> SubtractRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> SubtractRoundedHighNarrowingUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> SubtractSaturate(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> SubtractSaturate(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> SubtractSaturate(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
@@ -1209,7 +1209,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static int LeadingZeroCount(uint value) { throw null; }
         public static int ReverseElementBits(int value) { throw null; }
         public static uint ReverseElementBits(uint value) { throw null; }
-
         public abstract partial class Arm64
         {
             internal Arm64() { }
@@ -1218,7 +1217,7 @@ namespace System.Runtime.Intrinsics.Arm
             public static int LeadingSignCount(long value) { throw null; }
             public static int LeadingZeroCount(long value) { throw null; }
             public static int LeadingZeroCount(ulong value) { throw null; }
-            public static long ReverseElementBits(long  value) { throw null; }
+            public static long ReverseElementBits(long value) { throw null; }
             public static ulong ReverseElementBits(ulong value) { throw null; }
         }
     }
