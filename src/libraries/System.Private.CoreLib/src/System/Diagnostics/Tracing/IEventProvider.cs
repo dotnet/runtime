@@ -39,6 +39,7 @@ namespace System.Diagnostics.Tracing
         int EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId);
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength);
+        unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+            uint level, byte *pMetadata, uint metadataLength);
     }
 }

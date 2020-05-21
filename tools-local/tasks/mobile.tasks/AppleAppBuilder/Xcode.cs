@@ -21,6 +21,7 @@ internal class Xcode
         string monoInclude,
         bool preferDylibs,
         bool useConsoleUiTemplate,
+        bool useAotForSimulator,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
@@ -80,6 +81,8 @@ internal class Xcode
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
+        cmakeLists = cmakeLists.Replace("%Defines%", 
+            useAotForSimulator ? "add_definitions(-DUSE_AOT_FOR_SIMULATOR=1)" : "");
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);

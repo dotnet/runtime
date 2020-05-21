@@ -437,13 +437,13 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-#if !FEATURE_MULTIREG_RET
+#if defined(TARGET_ARMARCH)
 CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
                                                                        // when possible.
-#else                                                                  // FEATURE_MULTIREG_RET
+#else
 CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
                                                                        // when possible.
-#endif                                                                 // FEATURE_MULTIREG_RET
+#endif
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

@@ -3567,6 +3567,13 @@ main_loop:
 			ip++;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_POP_VT) {
+			int i32 = READ32 (ip + 1);
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
+			sp--;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_POP1) {
 			sp [-2] = sp [-1];
 			sp--;
