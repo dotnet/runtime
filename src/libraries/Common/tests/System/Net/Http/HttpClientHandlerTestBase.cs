@@ -74,19 +74,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         public static readonly bool[] BoolValues = new[] { true, false };
-        public static readonly bool[] AsyncBoolValues =
-            new[]
-            {
-                true,
-#if __NETCOREAPP
-                false
-#endif
-            };
-
-        public static IEnumerable<object[]> AsyncBoolMemberData() => AsyncBoolValues.Select(b => new object[] { b });
 
         // For use by remote server tests
-
         public static readonly IEnumerable<object[]> RemoteServersMemberData = Configuration.Http.RemoteServersMemberData;
 
         protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer)

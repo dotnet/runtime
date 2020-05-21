@@ -53,6 +53,20 @@ namespace System.Net.Http
             return Uri.EscapeDataString(data).Replace("%20", "+");
         }
 
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            // Only skip the original protected virtual SerializeToStream if this
+            // isn't a derived type that may have overridden the behavior.
+            if (GetType() != typeof(FormUrlEncodedContent))
+            {
+                base.SerializeToStream(stream, context, cancellationToken);
+            }
+            else
+            {
+                SerializeToStreamCore(stream, context, cancellationToken);
+            }
+        }
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.

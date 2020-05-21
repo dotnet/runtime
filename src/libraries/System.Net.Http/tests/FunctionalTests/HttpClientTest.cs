@@ -329,38 +329,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData(nameof(AsyncBoolMemberData))]
-        public async Task Send_NullRequest_ThrowsException(bool async)
-        {
-            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(null))))
-            {
-                await AssertExtensions.ThrowsAsync<ArgumentNullException>("request", () => client.SendAsync(async, null));
-            }
-        }
-
-        [Theory, MemberData(nameof(AsyncBoolMemberData))]
-        public async Task Send_DuplicateRequest_ThrowsException(bool async)
-        {
-            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
-            using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()))
-            {
-                (await client.SendAsync(async, request)).Dispose();
-                await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(async, request));
-            }
-        }
-
-        [Theory, MemberData(nameof(AsyncBoolMemberData))]
-        public async Task Send_RequestContentNotDisposed(bool async)
-        {
-            var content = new ByteArrayContent(new byte[1]);
-            using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()) { Content = content })
-            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
-            {
-                await client.SendAsync(async, request);
-                await content.ReadAsStringAsync(); // no exception
-            }
-        }
-
         [Fact]
         public async Task GetStringAsync_Success()
         {
@@ -869,5 +837,56 @@ namespace System.Net.Http.Functional.Tests
                 return false;
             }
         }
+
+
+
+        public abstract class HttpClientSendTest : HttpClientHandlerTestBase
+        {
+            protected HttpClientSendTest(ITestOutputHelper output) : base(output) { }
+
+
+            [Fact]
+            public async Task Send_NullRequest_ThrowsException()
+            {
+                using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(null))))
+                {
+                    await AssertExtensions.ThrowsAsync<ArgumentNullException>("request", () => client.SendAsync(TestAsync, null));
+                }
+            }
+
+            [Fact]
+            public async Task Send_DuplicateRequest_ThrowsException()
+            {
+                using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
+                using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()))
+                {
+                    (await client.SendAsync(TestAsync, request)).Dispose();
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(TestAsync, request));
+                }
+            }
+
+            [Fact]
+            public async Task Send_RequestContentNotDisposed()
+            {
+                var content = new ByteArrayContent(new byte[1]);
+                using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()) { Content = content })
+                using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
+                {
+                    await client.SendAsync(TestAsync, request);
+                    await content.ReadAsStringAsync(); // no exception
+                }
+            }
+        }
+    }
+
+    public sealed class HttpClientSendTest_Async : HttpClientTest.HttpClientSendTest
+    {
+        public HttpClientSendTest_Async(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class HttpClientSendTest_Sync : HttpClientTest.HttpClientSendTest
+    {
+        public HttpClientSendTest_Sync(ITestOutputHelper output) : base(output) { }
+        protected override bool TestAsync => false;
     }
 }
