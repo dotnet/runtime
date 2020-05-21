@@ -82,6 +82,7 @@ namespace System.IO.Pipelines
         // Determines what current operation is in flight (reading/writing)
         private PipeOperationState _operationState;
 
+        private readonly int _maxPooledBufferSize;
         private bool _disposed;
 
         internal long Length => _unconsumedBytes;
@@ -112,6 +113,7 @@ namespace System.IO.Pipelines
             // If we're using the default pool then mark it as null since we're just going to use the
             // array pool under the covers
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
+            _maxPooledBufferSize = _pool?.MaxBufferSize ?? 0;
             _minimumSegmentSize = options.MinimumSegmentSize;
             _pauseWriterThreshold = options.PauseWriterThreshold;
             _resumeWriterThreshold = options.ResumeWriterThreshold;
@@ -224,7 +226,7 @@ namespace System.IO.Pipelines
         {
             BufferSegment newSegment = CreateSegmentSynchronized();
 
-            if (_pool is null || sizeHint > _pool.MaxBufferSize)
+            if (_pool is null || sizeHint > _maxPooledBufferSize)
             {
                 // Use the array pool
                 int sizeToRequest = GetSegmentSize(sizeHint);
@@ -233,7 +235,7 @@ namespace System.IO.Pipelines
             else
             {
                 // Use the specified pool as it fits
-                newSegment.SetOwnedMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
+                newSegment.SetOwnedMemory(_pool.Rent(GetSegmentSize(sizeHint, _maxPooledBufferSize)));
             }
 
             _writingHeadMemory = newSegment.AvailableMemory;

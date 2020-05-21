@@ -45,6 +45,12 @@
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="System\IO\Pipelines\BufferSegment.netstandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System\IO\Pipelines\BufferSegment.netcoreapp.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
@@ -57,5 +63,8 @@
     <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
 </Project>
