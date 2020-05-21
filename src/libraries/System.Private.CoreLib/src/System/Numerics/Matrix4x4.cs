@@ -1484,8 +1484,8 @@ namespace System.Numerics
             }
 
             // Create Vector128<float> copy of the determinant and invert them.
-            Vector128<float> ones = Vector128.Create(1.0f, 1.0f, 1.0f, 1.0f);
-            Vector128<float> vTemp = Vector128.Create(det, det, det, det);
+            Vector128<float> ones = Vector128.Create(1.0f);
+            Vector128<float> vTemp = Vector128.Create(det);
             vTemp = Sse.Divide(ones, vTemp);
 
             row1 = Sse.Multiply(C0, vTemp);
