@@ -416,6 +416,12 @@ namespace System
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
         }
 
+        [DoesNotReturn]
+        internal static void ThrowEntryPointNotFoundException()
+        {
+            throw new EntryPointNotFoundException();
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)

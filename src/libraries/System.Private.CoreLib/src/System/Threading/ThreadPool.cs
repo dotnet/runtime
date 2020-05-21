@@ -942,7 +942,7 @@ namespace System.Threading
         {
             if (!(state is IAsyncStateMachineBox box))
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                ThrowHelper.ThrowEntryPointNotFoundException();
                 return;
             }
 
@@ -1119,12 +1119,6 @@ namespace System.Threading
             // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
             if (ReferenceEquals(callBack, ThreadPool.s_invokeAsyncStateMachineBox))
             {
-                if (!(state is IAsyncStateMachineBox))
-                {
-                    // The provided state must be the internal IAsyncStateMachineBox (Task) type
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
-                }
-
                 UnsafeQueueUserWorkItemInternal((object)state!, preferLocal);
                 return true;
             }
