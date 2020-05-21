@@ -1228,7 +1228,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            internal void BatchOrDispatch(SocketAsyncContext context, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, int batchIndex, ref int batchSize)
+            internal void BatchOrDispatch(SocketAsyncContext context, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation?> batchedOperations, int batchIndex, ref int batchSize)
             {
                 AsyncOperation nextOperation;
                 using (Lock())
@@ -1247,7 +1247,8 @@ namespace System.Net.Sockets
 
                             if (batchSize < ioControlBlocks.Length && nextOperation.TryBatch(context, batchIndex + batchSize, ref ioControlBlocks[batchSize]))
                             {
-                                batchedOperations[batchSize++] = nextOperation;
+                                batchedOperations[batchIndex + batchSize] = nextOperation;
+                                batchSize++;
 
                                 // we have batched one operation and we are done!
                                 return;
@@ -2516,7 +2517,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public void AddWaitingOperationsToBatch(Interop.Sys.SocketEvents events, in Span<Interop.Sys.IoControlBlock> ioControlBlocks, in Span<AsyncOperation> batchedOperations, int batchIndex, ref int batchSize)
+        public void AddWaitingOperationsToBatch(Interop.Sys.SocketEvents events, in Span<Interop.Sys.IoControlBlock> ioControlBlocks, in Span<AsyncOperation?> batchedOperations, int batchIndex, ref int batchSize)
         {
             Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0, "This method must not be used for handling errors!");
 

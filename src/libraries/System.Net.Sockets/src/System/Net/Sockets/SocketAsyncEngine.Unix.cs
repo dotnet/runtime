@@ -103,9 +103,9 @@ namespace System.Net.Sockets
         private static int s_allocateFromEngine = 0;
 
         private readonly IntPtr _port;
-        private readonly SocketAsyncContext.AsyncOperation[] _aioBatchedOperations;
+        private readonly SocketAsyncContext.AsyncOperation?[] _aioBatchedOperations;
         private readonly Interop.Sys.SocketEvent* _buffer;
-        private readonly Interop.Sys.AioContext _aioContext;
+        private readonly Interop.Sys.AioContext[] _aioContexts = new Interop.Sys.AioContext[EventBufferCount];
         private readonly Interop.Sys.IoEvent* _aioEvents;
         private readonly Interop.Sys.IoControlBlock* _aioBlocks;
         private readonly Interop.Sys.IoControlBlock** _aioBlocksPointers;
@@ -291,11 +291,10 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                Interop.Sys.AioContext aioContext = default;
                 int aioEventBufferCount = EventBufferCount * s_batchSegmentSize;
-                if (Interop.Sys.IsAioSupported() && Interop.Sys.IoSetup((uint)aioEventBufferCount, &aioContext) == 0)
+                if (Interop.Sys.IsAioSupported())
                 {
-                    _aioBatchedOperations = new SocketAsyncContext.AsyncOperation[aioEventBufferCount];
+                    _aioBatchedOperations = new SocketAsyncContext.AsyncOperation?[aioEventBufferCount];
                     _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * aioEventBufferCount);
                     _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * aioEventBufferCount);
                     _aioBlocksPointers = (Interop.Sys.IoControlBlock**)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock*) * aioEventBufferCount);
@@ -309,18 +308,27 @@ namespace System.Net.Sockets
                         _aioBlocksPointers[i] = &_aioBlocks[i];
                     }
 
-                    for (int i = 0; i < EventBufferCount; i++)
+                    fixed (Interop.Sys.AioContext* aioContext = _aioContexts)
                     {
-                        _unusedBatchSegments.Add(i);
+                        for (int i = 0; i < _aioContexts.Length; i++)
+                        {
+                            if (Interop.Sys.IoSetup((uint)s_batchSegmentSize, aioContext + i) == 0)
+                            {
+                                _unusedBatchSegments.Add(i);
+                            }
+                            else
+                            {
+                                Environment.FailFast($"AIO Setup has failed {i}");
+                            }
+                        }
                     }
 
-                    _aioContext = aioContext;
                     IsAio = true;
                 }
                 else
                 {
                     Debug.Assert(Interop.Sys.IsAioSupported() == false, "When AIO is supported IoSetup should always succeed");
-                    _aioBatchedOperations = Array.Empty<SocketAsyncContext.AsyncOperation>();
+                    _aioBatchedOperations = Array.Empty<SocketAsyncContext.AsyncOperation?>();
                 }
 
                 bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
@@ -516,8 +524,8 @@ namespace System.Net.Sockets
             Interop.Sys.IoEvent* aioEventsSegment = _aioEvents + currentBatchIndex;
             Span<Interop.Sys.IoControlBlock> ioControlBlocksSegment = new Span<Interop.Sys.IoControlBlock>(_aioBlocks + currentBatchIndex, batchSegmentSize);
 
-            Interop.Sys.AioContext aioContext = _aioContext;
-            System.Span<SocketAsyncContext.AsyncOperation> batchedOperations = new System.Span<SocketAsyncContext.AsyncOperation>(_aioBatchedOperations, currentBatchIndex, batchSegmentSize);
+            Interop.Sys.AioContext aioContext = _aioContexts[batchSegmentId];
+            System.Span<SocketAsyncContext.AsyncOperation?> batchedOperations = new System.Span<SocketAsyncContext.AsyncOperation?>(_aioBatchedOperations, currentBatchIndex, batchSegmentSize);
             int currentBatchSize = 0;
 
             while (true)
@@ -526,7 +534,7 @@ namespace System.Net.Sockets
                 {
                     Debug.Assert((socketEvent.Events & Interop.Sys.SocketEvents.Error) == 0, "HandleSyncEventsSpeculatively wipes out informatio about error");
 
-                    socketEvent.Context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocksSegment, batchedOperations, currentBatchIndex, ref currentBatchSize);
+                    socketEvent.Context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocksSegment, batchedOperations, 0, ref currentBatchSize);
                 }
 
                 if (currentBatchSize == 0)
@@ -555,11 +563,10 @@ namespace System.Net.Sockets
                 ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(aioEventsSegment, currentBatchSize);
                 for (int i = 0; i < events.Length; i++)
                 {
-                    batchedOperations[(int)events[i].Data - currentBatchIndex].HandleBatchEvent(in events[i], inline: i == events.Length - 1);
+                    Interlocked.Exchange(ref batchedOperations[(int)events[i].Data], null)!.HandleBatchEvent(in events[i], inline: true);
                 }
 
                 ioControlBlocksSegment.Clear();
-                batchedOperations.Clear();
                 currentBatchSize = 0;
             }
 
@@ -597,12 +604,16 @@ namespace System.Net.Sockets
             {
                 Interop.Sys.CloseSocketEventPort(_port);
             }
-            if (_aioContext.Ring != null)
+
+            foreach (var aioContext in _aioContexts)
             {
-                Interop.Sys.IoDestroy(_aioContext.Ring);
-                Marshal.FreeHGlobal(new IntPtr((void*)_aioEvents));
-                Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocksPointers));
-                Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocks));
+                if (aioContext.Ring != null)
+                {
+                    Interop.Sys.IoDestroy(aioContext.Ring);
+                    Marshal.FreeHGlobal(new IntPtr((void*)_aioEvents));
+                    Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocksPointers));
+                    Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocks));
+                }
             }
         }
 
