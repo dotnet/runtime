@@ -42,9 +42,11 @@ namespace System.Threading
         /// with an initial count of 0.
         /// </remarks>
         private bool _lockedSemaphoreFull = true;
-        /// <summary>The head of the double-linked waiting queue.  Waiters are dequeued from the head.</summary>
-        private Waiter? _waitersHead;
-        /// <summary>The tail of the double-linked waiting queue.  Waiters are added at the tail.</summary>
+        /// <summary>The tail of the double-linked circular waiting queue.</summary>
+        /// <remarks>
+        /// Waiters are added at the tail.
+        /// Items are dequeued from the head (tail.Prev).
+        /// </remarks>
         private Waiter? _waitersTail;
         /// <summary>A pool of waiter objects that are ready to be reused.</summary>
         /// <remarks>
@@ -94,25 +96,25 @@ namespace System.Threading
                     // Now that we're holding the lock, check to see whether the async lock is acquirable.
                     if (!_lockedSemaphoreFull)
                     {
+                        // If we are able to acquire the lock, we're done.
                         _lockedSemaphoreFull = true;
                         return default;
                     }
+
+                    // The lock couldn't be acquired.
+                    // Add the waiter to the linked list of waiters.
+                    if (_waitersTail is null)
+                    {
+                        w.Next = w.Prev = w;
+                    }
                     else
                     {
-                        // Add it to the linked list of waiters.
-                        if (_waitersTail is null)
-                        {
-                            Debug.Assert(_waitersHead is null);
-                            _waitersTail = _waitersHead = w;
-                        }
-                        else
-                        {
-                            Debug.Assert(_waitersHead != null);
-                            w.Prev = _waitersTail;
-                            _waitersTail.Next = w;
-                            _waitersTail = w;
-                        }
+                        Debug.Assert(_waitersTail.Next != null && _waitersTail.Prev != null);
+                        w.Next = _waitersTail;
+                        w.Prev = _waitersTail.Prev;
+                        w.Prev.Next = w.Next.Prev = w;
                     }
+                    _waitersTail = w;
                 }
 
                 // At this point the waiter was added to the list of waiters, so we want to
@@ -136,14 +138,11 @@ namespace System.Threading
 
                     lock (m.SyncObj)
                     {
-                        bool inList = w.Next != null || w.Prev != null || m._waitersHead == w;
+                        bool inList = w.Next != null;
                         if (inList)
                         {
-                            // The waiter was still in the list.
-                            Debug.Assert(
-                                m._waitersHead == w ||
-                                (m._waitersTail == w && w.Prev != null && w.Next is null) ||
-                                (w.Next != null && w.Prev != null));
+                            // The waiter is in the list.
+                            Debug.Assert(w.Prev != null);
 
                             // The gate counter was decremented when this waiter was added.  We need
                             // to undo that.  Since the waiter is still in the list, the lock must
@@ -156,33 +155,19 @@ namespace System.Threading
                             // release it, they will appropriately update state.
                             Interlocked.Increment(ref m._gate);
 
-                            // Remove it from the list.
-                            if (m._waitersHead == w && m._waitersTail == w)
+                            if (w.Next == w)
                             {
-                                // It's the only node in the list.
-                                m._waitersHead = m._waitersTail = null;
-                            }
-                            else if (m._waitersTail == w)
-                            {
-                                // It's the most recently queued item in the list.
-                                m._waitersTail = w.Prev;
-                                Debug.Assert(m._waitersTail != null);
-                                m._waitersTail.Next = null;
-                            }
-                            else if (m._waitersHead == w)
-                            {
-                                // It's the next item to be removed from the list.
-                                m._waitersHead = w.Next;
-                                Debug.Assert(m._waitersHead != null);
-                                m._waitersHead.Prev = null;
+                                Debug.Assert(m._waitersTail == w);
+                                m._waitersTail = null;
                             }
                             else
                             {
-                                // It's in the middle of the list.
-                                Debug.Assert(w.Next != null);
-                                Debug.Assert(w.Prev != null);
-                                w.Next.Prev = w.Prev;
+                                w.Next!.Prev = w.Prev;
                                 w.Prev.Next = w.Next;
+                                if (m._waitersTail == w)
+                                {
+                                    m._waitersTail = w.Next;
+                                }
                             }
 
                             // Remove it from the list.
@@ -217,33 +202,36 @@ namespace System.Threading
             void Contended()
             {
                 Waiter? w;
-
                 lock (SyncObj)
                 {
                     Debug.Assert(_lockedSemaphoreFull);
 
-                    // Wake up the next waiter in the list.
-                    w = _waitersHead;
-                    if (w != null)
+                    w = _waitersTail;
+                    if (w is null)
                     {
-                        // Remove the waiter.
-                        _waitersHead = w.Next;
-                        if (w.Next != null)
-                        {
-                            w.Next.Prev = null;
-                        }
-                        else
-                        {
-                            Debug.Assert(_waitersTail == w);
-                            _waitersTail = null;
-                        }
-                        w.Next = w.Prev = null;
+                        _lockedSemaphoreFull = false;
                     }
                     else
                     {
-                        // There wasn't a waiter.  Mark that the async lock is no longer full.
-                        Debug.Assert(_waitersTail is null);
-                        _lockedSemaphoreFull = false;
+                        Debug.Assert(w.Next != null && w.Prev != null);
+                        Debug.Assert(w.Next != w || w.Prev == w);
+                        Debug.Assert(w.Prev != w || w.Next == w);
+
+                        if (w.Next == w)
+                        {
+                            _waitersTail = null;
+                        }
+                        else
+                        {
+                            w = w.Prev; // get the head
+                            Debug.Assert(w.Next != null && w.Prev != null);
+                            Debug.Assert(w.Next != w && w.Prev != w);
+
+                            w.Next.Prev = w.Prev;
+                            w.Prev.Next = w.Next;
+                        }
+
+                        w.Next = w.Prev = null;
                     }
                 }
 

@@ -5698,6 +5698,13 @@ namespace System.Diagnostics.CodeAnalysis
         public bool ReturnValue { get { throw null; } }
         public string[] Members { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Constructor, Inherited = false)]
+    public sealed class RequiresUnreferencedCodeAttribute : System.Attribute
+    {
+        public RequiresUnreferencedCodeAttribute(string message) { }
+        public string Message { get { throw null; } }
+        public string? Url { get { throw null; } set { } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
     public sealed partial class SuppressMessageAttribute : System.Attribute

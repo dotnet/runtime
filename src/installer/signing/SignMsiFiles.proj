@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <StageProject Include="@(InstallerProject -> WithMetadataValue('SignPhase', 'MsiFiles'))" />
+    <StageProject Include="@(ProjectToBuild -> WithMetadataValue('SignPhase', 'MsiFiles'))" />
   </ItemGroup>
 
   <!--

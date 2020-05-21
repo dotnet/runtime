@@ -158,6 +158,7 @@ namespace R2RTest
                         CoreRootDirectory(),
                         AspNetPath(),
                         Composite(),
+                        PartialComposite(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSerpCommand.CompileSerpAssemblies));
 
@@ -267,6 +268,9 @@ namespace R2RTest
             //
             Option AspNetPath() =>
                 new Option(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder", new Argument<DirectoryInfo>().ExistingOnly());
+
+            Option PartialComposite() =>
+                new Option(new[] { "--partial-composite", "-pc" }, "Add references to framework and asp.net instead of unrooted inputs", new Argument<bool>());
         }
     }
 }

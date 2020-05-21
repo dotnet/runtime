@@ -8,21 +8,21 @@
   <String Id="ConfirmCancelMessage">¿Está seguro de que desea cancelar?</String>
   <String Id="ExecuteUpgradeRelatedBundleMessage">Versión anterior</String>
   <String Id="HelpHeader">Ayuda de configuración</String>
-  <String Id="HelpText">/install | /repair | /uninstall | /layout [directory] - instala, repara, desinstala o
-   crea una copia local completa del paquete en el directorio. Install es la opción predeterminada.
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [directorio]:  Instala, repara, desinstala o
+   crea una copia local completa del lote de aplicaciones del directorio. La opción predeterminada es /install.
 
-/passive | /quiet -  muestra una IU mínima sin peticiones, o bien no muestra la IU 
-  ni las peticiones. De forma predeterminada, se muestran la IU y todas las peticiones.
+/passive | /quiet:  muestra la interfaz de usuario mínima sin mensajes o no muestra ninguna interfaz de usuario
+   ni mensajes. De forma predeterminada, se muestra la interfaz de usuario y todos los mensajes.
 
-/norestart   - suprime los intentos de reiniciar. De forma predeterminada, la IU preguntará antes de reiniciar.
-/log log.txt - se registra en un archivo específico. De forma predeterminada, se crea un archivo de registro en %TEMP%.</String>
+/norestart:  suprime todos los intentos de reinicio. De forma predeterminada, la interfaz de usuario muestra un mensaje antes de reiniciar el equipo.
+/log log.txt:  crea un registro en un archivo específico. De forma predeterminada, se crea un archivo de registro en %TEMP%.</String>
   <String Id="HelpCloseButton">&amp;Cerrar</String>
   <String Id="InstallAcceptCheckbox">&amp;Acepto los términos y condiciones de licencia</String>
   <String Id="InstallOptionsButton">&amp;Opciones</String>
   <String Id="InstallInstallButton">&amp;Instalar</String>
   <String Id="InstallCloseButton">&amp;Cerrar</String>
   <String Id="OptionsHeader">Opciones de instalación</String>
-  <String Id="OptionsLocationLabel">Ubicación de instalación:</String>
+  <String Id="OptionsLocationLabel">Ubicación de la instalación:</String>
   <String Id="OptionsBrowseButton">E&amp;xaminar</String>
   <String Id="OptionsOkButton">&amp;Aceptar</String>
   <String Id="OptionsCancelButton">&amp;Cancelar</String>
@@ -58,8 +58,8 @@
   <String Id="FilesInUseDontCloseRadioButton">&amp;No cerrar las aplicaciones. Será necesario un reinicio.</String>
   <String Id="FilesInUseOkButton">&amp;Aceptar</String>
   <String Id="FilesInUseCancelButton">&amp;Cancelar</String>
-  <String Id="WelcomeHeaderMessage">.NET Runtime</String>
-  <String Id="WelcomeDescription">.NET es una plataforma de desarrollo que se puede usar para compilar aplicaciones de la línea de comandos, microservicios y sitios web modernos. Es de código abierto, multiplataforma y se admite en Microsoft. Esperamos que la disfrute.</String>
+  <String Id="WelcomeHeaderMessage">Entorno de ejecución .NET</String>
+  <String Id="WelcomeDescription">.NET Runtime se usa para ejecutar aplicaciones .NET en un equipo con Windows. Microsoft admite .NET, un código abierto multiplataforma. Esperamos que lo disfrute.</String>
   <String Id="LearnMoreTitle">Más información sobre .NET</String>
   <String Id="SuccessInstallLocation">Lo siguiente se instaló en [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Tutoriales&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetría de .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Declaración de privacidad&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;CLUF de la biblioteca .NET&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;Información de licencias de .NET&lt;/A&gt;</String>
+  <String Id="LicenseAssent">Al hacer clic en Instalar, acepta los términos siguientes.</String>
 </WixLocalization>

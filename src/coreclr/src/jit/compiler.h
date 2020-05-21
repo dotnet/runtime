@@ -3501,19 +3501,21 @@ public:
         assert(varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
-        // We make local variable SIMD12 types 16 bytes instead of just 12. lvSize()
-        // already does this calculation. However, we also need to prevent mapping types if the var is a
-        // dependently promoted struct field, which must remain its exact size within its parent struct.
-        // However, we don't know this until late, so we may have already pretended the field is bigger
-        // before that.
-        if ((varDsc->lvSize() == 16) && !lvaIsFieldOfDependentlyPromotedStruct(varDsc))
-        {
-            return true;
-        }
-        else
+        // We make local variable SIMD12 types 16 bytes instead of just 12.
+        // lvSize() will return 16 bytes for SIMD12, even for fields.
+        // However, we can't do that mapping if the var is a dependently promoted struct field.
+        // Such a field must remain its exact size within its parent struct unless it is a single
+        // field *and* it is the only field in a struct of 16 bytes.
+        if (varDsc->lvSize() != 16)
         {
             return false;
         }
+        if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+        {
+            LclVarDsc* parentVarDsc = lvaGetDesc(varDsc->lvParentLcl);
+            return (parentVarDsc->lvFieldCnt == 1) && (parentVarDsc->lvSize() == 16);
+        }
+        return true;
     }
 #endif // defined(FEATURE_SIMD)
 
@@ -3752,7 +3754,10 @@ protected:
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig);
+                                 CORINFO_SIG_INFO*     sig,
+                                 var_types             baseType,
+                                 var_types             retType,
+                                 unsigned              simdSize);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr = false);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
@@ -3762,7 +3767,10 @@ protected:
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
                               CORINFO_CLASS_HANDLE  clsHnd,
                               CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig);
+                              CORINFO_SIG_INFO*     sig,
+                              var_types             baseType,
+                              var_types             retType,
+                              unsigned              simdSize);
     GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);

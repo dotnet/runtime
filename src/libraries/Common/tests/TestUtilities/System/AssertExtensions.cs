@@ -27,7 +27,7 @@ namespace System
             Assert.Contains(expectedMessageContent, Assert.Throws<T>(action).Message);
         }
 
-        public static void Throws<T>(string netCoreParamName, string netFxParamName, Action action)
+        public static T Throws<T>(string netCoreParamName, string netFxParamName, Action action)
             where T : ArgumentException
         {
             T exception = Assert.Throws<T>(action);
@@ -35,7 +35,7 @@ namespace System
             if (netFxParamName == null && IsNetFramework)
             {
                 // Param name varies between .NET Framework versions -- skip checking it
-                return;
+                return exception;
             }
 
             string expectedParamName =
@@ -43,6 +43,7 @@ namespace System
                 netFxParamName : netCoreParamName;
 
             Assert.Equal(expectedParamName, exception.ParamName);
+            return exception;
         }
 
         public static void Throws<T>(string netCoreParamName, string netFxParamName, Func<object> testCode)

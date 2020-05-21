@@ -111,17 +111,6 @@ namespace System.Text.Json
                                     continue;
                                 }
 
-                                if (IsNonPublicProperty(propertyInfo))
-                                {
-                                    if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
-                                    {
-                                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, currentType);
-                                    }
-
-                                    // Non-public properties should not be included for (de)serialization.
-                                    continue;
-                                }
-
                                 // For now we only support public getters\setters
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
@@ -148,6 +137,15 @@ namespace System.Text.Json
                                         }
                                         // else ignore jsonPropertyInfo since it has [JsonIgnore] or it's hidden by a new slot.
                                     }
+                                }
+                                else
+                                {
+                                    if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
+                                    {
+                                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, currentType);
+                                    }
+
+                                    // Non-public properties should not be included for (de)serialization.
                                 }
                             }
                         }
@@ -209,13 +207,6 @@ namespace System.Text.Json
                     Debug.Fail($"Unexpected class type: {ClassType}");
                     throw new InvalidOperationException();
             }
-        }
-
-        private static bool IsNonPublicProperty(PropertyInfo propertyInfo)
-        {
-            MethodInfo? getMethod = propertyInfo.GetMethod;
-            MethodInfo? setMethod = propertyInfo.SetMethod;
-            return !((getMethod != null && getMethod.IsPublic) || (setMethod != null && setMethod.IsPublic));
         }
 
         private void InitializeConstructorParameters(Dictionary<string, JsonPropertyInfo> propertyCache, ConstructorInfo constructorInfo)

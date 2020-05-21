@@ -463,6 +463,7 @@ namespace System.Net.Sockets
         private sealed class BufferMemoryReceiveOperation : ReceiveOperation
         {
             public Memory<byte> Buffer;
+            public bool SetReceivedFlags;
 
             public BufferMemoryReceiveOperation(SocketAsyncContext context) : base(context) { }
 
@@ -479,7 +480,17 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    return SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                    if (!SetReceivedFlags)
+                    {
+                        Debug.Assert(SocketAddress == null);
+
+                        ReceivedFlags = SocketFlags.None;
+                        return SocketPal.TryCompleteReceive(context._socket, Buffer.Span, Flags, out BytesTransferred, out ErrorCode);
+                    }
+                    else
+                    {
+                        return SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                    }
                 }
             }
 
@@ -1465,13 +1476,13 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Receive(Memory<byte> buffer, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(Memory<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
             int socketAddressLen = 0;
             return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
         }
 
-        public SocketError Receive(Span<byte> buffer, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(Span<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
             int socketAddressLen = 0;
             return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
@@ -1545,6 +1556,39 @@ namespace System.Net.Sockets
             }
         }
 
+        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        {
+            SetNonBlocking();
+
+            SocketError errorCode;
+            int observedSequenceNumber;
+            if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
+                SocketPal.TryCompleteReceive(_socket, buffer.Span, flags, out bytesReceived, out errorCode))
+            {
+                return errorCode;
+            }
+
+            BufferMemoryReceiveOperation operation = RentBufferMemoryReceiveOperation();
+            operation.SetReceivedFlags = false;
+            operation.Callback = callback;
+            operation.Buffer = buffer;
+            operation.Flags = flags;
+            operation.SocketAddress = null;
+            operation.SocketAddressLen = 0;
+
+            if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
+            {
+                bytesReceived = operation.BytesTransferred;
+                errorCode = operation.ErrorCode;
+
+                ReturnOperation(operation);
+                return errorCode;
+            }
+
+            bytesReceived = 0;
+            return SocketError.IOPending;
+        }
+
         public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetNonBlocking();
@@ -1558,6 +1602,7 @@ namespace System.Net.Sockets
             }
 
             BufferMemoryReceiveOperation operation = RentBufferMemoryReceiveOperation();
+            operation.SetReceivedFlags = true;
             operation.Callback = callback;
             operation.Buffer = buffer;
             operation.Flags = flags;
@@ -1579,7 +1624,7 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Receive(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(IList<ArraySegment<byte>> buffers, SocketFlags flags, int timeout, out int bytesReceived)
         {
             return ReceiveFrom(buffers, ref flags, null, 0, timeout, out bytesReceived);
         }

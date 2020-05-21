@@ -14,7 +14,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new InvalidProgramException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_INVALIDPROGRAM, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_INVALIDPROGRAM, validateMessage: false);
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace System.Tests
         {
             string message = "bad program";
             var exception = new InvalidProgramException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_INVALIDPROGRAM, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_INVALIDPROGRAM, message: message);
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace System.Tests
             string message = "bad program";
             var innerException = new Exception("Inner exception");
             var exception = new InvalidProgramException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_INVALIDPROGRAM, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_INVALIDPROGRAM, innerException: innerException, message: message);
         }
     }
 }

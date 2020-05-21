@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#include <stdlib.h>
+#include "pal_icushim_internal.h"
+
 #if defined(TARGET_UNIX)
 #include <dlfcn.h>
 #elif defined(TARGET_WINDOWS)
@@ -10,12 +13,10 @@
 #include <libloaderapi.h>
 #include <errhandlingapi.h>
 #endif
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
-#include "pal_icushim_internal.h"
 #include "pal_icushim.h"
 
 // Define pointers to all the used ICU functions
