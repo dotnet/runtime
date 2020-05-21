@@ -91,11 +91,11 @@ namespace System.Xml
         {
             get
             {
-                return this.resolver;
+                return this._resolver;
             }
             set
             {
-                this.resolver = value;
+                this._resolver = value;
                 _wrapped.NamespaceResolver = value;
             }
         }

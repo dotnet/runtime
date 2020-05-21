@@ -38,7 +38,7 @@ namespace System.Net.Security
         }
 
         private ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, ISslIOAdapter => default;
+            where TWriteAdapter : struct, IReadWriteAdapter => default;
 
         private ValueTask<int> ReadAsyncInternal<TReadAdapter>(TReadAdapter adapter, Memory<byte> buffer) => default;
 

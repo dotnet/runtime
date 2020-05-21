@@ -2573,6 +2573,7 @@ template <class MemMgr>
 class CHashTableAndData : public CHashTable
 {
 public:
+    DAC_ALIGNAS(CHashTable)
     ULONG      m_iFree;                // Index into m_pcEntries[] of next available slot
     ULONG      m_iEntries;             // size of m_pcEntries[]
 

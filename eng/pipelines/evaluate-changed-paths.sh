@@ -162,7 +162,7 @@ probePaths() {
       if [[ "$include_path_string" == "" ]]; then
         include_path_string=":$_path"
       else
-        include_path_string="$exclude_path_string :$_path"
+        include_path_string="$include_path_string :$_path"
       fi
     done
 

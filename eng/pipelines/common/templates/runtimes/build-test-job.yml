@@ -21,6 +21,7 @@ parameters:
   pool: ''
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
+  runtimeVariant: ''
 
 ### Build managed test components (native components are getting built as part
 ### of the the product build job).
@@ -41,6 +42,7 @@ jobs:
     managedTestBuildOsGroup: ${{ parameters.osGroup }}
     managedTestBuildOsSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
@@ -68,7 +70,7 @@ jobs:
     # by switching over to using reference assembly.
     ${{ if ne(parameters.stagedBuild, true) }}:
       dependsOn:
-      - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
+      - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
@@ -83,7 +85,7 @@ jobs:
 
     # Install test build dependencies
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install correct cmake version

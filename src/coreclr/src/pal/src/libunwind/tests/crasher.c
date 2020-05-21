@@ -87,8 +87,13 @@ write_maps(char *fname)
 #endif
 
 #ifdef __GNUC__
+#ifndef __clang__
+// Gcc >= 8 became too good at inlining aliase c into b when using -O2 or -O3,
+// so force -O1 in all cases, otherwise a frame will be missing in the tests.
+#pragma GCC optimize "-O1"
+#endif
 int c(int x) NOINLINE ALIAS(b);
-#define compiler_barrier() asm volatile("");
+#define compiler_barrier() __asm__ __volatile__ ("");
 #else
 int c(int x);
 #define compiler_barrier()

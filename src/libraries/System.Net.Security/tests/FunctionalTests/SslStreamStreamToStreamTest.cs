@@ -395,7 +395,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_WriteAsync_ReadAsync_Pending_Success()
         {
-            if (this is SslStreamStreamToStreamTest_Sync)
+            if (this is SslStreamStreamToStreamTest_SyncBase)
             {
                 // This test assumes operations complete asynchronously.
                 return;
@@ -488,7 +488,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_Dispose_Throws()
         {
-            if (this is SslStreamStreamToStreamTest_Sync)
+            if (this is SslStreamStreamToStreamTest_SyncBase)
             {
                 // This test assumes operations complete asynchronously.
                 return;
@@ -511,7 +511,7 @@ namespace System.Net.Security.Tests
                 await WriteAsync(serverSslStream, new byte[] { 1 }, 0, 1)
                     .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
 
-                // Shouldn't throw, the context is diposed now.
+                // Shouldn't throw, the context is disposed now.
                 // Since the server read task is in progress, the read buffer is not returned to ArrayPool.
                 serverSslStream.Dispose();
 
@@ -821,19 +821,8 @@ namespace System.Net.Security.Tests
                 Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, buffer, offset, count, null);
     }
 
-    public sealed class SslStreamStreamToStreamTest_Sync : SslStreamStreamToStreamTest
+    public abstract class SslStreamStreamToStreamTest_SyncBase : SslStreamStreamToStreamTest
     {
-        protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
-        {
-            X509CertificateCollection clientCerts = clientCertificate != null ? new X509CertificateCollection() { clientCertificate } : null;
-            await WithServerCertificate(serverCertificate, async (certificate, name) =>
-            {
-                Task t1 = Task.Run(() => clientSslStream.AuthenticateAsClient(name, clientCerts, SslProtocols.None, checkCertificateRevocation: false));
-                Task t2 = Task.Run(() => serverSslStream.AuthenticateAsServer(certificate, clientCertificateRequired: clientCertificate != null, checkCertificateRevocation: false));
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
-            });
-        }
-
         protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -867,6 +856,108 @@ namespace System.Net.Security.Tests
             {
                 return Task.FromException<int>(e);
             }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Handshake_DisposeClient_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            var clientStream = new VirtualNetworkStream(network, isServer: false);
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                clientStream.Dispose();
+
+                await Assert.ThrowsAsync<AggregateException>(() => DoHandshake(clientSslStream, serverSslStream));
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Handshake_DisposeServer_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+            
+            var serverStream = new VirtualNetworkStream(network, isServer: true);
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                serverStream.Dispose();
+
+                await Assert.ThrowsAsync<AggregateException>(() => DoHandshake(clientSslStream, serverSslStream));
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Handshake_DisposeClientSsl_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork() { DisableConnectionBreaking = true };
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate);
+                clientSslStream.Dispose();
+
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => DoHandshake(clientSslStream, serverSslStream));
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Handshake_DisposeServerSsl_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork() {DisableConnectionBreaking = true};
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            {
+                var serverSslStream = new SslStream(serverStream);
+                serverSslStream.Dispose();
+
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => DoHandshake(clientSslStream, serverSslStream));
+            }
+        }
+    }
+
+    public sealed class SslStreamStreamToStreamTest_SyncParameters : SslStreamStreamToStreamTest_SyncBase
+    {
+        protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
+        {
+            X509CertificateCollection clientCerts = clientCertificate != null ? new X509CertificateCollection() { clientCertificate } : null;
+            await WithServerCertificate(serverCertificate, async (certificate, name) =>
+            {
+                Task t1 = Task.Run(() => clientSslStream.AuthenticateAsClient(name, clientCerts, SslProtocols.None, checkCertificateRevocation: false));
+                Task t2 = Task.Run(() => serverSslStream.AuthenticateAsServer(certificate, clientCertificateRequired: clientCertificate != null, checkCertificateRevocation: false));
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+            });
+        }
+    }
+
+    public sealed class SslStreamStreamToStreamTest_SyncSslOptions : SslStreamStreamToStreamTest_SyncBase
+    {
+        protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
+        {
+            X509CertificateCollection clientCerts = clientCertificate != null ? new X509CertificateCollection() { clientCertificate } : null;
+            await WithServerCertificate(serverCertificate, async (certificate, name) =>
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = name,
+                    ClientCertificates = clientCerts,
+                    EnabledSslProtocols = SslProtocols.None,
+                };
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = certificate, ClientCertificateRequired = clientCertificate != null,
+                };
+                Task t1 = Task.Run(() => clientSslStream.AuthenticateAsClient(clientOptions));
+                Task t2 = Task.Run(() => serverSslStream.AuthenticateAsServer(serverOptions));
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+            });
         }
     }
 

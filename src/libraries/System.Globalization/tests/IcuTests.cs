@@ -11,8 +11,7 @@ namespace System.Globalization.Tests
     public class IcuTests
     {
         private static bool IsIcuCompatiblePlatform => PlatformDetection.IsNotWindows ||
-                                                       (!PlatformDetection.IsMonoRuntime &&
-                                                       PlatformDetection.IsWindows10Version1903OrGreater);
+                                                       PlatformDetection.IsWindows10Version1903OrGreater;
 
         [ConditionalFact(nameof(IsIcuCompatiblePlatform))]
         public static void IcuShouldBeUsedByDefault()

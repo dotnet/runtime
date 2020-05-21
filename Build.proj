@@ -27,43 +27,10 @@
   <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
 
-  <!--
-    Use synthetic inputs/outputs to avoid building it all the time. This should let devs build with
-    MSBuild node reuse enabled (the Arcade default). If it were built every time, it would hit file
-    locking issues vs. the persistent nodes that loaded the task DLL for the previous build. It
-    isn't particularly accurate, but better than nothing.
-  -->
-  <Target Name="BuildRepoTasks"
-          DependsOnTargets="GetRepoTasksSrc"
-          BeforeTargets="Restore"
-          Inputs="@(RepoTasksSrc)"
-          Outputs="$(RepoTasksOutputFile)">
-    <ItemGroup>
-      <RepoTaskProjects Include="$(RepoTasksDir)**\*.csproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=Debug;Platform=AnyCPU"
-             Targets="Restore"/>
-
-    <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="Configuration=Debug;Platform=AnyCPU"
-             Targets="Build"/>
-
-    <WriteLinesToFile File="$(RepoTasksOutputFile)"
-                      Lines="$(RepoTasksOutputFile)"
-                      Overwrite="true" />
-  </Target>
-
-  <Target Name="GetRepoTasksSrc">
-    <PropertyGroup>
-      <RepoTasksDir>$(RepoTasksDir)</RepoTasksDir>
-      <RepoTasksOutputFile>$(ArtifactsObjDir)runtime.tasks\Debug\build-semaphore.txt</RepoTasksOutputFile>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <RepoTasksSrc Include="$(RepoTasksDir)**\*.cs*" />
-    </ItemGroup>
+  <Target Name="BuildLocalTasks"
+          BeforeTargets="Restore">
+    <MSBuild Projects="$(RepoTasksDir)tasks.proj"
+             Targets="BuildAndRestoreIncrementally"/>
   </Target>
 
   <Target Name="RestoreWithoutStaticGraph"

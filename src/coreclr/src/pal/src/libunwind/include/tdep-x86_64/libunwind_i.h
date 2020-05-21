@@ -89,6 +89,7 @@ struct cursor
         X86_64_SCF_LINUX_RT_SIGFRAME,   /* Linux ucontext_t */
         X86_64_SCF_FREEBSD_SIGFRAME,    /* FreeBSD signal frame */
         X86_64_SCF_FREEBSD_SYSCALL,     /* FreeBSD syscall */
+        X86_64_SCF_SOLARIS_SIGFRAME,    /* illumos/Solaris signal frame */
       }
     sigcontext_format;
     unw_word_t sigcontext_addr;
@@ -232,7 +233,11 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 #define tdep_get_ip(c)                  ((c)->dwarf.ip)
 #define tdep_big_endian(as)             0
 
+#ifdef HAVE_ATOMIC_OPS_H
+extern AO_t tdep_init_done;
+#else
 extern int tdep_init_done;
+#endif
 
 extern void tdep_init (void);
 extern void tdep_init_mem_validate (void);

@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0649;CA1810</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Linux;netcoreapp2.0-Linux;$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netcoreapp2.0-Windows_NT;$(NetCoreAppCurrent)-OSX;netcoreapp2.0-OSX;$(NetCoreAppCurrent)-Linux;netcoreapp2.0-Linux;netstandard2.0;_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -57,21 +57,28 @@
       <Link>Common\Interop\Windows\Wldap32\Interop.Ber.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Linux.cs" />
-    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
-      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Linux\OpenLdap\Interop.Ldap.cs">
       <Link>Common\Interop\Linux\OpenLdap\Interop.Ldap.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Linux\OpenLdap\Interop.Ber.cs">
       <Link>Common\Interop\Linux\OpenLdap\Interop.Ber.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

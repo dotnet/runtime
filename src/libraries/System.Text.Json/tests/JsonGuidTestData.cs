@@ -35,15 +35,39 @@ namespace System.Text.Json.Tests
 
         public static IEnumerable<object[]> InvalidGuidTests()
         {
+            // Invalid formats
+            Guid testGuid = new Guid(s_guidStr);
+            yield return new object[] { testGuid.ToString("B", CultureInfo.InvariantCulture) };
+            yield return new object[] { testGuid.ToString("P", CultureInfo.InvariantCulture) };
+            yield return new object[] { testGuid.ToString("N", CultureInfo.InvariantCulture) };
+
+            yield return new object[] { new string('$', 1) };
+            yield return new object[] { new string(' ', 1) };
+            yield return new object[] { new string('$', s_guidStr.Length) };
+            yield return new object[] { new string(' ', s_guidStr.Length) };
+
+            for (int truncationPoint = 1; truncationPoint < s_guidStr.Length - 1; truncationPoint++)
+            {
+                string truncatedText = s_guidStr.Substring(0, truncationPoint);
+
+                // Stop short
+                yield return new object[] { truncatedText };
+
+                // Append junk
+                yield return new object[] { truncatedText.PadRight(s_guidStr.Length, '$') };
+                yield return new object[] { truncatedText.PadRight(s_guidStr.Length, ' ') };
+                yield return new object[] { truncatedText.PadRight(truncatedText.Length + 1, '$') };
+                yield return new object[] { truncatedText.PadRight(truncatedText.Length + 1, ' ') };
+                // Prepend junk
+                yield return new object[] { truncatedText.PadLeft(s_guidStr.Length, '$') };
+                yield return new object[] { truncatedText.PadLeft(s_guidStr.Length, ' ') };
+                yield return new object[] { truncatedText.PadLeft(truncatedText.Length + 1, '$') };
+                yield return new object[] { truncatedText.PadLeft(truncatedText.Length + 1, ' ') };
+            }
+
             foreach (object[] guid in ValidGuidTests())
             {
                 string guidStr = (string)guid[0];
-
-                // Invalid formats
-                Guid testGuid = new Guid(guidStr);
-                yield return new object[] { testGuid.ToString("B", CultureInfo.InvariantCulture) };
-                yield return new object[] { testGuid.ToString("P", CultureInfo.InvariantCulture) };
-                yield return new object[] { testGuid.ToString("N", CultureInfo.InvariantCulture) };
 
                 for (int i = 0; i < guidStr.Length; i++)
                 {
@@ -70,25 +94,6 @@ namespace System.Text.Json.Tests
                         bad[i] = '!';
                         yield return new object[] { new string(bad) };
                     }
-                }
-
-                for (int truncationPoint = 0; truncationPoint < guidStr.Length; truncationPoint++)
-                {
-                    string truncatedText = guidStr.Substring(0, truncationPoint);
-
-                    // Stop short
-                    yield return new object[] { truncatedText };
-
-                    // Append junk
-                    yield return new object[] { truncatedText.PadRight(guidStr.Length, '$') };
-                    yield return new object[] { truncatedText.PadRight(guidStr.Length, ' ') };
-                    yield return new object[] { truncatedText.PadRight(truncatedText.Length + 1, '$') };
-                    yield return new object[] { truncatedText.PadRight(truncatedText.Length + 1, ' ') };
-                    // Prepend junk
-                    yield return new object[] { truncatedText.PadLeft(guidStr.Length, '$') };
-                    yield return new object[] { truncatedText.PadLeft(guidStr.Length, ' ') };
-                    yield return new object[] { truncatedText.PadLeft(truncatedText.Length + 1, '$') };
-                    yield return new object[] { truncatedText.PadLeft(truncatedText.Length + 1, ' ') };
                 }
 
                 // Too long

@@ -6,7 +6,7 @@
     on a whole subset, and the dependency on the subset is disregarded automatically when Subset
     doesn't contain it.
 
-    %(InstallerProject.SignPhase): Indicates this project must be built before a certain signing
+    %(ProjectToBuild.SignPhase): Indicates this project must be built before a certain signing
       phase. Projects can depend on 'signing/stages/Sign<stage>.proj' to wait until all projects
       that are part of a stage are complete. This allows the build to perform complex container
       signing that isn't (can't be?) supported by Arcade's single pass, such as MSIs and bundles:
