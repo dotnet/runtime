@@ -61,16 +61,7 @@ namespace System.IO.Pipelines
 
         public void ResetMemory()
         {
-            if (_memoryOwner is IMemoryOwner<byte> owner)
-            {
-                owner.Dispose();
-            }
-            else
-            {
-                Debug.Assert(_memoryOwner is byte[]);
-                byte[] poolArray = (byte[])_memoryOwner;
-                ArrayPool<byte>.Shared.Return(poolArray);
-            }
+            object memoryOwner = _memoryOwner!;
 
             // Order of below field clears is significant as it clears in a sequential order
             // https://github.com/dotnet/corefx/pull/35256#issuecomment-462800477
@@ -81,6 +72,19 @@ namespace System.IO.Pipelines
             _next = null;
             _end = 0;
             AvailableMemory = default;
+
+            // Return the memory, use a fast exact type check rather than checking the inheritance hierarchy
+            // or following the interface mapping.
+            if (memoryOwner.GetType() == typeof(byte[]))
+            {
+                byte[] poolArray = Unsafe.As<byte[]>(memoryOwner);
+                ArrayPool<byte>.Shared.Return(poolArray);
+            }
+            else
+            {
+                Debug.Assert(memoryOwner is IMemoryOwner<byte>);
+                Unsafe.As<IMemoryOwner<byte>>(memoryOwner).Dispose();
+            }
         }
 
         // Exposed for testing
