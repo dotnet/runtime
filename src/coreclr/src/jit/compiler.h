@@ -518,6 +518,10 @@ public:
 
     unsigned char lvSuppressedZeroInit : 1; // local needs zero init if we transform tail call to loop
 
+    unsigned char lvHasExplicitInit : 1; // The local is explicitly initialized and doesn't need zero initialization in
+                                         // the prolog. If the local has gc pointers, there are no gc-safe points
+                                         // between the prolog and the explicit initialization.
+
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
                                   // local.  For implicit byref parameters, this gets hijacked between
@@ -5905,6 +5909,8 @@ public:
     void optEnsureUniqueHead(unsigned loopInd, unsigned ambientWeight);
 
     void optUnrollLoops(); // Unrolls loops (needs to have cost info)
+
+    void optRemoveRedundantZeroInits();
 
 protected:
     // This enumeration describes what is killed by a call.

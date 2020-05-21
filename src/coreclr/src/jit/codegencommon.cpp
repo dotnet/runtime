@@ -4655,6 +4655,12 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
+        if (varDsc->lvHasExplicitInit)
+        {
+            varDsc->lvMustInit = 0;
+            continue;
+        }
+
         if (compiler->info.compInitMem || varDsc->HasGCPtr() || varDsc->lvMustInit)
         {
             if (varDsc->lvTracked)
