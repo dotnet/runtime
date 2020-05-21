@@ -561,6 +561,71 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
+// Lowering::IsValidConstForMovImm: Determines if the given node can be replaced by a mov/fmov immediate instruction
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+//  Returns:
+//     true if the node can be replaced by a mov/fmov immediate instruction; otherwise, false
+//
+//  IMPORTANT:
+//     This check may end up modifying node->gtOp1 if it is a cast node that can be removed
+bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
+{
+    assert((node->gtHWIntrinsicId == NI_Vector64_Create) || (node->gtHWIntrinsicId == NI_Vector128_Create) ||
+           (node->gtHWIntrinsicId == NI_Vector64_CreateScalarUnsafe) ||
+           (node->gtHWIntrinsicId == NI_Vector128_CreateScalarUnsafe) ||
+           (node->gtHWIntrinsicId == NI_AdvSimd_DuplicateToVector64) ||
+           (node->gtHWIntrinsicId == NI_AdvSimd_DuplicateToVector128) ||
+           (node->gtHWIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector64) ||
+           (node->gtHWIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector128));
+    assert(HWIntrinsicInfo::lookupNumArgs(node) == 1);
+
+    GenTree* op1    = node->gtOp1;
+    GenTree* castOp = nullptr;
+
+    if (varTypeIsIntegral(node->gtSIMDBaseType) && op1->OperIs(GT_CAST))
+    {
+        // We will sometimes get a cast around a constant value (such as for
+        // certain long constants) which would block the below containment.
+        // So we will temporarily check what the cast is from instead so we
+        // can catch those cases as well.
+
+        castOp = op1->AsCast()->CastOp();
+        op1    = castOp;
+    }
+
+    if (op1->IsCnsIntOrI())
+    {
+        const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
+
+        if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->gtSIMDBaseType)))
+        {
+            if (castOp != nullptr)
+            {
+                // We found a containable immediate under
+                // a cast, so remove the cast from the LIR.
+
+                BlockRange().Remove(node->gtOp1);
+                node->gtOp1 = op1;
+            }
+            return true;
+        }
+    }
+    else if (op1->IsCnsFltOrDbl())
+    {
+        assert(varTypeIsFloating(node->gtSIMDBaseType));
+        assert(castOp == nullptr);
+
+        const double dataValue = op1->AsDblCon()->gtDconVal;
+        return comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue);
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsicCreate: Lowers a Vector64 or Vector128 Create call
 //
 //  Arguments:
@@ -641,6 +706,33 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         }
     }
     assert((argCnt == 1) || (argCnt == (simdSize / genTypeSize(baseType))));
+
+    if ((argCnt == cnsArgCnt) && (argCnt == 1))
+    {
+        GenTree* castOp = nullptr;
+
+        if (varTypeIsIntegral(baseType) && op1->OperIs(GT_CAST))
+        {
+            // We will sometimes get a cast around a constant value (such as for
+            // certain long constants) which would block the below containment.
+            // So we will temporarily check what the cast is from instead so we
+            // can catch those cases as well.
+
+            castOp = op1->AsCast()->CastOp();
+            op1    = castOp;
+        }
+
+        if (IsValidConstForMovImm(node))
+        {
+            // Set the cnsArgCnt to zero so we get lowered to a DuplicateToVector
+            // intrinsic, which will itself mark the node as contained.
+            cnsArgCnt = 0;
+
+            // Reacquire op1 as the above check may have removed a cast node and
+            // changed op1.
+            op1 = node->gtOp1;
+        }
+    }
 
     if (argCnt == cnsArgCnt)
     {
@@ -1201,27 +1293,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AdvSimd_DuplicateToVector128:
         case NI_AdvSimd_Arm64_DuplicateToVector64:
         case NI_AdvSimd_Arm64_DuplicateToVector128:
-            if (intrin.op1->IsCnsIntOrI())
+        {
+            if (IsValidConstForMovImm(node))
             {
-                const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                // Use node->gtOp1 as the above check may
+                // have removed a cast node and changed op1
 
-                if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(intrin.baseType)))
-                {
-                    MakeSrcContained(node, intrin.op1);
-                }
-            }
-            else if (intrin.op1->IsCnsFltOrDbl())
-            {
-                assert(varTypeIsFloating(intrin.baseType));
-
-                const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
-
-                if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
-                {
-                    MakeSrcContained(node, intrin.op1);
-                }
+                MakeSrcContained(node, node->gtOp1);
             }
             break;
+        }
 
         default:
             unreached();

@@ -321,6 +321,10 @@ private:
     void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
 
+#ifdef TARGET_ARM64
+    bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
+#endif // TARGET_ARM64
+
     union VectorConstant {
         int8_t   i8[32];
         uint8_t  u8[32];
