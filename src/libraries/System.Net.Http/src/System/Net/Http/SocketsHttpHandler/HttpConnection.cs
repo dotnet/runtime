@@ -779,7 +779,6 @@ namespace System.Net.Http
             }
             else
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 request.Content!.CopyTo(stream, _transportContext, cancellationToken);
             }
 
@@ -1618,7 +1617,6 @@ namespace System.Net.Http
             }
             else
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 destination.Write(_readBuffer, _readOffset, count);
             }
             _readOffset += count;
@@ -1640,7 +1638,6 @@ namespace System.Net.Http
                 return _stream.CopyToAsync(destination, bufferSize, cancellationToken);
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
             _stream.CopyTo(destination, bufferSize);
             return Task.CompletedTask;
         }
@@ -1659,7 +1656,6 @@ namespace System.Net.Http
             }
             else
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 _stream.CopyTo(destination, bufferSize);
             }
         }

@@ -237,7 +237,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
         }
-        
+
         [Fact]
         public async Task GetAsync_SetCookieContainerAndMultipleCookieHeaders_BothCookiesSent()
         {

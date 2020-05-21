@@ -347,8 +347,6 @@ namespace System.Net.Http
             {
                 if (TryGetBuffer(out ArraySegment<byte> buffer))
                 {
-                    // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
-                    cancellationToken.ThrowIfCancellationRequested();
                     stream.Write(buffer.Array!, buffer.Offset, buffer.Count);
                 }
                 else

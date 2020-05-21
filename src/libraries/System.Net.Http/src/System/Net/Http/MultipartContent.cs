@@ -192,8 +192,6 @@ namespace System.Net.Http
                 var output = new StringBuilder();
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
                     // Write divider, headers, and content.
                     HttpContent content = _nestedContent[contentIndex];
                     EncodeStringToStream(stream, SerializeHeadersToString(output, contentIndex, content));

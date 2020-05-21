@@ -534,14 +534,14 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using (var invoker = new HttpMessageInvoker(CreateHttpClientHandler()))
                     using (var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = UseVersion })
-                        try
+                    try
+                    {
+                        using (HttpResponseMessage resp = await invoker.SendAsync(TestAsync, req, cancellationTokenSource.Token))
                         {
-                            using (HttpResponseMessage resp = await invoker.SendAsync(TestAsync, req, cancellationTokenSource.Token))
-                            {
-                                Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
-                            }
+                            Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
                         }
-                        catch (OperationCanceledException) { }
+                    }
+                    catch (OperationCanceledException) { }
                 },
                 async server =>
                 {
