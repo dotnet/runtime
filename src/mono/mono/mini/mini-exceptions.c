@@ -2695,7 +2695,10 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 #ifdef ENABLE_NETCORE
 		mono_first_chance_exception_checked (MONO_HANDLE_NEW (MonoObject, obj), error);
-		mono_error_assert_ok (error); // Should we swallow any errors here instead?
+		if (!is_ok (error)) {
+			g_warning ("Invokeing the FirstChanceException event failed: %s", mono_error_get_message (error));
+			mono_error_cleanup (error);
+		}
 #endif
 
 		StackFrameInfo catch_frame;
