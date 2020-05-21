@@ -182,6 +182,8 @@ namespace Mono.Linker.Dataflow
 			IntrospectionExtensions_GetTypeInfo,
 			Type_GetTypeFromHandle,
 			Type_get_TypeHandle,
+			Object_GetType,
+			TypeDelegator_Ctor,
 
 			// Anything above this marker will require the method to be run through
 			// the reflection body scanner.
@@ -193,6 +195,7 @@ namespace Mono.Linker.Dataflow
 			Type_GetField,
 			Type_GetProperty,
 			Type_GetEvent,
+			Type_GetNestedType,
 			Expression_Call,
 			Expression_Field,
 			Expression_Property,
@@ -323,6 +326,13 @@ namespace Mono.Linker.Dataflow
 					&& calledMethod.HasThis
 					=> IntrinsicId.Type_GetEvent,
 
+				// System.Type.GetNestedType (string)
+				// System.Type.GetNestedType (string, BindingFlags)
+				"GetNestedType" when calledMethod.IsDeclaredOnType ("System", "Type")
+					&& calledMethod.HasParameterOfType (0, "System", "String")
+					&& calledMethod.HasThis
+					=> IntrinsicId.Type_GetNestedType,
+
 				// System.Type.GetProperty (string)
 				// System.Type.GetProperty (string, BindingFlags)
 				// System.Type.GetProperty (string, Type)
@@ -334,6 +344,14 @@ namespace Mono.Linker.Dataflow
 					&& calledMethod.HasParameterOfType (0, "System", "String")
 					&& calledMethod.HasThis
 					=> IntrinsicId.Type_GetProperty,
+
+				// static System.Object.GetType ()
+				"GetType" when calledMethod.IsDeclaredOnType ("System", "Object")
+					=> IntrinsicId.Object_GetType,
+
+				".ctor" when calledMethod.IsDeclaredOnType ("System.Reflection", "TypeDelegator")
+					&& calledMethod.HasParameterOfType (0, "System", "Type")
+					=> IntrinsicId.TypeDelegator_Ctor,
 
 				// static System.Activator.CreateInstance (System.Type type)
 				// static System.Activator.CreateInstance (System.Type type, bool nonPublic)
@@ -442,6 +460,12 @@ namespace Mono.Linker.Dataflow
 						// the dead-end reflection refactoring. The call doesn't do anything and we
 						// don't want to lose the annotation.
 						methodReturnValue = methodParams[0];
+					}
+					break;
+
+				case IntrinsicId.TypeDelegator_Ctor: {
+						// This is an identity function for analysis purposes
+						methodReturnValue = methodParams[1];
 					}
 					break;
 
@@ -622,6 +646,47 @@ namespace Mono.Linker.Dataflow
 					break;
 
 				//
+				// System.Object
+				// 
+				// GetType()
+				//
+				case IntrinsicId.Object_GetType: {
+						// We could do better here if we start tracking the static types of values within the method body.
+						// Right now, this can only analyze a couple cases for which we have static information for.
+						TypeDefinition staticType = null;
+						if (methodParams[0] is MethodParameterValue methodParam) {
+							if (callingMethodBody.Method.HasThis) {
+								if (methodParam.ParameterIndex == 0) {
+									staticType = callingMethodBody.Method.DeclaringType;
+								} else {
+									staticType = callingMethodBody.Method.Parameters[methodParam.ParameterIndex - 1].ParameterType.Resolve ();
+								}
+							} else {
+								staticType = callingMethodBody.Method.Parameters[methodParam.ParameterIndex].ParameterType.Resolve ();
+							}
+						} else if (methodParams[0] is LoadFieldValue loadedField) {
+							staticType = loadedField.Field.FieldType.Resolve ();
+						}
+
+						if (staticType != null) {
+							// We can only analyze the Object.GetType call with the precise type if the type is sealed.
+							// The type could be a descendant of the type in question, making us miss reflection.
+							bool canUse = staticType.IsSealed;
+
+							if (!canUse) {
+								// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
+								// on delegates anyway so reflection on something this approximation would miss is actually safe.
+								canUse = staticType.IsTypeOf ("System", "Delegate");
+							}
+
+							if (canUse) {
+								methodReturnValue = new SystemTypeValue (staticType);
+							}
+						}
+					}
+					break;
+
+				//
 				// System.Type
 				//
 				// GetType (string)
@@ -729,6 +794,45 @@ namespace Mono.Linker.Dataflow
 								// Otherwise fall back to the bitfield requirements
 								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
 							}
+						}
+					}
+					break;
+
+				//
+				// GetNestedType (string)
+				// GetNestedType (string, BindingFlags)
+				//
+				case IntrinsicId.Type_GetNestedType: {
+						reflectionContext.AnalyzingPattern ();
+
+						BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+						if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters[1].ParameterType.Name == "BindingFlags" && methodParams[2].AsConstInt () != null) {
+							bindingFlags = (BindingFlags) methodParams[2].AsConstInt ();
+						}
+
+						var requiredMemberKinds = GetDynamicallyAccessedMemberTypesFromBindingFlagsForNestedTypes (bindingFlags);
+						foreach (var value in methodParams[0].UniqueValues ()) {
+							if (value is SystemTypeValue systemTypeValue) {
+								foreach (var stringParam in methodParams[1].UniqueValues ()) {
+									if (stringParam is KnownStringValue stringValue) {
+										TypeDefinition[] matchingNestedTypes = MarkNestedTypesOnType (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+
+										if (matchingNestedTypes != null) {
+											for (int i = 0; i < matchingNestedTypes.Length; i++)
+												methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (matchingNestedTypes[i]));
+										}
+
+										reflectionContext.RecordHandledPattern ();
+									} else {
+										// Otherwise fall back to the bitfield requirements
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
+									}
+								}
+							} else {
+								// Otherwise fall back to the bitfield requirements
+								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
+							}
+
 						}
 					}
 					break;
@@ -1162,10 +1266,10 @@ namespace Mono.Linker.Dataflow
 				MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 
 			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicNestedTypes))
-				MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: t => !t.IsNestedPublic);
+				MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.NonPublic);
 
 			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.PublicNestedTypes))
-				MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: t => t.IsNestedPublic);
+				MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 
 			if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberTypes.NonPublicProperties))
 				MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.NonPublic);
@@ -1284,15 +1388,31 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		void MarkNestedTypesOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<TypeDefinition, bool> filter)
+		TypeDefinition[] MarkNestedTypesOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<TypeDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
 		{
+			var result = new ArrayBuilder<TypeDefinition> ();
+
 			foreach (var nestedType in type.NestedTypes) {
 				if (filter != null && !filter (nestedType))
 					continue;
 
+				if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public) {
+					if (!nestedType.IsNestedPublic)
+						continue;
+				}
+
+				if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic) {
+					if (nestedType.IsNestedPublic)
+						continue;
+				}
+
+				result.Add (nestedType);
+
 				var methodCalling = reflectionContext.SourceMethod;
 				reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkType (nestedType, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
 			}
+
+			return result.ToArray ();
 		}
 
 		void MarkPropertiesOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<PropertyDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
@@ -1500,6 +1620,10 @@ namespace Mono.Linker.Dataflow
 
 			return string.Join (" | ", results.Select (r => r.ToString ()));
 		}
+
+		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForNestedTypes (BindingFlags bindingFlags) =>
+			(bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicNestedTypes : DynamicallyAccessedMemberTypes.None) |
+			(bindingFlags.HasFlag (BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicNestedTypes : DynamicallyAccessedMemberTypes.None);
 
 		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (BindingFlags bindingFlags) =>
 			(bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicConstructors : DynamicallyAccessedMemberTypes.None) |
