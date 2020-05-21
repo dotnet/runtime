@@ -234,7 +234,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public ActionCallInstruction(MethodInfo target)
         {
-            _target = target.CreateDelegate<Action>();
+            _target = (Action)target.CreateDelegate(typeof(Action));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -257,7 +257,7 @@ namespace System.Linq.Expressions.Interpreter
         public ActionCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
-            _target = target.CreateDelegate<Action<T0>>();
+            _target = (Action<T0>)target.CreateDelegate(typeof(Action<T0>));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -296,7 +296,7 @@ namespace System.Linq.Expressions.Interpreter
         public ActionCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
-            _target = target.CreateDelegate<Action<T0, T1>>();
+            _target = (Action<T0, T1>)target.CreateDelegate(typeof(Action<T0, T1>));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -335,7 +335,7 @@ namespace System.Linq.Expressions.Interpreter
         public ActionCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
-            _target = target.CreateDelegate<Action<T0, T1, T2>>();
+            _target = (Action<T0, T1, T2>)target.CreateDelegate(typeof(Action<T0, T1, T2>));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -374,7 +374,7 @@ namespace System.Linq.Expressions.Interpreter
         public ActionCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
-            _target = target.CreateDelegate<Action<T0, T1, T2, T3>>();
+            _target = (Action<T0, T1, T2, T3>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3>));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -411,7 +411,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public FuncCallInstruction(MethodInfo target)
         {
-            _target = target.CreateDelegate<Func<TRet>>();
+            _target = (Func<TRet>)target.CreateDelegate(typeof(Func<TRet>));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -434,7 +434,7 @@ namespace System.Linq.Expressions.Interpreter
         public FuncCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
-            _target = target.CreateDelegate<Func<T0, TRet>>();
+            _target = (Func<T0, TRet>)target.CreateDelegate(typeof(Func<T0, TRet>));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -475,7 +475,7 @@ namespace System.Linq.Expressions.Interpreter
         public FuncCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
-            _target = target.CreateDelegate<Func<T0, T1, TRet>>();
+            _target = (Func<T0, T1, TRet>)target.CreateDelegate(typeof(Func<T0, T1, TRet>));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -516,7 +516,7 @@ namespace System.Linq.Expressions.Interpreter
         public FuncCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
-            _target = target.CreateDelegate<Func<T0, T1, T2, TRet>>();
+            _target = (Func<T0, T1, T2, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, TRet>));
         }
 
         public override int Run(InterpretedFrame frame)
@@ -557,7 +557,7 @@ namespace System.Linq.Expressions.Interpreter
         public FuncCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
-            _target = target.CreateDelegate<Func<T0, T1, T2, T3, TRet>>();
+            _target = (Func<T0, T1, T2, T3, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, TRet>));
         }
 
         public override int Run(InterpretedFrame frame)
