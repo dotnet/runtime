@@ -534,7 +534,7 @@ namespace System.Net.Sockets
                 {
                     Debug.Assert((socketEvent.Events & Interop.Sys.SocketEvents.Error) == 0, "HandleSyncEventsSpeculatively wipes out informatio about error");
 
-                    socketEvent.Context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocksSegment, batchedOperations, 0, ref currentBatchSize);
+                    socketEvent.Context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocksSegment, batchedOperations, ref currentBatchSize);
                 }
 
                 if (currentBatchSize == 0)
@@ -563,10 +563,11 @@ namespace System.Net.Sockets
                 ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(aioEventsSegment, currentBatchSize);
                 for (int i = 0; i < events.Length; i++)
                 {
-                    Interlocked.Exchange(ref batchedOperations[(int)events[i].Data], null)!.HandleBatchEvent(in events[i], inline: true);
+                    batchedOperations[(int)events[i].Data]!.HandleBatchEvent(in events[i], inline: true);
+                    batchedOperations[(int)events[i].Data] = null;
+                    ioControlBlocksSegment[i] = default;
                 }
 
-                ioControlBlocksSegment.Clear();
                 currentBatchSize = 0;
             }
 
