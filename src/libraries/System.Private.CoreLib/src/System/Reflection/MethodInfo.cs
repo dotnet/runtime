@@ -27,10 +27,10 @@ namespace System.Reflection
         public virtual Delegate CreateDelegate(Type delegateType, object? target) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
         /// <summary>Creates a delegate of the given type 'T' from this method.</summary>
-        public T CreateDelegate<T>() where T : System.Delegate => (T)CreateDelegate(typeof(T));
+        public T CreateDelegate<T>() where T : Delegate => (T)CreateDelegate(typeof(T));
 
         /// <summary>Creates a delegate of the given type 'T' with the specified target from this method.</summary>
-        public T CreateDelegate<T>(object? target) where T : System.Delegate => (T)CreateDelegate(typeof(T), target);
+        public T CreateDelegate<T>(object? target) where T : Delegate => (T)CreateDelegate(typeof(T), target);
 
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
