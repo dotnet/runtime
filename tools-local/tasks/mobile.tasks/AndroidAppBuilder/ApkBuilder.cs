@@ -97,11 +97,6 @@ public class ApkBuilder
             string fileName = Path.GetFileName(file);
             string extension = Path.GetExtension(file);
 
-            if (file.Any(s => s >= 128))
-            {
-                // non-ascii files/folders are not allowed
-                return false;
-            }
             if (extensionsToIgnore.Contains(extension))
             {
                 // ignore native files, those go to lib/%abi%
