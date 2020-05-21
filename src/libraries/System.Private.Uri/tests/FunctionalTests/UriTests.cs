@@ -759,5 +759,65 @@ namespace System.PrivateUri.Tests
             Assert.True(Monitor.TryEnter(uriString, TimeSpan.FromSeconds(10)));
             Assert.False(timedOut);
         }
+
+        public static IEnumerable<object[]> FilePathHandlesNonAscii_TestData()
+        {
+            if (PlatformDetection.IsNotWindows)
+            {
+                // Unix absolute file path
+                yield return new object[] { "/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
+                yield return new object[] { "/a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
+            }
+
+            // Absolute fie path
+            yield return new object[] { "file:///\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
+            yield return new object[] { "file:///a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
+
+            // DOS
+            yield return new object[] { "file://C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "file:///C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+
+            // UNC
+            yield return new object[] { "\\\\\u00FCri/", "file://\u00FCri/", "/", "file://\u00FCri/", "\\\\\u00FCri\\" };
+            yield return new object[] { "file://\u00FCri/", "file://\u00FCri/", "/", "file://\u00FCri/", "\\\\\u00FCri\\" };
+
+            // ? and # handling
+            if (PlatformDetection.IsWindows)
+            {
+                yield return new object[] { "file:///a/?b/c\u00FC/", "file:///a/?b/c\u00FC/", "/a/", "file:///a/?b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/#b/c\u00FC/", "file:///a/#b/c\u00FC/", "/a/", "file:///a/#b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/?b/#c/d\u00FC/", "file:///a/?b/#c/d\u00FC/", "/a/", "file:///a/?b/#c/d%C3%BC/", "/a/" };
+            }
+            else
+            {
+                yield return new object[] { "/a/?b/c\u00FC/", "file:///a/%3Fb/c\u00FC/", "/a/%3Fb/c%C3%BC/", "file:///a/%3Fb/c%C3%BC/", "/a/?b/c\u00FC/" };
+                yield return new object[] { "/a/#b/c\u00FC/", "file:///a/%23b/c\u00FC/", "/a/%23b/c%C3%BC/", "file:///a/%23b/c%C3%BC/", "/a/#b/c\u00FC/" };
+                yield return new object[] { "/a/?b/#c/d\u00FC/", "file:///a/%3Fb/%23c/d\u00FC/", "/a/%3Fb/%23c/d%C3%BC/", "file:///a/%3Fb/%23c/d%C3%BC/", "/a/?b/#c/d\u00FC/" };
+
+                yield return new object[] { "file:///a/?b/c\u00FC/", "file:///a/?b/c\u00FC/", "/a/", "file:///a/?b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/#b/c\u00FC/", "file:///a/#b/c\u00FC/", "/a/", "file:///a/#b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/?b/#c/d\u00FC/", "file:///a/?b/#c/d\u00FC/", "/a/", "file:///a/?b/#c/d%C3%BC/", "/a/" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FilePathHandlesNonAscii_TestData))]
+        public static void FilePathHandlesNonAscii(string uriString, string toString, string absolutePath, string absoluteUri, string localPath)
+        {
+            var uri = new Uri(uriString);
+
+            Assert.Equal(toString, uri.ToString());
+            Assert.Equal(absolutePath, uri.AbsolutePath);
+            Assert.Equal(absoluteUri, uri.AbsoluteUri);
+            Assert.Equal(localPath, uri.LocalPath);
+
+            var uri2 = new Uri(uri.AbsoluteUri);
+
+            Assert.Equal(toString, uri2.ToString());
+            Assert.Equal(absolutePath, uri2.AbsolutePath);
+            Assert.Equal(absoluteUri, uri2.AbsoluteUri);
+            Assert.Equal(localPath, uri2.LocalPath);
+        }
     }
 }

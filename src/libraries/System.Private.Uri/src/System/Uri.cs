@@ -3219,8 +3219,10 @@ namespace System
             //    so both '?' and '#' will work as delimiters
             if (buildIriStringFromPath)
             {
-                // Dos paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
-                if (IsDosPath)
+                DebugAssertInCtor();
+
+                // Dos/Unix paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
+                if (IsFile && !IsUncPath)
                 {
                     if (IsImplicitFile)
                     {
@@ -3263,19 +3265,7 @@ namespace System
                     origIdx = index == -1 ? _originalUnicodeString.Length : (index + origIdx);
                 }
 
-                // Correctly escape unescape
-                string escapedPath = EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Path);
-
-                // Normalize path
-                try
-                {
-                    _string += escapedPath;
-                }
-                catch (ArgumentException)
-                {
-                    UriFormatException e = GetException(ParsingError.BadFormat)!;
-                    throw e;
-                }
+                _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Path);
 
                 if (_string.Length > ushort.MaxValue)
                 {
@@ -3394,6 +3384,8 @@ namespace System
             //
             if (buildIriStringFromPath)
             {
+                DebugAssertInCtor();
+
                 int offset = origIdx;
 
                 if (origIdx < _originalUnicodeString.Length && _originalUnicodeString[origIdx] == '?')
@@ -3409,19 +3401,7 @@ namespace System
                         origIdx = _originalUnicodeString.Length;
                     }
 
-                    // Correctly escape unescape
-                    string escapedPath = EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Query);
-
-                    // Normalize path
-                    try
-                    {
-                        _string += escapedPath;
-                    }
-                    catch (ArgumentException)
-                    {
-                        UriFormatException e = GetException(ParsingError.BadFormat)!;
-                        throw e;
-                    }
+                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Query);
 
                     if (_string.Length > ushort.MaxValue)
                     {
@@ -3470,25 +3450,15 @@ namespace System
             //
             if (buildIriStringFromPath)
             {
+                DebugAssertInCtor();
+
                 int offset = origIdx;
 
                 if (origIdx < _originalUnicodeString.Length && _originalUnicodeString[origIdx] == '#')
                 {
                     origIdx = _originalUnicodeString.Length;
 
-                    // Correctly escape unescape
-                    string escapedPath = EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Fragment);
-
-                    // Normalize path
-                    try
-                    {
-                        _string += escapedPath;
-                    }
-                    catch (ArgumentException)
-                    {
-                        UriFormatException e = GetException(ParsingError.BadFormat)!;
-                        throw e;
-                    }
+                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Fragment);
 
                     if (_string.Length > ushort.MaxValue)
                     {
