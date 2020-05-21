@@ -38,7 +38,7 @@ The dotnet/runtime repository requires at least Visual Studio 2019 16.6 Preview 
 
 ## CMake
 
-- Install [CMake](http://www.cmake.org/download) for Windows.
+- Install [CMake](https://cmake.org/download) for Windows.
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.
   The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 

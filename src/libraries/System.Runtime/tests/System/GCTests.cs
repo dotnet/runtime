@@ -25,7 +25,7 @@ namespace System.Tests
 
             if (s_is32Bits)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("pressure", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
             }
         }
 

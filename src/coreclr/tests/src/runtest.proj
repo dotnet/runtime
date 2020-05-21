@@ -291,7 +291,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 if (infraEx != null)
                 {
-                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.Message)%3B
+                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.ToString())%3B
                 }
                 else
                 {
@@ -304,7 +304,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     catch (Exception ex)
                     {
                         testOutput.Add("Unable to read error file: " + errorFile)%3B
-                        testOutput.Add(ex.Message)%3B
+                        testOutput.Add(ex.ToString())%3B
                     }
 
                     testOutput.Add(string.Empty)%3B
@@ -319,7 +319,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     catch(Exception ex)
                     {
                         testOutput.Add("Unable to read output file: " + outputFile)%3B
-                        testOutput.Add(ex.Message)%3B
+                        testOutput.Add(ex.ToString())%3B
                     }
 
                     testOutput.Add("To run the test:")%3B

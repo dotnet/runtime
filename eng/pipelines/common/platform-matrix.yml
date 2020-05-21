@@ -348,6 +348,26 @@ jobs:
         managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# iOS x86
+
+- ${{ if containsValue(parameters.platforms, 'iOS_x86') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: iOS
+      archType: x86
+      platform: iOS_x86
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # iOS arm
 
 - ${{ if containsValue(parameters.platforms, 'iOS_arm') }}:

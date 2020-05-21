@@ -2003,13 +2003,11 @@ void RCW::AddMemoryPressure(GCPressureSize pressureSize)
     CONTRACTL_END;
 
     int pressure = s_rGCPressureTable[pressureSize];
-
     GCInterface::AddMemoryPressure(pressure);
 
     // Remember the pressure we set.
     m_Flags.m_GCPressure = pressureSize;
 }
-
 
 void RCW::RemoveMemoryPressure()
 {
@@ -2026,7 +2024,6 @@ void RCW::RemoveMemoryPressure()
         return;
 
     int pressure = s_rGCPressureTable[m_Flags.m_GCPressure];
-
     GCInterface::RemoveMemoryPressure(pressure);
 
     m_Flags.m_GCPressure = GCPressureSize_None;

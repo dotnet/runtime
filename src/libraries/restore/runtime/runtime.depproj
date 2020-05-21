@@ -1,8 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly/ios/android. -->
-    <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly' or '$(RuntimeOS)' == 'ios' or '$(RuntimeOS)' == 'android'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>

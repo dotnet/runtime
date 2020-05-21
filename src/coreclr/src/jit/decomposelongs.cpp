@@ -1362,7 +1362,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
         GenTreeCall::Use* argList = m_compiler->gtNewCallArgs(loOp1, hiOp1, shiftByOp);
 
-        GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
+        GenTreeCall* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
         if (shift->IsUnusedValue())
@@ -1370,11 +1370,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
             call->SetUnusedValue();
         }
 
-        GenTreeCall*    callNode    = call->AsCall();
-        ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
-        retTypeDesc->InitializeLongReturnType(m_compiler);
-
-        call = m_compiler->fgMorphArgs(callNode);
+        call = m_compiler->fgMorphArgs(call);
         Range().InsertAfter(shift, LIR::SeqTree(m_compiler, call));
 
         Range().Remove(shift);

@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
             if (contentInfo == null)
                 throw new ArgumentNullException(nameof(contentInfo));
             if (contentInfo.Content == null)
-                throw new ArgumentNullException("contentInfo.Content");
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "contentInfo.Content"), nameof(contentInfo));
 
             // Normalize the subject identifier type the same way as .NET Framework.
             // This value is only used in the zero-argument ComputeSignature overload,

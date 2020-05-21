@@ -1611,6 +1611,7 @@ public:
 #ifdef FEATURE_READYTORUN
 private:
     PTR_ReadyToRunInfo      m_pReadyToRunInfo;
+    PTR_NativeImage         m_pNativeImage;
 #endif
 
 private:
@@ -2890,17 +2891,17 @@ public:
 #endif
     }
 
-    NativeImage *GetCompositeNativeImage() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_pReadyToRunInfo != NULL ? m_pReadyToRunInfo->GetNativeImage() : NULL);
-    }
-
 #ifdef FEATURE_READYTORUN
     PTR_ReadyToRunInfo GetReadyToRunInfo() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pReadyToRunInfo;
+    }
+
+    PTR_NativeImage GetCompositeNativeImage() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pNativeImage;
     }
 #endif
 

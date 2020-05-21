@@ -639,9 +639,8 @@ namespace System.Drawing
                 {
                     try
                     {
-                        // We threw this way on NetFX
                         if (outputStream == null)
-                            throw new ArgumentNullException("dataStream");
+                            throw new ArgumentNullException(nameof(outputStream));
 
                         picture.SaveAsFile(new GPStream(outputStream, makeSeekable: false), -1, out int temp);
                     }

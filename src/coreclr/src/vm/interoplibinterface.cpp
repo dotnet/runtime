@@ -848,7 +848,7 @@ namespace InteropLibImports
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
-            GCInterface::NewAddMemoryPressure(memoryInBytes);
+            GCInterface::AddMemoryPressure(memoryInBytes);
         }
         END_EXTERNAL_ENTRYPOINT;
 
@@ -867,7 +867,7 @@ namespace InteropLibImports
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
-            GCInterface::NewRemoveMemoryPressure(memoryInBytes);
+            GCInterface::RemoveMemoryPressure(memoryInBytes);
         }
         END_EXTERNAL_ENTRYPOINT;
 

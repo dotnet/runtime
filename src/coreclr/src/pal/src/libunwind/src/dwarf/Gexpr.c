@@ -60,6 +60,8 @@ static const uint8_t operands[256] =
     [DW_OP_const4s] =           OPND1 (VAL32),
     [DW_OP_const8u] =           OPND1 (VAL64),
     [DW_OP_const8s] =           OPND1 (VAL64),
+    [DW_OP_constu]  =           OPND1 (ULEB128),
+    [DW_OP_consts]  =           OPND1 (SLEB128),
     [DW_OP_pick] =              OPND1 (VAL8),
     [DW_OP_plus_uconst] =       OPND1 (ULEB128),
     [DW_OP_skip] =              OPND1 (VAL16),
@@ -235,8 +237,8 @@ dwarf_stack_aligned(struct dwarf_cursor *c, unw_word_t cfa_addr,
 }
 
 HIDDEN int
-dwarf_eval_expr (struct dwarf_cursor *c, unw_word_t *addr, unw_word_t len,
-                 unw_word_t *valp, int *is_register)
+dwarf_eval_expr (struct dwarf_cursor *c, unw_word_t stack_val, unw_word_t *addr,
+                 unw_word_t len, unw_word_t *valp, int *is_register)
 {
   unw_word_t operand1 = 0, operand2 = 0, tmp1, tmp2 = 0, tmp3, end_addr;
   uint8_t opcode, operands_signature, u8;
@@ -285,10 +287,14 @@ do {                                            \
   end_addr = *addr + len;
   *is_register = 0;
 
-  Debug (14, "len=%lu, pushing cfa=0x%lx\n",
-         (unsigned long) len, (unsigned long) c->cfa);
+  Debug (14, "len=%lu, pushing initial value=0x%lx\n",
+         (unsigned long) len, (unsigned long) stack_val);
 
-  push (c->cfa);        /* push current CFA as required by DWARF spec */
+  /* The DWARF standard requires the current CFA to be pushed onto the stack */
+  /* before evaluating DW_CFA_expression and DW_CFA_val_expression programs. */
+  /* DW_CFA_def_cfa_expressions do not take an initial value, but we push on */
+  /* a dummy value to keep this logic consistent. */
+  push (stack_val);
 
   while (*addr < end_addr)
     {

@@ -16,11 +16,11 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(assemblyName))
             {
-                throw new ArgumentException(nameof(assemblyName));
+                throw new ArgumentException(null, nameof(assemblyName));
             }
             if (string.IsNullOrEmpty(path))
             {
-                throw new ArgumentException(nameof(path));
+                throw new ArgumentException(null, nameof(path));
             }
             _assemblyName = assemblyName;
             Path = path;
