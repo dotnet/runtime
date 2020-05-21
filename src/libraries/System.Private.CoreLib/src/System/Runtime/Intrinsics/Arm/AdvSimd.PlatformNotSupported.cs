@@ -7462,84 +7462,84 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VRSUBHN.I16 Dd, Qn, Qm
         ///   A64: RSUBHN Vd.8B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector64<byte> SubtractRoundedHighNarrowLower(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<byte> SubtractRoundedHighNarrowingLower(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vrsubhn_s32 (int32x4_t a, int32x4_t b)
         ///   A32: VRSUBHN.I32 Dd, Qn, Qm
         ///   A64: RSUBHN Vd.4H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector64<short> SubtractRoundedHighNarrowLower(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<short> SubtractRoundedHighNarrowingLower(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x2_t vrsubhn_s64 (int64x2_t a, int64x2_t b)
         ///   A32: VRSUBHN.I64 Dd, Qn, Qm
         ///   A64: RSUBHN Vd.2S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector64<int> SubtractRoundedHighNarrowLower(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<int> SubtractRoundedHighNarrowingLower(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vrsubhn_s16 (int16x8_t a, int16x8_t b)
         ///   A32: VRSUBHN.I16 Dd, Qn, Qm
         ///   A64: RSUBHN Vd.8B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector64<sbyte> SubtractRoundedHighNarrowLower(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> SubtractRoundedHighNarrowingLower(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vrsubhn_u32 (uint32x4_t a, uint32x4_t b)
         ///   A32: VRSUBHN.I32 Dd, Qn, Qm
         ///   A64: RSUBHN Vd.4H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector64<ushort> SubtractRoundedHighNarrowLower(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ushort> SubtractRoundedHighNarrowingLower(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vrsubhn_u64 (uint64x2_t a, uint64x2_t b)
         ///   A32: VRSUBHN.I64 Dd, Qn, Qm
         ///   A64: RSUBHN Vd.2S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector64<uint> SubtractRoundedHighNarrowLower(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<uint> SubtractRoundedHighNarrowingLower(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vrsubhn_high_u16 (uint8x8_t r, uint16x8_t a, uint16x8_t b)
         ///   A32: VRSUBHN.I16 Dd+1, Qn, Qm
         ///   A64: RSUBHN2 Vd.16B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector128<byte> SubtractRoundedHighNarrowUpper(Vector64<byte> lower, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> SubtractRoundedHighNarrowingUpper(Vector64<byte> lower, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vrsubhn_high_s32 (int16x4_t r, int32x4_t a, int32x4_t b)
         ///   A32: VRSUBHN.I32 Dd+1, Qn, Qm
         ///   A64: RSUBHN2 Vd.8H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<short> SubtractRoundedHighNarrowUpper(Vector64<short> lower, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> SubtractRoundedHighNarrowingUpper(Vector64<short> lower, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vrsubhn_high_s64 (int32x2_t r, int64x2_t a, int64x2_t b)
         ///   A32: VRSUBHN.I64 Dd+1, Qn, Qm
         ///   A64: RSUBHN2 Vd.4S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector128<int> SubtractRoundedHighNarrowUpper(Vector64<int> lower, Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> SubtractRoundedHighNarrowingUpper(Vector64<int> lower, Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x16_t vrsubhn_high_s16 (int8x8_t r, int16x8_t a, int16x8_t b)
         ///   A32: VRSUBHN.I16 Dd+1, Qn, Qm
         ///   A64: RSUBHN2 Vd.16B, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector128<sbyte> SubtractRoundedHighNarrowUpper(Vector64<sbyte> lower, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> SubtractRoundedHighNarrowingUpper(Vector64<sbyte> lower, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vrsubhn_high_u32 (uint16x4_t r, uint32x4_t a, uint32x4_t b)
         ///   A32: VRSUBHN.I32 Dd+1, Qn, Qm
         ///   A64: RSUBHN2 Vd.8H, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<ushort> SubtractRoundedHighNarrowUpper(Vector64<ushort> lower, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> SubtractRoundedHighNarrowingUpper(Vector64<ushort> lower, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vrsubhn_high_u64 (uint32x2_t r, uint64x2_t a, uint64x2_t b)
         ///   A32: VRSUBHN.I64 Dd+1, Qn, Qm
         ///   A64: RSUBHN2 Vd.4S, Vn.2D, Vm.2D
         /// </summary>
-        public static Vector128<uint> SubtractRoundedHighNarrowUpper(Vector64<uint> lower, Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> SubtractRoundedHighNarrowingUpper(Vector64<uint> lower, Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vqsub_u8 (uint8x8_t a, uint8x8_t b)
