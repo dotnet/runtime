@@ -341,41 +341,34 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<uint> CompareTest(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> DivideScalar(System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> DivideScalar(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<byte> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<short> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<int> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<float> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<float> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<sbyte> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<ushort> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<uint> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<byte> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<short> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<int> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<float> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<float> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<sbyte> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<ushort> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<uint> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<byte> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<short> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<int> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<float> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<sbyte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<float> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<ushort> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<uint> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<byte> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<short> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<int> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<float> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<sbyte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<float> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<ushort> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector64<uint> value, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateToVector64(byte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> DuplicateToVector64(short value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> DuplicateToVector64(int value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateToVector64(sbyte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<float> DuplicateToVector64(float value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateToVector64(ushort value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateToVector64(uint value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<byte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<short> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<int> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<sbyte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<float> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<ushort> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector128<uint> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<byte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<short> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<int> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<sbyte> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<float> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<ushort> value, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateSelectedScalarToVector64(System.Runtime.Intrinsics.Vector64<uint> value, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> DuplicateToVector128(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> DuplicateToVector128(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> DuplicateToVector128(int value) { throw null; }
@@ -383,6 +376,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector128<float> DuplicateToVector128(float value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> DuplicateToVector128(ushort value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> DuplicateToVector128(uint value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> DuplicateToVector64(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> DuplicateToVector64(short value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DuplicateToVector64(int value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> DuplicateToVector64(sbyte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> DuplicateToVector64(float value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> DuplicateToVector64(ushort value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DuplicateToVector64(uint value) { throw null; }
         public static byte Extract(System.Runtime.Intrinsics.Vector128<byte> vector, byte index) { throw null; }
         public static double Extract(System.Runtime.Intrinsics.Vector128<double> vector, byte index) { throw null; }
         public static short Extract(System.Runtime.Intrinsics.Vector128<short> vector, byte index) { throw null; }
@@ -732,6 +732,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector128<sbyte> PolynomialMultiply(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> PolynomialMultiply(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<sbyte> PolynomialMultiply(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> PolynomialMultiplyWideningLower(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> PolynomialMultiplyWideningLower(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> PolynomialMultiplyWideningUpper(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> PolynomialMultiplyWideningUpper(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> PopCount(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> PopCount(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> PopCount(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
@@ -1199,6 +1203,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector128<byte> Encrypt(System.Runtime.Intrinsics.Vector128<byte> value, System.Runtime.Intrinsics.Vector128<byte> roundKey) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> InverseMixColumns(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> MixColumns(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> PolynomialMultiplyWideningLower(System.Runtime.Intrinsics.Vector64<long> left, System.Runtime.Intrinsics.Vector64<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> PolynomialMultiplyWideningLower(System.Runtime.Intrinsics.Vector64<ulong> left, System.Runtime.Intrinsics.Vector64<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> PolynomialMultiplyWideningUpper(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> PolynomialMultiplyWideningUpper(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     public abstract partial class ArmBase
@@ -1209,7 +1217,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static int LeadingZeroCount(uint value) { throw null; }
         public static int ReverseElementBits(int value) { throw null; }
         public static uint ReverseElementBits(uint value) { throw null; }
-
         public abstract partial class Arm64
         {
             internal Arm64() { }
@@ -1218,7 +1225,7 @@ namespace System.Runtime.Intrinsics.Arm
             public static int LeadingSignCount(long value) { throw null; }
             public static int LeadingZeroCount(long value) { throw null; }
             public static int LeadingZeroCount(ulong value) { throw null; }
-            public static long ReverseElementBits(long  value) { throw null; }
+            public static long ReverseElementBits(long value) { throw null; }
             public static ulong ReverseElementBits(ulong value) { throw null; }
         }
     }
