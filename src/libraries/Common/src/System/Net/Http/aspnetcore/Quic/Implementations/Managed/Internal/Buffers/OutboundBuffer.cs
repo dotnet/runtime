@@ -145,6 +145,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 ReturnBuffer(_toBeQueuedChunk.Buffer);
                 _toBeQueuedChunk = default;
             }
+
             // other buffered data will be dropped from socket thread once RESET_STREAM is sent.
         }
 
@@ -314,42 +315,42 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="destination">Destination memory for the data.</param>
         internal void CheckOut(Span<byte> destination)
         {
-            if (destination.IsEmpty)
-                return;
-
-            if (StreamState == SendStreamState.Ready)
+            if (!destination.IsEmpty)
             {
-                lock (SyncObject)
+                if (StreamState == SendStreamState.Ready)
                 {
-                    if (StreamState == SendStreamState.Ready)
+                    lock (SyncObject)
                     {
-                        StreamState = SendStreamState.Send;
+                        if (StreamState == SendStreamState.Ready)
+                        {
+                            StreamState = SendStreamState.Send;
+                        }
                     }
                 }
+
+                DrainIncomingChunks();
+                Debug.Assert(destination.Length <= GetNextSendableRange().count);
+
+                long start = _pending.GetMin();
+                long end = start + destination.Length - 1;
+
+                _pending.Remove(start, end);
+                _checkedOut.Add(start, end);
+
+                int copied = 0;
+                int i = _chunks.FindIndex(c => c.StreamOffset + c.Length >= start);
+                while (copied < destination.Length)
+                {
+                    int inChunkStart = (int)(start - _chunks[i].StreamOffset) + copied;
+                    int inChunkCount = Math.Min(_chunks[i].Length - inChunkStart, destination.Length - copied);
+                    _chunks[i].Memory.Span.Slice(inChunkStart, inChunkCount).CopyTo(destination.Slice(copied));
+
+                    copied += inChunkCount;
+                    i++;
+                }
+
+                SentBytes = Math.Max(SentBytes, end + 1);
             }
-
-            DrainIncomingChunks();
-            Debug.Assert(destination.Length <= GetNextSendableRange().count);
-
-            long start = _pending.GetMin();
-            long end = start + destination.Length - 1;
-
-            _pending.Remove(start, end);
-            _checkedOut.Add(start, end);
-
-            int copied = 0;
-            int i = _chunks.FindIndex(c => c.StreamOffset + c.Length >= start);
-            while (copied < destination.Length)
-            {
-                int inChunkStart = (int)(start - _chunks[i].StreamOffset) + copied;
-                int inChunkCount = Math.Min(_chunks[i].Length - inChunkStart, destination.Length - copied);
-                _chunks[i].Memory.Span.Slice(inChunkStart, inChunkCount).CopyTo(destination.Slice(copied));
-
-                copied += inChunkCount;
-                i++;
-            }
-
-            SentBytes = Math.Max(SentBytes, end + 1);
 
             if (SizeKnown && StreamState == SendStreamState.Send && SentBytes == WrittenBytes)
             {
@@ -401,43 +402,41 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 FinAcked = true;
             }
 
-            if (count == 0)
+            if (count > 0)
             {
-                return;
-            }
+                long end = offset + count - 1;
 
-            long end = offset + count - 1;
+                Debug.Assert(_checkedOut.Includes(offset, end));
 
-            Debug.Assert(_checkedOut.Includes(offset, end));
+                _checkedOut.Remove(offset, end);
+                _acked.Add(offset, end);
 
-            _checkedOut.Remove(offset, end);
-            _acked.Add(offset, end);
-
-            if (_acked[0].Start != 0)
-            {
-                // do not discard data yet, as the very first data to be discared were not acked
-                return;
-            }
-
-            // release unneeded data
-            long processed = _acked[0].End + 1;
-
-            // index of first chunk with unsent data is the same as count of unneeded chunks that are before
-            int toRemove = _chunks.FindIndex(c => c.StreamOffset + c.Length > processed);
-            if (toRemove == -1)
-            {
-                toRemove = _chunks.Count;
-            }
-
-            for (int i = 0; i < toRemove; i++)
-            {
-                if (_chunks[i].Buffer != null)
+                if (_acked[0].Start != 0)
                 {
-                    ReturnBuffer(_chunks[i].Buffer!);
+                    // do not discard data yet, as the very first data to be discared were not acked
+                    return;
                 }
-            }
 
-            _chunks.RemoveRange(0, toRemove);
+                // release unneeded data
+                long processed = _acked[0].End + 1;
+
+                // index of first chunk with unsent data is the same as count of unneeded chunks that are before
+                int toRemove = _chunks.FindIndex(c => c.StreamOffset + c.Length > processed);
+                if (toRemove == -1)
+                {
+                    toRemove = _chunks.Count;
+                }
+
+                for (int i = 0; i < toRemove; i++)
+                {
+                    if (_chunks[i].Buffer != null)
+                    {
+                        ReturnBuffer(_chunks[i].Buffer!);
+                    }
+                }
+
+                _chunks.RemoveRange(0, toRemove);
+            }
 
             if (FinAcked && _acked[0].Length == WrittenBytes && StreamState == SendStreamState.DataSent)
             {

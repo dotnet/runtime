@@ -997,13 +997,9 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     var payloadDestination = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int)count, fin);
 
-                    if (count > 0)
-                    {
-                        // add the newly sent data to the flow control counter
-                        SentData += Math.Max(0, offset + count - buffer.SentBytes);
-
-                        buffer.CheckOut(payloadDestination);
-                    }
+                    // add the newly sent data to the flow control counter
+                    SentData += Math.Max(0, offset + count - buffer.SentBytes);
+                    buffer.CheckOut(payloadDestination);
 
                     // record sent data
                     context.SentPacket.StreamFrames.Add(
