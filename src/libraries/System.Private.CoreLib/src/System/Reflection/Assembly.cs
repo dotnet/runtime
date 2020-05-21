@@ -6,6 +6,7 @@ using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Configuration.Assemblies;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Security;
 using System.Runtime.CompilerServices;
@@ -106,8 +107,13 @@ namespace System.Reflection
 
         public virtual string EscapedCodeBase => AssemblyName.EscapeCodeBase(CodeBase);
 
+        [RequiresUnreferencedCode("Assembly.CreateInstance is not supported with trimming. Use Type.GetType instead.")]
         public object? CreateInstance(string typeName) => CreateInstance(typeName, false, BindingFlags.Public | BindingFlags.Instance, binder: null, args: null, culture: null, activationAttributes: null);
+
+        [RequiresUnreferencedCode("Assembly.CreateInstance is not supported with trimming. Use Type.GetType instead.")]
         public object? CreateInstance(string typeName, bool ignoreCase) => CreateInstance(typeName, ignoreCase, BindingFlags.Public | BindingFlags.Instance, binder: null, args: null, culture: null, activationAttributes: null);
+
+        [RequiresUnreferencedCode("Assembly.CreateInstance is not supported with trimming. Use Type.GetType instead.")]
         public virtual object? CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object[]? args, CultureInfo? culture, object[]? activationAttributes)
         {
             Type? t = GetType(typeName, throwOnError: false, ignoreCase: ignoreCase);
