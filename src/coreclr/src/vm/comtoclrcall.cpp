@@ -409,19 +409,15 @@ void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallW
 
     maskedFlags &= ~(enum_NativeR4Retval|enum_NativeR8Retval);
 
-    CONSISTENCY_CHECK(maskedFlags != (                      enum_IsWinRTCtor|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor               ));
+    CONSISTENCY_CHECK(maskedFlags != (                      enum_IsVirtual));
+    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsVirtual));
+    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke               ));
     switch (maskedFlags)
     {
     case enum_IsDelegateInvoke|enum_IsVirtual:
     case enum_IsDelegateInvoke: pObject = COMToCLRGetObjectAndTarget_Delegate(pWrap, &pManagedTarget); break;
     case enum_IsVirtual:        pObject = COMToCLRGetObjectAndTarget_Virtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
     case 0:                     pObject = COMToCLRGetObjectAndTarget_NonVirtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
-    case enum_IsWinRTCtor:
-        if (!COMToCLRGetObjectAndTarget_WinRTCtor(pThread, pRealMD, pCMD, &pManagedTarget, &pObject, pRetValOut))
-            return;
-        break;
     default:                    UNREACHABLE();
     }
 
@@ -488,25 +484,20 @@ void COMToCLRWorkerBody(
 
     DWORD mask = (
         enum_IsDelegateInvoke |
-        enum_IsWinRTCtor |
         enum_IsVirtual |
         enum_NativeR4Retval |
         enum_NativeR8Retval);
     DWORD maskedFlags = pCMD->GetFlags() & mask;
 
-    CONSISTENCY_CHECK(maskedFlags != (                      enum_IsWinRTCtor|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor               ));
+    CONSISTENCY_CHECK(maskedFlags != (                      enum_IsVirtual));
+    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsVirtual));
+    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke               ));
     switch (maskedFlags)
     {
     case enum_IsDelegateInvoke|enum_IsVirtual:
     case enum_IsDelegateInvoke: pObject = COMToCLRGetObjectAndTarget_Delegate(pWrap, &pManagedTarget); break;
     case enum_IsVirtual:        pObject = COMToCLRGetObjectAndTarget_Virtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
     case 0:                     pObject = COMToCLRGetObjectAndTarget_NonVirtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
-    case enum_IsWinRTCtor:
-        if (!COMToCLRGetObjectAndTarget_WinRTCtor(pThread, pRealMD, pCMD, &pManagedTarget, &pObject, pRetValOut))
-            return;
-        break;
     default:
         COMToCLRWorkerBody_Rare(pThread, pFrame, pWrap, pRealMD, pCMD, maskedFlags, pRetValOut);
         return;
@@ -825,7 +816,7 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     else
     {
         // if this represents a ctor or static, use the class method (i.e. the actual ctor or static)
-        MethodDesc *pMD = ((IsWinRTCtor() || IsWinRTStatic()) ? GetMethodDesc() : GetCallMethodDesc());
+        MethodDesc *pMD = GetCallMethodDesc();
 
         // first see if we have an NGENed stub
         pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
