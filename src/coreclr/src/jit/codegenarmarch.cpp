@@ -2524,8 +2524,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
                     retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, target->GetRegNum());
     }
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
-    else if (call->IsR2RRelativeIndir() || call->IsVirtualStubRelativeIndir())
+    else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
         // Generate a direct call to a non-virtual user defined or helper method
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
@@ -2545,7 +2544,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
                     retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, tmpReg);
     }
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
     else
     {
         // Generate a direct call to a non-virtual user defined or helper method
