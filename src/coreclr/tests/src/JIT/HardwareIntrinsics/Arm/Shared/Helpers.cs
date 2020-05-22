@@ -2983,34 +2983,109 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
 
-        private static ulong PolynomialMult(sbyte op1, sbyte op2)
+        private struct poly128_t
         {
-            ulong result = 0;
-            ulong extendedOp2 = (ulong)op2;
+            public ulong lo;
+            public ulong hi;
 
-            for (int i = 0; i < 8 * sizeof(sbyte); i++)
+            public static poly128_t operator ^(poly128_t op1, poly128_t op2)
             {
-                if ((op1 & (1 << i)) != 0)
+                op1.lo ^= op2.lo;
+                op1.hi ^= op2.hi;
+
+                return op1;
+            }
+
+            public static poly128_t operator <<(poly128_t val, int shiftAmount)
+            {
+                for (int i = 0; i < shiftAmount; i++)
                 {
-                    result ^= (extendedOp2 << i);
+                    val.hi <<= 1;
+
+                    if ((val.lo & 0x8000000000000000U) != 0)
+                    {
+                       val.hi |= 1;
+                    }
+
+                    val.lo <<= 1;
+                }
+
+                return val;
+            }
+
+            public static implicit operator poly128_t(ulong lo)
+            {
+                poly128_t result = new poly128_t();
+                result.lo = lo;
+                return result;
+            }
+
+            public static explicit operator poly128_t(long lo)
+            {
+                poly128_t result = new poly128_t();
+                result.lo = (ulong)lo;
+                return result;
+            }
+        }
+
+        private static ushort PolynomialMult(byte op1, byte op2)
+        {
+            ushort result = default(ushort);
+            ushort extendedOp2 = (ushort)op2;
+
+            for (int i = 0; i < 8 * sizeof(byte); i++)
+            {
+                if ((op1 & ((byte)1 << i)) != 0)
+                {
+                    result = (ushort)(result ^ (extendedOp2 << i));
                 }
             }
 
             return result;
         }
 
-        public static sbyte PolynomialMultiply(sbyte op1, sbyte op2) => (sbyte)PolynomialMult(op1, op2);
-
-        private static ulong PolynomialMult(byte op1, byte op2)
+        private static short PolynomialMult(sbyte op1, sbyte op2)
         {
-            ulong result = 0;
-            ulong extendedOp2 = (ulong)op2;
+            short result = default(short);
+            short extendedOp2 = (short)op2;
 
-            for (int i = 0; i < 8 * sizeof(byte); i++)
+            for (int i = 0; i < 8 * sizeof(sbyte); i++)
             {
-                if ((op1 & (1 << i)) != 0)
+                if ((op1 & ((sbyte)1 << i)) != 0)
                 {
-                    result ^= (extendedOp2 << i);
+                    result = (short)(result ^ (extendedOp2 << i));
+                }
+            }
+
+            return result;
+        }
+
+        private static poly128_t PolynomialMult(ulong op1, ulong op2)
+        {
+            poly128_t result = default(poly128_t);
+            poly128_t extendedOp2 = (poly128_t)op2;
+
+            for (int i = 0; i < 8 * sizeof(ulong); i++)
+            {
+                if ((op1 & ((ulong)1 << i)) != 0)
+                {
+                    result = (poly128_t)(result ^ (extendedOp2 << i));
+                }
+            }
+
+            return result;
+        }
+
+        private static poly128_t PolynomialMult(long op1, long op2)
+        {
+            poly128_t result = default(poly128_t);
+            poly128_t extendedOp2 = (poly128_t)op2;
+
+            for (int i = 0; i < 8 * sizeof(long); i++)
+            {
+                if ((op1 & ((long)1 << i)) != 0)
+                {
+                    result = (poly128_t)(result ^ (extendedOp2 << i));
                 }
             }
 
@@ -3018,6 +3093,24 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static byte PolynomialMultiply(byte op1, byte op2) => (byte)PolynomialMult(op1, op2);
+
+        public static ushort PolynomialMultiplyWidening(byte op1, byte op2) => PolynomialMult(op1, op2);
+
+        public static ushort PolynomialMultiplyWideningUpper(byte[] op1, byte[] op2, int i) => PolynomialMultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static sbyte PolynomialMultiply(sbyte op1, sbyte op2) => (sbyte)PolynomialMult(op1, op2);
+
+        public static short PolynomialMultiplyWidening(sbyte op1, sbyte op2) => PolynomialMult(op1, op2);
+
+        public static short PolynomialMultiplyWideningUpper(sbyte[] op1, sbyte[] op2, int i) => PolynomialMultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong PolynomialMultiplyWideningLo64(ulong op1, ulong op2) => PolynomialMult(op1, op2).lo;
+
+        public static long PolynomialMultiplyWideningLo64(long op1, long op2) => (long)PolynomialMult(op1, op2).lo;
+
+        public static ulong PolynomialMultiplyWideningHi64(ulong op1, ulong op2) => PolynomialMult(op1, op2).hi;
+
+        public static long PolynomialMultiplyWideningHi64(long op1, long op2) => (long)PolynomialMult(op1, op2).hi;
 
         public static bool ExtractAndNarrowHigh(int i, sbyte[] left,
                                                 short[] right,

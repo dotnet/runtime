@@ -742,6 +742,10 @@
     <Compile Include="PolynomialMultiply.Vector64.SByte.cs" />
     <Compile Include="PolynomialMultiply.Vector128.Byte.cs" />
     <Compile Include="PolynomialMultiply.Vector128.SByte.cs" />
+    <Compile Include="PolynomialMultiplyWideningLower.Vector64.Byte.cs" />
+    <Compile Include="PolynomialMultiplyWideningLower.Vector64.SByte.cs" />
+    <Compile Include="PolynomialMultiplyWideningUpper.Vector128.Byte.cs" />
+    <Compile Include="PolynomialMultiplyWideningUpper.Vector128.SByte.cs" />
     <Compile Include="PopCount.Vector64.Byte.cs" />
     <Compile Include="PopCount.Vector64.SByte.cs" />
     <Compile Include="PopCount.Vector128.Byte.cs" />
