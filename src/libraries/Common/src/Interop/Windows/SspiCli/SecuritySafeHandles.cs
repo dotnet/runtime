@@ -341,7 +341,7 @@ namespace System.Net.Security
 
             return result;
         }
-        private SafeCredentialReference(SafeFreeCredentials target) //: base()
+        private SafeCredentialReference(SafeFreeCredentials target)
         {
             // Bumps up the refcount on Target to signify that target handle is statically cached so
             // its dispose should be postponed
