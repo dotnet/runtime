@@ -95,6 +95,9 @@ The C# compiler respects a set of attributes that impact its flow analysis.  We 
 - **DO** annotate properties where a getter will never return `null` but a setter allows `null` as being non-nullable but also `[AllowNull]`.
 - **DO** annotate properties where a getter may return `null` but a setter throws for `null` as being nullable but also `[DisallowNull]`.
 - **DO** add `[NotNullWhen(true)]` to nullable arguments of `Try` methods that will definitively be non-`null` if the method returns `true`.  For example, if `Int32.TryParse(string? s)` returns `true`, `s` is known to not be `null`, and so the method should be `public static bool TryParse([NotNullWhen(true)] string? s, out int result)`.
+- **DO** add `[NotNullIfNotNull(string)]` if nullable ref argument will be non-`null` upon exit, when an other argument passed evaluated to non-`null`, pass that argument name as string. Example: `public void Exchange([NotNullIfNotNull("value")] ref object? location, object? value);`.
+- **DO** add `[return: NotNullIfNotNull(string)]` if a method would not return `null` in case an argument passed evaluated to non-`null`, pass that argument name as string. Example: `[return: NotNullIfNotNull("name")] public string? FormatName(string? name);`
+- **DO** add `[MemberNotNull(params string[])]` for a helper method which initializes member field(s), pass the field name. Example: `[MemberNotNull("_buffer")] private void InitializeBuffer()`
 
 ## Code Review Guidance
 
