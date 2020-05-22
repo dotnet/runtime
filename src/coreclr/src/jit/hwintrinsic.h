@@ -273,7 +273,7 @@ struct HWIntrinsicInfo
     static int lookupImmUpperBound(NamedIntrinsic intrinsic);
 #elif defined(TARGET_ARM64)
     static void lookupImmBounds(
-        NamedIntrinsic intrinsic, int simdSize, var_types baseType, int* lowerBoundIncl, int* upperBoundExcl);
+        NamedIntrinsic intrinsic, int simdSize, var_types baseType, int* lowerBound, int* upperBound);
 #else
 #error Unsupported platform
 #endif

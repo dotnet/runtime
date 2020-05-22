@@ -994,12 +994,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         // However, for a case when the operand can take only two possible values - zero and one
         // the codegen will use cbnz to do conditional branch.
 
-        int immLowerBoundIncl = 0;
-        int immUpperBoundExcl = 0;
+        int immLowerBound = 0;
+        int immUpperBound = 0;
 
         HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->gtSIMDSize, intrinsicTree->gtSIMDBaseType,
-                                         &immLowerBoundIncl, &immUpperBoundExcl);
-        mayNeedBranchTargetReg = (immLowerBoundIncl != 0) || (immUpperBoundExcl != 2);
+                                         &immLowerBound, &immUpperBound);
+        mayNeedBranchTargetReg = (immLowerBound != 0) || (immUpperBound != 1);
     }
 
     if (mayNeedBranchTargetReg)

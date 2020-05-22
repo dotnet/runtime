@@ -46,17 +46,17 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     {
         nonConstImmReg = REG_NA;
 
-        immValue          = (int)immOp->AsIntCon()->IconValue();
-        immLowerBoundIncl = immValue;
-        immUpperBoundExcl = immValue + 1;
+        immValue      = (int)immOp->AsIntCon()->IconValue();
+        immLowerBound = immValue;
+        immUpperBound = immValue;
     }
     else
     {
         HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType,
-                                         &immLowerBoundIncl, &immUpperBoundExcl);
+                                         &immLowerBound, &immUpperBound);
 
         nonConstImmReg = immOp->GetRegNum();
-        immValue       = immLowerBoundIncl;
+        immValue       = immLowerBound;
 
         if (TestImmOpZeroOrOne())
         {
@@ -113,11 +113,11 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitBegin()
                                           INS_OPTS_LSL);
 
             // If the lower bound is non zero we need to adjust the branch target value by subtracting
-            // (immLowerBoundIncl << 3).
-            if (immLowerBoundIncl != 0)
+            // (immLowerBound << 3).
+            if (immLowerBound != 0)
             {
                 GetEmitter()->emitIns_R_R_I(INS_sub, EA_8BYTE, branchTargetReg, branchTargetReg,
-                                            ((ssize_t)immLowerBoundIncl << 3));
+                                            ((ssize_t)immLowerBound << 3));
             }
 
             GetEmitter()->emitIns_R(INS_br, EA_8BYTE, branchTargetReg);
@@ -146,7 +146,7 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitCaseEnd()
 
     if (NonConstImmOp())
     {
-        const bool isLastCase = (immValue + 1 == immUpperBoundExcl);
+        const bool isLastCase = (immValue == immUpperBound);
 
         if (isLastCase)
         {
