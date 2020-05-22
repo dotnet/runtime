@@ -38,7 +38,7 @@ namespace System.Text.Json
         public ReferenceResolver ReferenceResolver;
 
         /// <summary>
-        /// Use preverse references semantics on serialization.
+        /// Preserve object references when serializing.
         /// </summary>
         public bool ShouldWritePreservedReferences;
 

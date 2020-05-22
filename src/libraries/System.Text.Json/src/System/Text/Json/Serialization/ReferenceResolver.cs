@@ -23,8 +23,8 @@ namespace System.Text.Json.Serialization
         /// This method gets called before a CLR object is written so we can decide whether to write $id and enumerate the rest of its properties or $ref and step into the next object.
         /// </summary>
         /// <param name="value">The value of the CLR reference type object to get an id for.</param>
-        /// <param name="alreadyExists">`true` if a reference to value already exists; otherwise, `false`.</param>
-        /// <returns>The reference id realated to the specified value.</returns>
+        /// <param name="alreadyExists">When this method returns, <see langword="true"/> if a reference to value already exists; otherwise, <see langword="false"/>.</param>
+        /// <returns>The reference id for the specified object.</returns>
         public abstract string GetReference(object value, out bool alreadyExists);
 
         /// <summary>

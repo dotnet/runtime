@@ -20,34 +20,33 @@ namespace System.Text.Json
             ref WriteStack state,
             Utf8JsonWriter writer)
         {
-            MetadataPropertyName metadataToWrite;
+            MetadataPropertyName writtenMetadataName;
 
             // If the jsonConverter supports immutable dictionaries or value types, don't write any metadata
             if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
             {
-                metadataToWrite = MetadataPropertyName.NoMetadata;
+                writtenMetadataName = MetadataPropertyName.NoMetadata;
             }
             else
             {
 
                 string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+                Debug.Assert(referenceId != null);
 
                 if (alreadyExists)
                 {
-                    Debug.Assert(referenceId != null);
                     writer.WriteString(s_metadataRef, referenceId);
                     writer.WriteEndObject();
-                    metadataToWrite = MetadataPropertyName.Ref;
+                    writtenMetadataName = MetadataPropertyName.Ref;
                 }
                 else
                 {
-                    Debug.Assert(referenceId != null);
                     writer.WriteString(s_metadataId, referenceId);
-                    metadataToWrite = MetadataPropertyName.Id;
+                    writtenMetadataName = MetadataPropertyName.Id;
                 }
             }
 
-            return metadataToWrite;
+            return writtenMetadataName;
         }
 
         internal static MetadataPropertyName WriteReferenceForCollection(
@@ -56,13 +55,13 @@ namespace System.Text.Json
             ref WriteStack state,
             Utf8JsonWriter writer)
         {
-            MetadataPropertyName metadataToWrite;
+            MetadataPropertyName writtenMetadataName;
 
             // If the jsonConverter supports immutable enumerables or value type collections, don't write any metadata
             if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
             {
                 writer.WriteStartArray();
-                metadataToWrite = MetadataPropertyName.NoMetadata;
+                writtenMetadataName = MetadataPropertyName.NoMetadata;
             }
             else
             {
@@ -74,7 +73,7 @@ namespace System.Text.Json
                     writer.WriteStartObject();
                     writer.WriteString(s_metadataRef, referenceId);
                     writer.WriteEndObject();
-                    metadataToWrite = MetadataPropertyName.Ref;
+                    writtenMetadataName = MetadataPropertyName.Ref;
                 }
                 else
                 {
@@ -82,11 +81,11 @@ namespace System.Text.Json
                     writer.WriteStartObject();
                     writer.WriteString(s_metadataId, referenceId);
                     writer.WriteStartArray(s_metadataValues);
-                    metadataToWrite = MetadataPropertyName.Id;
+                    writtenMetadataName = MetadataPropertyName.Id;
                 }
             }
 
-            return metadataToWrite;
+            return writtenMetadataName;
         }
     }
 }

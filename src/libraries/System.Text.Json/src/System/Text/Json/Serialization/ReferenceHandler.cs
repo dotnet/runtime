@@ -54,9 +54,9 @@ namespace System.Text.Json.Serialization
         public static ReferenceHandler Preserve { get; } = new ReferenceHandler<DefaultReferenceResolver>();
 
         /// <summary>
-        /// Returns the <see cref="ReferenceResolver "/> instance used for each serialization call.
+        /// Returns the <see cref="ReferenceResolver "/> used for each serialization call.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The resolver to use for serialization and deserialization.</returns>
         public abstract ReferenceResolver CreateResolver();
     }
 }

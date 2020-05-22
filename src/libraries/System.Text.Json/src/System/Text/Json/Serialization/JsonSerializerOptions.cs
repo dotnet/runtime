@@ -27,7 +27,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
-        private ReferenceHandler? _referenceHandler = ReferenceHandler.Default;
+        private ReferenceHandler? _referenceHandler = null;
         private JavaScriptEncoder? _encoder = null;
         private JsonIgnoreCondition _defaultIgnoreCondition;
 
@@ -404,7 +404,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Defines how references are treated when reading and writing JSON, this is convenient to deal with circularity.
+        /// Configures how object references are handled when reading and writing JSON.
         /// </summary>
         public ReferenceHandler? ReferenceHandler
         {

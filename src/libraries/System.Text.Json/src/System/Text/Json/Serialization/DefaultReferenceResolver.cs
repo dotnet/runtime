@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// The default ReferenceResolver implementation to handle duplicate object references.
     /// </summary>
-    internal class DefaultReferenceResolver : ReferenceResolver
+    internal sealed class DefaultReferenceResolver : ReferenceResolver
     {
         private uint _referenceCount;
         private readonly Dictionary<string, object>? _referenceIdToObjectMap;
@@ -18,9 +18,7 @@ namespace System.Text.Json.Serialization
 
         public DefaultReferenceResolver()
         {
-            _referenceCount = default;
-
-            // Comparer used here to always do a Reference Equality comparison on serialization which is where we use the objects as the TKey in our dictionary.
+            // Comparer used here does a reference equality comparison on serialization, which is where we use the objects as the dictionary keys.
             _objectToReferenceIdMap = new Dictionary<object, string>(ReferenceEqualityComparer.Instance);
             _referenceIdToObjectMap = new Dictionary<string, object>();
         }
