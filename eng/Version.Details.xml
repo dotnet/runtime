@@ -174,9 +174,9 @@
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>5780105febb3018552f797fee40f7d60edcd594b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.Tests.Runners" Version="1.0.0-prerelease.20270.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.Tests.Runners" Version="1.0.0-prerelease.20271.3">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>66753a0cbf15c1b911ee2d05676c377f0230f24e</Sha>
+      <Sha>53d1b33f3562a166752b9ab24c8c69ef22b91bdd</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
