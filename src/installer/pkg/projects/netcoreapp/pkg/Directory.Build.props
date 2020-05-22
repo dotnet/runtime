@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <!-- UNIX -->
-    <SingleFileHostIncludeFilename Include="libSystem.Globalization.Native.so" />
     <SingleFileHostIncludeFilename Include="libSystem.IO.Compression.Native.so" />
     <SingleFileHostIncludeFilename Include="libSystem.IO.Ports.Native.so" />
     <SingleFileHostIncludeFilename Include="libSystem.Native.so" />
@@ -24,7 +23,6 @@
     <SingleFileHostIncludeFilename Include="libcoreclr.so" />
 
     <!-- OSX -->
-    <SingleFileHostIncludeFilename Include="libSystem.Globalization.Native.dylib" />
     <SingleFileHostIncludeFilename Include="libSystem.IO.Compression.Native.dylib" />
     <SingleFileHostIncludeFilename Include="libSystem.IO.Ports.Native.dylib" />
     <SingleFileHostIncludeFilename Include="libSystem.Native.dylib" />
