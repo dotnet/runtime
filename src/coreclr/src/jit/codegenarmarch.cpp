@@ -2326,10 +2326,6 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
-    if (this->compiler->compMethodID == 749)
-    {
-        printf("genCallInstruction : %s\n", this->compiler->info.compMethodName);
-    }
     gtCallTypes callType = (gtCallTypes)call->gtCallType;
 
     IL_OFFSETX ilOffset = BAD_IL_OFFSET;
