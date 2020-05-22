@@ -175,7 +175,7 @@
         $(LibrariesAllBinArtifactsPath)*.dll;
         $(LibrariesAllBinArtifactsPath)*.pdb"
         IsNative="" />
-      <LibrariesRuntimeFiles Include="
+      <LibrariesRuntimeFiles Condition="'$(TargetsMobile)' != 'true'" Include="
         $(LibrariesNativeArtifactsPath)*.dll;
         $(LibrariesNativeArtifactsPath)*.dylib;
         $(LibrariesNativeArtifactsPath)*.a;
@@ -183,6 +183,10 @@
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
         $(LibrariesNativeArtifactsPath)*.pdb"
+        IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)**\*.*" 
         IsNative="true" />
     </ItemGroup>
 
