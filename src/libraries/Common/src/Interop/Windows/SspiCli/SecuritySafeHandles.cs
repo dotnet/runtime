@@ -5,9 +5,9 @@
 #nullable enable
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
@@ -323,14 +323,8 @@ namespace System.Net.Security
     //
     // This is a class holding a Credential handle reference, used for static handles cache
     //
-#if DEBUG
-    internal sealed class SafeCredentialReference : DebugCriticalHandleMinusOneIsInvalid
+    internal sealed class SafeCredentialReference : CriticalFinalizerObject, IDisposable
     {
-#else
-    internal sealed class SafeCredentialReference : CriticalHandleMinusOneIsInvalid
-    {
-#endif
-
         //
         // Static cache will return the target handle if found the reference in the table.
         //
@@ -338,30 +332,45 @@ namespace System.Net.Security
 
         internal static SafeCredentialReference? CreateReference(SafeFreeCredentials target)
         {
-            SafeCredentialReference result = new SafeCredentialReference(target);
-            if (result.IsInvalid)
+            if (target.IsInvalid || target.IsClosed)
             {
                 return null;
             }
 
+            SafeCredentialReference result = new SafeCredentialReference(target);
+
             return result;
         }
-        private SafeCredentialReference(SafeFreeCredentials target) : base()
+        private SafeCredentialReference(SafeFreeCredentials target) //: base()
         {
             // Bumps up the refcount on Target to signify that target handle is statically cached so
             // its dispose should be postponed
             bool ignore = false;
             target.DangerousAddRef(ref ignore);
             Target = target;
-            SetHandle(new IntPtr(0));   // make this handle valid
         }
 
-        protected override bool ReleaseHandle()
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        public void Dispose(bool disposing)
         {
             SafeFreeCredentials target = Target;
             target?.DangerousRelease();
             Target = null!;
-            return true;
+        }
+
+        ~SafeCredentialReference()
+        {
+            Dispose(false);
+
+#if DEBUG
+            Debug.Fail("Finalizer should never be called. The SafeCredentialReference should be always disposed manually.");
+            throw NotImplemented.ByDesign;
+#endif
         }
     }
 
@@ -762,11 +771,11 @@ namespace System.Net.Security
                         }
                         else
                         {
-                             outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;
-                             outSecBuffer.type = outUnmanagedBuffer[0].BufferType;
-                             outSecBuffer.token = outUnmanagedBuffer[0].cbBuffer > 0 ?
-                                 new Span<byte>((byte*)outUnmanagedBuffer[0].pvBuffer, outUnmanagedBuffer[0].cbBuffer).ToArray() :
-                                 null;
+                            outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;
+                            outSecBuffer.type = outUnmanagedBuffer[0].BufferType;
+                            outSecBuffer.token = outUnmanagedBuffer[0].cbBuffer > 0 ?
+                                new Span<byte>((byte*)outUnmanagedBuffer[0].pvBuffer, outUnmanagedBuffer[0].cbBuffer).ToArray() :
+                                null;
                         }
                     }
                 }

@@ -34,7 +34,7 @@ namespace System.Net.Security
                     newRef = Interlocked.Exchange<SafeCredentialReference>(ref s_cacheSlots[index], newRef);
                 }
 
-                newRef?.Dispose();
+                newRef.Dispose();
             }
             catch (Exception e)
             {
