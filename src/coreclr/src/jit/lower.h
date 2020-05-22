@@ -460,6 +460,35 @@ private:
     }
 #endif // FEATURE_HW_INTRINSICS
 
+    //----------------------------------------------------------------------------------------------
+    // TryRemoveCastIfPresent: Removes op it is a cast operation and the size of its input is at
+    //                         least the size of expectedType
+    //
+    //  Arguments:
+    //     expectedType - The expected type of the cast operation input if it is to be removed
+    //     op           - The tree to remove if it is a cast op whose input is at least the size of expectedType
+    //
+    //  Returns:
+    //     op if it was not a cast node or if its input is not at least the size of expected type;
+    //     Otherwise, it returns the underlying operation that was being casted
+    GenTree* TryRemoveCastIfPresent(var_types expectedType, GenTree* op)
+    {
+        if (!op->OperIs(GT_CAST))
+        {
+            return op;
+        }
+
+        GenTree* castOp = op->AsCast()->CastOp();
+
+        if (genTypeSize(castOp->gtType) >= genTypeSize(expectedType))
+        {
+            BlockRange().Remove(op);
+            return castOp;
+        }
+
+        return op;
+    }
+
     // Utility functions
 public:
     static bool IndirsAreEquivalent(GenTree* pTreeA, GenTree* pTreeB);
