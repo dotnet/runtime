@@ -4529,11 +4529,16 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
         else
         {
+
+            bool shouldOptimizeVirtualStubCall = false;
 #if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
-            result = nullptr;
-#else
-            result = Ind(addr);
-#endif // defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+            shouldOptimizeVirtualStubCall = !call->IsTailCall();
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+
+            if (!shouldOptimizeVirtualStubCall)
+            {
+                result = Ind(addr);
+            }
         }
     }
 

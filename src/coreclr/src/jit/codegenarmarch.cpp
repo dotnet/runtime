@@ -2527,6 +2527,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
                ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
         assert(call->gtControlExpr == nullptr);
+        assert(!call->IsTailCall());
 
         regNumber tmpReg = call->GetSingleTempReg();
         GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, REG_R2R_INDIRECT_PARAM);
