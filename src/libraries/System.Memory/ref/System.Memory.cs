@@ -169,6 +169,9 @@ namespace System
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items) { }
         public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items, System.Comparison<TKey> comparison) { }
+        public static SpanSplitEnumerator<char> Split(this ReadOnlySpan<char> span) { }
+        public static SpanSplitEnumerator<char> Split(this ReadOnlySpan<char> span, char separator) { }
+        public static SpanSplitEnumerator<char> Split(this ReadOnlySpan<char> span, string separator) { }
         public static bool StartsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value)
 #nullable disable
