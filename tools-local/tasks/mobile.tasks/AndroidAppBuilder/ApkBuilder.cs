@@ -80,6 +80,7 @@ public class ApkBuilder
         Directory.CreateDirectory(OutputDir);
         Directory.CreateDirectory(Path.Combine(OutputDir, "bin"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
+        Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         
         var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
@@ -89,17 +90,13 @@ public class ApkBuilder
             extensionsToIgnore.Add(".dbg");
         }
 
-        // Copy AppDir to OutputDir/assets (ignore native files)
-        Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets"), file =>
+        // Copy AppDir to OutputDir/assets-tozip (ignore native files)
+        // these files then will be zipped and copied to apk/assets/assets.zip
+        Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
         {
             string fileName = Path.GetFileName(file);
             string extension = Path.GetExtension(file);
 
-            if (file.Any(s => s >= 128))
-            {
-                // non-ascii files/folders are not allowed
-                return false;
-            }
             if (extensionsToIgnore.Contains(extension))
             {
                 // ignore native files, those go to lib/%abi%
@@ -124,6 +121,10 @@ public class ApkBuilder
         string keytool = "keytool";
         string javac = "javac";
         string cmake = "cmake";
+        string zip = "zip";
+
+        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-r ../assets/assets.zip .");
+        Directory.Delete(Path.Combine(OutputDir, "assets-tozip"), true);
         
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
