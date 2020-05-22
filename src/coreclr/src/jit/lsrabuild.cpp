@@ -1507,8 +1507,7 @@ int LinearScan::ComputeOperandDstCount(GenTree* operand)
         // Stores and void-typed operands may be encountered when processing call nodes, which contain
         // pointers to argument setup stores.
         assert(operand->OperIsStore() || operand->OperIsBlkOp() || operand->OperIsPutArgStk() ||
-               operand->OperIsCompare() || operand->OperIs(GT_CMP) || operand->IsSIMDEqualityOrInequality() ||
-               operand->TypeGet() == TYP_VOID);
+               operand->OperIsCompare() || operand->OperIs(GT_CMP) || operand->TypeGet() == TYP_VOID);
         return 0;
     }
 }

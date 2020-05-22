@@ -6995,6 +6995,34 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> PolynomialMultiply(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// poly16x8_t vmull_p8 (poly8x8_t a, poly8x8_t b)
+        ///   A32: VMULL.P8 Qd, Dn, Dm
+        ///   A64: PMULL Vd.16B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> PolynomialMultiplyWideningLower(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// poly16x8_t vmull_p8 (poly8x8_t a, poly8x8_t b)
+        ///   A32: VMULL.P8 Qd, Dn, Dm
+        ///   A64: PMULL Vd.16B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<short> PolynomialMultiplyWideningLower(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// poly16x8_t vmull_high_p8 (poly8x16_t a, poly8x16_t b)
+        ///   A32: VMULL.P8 Qd, Dn+1, Dm+1
+        ///   A64: PMULL2 Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> PolynomialMultiplyWideningUpper(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// poly16x8_t vmull_high_p8 (poly8x16_t a, poly8x16_t b)
+        ///   A32: VMULL.P8 Qd, Dn+1, Dm+1
+        ///   A64: PMULL2 Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<short> PolynomialMultiplyWideningUpper(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vcnt_u8 (uint8x8_t a)
         ///   A32: VCNT.I8 Dd, Dm
         ///   A64: CNT Vd.8B, Vn.8B

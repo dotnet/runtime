@@ -54,7 +54,7 @@ namespace System.Drawing.Imaging
 
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
-            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
             int status = Gdip.GdipCreateMetafileFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, out nativeImage);
 
@@ -101,7 +101,7 @@ namespace System.Drawing.Imaging
 
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
-            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
             int status = Gdip.GdipRecordMetafileFromDelegateI_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, referenceHdc,
                 type, ref frameRect, frameUnit, description, out nativeImage);
@@ -120,7 +120,7 @@ namespace System.Drawing.Imaging
 
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
-            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
             int status = Gdip.GdipRecordMetafileFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, referenceHdc,
                 type, ref frameRect, frameUnit, description, out nativeImage);
@@ -189,7 +189,7 @@ namespace System.Drawing.Imaging
             {
                 // With libgdiplus we use a custom API for this, because there's no easy way
                 // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
-                GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+                GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
                 int status = Gdip.GdipGetMetafileHeaderFromDelegate_linux(sh.GetHeaderDelegate,
                     sh.GetBytesDelegate, sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate,
                     sh.SizeDelegate, header);

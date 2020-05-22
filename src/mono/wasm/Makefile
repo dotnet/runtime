@@ -44,7 +44,7 @@ emsdk_env.sh: | provision-wasm
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
-BUILDS_BIN_DIR=$(MONO_BIN_DIR)/wasm/runtimes
+BUILDS_BIN_DIR=$(SYS_NATIVE_DIR)/wasm/runtimes
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
 MONO_LIBS = \
 	$(MONO_BIN_DIR)/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} \

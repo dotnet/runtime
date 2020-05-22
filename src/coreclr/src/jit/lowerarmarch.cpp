@@ -553,6 +553,20 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return;
         }
 
+        case NI_Vector64_op_Equality:
+        case NI_Vector128_op_Equality:
+        {
+            LowerHWIntrinsicCmpOp(node, GT_EQ);
+            return;
+        }
+
+        case NI_Vector64_op_Inequality:
+        case NI_Vector128_op_Inequality:
+        {
+            LowerHWIntrinsicCmpOp(node, GT_NE);
+            return;
+        }
+
         default:
             break;
     }
@@ -623,6 +637,122 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
     }
 
     return false;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCmpOp: Lowers a Vector128 or Vector256 comparison intrinsic
+//
+//  Arguments:
+//     node  - The hardware intrinsic node.
+//     cmpOp - The comparison operation, currently must be GT_EQ or GT_NE
+//
+void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
+{
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    var_types      baseType    = node->gtSIMDBaseType;
+    unsigned       simdSize    = node->gtSIMDSize;
+    var_types      simdType    = Compiler::getSIMDTypeForSize(simdSize);
+
+    assert((intrinsicId == NI_Vector64_op_Equality) || (intrinsicId == NI_Vector64_op_Inequality) ||
+           (intrinsicId == NI_Vector128_op_Equality) || (intrinsicId == NI_Vector128_op_Inequality));
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(baseType));
+    assert(simdSize != 0);
+    assert(node->gtType == TYP_BOOL);
+    assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
+
+    // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
+    //          /--*  op2  simd
+    //          /--*  op1  simd
+    //   node = *  HWINTRINSIC   simd   T op_Equality
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    NamedIntrinsic cmpIntrinsic;
+
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            cmpIntrinsic = NI_AdvSimd_CompareEqual;
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            cmpIntrinsic = NI_AdvSimd_Arm64_CompareEqual;
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, cmpIntrinsic, baseType, simdSize);
+    BlockRange().InsertBefore(node, cmp);
+    LowerNode(cmp);
+
+    if ((baseType == TYP_FLOAT) && (simdSize == 12))
+    {
+        // For TYP_SIMD12 we need to clear the upper bits and can't assume their value
+
+        GenTree* idxCns = comp->gtNewIconNode(3, TYP_INT);
+        BlockRange().InsertAfter(cmp, idxCns);
+
+        GenTree* insCns = comp->gtNewIconNode(cmpOp == GT_EQ ? -1 : 0, TYP_INT);
+        BlockRange().InsertAfter(idxCns, insCns);
+
+        GenTree* tmp =
+            comp->gtNewSimdAsHWIntrinsicNode(simdType, cmp, idxCns, insCns, NI_AdvSimd_Insert, TYP_INT, simdSize);
+        BlockRange().InsertAfter(insCns, tmp);
+        LowerNode(tmp);
+
+        cmp = tmp;
+    }
+
+    GenTree* msk = comp->gtNewSimdHWIntrinsicNode(simdType, cmp, NI_AdvSimd_Arm64_MinAcross, TYP_UBYTE, simdSize);
+    BlockRange().InsertAfter(cmp, msk);
+    LowerNode(msk);
+
+    GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
+    BlockRange().InsertAfter(msk, zroCns);
+
+    GenTree* val = comp->gtNewSimdAsHWIntrinsicNode(TYP_UBYTE, msk, zroCns, NI_AdvSimd_Extract, TYP_UBYTE, simdSize);
+    BlockRange().InsertAfter(zroCns, val);
+    LowerNode(val);
+
+    zroCns = comp->gtNewIconNode(0, TYP_INT);
+    BlockRange().InsertAfter(val, zroCns);
+
+    node->ChangeOper(cmpOp);
+
+    node->gtType = TYP_INT;
+    node->gtOp1  = val;
+    node->gtOp2  = zroCns;
+
+    // The CompareEqual will set (condition is true) or clear (condition is false) all bits of the respective element
+    // The MinAcross then ensures we get either all bits set (all conditions are true) or clear (any condition is false)
+    // So, we need to invert the condition from the operation since we compare against zero
+
+    GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::NE : GenCondition::EQ;
+    GenTree*     cc     = LowerNodeCC(node, cmpCnd);
+
+    node->gtType = TYP_VOID;
+    node->ClearUnusedValue();
+
+    LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1189,11 +1319,6 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
             CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
-            break;
-
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
-            // TODO-ARM64-CQ Support containing 0
             break;
 
         case SIMDIntrinsicGetItem:

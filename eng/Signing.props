@@ -71,7 +71,6 @@
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/nethost.dll" />
 
     <!-- Sign managed libraries in installer subset. -->
-    <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.DotNet.PlatformAbstractions/**/*.dll" />
     <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.NET.HostModel/**/*.dll" />
   </ItemGroup>
 

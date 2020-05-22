@@ -8124,6 +8124,8 @@ namespace System.Reflection
         public abstract System.Reflection.ICustomAttributeProvider ReturnTypeCustomAttributes { get; }
         public virtual System.Delegate CreateDelegate(System.Type delegateType) { throw null; }
         public virtual System.Delegate CreateDelegate(System.Type delegateType, object? target) { throw null; }
+        public T CreateDelegate<T>() where T : System.Delegate { throw null; }
+        public T CreateDelegate<T>(object? target) where T : System.Delegate { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public abstract System.Reflection.MethodInfo GetBaseDefinition();
         public override System.Type[] GetGenericArguments() { throw null; }
