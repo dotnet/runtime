@@ -4205,8 +4205,8 @@ struct GenTreeCall final : public GenTree
     bool IsR2ROrVirtualStubRelativeIndir()
     {
 #if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
-        return (IsR2RRelativeIndir() ||
-                ((gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB) && (IsVirtualStubRelativeIndir()));
+        bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
+        return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
 #else
         return false;
 #endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
