@@ -175,6 +175,17 @@ const StdInterfaceDesc<15> g_IDispatchEx =
     }
 };
 
+// global IAgileObject vtable
+const StdInterfaceDesc<3> g_IAgileObject =
+{
+    enum_IAgileObject,
+    {
+        (UINT_PTR*)Unknown_QueryInterface,
+        (UINT_PTR*)Unknown_AddRefSpecial,
+        (UINT_PTR*)Unknown_ReleaseSpecial
+    }
+};
+
 // Generic helper to check if AppDomain matches and perform a DoCallBack otherwise
 inline BOOL IsCurrentDomainValid(ComCallWrapper* pWrap, Thread* pThread)
 {

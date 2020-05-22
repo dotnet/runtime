@@ -80,6 +80,7 @@ const SLOT * const g_rgStdVtables[] =
     (SLOT*)&g_IConnectionPointContainer.m_vtable,
     (SLOT*)&g_IObjectSafety.m_vtable,
     (SLOT*)&g_IDispatchEx.m_vtable,
+    (SLOT*)&g_IAgileObject.m_vtable
 };
 
 //------------------------------------------------------------------------------------------

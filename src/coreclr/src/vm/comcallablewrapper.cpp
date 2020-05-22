@@ -1494,6 +1494,7 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
     // IID_IConnectionPointContainer   B196B284-BAB4-101A-B69C-00AA00341D07
     // IID_IObjectSafety               CB5BDC81-93C1-11cf-8F20-00805F2CD064
     // IID_ISupportErrorInfo           DF0B3D60-548F-101B-8E65-08002B2BD119
+    // IID_IAgileObject                94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90
 
     // Switch on the first DWORD since they're all (currently) unique.
     switch (riid.Data1)
@@ -1504,6 +1505,23 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
     HANDLE_IID_INLINE(enum_ISupportsErrorInfo       ,0xDF0B3D60,0x548F,0x101B,0x8E,0x65,0x08,0x00,0x2B,0x2B,0xD1,0x19);
     HANDLE_IID_INLINE(enum_IProvideClassInfo        ,0xB196B283,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07);  // hit4, !=
     HANDLE_IID_INLINE(enum_IConnectionPointContainer,0xB196B284,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07);  // b196b284 101abab4 aa009cb6 071d3400
+    CASE_IID_INLINE(  enum_IAgileObject            ,0x94ea2b94,0xe9cc,0x49e0,0xc0,0xff,0xee,0x64,0xca,0x8f,0x5b,0x90)
+        {
+            // Don't implement IAgileObject if we are aggregated, if the object explicitly implements IMarshal, or if its ICustomQI returns
+            // Failed or Handled for IID_IMarshal (compat).
+            if (!IsAggregated())
+            {
+                ComCallWrapperTemplate *pTemplate = GetComCallWrapperTemplate();
+                if (!pTemplate->ImplementsIMarshal())
+                {
+                    if (!pTemplate->SupportsICustomQueryInterface() || !CustomQIRespondsToIMarshal())
+                    {
+                        RETURN QIStandardInterface(enum_IAgileObject);
+                    }
+                }
+            }
+        }
+        break;
     }
 
     RETURN NULL;

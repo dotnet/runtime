@@ -52,6 +52,7 @@ enum Enum_StdInterfaces
     enum_IConnectionPointContainer,
     enum_IObjectSafety,
     enum_IDispatchEx,
+    enum_IAgileObject,
     // add your favorite std interface here
     enum_LastStdVtable,
 
@@ -100,6 +101,7 @@ extern const StdInterfaceDesc<8>  g_IErrorInfo;
 extern const StdInterfaceDesc<5>  g_IConnectionPointContainer;
 extern const StdInterfaceDesc<5>  g_IObjectSafety;
 extern const StdInterfaceDesc<15> g_IDispatchEx;
+extern const StdInterfaceDesc<3>  g_IAgileObject;
 
 // enum class types
 enum ComClassType
