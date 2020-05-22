@@ -14,7 +14,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         internal const int MaximumLength = 20;
 
-        public static readonly Comparer<ConnectionId> SequenceNumberComparer = Comparer<ConnectionId>.Create((l,r) => l.SequenceNumber.CompareTo(r.SequenceNumber));
+        public static readonly Comparer<ConnectionId> SequenceNumberComparer = Comparer<ConnectionId>.Create((l, r) => l.SequenceNumber.CompareTo(r.SequenceNumber));
 
         private static Random _random = new Random(41);
 

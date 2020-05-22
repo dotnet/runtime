@@ -22,7 +22,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
 
         private static class Native
         {
-            [DllImport(global::Interop.Libraries.Ssl)]
+            [DllImport(Interop.Libraries.Ssl)]
             public static extern SslMethod TLS_method();
         }
     }

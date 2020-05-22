@@ -7,7 +7,9 @@ using System.Net.Security;
 
 namespace System.Net
 {
+#if WANT_QUIC_PUBLIC
     [EventSource(Name = "Microsoft-System-Net-Quic")]
+#endif
     internal sealed partial class NetEventSource : EventSource
     {
         private const int ConnectClientStartId = NextAvailableEventId;

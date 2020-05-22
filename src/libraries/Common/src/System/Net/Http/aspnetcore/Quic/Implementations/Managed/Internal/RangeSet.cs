@@ -166,7 +166,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Adds all items from other instance of <see cref="RangeSet"/>.
         /// </summary>
-        /// <param name="other">Ranges to be included.</param>
+        /// <param name="ranges">Ranges to be included.</param>
         internal void Add(RangeSet ranges)
         {
             for (int i = 0; i < ranges.Count; i++)

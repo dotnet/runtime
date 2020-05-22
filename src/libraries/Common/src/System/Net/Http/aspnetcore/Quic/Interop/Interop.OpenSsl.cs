@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Security;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal static partial class Interop
 {
@@ -134,6 +132,14 @@ internal static partial class Interop
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_ciphersuites")]
         internal static extern int SslSetCiphersuites(IntPtr ssl, byte* list);
 
+        internal static int SslSetCiphersuites(IntPtr ssl, string list)
+        {
+            var ptr = Marshal.StringToHGlobalAnsi(list);
+            int result = SslSetCiphersuites(ssl, (byte*) ptr.ToPointer());
+            Marshal.FreeHGlobal(ptr);
+            return result;
+        }
+
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_cipher_list")]
         internal static extern int SslSetCipherList(IntPtr ssl, byte* list);
 
@@ -141,14 +147,6 @@ internal static partial class Interop
         {
             var ptr = Marshal.StringToHGlobalAnsi(list);
             int result = SslSetCipherList(ssl, (byte*) ptr.ToPointer());
-            Marshal.FreeHGlobal(ptr);
-            return result;
-        }
-
-        internal static int SslSetCiphersuites(IntPtr ssl, string list)
-        {
-            var ptr = Marshal.StringToHGlobalAnsi(list);
-            int result = SslSetCiphersuites(ssl, (byte*) ptr.ToPointer());
             Marshal.FreeHGlobal(ptr);
             return result;
         }
@@ -176,17 +174,5 @@ internal static partial class Interop
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_get0_alpn_selected")]
         internal static extern int SslGet0AlpnSelected(IntPtr ssl, out IntPtr data, out int len);
-
-        static OpenSslQuic()
-        {
-            ErrPrintErrorsCb(PrintErrors, IntPtr.Zero);
-        }
-
-        private static int PrintErrors(byte* str, UIntPtr len, IntPtr _)
-        {
-            var span = new Span<byte>(str, (int) len.ToUInt32());
-            Console.WriteLine(System.Text.Encoding.ASCII.GetString(span));
-            return 1;
-        }
     }
 }

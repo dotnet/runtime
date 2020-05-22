@@ -43,7 +43,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         public ConnectionId? FindBySequenceNumber(long sequenceNumber)
         {
             var ids = _connectionIds;
-            int index = ids.BinarySearch(new ConnectionId(Array.Empty<byte>(), sequenceNumber, new StatelessResetToken()), ConnectionId.SequenceNumberComparer);
+            int index = ids.BinarySearch(new ConnectionId(Array.Empty<byte>(), sequenceNumber, default), ConnectionId.SequenceNumberComparer);
             return index < 0 ? null : ids[index];
         }
 

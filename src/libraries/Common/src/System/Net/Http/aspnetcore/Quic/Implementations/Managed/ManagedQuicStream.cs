@@ -232,7 +232,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             for (int i = 0; i < buffers.Span.Length; i++)
             {
-                await WriteAsyncInternal(buffers.Span[i], endStream && i == buffers.Length - 1,cancellationToken).ConfigureAwait(false);
+                await WriteAsyncInternal(buffers.Span[i], endStream && i == buffers.Length - 1, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -252,7 +252,7 @@ namespace System.Net.Quic.Implementations.Managed
                     new OperationCanceledException("Shutdown was cancelled", cancellationToken));
             });
 
-            await _shutdownCompleted.GetTask();
+            await _shutdownCompleted.GetTask().ConfigureAwait(false);
         }
 
 

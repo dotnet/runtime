@@ -51,7 +51,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _recvContext = new RecvContext(sentPacketPool);
         }
 
-        public IPEndPoint LocalEndPoint => (IPEndPoint)_socket.LocalEndPoint;
+        public IPEndPoint LocalEndPoint => (IPEndPoint)_socket.LocalEndPoint!;
 
         internal void Start()
         {
@@ -126,7 +126,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                 if (NetEventSource.IsEnabled) NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
 
-                _socket.SendTo(_sendBuffer, 0, _writer.BytesWritten, SocketFlags.None, receiver);
+                _socket.SendTo(_sendBuffer, 0, _writer.BytesWritten, SocketFlags.None, receiver!);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -228,7 +228,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             Task<SocketReceiveFromResult>? socketReceiveTask = null;
 
             // TODO-RZ: allow timers for multiple connections on server
-            long lastAction = Int64.MinValue;
+            long lastAction = long.MinValue;
             try
             {
                 while (!token.IsCancellationRequested)
@@ -240,7 +240,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     {
                         if (socketReceiveTask != null && socketReceiveTask.IsCompleted)
                         {
-                            var result = await socketReceiveTask!;
+                            var result = await socketReceiveTask.ConfigureAwait(false);
                             DoReceive(_recvBuffer.AsMemory(0, result.ReceivedBytes), (IPEndPoint)result.RemoteEndPoint);
                             lastAction = now;
                             // discard the completed task.
@@ -290,7 +290,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                             _signalTcs.TrySetResult(0);
                         }
 
-                        await Task.WhenAny(timeoutTask, socketReceiveTask, signalTask);
+                        await Task.WhenAny(timeoutTask, socketReceiveTask, signalTask).ConfigureAwait(false);
 
                         if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Wait");
                     }
@@ -298,7 +298,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
             }
 
             // cleanup everything

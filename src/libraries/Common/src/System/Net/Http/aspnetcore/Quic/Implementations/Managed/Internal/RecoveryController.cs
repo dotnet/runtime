@@ -206,7 +206,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Resets the recovery controller to the initial state.
         /// </summary>
-        void Reset()
+        internal void Reset()
         {
             PtoCount = 0;
             LatestRtt = 0;
@@ -224,7 +224,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        internal void OnPacketSent(PacketSpace space, SentPacket packet, bool handshakeComplete)
+        /// <summary>
+        ///     Informs the recovery controller that a packet has been sent to the peer.
+        /// </summary>
+        /// <param name="space">Packet space in which the packet was sent.</param>
+        /// <param name="packet">The sent packet.</param>
+        /// <param name="isHandshakeComplete">True if the TLS handshake has been completed.</param>
+        internal void OnPacketSent(PacketSpace space, SentPacket packet, bool isHandshakeComplete)
         {
             var pnSpace = GetPacketNumberSpace(space);
             pnSpace.SentPackets.Add(packet);
@@ -241,7 +247,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 // Note that we do not set NextLossTime because we need to receive an ack for later packet in order
                 // to deem this packet lost. The NextLossTime has to be set only when receiving ack or during the
                 // loss timer processing.
-                SetLossDetectionTimer(handshakeComplete);
+                SetLossDetectionTimer(isHandshakeComplete);
             }
         }
 
@@ -249,6 +255,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Instance of <see cref="SentPacket"/> to be used in binary search to avoid one per each call.
         /// </summary>
         internal readonly SentPacket _binarySearchPacket = new SentPacket();
+
+        /// <summary>
+        ///     Informs the recovery controller that ACK frames have been received.
+        /// </summary>
+        /// <param name="space">Packet space for which the frame was received.</param>
+        /// <param name="ranges">Acknowledged ranges of packet numbers.</param>
+        /// <param name="ackDelay">Ack delay reported in the frame.</param>
+        /// <param name="frame">The received frame.</param>
+        /// <param name="now">Timestamp of the current moment.</param>
+        /// <param name="isHandshakeComplete">True if the TLS handshake has been completed.</param>
         internal void OnAckReceived(PacketSpace space, Span<RangeSet.Range> ranges, long ackDelay,
             in AckFrame frame, long now, bool isHandshakeComplete)
         {
@@ -369,8 +385,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 adjustedRtt = LatestRtt - ackDelay;
 
             SmoothedRtt = (7 * SmoothedRtt + adjustedRtt) / 8;
-            RttVariation = (long)(3 * RttVariation / 4 +
-                                  1 * Math.Abs(SmoothedRtt - adjustedRtt) / 4);
+            RttVariation = 3 * RttVariation / 4 + 1 * Math.Abs(SmoothedRtt - adjustedRtt) / 4;
         }
 
         private PacketNumberSpace GetEarliestSpace(bool handshakeComplete, Comparer<PacketNumberSpace> comparer)
@@ -452,6 +467,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return timeout * (1 << PtoCount);
         }
 
+        /// <summary>
+        ///     Called to process a timeout event.
+        /// </summary>
+        /// <param name="isHandshakeComplete">True if TLS handshake has been completed.</param>
+        /// <param name="now">Timestamp of the current moment.</param>
         internal void OnLossDetectionTimeout(bool isHandshakeComplete, long now)
         {
             var pnSpace = GetEarliestSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer);

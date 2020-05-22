@@ -3,7 +3,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Security;
@@ -15,7 +14,7 @@ namespace System.Net.Quic.Implementations.Managed
     /// <summary>
     ///     Class encapsulating TLS related logic and interop.
     /// </summary>
-    internal class Tls : IDisposable
+    internal sealed class Tls : IDisposable
     {
         private static readonly unsafe OpenSslQuicMethods.AddHandshakeDataFunc AddHandshakeDelegate = AddHandshakeDataImpl;
         private static readonly unsafe OpenSslQuicMethods.SetEncryptionSecretsFunc SetEncryptionSecretsDelegate = SetEncryptionSecretsImpl;
@@ -50,7 +49,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (options.ClientAuthenticationOptions?.TargetHost != null)
                 Interop.OpenSslQuic.SslSetTlsExHostName(_ssl, options.ClientAuthenticationOptions.TargetHost);
 
-            if (options.ClientAuthenticationOptions != null)
+            if (options.ClientAuthenticationOptions?.ApplicationProtocols != null)
             {
                 SetAlpn(options.ClientAuthenticationOptions.ApplicationProtocols);
             }
@@ -67,7 +66,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (options.PrivateKeyFilePath != null)
                 Interop.OpenSslQuic.SslUsePrivateKeyFile(_ssl, options.PrivateKeyFilePath, SslFiletype.Pem);
 
-            if (options.ServerAuthenticationOptions != null)
+            if (options.ServerAuthenticationOptions?.ApplicationProtocols != null)
             {
                 SetAlpn(options.ServerAuthenticationOptions.ApplicationProtocols);
             }
@@ -75,10 +74,15 @@ namespace System.Net.Quic.Implementations.Managed
 
         private unsafe void SetAlpn(List<SslApplicationProtocol> protos)
         {
-            Span<byte> buffer = stackalloc byte[protos.Sum(p => p.Protocol.Length + 1)];
+            int totalLength = 0;
+            for (int i = 0; i < protos.Count; i++)
+            {
+                totalLength += protos[i].Protocol.Length + 1;
+            }
+            Span<byte> buffer = stackalloc byte[totalLength];
             int offset = 0;
 
-            for (var i = 0; i < protos.Count; i++)
+            for (int i = 0; i < protos.Count; i++)
             {
                 var protocol = protos[i];
                 buffer[offset] = (byte)protocol.Protocol.Length;
@@ -221,15 +225,15 @@ namespace System.Net.Quic.Implementations.Managed
             return parameters;
         }
 
-        internal unsafe SslApplicationProtocol GetAlpnProtocol()
+        internal SslApplicationProtocol GetAlpnProtocol()
         {
-            int result = Interop.OpenSslQuic.SslGet0AlpnSelected(_ssl, out IntPtr pString, out int length);
+            Interop.OpenSslQuic.SslGet0AlpnSelected(_ssl, out IntPtr pString, out int length);
             if (pString != IntPtr.Zero)
             {
                 return new SslApplicationProtocol(Marshal.PtrToStringAnsi(pString, length));
             }
 
-            return new SslApplicationProtocol();
+            return default;
         }
 
         private static unsafe int SetEncryptionSecretsImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte* readSecret,

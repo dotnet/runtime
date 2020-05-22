@@ -145,7 +145,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Flow control limits set by this endpoint for the peer for the entire connection.
         /// </summary>
-        private ConnectionFlowControlLimits _localLimits;
+        private ConnectionFlowControlLimits _localLimits = default;
 
         /// <summary>
         ///     Values of <see cref="_localLimits"/> that peer has confirmed received.
@@ -671,9 +671,9 @@ namespace System.Net.Quic.Implementations.Managed
             if (!Connected)
             {
                 // abandon connection attempt
-                // TODO-RZ: can we just wink the connection out?
-                // _connectTcs.TryCompleteException();
+                _connectTcs.TryCompleteException(new QuicConnectionAbortedException(errorCode));
                 _closeTcs.TryComplete();
+                return;
             }
 
             if (IsClosed) return;
