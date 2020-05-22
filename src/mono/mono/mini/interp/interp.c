@@ -1658,7 +1658,7 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
 
 	MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoDelegate, this_obj), interp_method, gpointer, imethod);
 
-	mono_delegate_ctor (this_obj, target, entry, error);
+	mono_delegate_ctor (this_obj, target, entry, imethod->method, error);
 }
 
 /*
