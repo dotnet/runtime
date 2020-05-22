@@ -25,7 +25,7 @@ class App
 	{
 		if (args.Name == "Test" && args.RequestingAssembly == null)
 			return Assembly.LoadFile (Path.Combine (Directory.GetCurrentDirectory (), "assemblyresolve_deps", "Test.dll"));
-		if (args.Name == "TestBase, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" && args.RequestingAssembly.GetName ().Name == "Test")
+		if (args.Name == "TestBase" && args.RequestingAssembly.GetName ().Name == "Test")
 			return Assembly.LoadFile (Path.Combine (Directory.GetCurrentDirectory (), "assemblyresolve_deps", "TestBase.dll"));
 
 		throw new InvalidOperationException (String.Format ("Unexpected parameter combination Name=\"{0}\" RequestingAssembly=\"{1}\"", args.Name, args.RequestingAssembly));
