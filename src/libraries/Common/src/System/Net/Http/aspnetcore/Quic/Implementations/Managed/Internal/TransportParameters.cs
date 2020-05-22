@@ -28,7 +28,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private static TransportParameters Create(long maxBidiStreams, long maxUniStreams, TimeSpan idleTimeout)
         {
-
             return new TransportParameters
             {
                 InitialMaxStreamsBidi = maxBidiStreams,

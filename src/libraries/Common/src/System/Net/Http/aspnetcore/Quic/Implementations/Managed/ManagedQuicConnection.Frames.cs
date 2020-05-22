@@ -172,6 +172,10 @@ namespace System.Net.Quic.Implementations.Managed
             if (context.HandshakeWanted && _outboundError == null)
             {
                 DoHandshake();
+                if (_outboundError != null)
+                {
+                    return ProcessPacketResult.Error;
+                }
             }
 
             return ProcessPacketResult.Ok;
@@ -560,7 +564,7 @@ namespace System.Net.Quic.Implementations.Managed
                     StartDraining();
                 }
 
-                if (_connectTcs.IsSet)
+                if (!_connectTcs.IsSet)
                 {
                     // connection will not succeed
                     _connectTcs.TryCompleteException(MakeAbortedException(_inboundError));

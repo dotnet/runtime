@@ -45,6 +45,11 @@ namespace System.Net.Quic.Implementations.Managed
                         break;
                 }
 
+                if (status == ProcessPacketResult.Error)
+                {
+                    break;
+                }
+
                 // ReceiveOne will adjust the buffer length once it is known, thus the length here skips the
                 // just processed coalesced packet
                 buffer = buffer.Slice(reader.Buffer.Length);
