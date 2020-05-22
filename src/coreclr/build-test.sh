@@ -542,7 +542,6 @@ handle_arguments_local() {
 
         copynativeonly|-copynativeonly)
             __SkipStressDependencies=1
-            __SkipRestorePackages=1
             __SkipNative=1
             __SkipManaged=1
             __CopyNativeTestBinaries=1

@@ -117,7 +117,7 @@ if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 if /i "%1" == "allTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipRestorePackages=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-excludemonofailures"  (set __Mono=1&set processedArgs=!processedArgs!&shift&goto Arg_Loop)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -286,8 +286,6 @@ if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: native test build failed.
     exit /b 1
 )
-
-:skipnative
 
 REM =========================================================================================
 REM ===
