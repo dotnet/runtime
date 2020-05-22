@@ -140,7 +140,7 @@ if ENABLE_NETCORE
 if HAVE_SYS_ICU
 shim_libraries = libmonoruntime-shimglobalization.la
 
-libmonoruntime_shimglobalization_la_SOURCES = \
+nodist_libmonoruntime_shimglobalization_la_SOURCES = \
 									@ICU_SHIM_PATH@/pal_calendarData.c \
 									@ICU_SHIM_PATH@/pal_casing.c \
 									@ICU_SHIM_PATH@/pal_collation.c \
