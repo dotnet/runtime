@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -12,14 +13,15 @@ namespace System.Text.Json.Serialization.Converters
     {
         private const string KeyNameCLR = "Key";
         private const string ValueNameCLR = "Value";
+
         private const int NumProperties = 2;
 
         // Property name for "Key" and "Value" with Options.PropertyNamingPolicy applied.
         private string _keyName = null!;
         private string _valueName = null!;
 
-        private static readonly Type s_keyType = typeof(TKey);
-        private static readonly Type s_valueType = typeof(TValue);
+        private static readonly ConstructorInfo s_constructorInfo =
+            typeof(KeyValuePair<TKey, TValue>).GetConstructor(new[] { typeof(TKey), typeof(TValue) })!;
 
         internal override void Initialize(JsonSerializerOptions options)
         {
@@ -37,7 +39,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Validation for the naming policy will occur during JsonPropertyInfo creation.
             }
 
-            ConstructorInfo = TypeToConvert.GetConstructor(new[] { s_keyType, s_valueType });
+            ConstructorInfo = s_constructorInfo;
             Debug.Assert(ConstructorInfo != null);
         }
 
@@ -51,25 +53,29 @@ namespace System.Text.Json.Serialization.Converters
             out JsonParameterInfo? jsonParameterInfo)
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            ArgumentState? argState = state.Current.CtorArgumentState;
 
-            Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object);
+            Debug.Assert(classInfo.ClassType == ClassType.Object);
+            Debug.Assert(argState != null);
             Debug.Assert(_keyName != null);
             Debug.Assert(_valueName != null);
 
             bool caseInsensitiveMatch = options.PropertyNameCaseInsensitive;
 
             string propertyName = reader.GetString()!;
-            if (!state.Current.CtorArgumentState!.FoundKey &&
+            state.Current.JsonPropertyNameAsString = propertyName;
+
+            if (!argState.FoundKey &&
                 FoundKeyProperty(propertyName, caseInsensitiveMatch))
             {
                 jsonParameterInfo = classInfo.ParameterCache![_keyName];
-                state.Current.CtorArgumentState!.FoundKey = true;
+                argState.FoundKey = true;
             }
-            else if (!state.Current.CtorArgumentState!.FoundValue &&
+            else if (!argState.FoundValue &&
                 FoundValueProperty(propertyName, caseInsensitiveMatch))
             {
                 jsonParameterInfo = classInfo.ParameterCache![_valueName];
-                state.Current.CtorArgumentState!.FoundValue = true;
+                argState.FoundValue = true;
             }
             else
             {
@@ -79,10 +85,8 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             Debug.Assert(jsonParameterInfo != null);
-
-            state.Current.CtorArgumentState!.ParameterIndex++;
-
-            state.Current.CtorArgumentState.JsonParameterInfo = jsonParameterInfo;
+            argState.ParameterIndex++;
+            argState.JsonParameterInfo = jsonParameterInfo;
             return true;
         }
 
