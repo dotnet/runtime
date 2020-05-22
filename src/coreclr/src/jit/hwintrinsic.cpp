@@ -482,11 +482,14 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr)
 {
     GenTree* arg = nullptr;
-    if (argType == TYP_STRUCT)
+    if (varTypeIsStruct(argType))
     {
-        unsigned int argSizeBytes;
-        var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
-        argType           = getSIMDTypeForSize(argSizeBytes);
+        if (!varTypeIsSIMD(argType))
+        {
+            unsigned int argSizeBytes;
+            var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
+            argType           = getSIMDTypeForSize(argSizeBytes);
+        }
         assert(varTypeIsSIMD(argType));
         arg = impSIMDPopStack(argType, expectAddr);
         assert(varTypeIsSIMD(arg->TypeGet()));
@@ -605,9 +608,9 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
 
 #ifdef TARGET_XARCH
     assert((intrinsic >= NI_Vector128_As && intrinsic <= NI_Vector128_AsUInt64) ||
-           (intrinsic >= NI_Vector128_get_AllBitsSet && intrinsic <= NI_Vector128_ToVector256Unsafe) ||
+           (intrinsic >= NI_Vector128_get_AllBitsSet && intrinsic <= NI_Vector128_WithElement) ||
            (intrinsic >= NI_Vector256_As && intrinsic <= NI_Vector256_AsUInt64) ||
-           (intrinsic >= NI_Vector256_get_AllBitsSet && intrinsic <= NI_Vector256_ToScalar));
+           (intrinsic >= NI_Vector256_get_AllBitsSet && intrinsic <= NI_Vector256_WithElement));
 #else
     assert((intrinsic >= NI_Vector64_AsByte && intrinsic <= NI_Vector64_AsUInt32) ||
            (intrinsic >= NI_Vector64_get_AllBitsSet && intrinsic <= NI_Vector64_ToVector128Unsafe) ||
