@@ -6,7 +6,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
 
 namespace System.Formats.Cbor
 {
@@ -77,11 +76,11 @@ namespace System.Formats.Cbor
         /// <param name="convertIndefiniteLengthEncodings">
         ///   Enables automatically converting indefinite-length encodings into definite-length equivalents.
         ///   Allows use of indefinite-length write APIs in conformance levels that otherwise do not permit it.
-        ///   Defaults to <c>false</c>.
+        ///   Defaults to <see langword="false" />.
         /// </param>
         /// <param name="allowMultipleRootLevelValues">
         ///   Specify if multiple root-level values are to be supported by the writer.
-        ///   When set to <c>false</c>, the reader will throw an <see cref="InvalidOperationException"/>
+        ///   When set to <see langword="false" />, the reader will throw an <see cref="InvalidOperationException"/>
         ///   if trying to write beyond the scope of one root-level CBOR data item.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -127,7 +126,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="encodedValue">The encoded value to write.</param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="preEncodedValue"/> is not a well-formed CBOR encoding --OR--
+        ///   <paramref name="preEncodedValue"/> is not a well-formed CBOR encoding -or-
         ///   <paramref name="preEncodedValue"/> is not valid under the current conformance level
         /// </exception>
         public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)
@@ -190,8 +189,8 @@ namespace System.Formats.Cbor
         ///   On success, receives the number of bytes written to <paramref name="destination"/>.
         /// </param>
         /// <returns>
-        ///   <c>true</c> if the encode succeeded,
-        ///   <c>false</c> if <paramref name="destination"/> is too small.
+        ///   <see langword="true" /> if the encode succeeded,
+        ///   <see langword="false" /> if <paramref name="destination"/> is too small.
         /// </returns>
         /// <exception cref="InvalidOperationException">
         ///   The writer does not contain a complete CBOR value or sequence of root-level values.

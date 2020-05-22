@@ -14,19 +14,28 @@ namespace System.Formats.Cbor
         private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeAllocations;
 
         /// <summary>
-        ///   Reads the next data item as the start of a map (major type 5)
+        ///   Reads the next data item as the start of a map (major type 5).
         /// </summary>
         /// <returns>
-        ///   The number of key-value pairs in a definite-length map, or <c>null</c> if the map is indefinite-length.
+        ///   The number of key-value pairs in a definite-length map, or <see langword="null" /> if the map is indefinite-length.
         /// </returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
+        /// <remarks>
+        ///   Map contents are consumed as if they were arrays twice the length of the map's declared size.
+        ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
+        ///   must be consumed by successive calls to <see cref="ReadInt32"/> and <see cref="ReadTextString"/>.
+        ///   It is up to the caller to keep track of whether the next value is a key or a value.
+        ///   
+        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
+        ///   for instance a map can contain keys that are maps themselves.
+        /// </remarks>
         public int? ReadStartMap()
         {
             int? length;
@@ -65,16 +74,16 @@ namespace System.Formats.Cbor
 
 
         /// <summary>
-        ///   Reads the end of a map (major type 5)
+        ///   Reads the end of a map (major type 5).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the current context is not a map --OR--
+        ///   the current context is not a map -or-
         ///   the reader is not at the end of the map
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public void ReadEndMap()
         {

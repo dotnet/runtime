@@ -20,9 +20,9 @@ namespace System.Formats.Cbor
         ///   the reader is not at the start of new value.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public void SkipValue(bool disableConformanceLevelChecks = false)
         {
@@ -42,9 +42,9 @@ namespace System.Formats.Cbor
         ///   the reader is at the root context
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public void SkipToParent(bool disabledConformanceLevelChecks = false)
         {

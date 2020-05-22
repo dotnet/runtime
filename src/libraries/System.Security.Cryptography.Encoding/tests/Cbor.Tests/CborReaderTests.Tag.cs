@@ -247,7 +247,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void ReadDateTimeOffset_StrictConformance_OnError_ShouldRollbackConformanceValidationState()
+        public static void ReadDateTimeOffset_StrictConformance_OnError_ShouldPreserveReaderState()
         {
             string hexEncoding = "a20101c06001"; // { 1 : 1 , 0("") : 1 } conforming CBOR with invalid date/time schema
             var reader = new CborReader(hexEncoding.HexToByteArray(), CborConformanceLevel.Strict);
@@ -256,8 +256,10 @@ namespace System.Formats.Cbor.Tests
             reader.ReadInt32();
             reader.ReadInt32();
 
-            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
-            reader.SkipValue(disableConformanceLevelChecks: false); // skip the failed value, should not complain about duplicate keys
+            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset()); // throws a format exception due to malformed date/time string
+            // the following operation would original throw a false positive duplicate key error,
+            // due to the checkpoint restore logic not properly resetting key uniqueness validation
+            reader.SkipValue(disableConformanceLevelChecks: false);
 
             reader.ReadInt32();
             reader.ReadEndMap();

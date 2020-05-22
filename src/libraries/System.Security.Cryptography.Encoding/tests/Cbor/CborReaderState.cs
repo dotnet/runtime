@@ -37,7 +37,7 @@ namespace System.Formats.Cbor
         StartByteString,
 
         /// <summary>
-        ///   Indicates that the <see cref="CborReader"/> is at the end of an indefinite-length byte string (major type 2).
+        ///   Indicates that the reader is at the end of an indefinite-length byte string (major type 2).
         /// </summary>
         EndByteString,
 
@@ -52,7 +52,7 @@ namespace System.Formats.Cbor
         StartTextString,
 
         /// <summary>
-        ///   Indicates that the <see cref="CborReader"/> is at the end of an indefinite-length UTF-8 text string (major type 3).
+        ///   Indicates that the reader is at the end of an indefinite-length UTF-8 text string (major type 3).
         /// </summary>
         EndTextString,
 
@@ -62,7 +62,7 @@ namespace System.Formats.Cbor
         StartArray,
 
         /// <summary>
-        ///   Indicates that the <see cref="CborReader"/> is at the end of an array (major type 4).
+        ///   Indicates that the reader is at the end of an array (major type 4).
         /// </summary>
         EndArray,
 
@@ -72,7 +72,7 @@ namespace System.Formats.Cbor
         StartMap,
 
         /// <summary>
-        ///   Indicates that the <see cref="CborReader"/> is at the end of a map (major type 5).
+        ///   Indicates that the reader is at the end of a map (major type 5).
         /// </summary>
         EndMap,
 
@@ -102,7 +102,7 @@ namespace System.Formats.Cbor
         DoublePrecisionFloat,
 
         /// <summary>
-        ///   Indicates that the next CBOR data item is a <c>null</c> literal (major type 7).
+        ///   Indicates that the next CBOR data item is a <see langword="null" /> literal (major type 7).
         /// </summary>
         Null,
 
@@ -112,21 +112,21 @@ namespace System.Formats.Cbor
         Boolean,
 
         /// <summary>
-        ///   Indicates that the <see cref="CborReader"/> has completed reading a full CBOR document.
+        ///   Indicates that the reader has completed reading a full CBOR document.
         /// </summary>
         /// <remarks>
-        ///   If <see cref="CborReader.AllowMultipleRootLevelValues"/> is set to <c>true</c>,
+        ///   If <see cref="CborReader.AllowMultipleRootLevelValues"/> is set to <see langword="true" />,
         ///   the reader will report this value even if the buffer contains trailing bytes.
         /// </remarks>
         Finished,
 
         /// <summary>
-        ///   Indicates that the <see cref="CborReader"/> has encountered an incomplete CBOR document.
+        ///   Indicates that the reader has encountered an incomplete CBOR document.
         /// </summary>
         EndOfData,
 
         /// <summary>
-        ///   Indicates that the <see cref="CborReader"/> has encountered an error in the CBOR format encoding.
+        ///   Indicates that the reader has encountered an error in the CBOR format encoding.
         /// </summary>
         FormatError,
     }

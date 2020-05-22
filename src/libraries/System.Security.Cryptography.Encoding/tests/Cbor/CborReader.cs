@@ -70,7 +70,7 @@ namespace System.Formats.Cbor
         /// </param>
         /// <param name="allowMultipleRootLevelValues">
         ///   Specify if multiple root-level values are to be supported by the reader.
-        ///   When set to <c>false</c>, the reader will throw an <see cref="InvalidOperationException"/>
+        ///   When set to <see langword="false" />, the reader will throw an <see cref="InvalidOperationException"/>
         ///   if trying to read beyond the scope of one root-level CBOR data item.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -105,7 +105,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>A <see cref="ReadOnlySpan{T}"/> view of the encoded value.</returns>
         /// <exception cref="FormatException">
-        ///   The data item is not a valid CBOR data item encoding --OR--
+        ///   The data item is not a valid CBOR data item encoding -or-
         ///   The CBOR encoding is not valid under the current conformance level
         /// </exception>
         public ReadOnlySpan<byte> ReadEncodedValue()

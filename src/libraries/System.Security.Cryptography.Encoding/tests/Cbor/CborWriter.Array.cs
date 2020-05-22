@@ -12,14 +12,14 @@ namespace System.Formats.Cbor
         // Implements major type 4 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>
-        ///   Writes the start of a definite-length array (major type 4)
+        ///   Writes the start of a definite-length array (major type 4).
         /// </summary>
         /// <param name="definiteLength">The definite length of the array.</param>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   The <paramref name="definiteLength"/> parameter cannot be negative.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
         ///   The major type of the encoded value is not permitted in the parent data item
         /// </exception>
         public void WriteStartArray(int definiteLength)
@@ -34,12 +34,12 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes the start of an indefinite-length array (major type 4)
+        ///   Writes the start of an indefinite-length array (major type 4).
         /// </summary>
         /// <param name="definiteLength">The definite length of the array.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
@@ -59,7 +59,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes the end of an array (major type 4)
+        ///   Writes the end of an array (major type 4).
         /// </summary>
         /// <exception cref="InvalidOperationException">
         ///   The written data is not accepted under the current conformance level

@@ -12,12 +12,12 @@ namespace System.Formats.Cbor
         // Implements major type 6 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>
-        ///   Writes a semantic tag (major type 6)
+        ///   Writes a semantic tag (major type 6).
         /// </summary>
         /// <param name="tag">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteTag(CborTag tag)
@@ -37,8 +37,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteDateTimeOffset(DateTimeOffset value)
@@ -58,8 +58,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="seconds">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteUnixTimeSeconds(long seconds)
@@ -77,8 +77,8 @@ namespace System.Formats.Cbor
         ///   The <paramref name="seconds"/> parameter cannot be infinite or NaN
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteUnixTimeSeconds(double seconds)
@@ -98,8 +98,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteBigInteger(BigInteger value)
@@ -118,8 +118,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteDecimal(decimal value)

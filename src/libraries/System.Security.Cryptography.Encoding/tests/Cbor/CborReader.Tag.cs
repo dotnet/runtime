@@ -10,16 +10,16 @@ namespace System.Formats.Cbor
     public partial class CborReader
     {
         /// <summary>
-        ///   Reads the next data item as a semantic tag (major type 6)
+        ///   Reads the next data item as a semantic tag (major type 6).
         /// </summary>
         /// <returns>The decoded <see cref="CborTag"/> value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public CborTag ReadTag()
         {
@@ -39,9 +39,9 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public CborTag PeekTag() => PeekTagCore(out int _);
 
@@ -51,14 +51,14 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded <see cref="DateTimeOffset"/> value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type. --OR--
+        ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   invalid semantic date/time encoding --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   invalid semantic date/time encoding -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public DateTimeOffset ReadDateTimeOffset()
         {
@@ -102,14 +102,14 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded <see cref="DateTimeOffset"/> value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type. --OR--
+        ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   invalid semantic date/time encoding --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   invalid semantic date/time encoding -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public DateTimeOffset ReadUnixTimeSeconds()
         {
@@ -157,14 +157,14 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded <see cref="BigInteger"/> value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type. --OR--
+        ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   invalid semantic bignum encoding --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   invalid semantic bignum encoding -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public BigInteger ReadBigInteger()
         {
@@ -207,17 +207,17 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded <see cref="decimal"/> value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type. --OR--
+        ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
         /// </exception>
         /// <exception cref="OverflowException">
         ///   Decoded decimal fraction is either too large or too small for a <see cref="decimal"/> value.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   invalid semantic decimal fraction encoding --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   invalid semantic decimal fraction encoding -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public decimal ReadDecimal()
         {

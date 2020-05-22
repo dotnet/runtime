@@ -17,12 +17,12 @@ namespace System.Formats.Cbor
         private List<(int Offset, int Length)>? _currentIndefiniteLengthStringRanges = null;
 
         /// <summary>
-        ///   Writes a buffer as a byte string encoding (major type 2)
+        ///   Writes a buffer as a byte string encoding (major type 2).
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteByteString(ReadOnlySpan<byte> value)
@@ -45,11 +45,11 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes the start of an indefinite-length byte string (major type 2)
+        ///   Writes the start of an indefinite-length byte string (major type 2).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
@@ -77,7 +77,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes the end of an indefinite-length byte string (major type 2)
+        ///   Writes the end of an indefinite-length byte string (major type 2).
         /// </summary>
         /// <exception cref="InvalidOperationException">
         ///   The written data is not accepted under the current conformance level
@@ -89,12 +89,12 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes a buffer as a UTF-8 string encoding (major type 3)
+        ///   Writes a buffer as a UTF-8 string encoding (major type 3).
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteTextString(ReadOnlySpan<char> value)
@@ -129,11 +129,11 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes the start of an indefinite-length UTF-8 string (major type 3)
+        ///   Writes the start of an indefinite-length UTF-8 string (major type 3).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item --OR--
-        ///   The major type of the encoded value is not permitted in the parent data item --OR--
+        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   The major type of the encoded value is not permitted in the parent data item -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
@@ -161,7 +161,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes the end of an indefinite-length UTF-8 string (major type 3)
+        ///   Writes the end of an indefinite-length UTF-8 string (major type 3).
         /// </summary>
         /// <exception cref="InvalidOperationException">
         ///   The written data is not accepted under the current conformance level

@@ -9,18 +9,18 @@ namespace System.Formats.Cbor
     public partial class CborReader
     {
         /// <summary>
-        ///   Reads the next data item as the start of an array (major type 4)
+        ///   Reads the next data item as the start of an array (major type 4).
         /// </summary>
         /// <returns>
-        ///   The length of the definite-length array, or <c>null</c> if the array is indefinite-length.
+        ///   The length of the definite-length array, or <see langword="null" /> if the array is indefinite-length.
         /// </returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data --OR--
-        ///   CBOR encoding not accepted under the current conformance level
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public int? ReadStartArray()
         {
@@ -49,15 +49,15 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Reads the end of an array (major type 4)
+        ///   Reads the end of an array (major type 4).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the current context is not an array --OR--
-        ///   the reader is not at the end of the array
+        ///   the current context is not an array. -or-
+        ///   the reader is not at the end of the array.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   invalid CBOR encoding data --OR--
-        ///   unexpected end of CBOR encoding data
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data
         /// </exception>
         public void ReadEndArray()
         {
