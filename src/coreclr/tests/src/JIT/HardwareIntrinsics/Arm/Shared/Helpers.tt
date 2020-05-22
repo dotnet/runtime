@@ -345,7 +345,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= type.wide #> AddPairwiseWideningAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => (<#= type.wide #>)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
 
-        private static <#= type.name #> HighNarrow(<#= type.wide #> op1, bool round)
+        private static <#= type.name #> HighNarrowing(<#= type.wide #> op1, bool round)
         {
             <#= type.wideUnsigned #> roundConst = 0;
             if (round)
@@ -355,13 +355,13 @@ namespace JIT.HardwareIntrinsics.Arm
             return (<#= type.name #>)(((<#= type.wideUnsigned #>)op1 + roundConst) >> (8 * sizeof(<#= type.name #>)));
         }
 
-        public static <#= type.name #> AddHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 + op2), round: false);
+        public static <#= type.name #> AddHighNarrowing(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrowing((<#= type.wide #>)(op1 + op2), round: false);
 
-        public static <#= type.name #> AddHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static <#= type.name #> AddHighNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static <#= type.name #> AddRoundedHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 + op2), round: true);
+        public static <#= type.name #> AddRoundedHighNarrowing(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrowing((<#= type.wide #>)(op1 + op2), round: true);
 
-        public static <#= type.wide #> AddRoundedHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static <#= type.wide #> AddRoundedHighNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static <#= type.wide #> AddWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2);
 
@@ -370,6 +370,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static <#= type.wide #> AddWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
         public static <#= type.wide #> AddWideningUpper(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static <#= type.name #> ExtractNarrowing(<#= type.wide #> op1) => (<#= type.name #>)op1;
+ 
+        public static <#= type.name #> ExtractNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static <#= type.name #> FusedAddHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2) >> 1);
 
@@ -389,13 +393,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= type.wide #> MultiplyWideningUpperAndSubtract(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static <#= type.name #> SubtractHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 - op2), round: false);
+        public static <#= type.name #> SubtractHighNarrowing(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrowing((<#= type.wide #>)(op1 - op2), round: false);
 
-        public static <#= type.wide #> SubtractHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static <#= type.wide #> SubtractHighNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static <#= type.name #> SubtractRoundedHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 - op2), round: true);
+        public static <#= type.name #> SubtractRoundedHighNarrowing(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrowing((<#= type.wide #>)(op1 - op2), round: true);
 
-        public static <#= type.wide #> SubtractRoundedHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+        public static <#= type.wide #> SubtractRoundedHighNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static <#= type.wide #> SubtractWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 - (<#= type.wide #>)op2);
 
@@ -774,26 +778,6 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long PolynomialMultiplyWideningHi64(long op1, long op2) => (long)PolynomialMult(op1, op2).hi;
 
 <#
-        foreach (var type in new[] { (small: "sbyte",  wide: "short"),
-                                     (small: "short",  wide: "int"),
-                                     (small: "int",    wide: "long"),
-                                     (small: "byte",   wide: "ushort"),
-                                     (small: "ushort", wide: "uint"),
-                                     (small: "uint",   wide: "ulong") })
-        {
-#>
-        public static bool ExtractAndNarrowHigh(int i, <#= type.small  #>[] left,
-                                                <#= type.wide  #>[] right,
-                                                <#= type.small  #>[] result)
-        {
-            if (i < left.Length)
-              return left[i] != result[i];
-            else
-              return (<#= type.small  #>)right[i - left.Length] != result[i];
-        }
-<#
-        }
-
         foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
         {
 #>
