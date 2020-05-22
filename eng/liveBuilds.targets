@@ -186,7 +186,7 @@
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
                              Include="
-        $(LibrariesNativeArtifactsPath)\**\*.*" 
+        $(LibrariesNativeArtifactsPath)**\*.*" 
         IsNative="true" />
     </ItemGroup>
 
