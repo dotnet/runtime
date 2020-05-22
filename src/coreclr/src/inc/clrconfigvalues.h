@@ -620,6 +620,16 @@ CONFIG_DWORD_INFO(INTERNAL_OSR_HighId, W("OSR_HighId"), 10000000, "High end of e
 #endif
 
 ///
+/// Profile Guided Opts
+///
+#ifdef FEATURE_PGO
+RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_PGODataPath, W("PGODataPath"), "Read/Write PGO data from/to the indicated file.", CLRConfig::EEConfig_default)
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ReadPGOData, W("ReadPGOData"), 0, "Read PGO data")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_WritePGOData, W("WritePGOData"), 0, "Write PGO data")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier0 code and make counts available to Tier1")
+#endif
+
+///
 /// Entry point slot backpatch
 ///
 #ifndef CROSSGEN_COMPILE

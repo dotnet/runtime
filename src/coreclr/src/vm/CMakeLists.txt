@@ -106,6 +106,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     peimagelayout.cpp
     perfmap.cpp
     perfinfo.cpp
+    pgo.cpp
     precode.cpp
     prestub.cpp
     profilerdiagnosticprotocolhelper.cpp
@@ -217,6 +218,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     peimagelayout.inl
     perfmap.h
     perfinfo.h
+    pgo.h
     precode.h
     rejit.h
     rejit.inl
