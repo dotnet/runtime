@@ -247,14 +247,6 @@ dwarf_get (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t *val)
                                      0, c->as_arg);
   else if (c->as->abi == UNW_MIPS_ABI_O32)
     return read_s32 (c, DWARF_GET_LOC (loc), val);
-  else if (c->as->abi == UNW_MIPS_ABI_N32) {
-    if (tdep_big_endian(c->as))
-      return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc) + 4, val,
-                                       0, c->as_arg);
-    else
-      return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), val,
-                                       0, c->as_arg);
-  }
   else
     return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), val,
                                      0, c->as_arg);
