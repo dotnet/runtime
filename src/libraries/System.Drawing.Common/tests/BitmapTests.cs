@@ -1741,7 +1741,7 @@ namespace System.Drawing.Tests
 
             using (FileStream stream = new FileStream(path, FileMode.Open))
             {
-                using (Bitmap bitmap = new Bitmap(new NonSeekableStream(stream)))
+                using (Bitmap bitmap = new Bitmap(new TestStream(stream, canSeek: false)))
                 {
                     Assert.Equal(100, bitmap.Height);
                     Assert.Equal(100, bitmap.Width);
@@ -1750,22 +1750,55 @@ namespace System.Drawing.Tests
             }
         }
 
-        private class NonSeekableStream : Stream
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void SaveToRestrictiveStream(bool canRead, bool canSeek)
+        {
+            using (Stream backingStream = new MemoryStream())
+            using (Stream restrictiveStream = new TestStream(backingStream, canRead, canSeek))
+            {
+                using (Bitmap bitmap = new Bitmap(100, 100))
+                {
+                    bitmap.Save(restrictiveStream, ImageFormat.Png);
+                }
+
+                backingStream.Position = 0;
+
+                using (Bitmap bitmap = new Bitmap(backingStream))
+                {
+                    Assert.Equal(100, bitmap.Height);
+                    Assert.Equal(100, bitmap.Width);
+                    Assert.Equal(ImageFormat.Png, bitmap.RawFormat);
+                }
+            }
+        }
+
+        private class TestStream : Stream
         {
             private Stream _stream;
+            private bool _canRead;
+            private bool _canSeek;
 
-            public NonSeekableStream(Stream stream)
+            public TestStream(Stream stream, bool canRead = true, bool canSeek = true)
             {
                 _stream = stream;
+                _canRead = canRead;
+                _canSeek = canSeek;
             }
 
-            public override bool CanRead => _stream.CanRead;
-            public override bool CanSeek => false;
+            public override bool CanRead => _canRead && _stream.CanRead;
+            public override bool CanSeek => _canSeek && _stream.CanSeek;
             public override bool CanWrite => _stream.CanWrite;
             public override long Length => _stream.Length;
-            public override long Position { get => _stream.Position; set => throw new InvalidOperationException(); }
+            public override long Position
+            {
+                get => _stream.Position;
+                set => _stream.Position = _canSeek ? value : throw new NotSupportedException();
+            }
             public override void Flush() => _stream.Flush();
-            public override int Read(byte[] buffer, int offset, int count) => _stream.Read(buffer, offset, count);
+            public override int Read(byte[] buffer, int offset, int count) => _canRead ?  _stream.Read(buffer, offset, count) : throw new NotSupportedException();
             public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
             public override void SetLength(long value) => _stream.SetLength(value);
             public override void Write(byte[] buffer, int offset, int count) => _stream.Write(buffer, offset, count);
