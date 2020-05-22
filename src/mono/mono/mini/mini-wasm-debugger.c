@@ -37,6 +37,7 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_value_expanded (int object_id, int idx);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_object (int object_id, const char* name);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name, const char *method_name);
@@ -956,13 +957,32 @@ are_getters_allowed (const char *class_name)
 }
 
 static void
+invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
+{
+	ERROR_DECL (error);
+	MonoObject *res;
+	MonoObject *exc;
+
+	MonoMethodSignature *sig = mono_method_signature_internal (p->get);
+
+	res = mono_runtime_try_invoke (p->get, obj, NULL, &exc, error);
+	if (!is_ok (error) && exc == NULL)
+		exc = (MonoObject*) mono_error_convert_to_exception (error);
+	if (exc)
+		describe_value (mono_get_object_type (), &exc, TRUE);
+	else if (!res || !m_class_is_valuetype (mono_object_class (res)))
+		describe_value (sig->ret, &res, TRUE);
+	else
+		describe_value (sig->ret, mono_object_unbox_internal (res), TRUE);
+}
+
+static void
 describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, gboolean expandValueType)
 {
 	MonoClassField *f;
 	MonoProperty *p;
 	MonoMethodSignature *sig;
 	gpointer iter = NULL;
-	ERROR_DECL (error);
 	gboolean is_valuetype;
 	int pnum;
 	char *klass_name;
@@ -1004,11 +1024,7 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 	iter = NULL;
 	pnum = 0;
 	while ((p = mono_class_get_properties (klass, &iter))) {
-		DEBUG_PRINTF (2, "mono_class_get_properties - %s - %s\n", p->name, p->get->name);
 		if (p->get->name) { //if get doesn't have name means that doesn't have a getter implemented and we don't want to show value, like VS debug
-			MonoObject *res;
-			MonoObject *exc;
-
 			if (isAsyncLocalThis && (p->name[0] != '<' || (p->name[0] == '<' &&  p->name[1] == '>')))
 				continue;
 
@@ -1019,9 +1035,12 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 			if (!getters_allowed) {
 				// not allowed to call the getter here
 				char *ret_class_name = mono_class_full_name (mono_class_from_mono_type_internal (sig->ret));
-				mono_wasm_add_typed_value ("getter", ret_class_name, 0);
-				g_free (ret_class_name);
 
+				// getters not supported for valuetypes, yet
+				gboolean invokable = !is_valuetype && sig->param_count == 0;
+				mono_wasm_add_typed_value ("getter", ret_class_name, invokable);
+
+				g_free (ret_class_name);
 				continue;
 			}
 
@@ -1031,15 +1050,7 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 				continue;
 			}
 
-			res = mono_runtime_try_invoke (p->get, obj, NULL, &exc, error);
-			if (!is_ok (error) && exc == NULL)
-				exc = (MonoObject*) mono_error_convert_to_exception (error);
-			if (exc)
-				describe_value (mono_get_object_type (), &exc, TRUE);
-			else if (!res || !m_class_is_valuetype (mono_object_class (res)))
-				describe_value (sig->ret, &res, TRUE);
-			else
-				describe_value (sig->ret, mono_object_unbox_internal (res), TRUE);
+			invoke_and_describe_getter_value (obj, p);
 		}
 		pnum ++;
 	}
@@ -1091,6 +1102,36 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolea
 	}
 
 	return TRUE;
+}
+
+static gboolean
+invoke_getter_on_object (guint64 objectId, const char *name)
+{
+	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
+	if (!ref) {
+		DEBUG_PRINTF (1, "invoke_getter_on_object no objRef found for id %llu\n", objectId);
+		return FALSE;
+	}
+
+	MonoObject *obj = mono_gchandle_get_target_internal (ref->handle);
+	if (!obj) {
+		DEBUG_PRINTF (1, "invoke_getter_on_object !obj\n");
+		return FALSE;
+	}
+
+	MonoClass *klass = mono_object_class (obj);
+	gpointer iter = NULL;
+	MonoProperty *p;
+	while ((p = mono_class_get_properties (klass, &iter))) {
+		//if get doesn't have name means that doesn't have a getter implemented and we don't want to show value, like VS debug
+		if (!p->get->name || strcasecmp (p->name, name) != 0)
+			continue;
+
+		invoke_and_describe_getter_value (obj, p);
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 static gboolean 
@@ -1277,6 +1318,11 @@ mono_wasm_get_array_value_expanded (int object_id, int idx)
 	describe_array_value_expanded (object_id, idx);
 }
 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_getter_on_object (int object_id, const char* name)
+{
+	invoke_getter_on_object (object_id, name);
+}
 // Functions required by debugger-state-machine.
 gsize
 mono_debugger_tls_thread_id (DebuggerTlsData *debuggerTlsData)
