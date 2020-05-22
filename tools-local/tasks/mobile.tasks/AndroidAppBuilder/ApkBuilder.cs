@@ -193,7 +193,10 @@ public class ApkBuilder
         
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "runtime-android", "libruntime-android.so"));
-        dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so"));
+        
+        // Testing out if this works better for addrange 
+        dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories).Where(f => f.EndsWith(".so")).ToArray());
+        //dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so"));
 
         // add all *.so files to lib/%abi%/
         Directory.CreateDirectory(Path.Combine(OutputDir, "lib", abi));

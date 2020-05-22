@@ -72,7 +72,7 @@ jobs:
         - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
 
     # Android 
-    - ${{ if eq(parameters.platform, 'Android_x86') }}:
+    - ${{ if in(parameters.platform, 'Android_x86', 'Android_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - Ubuntu.1804.Amd64.Android.Open
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
