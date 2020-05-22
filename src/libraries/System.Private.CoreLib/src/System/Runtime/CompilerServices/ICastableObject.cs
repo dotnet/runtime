@@ -30,4 +30,19 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType, bool throwIfNotFound);
     }
+
+    /// <summary>
+    /// Attribute required by any type that is returned by <see cref="ICastableObject.GetInterfaceImplementation(RuntimeTypeHandle, bool)"/>.
+    /// </summary>
+    /// <remarks>
+    /// This attribute is used to enforce policy in the runtime and make
+    /// <see cref="ICastableObject" /> scenarios linker friendly.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+    public sealed class CastableObjectImplementationAttribute : Attribute
+    {
+        public CastableObjectImplementationAttribute()
+        {
+        }
+    }
 }

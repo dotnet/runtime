@@ -8803,6 +8803,11 @@ namespace System.Runtime.CompilerServices
     {
         public CallerMemberNameAttribute() { }
     }
+    [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple=false, Inherited=false)]
+    public sealed class CastableObjectImplementationAttribute : Attribute
+    {
+        public CastableObjectImplementationAttribute() { }
+    }
     [System.FlagsAttribute]
     public enum CompilationRelaxations
     {
