@@ -995,7 +995,10 @@ bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
         return false;
     }
 
-    return hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), NULL);
+    {
+        GCX_COOP();
+        return hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), NULL);
+    }
 }
 
 /*static*/
@@ -1087,31 +1090,27 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         _ASSERTE(hType1.GetMethodTable() != NULL);
         _ASSERTE(hType2.GetMethodTable() != NULL);
 
+        if (!IsCompatibleWith(hType1, hType2))
         {
-            GCX_COOP();
+            SString strAssemblyName;
+            pMD->GetAssembly()->GetDisplayName(strAssemblyName);
 
-            if (!IsCompatibleWith(hType1, hType2))
-            {
-                SString strAssemblyName;
-                pMD->GetAssembly()->GetDisplayName(strAssemblyName);
+            SString strInvalidTypeName;
+            TypeString::AppendType(strInvalidTypeName, TypeHandle(pMD->GetMethodTable()));
 
-                SString strInvalidTypeName;
-                TypeString::AppendType(strInvalidTypeName, TypeHandle(pMD->GetMethodTable()));
+            SString strInvalidMethodName;
+            TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
 
-                SString strInvalidMethodName;
-                TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
+            SString strParentMethodName;
+            TypeString::AppendMethod(strParentMethodName, pParentMD, pParentMD->GetMethodInstantiation());
 
-                SString strParentMethodName;
-                TypeString::AppendMethod(strParentMethodName, pParentMD, pParentMD->GetMethodInstantiation());
-
-                COMPlusThrow(
-                    kTypeLoadException,
-                    IDS_CLASSLOAD_MI_BADRETURNTYPE,
-                    strInvalidMethodName,
-                    strInvalidTypeName,
-                    strAssemblyName,
-                    strParentMethodName);
-            }
+            COMPlusThrow(
+                kTypeLoadException,
+                IDS_CLASSLOAD_MI_BADRETURNTYPE,
+                strInvalidMethodName,
+                strInvalidTypeName,
+                strAssemblyName,
+                strParentMethodName);
         }
     }
 
