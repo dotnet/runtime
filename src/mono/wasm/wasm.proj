@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildWasmRuntimes">
+<Project Sdk="Microsoft.Build.Traversal">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
@@ -37,7 +37,9 @@
       />
   </Target>
 
-  <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable">
+  <Target Name="BuildWasmRuntimes"
+          AfterTargets="Build"
+          DependsOnTargets="BuildPInvokeTable">
     <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) SYS_NATIVE_DIR=$(ArtifactsBinDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
