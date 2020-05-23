@@ -646,19 +646,19 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64x2_t vdupq_laneq_f64 (float64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static System.Runtime.Intrinsics.Vector128<double> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<double> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+            public static Vector128<double> DuplicateSelectedScalarToVector128(Vector128<double> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
 
             /// <summary>
             /// int64x2_t vdupq_laneq_s64 (int64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static System.Runtime.Intrinsics.Vector128<long> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<long> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+            public static Vector128<long> DuplicateSelectedScalarToVector128(Vector128<long> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
 
             /// <summary>
             /// uint64x2_t vdupq_laneq_u64 (uint64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static System.Runtime.Intrinsics.Vector128<ulong> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<ulong> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
+            public static Vector128<ulong> DuplicateSelectedScalarToVector128(Vector128<ulong> value, byte index) => DuplicateSelectedScalarToVector128(value, index);
 
             /// <summary>
             /// float64x2_t vdupq_n_f64 (float64_t value)
