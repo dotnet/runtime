@@ -20,6 +20,11 @@ namespace System.IO.Pipelines
         private static Exception CreateArgumentNullException(ExceptionArgument argument) => new ArgumentNullException(argument.ToString());
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_NoWriteToAdvance() => throw CreateInvalidOperationException_NoWriteToAdvance();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Exception CreateInvalidOperationException_NoWriteToAdvance() => new InvalidOperationException(SR.NoWritingOperationToAdvance);
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_AlreadyReading() => throw CreateInvalidOperationException_AlreadyReading();
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_AlreadyReading() => new InvalidOperationException(SR.ReadingIsInProgress);
