@@ -101,10 +101,8 @@ namespace System.Collections
             // which allows to avoid the long multiplication if the divisor is less than 2**31.
             Debug.Assert(divisor <= int.MaxValue);
 
-            ulong lowbits = multiplier * value;
-            // 64bit * 64bit => 128bit isn't currently supported by Math https://github.com/dotnet/runtime/issues/31184
-            // otherwise we'd want this to be (uint)Math.BigMul(lowbits, divisor, out _)
-            uint highbits = (uint)((((lowbits >> 32) + 1) * divisor) >> 32);
+            // This is equivalent of (uint)Math.BigMul(multiplier * value, divisor, out _) that is currently faster
+            uint highbits = (uint)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
 
             Debug.Assert(highbits == value % divisor);
             return highbits;
