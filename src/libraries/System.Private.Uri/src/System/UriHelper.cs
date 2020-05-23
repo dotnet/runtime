@@ -668,35 +668,36 @@ namespace System
             HexConverter.ToCharsBuffer(b, to.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
-        internal static char EscapedAscii(char digit, char next)
+        internal static char EscapedAscii(uint digit, uint next)
         {
-            if (!(((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f'))))
+            digit -= '0';
+
+            if (digit <= 9)
             {
-                return Uri.c_DummyChar;
+                // digit is already [0, 9]
             }
-
-            int res = (digit <= '9')
-                ? ((int)digit - (int)'0')
-                : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-                   + 10);
-
-            if (!(((next >= '0') && (next <= '9'))
-                || ((next >= 'A') && (next <= 'F'))
-                || ((next >= 'a') && (next <= 'f'))))
+            else if ((uint)((digit - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
             {
-                return Uri.c_DummyChar;
+                digit = ((digit + '0') | 0x20) - 'a' + 10;
             }
+            else goto Invalid;
 
-            return (char)((res << 4) + ((next <= '9')
-                    ? ((int)next - (int)'0')
-                    : (((next <= 'F')
-                        ? ((int)next - (int)'A')
-                        : ((int)next - (int)'a'))
-                       + 10)));
+            next -= '0';
+
+            if (next <= 9)
+            {
+                // next is already [0, 9]
+            }
+            else if ((uint)((next - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
+            {
+                next = ((next + '0') | 0x20) - 'a' + 10;
+            }
+            else goto Invalid;
+
+            return (char)((digit << 4) | next);
+
+        Invalid:
+            return Uri.c_DummyChar;
         }
 
         internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
