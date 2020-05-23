@@ -1203,6 +1203,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) => Multiply(left, right);
 
             /// <summary>
+            /// float64x2_t vmulq_n_f64 (float64x2_t a, float64_t b)
+            ///   A64: FMUL Vd.2D, Vn.2D, Vm.D[0]
+            /// </summary>
+            public static Vector128<double> MultiplyByScalar(Vector128<double> left, Vector64<double> right) => MultiplyByScalar(left, right);
+
+            /// <summary>
+            /// float64x2_t vmulq_laneq_f64 (float64x2_t a, float64x2_t v, const int lane)
+            ///   A64: FMUL Vd.2D, Vn.2D, Vm.D[lane]
+            /// </summary>
+            public static Vector128<double> MultiplyBySelectedScalar(Vector128<double> left, Vector128<double> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+            /// <summary>
             /// float32x2_t vmulx_f32 (float32x2_t a, float32x2_t b)
             ///   A64: FMULX Vd.2S, Vn.2S, Vm.2S
             /// </summary>
@@ -6575,6 +6587,216 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> MultiplyAdd(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right) => MultiplyAdd(addend, left, right);
+
+        /// <summary>
+        /// int16x4_t vmul_n_s16 (int16x4_t a, int16_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[0]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplyByScalar(Vector64<short> left, Vector64<short> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// int32x2_t vmul_n_s32 (int32x2_t a, int32_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[0]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplyByScalar(Vector64<int> left, Vector64<int> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// float32x2_t vmul_n_f32 (float32x2_t a, float32_t b)
+        ///   A32: VMUL.F32 Dd, Dn, Dm[0]
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<float> MultiplyByScalar(Vector64<float> left, Vector64<float> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// uint16x4_t vmul_n_u16 (uint16x4_t a, uint16_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[0]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<ushort> MultiplyByScalar(Vector64<ushort> left, Vector64<ushort> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// uint32x2_t vmul_n_u32 (uint32x2_t a, uint32_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[0]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<uint> MultiplyByScalar(Vector64<uint> left, Vector64<uint> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// int16x8_t vmulq_n_s16 (int16x8_t a, int16_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[0]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplyByScalar(Vector128<short> left, Vector64<short> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// int32x4_t vmulq_n_s32 (int32x4_t a, int32_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[0]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplyByScalar(Vector128<int> left, Vector64<int> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// float32x4_t vmulq_n_f32 (float32x4_t a, float32_t b)
+        ///   A32: VMUL.F32 Qd, Qn, Dm[0]
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<float> MultiplyByScalar(Vector128<float> left, Vector64<float> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmulq_n_u16 (uint16x8_t a, uint16_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[0]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<ushort> MultiplyByScalar(Vector128<ushort> left, Vector64<ushort> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmulq_n_u32 (uint32x4_t a, uint32_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[0]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<uint> MultiplyByScalar(Vector128<uint> left, Vector64<uint> right) => MultiplyByScalar(left, right);
+
+        /// <summary>
+        /// int16x4_t vmul_lane_s16 (int16x4_t a, int16x4_t v, const int lane)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyBySelectedScalar(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// int16x4_t vmul_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyBySelectedScalar(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// int32x2_t vmul_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyBySelectedScalar(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// int32x2_t vmul_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyBySelectedScalar(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// float32x2_t vmul_lane_f32 (float32x2_t a, float32x2_t v, const int lane)
+        ///   A32: VMUL.F32 Dd, Dn, Dm[lane]
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<float> MultiplyBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// float32x2_t vmul_laneq_f32 (float32x2_t a, float32x4_t v, const int lane)
+        ///   A32: VMUL.F32 Dd, Dn, Dm[lane]
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<float> MultiplyBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// uint16x4_t vmul_lane_u16 (uint16x4_t a, uint16x4_t v, const int lane)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplyBySelectedScalar(Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// uint16x4_t vmul_laneq_u16 (uint16x4_t a, uint16x8_t v, const int lane)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplyBySelectedScalar(Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// uint32x2_t vmul_lane_u32 (uint32x2_t a, uint32x2_t v, const int lane)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplyBySelectedScalar(Vector64<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// uint32x2_t vmul_laneq_u32 (uint32x2_t a, uint32x4_t v, const int lane)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplyBySelectedScalar(Vector64<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// int16x8_t vmulq_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyBySelectedScalar(Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// int16x8_t vmulq_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyBySelectedScalar(Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// int32x4_t vmulq_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalar(Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// int32x4_t vmulq_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalar(Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// float32x4_t vmulq_lane_f32 (float32x4_t a, float32x2_t v, const int lane)
+        ///   A32: VMUL.F32 Qd, Qn, Dm[lane]
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<float> MultiplyBySelectedScalar(Vector128<float> left, Vector64<float> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// float32x4_t vmulq_laneq_f32 (float32x4_t a, float32x4_t v, const int lane)
+        ///   A32: VMUL.F32 Qd, Qn, Dm[lane]
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<float> MultiplyBySelectedScalar(Vector128<float> left, Vector128<float> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// uint16x8_t vmulq_lane_u16 (uint16x8_t a, uint16x4_t v, const int lane)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplyBySelectedScalar(Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// uint16x8_t vmulq_laneq_u16 (uint16x8_t a, uint16x8_t v, const int lane)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplyBySelectedScalar(Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// uint32x4_t vmulq_lane_u32 (uint32x4_t a, uint32x2_t v, const int lane)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalar(Vector128<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// uint32x4_t vmulq_laneq_u32 (uint32x4_t a, uint32x4_t v, const int lane)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalar(Vector128<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
         /// <summary>
         /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
