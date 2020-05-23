@@ -3530,7 +3530,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             }
             else
             {
-                free(pLoggedTypesFromModule);
+                delete pLoggedTypesFromModule;
                 pLoggedTypesFromModule = recheckLoggedTypesFromModule;
             }
 
