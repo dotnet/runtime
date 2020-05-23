@@ -1750,6 +1750,36 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0U, 0U, "00000000000000000000000000000000")]
+        [InlineData(0U, 1U, "00000000000000000000000000000000")]
+        [InlineData(1U, 0U, "00000000000000000000000000000000")]
+        [InlineData(2U, 3U, "00000000000000000000000000000006")]
+        [InlineData(ulong.MaxValue, 2, "0000000000000001FFFFFFFFFFFFFFFE")]
+        [InlineData(ulong.MaxValue, 1, "0000000000000000FFFFFFFFFFFFFFFF")]
+        [InlineData(ulong.MaxValue, ulong.MaxValue, "FFFFFFFFFFFFFFFE0000000000000001")]
+        [InlineData(ulong.MaxValue, 3, "0000000000000002FFFFFFFFFFFFFFFD")]
+        public static void BigMul128_Unsigned(ulong a, ulong b, string result)
+        {
+            ulong high = Math.BigMul(a, b, out ulong low);
+            Assert.Equal(result, high.ToString("X16") + low.ToString("X16"));
+        }
+
+        [Theory]
+        [InlineData(0L, 0L, "00000000000000000000000000000000")]
+        [InlineData(0L, 1L, "00000000000000000000000000000000")]
+        [InlineData(1L, 0L, "00000000000000000000000000000000")]
+        [InlineData(2L, 3L, "00000000000000000000000000000006")]
+        [InlineData(3L, -2L, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA")]
+        [InlineData(-1L, -1L, "00000000000000000000000000000001")]
+        [InlineData(-1L, long.MinValue, "00000000000000008000000000000000")]
+        [InlineData(1L, long.MinValue, "FFFFFFFFFFFFFFFF8000000000000000")]
+        public static void BigMul128_Signed(long a, long b, string result)
+        {
+            long high = Math.BigMul(a, b, out long low);
+            Assert.Equal(result, high.ToString("X16") + low.ToString("X16"));
+        }
+
+        [Theory]
         [InlineData(1073741, 2147483647, 2000, 1647)]
         [InlineData(6, 13952, 2000, 1952)]
         [InlineData(0, 0, 2000, 0)]

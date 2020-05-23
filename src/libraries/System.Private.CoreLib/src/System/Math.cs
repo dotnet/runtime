@@ -18,6 +18,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -111,6 +112,52 @@ namespace System
         public static long BigMul(int a, int b)
         {
             return ((long)a) * b;
+        }
+
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
+        {
+            if (Bmi2.X64.IsSupported)
+            {
+                ulong tmp;
+                ulong high = Bmi2.X64.MultiplyNoFlags(a, b, &tmp);
+                low = tmp;
+                return high;
+            }
+
+            return SoftwareFallback(a, b, out low);
+
+            static ulong SoftwareFallback(ulong a, ulong b, out ulong low)
+            {
+                // It's adoption of algorithm for multiplication
+                // of 32-bit unsigned integers described
+                // in Hacker's Delight by Henry S. Warren, Jr. (ISBN 0-201-91465-4), Chapter 8
+                // Basically, it's an optimized version of FOIL method applied to
+                // low and high dwords of each operand
+                const ulong lowBitsMask = 0xFFFFFFFFU;
+
+                ulong al = a & lowBitsMask;
+                ulong ah = a >> 32;
+                ulong bl = b & lowBitsMask;
+                ulong bh = b >> 32;
+
+                ulong mull = al * bl;
+                ulong t = ah * bl + (mull >> 32);
+                ulong tl = t & lowBitsMask;
+
+                tl += al * bh;
+                low = tl << 32 | mull & lowBitsMask;
+
+                return ah * bh + (t >> 32) + (tl >> 32);
+            }
+        }
+
+        public static long BigMul(long a, long b, out long low)
+        {
+            ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
+            low = (long)ulow;
+            return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
         }
 
         public static double BitDecrement(double x)
