@@ -4,70 +4,93 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Pipelines
 {
-    [DebuggerDisplay("State: {_state}")]
+    [DebuggerDisplay("State: {State}")]
+    [StructLayout(LayoutKind.Explicit)]
     internal struct PipeOperationState
     {
-        private State _state;
+        [FieldOffset(0)]
+        private ReadState _readState;
+        [FieldOffset(64)]
+        private volatile WriteState _writeState;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginRead()
         {
-            if ((_state & State.Reading) == State.Reading)
+            if ((_readState & ReadState.Reading) != 0)
             {
                 ThrowHelper.ThrowInvalidOperationException_AlreadyReading();
             }
 
-            _state |= State.Reading;
+            _readState |= ReadState.Reading;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginReadTentative()
         {
-            if ((_state & State.Reading) == State.Reading)
+            if ((_readState & ReadState.Reading) != 0)
             {
                 ThrowHelper.ThrowInvalidOperationException_AlreadyReading();
             }
 
-            _state |= State.ReadingTentative;
+            _readState |= ReadState.ReadingTentative;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EndRead()
         {
-            if ((_state & State.Reading) != State.Reading &&
-                (_state & State.ReadingTentative) != State.ReadingTentative)
+            if (_readState == ReadState.Inactive)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoReadToComplete();
             }
 
-            _state &= ~(State.Reading | State.ReadingTentative);
+            _readState = ReadState.Inactive;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginWrite()
         {
-            _state |= State.Writing;
+            _writeState = (WriteState.Allocating | WriteState.Writing);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EndWrite()
         {
-            _state &= ~State.Writing;
+            _writeState = WriteState.Inactive;
         }
 
-        public bool IsWritingActive => (_state & State.Writing) == State.Writing;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void EndWriteAllocation()
+        {
+            Debug.Assert(_writeState == (WriteState.Allocating | WriteState.Writing));
+            _writeState = WriteState.Writing;
+        }
 
-        public bool IsReadingActive => (_state & State.Reading) == State.Reading;
+        public bool IsWritingActive => (_writeState & WriteState.Writing) != 0;
+
+        public bool IsWritingAllocating => (_writeState & WriteState.Allocating) != 0;
+
+        public bool IsReadingActive => (_readState & ReadState.Reading) != 0;
+
+        private string State => $"WriteState: {_writeState}; ReadState: {_readState}";
 
         [Flags]
-        internal enum State : byte
+        internal enum ReadState : int
         {
+            Inactive = 0,
             Reading = 1,
-            ReadingTentative = 2,
-            Writing = 4
+            ReadingTentative = 2
+        }
+
+        [Flags]
+        internal enum WriteState : int
+        {
+            Inactive = 0,
+            Allocating = 1,
+            Writing = 2
         }
     }
 }

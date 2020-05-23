@@ -150,7 +150,7 @@ namespace System.IO.Pipelines
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
-            BufferSegment newSegment = CreateSegmentUnsynchronized();
+            BufferSegment newSegment = CreateSegment();
 
             if (_pool is null || sizeHint > _pool.MaxBufferSize)
             {
@@ -178,7 +178,7 @@ namespace System.IO.Pipelines
             return adjustedToMaximumSize;
         }
 
-        private BufferSegment CreateSegmentUnsynchronized()
+        private BufferSegment CreateSegment()
         {
             if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
             {
@@ -188,7 +188,7 @@ namespace System.IO.Pipelines
             return new BufferSegment();
         }
 
-        private void ReturnSegmentUnsynchronized(BufferSegment segment)
+        private void ReturnSegment(BufferSegment segment)
         {
             if (_bufferSegmentPool.Count < MaxSegmentPoolSize)
             {
@@ -297,7 +297,7 @@ namespace System.IO.Pipelines
                         }
 
                         returnSegment.ResetMemory();
-                        ReturnSegmentUnsynchronized(returnSegment);
+                        ReturnSegment(returnSegment);
 
                         // Update the head segment after we return the current segment
                         _head = segment;
@@ -364,7 +364,7 @@ namespace System.IO.Pipelines
                 }
 
                 returnSegment.ResetMemory();
-                ReturnSegmentUnsynchronized(returnSegment);
+                ReturnSegment(returnSegment);
 
                 // Update the head segment after we return the current segment
                 _head = segment;

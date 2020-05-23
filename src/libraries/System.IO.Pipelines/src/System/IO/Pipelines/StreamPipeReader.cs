@@ -151,7 +151,7 @@ namespace System.IO.Pipelines
             {
                 BufferSegment next = returnStart.NextSegment!;
                 returnStart.ResetMemory();
-                ReturnSegmentUnsynchronized(returnStart);
+                ReturnSegment(returnStart);
                 returnStart = next;
             }
         }
@@ -323,7 +323,7 @@ namespace System.IO.Pipelines
 
         private BufferSegment AllocateSegment()
         {
-            BufferSegment nextSegment = CreateSegmentUnsynchronized();
+            BufferSegment nextSegment = CreateSegment();
 
             if (_pool is null)
             {
@@ -337,7 +337,7 @@ namespace System.IO.Pipelines
             return nextSegment;
         }
 
-        private BufferSegment CreateSegmentUnsynchronized()
+        private BufferSegment CreateSegment()
         {
             if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
             {
@@ -347,7 +347,7 @@ namespace System.IO.Pipelines
             return new BufferSegment();
         }
 
-        private void ReturnSegmentUnsynchronized(BufferSegment segment)
+        private void ReturnSegment(BufferSegment segment)
         {
             Debug.Assert(segment != _readHead, "Returning _readHead segment that's in use!");
             Debug.Assert(segment != _readTail, "Returning _readTail segment that's in use!");

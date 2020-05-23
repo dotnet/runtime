@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -43,6 +42,7 @@ namespace System.IO.Pipelines
 
         // Mutable struct! Don't make this readonly
         private BufferSegmentStack _bufferSegmentPool;
+        private BufferSegment? _pooledBufferSegment;
 
         private readonly DefaultPipeReader _reader;
         private readonly DefaultPipeWriter _writer;
@@ -71,6 +71,9 @@ namespace System.IO.Pipelines
 
         private readonly int _maxPooledBufferSize;
         private bool _disposed;
+
+        private static readonly Exception s_exceptionSentinel = new Exception();
+        private volatile Exception? _writerCompletionException;
 
         // The extent of the bytes available to the PipeReader to consume
         private BufferSegment? _readTail;
@@ -132,6 +135,7 @@ namespace System.IO.Pipelines
             _writerCompletion.Reset();
             _readerAwaitable = new PipeAwaitable(completed: false, _useSynchronizationContext);
             _writerAwaitable = new PipeAwaitable(completed: true, _useSynchronizationContext);
+            _writerCompletionException = null;
             _readTailIndex = 0;
             _readHeadIndex = 0;
             _lastExaminedIndex = -1;
@@ -153,6 +157,13 @@ namespace System.IO.Pipelines
 
             AllocateWriteHeadIfNeeded(sizeHint);
 
+            _operationState.EndWriteAllocation();
+            if (_writerCompletionException != null)
+            {
+                CompleteWriter();
+                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+            }
+
             return _writingHeadMemory;
         }
 
@@ -170,6 +181,13 @@ namespace System.IO.Pipelines
 
             AllocateWriteHeadIfNeeded(sizeHint);
 
+            _operationState.EndWriteAllocation();
+            if (_writerCompletionException != null)
+            {
+                CompleteWriter();
+                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+            }
+
             return _writingHeadMemory.Span;
         }
 
@@ -181,50 +199,55 @@ namespace System.IO.Pipelines
             if (!_operationState.IsWritingActive ||
                 _writingHeadMemory.Length == 0 || _writingHeadMemory.Length < sizeHint)
             {
-                AllocateWriteHeadSynchronized(sizeHint);
+                AllocateWriteHead(sizeHint);
             }
         }
 
-        private void AllocateWriteHeadSynchronized(int sizeHint)
+        private void AllocateWriteHead(int sizeHint)
         {
-            lock (_sync)
-            {
-                _operationState.BeginWrite();
+            // First set the Write active and block reader from returning the writer's blocks
+            _operationState.BeginWrite();
 
-                if (_writingHead == null)
+            if (_writingHead == null)
+            {
+                Debug.Assert(_readHead == null, "Returning _readHead segment that's in use!");
+                Debug.Assert(_readTail == null, "Returning _readTail segment that's in use!");
+
+                // We need to allocate memory to write since nobody has written before
+                BufferSegment newSegment = AllocateSegment(sizeHint);
+
+                // Set all the pointers
+                _writingHead = _readHead = _readTail = newSegment;
+                _lastExaminedIndex = 0;
+            }
+            else
+            {
+                int bytesLeftInBuffer = _writingHeadMemory.Length;
+
+                if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
                 {
-                    // We need to allocate memory to write since nobody has written before
+                    if (_writingHeadBytesBuffered > 0)
+                    {
+                        // Flush buffered data to the segment
+                        _writingHead.End += _writingHeadBytesBuffered;
+                        _writingHeadBytesBuffered = 0;
+                    }
+
                     BufferSegment newSegment = AllocateSegment(sizeHint);
 
-                    // Set all the pointers
-                    _writingHead = _readHead = _readTail = newSegment;
-                    _lastExaminedIndex = 0;
-                }
-                else
-                {
-                    int bytesLeftInBuffer = _writingHeadMemory.Length;
-
-                    if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
-                    {
-                        if (_writingHeadBytesBuffered > 0)
-                        {
-                            // Flush buffered data to the segment
-                            _writingHead.End += _writingHeadBytesBuffered;
-                            _writingHeadBytesBuffered = 0;
-                        }
-
-                        BufferSegment newSegment = AllocateSegment(sizeHint);
-
-                        _writingHead.SetNext(newSegment);
-                        _writingHead = newSegment;
-                    }
+                    _writingHead.SetNext(newSegment);
+                    _writingHead = newSegment;
                 }
             }
         }
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
-            BufferSegment newSegment = CreateSegmentUnsynchronized();
+            BufferSegment? newSegment = Interlocked.Exchange(ref _pooledBufferSegment, null);
+            if (newSegment is null)
+            {
+                newSegment = CreateSegmentSynchronized();
+            }
 
             int maxSize = _maxPooledBufferSize;
             if (_pool != null && sizeHint <= maxSize)
@@ -253,11 +276,14 @@ namespace System.IO.Pipelines
             return adjustedToMaximumSize;
         }
 
-        private BufferSegment CreateSegmentUnsynchronized()
+        private BufferSegment CreateSegmentSynchronized()
         {
-            if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
+            lock (_sync)
             {
-                return segment;
+                if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
+                {
+                    return segment;
+                }
             }
 
             return new BufferSegment();
@@ -385,6 +411,29 @@ namespace System.IO.Pipelines
 
         internal void CompleteWriter(Exception? exception)
         {
+            _writerCompletionException = exception ?? s_exceptionSentinel;
+            if (_operationState.IsWritingAllocating)
+            {
+                return;
+            }
+
+            CompleteWriter();
+        }
+
+        private void CompleteWriter()
+        {
+            Exception? exception = Interlocked.Exchange(ref _writerCompletionException, null);
+
+            if (exception is null)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(exception, s_exceptionSentinel))
+            {
+                exception = null;
+            }
+
             CompletionData completionData;
             PipeCompletionCallbacks? completionCallbacks;
             bool readerCompleted;
@@ -438,9 +487,6 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_InvalidExaminedOrConsumedPosition();
             }
 
-            BufferSegment? returnStart = null;
-            BufferSegment? returnEnd = null;
-
             CompletionData completionData = default;
 
             lock (_sync)
@@ -475,6 +521,8 @@ namespace System.IO.Pipelines
                     }
                 }
 
+                BufferSegment? returnStart = null;
+                BufferSegment? returnEnd = null;
                 if (consumedSegment != null)
                 {
                     if (_readHead == null)
@@ -541,12 +589,23 @@ namespace System.IO.Pipelines
                     _readerAwaitable.SetUncompleted();
                 }
 
-                while (returnStart != null && returnStart != returnEnd)
+                if (returnStart != null && returnStart != returnEnd)
                 {
                     BufferSegment? next = returnStart.NextSegment;
                     returnStart.ResetMemory();
-                    ReturnSegmentUnsynchronized(returnStart);
+                    if (Interlocked.CompareExchange(ref _pooledBufferSegment, returnStart, null) != null)
+                    {
+                        ReturnSegmentUnsynchronized(returnStart);
+                    }
                     returnStart = next;
+
+                    while (returnStart != null && returnStart != returnEnd)
+                    {
+                        next = returnStart.NextSegment;
+                        returnStart.ResetMemory();
+                        ReturnSegmentUnsynchronized(returnStart);
+                        returnStart = next;
+                    }
                 }
 
                 _operationState.EndRead();
@@ -954,28 +1013,36 @@ namespace System.IO.Pipelines
             CompletionData completionData;
             ValueTask<FlushResult> result;
 
+            // Allocate whatever the pool gives us so we can write, this also marks the
+            // state as writing
+            AllocateWriteHeadIfNeeded(0);
+            if (source.Length <= _writingHeadMemory.Length)
+            {
+                source.CopyTo(_writingHeadMemory);
+
+                AdvanceCore(source.Length);
+            }
+            else
+            {
+                // This is the multi segment copy
+                WriteMultiSegment(source.Span);
+            }
+
+
             lock (_sync)
             {
-                // Allocate whatever the pool gives us so we can write, this also marks the
-                // state as writing
-                AllocateWriteHeadIfNeeded(0);
-
-                if (source.Length <= _writingHeadMemory.Length)
-                {
-                    source.CopyTo(_writingHeadMemory);
-
-                    AdvanceCore(source.Length);
-                }
-                else
-                {
-                    // This is the multi segment copy
-                    WriteMultiSegment(source.Span);
-                }
+                _operationState.EndWriteAllocation();
 
                 PrepareFlush(out completionData, out result, cancellationToken);
+
+                if (_writerCompletionException != null)
+                {
+                    CompleteWriter();
+                }
             }
 
             TrySchedule(_readerScheduler, completionData);
+
             return result;
         }
 

@@ -57,7 +57,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task BufferSegmentsPooledUpToThreshold()
         {
-            int blockCount = Pipe.MaxSegmentPoolSize + 1;
+            int blockCount = Pipe.MaxSegmentPoolSize + 2;
 
             // Write 256 blocks to ensure they get reused
             for (int i = 0; i < blockCount; i++)
@@ -73,7 +73,7 @@ namespace System.IO.Pipelines.Tests
 
             Assert.Equal(blockCount, oldSegments.Count);
 
-            // This should return them all to the segment pool (256 blocks, the last block will be discarded)
+            // This should return them all to the segment pool (256 + 1) blocks, the last block will be discarded
             _pipe.Reader.AdvanceTo(result.Buffer.End);
 
             for (int i = 0; i < blockCount; i++)
@@ -91,14 +91,14 @@ namespace System.IO.Pipelines.Tests
 
             _pipe.Reader.AdvanceTo(result.Buffer.End);
 
-            // Assert Pipe.MaxSegmentPoolSize pooled segments
-            for (int i = 0; i < Pipe.MaxSegmentPoolSize; i++)
+            // Assert Pipe.MaxSegmentPoolSize + 1 pooled segments (one held inline).
+            for (int i = 0; i < Pipe.MaxSegmentPoolSize + 1; i++)
             {
-                Assert.Same(oldSegments[i], newSegments[Pipe.MaxSegmentPoolSize - i - 1]);
+                Assert.Contains(oldSegments[i], newSegments);
             }
 
             // The last segment shouldn't exist in the new list of segments at all (it should be new)
-            Assert.DoesNotContain(oldSegments[256], newSegments);
+            Assert.DoesNotContain(oldSegments[blockCount - 1], newSegments);
         }
 
         private static List<ReadOnlySequenceSegment<byte>> GetSegments(ReadResult result)
