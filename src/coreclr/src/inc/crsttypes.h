@@ -182,7 +182,7 @@ enum CrstType
 // An array mapping CrstType to level.
 int g_rgCrstLevelMap[] =
 {
-    9,          // CrstAllowedFiles
+    7,          // CrstAllowedFiles
     9,          // CrstAppDomainCache
     14,         // CrstAppDomainHandleTable
     0,          // CrstArgBasedStubCache
@@ -194,7 +194,7 @@ int g_rgCrstLevelMap[] =
     4,          // CrstAvailableParamTypes
     7,          // CrstBaseDomain
     -1,         // CrstCCompRC
-    9,          // CrstCer
+    7,          // CrstCer
     13,         // CrstClassFactInfoHash
     8,          // CrstClassInit
     -1,         // CrstClrNotification
@@ -223,7 +223,7 @@ int g_rgCrstLevelMap[] =
     0,          // CrstDynamicIL
     3,          // CrstDynamicMT
     3,          // CrstDynLinkZapItems
-    7,          // CrstEtwTypeLogHash
+    0,          // CrstEtwTypeLogHash
     18,         // CrstEventPipe
     0,          // CrstEventStore
     0,          // CrstException
@@ -326,7 +326,7 @@ int g_rgCrstLevelMap[] =
     4,          // CrstThreadStaticDataHashTable
     12,         // CrstThreadStore
     9,          // CrstTieredCompilation
-    9,          // CrstTPMethodTable
+    7,          // CrstTPMethodTable
     3,          // CrstTypeEquivalenceMap
     7,          // CrstTypeIDMap
     3,          // CrstUMEntryThunkCache
