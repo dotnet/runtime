@@ -7612,7 +7612,7 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
     }
     CONTRACTL_END
 
-    if (Level <= Context.EventPipeProvider.Level || Context.EventPipeProvider.Level == 0)
+    if (Level <= Context.EventPipeProvider.Level)
     {
         return (Keyword == (ULONGLONG)0) || (Keyword & Context.EventPipeProvider.EnabledKeywordsBitmask) != 0;
     }
