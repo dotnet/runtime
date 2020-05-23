@@ -7074,6 +7074,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     UINT64 keywords,
     UINT32 eventVersion,
     UINT32 level,
+    UINT8 opcode,
     BOOL needStack,
     UINT32 cParamDescs,
     COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
@@ -7120,6 +7121,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
             keywords,
             eventVersion,
             (EventPipeEventLevel)level,
+            opcode,
             params,
             cParamDescs,
             &metadataLength);

@@ -40,21 +40,21 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     // Create a param descriptor for every type
     COR_PRF_EVENTPIPE_PARAM_DESC allTypesParams[] = {
-        { COR_PRF_EVENTPIPE_BOOLEAN, WCHAR("Boolean") },
-        { COR_PRF_EVENTPIPE_CHAR, WCHAR("Char") },
-        { COR_PRF_EVENTPIPE_SBYTE, WCHAR("SByte") },
-        { COR_PRF_EVENTPIPE_BYTE, WCHAR("Byte") },
-        { COR_PRF_EVENTPIPE_INT16, WCHAR("Int16") },
-        { COR_PRF_EVENTPIPE_UINT16, WCHAR("UInt16") },
-        { COR_PRF_EVENTPIPE_INT32, WCHAR("Int32") },
-        { COR_PRF_EVENTPIPE_UINT32, WCHAR("UInt32") },
-        { COR_PRF_EVENTPIPE_INT64, WCHAR("Int64") },
-        { COR_PRF_EVENTPIPE_UINT64, WCHAR("UInt64") },
-        { COR_PRF_EVENTPIPE_SINGLE, WCHAR("Single") },
-        { COR_PRF_EVENTPIPE_DOUBLE, WCHAR("Double") },
-        { COR_PRF_EVENTPIPE_GUID, WCHAR("Guid") },
-        { COR_PRF_EVENTPIPE_STRING, WCHAR("String") },
-        { COR_PRF_EVENTPIPE_DATETIME, WCHAR("DateTime") }
+        { 0, COR_PRF_EVENTPIPE_BOOLEAN,  WCHAR("Boolean") },
+        { 0, COR_PRF_EVENTPIPE_CHAR,     WCHAR("Char") },
+        { 0, COR_PRF_EVENTPIPE_SBYTE,    WCHAR("SByte") },
+        { 0, COR_PRF_EVENTPIPE_BYTE,     WCHAR("Byte") },
+        { 0, COR_PRF_EVENTPIPE_INT16,    WCHAR("Int16") },
+        { 0, COR_PRF_EVENTPIPE_UINT16,   WCHAR("UInt16") },
+        { 0, COR_PRF_EVENTPIPE_INT32,    WCHAR("Int32") },
+        { 0, COR_PRF_EVENTPIPE_UINT32,   WCHAR("UInt32") },
+        { 0, COR_PRF_EVENTPIPE_INT64,    WCHAR("Int64") },
+        { 0, COR_PRF_EVENTPIPE_UINT64,   WCHAR("UInt64") },
+        { 0, COR_PRF_EVENTPIPE_SINGLE,   WCHAR("Single") },
+        { 0, COR_PRF_EVENTPIPE_DOUBLE,   WCHAR("Double") },
+        { 0, COR_PRF_EVENTPIPE_GUID,     WCHAR("Guid") },
+        { 0, COR_PRF_EVENTPIPE_STRING,   WCHAR("String") },
+        { 0, COR_PRF_EVENTPIPE_DATETIME, WCHAR("DateTime") }
     };
 
     const size_t allTypesParamsCount = sizeof(allTypesParams) / sizeof(allTypesParams[0]);
@@ -65,6 +65,7 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
             0,                              // Keywords
             1,                              // Version
             COR_PRF_EVENTPIPE_LOGALWAYS,    // Level
+            12,                              // opcode
             true,                           // Needs stack
             allTypesParamsCount,            // size of params
             allTypesParams,                 // Param descriptors
@@ -77,18 +78,43 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         return hr;
     }
 
+    COR_PRF_EVENTPIPE_PARAM_DESC arrayTypeParams[] = {
+        { COR_PRF_EVENTPIPE_FLAG_ARRAY_TYPE, COR_PRF_EVENTPIPE_INT32,    WCHAR("IntArray")},
+    };
+    const size_t arrayTypeParamsCount = sizeof(arrayTypeParams) / sizeof(arrayTypeParams[0]);
+    hr = _pCorProfilerInfo12->EventPipeDefineEvent(
+            _provider,                       // Provider
+            WCHAR("ArrayTypeEvent"),         // Name
+            3,                               // ID
+            0,                               // Keywords
+            1,                               // Version
+            COR_PRF_EVENTPIPE_LOGALWAYS,     // Level
+            0,                               // opcode
+            true,                            // Needs stack
+            arrayTypeParamsCount,            // size of params
+            arrayTypeParams,                 // Param descriptors
+            &_arrayTypeEvent                 // [OUT] event ID
+        );
+    if (FAILED(hr))
+    {
+        _failures++;
+        printf("FAIL: could not create array type EventPipe event with hr=0x%x\n", hr);
+        return hr;
+    }
+
     // EVENTPIPE_EVENT _emptyEvent;
     hr = _pCorProfilerInfo12->EventPipeDefineEvent(
-        _provider,                      // Provider
-        WCHAR("EmptyEvent"),            // Name
-        2032,                           // ID
-        0,                              // Keywords
-        1,                              // Version
-        COR_PRF_EVENTPIPE_INFORMATIONAL,// Level
-        false,                          // Needs stack
-        0,                              // size of params
-        NULL,                           // Param descriptors
-        &_emptyEvent                    // [OUT] event ID
+            _provider,                      // Provider
+            WCHAR("EmptyEvent"),            // Name
+            2032,                           // ID
+            0,                              // Keywords
+            1,                              // Version
+            COR_PRF_EVENTPIPE_INFORMATIONAL,// Level
+            0,                              // opcode
+            false,                          // Needs stack
+            0,                              // size of params
+            NULL,                           // Param descriptors
+            &_emptyEvent                    // [OUT] event ID
     );
     if (FAILED(hr))
     {
@@ -98,7 +124,7 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     }
 
     COR_PRF_EVENTPIPE_PARAM_DESC simpleParams[] = {
-        { COR_PRF_EVENTPIPE_INT32, WCHAR("Int32") }
+        { 0, COR_PRF_EVENTPIPE_INT32, WCHAR("Int32") }
     };
 
     const size_t simpleParamsCount = sizeof(simpleParams) / sizeof(simpleParams[0]);
@@ -110,6 +136,7 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
             0,                              // Keywords
             1,                              // Version
             COR_PRF_EVENTPIPE_VERBOSE,      // Level
+            0,                              // opcode
             true,                           // Needs stack
             simpleParamsCount,              // size of params
             simpleParams,                   // Param descriptors
@@ -159,10 +186,10 @@ HRESULT STDMETHODCALLTYPE EventPipeProfiler::JITCachedFunctionSearchFinished(Fun
 }
 
 
-HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionId)
+HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
 {
-    String functionName = GetFunctionIDName(functionId);
-    if (functionName == WCHAR("TriggerMethod"))
+    String functionName = GetFunctionIDName(functionID);
+    if (functionName == L"TriggerMethod")
     {
         printf("TriggerMethod found! Sending event...\n");
 
@@ -221,7 +248,7 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionId)
         eventData[12].ptr = reinterpret_cast<UINT64>(&guid);
         eventData[12].size = sizeof(GUID);
         // { COR_PRF_EVENTPIPE_STRING, WCHAR("String") }
-        LPCWCH str = WCHAR("Hello, this is a string!");
+        LPCWCH str = L"Hello, this is a string!";
         eventData[13].ptr = reinterpret_cast<UINT64>(str);
         eventData[13].size = static_cast<UINT32>(wcslen(str) + 1 /*include null char*/) * sizeof(WCHAR);
         // { COR_PRF_EVENTPIPE_DATETIME, WCHAR("DateTime") }
@@ -233,12 +260,43 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionId)
         HRESULT hr = _pCorProfilerInfo12->EventPipeWriteEvent(
                         _allTypesEvent,
                         eventData,
-                        sizeof(eventData)/sizeof(COR_PRF_EVENT_DATA),
+                        sizeof(eventData)/sizeof(eventData[0]),
                         NULL,
                         NULL);
         if (FAILED(hr))
         {
             printf("FAIL: EventPipeWriteEvent failed for AllTypesEvent with hr=0x%x\n", hr);
+            _failures++;
+            return hr;
+        }
+
+        // Array types are not supported in the version of TraceEvent we consume in the
+        // tests, but we can at least make sure nothing asserts in the runtime.
+        // Once TraceEvent has a new version out with the array type support
+        // we can update and it will work.
+        // { COR_PRF_EVENTPIPE_FLAG_ARRAY_TYPE, COR_PRF_EVENTPIPE_INT32, WCHAR("IntArray")}
+        COR_PRF_EVENT_DATA arrayTypeEventData[1];
+        constexpr INT32 arraySize = 2 + (100 * sizeof(INT32));
+        BYTE dataSource[arraySize];
+        size_t offset = 0;
+        WriteToBuffer<UINT16>(dataSource, arraySize, &offset, 100);
+
+        for (int i = 0; i < 100; ++i)
+        {
+            WriteToBuffer<INT32>(dataSource, arraySize, &offset, 100 - i);
+        }
+
+        arrayTypeEventData[0].ptr = reinterpret_cast<UINT64>(&dataSource[0]);
+        arrayTypeEventData[0].size = arraySize;
+        hr = _pCorProfilerInfo12->EventPipeWriteEvent(
+                        _arrayTypeEvent,
+                        arrayTypeEventData,
+                        sizeof(arrayTypeEventData) / sizeof(arrayTypeEventData[0]),
+                        NULL,
+                        NULL);
+        if (FAILED(hr))
+        {
+            printf("FAIL: EventPipeWriteEvent failed for ArrayTypeEvent with hr=0x%x\n", hr);
             _failures++;
             return hr;
         }

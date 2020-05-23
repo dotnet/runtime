@@ -761,6 +761,11 @@ typedef enum
 
 typedef enum
 {
+    COR_PRF_EVENTPIPE_FLAG_ARRAY_TYPE = 1
+} COR_PRF_EVENTPIPE_PARAM_FLAGS;
+
+typedef enum
+{
     COR_PRF_EVENTPIPE_LOGALWAYS = 0,
     COR_PRF_EVENTPIPE_CRITICAL = 1,
     COR_PRF_EVENTPIPE_ERROR = 2,
@@ -771,6 +776,7 @@ typedef enum
 
 typedef struct
 {
+    UINT32       flags;
     UINT32       type;
     const WCHAR *name;
 } COR_PRF_EVENTPIPE_PARAM_DESC;
@@ -4079,14 +4085,15 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
 
     HRESULT EventPipeDefineEvent(
                 [in] EVENTPIPE_PROVIDER     provHandle,
-                [in, string] const WCHAR   *szName, 
+                [in, string] const WCHAR   *szName,
                 [in] UINT32                 eventID,
                 [in] UINT64                 keywords,
                 [in] UINT32                 eventVersion,
                 [in] UINT32                 level,
+                [in] UINT8                  opcode,
                 [in] BOOL                   needStack,
                 [in] UINT32                 cParamDescs,
-                [in, size_is(cParamDescs)] 
+                [in, size_is(cParamDescs)]
                      COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
                 [out] EVENTPIPE_EVENT      *pEventHandle);
 

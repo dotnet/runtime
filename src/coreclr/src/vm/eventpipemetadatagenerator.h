@@ -13,7 +13,7 @@ enum class EventPipeEventLevel;
 // This enum is derived from the managed TypeCode type, though
 // not all of these values are available in TypeCode.
 // For example, Guid does not exist in TypeCode.
-// Keep this in sync with COR_PRF_EVENTPIPE_PARAM_TYPE defined in 
+// Keep this in sync with COR_PRF_EVENTPIPE_PARAM_TYPE defined in
 // corprof.idl
 enum class EventPipeParameterType
 {
@@ -38,9 +38,21 @@ enum class EventPipeParameterType
     String = 18,        // Unicode character string
 };
 
+enum class EventPipeParameterFlags
+{
+    ArrayType = 1
+};
+
+enum class EventPipeMetadataTag
+{
+    Opcode = 1,
+    ParameterPayload = 2
+};
+
 // Contains the metadata associated with an EventPipe event parameter.
 struct EventPipeParameterDesc
 {
+    UINT32 Flags;
     EventPipeParameterType Type;
     LPCWSTR Name;
 };
@@ -48,15 +60,48 @@ struct EventPipeParameterDesc
 // Generates metadata for an event emitted by the EventPipe.
 class EventPipeMetadataGenerator
 {
-public:
-    static BYTE* GenerateEventMetadata(
-        unsigned int eventID,
+private:
+    // Array is not part of TypeCode, we decided to use 19 to represent it.
+    // (18 is the last type code value, string)
+    static const UINT32 EventPipeTypeCodeArray = 19;
+
+    static bool HasV2ParamTypes(
+        EventPipeParameterDesc *pParams,
+        UINT32 paramCount);
+
+    static void GetEventMetadataLength(
+        UINT32 eventID,
         LPCWSTR pEventName,
         INT64 keywords,
-        unsigned int version,
+        UINT32 version,
         EventPipeEventLevel level,
+        UINT8 opcode,
         EventPipeParameterDesc *pParams,
-        unsigned int paramCount,
+        UINT32 paramCount,
+        size_t *totalLength,
+        size_t *v2Length);
+
+    static void WriteToBuffer(BYTE *pBuffer, size_t bufferLength, size_t *pOffset, LPCWSTR str, size_t strLen);
+
+    template<typename T>
+    static void WriteToBuffer(BYTE *pBuffer, size_t bufferLength, size_t *pOffset, T value)
+    {
+        _ASSERTE(bufferLength >= (*pOffset + sizeof(T)));
+
+        *(T*)(pBuffer + *pOffset) = value;
+        *pOffset += sizeof(T);
+    }
+
+public:
+    static BYTE* GenerateEventMetadata(
+        UINT32 eventID,
+        LPCWSTR pEventName,
+        INT64 keywords,
+        UINT32 version,
+        EventPipeEventLevel level,
+        UINT8 opcode,
+        EventPipeParameterDesc *pParams,
+        UINT32 paramCount,
         size_t *pMetadataLength);
 };
 
