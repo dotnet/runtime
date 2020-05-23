@@ -757,6 +757,72 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> FusedMultiplySubtract(Vector128<double> minuend, Vector128<double> left, Vector128<double> right) => FusedMultiplySubtract(minuend, left, right);
 
             /// <summary>
+            /// float32x2_t vfms_n_f32 (float32x2_t a, float32x2_t b, float32_t n)
+            ///   A64: FMLS Vd.2S, Vn.2S, Vm.S[0]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractByScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) => FusedMultiplySubtractByScalar(minuend, left, right);
+
+            /// <summary>
+            /// float64x2_t vfmsq_n_f64 (float64x2_t a, float64x2_t b, float64_t n)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.D[0]
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtractByScalar(Vector128<double> minuend, Vector128<double> left, Vector64<double> right) => FusedMultiplySubtractByScalar(minuend, left, right);
+
+            /// <summary>
+            /// float32x4_t vfmsq_n_f32 (float32x4_t a, float32x4_t b, float32_t n)
+            ///   A64: FMLS Vd.4S, Vn.4S, Vm.S[0]
+            /// </summary>
+            public static Vector128<float> FusedMultiplySubtractByScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right) => FusedMultiplySubtractByScalar(minuend, left, right);
+
+            /// <summary>
+            /// float32x2_t vfms_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
+            ///   A64: FMLS Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32x2_t vfms_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
+            ///   A64: FMLS Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+
+            /// <summary>
+            /// float64x2_t vfmsq_laneq_f64 (float64x2_t a, float64x2_t b, float64x2_t v, const int lane)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.D[lane]
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtractBySelectedScalar(Vector128<double> minuend, Vector128<double> left, Vector128<double> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32x4_t vfmsq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
+            ///   A64: FMLS Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> FusedMultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32x4_t vfmsq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
+            ///   A64: FMLS Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> FusedMultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+
+            /// <summary>
+            /// float64_t vfmsd_laneq_f64 (float64_t a, float64_t b, float64x2_t v, const int lane)
+            ///   A64: FMLS Dd, Dn, Vm.D[lane]
+            /// </summary>
+            public static Vector64<double> FusedMultiplySubtractScalarBySelectedScalar(Vector64<double> minuend, Vector64<double> left, Vector128<double> right, byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32_t vfmss_lane_f32 (float32_t a, float32_t b, float32x2_t v, const int lane)
+            ///   A64: FMLS Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32_t vfmss_laneq_f32 (float32_t a, float32_t b, float32x4_t v, const int lane)
+            ///   A64: FMLS Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
+
+            /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
             /// </summary>
