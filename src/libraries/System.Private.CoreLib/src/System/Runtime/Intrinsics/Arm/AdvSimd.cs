@@ -685,6 +685,72 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> FusedMultiplyAdd(Vector128<double> addend, Vector128<double> left, Vector128<double> right) => FusedMultiplyAdd(addend, left, right);
 
             /// <summary>
+            /// float32x2_t vfma_n_f32 (float32x2_t a, float32x2_t b, float32_t n)
+            ///   A64: FMLA Vd.2S, Vn.2S, Vm.S[0]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddByScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right) => FusedMultiplyAddByScalar(addend, left, right);
+
+            /// <summary>
+            /// float64x2_t vfmaq_n_f64 (float64x2_t a, float64x2_t b, float64_t n)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.D[0]
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAddByScalar(Vector128<double> addend, Vector128<double> left, Vector64<double> right) => FusedMultiplyAddByScalar(addend, left, right);
+
+            /// <summary>
+            /// float32x4_t vfmaq_n_f32 (float32x4_t a, float32x4_t b, float32_t n)
+            ///   A64: FMLA Vd.4S, Vn.4S, Vm.S[0]
+            /// </summary>
+            public static Vector128<float> FusedMultiplyAddByScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right) => FusedMultiplyAddByScalar(addend, left, right);
+
+            /// <summary>
+            /// float32x2_t vfma_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
+            ///   A64: FMLA Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32x2_t vfma_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
+            ///   A64: FMLA Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+            /// <summary>
+            /// float64x2_t vfmaq_laneq_f64 (float64x2_t a, float64x2_t b, float64x2_t v, const int lane)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.D[lane]
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAddBySelectedScalar(Vector128<double> addend, Vector128<double> left, Vector128<double> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32x4_t vfmaq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
+            ///   A64: FMLA Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> FusedMultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32x4_t vfmaq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
+            ///   A64: FMLA Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> FusedMultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+            /// <summary>
+            /// float64_t vfmad_laneq_f64 (float64_t a, float64_t b, float64x2_t v, const int lane)
+            ///   A64: FMLA Dd, Dn, Vm.D[lane]
+            /// </summary>
+            public static Vector64<double> FusedMultiplyAddScalarBySelectedScalar(Vector64<double> addend, Vector64<double> left, Vector128<double> right, byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32_t vfmas_lane_f32 (float32_t a, float32_t b, float32x2_t v, const int lane)
+            ///   A64: FMLA Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddScalarBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
+
+            /// <summary>
+            /// float32_t vfmas_laneq_f32 (float32_t a, float32_t b, float32x4_t v, const int lane)
+            ///   A64: FMLA Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddScalarBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplyAddScalarBySelectedScalar(addend, left, right, rightIndex);
+
+            /// <summary>
             /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
             ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
