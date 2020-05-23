@@ -168,6 +168,8 @@ namespace System.Threading
         internal static readonly bool UsePortableThreadPool = InitializeConfigAndDetermineUsePortableThreadPool();
         internal static bool SupportsTimeSensitiveWorkItems => UsePortableThreadPool;
 
+        // This needs to be initialized after UsePortableThreadPool above, as it may depend on UsePortableThreadPool and the
+        // config initialization
         internal static readonly bool EnableWorkerTracking = GetEnableWorkerTracking();
 
 
@@ -220,6 +222,11 @@ namespace System.Threading
             out uint configValue,
             out bool isBoolean,
             out char* appContextConfigName);
+
+        private static bool GetEnableWorkerTracking() =>
+            UsePortableThreadPool
+                ? AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false)
+                : GetEnableWorkerTrackingNative();
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -443,7 +450,7 @@ namespace System.Threading
         {
             if (UsePortableThreadPool)
             {
-                // TODO: PortableThreadPool - Implement worker tracking
+                PortableThreadPool.ThreadPoolInstance.ReportThreadStatus(isWorking);
                 return;
             }
 
@@ -471,7 +478,7 @@ namespace System.Threading
             UsePortableThreadPool ? PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject() : null;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool GetEnableWorkerTracking();
+        private static extern bool GetEnableWorkerTrackingNative();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr RegisterWaitForSingleObjectNative(

@@ -47,7 +47,8 @@ namespace System.Threading
     public static partial class ThreadPool
     {
         internal const bool SupportsTimeSensitiveWorkItems = true;
-        internal const bool EnableWorkerTracking = false;
+        internal static readonly bool EnableWorkerTracking =
+            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {

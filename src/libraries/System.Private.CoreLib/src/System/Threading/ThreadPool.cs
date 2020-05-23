@@ -771,7 +771,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void DispatchWorkItemWithWorkerTracking(object workItem, Thread currentThread)
         {
-            Debug.Assert(ThreadPoolGlobals.enableWorkerTracking);
+            Debug.Assert(ThreadPool.EnableWorkerTracking);
             Debug.Assert(currentThread == Thread.CurrentThread);
 
             bool reportedStatus = false;

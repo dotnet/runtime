@@ -23,6 +23,7 @@ namespace System.Threading
             public const string WorkerThreadAdjustmentStats = "Duration={0};\nThroughput={1};\nThreadWave={2};\nThroughputWave={3};\nThroughputErrorEstimate={4};\nAverageThroughputErrorEstimate={5};\nThroughputRatio={6};\nConfidence={7};\nNewControlSetting={8};\nNewThreadWaveMagnitude={9};\nClrInstanceID={10}";
             public const string IOEnqueue = "NativeOverlapped={0};\nOverlapped={1};\nMultiDequeues={2};\nClrInstanceID={3}";
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
+            public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
         }
 
         // The task definitions for the ETW manifest
@@ -31,6 +32,7 @@ namespace System.Threading
             public const EventTask ThreadPoolWorkerThread = (EventTask)16;
             public const EventTask ThreadPoolWorkerThreadAdjustment = (EventTask)18;
             public const EventTask ThreadPool = (EventTask)23;
+            public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
         }
 
         public static class Opcodes // this name and visibility is important for EventSource
@@ -260,6 +262,27 @@ namespace System.Threading
         [NonEvent]
         public void ThreadPoolIODequeue(RegisteredWaitHandle registeredWaitHandle) =>
             ThreadPoolIODequeue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero);
+
+        [Event(60, Level = EventLevel.Verbose, Message = Messages.WorkingThreadCount, Task = Tasks.ThreadPoolWorkingThreadCount, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        public unsafe void ThreadPoolWorkingThreadCount(short count)
+        {
+            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+
+            int countInt = count;
+            short clrInstanceId = ClrInstanceId;
+
+            EventData* data = stackalloc EventData[2];
+            data[0].DataPointer = (IntPtr)(&countInt);
+            data[0].Size = sizeof(int);
+            data[0].Reserved = 0;
+            data[1].DataPointer = (IntPtr)(&clrInstanceId);
+            data[1].Size = sizeof(short);
+            data[1].Reserved = 0;
+            WriteEventCore(60, 2, data);
+        }
 
 #pragma warning disable IDE1006 // Naming Styles
         public static readonly PortableThreadPoolEventSource Log = new PortableThreadPoolEventSource();
