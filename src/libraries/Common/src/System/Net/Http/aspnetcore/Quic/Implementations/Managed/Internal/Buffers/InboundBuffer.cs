@@ -449,7 +449,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         public void OnConnectionError(QuicConnectionAbortedException exception)
         {
-            _deliverableChannel.Writer.TryComplete(exception);
+            _deliverableChannel.Writer.TryComplete(exception.ErrorCode == 0 ? null : exception);
         }
 
         private void ReturnBuffer(byte[] buffer)

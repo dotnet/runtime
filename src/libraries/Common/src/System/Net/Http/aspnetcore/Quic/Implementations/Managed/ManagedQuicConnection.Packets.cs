@@ -228,9 +228,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         private bool UnprotectLongHeaderPacket(QuicReader reader, ref LongPacketHeader header, out SharedPacketData headerData, PacketNumberSpace pnSpace)
         {
-            // initialize protection keys if necessary
+            // initialize protection keys if necessary (first initial packet)
             if (_isServer && header.PacketType == PacketType.Initial &&
-                pnSpace.RecvCryptoSeal == null)
+                pnSpace.RecvCryptoSeal == null && pnSpace.LargestReceivedPacketNumber < 0)
             {
                 // clients destination connection Id is ours source connection Id
                 SourceConnectionId = new ConnectionId(header.DestinationConnectionId.ToArray(), 0,

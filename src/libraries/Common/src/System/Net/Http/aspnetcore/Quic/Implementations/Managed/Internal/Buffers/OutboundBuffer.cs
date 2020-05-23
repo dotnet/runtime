@@ -446,7 +446,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 _chunks.RemoveRange(0, toRemove);
             }
 
-            if (FinAcked && _acked[0].Length == WrittenBytes && StreamState == SendStreamState.DataSent)
+            if (FinAcked && _acked.Count > 0 && _acked[0].Length == WrittenBytes && StreamState == SendStreamState.DataSent)
             {
                 lock (SyncObject)
                 {

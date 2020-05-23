@@ -63,11 +63,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _socket.Bind(_listenEndpoint);
             _socket.Blocking = false;
 
-            if (_listenEndpoint.AddressFamily == AddressFamily.InterNetwork)
-            {
-                _socket.DontFragment = true;
-            }
-
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // disable exception when client forcibly closes the socket.
@@ -311,6 +306,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             catch (Exception e)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                Console.WriteLine(e);
             }
 
             // cleanup everything
