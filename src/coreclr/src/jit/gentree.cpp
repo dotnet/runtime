@@ -697,7 +697,7 @@ int GenTree::GetRegisterDstCount() const
 #if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
     {
-        return (const_cast<GenTree*>(this))->AsPutArgSplit()->gtNumRegs;
+        return AsPutArgSplit()->gtNumRegs;
     }
 #endif
 #if !defined(TARGET_64BIT)
@@ -742,7 +742,6 @@ regMaskTP GenTree::gtGetRegMask() const
 
     if (IsMultiRegCall())
     {
-        // temporarily cast away const-ness as AsCall() method is not declared const
         resultMask = genRegMask(GetRegNum());
         resultMask |= AsCall()->GetOtherRegMask();
     }
@@ -16520,7 +16519,6 @@ bool GenTree::isContained() const
     // They can only produce a result if the child is a SIMD equality comparison.
     else if (OperKind() & GTK_RELOP)
     {
-        // We have to cast away const-ness since AsOp() method is non-const.
         const GenTree* childNode = AsOp()->gtGetOp1();
         assert(isMarkedContained == false);
     }
