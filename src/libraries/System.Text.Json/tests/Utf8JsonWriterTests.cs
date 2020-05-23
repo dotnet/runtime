@@ -1381,6 +1381,31 @@ namespace System.Text.Json.Tests
             Assert.Equal(expectedString, actualString);
         }
 
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task GrowBeyondBufferSize(bool formatted, bool skipValidation)
+        {
+            const int InitialGrowthSize = 256;
+            var writer = new FixedSizedBufferWriter(InitialGrowthSize);
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+            byte[] utf8String = Encoding.UTF8.GetBytes("this is a string long enough to overflow the buffer and cause an exception to be thrown.");
+
+            await using var jsonUtf8 = new Utf8JsonWriter(writer, options);
+
+            jsonUtf8.WriteStartArray();
+
+            while (jsonUtf8.BytesPending < InitialGrowthSize - utf8String.Length)
+            {
+                jsonUtf8.WriteStringValue(utf8String);
+            }
+
+            Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValue(utf8String));
+        }
+
         private static async Task WriteLargeToStreamHelper(Stream stream, JsonWriterOptions options)
         {
             const int SyncWriteThreshold = 25_000;
