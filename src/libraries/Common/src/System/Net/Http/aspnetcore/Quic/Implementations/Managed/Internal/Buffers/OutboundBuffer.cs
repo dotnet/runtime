@@ -337,16 +337,23 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 _pending.Remove(start, end);
                 _checkedOut.Add(start, end);
 
+                // skip chunks which are not interesting to us.
+                int chunkIndex = 0;
+                while (_chunks[chunkIndex].StreamOffset + _chunks[chunkIndex].Length < start)
+                {
+                    chunkIndex++;
+                }
+
                 int copied = 0;
-                int i = _chunks.FindIndex(c => c.StreamOffset + c.Length >= start);
                 while (copied < destination.Length)
                 {
-                    int inChunkStart = (int)(start - _chunks[i].StreamOffset) + copied;
-                    int inChunkCount = Math.Min(_chunks[i].Length - inChunkStart, destination.Length - copied);
-                    _chunks[i].Memory.Span.Slice(inChunkStart, inChunkCount).CopyTo(destination.Slice(copied));
+                    var chunk = _chunks[chunkIndex];
+                    int inChunkStart = (int)(start - chunk.StreamOffset) + copied;
+                    int inChunkCount = Math.Min(chunk.Length - inChunkStart, destination.Length - copied);
+                    chunk.Memory.Span.Slice(inChunkStart, inChunkCount).CopyTo(destination.Slice(copied));
 
                     copied += inChunkCount;
-                    i++;
+                    chunkIndex++;
                 }
 
                 SentBytes = Math.Max(SentBytes, end + 1);
@@ -420,18 +427,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 // release unneeded data
                 long processed = _acked[0].End + 1;
 
-                // index of first chunk with unsent data is the same as count of unneeded chunks that are before
-                int toRemove = _chunks.FindIndex(c => c.StreamOffset + c.Length > processed);
-                if (toRemove == -1)
+                int toRemove = 0;
+                for (; toRemove < _chunks.Count; toRemove++)
                 {
-                    toRemove = _chunks.Count;
-                }
-
-                for (int i = 0; i < toRemove; i++)
-                {
-                    if (_chunks[i].Buffer != null)
+                    var chunk = _chunks[toRemove];
+                    if (chunk.StreamOffset + chunk.Length > processed)
                     {
-                        ReturnBuffer(_chunks[i].Buffer!);
+                        // this chunk contains unsent data, stop there
+                        break;
+                    }
+
+                    if (chunk.Buffer != null)
+                    {
+                        ReturnBuffer(chunk.Buffer);
                     }
                 }
 
