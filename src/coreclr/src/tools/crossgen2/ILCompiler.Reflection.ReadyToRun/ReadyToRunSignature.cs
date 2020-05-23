@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
@@ -1723,12 +1724,99 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Read a string token from the signature stream and convert it to the actual string.
         /// </summary>
-        /// <returns></returns>
         private void ParseStringHandle(StringBuilder builder)
         {
             uint rid = ReadUIntAndEmitInlineSignatureBinary(builder);
             UserStringHandle stringHandle = MetadataTokens.UserStringHandle((int)rid);
-            builder.Append(_metadataReader.GetUserString(stringHandle));
+            AppendCSharpStringLiteral(builder, _metadataReader.GetUserString(stringHandle));
+        }
+
+        /// <summary>
+        /// Appends a C# string literal with the given value to the string builder.
+        /// </summary>
+        /// <remarks>
+        /// This method closely follows the logic in <see cref="Microsoft.CodeAnalysis.CSharp.ObjectDisplay.FormatLiteral(string, ObjectDisplayOptions)"/>
+        /// method in Roslyn .NET compiler; see its
+        /// <a href="https://github.com/dotnet/roslyn/blob/master/src/Compilers/CSharp/Portable/SymbolDisplay/ObjectDisplay.cs">sources</a> for reference.
+        /// </remarks>
+        private static void AppendCSharpStringLiteral(StringBuilder builder, string value)
+        {
+            builder.Append('"');
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                UnicodeCategory category;
+
+                // Fast check for printable ASCII characters
+                if ((c <= 0x7e) && (c >= 0x20) || !NeedsEscaping(category = CharUnicodeInfo.GetUnicodeCategory(c)))
+                {
+                    if ((c == '"') || (c == '\\'))
+                    {
+                        builder.Append(@"\");
+                    }
+                    builder.Append(c);
+                }
+                else if (category == UnicodeCategory.Surrogate)
+                {
+                    // Check for a valid surrogate pair
+                    category = CharUnicodeInfo.GetUnicodeCategory(value, i);
+                    if (category == UnicodeCategory.Surrogate)
+                    {
+                        // Escape an unpaired surrogate
+                        builder.Append(@"\u" + ((int)c).ToString("x4"));
+                    }
+                    else if (NeedsEscaping(category))
+                    {
+                        // A surrogate pair that needs to be escaped
+                        int codePoint = char.ConvertToUtf32(value, i);
+                        builder.Append(@"\U" + codePoint.ToString("x8"));
+                        i++; // Skip the already-encoded second surrogate of the pair
+                    }
+                    else
+                    {
+                        // Copy a printable surrogate pair
+                        builder.Append(c);
+                        builder.Append(value[++i]);
+                    }
+                }
+                else
+                {
+                    string encoded = c switch
+                    {
+                        '\0' => @"\0",
+                        '\a' => @"\a",
+                        '\b' => @"\b",
+                        '\f' => @"\f",
+                        '\n' => @"\n",
+                        '\r' => @"\r",
+                        '\t' => @"\t",
+                        '\v' => @"\v",
+                        _ => @"\u" + ((int)c).ToString("x4")
+                    };
+                    builder.Append(encoded);
+                }
+            }
+
+            builder.Append('"');
+        }
+
+        /// <summary>
+        /// Determines whether characters of the given <see cref="UnicodeCategory"/> will be represented with escape sequences.
+        /// </summary>
+        private static bool NeedsEscaping(UnicodeCategory category)
+        {
+            switch (category)
+            {
+                case UnicodeCategory.LineSeparator:
+                case UnicodeCategory.ParagraphSeparator:
+                case UnicodeCategory.Control:
+                case UnicodeCategory.Surrogate:
+                case UnicodeCategory.OtherNotAssigned:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }
