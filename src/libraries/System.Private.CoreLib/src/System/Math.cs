@@ -141,18 +141,18 @@ namespace System
                 // Basically, it's an optimized version of FOIL method applied to
                 // low and high dwords of each operand
 
-                ulong al = (uint)a;
-                ulong ah = a >> 32;
-                ulong bl = (uint)b;
-                ulong bh = b >> 32;
+                uint al = (uint)a;
+                uint ah = (uint)(a >> 32);
+                uint bl = (uint)b;
+                uint bh = (uint)(b >> 32);
 
-                ulong mull = al * bl;
-                ulong t = ah * bl + (mull >> 32);
-                ulong tl = al * bh + (uint)t;
+                ulong mull = ((ulong)al) * bl;
+                ulong t = ((ulong)ah) * bl + (mull >> 32);
+                ulong tl = ((ulong)al) * bh + (uint)t;
 
                 low = tl << 32 | (uint)mull;
 
-                return ah * bh + (t >> 32) + (tl >> 32);
+                return ((ulong)ah) * bh + (t >> 32) + (tl >> 32);
             }
         }
 
