@@ -28,6 +28,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         /// <param name="recovery">The recovery controller.</param>
         /// <param name="packets">Packets lost.</param>
         /// <param name="now">Timestamp when loss occured in ticks.</param>
-        void OnPacketsLost(RecoveryController recovery, List<SentPacket> packets, long now);
+        void OnPacketsLost(RecoveryController recovery, Span<SentPacket> packets, long now);
     }
 }

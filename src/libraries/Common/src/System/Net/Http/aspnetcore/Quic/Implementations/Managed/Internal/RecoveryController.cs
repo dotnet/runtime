@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
@@ -504,7 +505,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             pnSpace.NextLossTime = long.MaxValue;
 
             // lost packets to be passed to congestion controller (with InFlight = true)
-            var lostPacketsForCc = new List<SentPacket>();
+            int newlyLostCount = 0;
+            SentPacket[] newlyLost = ArrayPool<SentPacket>.Shared.Rent(pnSpace.SentPackets.Count);
 
             long lossDelay = (long)(TimeReorderingThreshold * Math.Max(LatestRtt, SmoothedRtt));
 
@@ -533,7 +535,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                     if (packet.InFlight)
                     {
-                        lostPacketsForCc.Add(packet);
+                        newlyLost[newlyLostCount++] = packet;
                     }
                 }
                 else
@@ -548,7 +550,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             pnSpace.SentPackets.RemoveRange(0, removed);
 
             // Inform the congestion controller of lost packets.
-            CongestionController.OnPacketsLost(this, lostPacketsForCc, now);
+            var newlyLostAsSpan = newlyLost.AsSpan(0, newlyLostCount);
+            CongestionController.OnPacketsLost(this, newlyLostAsSpan, now);
+
+            // clear to avoid having references to packets from pooled array
+            newlyLostAsSpan.Clear();
+            ArrayPool<SentPacket>.Shared.Return(newlyLost);
         }
 
         /// <summary>
@@ -556,7 +563,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         /// <param name="space">Packet space to drop.</param>
         /// <param name="isHandshakeComplete">True if handshake is complete</param>
-        /// <param name="sentPacketPool">Object pool to which instances of <see cref="SentPacket"/> shoudl be returned.</param>
+        /// <param name="sentPacketPool">Object pool to which instances of <see cref="SentPacket"/> should be returned.</param>
         internal void DropUnackedData(PacketSpace space, bool isHandshakeComplete,
             ObjectPool<SentPacket> sentPacketPool)
         {

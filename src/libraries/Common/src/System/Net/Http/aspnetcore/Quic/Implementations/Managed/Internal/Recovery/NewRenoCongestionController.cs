@@ -56,7 +56,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             }
         }
 
-        public void OnPacketsLost(RecoveryController recovery, List<SentPacket> lostPackets, long now)
+        public void OnPacketsLost(RecoveryController recovery, Span<SentPacket> lostPackets, long now)
         {
             SentPacket? lastPacket = null;
             foreach (var packet in lostPackets)

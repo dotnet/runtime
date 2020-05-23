@@ -238,16 +238,28 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     while (!(doTimeout = _currentTimeout <= (now = Timestamp.Now)) &&
                            !_signalWanted)
                     {
-                        if (socketReceiveTask != null && socketReceiveTask.IsCompleted)
+                        if (socketReceiveTask != null)
                         {
+                            // there is still a pending task from last sleep
+                            if (!socketReceiveTask.IsCompleted)
+                            {
+                                break;
+                            }
+
                             var result = await socketReceiveTask.ConfigureAwait(false);
                             DoReceive(_recvBuffer.AsMemory(0, result.ReceivedBytes), (IPEndPoint)result.RemoteEndPoint);
                             lastAction = now;
                             // discard the completed task.
                             socketReceiveTask = null;
                         }
-                        if (socketReceiveTask == null && _socket.Poll(0, SelectMode.SelectRead))
+                        else 
                         {
+                            // no pending async task, receive synchronously if there is some data
+                            if (!_socket.Poll(0, SelectMode.SelectRead))
+                            {
+                                break;
+                            }
+
                             EndPoint remoteEp = _listenEndpoint;
                             int result = _socket.ReceiveFrom(_recvBuffer, ref remoteEp);
                             DoReceive(_recvBuffer.AsMemory(0, result), (IPEndPoint)remoteEp);
