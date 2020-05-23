@@ -89,7 +89,10 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private readonly TransportParameters _localTransportParameters;
 
-        private readonly Tls _tls;
+        /// <summary>
+        ///     The TLS handshake module.
+        /// </summary>
+        internal Tls Tls { get; }
 
         /// <summary>
         ///     Remote endpoint address.
@@ -110,7 +113,7 @@ namespace System.Net.Quic.Implementations.Managed
         ///     True if handshake has been confirmed by the peer. For server this means that TLS has reported handshake complete,
         ///     for client it means that a HANDSHAKE_DONE frame has been received.
         /// </summary>
-        private bool HandshakeConfirmed => _isServer ? _tls.IsHandshakeComplete : _handshakeDoneReceived;
+        private bool HandshakeConfirmed => _isServer ? Tls.IsHandshakeComplete : _handshakeDoneReceived;
 
         /// <summary>
         ///     True if HANDSHAKE_DONE frame has been received. Valid only for client.
@@ -214,7 +217,7 @@ namespace System.Net.Quic.Implementations.Managed
             _socketContext = new SingleConnectionSocketContext(listenEndPoint, this);
             _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
             _gcHandle = GCHandle.Alloc(this);
-            _tls = new Tls(_gcHandle, options, _localTransportParameters);
+            Tls = new Tls(_gcHandle, options, _localTransportParameters);
 
             // init random connection ids for the client
             SourceConnectionId = ConnectionId.Random(ConnectionId.DefaultCidSize);
@@ -225,7 +228,7 @@ namespace System.Net.Quic.Implementations.Managed
             DeriveInitialProtectionKeys(DestinationConnectionId.Data);
 
             // generate first Crypto frames
-            _tls.DoHandshake();
+            Tls.DoHandshake();
 
             _localLimits.UpdateMaxData(_localTransportParameters.InitialMaxData);
             _localLimits.UpdateMaxStreamsBidi(_localTransportParameters.InitialMaxStreamsBidi);
@@ -243,7 +246,7 @@ namespace System.Net.Quic.Implementations.Managed
             _localTransportParameters = TransportParameters.FromListenerOptions(options);
 
             _gcHandle = GCHandle.Alloc(this);
-            _tls = new Tls(_gcHandle, options, _localTransportParameters);
+            Tls = new Tls(_gcHandle, options, _localTransportParameters);
 
             _localLimits.UpdateMaxData(_localTransportParameters.InitialMaxData);
             _localLimits.UpdateMaxStreamsBidi(_localTransportParameters.InitialMaxStreamsBidi);
@@ -309,7 +312,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (timestamp >= Recovery.LossRecoveryTimer)
             {
-                Recovery.OnLossDetectionTimeout(_tls.IsHandshakeComplete, timestamp);
+                Recovery.OnLossDetectionTimeout(Tls.IsHandshakeComplete, timestamp);
             }
         }
 
@@ -318,9 +321,9 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private void DoHandshake()
         {
-            var status = _tls.DoHandshake();
+            var status = Tls.DoHandshake();
 
-            if (status == SslError.Ssl)
+            if (status == SslError.Ssl && _outboundError == null)
             {
                 CloseConnection(TransportErrorCode.InternalError, "SSL error");
                 return;
@@ -328,7 +331,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (ReferenceEquals(_peerTransportParameters, TransportParameters.Default))
             {
-                var param = _tls.GetPeerTransportParameters(_isServer);
+                var param = Tls.GetPeerTransportParameters(_isServer);
 
                 if (param == null)
                 {
@@ -405,7 +408,7 @@ namespace System.Net.Quic.Implementations.Managed
             // if pending errors, send them in appropriate epoch,
             if (_outboundError != null && _outboundError.IsQuicError)
             {
-                EncryptionLevel desiredLevel = _tls.WriteLevel;
+                EncryptionLevel desiredLevel = Tls.WriteLevel;
                 if (!Connected && desiredLevel == EncryptionLevel.Application)
                 {
                     // don't use application level if handshake is not complete
@@ -512,7 +515,7 @@ namespace System.Net.Quic.Implementations.Managed
             await CloseAsync((long)TransportErrorCode.NoError).ConfigureAwait(false);
 
             // TODO-RZ: this may be dangerous, since _tls is accessed from background thread.
-            _tls.Dispose();
+            Tls.Dispose();
             _gcHandle.Free();
 
             _disposed = true;
@@ -541,7 +544,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
             ReadOnlySpan<byte> writeSecret)
         {
-            var alg = _tls.GetNegotiatedCipher();
+            var alg = Tls.GetNegotiatedCipher();
             SetEncryptionSecrets(level, alg, readSecret, writeSecret);
 
             return 1;
@@ -662,7 +665,7 @@ namespace System.Net.Quic.Implementations.Managed
             return stream;
         }
 
-        internal override SslApplicationProtocol NegotiatedApplicationProtocol => _tls.GetAlpnProtocol();
+        internal override SslApplicationProtocol NegotiatedApplicationProtocol => Tls.GetAlpnProtocol();
 
         internal override async ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
@@ -717,7 +720,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            Recovery.DropUnackedData(space, _tls.IsHandshakeComplete, sentPacketPool);
+            Recovery.DropUnackedData(space, Tls.IsHandshakeComplete, sentPacketPool);
 
             // drop protection keys
             pnSpace.SendCryptoSeal = null;

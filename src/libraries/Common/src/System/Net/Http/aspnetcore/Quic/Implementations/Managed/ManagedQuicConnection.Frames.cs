@@ -257,7 +257,7 @@ namespace System.Net.Quic.Implementations.Managed
             var space = GetPacketSpace(packetType);
             long ackDelay =
                 Timestamp.FromMicroseconds(frame.AckDelay * (1 << (int)_peerTransportParameters.AckDelayExponent));
-            Recovery.OnAckReceived(space, ranges, ackDelay, frame, context.Timestamp, _tls.IsHandshakeComplete);
+            Recovery.OnAckReceived(space, ranges, ackDelay, frame, context.Timestamp, Tls.IsHandshakeComplete);
 
             var ackedPackets = Recovery.GetPacketNumberSpace(space).AckedPackets;
             while (ackedPackets.TryDequeue(out var packet))
@@ -346,7 +346,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // define a copy of level variable with smaller scope to prevent allocations in common case
                 EncryptionLevel level2 = level;
-                stream.Deliver(segment => { _tls.OnDataReceived(level2, segment.Span); });
+                stream.Deliver(segment => { Tls.OnDataReceived(level2, segment.Span); });
                 context.HandshakeWanted = true;
             }
 
@@ -677,7 +677,7 @@ namespace System.Net.Quic.Implementations.Managed
             int writtenAfterNonAckEliciting = writer.BytesWritten;
 
             if (writer.BytesAvailable > 0 && _isServer && !_handshakeDoneSent && packetType == PacketType.OneRtt &&
-                _tls.IsHandshakeComplete)
+                Tls.IsHandshakeComplete)
             {
                 writer.WriteFrameType(FrameType.HandshakeDone);
                 // no data

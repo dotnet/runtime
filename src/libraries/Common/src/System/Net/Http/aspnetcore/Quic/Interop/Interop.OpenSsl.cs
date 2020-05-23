@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Xml.Schema;
 
 internal static partial class Interop
 {
     // TODO-RZ: remove this and use System.Security.Cryptography.Native
     internal static unsafe class OpenSslQuic
     {
-        private static IntPtr __globalSslCtx = SslCtxNew(SslMethod.Tls);
+        internal static IntPtr __globalSslCtx = SslCtxNew(SslMethod.Tls);
         internal static IntPtr SslCreate()
         {
             return SslNew(__globalSslCtx);
@@ -53,6 +55,12 @@ internal static partial class Interop
             )]
             string file, SslFiletype type);
 
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_use_cert_and_key")]
+        internal static extern int SslUseCertAndKey(IntPtr ssl, IntPtr x509, IntPtr privateKey, IntPtr caChain, int doOverride); 
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_use_certificate")]
+        internal static extern int SslUseCertificate(IntPtr ssl, IntPtr x509); 
+
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_version")]
         internal static extern byte* SslGetVersion(IntPtr ssl);
 
@@ -70,6 +78,12 @@ internal static partial class Interop
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_ctrl")]
         internal static extern int SslCtrl(IntPtr ssl, SslCtrlCommand cmd, long larg, IntPtr parg);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_callback_ctrl")]
+        internal static extern int SslCallbackCtrl(IntPtr ssl, SslCtrlCommand cmd, IntPtr fp);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_CTX_callback_ctrl")]
+        internal static extern int SslCtxCallbackCtrl(IntPtr ctx, SslCtrlCommand cmd, IntPtr fp);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_error")]
         internal static extern int SslGetError(IntPtr ssl, int code);
@@ -91,12 +105,22 @@ internal static partial class Interop
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_ex_data")]
         internal static extern IntPtr SslGetExData(IntPtr ssl, int idx);
 
-        internal static int SslSetTlsExHostName(IntPtr ssl, string hostname)
+        internal static int SslSetTlsExtHostName(IntPtr ssl, string hostname)
         {
             var addr = Marshal.StringToHGlobalAnsi(hostname);
-            int res = SslCtrl(ssl, SslCtrlCommand.SetTlsextHostname, 0, addr);
+            const long TLSEXT_NAMETYPE_host_name = 0;
+            int res = SslCtrl(ssl, SslCtrlCommand.SetTlsextHostname, TLSEXT_NAMETYPE_host_name, addr);
             Marshal.FreeHGlobal(addr);
             return res;
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate int TlsExtServernameCallback(IntPtr ssl, ref int al, IntPtr arg);
+
+        internal static int SslCtxSetTlsExtServernameCallback(IntPtr ctx, TlsExtServernameCallback callback)
+        {
+            var addr = Marshal.GetFunctionPointerForDelegate(callback);
+            return SslCtxCallbackCtrl(ctx, SslCtrlCommand.SetTlsextServernameCb, addr);
         }
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_quic_transport_params")]
@@ -174,5 +198,50 @@ internal static partial class Interop
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_get0_alpn_selected")]
         internal static extern int SslGet0AlpnSelected(IntPtr ssl, out IntPtr data, out int len);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_peer_certificate")]
+        internal static extern IntPtr SslGetPeerCertificate(IntPtr ssl);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "BIO_s_mem")]
+        internal static extern IntPtr BioSMem();
+
+        [DllImport(Libraries.Crypto, EntryPoint = "BIO_new")]
+        internal static extern IntPtr BioNew(IntPtr bioMethod);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "BIO_new_mem_buf")]
+        internal static extern IntPtr BioNewMemBuf(byte* buf, int len);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "BIO_free")]
+        internal static extern void BioFree(IntPtr bio);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "BIO_write")]
+        internal static extern int BioWrite(IntPtr bio, byte* data, int dlen);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "PEM_read_bio_X509")]
+        internal static extern IntPtr PemReadBioX509(IntPtr bio, IntPtr pOut, IntPtr pemPasswordCb, IntPtr u);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "d2i_X509")]
+        internal static extern IntPtr D2iX509(IntPtr pOut, ref byte* data, int len);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "d2i_PKCS12_bio")]
+        internal static extern IntPtr D2iPkcs12Bio(IntPtr bio, IntPtr pOut);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "PKCS12_parse")]
+        internal static extern int Pkcs12Parse(IntPtr pkcs, IntPtr pass, out IntPtr key, out IntPtr cert, out IntPtr caStack);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "PKCS12_free")]
+        internal static extern void Pkcs12Free(IntPtr pkcs);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "X509_free")]
+        internal static extern void X509Free(IntPtr x509);
+
+        [DllImport(Libraries.Crypto, EntryPoint = "EVP_PKEY_free")]
+        internal static extern void EvpPKeyFree(IntPtr evpKey);
+
+        // [DllImport(Libraries.Crypto, EntryPoint = "OPENSSL_sk_kj")]
+        // internal static extern void SkX509Free(IntPtr stack);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_servername")]
+        internal static extern IntPtr SslGetServername(IntPtr ssl, int type);
     }
 }

@@ -411,7 +411,7 @@ namespace System.Net.Quic.Implementations.Managed
                 context.ReturnPacket(lostPacket);
             }
 
-            int maxPacketLength = (int)(_tls.IsHandshakeComplete
+            int maxPacketLength = (int)(Tls.IsHandshakeComplete
                 // Limit maximum size so that it can be always encoded into the reserved 2 bytes of `payloadLengthSpan`
                 ? Math.Min((1 << 14) - 1, _peerTransportParameters.MaxPacketSize)
                 // use minimum size for packets during handshake
@@ -526,7 +526,7 @@ namespace System.Net.Quic.Implementations.Managed
                 recoverySpace.RemainingLossProbes--;
             }
 
-            Recovery.OnPacketSent(GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
+            Recovery.OnPacketSent(GetPacketSpace(packetType), context.SentPacket, Tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
             NetEventSource.PacketSent(this, context.SentPacket.BytesSent);
 
