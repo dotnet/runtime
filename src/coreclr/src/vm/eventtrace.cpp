@@ -3479,15 +3479,17 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
         return fSucceeded;
     }
 
-    // TODO: Do under crst?
-    if (s_pAllLoggedTypes == NULL)
     {
-        s_pAllLoggedTypes = new (nothrow) AllLoggedTypes;
+        CrstHolder _crst(GetHashCrst());
         if (s_pAllLoggedTypes == NULL)
         {
-            // out of memory.  Bail on ETW stuff
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
+            s_pAllLoggedTypes = new (nothrow) AllLoggedTypes;
+            if (s_pAllLoggedTypes == NULL)
+            {
+                // out of memory.  Bail on ETW stuff
+                *pfCreatedNew = FALSE;
+                return fSucceeded;
+            }
         }
     }
 
