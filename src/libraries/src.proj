@@ -45,13 +45,4 @@
              Projects="@(ApiCompatProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
-
-  <!-- Wasm runtimes depend on the mono runtime and libs to be built, so they can only be built here -->
-  <Target Name="BuildWasmPackageDependency"
-          Condition="'$(TargetOS)' == 'Browser'"
-          AfterTargets="Build">
-    <MSBuild Projects="$(MonoProjectRoot)\wasm\wasm.proj"
-             Properties="Configuration=$(Configuration);TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)"/>
-  </Target>
-
 </Project>

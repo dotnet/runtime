@@ -103,7 +103,7 @@ Z_LIBS=$(BUNDLE_ZLIB_PATH)
 endif
 endif
 
-noinst_LTLIBRARIES = libmonoruntime-config.la $(support_libraries) $(boehm_libraries) $(sgen_libraries)
+noinst_LTLIBRARIES = libmonoruntime-config.la $(support_libraries) $(boehm_libraries) $(sgen_libraries) $(shim_libraries)
 
 lib_LTLIBRARIES = $(icall_table_libraries) $(ilgen_libraries)
 
@@ -135,6 +135,26 @@ support_libraries = libmonoruntime-support.la
 libmonoruntime_support_la_SOURCES = support.c
 libmonoruntime_support_la_LDFLAGS = $(Z_LIBS)
 libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @ZLIB_CFLAGS@
+
+if ENABLE_NETCORE
+if HAVE_SYS_ICU
+shim_libraries = libmonoruntime-shimglobalization.la
+
+nodist_libmonoruntime_shimglobalization_la_SOURCES = \
+									@ICU_SHIM_PATH@/pal_calendarData.c \
+									@ICU_SHIM_PATH@/pal_casing.c \
+									@ICU_SHIM_PATH@/pal_collation.c \
+									@ICU_SHIM_PATH@/pal_idna.c \
+									@ICU_SHIM_PATH@/pal_locale.c \
+									@ICU_SHIM_PATH@/pal_localeNumberData.c \
+									@ICU_SHIM_PATH@/pal_localeStringData.c \
+									@ICU_SHIM_PATH@/pal_normalization.c \
+									@ICU_SHIM_PATH@/pal_timeZoneInfo.c \
+									@ICU_SHIM_PATH@/pal_icushim.c
+
+libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/Common/
+endif
+endif
 
 #
 # This library contains the icall tables if the runtime was configured with --disable-icall-tables
@@ -424,12 +444,12 @@ if !ENABLE_MSVC_ONLY
 libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntime_la_LIBADD = libmonoruntime-config.la $(support_libraries)
+libmonoruntime_la_LIBADD = libmonoruntime-config.la $(support_libraries) $(shim_libraries)
 
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(sgen_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la $(support_libraries)
+libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la $(support_libraries) $(shim_libraries)
 
 endif # !ENABLE_MSVC_ONLY
 

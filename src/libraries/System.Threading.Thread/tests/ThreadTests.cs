@@ -652,7 +652,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [ActiveIssue ("https://github.com/dotnet/runtime/issues/35908", TestRuntimes.Mono)]
         public static void ThreadNameDoesNotAffectProcessName()
         {
             // On Linux, changing the main thread name affects ProcessName.

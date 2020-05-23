@@ -46,7 +46,7 @@ namespace System
                 {
                     Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true)!;
                     MethodInfo mi = dirType.GetTypeInfo().GetDeclaredMethod("CreateDirectory")!;
-                    return (Func<string, object>)mi.CreateDelegate(typeof(Func<string, object>));
+                    return mi.CreateDelegate<Func<string, object>>();
                 });
                 createDirectory(path);
 

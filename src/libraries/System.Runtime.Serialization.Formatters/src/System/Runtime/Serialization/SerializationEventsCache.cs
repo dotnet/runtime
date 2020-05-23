@@ -82,7 +82,7 @@ namespace System.Runtime.Serialization
             {
                 foreach (MethodInfo m in methods)
                 {
-                    SerializationEventHandler onDeserialized = (SerializationEventHandler)m.CreateDelegate(typeof(SerializationEventHandler), obj);
+                    SerializationEventHandler onDeserialized = m.CreateDelegate<SerializationEventHandler>(obj);
                     handler = (SerializationEventHandler)Delegate.Combine(handler, onDeserialized);
                 }
             }

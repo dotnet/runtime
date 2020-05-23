@@ -4,70 +4,67 @@
     <OutputPath>bin</OutputPath>
     <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
-    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
-    <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
-    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(NetCoreAppCurrent)-$(Configuration)'))</AndroidAppBuilderDir>
+    <RuntimePackDir>$(ArtifactsBinDir)lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(TargetArchitecture)\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
+    <AndroidAppBuilderDir>$(ArtifactsBinDir)AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)</AndroidAppBuilderDir>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <PublishTrimmed>true</PublishTrimmed>
+    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
   </PropertyGroup>
 
-  <Target Name="RebuildAndroidAppBuilder">
-    <MSBuild Projects="$(AndroidAppBuilderProjDirectory)\AndroidAppBuilder.csproj"
-             Properties="Configuration=$(Configuration);Platform=$(HostArch)" Targets="Restore;Build" />
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-Android-$(Configuration)-$(Platform)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
   <UsingTask TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderDir)\AndroidAppBuilder.dll" />
 
-  <Target Name="BuildAppBundle" DependsOnTargets="RebuildAndroidAppBuilder">
+  <!-- Build APK during 'dotnet publish' -->
+  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
-      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
-      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(TargetArchitecture)</AndroidAbi>
+      <AndroidAbi Condition="'$(Platform)'=='arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(Platform)'=='arm'">armeabi-v7a</AndroidAbi>
+      <AndroidAbi Condition="'$(Platform)'=='x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(Platform)</AndroidAbi>
+      <ApkDir>$(MSBuildThisFileDirectory)$(PublishDir)\apk</ApkDir>
+      <StripDebugSymbols>False</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
     </PropertyGroup>
-    <ItemGroup>
-      <AppBinaries Include="bin\*.*"/>
-      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" 
-                   Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
-    </ItemGroup>
-    <Error Condition="'$(AndroidAbi)'==''" Text="Unknown $(TargetArchitecture)" />
-    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
-    <RemoveDir Directories="$(BundleDir)" />
-    <Copy SourceFiles="@(AppBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
-    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
-    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
-    <Copy Condition="'$(AndroidOpenSslCryptoLib)' != ''"
-          SourceFiles="$(AndroidOpenSslCryptoLib)"
-          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(AndroidOpenSslLib)' != ''"
-          SourceFiles="$(AndroidOpenSslLib)"
-          DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <RemoveDir Directories="$(ApkDir)" />
 
-    <AndroidAppBuilderTask 
+    <!-- These native libs are not needed for HelloWorld
+         and can be deleted to save 0.4 Mb for APK size -->
+    <Delete Files="$(PublishDir)\libSystem.IO.Compression.Native.so" />
+    <Delete Files="$(PublishDir)\libSystem.Security.Cryptography.Native.OpenSsl.so" />
+
+    <AndroidAppBuilderTask
         Abi="$(AndroidAbi)"
         ProjectName="HelloAndroid"
-        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
+        MonoRuntimeHeaders="%(ResolvedRuntimePack.PackageDirectory)\runtimes\android-$(Platform)\native\include\mono-2.0"
         MainLibraryFileName="Program.dll"
-        SourceDir="$(BundleDir)"
-        OutputDir="$(BundleDir)\apk">
+        StripDebugSymbols="$(StripDebugSymbols)"
+        SourceDir="$(MSBuildThisFileDirectory)$(PublishDir)"
+        OutputDir="$(ApkDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
     <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
-  </Target>
 
-  <!-- Deploy and launch on an active emulator or device -->
-  <Target Name="ReinstallAndLaunch">
-    <PropertyGroup>
-      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
-    </PropertyGroup>
-    <Message Importance="High" Text="Uninstalling app if it exists (throws an error if it doesn't but it can be ignored):"/>
-    <Exec Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
-    <Exec Command="$(AdbTool) install bin/bundle/apk/bin/HelloAndroid.apk" />
-    <Exec Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
-    <!--Exec Command="$(AdbTool) logcat" /-->
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) kill-server"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) start-server"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -c" ContinueOnError="WarnAndContinue" />
+    <Message Condition="'$(DeployAndRun)' == 'true'" Importance="High" Text="Uninstalling app if it exists (throws an error if it doesn't but it can be ignored):"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -d -s DOTNET" />
   </Target>
 </Project>

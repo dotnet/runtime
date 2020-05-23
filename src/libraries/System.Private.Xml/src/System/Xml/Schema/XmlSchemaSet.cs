@@ -958,7 +958,7 @@ namespace System.Xml.Schema
                 {
                     return schema;
                 }
-                else if (tns == string.Empty)
+                else if (tns.Length == 0)
                 { //There could be a chameleon for same ns
                     // It is OK to pass in the schema we have found so far, since it must have the schemaUri we're looking for
                     // (we found it that way above) and it must be the original chameleon schema (the one without target ns)

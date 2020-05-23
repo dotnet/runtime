@@ -54,7 +54,7 @@ namespace System.Reflection
 
             if (cultureName != null)
             {
-                if (cultureName == string.Empty)
+                if (cultureName.Length == 0)
                     cultureName = "neutral";
                 sb.Append(", Culture=");
                 sb.AppendQuoted(cultureName);

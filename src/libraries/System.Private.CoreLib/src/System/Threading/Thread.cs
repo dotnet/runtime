@@ -243,7 +243,7 @@ namespace System.Threading
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum, nameof(state));
+                    throw new ArgumentOutOfRangeException(nameof(state), SR.ArgumentOutOfRange_Enum);
             }
 
             return TrySetApartmentStateUnchecked(state);

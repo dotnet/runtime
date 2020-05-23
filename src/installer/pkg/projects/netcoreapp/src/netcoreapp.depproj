@@ -99,13 +99,13 @@
 
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
-      <LibrariesRefAssemblies TargetPath="ref/$(NETCoreAppFramework)" />
+      <LibrariesRefAssemblies TargetPath="ref/$(NetCoreAppCurrent)" />
       <Reference Include="@(LibrariesRefAssemblies)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(PackageRID)' != ''">
-      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NETCoreAppFramework)" />
-      <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="runtimes/$(PackageRID)/native" />
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)" />
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="runtimes/$(PackageRID)/native/%(RecursiveDir)" />
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>
 

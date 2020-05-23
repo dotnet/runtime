@@ -89,12 +89,12 @@ namespace System.Numerics
         }
         private static readonly Vector<T> s_one = new Vector<T>(GetOneValue());
 
-        internal static Vector<T> AllOnes
+        internal static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            get => s_allOnes;
+            get => s_allBitsSet;
         }
-        private static readonly Vector<T> s_allOnes = new Vector<T>(GetAllBitsSetValue());
+        private static readonly Vector<T> s_allBitsSet = new Vector<T>(GetAllBitsSetValue());
         #endregion Static Members
 
         #region Constructors
@@ -322,11 +322,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals(object? obj)
         {
-            if (!(obj is Vector<T>))
-            {
-                return false;
-            }
-            return Equals((Vector<T>)obj);
+            return (obj is Vector<T> other) && Equals(other);
         }
 
         /// <summary>
@@ -337,56 +333,7 @@ namespace System.Numerics
         [Intrinsic]
         public readonly bool Equals(Vector<T> other)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                for (int g = 0; g < Count; g++)
-                {
-                    if (!ScalarEquals(this[g], other[g]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            else
-            {
-<#
-    foreach (Type type in supportedTypes)
-    {
-#>
-                <#=GenerateIfStatementHeader(type)#>
-                {
-                    return
-<#
-        for (int g = 0; g < GetNumFields(type, totalSize); g++)
-        {
-#>
-<#
-            if (g == 0)
-            {
-#>
-                        this.<#=GetRegisterFieldName(type, g)#> == other.<#=GetRegisterFieldName(type, g)#>
-<#
-            }
-            else
-            {
-#>
-                        && this.<#=GetRegisterFieldName(type, g)#> == other.<#=GetRegisterFieldName(type, g)#><#=(g == (GetNumFields(type, totalSize) -1)) ? ";" : ""#>
-<#
-            }
-#>
-<#
-        }
-#>
-                }
-<#
-    }
-#>
-                else
-                {
-                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
-                }
-            }
+            return this == other;
         }
 
         /// <summary>
@@ -884,7 +831,7 @@ namespace System.Numerics
         /// <returns>The one's complement vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator ~(Vector<T> value) =>
-            s_allOnes ^ value;
+            AllBitsSet ^ value;
         #endregion Bitwise Operators
 
         #region Logical Operators
@@ -896,8 +843,59 @@ namespace System.Numerics
         /// <returns>True if all elements are equal; False otherwise.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Vector<T> left, Vector<T> right) =>
-            left.Equals(right);
+        public static bool operator ==(Vector<T> left, Vector<T> right)
+        {
+            if (Vector.IsHardwareAccelerated)
+            {
+                for (int g = 0; g < Count; g++)
+                {
+                    if (!ScalarEquals(left[g], right[g]))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+<#
+    foreach (Type type in supportedTypes)
+    {
+#>
+                <#=GenerateIfStatementHeader(type)#>
+                {
+                    return
+<#
+        for (int g = 0; g < GetNumFields(type, totalSize); g++)
+        {
+#>
+<#
+            if (g == 0)
+            {
+#>
+                        left.<#=GetRegisterFieldName(type, g)#> == right.<#=GetRegisterFieldName(type, g)#>
+<#
+            }
+            else
+            {
+#>
+                        && left.<#=GetRegisterFieldName(type, g)#> == right.<#=GetRegisterFieldName(type, g)#><#=(g == (GetNumFields(type, totalSize) -1)) ? ";" : ""#>
+<#
+            }
+#>
+<#
+        }
+#>
+                }
+<#
+    }
+#>
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+        }
 
         /// <summary>
         /// Returns a boolean indicating whether any single pair of elements in the given vectors are not equal.

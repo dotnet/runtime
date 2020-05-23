@@ -67,6 +67,16 @@ namespace Internal.Cryptography
         private static readonly Dictionary<string, string> s_extraOidToFriendlyName =
             InvertWithDefaultComparer(s_extraFriendlyNameToOid);
 
+        private static Dictionary<string, string> InvertWithDefaultComparer(Dictionary<string, string> source)
+        {
+            var result = new Dictionary<string, string>(source.Count);
+            foreach (KeyValuePair<string, string> item in source)
+            {
+                result.Add(item.Value, item.Key);
+            }
+            return result;
+        }
+
 #if DEBUG
         static partial void ExtraStaticDebugValidation()
         {

@@ -2489,11 +2489,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 
 			if (op != -1) {
-				td->last_ins->data[1] = op;
-				if (td->last_ins->opcode == MINT_CALLI_NAT_FAST)
-					td->last_ins->data[2] = save_last_error;
-			} else if (op == -1 && td->last_ins->opcode == MINT_CALLI_NAT) {
-				td->last_ins->data[1] = save_last_error;
+				g_assert (td->last_ins->opcode == MINT_CALLI_NAT_FAST);
+				td->last_ins->data [1] = op;
+				td->last_ins->data [2] = save_last_error;
+			} else if (native) {
+				g_assert (td->last_ins->opcode == MINT_CALLI_NAT);
+				td->last_ins->data [1] = save_last_error;
 			}
 		} else {
 			InterpMethod *imethod = mono_interp_get_imethod (domain, target_method, error);
@@ -3739,14 +3740,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case CEE_POP:
 			CHECK_STACK(td, 1);
-			SIMPLE_OP(td, MINT_POP);
 			if (td->sp [-1].type == STACK_TYPE_VT) {
 				int size = mono_class_value_size (td->sp [-1].klass, NULL);
 				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
-				interp_add_ins (td, MINT_VTRESULT);
-				td->last_ins->data [0] = 0;
-				WRITE32_INS (td->last_ins, 1, &size);
+				interp_add_ins (td, MINT_POP_VT);
+				WRITE32_INS (td->last_ins, 0, &size);
 				td->vt_sp -= size;
+				td->ip++;
+			} else {
+				SIMPLE_OP(td, MINT_POP);
 			}
 			--td->sp;
 			break;
@@ -4609,6 +4611,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				if (m_class_get_parent (klass) == mono_defaults.array_class) {
 					interp_add_ins (td, MINT_NEWOBJ_ARRAY);
 					td->last_ins->data [0] = get_data_item_index (td, m->klass);
+					td->last_ins->data [1] = csignature->param_count;
+				} else if (klass == mono_defaults.string_class) {
+					interp_add_ins (td, MINT_NEWOBJ_STRING);
+					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 					td->last_ins->data [1] = csignature->param_count;
 				} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 						!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
@@ -6489,6 +6495,7 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 			break;
 		}
 		case MINT_NEWOBJ_ARRAY:
+		case MINT_NEWOBJ_STRING:
 			*pop = ins->data [1];
 			*push = 1;
 			break;
@@ -7341,7 +7348,7 @@ retry:
 				sp [-i].ins = NULL;
 			memset (sp, 0, sizeof (StackContentInfo));
 			sp++;
-		} else if (ins->opcode == MINT_POP) {
+		} else if (ins->opcode == MINT_POP || ins->opcode == MINT_POP_VT) {
 			sp--;
 			if (sp->ins) {
 				// The top of the stack is not used by any instructions. Kill both the

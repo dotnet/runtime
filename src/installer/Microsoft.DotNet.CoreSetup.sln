@@ -9,8 +9,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		NuGet.Config = NuGet.Config
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DotNet.PlatformAbstractions", "managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj", "{04D84DC8-A509-43FE-B846-16B770D9E3AA}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostActivation.Tests", "test\HostActivation.Tests\HostActivation.Tests.csproj", "{23F4AB97-D15C-4C51-A641-DF5C5D5EF70F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtils", "test\TestUtils\TestUtils.csproj", "{D6676666-D14D-4DFA-88FB-76E3E823E2E1}"
@@ -41,22 +39,6 @@ Global
 		RelWithDebInfo|x64 = RelWithDebInfo|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.Debug|x64.Build.0 = Debug|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.MinSizeRel|Any CPU.ActiveCfg = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.MinSizeRel|Any CPU.Build.0 = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.MinSizeRel|x64.ActiveCfg = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.MinSizeRel|x64.Build.0 = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.Release|x64.ActiveCfg = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.Release|x64.Build.0 = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.RelWithDebInfo|Any CPU.ActiveCfg = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
-		{04D84DC8-A509-43FE-B846-16B770D9E3AA}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
 		{23F4AB97-D15C-4C51-A641-DF5C5D5EF70F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{23F4AB97-D15C-4C51-A641-DF5C5D5EF70F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{23F4AB97-D15C-4C51-A641-DF5C5D5EF70F}.Debug|x64.ActiveCfg = Debug|Any CPU

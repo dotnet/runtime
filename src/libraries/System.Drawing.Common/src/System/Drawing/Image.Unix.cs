@@ -74,7 +74,7 @@ namespace System.Drawing
             // We use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus.  So, we wrap the stream
             // with a set of delegates.
-            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, true);
+            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: true);
 
             int st = Gdip.GdipLoadImageFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, out IntPtr imagePtr);
@@ -247,7 +247,7 @@ namespace System.Drawing
 
             try
             {
-                GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+                GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false, makeSeekable: false);
                 st = Gdip.GdipSaveImageToDelegate_linux(nativeImage, sh.GetBytesDelegate, sh.PutBytesDelegate,
                     sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, ref guid, nativeEncoderParams);
 

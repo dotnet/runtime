@@ -388,7 +388,7 @@ namespace System.Text
 
             if ((bufferLength & 8) != 0)
             {
-                if (Bmi1.X64.IsSupported)
+                if (UIntPtr.Size == sizeof(ulong))
                 {
                     // If we can use 64-bit tzcnt to count the number of leading ASCII bytes, prefer it.
 
@@ -396,10 +396,10 @@ namespace System.Text
                     if (!AllBytesInUInt64AreAscii(candidateUInt64))
                     {
                         // Clear everything but the high bit of each byte, then tzcnt.
-                        // Remember the / 8 at the end to convert bit count to byte count.
+                        // Remember to divide by 8 at the end to convert bit count to byte count.
 
                         candidateUInt64 &= UInt64HighBitsOnlyMask;
-                        pBuffer += (nuint)(Bmi1.X64.TrailingZeroCount(candidateUInt64) / 8);
+                        pBuffer += (nuint)(BitOperations.TrailingZeroCount(candidateUInt64) >> 3);
                         goto Finish;
                     }
                 }
@@ -914,7 +914,7 @@ namespace System.Text
 
             if ((bufferLength & 4) != 0)
             {
-                if (Bmi1.X64.IsSupported)
+                if (UIntPtr.Size == sizeof(ulong))
                 {
                     // If we can use 64-bit tzcnt to count the number of leading ASCII chars, prefer it.
 
@@ -922,12 +922,12 @@ namespace System.Text
                     if (!AllCharsInUInt64AreAscii(candidateUInt64))
                     {
                         // Clear the low 7 bits (the ASCII bits) of each char, then tzcnt.
-                        // Remember the / 8 at the end to convert bit count to byte count,
+                        // Remember to divide by 8 at the end to convert bit count to byte count,
                         // then the & ~1 at the end to treat a match in the high byte of
                         // any char the same as a match in the low byte of that same char.
 
                         candidateUInt64 &= 0xFF80FF80_FF80FF80ul;
-                        pBuffer = (char*)((byte*)pBuffer + ((nuint)(Bmi1.X64.TrailingZeroCount(candidateUInt64) / 8) & ~(nuint)1));
+                        pBuffer = (char*)((byte*)pBuffer + ((nuint)(BitOperations.TrailingZeroCount(candidateUInt64) >> 3) & ~(nuint)1));
                         goto Finish;
                     }
                 }

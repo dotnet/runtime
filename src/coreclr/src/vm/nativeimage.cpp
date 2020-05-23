@@ -61,14 +61,24 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
     HENUMInternal assemblyEnum;
     HRESULT hr = m_pManifestMetadata->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
     mdAssemblyRef assemblyRef;
-    int assemblyIndex = 0;
+    m_manifestAssemblyCount = 0;
     while (m_pManifestMetadata->EnumNext(&assemblyEnum, &assemblyRef))
     {
         LPCSTR assemblyName;
         hr = m_pManifestMetadata->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
-        m_assemblySimpleNameToIndexMap.Add(AssemblyNameIndex(assemblyName, assemblyIndex));
-        assemblyIndex++;
+        m_assemblySimpleNameToIndexMap.Add(AssemblyNameIndex(assemblyName, m_manifestAssemblyCount));
+        m_manifestAssemblyCount++;
     }
+    
+    // When a composite image contributes to a larger version bubble, its manifest assembly
+    // count may exceed its component assembly count as it may contain references to
+    // assemblies outside of the composite image that are part of its version bubble.
+    _ASSERTE(m_manifestAssemblyCount >= m_componentAssemblyCount);
+    
+    S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(m_manifestAssemblyCount);
+
+    // Note: Memory allocated on loader heap is zero filled
+    m_pNativeMetadataAssemblyRefMap = (PTR_Assembly*)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
 }
 
 NativeImage::~NativeImage()
@@ -115,7 +125,7 @@ NativeImage *NativeImage::Open(
 #endif
 
 #ifndef DACCESS_COMPILE
-Assembly *NativeImage::LoadComponentAssembly(uint32_t rowid)
+Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid)
 {
     STANDARD_VM_CONTRACT;
 

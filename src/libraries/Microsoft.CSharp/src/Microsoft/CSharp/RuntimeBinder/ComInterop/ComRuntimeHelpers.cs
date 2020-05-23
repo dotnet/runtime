@@ -399,7 +399,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             method.Emit(OpCodes.Ret);
 
-            return (IUnknownReleaseDelegate)dm.CreateDelegate(typeof(IUnknownReleaseDelegate));
+            return dm.CreateDelegate<IUnknownReleaseDelegate>();
         }
 
         internal static readonly IntPtr s_nullInterfaceId = GetNullInterfaceId();
@@ -539,7 +539,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             method.EmitCalli(OpCodes.Calli, CallingConvention.Winapi, typeof(int), invokeParamTypes);
 
             method.Emit(OpCodes.Ret);
-            return (IDispatchInvokeDelegate)dm.CreateDelegate(typeof(IDispatchInvokeDelegate));
+            return dm.CreateDelegate<IDispatchInvokeDelegate>();
         }
 
         #endregion

@@ -10,6 +10,7 @@ parameters:
   osSubgroup: ''
   platform: ''
   pool: ''
+  runtimeVariant: ''
   signBinaries: false
   stagedBuild: false
   testGroup: ''
@@ -25,6 +26,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
@@ -37,8 +39,8 @@ jobs:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     ${{ if eq(parameters.compilerName, 'clang') }}:
-      name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -104,7 +106,7 @@ jobs:
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python

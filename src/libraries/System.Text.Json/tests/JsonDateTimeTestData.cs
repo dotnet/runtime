@@ -42,7 +42,6 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.6666660\"", "1997-07-16T19:20:30.666666" };
 
             // Test fraction truncation.
-            yield return new object[] { "\"1997-07-16T19:20:30.0000000\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.00000001\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.000000001\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.77777770\"", "1997-07-16T19:20:30.7777777" };
@@ -153,7 +152,6 @@ namespace System.Text.Json.Tests
             // Invalid fractions.
             yield return new object[] { "\"1997-07-16T19.45\"" };
             yield return new object[] { "\"1997-07-16T19:20.45\"" };
-            yield return new object[] { "\"1997-07-16T19:20:30a\"" };
             yield return new object[] { "\"1997-07-16T19:20:30,45\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.a\"" };
@@ -168,7 +166,6 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+01Z\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+01:\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555 +01:00\"" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555+01:\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555- 01:00\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+04 :30\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-04: 30\"" };
