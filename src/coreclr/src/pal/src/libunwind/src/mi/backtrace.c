@@ -23,9 +23,9 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
-#if !defined(UNW_REMOTE_ONLY) && !defined(UNW_LOCAL_ONLY)
-#define UNW_LOCAL_ONLY
+#ifndef UNW_REMOTE_ONLY
 
+#define UNW_LOCAL_ONLY
 #include <libunwind.h>
 #include <libunwind_i.h>
 #include <string.h>
@@ -75,9 +75,7 @@ unw_backtrace (void **buffer, int size)
   return n;
 }
 
-#ifdef CONFIG_WEAK_BACKTRACE
 extern int backtrace (void **buffer, int size)
   WEAK ALIAS(unw_backtrace);
-#endif
 
 #endif /* !UNW_REMOTE_ONLY */

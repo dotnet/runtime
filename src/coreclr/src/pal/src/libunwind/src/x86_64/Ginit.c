@@ -49,6 +49,13 @@ static struct unw_addr_space local_addr_space;
 
 unw_addr_space_t unw_local_addr_space = &local_addr_space;
 
+HIDDEN unw_dyn_info_list_t _U_dyn_info_list;
+
+/* XXX fix me: there is currently no way to locate the dyn-info list
+       by a remote unwinder.  On ia64, this is done via a special
+       unwind-table entry.  Perhaps something similar can be done with
+       DWARF2 unwind info.  */
+
 static void
 put_unwind_info (unw_addr_space_t as, unw_proc_info_t *proc_info, void *arg)
 {
@@ -59,13 +66,7 @@ static int
 get_dyn_info_list_addr (unw_addr_space_t as, unw_word_t *dyn_info_list_addr,
                         void *arg)
 {
-#ifndef UNW_LOCAL_ONLY
-# pragma weak _U_dyn_info_list_addr
-  if (!_U_dyn_info_list_addr)
-    return -UNW_ENOINFO;
-#endif
-  // Access the `_U_dyn_info_list` from `LOCAL_ONLY` library, i.e. libunwind.so.
-  *dyn_info_list_addr = _U_dyn_info_list_addr ();
+  *dyn_info_list_addr = (unw_word_t) &_U_dyn_info_list;
   return 0;
 }
 
@@ -74,44 +75,14 @@ get_dyn_info_list_addr (unw_addr_space_t as, unw_word_t *dyn_info_list_addr,
 
 static int mem_validate_pipe[2] = {-1, -1};
 
-#ifdef HAVE_PIPE2
-static inline void
-do_pipe2 (int pipefd[2])
-{
-  pipe2 (pipefd, O_CLOEXEC | O_NONBLOCK);
-}
-#else
-static inline void
-set_pipe_flags (int fd)
-{
-  int fd_flags = fcntl (fd, F_GETFD, 0);
-  int status_flags = fcntl (fd, F_GETFL, 0);
-
-  fd_flags |= FD_CLOEXEC;
-  fcntl (fd, F_SETFD, fd_flags);
-
-  status_flags |= O_NONBLOCK;
-  fcntl (fd, F_SETFL, status_flags);
-}
-
-static inline void
-do_pipe2 (int pipefd[2])
-{
-  pipe (pipefd);
-  set_pipe_flags(pipefd[0]);
-  set_pipe_flags(pipefd[1]);
-}
-#endif
-
 static inline void
 open_pipe (void)
 {
-  if (mem_validate_pipe[0] != -1)
-    close (mem_validate_pipe[0]);
-  if (mem_validate_pipe[1] != -1)
-    close (mem_validate_pipe[1]);
+  /* ignore errors for closing invalid fd's */
+  close (mem_validate_pipe[0]);
+  close (mem_validate_pipe[1]);
 
-  do_pipe2 (mem_validate_pipe);
+  pipe2 (mem_validate_pipe, O_CLOEXEC | O_NONBLOCK);
 }
 
 ALWAYS_INLINE
@@ -160,12 +131,18 @@ static int msync_validate (void *addr, size_t len)
 static int mincore_validate (void *addr, size_t len)
 {
   unsigned char mvec[2]; /* Unaligned access may cross page boundary */
+  size_t i;
 
   /* mincore could fail with EAGAIN but we conservatively return -1
      instead of looping. */
-  if (mincore (addr, len, (char *)mvec) != 0)
+  if (mincore (addr, len, mvec) != 0)
     {
       return -1;
+    }
+
+  for (i = 0; i < (len + PAGE_SIZE - 1) / PAGE_SIZE; i++)
+    {
+      if (!(mvec[i] & 1)) return -1;
     }
 
   return write_validate (addr);
@@ -186,9 +163,9 @@ tdep_init_mem_validate (void)
   unw_word_t addr = PAGE_START((unw_word_t)&present);
   unsigned char mvec[1];
   int ret;
-  while ((ret = mincore ((void*)addr, PAGE_SIZE, (char *)mvec)) == -1 &&
+  while ((ret = mincore ((void*)addr, PAGE_SIZE, mvec)) == -1 &&
          errno == EAGAIN) {}
-  if (ret == 0)
+  if (ret == 0 && (mvec[0] & 1))
     {
       Debug(1, "using mincore to validate memory\n");
       mem_validate_func = mincore_validate;
@@ -203,93 +180,13 @@ tdep_init_mem_validate (void)
 
 /* Cache of already validated addresses */
 #define NLGA 4
-#if defined(HAVE___THREAD) && HAVE___THREAD
-// thread-local variant
-static __thread unw_word_t last_good_addr[NLGA];
-static __thread int lga_victim;
-
-static int
-is_cached_valid_mem(unw_word_t addr)
-{
-  int i;
-  for (i = 0; i < NLGA; i++)
-    {
-      if (addr == last_good_addr[i])
-        return 1;
-    }
-  return 0;
-}
-
-static void
-cache_valid_mem(unw_word_t addr)
-{
-  int i, victim;
-  victim = lga_victim;
-  for (i = 0; i < NLGA; i++) {
-    if (last_good_addr[victim] == 0) {
-      last_good_addr[victim] = addr;
-      return;
-    }
-    victim = (victim + 1) % NLGA;
-  }
-
-  /* All slots full. Evict the victim. */
-  last_good_addr[victim] = addr;
-  victim = (victim + 1) % NLGA;
-  lga_victim = victim;
-}
-
-#elif HAVE_ATOMIC_OPS_H
-// global, thread safe variant
-static AO_T last_good_addr[NLGA];
-static AO_T lga_victim;
-
-static int
-is_cached_valid_mem(unw_word_t addr)
-{
-  int i;
-  for (i = 0; i < NLGA; i++)
-    {
-      if (addr == AO_load(&last_good_addr[i]))
-        return 1;
-    }
-  return 0;
-}
-
-static void
-cache_valid_mem(unw_word_t addr)
-{
-  int i, victim;
-  victim = AO_load(&lga_victim);
-  for (i = 0; i < NLGA; i++) {
-    if (AO_compare_and_swap(&last_good_addr[victim], 0, addr)) {
-      return;
-    }
-    victim = (victim + 1) % NLGA;
-  }
-
-  /* All slots full. Evict the victim. */
-  AO_store(&last_good_addr[victim], addr);
-  victim = (victim + 1) % NLGA;
-  AO_store(&lga_victim, victim);
-}
-#else
-// disabled, no cache
-static int
-is_cached_valid_mem(unw_word_t addr UNUSED)
-{
-  return 0;
-}
-
-static void
-cache_valid_mem(unw_word_t addr UNUSED)
-{
-}
-#endif
+static unw_word_t last_good_addr[NLGA];
+static int lga_victim;
 
 static int
 validate_mem (unw_word_t addr)
 {
+  int i, victim;
   size_t len;
 
   if (PAGE_START(addr + sizeof (unw_word_t) - 1) == PAGE_START(addr))
@@ -302,13 +199,28 @@ validate_mem (unw_word_t addr)
   if (addr == 0)
     return -1;
 
-  if (is_cached_valid_mem(addr))
-    return 0;
+  for (i = 0; i < NLGA; i++)
+    {
+      if (last_good_addr[i] && (addr == last_good_addr[i]))
+        return 0;
+    }
 
   if (mem_validate_func ((void *) addr, len) == -1)
     return -1;
 
-  cache_valid_mem(addr);
+  victim = lga_victim;
+  for (i = 0; i < NLGA; i++) {
+    if (!last_good_addr[victim]) {
+      last_good_addr[victim++] = addr;
+      return 0;
+    }
+    victim = (victim + 1) % NLGA;
+  }
+
+  /* All slots full. Evict the victim. */
+  last_good_addr[victim] = addr;
+  victim = (victim + 1) % NLGA;
+  lga_victim = victim;
 
   return 0;
 }
@@ -422,6 +334,9 @@ x86_64_local_addr_space_init (void)
   local_addr_space.acc.resume = x86_64_local_resume;
   local_addr_space.acc.get_proc_name = get_static_proc_name;
   unw_flush_cache (&local_addr_space, 0, 0);
+
+  memset (last_good_addr, 0, sizeof (unw_word_t) * NLGA);
+  lga_victim = 0;
 }
 
 #endif /* !UNW_REMOTE_ONLY */
