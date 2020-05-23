@@ -141,6 +141,7 @@ namespace System
                 // Basically, it's an optimized version of FOIL method applied to
                 // low and high dwords of each operand
 
+                // Use 32-bit uints to optimize the fallback for 32-bit platforms.
                 uint al = (uint)a;
                 uint ah = (uint)(a >> 32);
                 uint bl = (uint)b;
