@@ -114,6 +114,11 @@ namespace System
             return ((long)a) * b;
         }
 
+        /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
+        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
@@ -130,29 +135,33 @@ namespace System
 
             static ulong SoftwareFallback(ulong a, ulong b, out ulong low)
             {
-                // It's adoption of algorithm for multiplication
+                // Adaptation of algorithm for multiplication
                 // of 32-bit unsigned integers described
                 // in Hacker's Delight by Henry S. Warren, Jr. (ISBN 0-201-91465-4), Chapter 8
                 // Basically, it's an optimized version of FOIL method applied to
                 // low and high dwords of each operand
-                const ulong lowBitsMask = 0xFFFFFFFFU;
 
-                ulong al = a & lowBitsMask;
-                ulong ah = a >> 32;
-                ulong bl = b & lowBitsMask;
-                ulong bh = b >> 32;
+                // Use 32-bit uints to optimize the fallback for 32-bit platforms.
+                uint al = (uint)a;
+                uint ah = (uint)(a >> 32);
+                uint bl = (uint)b;
+                uint bh = (uint)(b >> 32);
 
-                ulong mull = al * bl;
-                ulong t = ah * bl + (mull >> 32);
-                ulong tl = t & lowBitsMask;
+                ulong mull = ((ulong)al) * bl;
+                ulong t = ((ulong)ah) * bl + (mull >> 32);
+                ulong tl = ((ulong)al) * bh + (uint)t;
 
-                tl += al * bh;
-                low = tl << 32 | mull & lowBitsMask;
+                low = tl << 32 | (uint)mull;
 
-                return ah * bh + (t >> 32) + (tl >> 32);
+                return ((ulong)ah) * bh + (t >> 32) + (tl >> 32);
             }
         }
 
+        /// <summary>Produces the full product of two 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
+        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
