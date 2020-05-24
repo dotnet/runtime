@@ -40,6 +40,7 @@ public class ProcessParameters
     public IEnumerable<string> InputFileNames;
     public string OutputFileName;
     public long CompilationCostHeuristic;
+    public bool UseShellExecute;
     public bool CollectJittedMethods;
     public IEnumerable<string> MonitorModules;
     public IEnumerable<string> MonitorFolders;
@@ -146,7 +147,7 @@ public class ProcessRunner : IDisposable
         {
             FileName = _processInfo.Parameters.ProcessPath,
             Arguments = _processInfo.Parameters.Arguments,
-            UseShellExecute = false,
+            UseShellExecute = _processInfo.Parameters.UseShellExecute,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
