@@ -10,9 +10,8 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeParser</a>
     /// </summary>
-    public struct NativeParser
+    private struct NativeParser
     {
-        // TODO (refactoring) - all these Native* class should be private
         /// <summary>
         /// The current index of the image byte array
         /// </summary>
@@ -83,9 +82,8 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeHashtable</a>
     /// </summary>
-    public struct NativeHashtable
+    private struct NativeHashtable
     {
-        // TODO (refactoring) - all these Native* class should be private
         private byte[] _image;
         private uint _baseOffset;
         private uint _bucketMask;
@@ -244,9 +242,8 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeHashtable</a>
     /// </summary>
-    public struct NativeCuckooFilter
+    private struct NativeCuckooFilter
     {
-        // TODO (refactoring) - all these Native* class should be private
         private byte[] _image;
         private int _filterStartOffset;
         private int _filterEndOffset;
