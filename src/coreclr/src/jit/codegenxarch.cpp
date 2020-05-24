@@ -6864,7 +6864,11 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     if (*bitMask == nullptr)
     {
         assert(cnsAddr != nullptr);
-        *bitMask = GetEmitter()->emitAnyConst(cnsAddr, genTypeSize(targetType), emitDataAlignment::Preferred);
+
+        UNATIVE_OFFSET cnsSize  = genTypeSize(targetType);
+        UNATIVE_OFFSET cnsAlign = (compiler->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+
+        *bitMask = GetEmitter()->emitAnyConst(cnsAddr, cnsSize, cnsAlign);
     }
 
     // We need an additional register for bitmask.
