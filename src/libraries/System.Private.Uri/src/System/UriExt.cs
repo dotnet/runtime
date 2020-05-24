@@ -223,7 +223,7 @@ namespace System
                 {
                     if ((uint)(i + 2) < (uint)data.Length)
                     {
-                        char value = UriHelper.EscapedAscii(data[i + 1], data[i + 2]);
+                        char value = UriHelper.DecodeHexChars(data[i + 1], data[i + 2]);
 
                         if (value >= UriHelper.UnreservedTable.Length || UriHelper.UnreservedTable[value])
                         {

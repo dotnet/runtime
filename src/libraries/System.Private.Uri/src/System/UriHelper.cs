@@ -376,7 +376,7 @@ namespace System
                             }
                             else if (next + 2 < end)
                             {
-                                ch = EscapedAscii(pStr[next + 1], pStr[next + 2]);
+                                ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
                                 // Unescape a good sequence if full unescape is requested
                                 if (unescapeMode >= UnescapeMode.UnescapeAll)
                                 {
@@ -510,7 +510,7 @@ namespace System
                                 break;
 
                             // already made sure we have 3 characters in str
-                            ch = EscapedAscii(pStr[next + 1], pStr[next + 2]);
+                            ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
 
                             //invalid hex sequence ?
                             if (ch == Uri.c_DummyChar)
@@ -668,33 +668,37 @@ namespace System
             HexConverter.ToCharsBuffer(b, to.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
-        internal static char EscapedAscii(uint digit, uint next)
+        /// <summary>
+        /// Converts 2 hex chars to a byte (returned in a char), e.g, "0a" becomes (char)0x0A.
+        /// <para>If either char is not hex, returns <see cref="Uri.c_DummyChar"/>.</para>
+        /// </summary>
+        internal static char DecodeHexChars(uint first, uint second)
         {
-            digit -= '0';
+            first -= '0';
 
-            if (digit <= 9)
+            if (first <= 9)
             {
-                // digit is already [0, 9]
+                // first is already [0, 9]
             }
-            else if ((uint)((digit - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
+            else if ((uint)((first - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
             {
-                digit = ((digit + '0') | 0x20) - 'a' + 10;
-            }
-            else goto Invalid;
-
-            next -= '0';
-
-            if (next <= 9)
-            {
-                // next is already [0, 9]
-            }
-            else if ((uint)((next - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
-            {
-                next = ((next + '0') | 0x20) - 'a' + 10;
+                first = ((first + '0') | 0x20) - 'a' + 10;
             }
             else goto Invalid;
 
-            return (char)((digit << 4) | next);
+            second -= '0';
+
+            if (second <= 9)
+            {
+                // second is already [0, 9]
+            }
+            else if ((uint)((second - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
+            {
+                second = ((second + '0') | 0x20) - 'a' + 10;
+            }
+            else goto Invalid;
+
+            return (char)((first << 4) | second);
 
         Invalid:
             return Uri.c_DummyChar;
