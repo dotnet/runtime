@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
 using System.Net;
 using System.Collections;
 using System.ComponentModel;
@@ -12,7 +11,6 @@ using System.Runtime.InteropServices;
 using System.Xml;
 using System.Threading;
 using System.Security.Cryptography.X509Certificates;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -1100,18 +1098,6 @@ namespace System.DirectoryServices.Protocols
             {
                 error = LdapPal.BindToDirectory(_ldapHandle, null, null);
             }
-            else if (AuthType == AuthType.Basic)
-            {
-                var tempDomainName = new StringBuilder(100);
-                if (domainName != null && domainName.Length != 0)
-                {
-                    tempDomainName.Append(domainName);
-                    tempDomainName.Append('\\');
-                }
-
-                tempDomainName.Append(username);
-                error = LdapPal.BindToDirectory(_ldapHandle, tempDomainName.ToString(), password);
-            }
             else
             {
                 var cred = new SEC_WINNT_AUTH_IDENTITY_EX()
@@ -1129,41 +1115,25 @@ namespace System.DirectoryServices.Protocols
                 if (tempCredential != null)
                 {
                     cred.user = username;
-                    cred.userLength = (username == null ? 0 : username.Length);
+                    cred.userLength = username?.Length ?? 0;
                     cred.domain = domainName;
-                    cred.domainLength = (domainName == null ? 0 : domainName.Length);
+                    cred.domainLength = domainName?.Length ?? 0;
                     cred.password = password;
-                    cred.passwordLength = (password == null ? 0 : password.Length);
+                    cred.passwordLength = password?.Length ?? 0;
                 }
 
-                BindMethod method = BindMethod.LDAP_AUTH_NEGOTIATE;
-                switch (AuthType)
+                var method = AuthType switch
                 {
-                    case AuthType.Negotiate:
-                        method = BindMethod.LDAP_AUTH_NEGOTIATE;
-                        break;
-                    case AuthType.Kerberos:
-                        method = BindMethod.LDAP_AUTH_NEGOTIATE;
-                        break;
-                    case AuthType.Ntlm:
-                        method = BindMethod.LDAP_AUTH_NTLM;
-                        break;
-                    case AuthType.Digest:
-                        method = BindMethod.LDAP_AUTH_DIGEST;
-                        break;
-                    case AuthType.Sicily:
-                        method = BindMethod.LDAP_AUTH_SICILY;
-                        break;
-                    case AuthType.Dpa:
-                        method = BindMethod.LDAP_AUTH_DPA;
-                        break;
-                    case AuthType.Msn:
-                        method = BindMethod.LDAP_AUTH_MSN;
-                        break;
-                    case AuthType.External:
-                        method = BindMethod.LDAP_AUTH_EXTERNAL;
-                        break;
-                }
+                    AuthType.Negotiate => BindMethod.LDAP_AUTH_NEGOTIATE,
+                    AuthType.Kerberos => BindMethod.LDAP_AUTH_NEGOTIATE,
+                    AuthType.Ntlm => BindMethod.LDAP_AUTH_NTLM,
+                    AuthType.Digest => BindMethod.LDAP_AUTH_DIGEST,
+                    AuthType.Sicily => BindMethod.LDAP_AUTH_SICILY,
+                    AuthType.Dpa => BindMethod.LDAP_AUTH_DPA,
+                    AuthType.Msn => BindMethod.LDAP_AUTH_MSN,
+                    AuthType.External => BindMethod.LDAP_AUTH_EXTERNAL,
+                    _ => BindMethod.LDAP_AUTH_NEGOTIATE
+                };
 
                 error = InternalBind(tempCredential, cred, method);
             }

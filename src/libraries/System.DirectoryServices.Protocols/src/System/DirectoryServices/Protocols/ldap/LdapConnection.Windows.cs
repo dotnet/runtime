@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -38,6 +39,25 @@ namespace System.DirectoryServices.Protocols
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
-            => tempCredential == null && AuthType == AuthType.External ? Interop.ldap_bind_s(_ldapHandle, null, null, method) : Interop.ldap_bind_s(_ldapHandle, null, cred, method);
+        {
+            if (tempCredential != null && AuthType == AuthType.Basic)
+            {
+                var tempDomainName = new StringBuilder(100);
+                if (!string.IsNullOrEmpty(cred.domain))
+                {
+                    tempDomainName.Append(cred.domain);
+                    tempDomainName.Append('\\');
+                }
+
+                tempDomainName.Append(cred.user);
+                return Interop.ldap_simple_bind_s(_ldapHandle, tempDomainName.ToString(), cred.password);
+            }
+
+            if (tempCredential == null && AuthType == AuthType.External)
+                return Interop.ldap_bind_s(_ldapHandle, null, null, method);
+
+            return Interop.ldap_bind_s(_ldapHandle, null, cred, method);
+        }
+
     }
 }

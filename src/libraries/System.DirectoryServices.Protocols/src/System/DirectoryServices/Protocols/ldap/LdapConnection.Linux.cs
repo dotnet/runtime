@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -24,17 +25,26 @@ namespace System.DirectoryServices.Protocols
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
         {
-            int error;
             if (tempCredential == null && (AuthType == AuthType.External || AuthType == AuthType.Kerberos))
             {
-                error = BindSasl();
-            }
-            else
-            {
-                error = Interop.ldap_simple_bind(_ldapHandle, cred.user, cred.password);
+                return BindSasl();
             }
 
-            return error;
+            if (tempCredential != null)
+            {
+                var tempDomainName = new StringBuilder(100);
+                if (!string.IsNullOrEmpty(cred.domain))
+                {
+                    tempDomainName.Append(cred.domain);
+                    tempDomainName.Append('\\');
+                }
+
+                tempDomainName.Append(cred.user);
+                return Interop.ldap_simple_bind(_ldapHandle, tempDomainName.ToString(), cred.password);
+            }
+
+            return Interop.ldap_simple_bind(_ldapHandle, cred.user, cred.password);
+
         }
 
         private int BindSasl()
