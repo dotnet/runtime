@@ -9201,11 +9201,17 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> Lc
 //    When it gets to an assignment to a local variable or a local field, it checks whether the assignment
 //    is the first reference to the local (or to the parent of the local field), and, if so,
 //    it may do one of two optimizations:
-//      1. If the local is untracked, the rhs of the assignment is 0, and the local is guaranteed
-//         to be fully initialized in the prolog, the explicit zero initialization is removed.
-//      2. If the assignment is to a local (and not a field) and either the local has no gc pointers or there
-//         are no gc-safe points between the prolog and the assignment, it marks the local with lvHasExplicitInit
-//         which tells the codegen not to insert zero initialization for this local in the prolog.
+//      1. If the following conditions are true:
+//            the local is untracked,
+//            the rhs of the assignment is 0,
+//            the local is guaranteed to be fully initialized in the prolog,
+//         then the explicit zero initialization is removed.
+//      2. If the following conditions are true:
+//            the assignment is to a local (and not a field),
+//            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the assignment,
+//            either the local has no gc pointers or there are no gc-safe points between the prolog and the assignment,
+//         then the local with lvHasExplicitInit which tells the codegen not to insert zero initialization for this
+//         local in the prolog.
 
 void Compiler::optRemoveRedundantZeroInits()
 {
@@ -9219,6 +9225,7 @@ void Compiler::optRemoveRedundantZeroInits()
     CompAllocator   allocator(getAllocator(CMK_ZeroInit));
     LclVarRefCounts refCounts(allocator);
     bool            hasGCSafePoint = false;
+    bool            canThrow       = false;
 
     assert(fgStmtListThreaded);
 
@@ -9231,9 +9238,14 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
-                if ((tree->gtFlags & GTF_CALL) != 0)
+                if (((tree->gtFlags & GTF_CALL) != 0) && (!tree->IsCall() || !tree->AsCall()->IsSuppressGCTransition()))
                 {
                     hasGCSafePoint = true;
+                }
+
+                if ((tree->gtFlags & GTF_EXCEPT) != 0)
+                {
+                    canThrow = true;
                 }
 
                 switch (tree->gtOper)
@@ -9247,7 +9259,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         unsigned* pRefCount = refCounts.LookupPointer(lclNum);
                         if (pRefCount != nullptr)
                         {
-                            *pRefCount = (*pRefCount)++;
+                            *pRefCount = (*pRefCount) + 1;
                         }
                         else
                         {
@@ -9274,7 +9286,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                     bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                                     bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
 
-                                    if (!fgVarNeedsExplicitZeroInit(lclDsc, bbInALoop, bbIsReturn))
+                                    if (!fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
                                     {
                                         // We are guaranteed to have a zero initialization in the prolog and
                                         // the local hasn't been redefined between the prolog and this explicit
@@ -9289,13 +9301,16 @@ void Compiler::optRemoveRedundantZeroInits()
                                     }
                                 }
 
-                                if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR))
+                                if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&
+                                    (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
                                 {
+                                    // If compMethodRequiresPInvokeFrame() returns true, lower may later
+                                    // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
                                     if (!lclDsc->HasGCPtr() ||
                                         (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
                                     {
                                         // The local hasn't been used and won't be reported to the gc between
-                                        // the prolog and this explicit zero intialization. Therefore, it doesn't
+                                        // the prolog and this explicit intialization. Therefore, it doesn't
                                         // require zero initialization in the prolog.
                                         lclDsc->lvHasExplicitInit = 1;
                                     }

@@ -4146,10 +4146,38 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 #endif // MEASURE_CLRAPI_CALLS
 
 //------------------------------------------------------------------------------
+// fgVarIsNeverZeroInitializedInProlog : Check whether the variable is never zero initialized in the prolog.
+//
+// Arguments:
+//    varNum     -       local variable number
+//
+// Returns:
+//             true if this is a special variable that is never zero initialized in the prolog;
+//             false otherwise
+//
+
+bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+    bool result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (opts.IsOSR() && (varNum == lvaGSSecurityCookie)) ||
+                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+
+#if FEATURE_FIXED_OUT_ARGS
+    result = result || (varNum == lvaPInvokeFrameRegSaveVar) || (varNum == lvaOutgoingArgSpaceVar);
+#endif
+
+#if defined(FEATURE_EH_FUNCLETS)
+    result = result || (varNum == lvaPSPSym);
+#endif
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
 // fgVarNeedsExplicitZeroInit : Check whether the variable needs an explicit zero initialization.
 //
 // Arguments:
-//    varDsc     -       local var description
+//    varNum     -       local var number
 //    bbInALoop  -       true if the basic block may be in a loop
 //    bbIsReturn -       true if the basic block always returns
 //
@@ -4165,9 +4193,16 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 //      - compInitMem is set and the variable has a long lifetime or has gc fields.
 //     In these cases we will insert zero-initialization in the prolog if necessary.
 
-bool Compiler::fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, bool bbIsReturn)
+bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool bbIsReturn)
 {
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
     if (bbInALoop && !bbIsReturn)
+    {
+        return true;
+    }
+
+    if (fgVarIsNeverZeroInitializedInProlog(varNum))
     {
         return true;
     }
