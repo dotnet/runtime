@@ -80,9 +80,6 @@ dwarf_find_unwind_table (struct elf_dyn_info *edi, unw_addr_space_t as,
           break;
 
         case PT_GNU_EH_FRAME:
-#if defined __sun
-        case PT_SUNW_UNWIND:
-#endif
           peh_hdr = phdr + i;
           break;
 

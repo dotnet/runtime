@@ -1614,9 +1614,9 @@ namespace System.Runtime.Serialization
     internal static class SerializationInfoExtensions
     {
         private static readonly Action<SerializationInfo, string, object, Type> s_updateValue =
-            (Action<SerializationInfo, string, object, Type>)typeof(SerializationInfo)
+            typeof(SerializationInfo)
             .GetMethod("UpdateValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
-            .CreateDelegate(typeof(Action<SerializationInfo, string, object, Type>));
+            .CreateDelegate<Action<SerializationInfo, string, object, Type>>();
 
         public static void UpdateValue(this SerializationInfo si, string name, object value, Type type) =>
             s_updateValue(si, name, value, type);

@@ -9,7 +9,7 @@ internal static partial class Interop
 #if MONO
         internal const string GlobalizationNative = "__Internal";
 #else
-        internal const string GlobalizationNative = "libSystem.Globalization.Native";
+        internal const string GlobalizationNative = "QCall";
 #endif
     }
 }

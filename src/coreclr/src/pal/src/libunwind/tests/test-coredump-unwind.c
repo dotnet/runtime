@@ -57,11 +57,7 @@
 #include <grp.h>
 
 /* For SIGSEGV handler code */
-#if HAVE_EXECINFO_H
-# include <execinfo.h>
-#else
-  extern int backtrace (void **, int);
-#endif
+#include <execinfo.h>
 #include <sys/ucontext.h>
 
 #include <libunwind-coredump.h>
@@ -246,7 +242,7 @@ void handle_sigsegv(int sig, siginfo_t *info, void *ucontext)
     void *array[50];
     int size;
     size = backtrace(array, 50);
-#if defined __linux__ && HAVE_EXECINFO_H
+#ifdef __linux__
     backtrace_symbols_fd(array, size, 2);
 #endif
   }

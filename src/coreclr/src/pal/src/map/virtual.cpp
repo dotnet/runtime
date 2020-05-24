@@ -2276,6 +2276,12 @@ Function:
     at which the allocator should start allocating memory from its reserved memory range.
 
 --*/
+#ifdef __sun
+// The upper limit of the random() function on SunOS derived operating systems is not RAND_MAX, but 2^31-1.
+#define OFFSET_RAND_MAX 0x7FFFFFFF
+#else
+#define OFFSET_RAND_MAX RAND_MAX
+#endif
 int32_t ExecutableMemoryAllocator::GenerateRandomStartOffset()
 {
     int32_t pageCount;
@@ -2284,7 +2290,7 @@ int32_t ExecutableMemoryAllocator::GenerateRandomStartOffset()
     // This code is similar to what coreclr runtime does on Windows.
     // It generates a random number of pages to skip between 0...MaxStartPageOffset.
     srandom(time(NULL));
-    pageCount = (int32_t)(MaxStartPageOffset * (int64_t)random() / RAND_MAX);
+    pageCount = (int32_t)(MaxStartPageOffset * (int64_t)random() / OFFSET_RAND_MAX);
 
     return pageCount * GetVirtualPageSize();
 }

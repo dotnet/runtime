@@ -1658,7 +1658,7 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
 
 	MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoDelegate, this_obj), interp_method, gpointer, imethod);
 
-	mono_delegate_ctor (this_obj, target, entry, error);
+	mono_delegate_ctor (this_obj, target, entry, imethod->method, error);
 }
 
 /*
@@ -3565,6 +3565,13 @@ main_loop:
 		MINT_IN_CASE(MINT_POP) {
 			sp--;
 			ip++;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_POP_VT) {
+			int i32 = READ32 (ip + 1);
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
+			sp--;
+			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_POP1) {

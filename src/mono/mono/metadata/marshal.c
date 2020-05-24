@@ -512,7 +512,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 		gpointer compiled_ptr = mono_compile_method_checked (wrapper, error);
 		goto_if_nok (error, leave);
 
-		mono_delegate_ctor_with_method (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
+		mono_delegate_ctor (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
 		goto_if_nok (error, leave);
 	}
 
@@ -6268,6 +6268,36 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 
 		return res;
 	}
+	case MONO_TYPE_SZARRAY: {
+		//TODO: Implement structs and in-params for all value types	
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		// we only support char[] for in-params; we return a pointer to the managed heap here, and that's not 'in'-safe
+		if ((param_attrs & PARAM_ATTRIBUTE_IN) && eklass != mono_get_char_class ())
+			break;
+
+		if (m_class_get_rank (klass) > 1)
+			break;
+
+		if (arr->bounds)
+			if (arr->bounds->lower_bound != 0)
+				break;
+
+		if (mono_class_is_auto_layout (eklass))
+			break;
+
+		if (m_class_is_valuetype (eklass) && (mono_class_is_explicit_layout (eklass) || m_class_is_blittable (eklass) || m_class_is_enumtype (eklass)))
+			return arr->vector;
+
+		if (eklass == mono_get_char_class ()) {
+			char *res =  mono_utf16_to_utf8 ((mono_unichar2 *) arr->vector, arr->max_length, error);
+			return_val_if_nok (error, NULL);
+			return res;
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -6326,6 +6356,20 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		}
 
 		mono_marshal_free (ptr);
+		break;
+	}
+	case MONO_TYPE_SZARRAY: {
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		if (eklass != mono_get_char_class ())
+			break;
+
+		mono_unichar2 *utf16_array = g_utf8_to_utf16 ((const char *)ptr, arr->max_length, NULL, NULL, NULL);
+		g_free (ptr);
+		memcpy (arr->vector, utf16_array, arr->max_length * sizeof (mono_unichar2));
+		g_free (utf16_array);
 		break;
 	}
 	default:

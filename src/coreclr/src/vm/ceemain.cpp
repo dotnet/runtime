@@ -836,8 +836,6 @@ void EEStartupHelper()
 
         VirtualCallStubManager::InitStatic();
 
-        GCInterface::m_MemoryPressureLock.Init(CrstGCMemoryPressure);
-
 #endif // CROSSGEN_COMPILE
 
         // Setup the domains. Threads are started in a default domain.

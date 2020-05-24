@@ -562,14 +562,14 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
 //
 // Arguments:
-//     initReg        - register to use as a scratch register
-//     pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
-//                      this call sets 'initReg' to a non-zero value.
+//     initReg          - register to use as a scratch register
+//     pInitRegModified - OUT parameter. *pInitRegModified is set to 'true' if and only if
+//                        this call sets 'initReg' to a non-zero value.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -593,7 +593,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
 
-    *pInitRegZeroed = false;
+    *pInitRegModified = true;
 }
 
 //---------------------------------------------------------------------
@@ -1402,7 +1402,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
         // Insert pieces in reverse order
         for (int i = regCount - 1; i >= 0; --i)
         {
-            var_types type = op1->GetRegTypeByIndex(i);
+            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
             regNumber reg  = op1->GetRegByIndex(i);
             if (op1->IsCopyOrReload())
             {
@@ -1444,7 +1444,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
     {
         for (unsigned i = 0; i < regCount; ++i)
         {
-            var_types type = op1->GetRegTypeByIndex(i);
+            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
             regNumber reg  = op1->GetRegByIndex(i);
             if (op1->IsCopyOrReload())
             {

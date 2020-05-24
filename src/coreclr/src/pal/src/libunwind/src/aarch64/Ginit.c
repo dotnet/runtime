@@ -41,7 +41,7 @@ static struct unw_addr_space local_addr_space;
 unw_addr_space_t unw_local_addr_space = &local_addr_space;
 
 static inline void *
-uc_addr (unw_tdep_context_t *uc, int reg)
+uc_addr (ucontext_t *uc, int reg)
 {
   if (reg >= UNW_AARCH64_X0 && reg < UNW_AARCH64_V0)
     return &uc->uc_mcontext.regs[reg];
@@ -54,12 +54,19 @@ uc_addr (unw_tdep_context_t *uc, int reg)
 # ifdef UNW_LOCAL_ONLY
 
 HIDDEN void *
-tdep_uc_addr (unw_tdep_context_t *uc, int reg)
+tdep_uc_addr (ucontext_t *uc, int reg)
 {
   return uc_addr (uc, reg);
 }
 
 # endif /* UNW_LOCAL_ONLY */
+
+HIDDEN unw_dyn_info_list_t _U_dyn_info_list;
+
+/* XXX fix me: there is currently no way to locate the dyn-info list
+       by a remote unwinder.  On ia64, this is done via a special
+       unwind-table entry.  Perhaps something similar can be done with
+       DWARF2 unwind info.  */
 
 static void
 put_unwind_info (unw_addr_space_t as, unw_proc_info_t *proc_info, void *arg)
@@ -71,13 +78,7 @@ static int
 get_dyn_info_list_addr (unw_addr_space_t as, unw_word_t *dyn_info_list_addr,
                         void *arg)
 {
-#ifndef UNW_LOCAL_ONLY
-# pragma weak _U_dyn_info_list_addr
-  if (!_U_dyn_info_list_addr)
-    return -UNW_ENOINFO;
-#endif
-  // Access the `_U_dyn_info_list` from `LOCAL_ONLY` library, i.e. libunwind.so.
-  *dyn_info_list_addr = _U_dyn_info_list_addr ();
+  *dyn_info_list_addr = (unw_word_t) &_U_dyn_info_list;
   return 0;
 }
 
@@ -103,7 +104,7 @@ access_reg (unw_addr_space_t as, unw_regnum_t reg, unw_word_t *val, int write,
             void *arg)
 {
   unw_word_t *addr;
-  unw_tdep_context_t *uc = arg;
+  ucontext_t *uc = arg;
 
   if (unw_is_fpreg (reg))
     goto badreg;
@@ -132,7 +133,7 @@ static int
 access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
               int write, void *arg)
 {
-  unw_tdep_context_t *uc = arg;
+  ucontext_t *uc = arg;
   unw_fpreg_t *addr;
 
   if (!unw_is_fpreg (reg))

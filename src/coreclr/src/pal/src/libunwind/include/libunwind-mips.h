@@ -98,7 +98,7 @@ typedef enum
     UNW_MIPS_R30,
     UNW_MIPS_R31,
 
-    UNW_MIPS_PC = 64,
+    UNW_MIPS_PC = 34,
 
     /* FIXME: Other registers!  */
 

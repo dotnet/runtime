@@ -25,8 +25,8 @@ namespace System.Text.RegularExpressions
 
         protected internal override RegexRunner CreateInstance() =>
             new CompiledRegexRunner(
-                _go ??= (Action<RegexRunner>)_goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
-                _findFirstChar ??= (Func<RegexRunner, bool>)_findFirstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
+                _go ??= _goMethod.CreateDelegate<Action<RegexRunner>>(),
+                _findFirstChar ??= _findFirstCharMethod.CreateDelegate<Func<RegexRunner, bool>>(),
                 _trackcount);
     }
 }
