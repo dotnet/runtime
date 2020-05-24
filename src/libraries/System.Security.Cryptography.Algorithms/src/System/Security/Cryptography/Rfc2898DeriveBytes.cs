@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Text;
 using System.Diagnostics;
 
@@ -258,7 +259,7 @@ namespace System.Security.Cryptography
         // where i is the block number.
         private void Func()
         {
-            Helpers.WriteInt(_block, _salt, _salt.Length - sizeof(uint));
+            BinaryPrimitives.WriteUInt32BigEndian(_salt.AsSpan(_salt.Length - sizeof(uint)), _block);
             Debug.Assert(_blockSize == _buffer.Length);
 
             // The biggest _blockSize we have is from SHA512, which is 64 bytes.
