@@ -81,8 +81,8 @@ namespace System.DirectoryServices.Protocols
 
         internal static int ResultToErrorCode(ConnectionHandle ldapHandle, IntPtr result, int freeIt) => Interop.ldap_result2error(ldapHandle, result, freeIt);
 
-        internal static int SearchDirectory(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber) =>
-                                Interop.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, timelimit, sizelimit, ref messageNumber);
+        internal static int SearchDirectory(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber)
+            => Interop.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, sizelimit, timelimit, ref messageNumber);
 
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetClientCertOption(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue) => Interop.ldap_set_option_clientcert(ldapHandle, option, outValue);
