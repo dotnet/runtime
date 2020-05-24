@@ -123,10 +123,7 @@ namespace System.IO.Pipelines
 
         internal Memory<byte> GetMemory(int sizeHint)
         {
-            if (_writerCompletion.IsCompleted)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
-            }
+            ThrowIfWriterCompleted();
 
             if (sizeHint < 0)
             {
@@ -134,16 +131,14 @@ namespace System.IO.Pipelines
             }
 
             AllocateWriteHeadIfNeeded(sizeHint);
+            ThrowIfWriterCompleted();
 
             return _operationState.WritingHeadMemory;
         }
 
         internal Span<byte> GetSpan(int sizeHint)
         {
-            if (_writerCompletion.IsCompleted)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
-            }
+            ThrowIfWriterCompleted();
 
             if (sizeHint < 0)
             {
@@ -151,8 +146,18 @@ namespace System.IO.Pipelines
             }
 
             AllocateWriteHeadIfNeeded(sizeHint);
+            ThrowIfWriterCompleted();
 
             return _operationState.WritingHeadMemory.Span;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ThrowIfWriterCompleted()
+        {
+            if (_writerCompletion.IsCompleted)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -263,6 +268,7 @@ namespace System.IO.Pipelines
             return new BufferSegment();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void InitializeSegmentMemory(int sizeHint, BufferSegment newSegment)
         {
             int maxSize = _maxPooledBufferSize;
@@ -368,7 +374,7 @@ namespace System.IO.Pipelines
             ValueTask<FlushResult> result;
             lock (_sync)
             {
-                PrepareFlush(out completionData, out result, cancellationToken);
+                PrepareFlushUnsynchronized(out completionData, out result, cancellationToken);
             }
 
             TrySchedule(_readerScheduler, completionData);
@@ -376,7 +382,7 @@ namespace System.IO.Pipelines
             return result;
         }
 
-        private void PrepareFlush(out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
+        private void PrepareFlushUnsynchronized(out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
         {
             bool wasEmpty = CommitUnsynchronized();
 
@@ -1004,16 +1010,12 @@ namespace System.IO.Pipelines
 
         internal ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            if (_writerCompletion.IsCompleted)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
-            }
-
             CompletionData completionData;
             ValueTask<FlushResult> result;
 
             lock (_sync)
             {
+                ThrowIfWriterCompleted();
                 // Allocate whatever the pool gives us so we can write, this also marks the
                 // state as writing
                 AllocateWriteHeadIfNeeded(0);
@@ -1035,7 +1037,7 @@ namespace System.IO.Pipelines
                     WriteMultiSegment(source.Span);
                 }
 
-                PrepareFlush(out completionData, out result, cancellationToken);
+                PrepareFlushUnsynchronized(out completionData, out result, cancellationToken);
             }
 
             TrySchedule(_readerScheduler, completionData);
