@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
@@ -9,7 +10,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal static class MsQuicAddressHelpers
     {
         internal const ushort IPv4 = 2;
-        internal const ushort IPv6 = 23;
+
+        // the AF_INET6 define in msquic code comes from system headers and is different on windows and linux
+        private static ushort _ipv6 = (ushort) (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 23 : 10);
+        internal static ushort IPv6 => _ipv6;
 
         internal static IPEndPoint INetToIPEndPoint(ref SOCKADDR_INET inetAddress)
         {
