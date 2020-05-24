@@ -142,6 +142,7 @@
 #include "eventpipeprovider.h"
 #include "eventpipemetadatagenerator.h"
 #include "eventpipeeventpayload.h"
+#include "eventpipesession.h"
 #endif // FEATURE_PERFTRACING
 
 //---------------------------------------------------------------------------------------
@@ -7028,7 +7029,128 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
     return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
-HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDER *pProviderHandle)
+HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
+    const WCHAR* szProviderName,
+    UINT32 cProviderConfigs,
+    COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
+    BOOL requestRundown,
+    BOOL requestSamples,
+    EVENTPIPE_SESSION* pSession)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeStartSession.\n"));
+
+#ifdef FEATURE_PERFTRACING
+
+    static_assert(offsetof(EventPipeProviderConfiguration, m_pProviderName) == offsetof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG, providerName)
+                  && offsetof(EventPipeProviderConfiguration, m_keywords) == offsetof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG, keywords)
+                  && offsetof(EventPipeProviderConfiguration, m_loggingLevel) == offsetof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG, loggingLevel)
+                  && offsetof(EventPipeProviderConfiguration, m_pFilterData) == offsetof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG, filterData)
+                  && sizeof(EventPipeProviderConfiguration) == sizeof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG),
+        "Layouts of EventPipeProviderConfiguration type and COR_PRF_EVENTPIPE_PROVIDER_CONFIG type do not match!");
+
+    if (szProviderName == NULL
+        || cProviderConfigs == 0
+        || pProviderConfigs == NULL
+        || pSession == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        auto eventPipeFunc = [](EventPipeProvider *provider,
+                                DWORD eventId,
+                                DWORD eventVersion,
+                                ULONG cbMetadataBlob,
+                                LPCBYTE metadataBlob,
+                                DWORD eventThreadId,
+                                ULONG cbEventData,
+                                LPCBYTE eventData,
+                                ULONG numStackFrames,
+                                UINT_PTR stackFrames[])
+        {
+            BEGIN_PIN_PROFILER(CORProfilerIsMonitoringEventPipe());
+            g_profControlBlock.pProfInterface->EventPipeEventDelivered(provider,
+                                                                       eventId,
+                                                                       eventVersion,
+                                                                       cbMetadataBlob,
+                                                                       metadataBlob,
+                                                                       eventThreadId,
+                                                                       cbEventData,
+                                                                       eventData,
+                                                                       numStackFrames,
+                                                                       stackFrames);
+            END_PIN_PROFILER();
+        };
+
+        EventPipeProviderConfiguration *pProviders = reinterpret_cast<EventPipeProviderConfiguration *>(pProviderConfigs);
+        UINT64 sessionID = EventPipe::Enable(NULL,
+                                             100, // circularBufferSizeInMB (shouldn't need this once it's synchronous)
+                                             pProviders,
+                                             cProviderConfigs,
+                                             EventPipeSessionType::Synchronous,
+                                             EventPipeSerializationFormat::NetTraceV4,
+                                             requestRundown,
+                                             NULL,
+                                             requestSamples,
+                                             eventPipeFunc);
+        EventPipe::StartStreaming(sessionID);
+
+        *pSession = sessionID;
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeStopSession(
+    EVENTPIPE_SESSION session)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeStopSession.\n"));
+
+#ifdef FEATURE_PERFTRACING
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        EventPipe::Disable(session);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDER *pProvider)
 {
     CONTRACTL
     {
@@ -7045,7 +7167,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
         "**PROF: EventPipeCreateProvider.\n"));
 
 #ifdef FEATURE_PERFTRACING
-    if (szName == NULL || pProviderHandle == NULL)
+    if (szName == NULL || pProvider == NULL)
     {
         return E_INVALIDARG;
     }
@@ -7053,14 +7175,83 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
     HRESULT hr = S_OK;
     EX_TRY
     {
-        EventPipeProvider *pProvider = EventPipe::CreateProvider(szName, NULL, NULL);
-        if (pProvider == NULL)
+        EventPipeProvider *pRealProvider = EventPipe::CreateProvider(szName, NULL, NULL);
+        if (pRealProvider == NULL)
         {
             hr = E_FAIL;
         }
         else
         {
-            *pProviderHandle = reinterpret_cast<EVENTPIPE_PROVIDER>(pProvider);
+            *pProvider = reinterpret_cast<EVENTPIPE_PROVIDER>(pRealProvider);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeGetProviderInfo(
+            EVENTPIPE_PROVIDER provider,
+            ULONG      cchName,
+            ULONG      *pcchName,
+            WCHAR      szName[])
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeGetProviderInfo.\n"));
+
+#ifdef FEATURE_PERFTRACING
+        if (cchName == 0 || szName == NULL)
+        {
+            // The only thing this API returns is the name, so bail
+            // if we can't return the name.
+            return E_INVALIDARG;
+        }
+
+        EventPipeProvider *pRealProvider = reinterpret_cast<EventPipeProvider *>(provider);
+        if (pRealProvider == NULL)
+        {
+            // Bogus provider passed in
+            return E_INVALIDARG;
+        }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        const SString &providerName = pRealProvider->GetProviderName();
+        ULONG numChars = providerName.GetCount() + 1;
+        if (pcchName != NULL)
+        {
+            *pcchName = numChars;
+        }
+
+        if (numChars >= cchName)
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+        }
+        else
+        {
+            size_t pos = 0;
+            for (SString::CIterator it = providerName.Begin(); it != providerName.End(); ++it)
+            {
+                szName[pos] = *it;
+                ++pos;
+            }
+
+            szName[pos] = '\0';
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7072,7 +7263,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
-    EVENTPIPE_PROVIDER provHandle,
+    EVENTPIPE_PROVIDER provider,
     const WCHAR *szName,
     UINT32 eventID,
     UINT64 keywords,
@@ -7082,7 +7273,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     BOOL needStack,
     UINT32 cParamDescs,
     COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
-    EVENTPIPE_EVENT *pEventHandle)
+    EVENTPIPE_EVENT *pEvent)
 {
     CONTRACTL
     {
@@ -7097,9 +7288,10 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: EventPipeDefineEvent.\n"));
+
 #ifdef FEATURE_PERFTRACING
-    EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
-    if (pProvider == NULL || szName == NULL || pEventHandle == NULL)
+    EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provider);
+    if (pProvider == NULL || szName == NULL || pEvent == NULL)
     {
         return E_INVALIDARG;
     }
@@ -7142,7 +7334,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
             &metadataLength);
 
         // Add the event.
-        EventPipeEvent *pEvent = pProvider->AddEvent(
+        EventPipeEvent *pRealEvent = pProvider->AddEvent(
             eventID,
             keywords,
             eventVersion,
@@ -7151,7 +7343,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
             pMetadata,
             (unsigned int)metadataLength);
 
-        *pEventHandle = reinterpret_cast<EVENTPIPE_EVENT>(pEvent);
+        *pEvent = reinterpret_cast<EVENTPIPE_EVENT>(pRealEvent);
     }
     EX_CATCH_HRESULT(hr);
 
@@ -7162,7 +7354,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
-    EVENTPIPE_EVENT eventHandle,
+    EVENTPIPE_EVENT event,
     UINT32 cData,
     COR_PRF_EVENT_DATA data[],
     LPCGUID pActivityId,
@@ -7182,7 +7374,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
         LL_INFO1000,
         "**PROF: EventPipeWriteEvent.\n"));
 #ifdef FEATURE_PERFTRACING
-    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
+    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(event);
 
     if (pEvent == NULL)
     {

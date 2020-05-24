@@ -22,7 +22,8 @@ enum class EventPipeSessionType
 {
     File,
     Listener,
-    IpcStream
+    IpcStream,
+    Synchronous
 };
 
 enum class EventPipeSerializationFormat
@@ -68,6 +69,9 @@ private:
     // For determininig if a particular session needs rundown events
     const bool m_rundownRequested;
 
+    // For synchronous sessions
+    EventPipeSessionSynchronousCallback m_synchronousCallback;
+
     // Start date and time in UTC.
     FILETIME m_sessionStartTime;
 
@@ -105,7 +109,9 @@ public:
         uint32_t circularBufferSizeInMB,
         const EventPipeProviderConfiguration *pProviders,
         uint32_t numProviders,
-        bool rundownEnabled = false);
+        bool rundownEnabled = false,
+        EventPipeSessionSynchronousCallback callback = nullptr);
+
     ~EventPipeSession();
 
     uint64_t GetMask() const
@@ -190,7 +196,7 @@ public:
 
     bool WriteAllBuffersToFile(bool *pEventsWritten);
 
-    bool WriteEventBuffered(
+    bool WriteEvent(
         Thread *pThread,
         EventPipeEvent &event,
         EventPipeEventPayload &payload,

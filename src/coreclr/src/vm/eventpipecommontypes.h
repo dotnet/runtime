@@ -9,6 +9,8 @@
 
 #include "common.h"
 
+class EventPipeProvider;
+
 enum class EventPipeEventLevel
 {
     LogAlways,
@@ -21,6 +23,8 @@ enum class EventPipeEventLevel
 
 struct EventPipeProviderConfiguration
 {
+    friend class ProfToEEInterfaceImpl;
+
 private:
     LPCWSTR m_pProviderName = nullptr;
     UINT64 m_keywords = 0;
@@ -114,6 +118,18 @@ public:
 private:
     SList<SListElem<EventPipeProviderCallbackData>> list;
 };
+
+typedef void (*EventPipeSessionSynchronousCallback)(
+    EventPipeProvider *provider,
+    DWORD eventId,
+    DWORD eventVersion,
+    ULONG cbMetadataBlob,
+    LPCBYTE metadataBlob,
+    DWORD eventThreadId,
+    ULONG cbEventData,
+    LPCBYTE eventData,
+    ULONG numStackFrames,
+    UINT_PTR stackFrames[]);
 
 #endif // FEATURE_PERFTRACING
 

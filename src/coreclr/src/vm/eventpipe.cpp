@@ -133,7 +133,7 @@ void EventPipe::FinishInitialize()
 
 //
 // If EventPipe environment variables are specified, parse them and start a session
-// 
+//
 void EventPipe::EnableViaEnvironmentVariables()
 {
     STANDARD_VM_CONTRACT;
@@ -299,7 +299,8 @@ EventPipeSessionID EventPipe::Enable(
     EventPipeSerializationFormat format,
     const bool rundownRequested,
     IpcStream *const pStream,
-    const bool enableSampleProfiler)
+    const bool enableSampleProfiler,
+    EventPipeSessionSynchronousCallback callback)
 {
     CONTRACTL
     {
@@ -336,7 +337,9 @@ EventPipeSessionID EventPipe::Enable(
             rundownRequested,
             circularBufferSizeInMB,
             pProviders,
-            numProviders);
+            numProviders,
+            false, //TODO: what is the difference between rundownRequested above and this rundownEnabled?
+            callback);
 
         const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue, enableSampleProfiler);
         if (fSuccess)
@@ -772,7 +775,7 @@ void EventPipe::WriteEventInternal(
             {
                 _ASSERTE(pRundownSession != nullptr);
                 if (pRundownSession != nullptr)
-                    pRundownSession->WriteEventBuffered(
+                    pRundownSession->WriteEvent(
                         pThread,
                         event,
                         payload,
@@ -804,7 +807,7 @@ void EventPipe::WriteEventInternal(
                 // Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occured in between
                 // the check and the load
                 if (pSession != nullptr)
-                    pSession->WriteEventBuffered(
+                    pSession->WriteEvent(
                         pThread,
                         event,
                         payload,

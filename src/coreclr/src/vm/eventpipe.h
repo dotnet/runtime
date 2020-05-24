@@ -64,7 +64,8 @@ public:
         EventPipeSerializationFormat format,
         const bool rundownRequested,
         IpcStream *const pStream,
-        const bool enableSampleProfiler = true);
+        const bool enableSampleProfiler = true,
+        EventPipeSessionSynchronousCallback callback = nullptr);
 
     // Disable tracing via the event pipe.
     static void Disable(EventPipeSessionID id);

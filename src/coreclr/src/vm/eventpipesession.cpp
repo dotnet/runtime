@@ -9,6 +9,7 @@
 #include "eventpipeprovider.h"
 #include "eventpipesession.h"
 #include "eventpipesessionprovider.h"
+#include "eventpipeeventpayload.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -22,12 +23,14 @@ EventPipeSession::EventPipeSession(
     uint32_t circularBufferSizeInMB,
     const EventPipeProviderConfiguration *pProviders,
     uint32_t numProviders,
-    bool rundownEnabled) : m_index(index),
-                           m_pProviderList(new EventPipeSessionProviderList(pProviders, numProviders)),
-                           m_rundownEnabled(rundownEnabled),
-                           m_SessionType(sessionType),
-                           m_format(format),
-                           m_rundownRequested(rundownSwitch)
+    bool rundownEnabled,
+    EventPipeSessionSynchronousCallback callback) : m_index(index),
+                                                    m_pProviderList(new EventPipeSessionProviderList(pProviders, numProviders)),
+                                                    m_rundownEnabled(rundownEnabled),
+                                                    m_SessionType(sessionType),
+                                                    m_format(format),
+                                                    m_rundownRequested(rundownSwitch),
+                                                    m_synchronousCallback(callback)
 {
     CONTRACTL
     {
@@ -39,6 +42,7 @@ EventPipeSession::EventPipeSession(
         PRECONDITION(circularBufferSizeInMB > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
+        PRECONDITION((m_synchronousCallback != nullptr) == (m_SessionType == EventPipeSessionType::Synchronous));
     }
     CONTRACTL_END;
 
@@ -305,7 +309,7 @@ bool EventPipeSession::WriteAllBuffersToFile(bool *pEventsWritten)
     return !m_pFile->HasErrors();
 }
 
-bool EventPipeSession::WriteEventBuffered(
+bool EventPipeSession::WriteEvent(
     Thread *pThread,
     EventPipeEvent &event,
     EventPipeEventPayload &payload,
@@ -323,9 +327,29 @@ bool EventPipeSession::WriteEventBuffered(
     CONTRACTL_END;
 
     // Filter events specific to "this" session based on precomputed flag on provider/events.
-    return event.IsEnabled(GetMask()) ?
-        m_pBufferManager->WriteEvent(pThread, *this, event, payload, pActivityId, pRelatedActivityId, pEventThread, pStack) :
-        false;
+    if (event.IsEnabled(GetMask()))
+    {
+        if (m_synchronousCallback != nullptr)
+        {
+            m_synchronousCallback(event.GetProvider(),
+                                  event.GetEventID(),
+                                  event.GetEventVersion(),
+                                  event.GetMetadataLength(),
+                                  event.GetMetadata(),
+                                  pEventThread == nullptr ? 0 : pEventThread->GetThreadId(),
+                                  payload.GetSize(),
+                                  payload.GetFlatData(),
+                                  pStack == nullptr ? 0 : pStack->GetSize(),
+                                  pStack == nullptr ? nullptr : reinterpret_cast<UINT_PTR *>(pStack->GetPointer()));
+            return true;
+        }
+        else
+        {
+            return m_pBufferManager->WriteEvent(pThread, *this, event, payload, pActivityId, pRelatedActivityId, pEventThread, pStack);
+        }
+    }
+
+    return false;
 }
 
 void EventPipeSession::WriteSequencePointUnbuffered()
@@ -383,6 +407,12 @@ void EventPipeSession::StartStreaming()
 
     if (m_SessionType == EventPipeSessionType::IpcStream)
         CreateIpcStreamingThread();
+
+    if (m_SessionType == EventPipeSessionType::Synchronous)
+    {
+        _ASSERTE(m_pFile == nullptr);
+        _ASSERTE(!IsIpcStreamingEnabled());
+    }
 }
 
 void EventPipeSession::EnableRundown()
