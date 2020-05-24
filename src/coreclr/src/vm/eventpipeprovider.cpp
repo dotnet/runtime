@@ -255,11 +255,14 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
         isEventFilterDescriptorInitialized = true;
     }
 
+    // NOTE: When we call the callback, we pass in enabled (which is either 1 or 0) as the ControlCode.
+    // If we want to add new ControlCode, we have to make corresponding change in eventtrace.cpp:EtwCallbackCommon
+    // to address this. See https://github.com/dotnet/runtime/pull/36733 for more discussions on this.
     if (pCallbackFunction != NULL && !g_fEEShutDown)
     {
         (*pCallbackFunction)(
             NULL, /* providerId */
-            enabled,
+            enabled, /* ControlCode */
             (UCHAR)providerLevel,
             keywords,
             0 /* matchAllKeywords */,
