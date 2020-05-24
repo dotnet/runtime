@@ -10133,22 +10133,12 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
     }
     GenTree* blkSrc = blkNode->Addr();
     assert(blkSrc != nullptr);
-    if (blkSrc->OperIs(GT_ADDR) && blkSrc->gtGetOp1()->OperIs(GT_LCL_VAR))
+    if (!blkNode->TypeIs(TYP_STRUCT) && blkSrc->OperIs(GT_ADDR) && blkSrc->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
         GenTreeLclVarCommon* lclVarNode = blkSrc->gtGetOp1()->AsLclVarCommon();
-        if ((blkNode->TypeGet() != TYP_STRUCT) &&
-            ((genTypeSize(blkNode) != genTypeSize(lclVarNode)) || (!isDest && !varTypeIsStruct(lclVarNode))))
+        if ((genTypeSize(blkNode) != genTypeSize(lclVarNode)) || (!isDest && !varTypeIsStruct(lclVarNode)))
         {
             lvaSetVarDoNotEnregister(lclVarNode->GetLclNum() DEBUG_ARG(DNER_VMNeedsStackAddr));
-        }
-        else
-        {
-            unsigned lclSize = lclVarNode->TypeIs(TYP_STRUCT) ? lvaGetDesc(lclVarNode)->lvExactSize
-                                                              : genTypeSize(lvaGetDesc(lclVarNode));
-            if ((blkNode->Size() == lclSize) && (lclVarNode->TypeGet() == tree->TypeGet()))
-            {
-                return lclVarNode;
-            }
         }
     }
 

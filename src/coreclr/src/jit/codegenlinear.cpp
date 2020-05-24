@@ -1401,7 +1401,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     {
         assert(compiler->lvaEnregMultiRegVars);
         GenTreeLclVar* lcl              = tree->gtSkipReloadOrCopy()->AsLclVar();
-        LclVarDsc*     varDsc           = &compiler->lvaTable[lcl->GetLclNum()];
+        LclVarDsc*     varDsc           = compiler->lvaGetDesc(lcl);
         unsigned       firstFieldVarNum = varDsc->lvFieldLclStart;
         for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
         {
@@ -1425,7 +1425,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
                 // We have loaded this into a register only temporarily
                 gcInfo.gcMarkRegSetNpt(reg);
             }
-            else if (isFieldDying != 0)
+            else if (isFieldDying)
             {
                 gcInfo.gcMarkRegSetNpt(genRegMask(fldVarDsc->GetRegNum()));
             }

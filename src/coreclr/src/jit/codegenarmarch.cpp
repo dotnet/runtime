@@ -1389,10 +1389,6 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
 
     genConsumeRegs(op1);
 
-    int  offset        = 0;
-    bool isMultiRegVar = treeNode->IsMultiRegLclVar();
-    bool hasRegs       = false;
-
     // Check for the case of an enregistered SIMD type that's returned in multiple registers.
     if (varDsc->lvIsRegCandidate() && treeNode->GetRegNum() != REG_NA)
     {
@@ -1445,6 +1441,11 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
     }
     else
     {
+
+        int  offset        = 0;
+        bool isMultiRegVar = treeNode->IsMultiRegLclVar();
+        bool hasRegs       = false;
+
         if (isMultiRegVar)
         {
             assert(compiler->lvaEnregMultiRegVars);

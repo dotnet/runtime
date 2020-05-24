@@ -3304,7 +3304,7 @@ public:
         gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
     }
 
-    unsigned int GetFieldCount(Compiler* compiler);
+    unsigned int GetFieldCount(Compiler* compiler) const;
     var_types GetFieldTypeByIndex(Compiler* compiler, unsigned idx);
 
     //-------------------------------------------------------------------

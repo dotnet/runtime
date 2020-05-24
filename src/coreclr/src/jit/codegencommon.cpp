@@ -11671,10 +11671,11 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
-    if (actualOp1->OperIs(GT_LCL_VAR) && varTypeIsEnregisterable(op1) && !actualOp1->AsLclVar()->IsMultiReg())
+    if (genIsRegCandidateLocal(actualOp1))
     {
         // Right now the only enregisterable structs supported are SIMD vector types.
         assert(varTypeIsSIMD(op1));
+        assert(!actualOp1->AsLclVar()->IsMultiReg());
 #ifdef FEATURE_SIMD
         genSIMDSplitReturn(op1, &retTypeDesc);
 #endif // FEATURE_SIMD
@@ -11791,7 +11792,6 @@ void CodeGen::genRegCopy(GenTree* treeNode)
             // on the source is still valid at the consumer).
             if (targetReg != REG_NA)
             {
-                regMaskTP targetRegMask = genRegMask(targetReg);
                 // We shouldn't specify a no-op move.
                 regMaskTP targetRegMask = genRegMask(targetReg);
                 assert(sourceReg != targetReg);
@@ -11870,7 +11870,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
             if ((lcl->gtFlags & GTF_VAR_DEATH) == 0 && (treeNode->gtFlags & GTF_VAR_DEATH) == 0)
             {
-                LclVarDsc* varDsc = &compiler->lvaTable[lcl->GetLclNum()];
+                LclVarDsc* varDsc = compiler->lvaGetDesc(lcl);
 
                 // If we didn't just spill it (in genConsumeReg, above), then update the register info
                 if (varDsc->GetRegNum() != REG_STK)

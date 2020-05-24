@@ -725,9 +725,7 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 #endif
     if (OperIsScalarLocal())
     {
-        // temporarily cast away const-ness as AsLclVar() method is not declared const
-        GenTree* temp = const_cast<GenTree*>(this);
-        return temp->AsLclVar()->GetFieldCount(compiler);
+        return AsLclVar()->GetFieldCount(compiler);
     }
     assert(!"Unexpected multi-reg node");
     return 0;
@@ -5575,7 +5573,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
 // Notes:
 //     This must be a multireg lclVar.
 //
-unsigned int GenTreeLclVar::GetFieldCount(Compiler* compiler)
+unsigned int GenTreeLclVar::GetFieldCount(Compiler* compiler) const
 {
     assert(IsMultiReg());
     LclVarDsc* varDsc = compiler->lvaGetDesc(GetLclNum());
@@ -10218,7 +10216,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
     {
         // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg call node.
-        const GenTreeCall* call     = tree->gtSkipReloadOrCopy()->AsCall();
+        const GenTreeCall* call     = tree->AsCall();
         const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
         {
