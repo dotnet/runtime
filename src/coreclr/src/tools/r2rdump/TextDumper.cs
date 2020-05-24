@@ -455,7 +455,7 @@ namespace R2RDump
                         R2RDump.WriteWarning("String is not zero-terminated");
                     }
                     string ownerCompositeExecutable = Encoding.UTF8.GetString(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
-                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToCSharpString());
+                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToEscapedString());
                     break;
             }
         }

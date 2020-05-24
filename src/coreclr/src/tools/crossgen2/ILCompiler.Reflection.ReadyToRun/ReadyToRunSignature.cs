@@ -1727,7 +1727,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             uint rid = ReadUIntAndEmitInlineSignatureBinary(builder);
             UserStringHandle stringHandle = MetadataTokens.UserStringHandle((int)rid);
-            builder.AppendCSharpString(_metadataReader.GetUserString(stringHandle));
+            builder.AppendEscapedString(_metadataReader.GetUserString(stringHandle));
         }
     }
 }

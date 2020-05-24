@@ -17,7 +17,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// method in Roslyn .NET compiler; see its
         /// <a href="https://github.com/dotnet/roslyn/blob/master/src/Compilers/CSharp/Portable/SymbolDisplay/ObjectDisplay.cs">sources</a> for reference.
         /// </remarks>
-        public static StringBuilder AppendCSharpString(this StringBuilder builder, string value)
+        public static StringBuilder AppendEscapedString(this StringBuilder builder, string value)
         {
             builder.Append('"');
 
@@ -104,9 +104,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Returns a C# string literal with the given value.
         /// </summary>
-        public static string ToCSharpString(this string value)
+        public static string ToEscapedString(this string value)
         {
-            return new StringBuilder(value.Length + 16).AppendCSharpString(value).ToString();
+            return new StringBuilder(value.Length + 16).AppendEscapedString(value).ToString();
         }
     }
 }
