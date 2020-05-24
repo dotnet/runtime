@@ -135,13 +135,6 @@ namespace System.IO.Pipelines
 
             AllocateWriteHeadIfNeeded(sizeHint);
 
-            _operationState.EndWriteAllocation();
-            if (_writerCompletionException != null)
-            {
-                CompleteWriter();
-                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
-            }
-
             return _operationState.WritingHeadMemory;
         }
 
@@ -158,13 +151,6 @@ namespace System.IO.Pipelines
             }
 
             AllocateWriteHeadIfNeeded(sizeHint);
-
-            _operationState.EndWriteAllocation();
-            if (_writerCompletionException != null)
-            {
-                CompleteWriter();
-                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
-            }
 
             return _operationState.WritingHeadMemory.Span;
         }
@@ -185,14 +171,17 @@ namespace System.IO.Pipelines
         {
             // First set the Write active and block reader from returning the writer's blocks
             _operationState.BeginWrite();
+            if (_writerCompletionException != null)
+            {
+                _operationState.EndWriteAllocation();
+                CompleteWriter();
+                return;
+            }
 
             if (_operationState.WritingHead == null)
             {
-                Debug.Assert(_operationState.ReadHead == null, "Returning ReadHead segment that's in use!");
-                Debug.Assert(_operationState.ReadTail == null, "Returning ReadTail segment that's in use!");
-
                 // We need to allocate memory to write since nobody has written before
-                BufferSegment newSegment = AllocateSegment(sizeHint);
+                BufferSegment newSegment = AllocateSegmentNoActiveReading(sizeHint);
 
                 // Set all the pointers
                 _operationState.WritingHead = _operationState.ReadHead = _operationState.ReadTail = newSegment;
@@ -217,6 +206,12 @@ namespace System.IO.Pipelines
                     _operationState.WritingHead = newSegment;
                 }
             }
+
+            _operationState.EndWriteAllocation();
+            if (_writerCompletionException != null)
+            {
+                CompleteWriter();
+            }
         }
 
         private BufferSegment AllocateSegment(int sizeHint)
@@ -227,6 +222,49 @@ namespace System.IO.Pipelines
                 newSegment = CreateSegmentSynchronized();
             }
 
+            InitializeSegmentMemory(sizeHint, newSegment);
+
+            return newSegment;
+        }
+
+        private BufferSegment AllocateSegmentNoActiveReading(int sizeHint)
+        {
+            Debug.Assert(_operationState.ReadHead == null, "Allocating unguarded segment when reader active!");
+            Debug.Assert(_operationState.ReadTail == null, "Allocating unguarded segment when reader active!");
+
+            BufferSegment? newSegment = _pooledBufferSegment;
+            if (newSegment is null)
+            {
+                if (!_bufferSegmentPool.TryPop(out newSegment))
+                {
+                    newSegment = new BufferSegment();
+                }
+            }
+            else
+            {
+                _pooledBufferSegment = null;
+            }
+
+            InitializeSegmentMemory(sizeHint, newSegment);
+
+            return newSegment;
+        }
+
+        private BufferSegment CreateSegmentSynchronized()
+        {
+            lock (_sync)
+            {
+                if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
+                {
+                    return segment;
+                }
+            }
+
+            return new BufferSegment();
+        }
+
+        private void InitializeSegmentMemory(int sizeHint, BufferSegment newSegment)
+        {
             int maxSize = _maxPooledBufferSize;
             if (_pool != null && sizeHint <= maxSize)
             {
@@ -242,8 +280,6 @@ namespace System.IO.Pipelines
             }
 
             _operationState.WritingHeadMemory = newSegment.AvailableMemory;
-
-            return newSegment;
         }
 
         private int GetSegmentSize(int sizeHint, int maxBufferSize = int.MaxValue)
@@ -253,19 +289,6 @@ namespace System.IO.Pipelines
             // After that adjust it to fit into pools max buffer size
             int adjustedToMaximumSize = Math.Min(maxBufferSize, sizeHint);
             return adjustedToMaximumSize;
-        }
-
-        private BufferSegment CreateSegmentSynchronized()
-        {
-            lock (_sync)
-            {
-                if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
-                {
-                    return segment;
-                }
-            }
-
-            return new BufferSegment();
         }
 
         private void ReturnSegmentUnsynchronized(BufferSegment segment)
@@ -355,7 +378,7 @@ namespace System.IO.Pipelines
 
         private void PrepareFlush(out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
         {
-            var wasEmpty = CommitUnsynchronized();
+            bool wasEmpty = CommitUnsynchronized();
 
             // AttachToken before completing reader awaiter in case cancellationToken is already completed
             _writerAwaitable.BeginOperation(cancellationToken, s_signalWriterAwaitable, this);
@@ -989,32 +1012,30 @@ namespace System.IO.Pipelines
             CompletionData completionData;
             ValueTask<FlushResult> result;
 
-            // Allocate whatever the pool gives us so we can write, this also marks the
-            // state as writing
-            AllocateWriteHeadIfNeeded(0);
-            if (source.Length <= _operationState.WritingHeadMemory.Length)
-            {
-                source.CopyTo(_operationState.WritingHeadMemory);
-
-                AdvanceCore(source.Length);
-            }
-            else
-            {
-                // This is the multi segment copy
-                WriteMultiSegment(source.Span);
-            }
-
-
             lock (_sync)
             {
-                _operationState.EndWriteAllocation();
-
-                PrepareFlush(out completionData, out result, cancellationToken);
-
+                // Allocate whatever the pool gives us so we can write, this also marks the
+                // state as writing
+                AllocateWriteHeadIfNeeded(0);
                 if (_writerCompletionException != null)
                 {
                     CompleteWriter();
+                    ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
                 }
+
+                if (source.Length <= _operationState.WritingHeadMemory.Length)
+                {
+                    source.CopyTo(_operationState.WritingHeadMemory);
+
+                    AdvanceCore(source.Length);
+                }
+                else
+                {
+                    // This is the multi segment copy
+                    WriteMultiSegment(source.Span);
+                }
+
+                PrepareFlush(out completionData, out result, cancellationToken);
             }
 
             TrySchedule(_readerScheduler, completionData);
