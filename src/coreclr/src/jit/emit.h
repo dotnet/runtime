@@ -2173,7 +2173,7 @@ public:
         dataSection*   dsdList;
         dataSection*   dsdLast;
         UNATIVE_OFFSET dsdOffs;
-        UNATIVE_OFFSET alignment;
+        UNATIVE_OFFSET alignment; // in bytes, defaults to 4
 
         dataSecDsc() : dsdList(nullptr), dsdLast(nullptr), dsdOffs(0), alignment(4)
         {

@@ -4622,7 +4622,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
-    // This restricts the emitConsDsc.alignment to: 1, 2, 4, 8, 16, or 32
+    // This restricts the emitConsDsc.alignment to: 1, 2, 4, 8, 16, or 32 bytes
     // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
     assert(isPow2(emitConsDsc.alignment) && (emitConsDsc.alignment <= 32));
 
@@ -5335,10 +5335,15 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
 
     assert(emitDataSecCur == nullptr);
 
-    // The size must not be zero and must be a multiple of 4
+    // The size must not be zero and must be a multiple of 4 bytes
+    // Additionally, 4 bytes is the minimum alignment that will
+    // actually be used. That is, if the user requests an alignment
+    // of 1 or 2, they will get  something that is at least 4-byte
+    // aligned. We allow the others since 4 is at least 1/2 and its
+    // simpler to allow it than to check and block.
     assert((size != 0) && ((size % 4) == 0));
 
-    // This restricts the alignment to: 1, 2, 4, 8, 16, or 32
+    // This restricts the alignment to: 1, 2, 4, 8, 16, or 32 bytes
     // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
 
     const size_t MaxAlignment = 32;
@@ -5349,6 +5354,15 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
 
     if (alignment > 4)
     {
+        // As per the above comment, the minimum alignment is actually 4
+        // bytes so we don't need to make any adjustments if the requested
+        // alignment is 1, 2, or 4.
+        //
+        // The maximum requested alignment is tracked and the memory allocator
+        // will end up ensuring offset 0 is at an address matching that
+        // alignment. So if the requested alignment is greater than 4, we need
+        // to pad the space out so the offset is a multiple of the requested.
+
         uint8_t zero[MaxAlignment] = {};
 
         UNATIVE_OFFSET zeroSize  = alignment - (secOffs % alignment);
