@@ -706,12 +706,18 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
     if ((baseType == TYP_FLOAT) && (simdSize == 12))
     {
-        // For TYP_SIMD12 we need to clear the upper bits and can't assume their value
+        // For TYP_SIMD12 the value of the upper bits is unknown but shouldn't impact
+        // the comparison. So, we should always pretend the bits were equivalent to
+        // ensure that the final result is correct. In the case of equality, the unsigned
+        // min across will always treat -1 (all bits set) as higher and so it will be
+        // preserved if the other three elements were also equal. In the case of inequality
+        // it will likewise be handled and won't cause an otherwise equivalent vector from
+        // being treated as not equal.
 
         GenTree* idxCns = comp->gtNewIconNode(3, TYP_INT);
         BlockRange().InsertAfter(cmp, idxCns);
 
-        GenTree* insCns = comp->gtNewIconNode(cmpOp == GT_EQ ? -1 : 0, TYP_INT);
+        GenTree* insCns = comp->gtNewIconNode(-1, TYP_INT);
         BlockRange().InsertAfter(idxCns, insCns);
 
         GenTree* tmp =
