@@ -136,10 +136,7 @@ namespace System.Numerics
         [Intrinsic]
         public readonly bool Equals(Vector4 other)
         {
-            return this.X == other.X
-                && this.Y == other.Y
-                && this.Z == other.Z
-                && this.W == other.W;
+            return this == other;
         }
         #endregion Public Instance Methods
 
@@ -329,7 +326,10 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector4 left, Vector4 right)
         {
-            return left.Equals(right);
+            return left.X == right.X
+                && left.Y == right.Y
+                && left.Z == right.Z
+                && left.W == right.W;
         }
 
         /// <summary>

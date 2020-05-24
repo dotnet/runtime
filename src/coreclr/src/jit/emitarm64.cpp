@@ -604,20 +604,23 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
-            assert(id->idOpSize() == EA_8BYTE);
+            ins      = id->idIns();
+            datasize = id->idOpSize();
             assert(insOptsNone(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
-            assert(isValidImmShift(emitGetInsSC(id), EA_8BYTE));
+            assert(isValidVectorShiftAmount(emitGetInsSC(id), datasize, emitInsIsVectorRightShift(ins)));
             break;
 
         case IF_DV_2O: // DV_2O   .Q.......iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - vector)
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            ins      = id->idIns();
+            datasize = id->idOpSize();
+            elemsize = optGetElemsize(id->idInsOpt());
+            assert(isValidVectorDatasize(datasize));
+            assert(isValidArrangement(datasize, id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidImmShift(emitGetInsSC(id), elemsize));
+            assert(isValidVectorShiftAmount(emitGetInsSC(id), elemsize, emitInsIsVectorRightShift(ins)));
             break;
 
         case IF_DV_2B: // DV_2B   .Q.........iiiii ......nnnnnddddd      Rd Vn[]  (umov/smov    - to general)
@@ -1376,13 +1379,13 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     // clang-format off
     const static insFormat insFormats[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                ) fmt,
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) fmt,
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) fmt,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) fmt,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) fmt,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) fmt,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) fmt,
+        #define INST1(id, nm, info, fmt, e1                                ) fmt,
+        #define INST2(id, nm, info, fmt, e1, e2                            ) fmt,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) fmt,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) fmt,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) fmt,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) fmt,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) fmt,
         #include "instrs.h"
     };
     // clang-format on
@@ -1393,76 +1396,81 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     return insFormats[ins];
 }
 
-// INST_FP is 1
-#define LD 2
-#define ST 4
-#define CMP 8
+#define LD 1
+#define ST 2
+#define CMP 4
+#define RSH 8
 
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
-    #define INST1(id, nm, fp, ldst, fmt, e1                                ) ldst | INST_FP*fp,
-    #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) ldst | INST_FP*fp,
-    #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) ldst | INST_FP*fp,
-    #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) ldst | INST_FP*fp,
-    #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) ldst | INST_FP*fp,
-    #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) ldst | INST_FP*fp,
-    #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) ldst | INST_FP*fp,
+    #define INST1(id, nm, info, fmt, e1                                ) info,
+    #define INST2(id, nm, info, fmt, e1, e2                            ) info,
+    #define INST3(id, nm, info, fmt, e1, e2, e3                        ) info,
+    #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) info,
+    #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) info,
+    #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) info,
+    #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) info,
     #include "instrs.h"
 };
 // clang-format on
 
-/*****************************************************************************
- *
- *  Returns true if the instruction is some kind of compare or test instruction
- */
-
+//------------------------------------------------------------------------
+// emitInsIsCompare: Returns true if the instruction is some kind of compare or test instruction.
+//
 bool emitter::emitInsIsCompare(instruction ins)
 {
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
-        return (CodeGenInterface::instInfo[ins] & CMP) ? true : false;
+        return (CodeGenInterface::instInfo[ins] & CMP) != 0;
     else
         return false;
 }
 
-/*****************************************************************************
- *
- *  Returns true if the instruction is some kind of load instruction
- */
-
+//------------------------------------------------------------------------
+// emitInsIsLoad: Returns true if the instruction is some kind of load instruction.
+//
 bool emitter::emitInsIsLoad(instruction ins)
 {
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
-        return (CodeGenInterface::instInfo[ins] & LD) ? true : false;
+        return (CodeGenInterface::instInfo[ins] & LD) != 0;
     else
         return false;
 }
-/*****************************************************************************
- *
- *  Returns true if the instruction is some kind of store instruction
- */
 
+//------------------------------------------------------------------------
+// emitInsIsStore: Returns true if the instruction is some kind of store instruction.
+//
 bool emitter::emitInsIsStore(instruction ins)
 {
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
-        return (CodeGenInterface::instInfo[ins] & ST) ? true : false;
+        return (CodeGenInterface::instInfo[ins] & ST) != 0;
     else
         return false;
 }
 
-/*****************************************************************************
- *
- *  Returns true if the instruction is some kind of load/store instruction
- */
-
+//------------------------------------------------------------------------
+// emitInsIsLoadOrStore: Returns true if the instruction is some kind of load or store instruction.
+//
 bool emitter::emitInsIsLoadOrStore(instruction ins)
 {
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
-        return (CodeGenInterface::instInfo[ins] & (LD | ST)) ? true : false;
+        return (CodeGenInterface::instInfo[ins] & (LD | ST)) != 0;
+    else
+        return false;
+}
+
+//------------------------------------------------------------------------
+// emitInsIsVectorRightShift: Returns true if the instruction is ASIMD right shift.
+//
+bool emitter::emitInsIsVectorRightShift(instruction ins)
+{
+    // We have pseudo ins like lea which are not included in emitInsLdStTab.
+    if (ins < ArrLen(CodeGenInterface::instInfo))
+        return (CodeGenInterface::instInfo[ins] & RSH) != 0;
     else
         return false;
 }
@@ -1470,6 +1478,7 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
 #undef LD
 #undef ST
 #undef CMP
+#undef RHS
 
 /*****************************************************************************
  *
@@ -1481,101 +1490,101 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     // clang-format off
     const static code_t insCodes1[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                ) e1,
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) e1,
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) e1,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) e1,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e1,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e1,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e1,
+        #define INST1(id, nm, info, fmt, e1                                ) e1,
+        #define INST2(id, nm, info, fmt, e1, e2                            ) e1,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) e1,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) e1,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e1,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e1,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e1,
         #include "instrs.h"
     };
     const static code_t insCodes2[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) e2,
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) e2,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) e2,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e2,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e2,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e2,
+        #define INST1(id, nm, info, fmt, e1                                )
+        #define INST2(id, nm, info, fmt, e1, e2                            ) e2,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) e2,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) e2,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e2,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e2,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e2,
         #include "instrs.h"
     };
     const static code_t insCodes3[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) e3,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) e3,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e3,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e3,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e3,
+        #define INST1(id, nm, info, fmt, e1                                )
+        #define INST2(id, nm, info, fmt, e1, e2                            )
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) e3,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) e3,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e3,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e3,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e3,
         #include "instrs.h"
     };
     const static code_t insCodes4[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) e4,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e4,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e4,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e4,
+        #define INST1(id, nm, info, fmt, e1                                )
+        #define INST2(id, nm, info, fmt, e1, e2                            )
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) e4,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e4,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e4,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e4,
         #include "instrs.h"
     };
     const static code_t insCodes5[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) e5,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e5,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e5,
+        #define INST1(id, nm, info, fmt, e1                                )
+        #define INST2(id, nm, info, fmt, e1, e2                            )
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e5,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e5,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e5,
         #include "instrs.h"
     };
     const static code_t insCodes6[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) e6,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e6,
+        #define INST1(id, nm, info, fmt, e1                                )
+        #define INST2(id, nm, info, fmt, e1, e2                            )
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                )
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e6,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e6,
         #include "instrs.h"
     };
     const static code_t insCodes7[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e7,
+        #define INST1(id, nm, info, fmt, e1                                )
+        #define INST2(id, nm, info, fmt, e1, e2                            )
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                )
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            )
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e7,
         #include "instrs.h"
     };
     const static code_t insCodes8[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e8,
+        #define INST1(id, nm, info, fmt, e1                                )
+        #define INST2(id, nm, info, fmt, e1, e2                            )
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                )
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            )
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e8,
         #include "instrs.h"
     };
     const static code_t insCodes9[] =
     {
-        #define INST1(id, nm, fp, ldst, fmt, e1                                )
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e9,
+        #define INST1(id, nm, info, fmt, e1                                )
+        #define INST2(id, nm, info, fmt, e1, e2                            )
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                )
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            )
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e9,
         #include "instrs.h"
     };
     // clang-format on
@@ -1596,6 +1605,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode4G[4] = {IF_DR_2E, IF_DR_2F, IF_DV_2M, IF_DV_2L};
     const static insFormat formatEncode4H[4] = {IF_DV_3E, IF_DV_3A, IF_DV_2L, IF_DV_2M};
     const static insFormat formatEncode4I[4] = {IF_DV_3D, IF_DV_3B, IF_DV_2G, IF_DV_2A};
+    const static insFormat formatEncode4J[4] = {IF_DV_2N, IF_DV_2O, IF_DV_3E, IF_DV_3A};
     const static insFormat formatEncode3A[3] = {IF_DR_3A, IF_DR_3B, IF_DI_2C};
     const static insFormat formatEncode3B[3] = {IF_DR_2A, IF_DR_2B, IF_DI_1C};
     const static insFormat formatEncode3C[3] = {IF_DR_3A, IF_DR_3B, IF_DV_3C};
@@ -1791,6 +1801,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 4; index++)
             {
                 if (fmt == formatEncode4I[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN4J:
+            for (index = 0; index < 4; index++)
+            {
+                if (fmt == formatEncode4J[index])
                 {
                     encoding_found = true;
                     break;
@@ -4393,15 +4414,21 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_fcvtl:
-        case INS_fcvtl2:
         case INS_fcvtn:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(size == EA_8BYTE);
+            assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+            fmt = IF_DV_2A;
+            break;
+
+        case INS_fcvtl2:
         case INS_fcvtn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            assert(isValidVectorDatasize(size));
-            assert(insOptsNone(opt));
-            assert(size == EA_8BYTE); // Narrowing from Double or Widening to Double (Half not supported)
-            fmt = IF_DV_2G;
+            assert(size == EA_16BYTE);
+            assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
+            fmt = IF_DV_2A;
             break;
 
         case INS_scvtf:
@@ -4797,6 +4824,7 @@ void emitter::emitIns_R_R_I(
         bool       canEncode;
         bitMaskImm bmi;
         unsigned   registerListSize;
+        bool       isRightShift;
 
         case INS_mov:
             // Check for the 'mov' aliases for the vector registers
@@ -4850,19 +4878,21 @@ void emitter::emitIns_R_R_I(
             fmt = IF_DI_2B;
             break;
 
-        case INS_sshr:
-        case INS_ssra:
+        case INS_shl:
+        case INS_sli:
+        case INS_sri:
         case INS_srshr:
         case INS_srsra:
-        case INS_shl:
-        case INS_ushr:
-        case INS_usra:
+        case INS_sshr:
+        case INS_ssra:
         case INS_urshr:
         case INS_ursra:
-        case INS_sri:
-        case INS_sli:
+        case INS_ushr:
+        case INS_usra:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
+
             if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
@@ -4870,7 +4900,7 @@ void emitter::emitIns_R_R_I(
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert(isValidVectorElemsize(elemsize));
-                assert(isValidImmShift(imm, elemsize));
+                assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
                 assert(opt != INS_OPTS_1D); // Reserved encoding
                 fmt = IF_DV_2O;
                 break;
@@ -4880,7 +4910,63 @@ void emitter::emitIns_R_R_I(
                 // Scalar operation
                 assert(insOptsNone(opt));
                 assert(size == EA_8BYTE); // only supported size
-                assert(isValidImmShift(imm, size));
+                assert(isValidVectorShiftAmount(imm, size, isRightShift));
+                fmt = IF_DV_2N;
+            }
+            break;
+
+        case INS_sqshl:
+        case INS_uqshl:
+        case INS_sqshlu:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
+
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidArrangement(size, opt));
+                assert(opt != INS_OPTS_1D); // The encoding immh = 1xxx, Q = 0 is reserved
+                elemsize = optGetElemsize(opt);
+                assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
+                fmt = IF_DV_2O;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert(isValidVectorElemsize(size));
+                assert(isValidVectorShiftAmount(imm, size, isRightShift));
+                fmt = IF_DV_2N;
+            }
+            break;
+
+        case INS_sqrshrn:
+        case INS_sqrshrun:
+        case INS_sqshrn:
+        case INS_sqshrun:
+        case INS_uqrshrn:
+        case INS_uqshrn:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
+
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidArrangement(size, opt));
+                assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding immh = 1xxx, Q = x is reserved
+                elemsize = optGetElemsize(opt);
+                assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
+                fmt = IF_DV_2O;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert(isValidVectorElemsize(size));
+                assert(size != EA_8BYTE); // The encoding immh = 1xxx is reserved
+                assert(isValidVectorShiftAmount(imm, size, isRightShift));
                 fmt = IF_DV_2N;
             }
             break;
@@ -4890,19 +4976,20 @@ void emitter::emitIns_R_R_I(
             assert(imm == 0);
             __fallthrough;
 
-        case INS_shrn:
         case INS_rshrn:
+        case INS_shrn:
         case INS_sshll:
         case INS_ushll:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
             // Vector operation
             assert(size == EA_8BYTE);
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
             assert(elemsize != EA_8BYTE); // Reserved encodings
             assert(isValidVectorElemsize(elemsize));
-            assert(isValidImmShift(imm, elemsize));
+            assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
             fmt = IF_DV_2O;
             break;
 
@@ -4911,19 +4998,27 @@ void emitter::emitIns_R_R_I(
             assert(imm == 0);
             __fallthrough;
 
-        case INS_shrn2:
         case INS_rshrn2:
+        case INS_shrn2:
+        case INS_sqrshrn2:
+        case INS_sqrshrun2:
+        case INS_sqshrn2:
+        case INS_sqshrun2:
         case INS_sshll2:
+        case INS_uqrshrn2:
+        case INS_uqshrn2:
         case INS_ushll2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            isRightShift = emitInsIsVectorRightShift(ins);
+
             // Vector operation
             assert(size == EA_16BYTE);
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(elemsize != EA_8BYTE); // Reserved encodings
+            assert(elemsize != EA_8BYTE); // The encoding immh = 1xxx, Q = x is reserved
             assert(isValidVectorElemsize(elemsize));
-            assert(isValidImmShift(imm, elemsize));
+            assert(isValidVectorShiftAmount(imm, elemsize, isRightShift));
             fmt = IF_DV_2O;
             break;
 
@@ -5571,6 +5666,10 @@ void emitter::emitIns_R_R_R(
         case INS_cmhi:
         case INS_cmhs:
         case INS_cmtst:
+        case INS_srshl:
+        case INS_sshl:
+        case INS_urshl:
+        case INS_ushl:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5592,8 +5691,12 @@ void emitter::emitIns_R_R_R(
             break;
 
         case INS_sqadd:
+        case INS_sqrshl:
+        case INS_sqshl:
         case INS_sqsub:
         case INS_uqadd:
+        case INS_uqrshl:
+        case INS_uqshl:
         case INS_uqsub:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -8754,18 +8857,33 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return bits;
 }
 
-/*****************************************************************************
- *
- *   Returns the encoding to shift by 'shift' for an Arm64 vector or scalar instruction
- */
-
-/*static*/ emitter::code_t emitter::insEncodeVectorShift(emitAttr size, ssize_t shift)
+// insEncodeVectorShift: Returns the encoding for the SIMD shift (immediate) instructions.
+//
+// Arguments:
+//    size  - for the scalar variants specifies 'datasize', for the vector variants specifies 'element size'.
+//    shift - if the shift is positive, the operation is a left shift. Otherwise, it is a right shift.
+//
+// Returns:
+//    "immh:immb" field of the instruction that contains encoded shift amount.
+//
+/*static*/ emitter::code_t emitter::insEncodeVectorShift(emitAttr size, ssize_t shiftAmount)
 {
-    assert(shift < getBitWidth(size));
+    if (shiftAmount < 0)
+    {
+        shiftAmount = -shiftAmount;
+        // The right shift amount must be in the range 1 to the destination element width in bits.
+        assert((shiftAmount > 0) && (shiftAmount <= getBitWidth(size)));
 
-    code_t imm = (code_t)(getBitWidth(size) + shift);
-
-    return imm << 16;
+        code_t imm = (code_t)(2 * getBitWidth(size) - shiftAmount);
+        return imm << 16;
+    }
+    else
+    {
+        // The left shift amount must in the range 0 to the element width in bits minus 1.
+        assert(shiftAmount < getBitWidth(size));
+        code_t imm = (code_t)(getBitWidth(size) + shiftAmount);
+        return imm << 16;
+    }
 }
 
 /*****************************************************************************
@@ -10595,9 +10713,25 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(id->idOpSize()); // Q
-            code |= insEncodeFloatElemsize(elemsize);    // X
-            code |= insEncodeReg_Vd(id->idReg1());       // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
+            if ((ins == INS_fcvtl) || (ins == INS_fcvtl2) || (ins == INS_fcvtn) || (ins == INS_fcvtn2))
+            {
+                // fcvtl{2} and fcvtn{2} encode the element size as
+                //   esize = 16 << UInt(sz)
+                if (elemsize == EA_4BYTE)
+                {
+                    code |= 0x00400000; // X
+                }
+                else
+                {
+                    assert(elemsize == EA_2BYTE);
+                }
+            }
+            else
+            {
+                code |= insEncodeFloatElemsize(elemsize); // X
+            }
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10738,11 +10872,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
-            imm  = emitGetInsSC(id);
-            code = emitInsCode(ins, fmt);
-            code |= insEncodeVectorShift(EA_8BYTE, imm); // iiiiiii
-            code |= insEncodeReg_Vd(id->idReg1());       // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            code     = emitInsCode(ins, fmt);
+            code |= insEncodeVectorShift(elemsize, emitInsIsVectorRightShift(ins) ? -imm : imm); // iiiiiii
+            code |= insEncodeReg_Vd(id->idReg1());                                               // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());                                               // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10750,10 +10885,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm      = emitGetInsSC(id);
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
-            code |= insEncodeVectorsize(id->idOpSize()); // Q
-            code |= insEncodeVectorShift(elemsize, imm); // iiiiiii
-            code |= insEncodeReg_Vd(id->idReg1());       // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
+            code |= insEncodeVectorsize(id->idOpSize());                                         // Q
+            code |= insEncodeVectorShift(elemsize, emitInsIsVectorRightShift(ins) ? -imm : imm); // iiiiiii
+            code |= insEncodeReg_Vd(id->idReg1());                                               // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());                                               // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -12345,6 +12480,23 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn   (fabs, fcvt - vector)
+            if ((ins == INS_fcvtl) || (ins == INS_fcvtl2))
+            {
+                emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            }
+            else if ((ins == INS_fcvtn) || (ins == INS_fcvtn2))
+            {
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), false);
+            }
+            else
+            {
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            }
+            break;
+
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn   (aes*, sha1su1)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
@@ -12492,7 +12644,14 @@ void emitter::emitDispIns(
             }
             else
             {
-                elemsize = optGetElemsize(id->idInsOpt());
+                if ((ins == INS_saddlv) || (ins == INS_uaddlv))
+                {
+                    elemsize = optGetElemsize(optWidenDstArrangement(id->idInsOpt()));
+                }
+                else
+                {
+                    elemsize = optGetElemsize(id->idInsOpt());
+                }
                 emitDispReg(id->idReg1(), elemsize, true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
@@ -13931,6 +14090,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
+                case INS_fcvtl:
+                case INS_fcvtl2:
+                case INS_fcvtn:
+                case INS_fcvtn2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);
@@ -13981,14 +14148,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fcmlt:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-
-                case INS_fcvtl:
-                case INS_fcvtl2:
-                case INS_fcvtn:
-                case INS_fcvtn2:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
                 case INS_frecpe:
@@ -14297,6 +14456,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_shadd:
                 case INS_shsub:
                 case INS_srhadd:
+                case INS_srshl:
+                case INS_sshl:
                 case INS_smax:
                 case INS_smaxp:
                 case INS_smin:
@@ -14308,6 +14469,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_uhadd:
                 case INS_uhsub:
                 case INS_urhadd:
+                case INS_urshl:
+                case INS_ushl:
                 case INS_uzp1:
                 case INS_uzp2:
                 case INS_zip1:
@@ -14346,6 +14509,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_mul:
                 case INS_mla:
                 case INS_mls:
+                case INS_sqshl:
+                case INS_sqrshl:
+                case INS_uqrshl:
+                case INS_uqshl:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
@@ -14475,9 +14642,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
                 case INS_rshrn:
                 case INS_rshrn2:
-                case INS_ssra:
                 case INS_srshr:
+                case INS_sqshrn:
+                case INS_sqshrn2:
+                case INS_ssra:
                 case INS_urshr:
+                case INS_uqshrn:
+                case INS_uqshrn2:
                 case INS_usra:
                     if (id->idOpSize() == EA_16BYTE)
                     {
@@ -14495,6 +14666,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_ursra:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_sqrshrn:
+                case INS_sqrshrn2:
+                case INS_sqrshrun:
+                case INS_sqrshrun2:
+                case INS_sqshrun:
+                case INS_sqshrun2:
+                case INS_sqshl:
+                case INS_sqshlu:
+                case INS_uqrshrn:
+                case INS_uqrshrn2:
+                case INS_uqshl:
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
                     break;
 
                 default:

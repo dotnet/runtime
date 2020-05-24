@@ -1266,35 +1266,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh08_small/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/huge/_il_relhuge_b/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/huge/_il_relhuge_i4/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/huge/_il_relhuge_objref/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/huge/_il_relhuge_r4/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/huge/_il_relhuge_r8/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/huge/_il_relhuge_struct/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/huge/_il_relhuge_u8/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_dbgaddress/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_dbginitializearray/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_dbgldelem_get/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_reladdress/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
@@ -1304,9 +1277,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_relinitializearray/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_relldelem_get/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgfloat64_range1/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
@@ -1380,12 +1350,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray3_cs_do/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/int64/arrays/_il_relhugedim/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
@@ -1405,12 +1369,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/34379</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/_il_reljumps4/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/port/_il_dbghuge_gcref/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/port/_il_relhuge_gcref/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">

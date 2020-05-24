@@ -7310,7 +7310,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 		return_val_if_nok (error, NULL_HANDLE);
 	}
 
-	mono_delegate_ctor_with_method (delegate, target, NULL, method, error);
+	mono_delegate_ctor (delegate, target, NULL, method, error);
 	return_val_if_nok (error, NULL_HANDLE);
 	return delegate;
 }
