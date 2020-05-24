@@ -179,6 +179,14 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void ThrowsOnAdvanceWithNoMemory()
         {
+            Memory<byte> buffer = Pipe.Writer.GetMemory(1);
+            Pipe.Writer.Advance(buffer.Length);
+            Assert.Throws<ArgumentOutOfRangeException>(() => Pipe.Writer.Advance(1));
+        }
+
+        [Fact]
+        public void ThrowsOnAdvanceWithoutWrite()
+        {
             PipeWriter buffer = Pipe.Writer;
             Assert.Throws<ArgumentOutOfRangeException>(() => buffer.Advance(1));
         }

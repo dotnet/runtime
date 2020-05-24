@@ -181,7 +181,24 @@ namespace System.IO.Pipelines
             if (!_operationState.IsWritingActive ||
                 _writingHeadMemory.Length == 0 || _writingHeadMemory.Length < sizeHint)
             {
-                AllocateWriteHeadSynchronized(sizeHint);
+                // Set wrtiting before checking anything; this is important as AdvanceReader
+                // can release the write head to free up memory if it considers the Pipe to be idle.
+                _operationState.BeginWrite();
+
+                // Ensure a read is not in progress as it may have released the write head, but not yet returned
+                // the segments in which case we cannot access them without a lock.
+                if (!_operationState.IsReadingActive && _writingHead == null)
+                {
+                    // No reader in progress and no existing data; so we don't need the lock to allocate and initalize.
+                    BufferSegment newSegment = AllocateSegment(sizeHint);
+                    // Set all the pointers
+                    _writingHead = _readHead = _readTail = newSegment;
+                    _lastExaminedIndex = 0;
+                }
+                else
+                {
+                    AllocateWriteHeadSynchronized(sizeHint);
+                }
             }
         }
 
@@ -189,13 +206,10 @@ namespace System.IO.Pipelines
         {
             lock (_sync)
             {
-                _operationState.BeginWrite();
-
                 if (_writingHead == null)
                 {
-                    // We need to allocate memory to write since nobody has written before
+                    // No existing write head so we need to initialize everything.
                     BufferSegment newSegment = AllocateSegment(sizeHint);
-
                     // Set all the pointers
                     _writingHead = _readHead = _readTail = newSegment;
                     _lastExaminedIndex = 0;
@@ -313,15 +327,14 @@ namespace System.IO.Pipelines
 
         internal void Advance(int bytes)
         {
-            lock (_sync)
+            // Advance is not under lock, so Write must be active or Read could release
+            // the write head to free up idle memory before we have increased the unflushed data.
+            if (!_operationState.IsWritingActive || (uint)bytes > (uint)_writingHeadMemory.Length)
             {
-                if ((uint)bytes > (uint)_writingHeadMemory.Length)
-                {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
-                }
-
-                AdvanceCore(bytes);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
             }
+
+            AdvanceCore(bytes);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -438,8 +451,6 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_InvalidExaminedOrConsumedPosition();
             }
 
-            BufferSegment? returnStart = null;
-            BufferSegment? returnEnd = null;
 
             CompletionData completionData = default;
 
@@ -475,6 +486,8 @@ namespace System.IO.Pipelines
                     }
                 }
 
+                BufferSegment? returnStart = null;
+                BufferSegment? returnEnd = null;
                 if (consumedSegment != null)
                 {
                     if (_readHead == null)
@@ -655,7 +668,6 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
             }
 
-            ValueTask<ReadResult> result;
             lock (_sync)
             {
                 _readerAwaitable.BeginOperation(token, s_signalReaderAwaitable, this);
@@ -664,16 +676,12 @@ namespace System.IO.Pipelines
                 if (_readerAwaitable.IsCompleted)
                 {
                     GetReadResult(out ReadResult readResult);
-                    result = new ValueTask<ReadResult>(readResult);
-                }
-                else
-                {
-                    // Otherwise it's async
-                    result = new ValueTask<ReadResult>(_reader, token: 0);
+                    return new ValueTask<ReadResult>(readResult);
                 }
             }
 
-            return result;
+            // Otherwise it's async
+            return new ValueTask<ReadResult>(_reader, token: 0);
         }
 
         internal bool TryRead(out ReadResult result)
