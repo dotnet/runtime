@@ -1015,11 +1015,6 @@ namespace System.Threading
         internal bool IsBlocking => UserUnregisterWaitHandleValue == InvalidHandleValue;
 
         /// <summary>
-        /// The <see cref="PortableThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
-        /// </summary>
-        internal PortableThreadPool.WaitThread? WaitThread { get; set; }
-
-        /// <summary>
         /// The number of callbacks that are currently queued on the Thread Pool or executing.
         /// </summary>
         private int _numRequestedCallbacks;
@@ -1036,74 +1031,6 @@ namespace System.Threading
         private AutoResetEvent? _callbacksComplete;
 
         private AutoResetEvent? _removed;
-
-        private bool UnregisterPortable(WaitHandle waitObject)
-        {
-            // The registered wait handle must have been registered by this time, otherwise the instance is not handed out to
-            // the caller of the public variants of RegisterWaitForSingleObject
-            Debug.Assert(WaitThread != null);
-
-            s_callbackLock.Acquire();
-            bool needToRollBackRefCountOnException = false;
-            try
-            {
-                if (_unregisterCalled)
-                {
-                    return false;
-                }
-
-                UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
-                UserUnregisterWaitHandle?.DangerousAddRef(ref needToRollBackRefCountOnException);
-
-                UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
-
-                if (_unregistered)
-                {
-                    SignalUserWaitHandle();
-                    return true;
-                }
-
-                if (IsBlocking)
-                {
-                    _callbacksComplete = RentEvent();
-                }
-                else
-                {
-                    _removed = RentEvent();
-                }
-            }
-            catch (Exception) // Rollback state on exception
-            {
-                if (_removed != null)
-                {
-                    ReturnEvent(_removed);
-                    _removed = null;
-                }
-                else if (_callbacksComplete != null)
-                {
-                    ReturnEvent(_callbacksComplete);
-                    _callbacksComplete = null;
-                }
-
-                UserUnregisterWaitHandleValue = IntPtr.Zero;
-
-                if (needToRollBackRefCountOnException)
-                {
-                    UserUnregisterWaitHandle?.DangerousRelease();
-                }
-
-                UserUnregisterWaitHandle = null;
-                throw;
-            }
-            finally
-            {
-                _unregisterCalled = true;
-                s_callbackLock.Release();
-            }
-
-            WaitThread!.UnregisterWait(this);
-            return true;
-        }
 
         /// <summary>
         /// Signal <see cref="UserUnregisterWaitHandle"/> if it has not been signaled yet and is a valid handle.
