@@ -18630,6 +18630,36 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3, op4), hwIntrinsicID, baseType, size);
 }
 
+GenTreeHWIntrinsic* Compiler::gtNewSimdCreateBroadcastNode(var_types type,
+                                                           GenTree*  op1,
+                                                           var_types baseType,
+                                                           unsigned  size,
+                                                           bool      isSimdAsHWIntrinsic);
+{
+    NamedIntrinsic hwIntrinsicID = NI_Vector128_Create;
+
+#if defined(TARGET_XARCH)
+    if (size == 32)
+    {
+        hwIntrinsicID = NI_Vector256_Create;
+    }
+#elif defined(TARGET_ARM64)
+    if (size == 8)
+    {
+        hwIntrinsicID = NI_Vector64_Create;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    if (isSimdAsHWIntrinsic)
+    {
+        return gtNewSimdAsHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+    }
+
+    return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+}
+
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
 {
     SetOpLclRelatedToSIMDIntrinsic(op1);

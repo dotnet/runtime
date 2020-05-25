@@ -502,7 +502,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         }
                         assert(bitMask != nullptr);
 
-                        bitMask = gtNewSIMDNode(retType, bitMask, SIMDIntrinsicInit, baseType, simdSize);
+                        bitMask = gtNewSimdCreateBroadcastNode(retType, bitMask, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
 
                         intrinsic = isVectorT256 ? NI_VectorT256_op_BitwiseAnd : NI_VectorT128_op_BitwiseAnd;
                         intrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType);
@@ -584,16 +584,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector3_CreateBroadcast:
                 case NI_Vector4_CreateBroadcast:
                 case NI_VectorT128_CreateBroadcast:
-                {
-                    copyBlkDst = op1;
-                    copyBlkSrc = gtNewSimdAsHWIntrinsicNode(retType, op2, NI_Vector128_Create, baseType, simdSize);
-                    break;
-                }
-
                 case NI_VectorT256_CreateBroadcast:
                 {
                     copyBlkDst = op1;
-                    copyBlkSrc = gtNewSimdAsHWIntrinsicNode(retType, op2, NI_Vector256_Create, baseType, simdSize);
+                    copyBlkSrc = gtNewSimdCreateBroadcastNode(retType, op2, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
                     break;
                 }
 
@@ -673,8 +667,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                             }
                         }
 
-                        GenTree* constVector =
-                            gtNewSIMDNode(retType, constVal, nullptr, SIMDIntrinsicInit, TYP_INT, simdSize);
+                        GenTree* constVector = gtNewSimdCreateBroadcastNode(retType, constVal, TYP_INT, simdSize, /* isSimdAsHWIntrinsic */ true);
 
                         GenTree* constVectorDup1;
                         constVector = impCloneExpr(constVector, &constVectorDup1, clsHnd, (unsigned)CHECK_SPILL_ALL,
@@ -792,18 +785,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 #elif defined(TARGET_ARM64)
                 case NI_Vector2_CreateBroadcast:
-                {
-                    copyBlkDst = op1;
-                    copyBlkSrc = gtNewSimdAsHWIntrinsicNode(retType, op2, NI_Vector64_Create, baseType, simdSize);
-                    break;
-                }
-
                 case NI_Vector3_CreateBroadcast:
                 case NI_Vector4_CreateBroadcast:
                 case NI_VectorT128_CreateBroadcast:
                 {
                     copyBlkDst = op1;
-                    copyBlkSrc = gtNewSimdAsHWIntrinsicNode(retType, op2, NI_Vector128_Create, baseType, simdSize);
+                    copyBlkSrc = gtNewSimdCreateBroadcastNode(retType, op2, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
                     break;
                 }
 
@@ -1217,8 +1204,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                     }
                 }
 
-                GenTree* constVector =
-                    gtNewSIMDNode(retType, constVal, nullptr, SIMDIntrinsicInit, constVal->TypeGet(), simdSize);
+                GenTree* constVector = gtNewSimdCreateBroadcastNode(retType, constVal, constVal->TypeGet(), simdSize, /* isSimdAsHWIntrinsic */ true);
 
                 GenTree* constVectorDup;
                 constVector = impCloneExpr(constVector, &constVectorDup, clsHnd, (unsigned)CHECK_SPILL_ALL,
