@@ -82,9 +82,8 @@ namespace System.Formats.Cbor
         ///   Defaults to <see langword="false" />.
         /// </param>
         /// <param name="allowMultipleRootLevelValues">
-        ///   Specify if multiple root-level values are to be supported by the writer.
-        ///   When set to <see langword="false" />, the reader will throw an <see cref="InvalidOperationException"/>
-        ///   if trying to write beyond the scope of one root-level CBOR data item.
+        ///   <see langword="true"/> to allow multiple root-level values to be written by the writer; otherwise, <see langword="false"/>.
+        ///   The default is <see langword="false"/>.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="conformanceLevel"/> is not a defined <see cref="CborConformanceLevel"/>.
