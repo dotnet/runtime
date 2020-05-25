@@ -61,8 +61,6 @@ namespace System.Formats.Cbor
         /// </summary>
         public int BytesWritten => _offset;
 
-        // Returns true iff a complete CBOR document has been written to buffer
-
         /// <summary>
         ///   True if the writer has completed writing a complete root-level CBOR document,
         ///   or sequence of root-level CBOR documents.
@@ -128,8 +126,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="encodedValue">The encoded value to write.</param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="preEncodedValue"/> is not a well-formed CBOR encoding -or-
-        ///   <paramref name="preEncodedValue"/> is not valid under the current conformance level
+        ///   <paramref name="encodedValue"/> is not a well-formed CBOR encoding -or-
+        ///   <paramref name="encodedValue"/> is not valid under the current conformance level
         /// </exception>
         public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)
         {

@@ -115,7 +115,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded byte array.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type.
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next data item is a definite-length encoded string.
         /// </exception>
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
@@ -270,7 +271,8 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as the start of an indefinite-length UTF-8 text string (major type 3).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type.
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next data item is a definite-length encoded string.
         /// </exception>
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
