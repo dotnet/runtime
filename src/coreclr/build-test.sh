@@ -478,6 +478,10 @@ handle_arguments_local() {
             __SkipGenerateLayout=1
             ;;
 
+        skipcrossgenframework|-skipcrossgenframework)
+            __SkipCrossgenFramework=1
+            ;;
+
         crossgen|-crossgen)
             __DoCrossgen=1
             __TestBuildMode=crossgen
@@ -500,6 +504,7 @@ handle_arguments_local() {
 
         generatelayoutonly|-generatelayoutonly)
             __GenerateLayoutOnly=1
+            __SkipCrossgenFramework=1
             ;;
 
         priority1|-priority1)
