@@ -1461,10 +1461,6 @@ namespace System.Net.Sockets
                     op.CancellationRegistration.Dispose();
                     op.InvokeCallback(allowPooling: true);
                 }
-                else
-                {
-                    op.Schedule();
-                }
                 // dispatch next operation (if there was any)
                 // todo: handle next operation
                 //nextOp?.Dispatch();

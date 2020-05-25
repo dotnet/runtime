@@ -60,6 +60,8 @@ namespace System.Net.Sockets
 
         private static readonly int s_aioInstanceCount = GetAioInstanceCount();
 
+        private static readonly AioContinuationHandling s_aioContinuationHandling = GetAioContinuationHandling();
+
         private static int GetEngineCount()
         {
             // The responsibility of SocketAsyncEngine is to get notifications from epoll|kqueue
@@ -105,6 +107,16 @@ namespace System.Net.Sockets
             }
 
             return 100;
+        }
+
+        private static AioContinuationHandling GetAioContinuationHandling()
+        {
+            if (uint.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_AIO_CONTINUATION"), out uint result))
+            {
+                return (AioContinuationHandling)result;
+            }
+
+            return AioContinuationHandling.RunInline;
         }
 
         //
@@ -538,6 +550,7 @@ namespace System.Net.Sockets
             }
 
             int batchSegmentSize = s_batchSegmentSize;
+            AioContinuationHandling runContinuation = s_aioContinuationHandling;
             int currentBatchIndex = aioContextInex * batchSegmentSize;
             Interop.Sys.IoControlBlock** aioBlocksPointersSegment = _aioBlocksPointers + currentBatchIndex;
             Interop.Sys.IoEvent* aioEventsSegment = _aioEvents + currentBatchIndex;
@@ -580,11 +593,40 @@ namespace System.Net.Sockets
                 }
 
                 ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(aioEventsSegment, currentBatchSize);
-                for (int i = 0; i < events.Length; i++)
+
+                switch (runContinuation)
                 {
-                    batchedOperations[(int)events[i].Data]!.HandleBatchEvent(in events[i], inline: true);
-                    batchedOperations[(int)events[i].Data] = null;
-                    ioControlBlocksSegment[i] = default;
+                    case AioContinuationHandling.RunInline:
+                        for (int i = 0; i < events.Length; i++)
+                        {
+                            batchedOperations[(int)events[i].Data]!.HandleBatchEvent(in events[i], inline: true);
+                            batchedOperations[(int)events[i].Data] = null;
+                            ioControlBlocksSegment[i] = default;
+                        }
+                        break;
+                    case AioContinuationHandling.ScheduleSingleWorkItem:
+                        for (int i = 0; i < events.Length; i++)
+                        {
+                            SocketAsyncContext.AsyncOperation asyncOperation = batchedOperations[(int)events[i].Data]!;
+
+                            asyncOperation.HandleBatchEvent(in events[i], inline: false);
+                            ThreadPool.UnsafeQueueUserWorkItem(asyncOperation, preferLocal: false);
+
+                            batchedOperations[(int)events[i].Data] = null;
+                            ioControlBlocksSegment[i] = default;
+                        }
+                        break;
+                    case AioContinuationHandling.ScheduleBatchOfWorkItems:
+                        for (int i = 0; i < events.Length; i++)
+                        {
+                            batchedOperations[(int)events[i].Data]!.HandleBatchEvent(in events[i], inline: false);
+                            ioControlBlocksSegment[i] = default;
+                        }
+                        var workItems = batchedOperations.Slice(0, events.Length);
+                        ThreadPool.UnsafeQueueUserWorkItems<SocketAsyncContext.AsyncOperation>(workItems!);
+                        workItems.Clear();
+
+                        break;
                 }
 
                 currentBatchSize = 0;
@@ -666,6 +708,13 @@ namespace System.Net.Sockets
                 Context = context;
                 Events = events;
             }
+        }
+
+        private enum AioContinuationHandling
+        {
+            RunInline = 0,
+            ScheduleSingleWorkItem = 1,
+            ScheduleBatchOfWorkItems = 2
         }
     }
 }
