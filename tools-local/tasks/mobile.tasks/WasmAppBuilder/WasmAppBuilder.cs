@@ -68,7 +68,7 @@ public class WasmAppBuilder : Task
         foreach (var assembly in Assemblies!.Values)
             File.Copy (assembly.Location, Path.Join (AppDir, "managed", Path.GetFileName (assembly.Location)), true);
         foreach (var f in new string [] { "dotnet.wasm", "dotnet.js" })
-            File.Copy (Path.Join (RuntimePackDir, "native", "wasm", "release", f), Path.Join (AppDir, f), true);
+            File.Copy (Path.Join (RuntimePackDir, "native", "wasm", "runtimes", "release", f), Path.Join (AppDir, f), true);
         File.Copy (MainJS!, Path.Join (AppDir, Path.GetFileName (MainJS!)),  true);
 
         using (var sw = File.CreateText (Path.Join (AppDir, "mono-config.js"))) {

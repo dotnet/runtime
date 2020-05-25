@@ -1,14 +1,10 @@
-<Project Sdk="Microsoft.Build.Traversal">
-  <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-  </PropertyGroup>
+<Project>
 
   <UsingTask TaskName="PInvokeTableGenerator"
     AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmAppBuilder.dll'))"/>
 
   <PropertyGroup>
-    <WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
-    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\browser-wasm\lib\$(NetCoreAppCurrent)</RuntimePackDir>
+    <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,7 +25,7 @@
   </Target>
 
   <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv">
-    <MakeDir Directories="$(MonoObjDir)wasm"/>
+    <MakeDir Directories="$(ArtifactsObjDir)wasm"/>
     <PInvokeTableGenerator
       Modules="@(WasmPInvokeModules)"
       Assemblies="@(WasmPInvokeAssemblies)"
@@ -38,9 +34,8 @@
   </Target>
 
   <Target Name="BuildWasmRuntimes"
-          AfterTargets="Build"
           DependsOnTargets="BuildPInvokeTable">
-    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) SYS_NATIVE_DIR=$(ArtifactsBinDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) BUILDS_BIN_DIR=$(NativeBinDir)/wasm/runtimes SYS_NATIVE_DIR=$(ArtifactsObjDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)/System.Native CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
 </Project>

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+    <NativeBinPlaceDependsOnTargets Condition="'$(TargetOS)' == 'Browser'">BuildWasmRuntimes</NativeBinPlaceDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,8 +25,11 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.vbproj" Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 
+  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(MonoProjectRoot)wasm\wasm.targets" />
+
   <Target Name="NativeBinPlace"
-          BeforeTargets="Build">
+          AfterTargets="Build"
+          DependsOnTargets="$(NativeBinPlaceDependsOnTargets)">
     <MSBuild Targets="Build"
              Projects="@(NativeBinPlaceProject)"
              Properties="$(TraversalGlobalProperties)" />

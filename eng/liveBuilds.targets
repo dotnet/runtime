@@ -176,7 +176,7 @@
         $(LibrariesAllBinArtifactsPath)*.dll;
         $(LibrariesAllBinArtifactsPath)*.pdb"
         IsNative="" />
-      <LibrariesRuntimeFiles Condition="'$(TargetsMobile)' != 'true'" Include="
+      <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dll;
         $(LibrariesNativeArtifactsPath)*.dylib;
         $(LibrariesNativeArtifactsPath)*.a;
@@ -185,9 +185,12 @@
         $(LibrariesNativeArtifactsPath)*.dwarf;
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
-        $(LibrariesNativeArtifactsPath)**\*.*" 
+        $(LibrariesNativeArtifactsPath)wasm\runtimes\debug\dotnet.js;
+        $(LibrariesNativeArtifactsPath)wasm\runtimes\debug\dotnet.wasm;
+        $(LibrariesNativeArtifactsPath)wasm\runtimes\release\dotnet.js;
+        $(LibrariesNativeArtifactsPath)wasm\runtimes\release\dotnet.wasm"
         IsNative="true" />
     </ItemGroup>
 
