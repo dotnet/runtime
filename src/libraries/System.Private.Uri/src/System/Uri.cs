@@ -1805,24 +1805,21 @@ namespace System
         {
             Debug.Assert((flags & Flags.Debug_LeftConstructor) == 0);
 
-            int length = uriString.Length;
-            if (length == 0)
+            if (uriString.Length == 0)
                 return ParsingError.EmptyUriString;
 
-            if (length >= c_MaxUriBufferSize)
+            if (uriString.Length >= c_MaxUriBufferSize)
                 return ParsingError.SizeLimit;
 
             //STEP1: parse scheme, lookup this Uri Syntax or create one using UnknownV1SyntaxFlags uri syntax template
-            fixed (char* pUriString = uriString)
-            {
-                ParsingError err = ParsingError.None;
-                int idx = ParseSchemeCheckImplicitFile(pUriString, length, ref err, ref flags, ref syntax);
+            ParsingError err = ParsingError.None;
+            int idx = ParseSchemeCheckImplicitFile(uriString, ref err, ref flags, ref syntax);
 
-                if (err != ParsingError.None)
-                    return err;
+            if (err != ParsingError.None)
+                return err;
 
-                flags |= (Flags)idx;
-            }
+            flags |= (Flags)idx;
+
             return ParsingError.None;
         }
 
@@ -3504,7 +3501,7 @@ namespace System
         // returns the start of the next component  position
         // throws UriFormatException if invalid scheme
         //
-        private static unsafe int ParseSchemeCheckImplicitFile(char* uriString, int length,
+        private static unsafe int ParseSchemeCheckImplicitFile(string uriString,
             ref ParsingError err, ref Flags flags, ref UriParser? syntax)
         {
             Debug.Assert((flags & Flags.Debug_LeftConstructor) == 0);
@@ -3512,13 +3509,13 @@ namespace System
             int idx = 0;
 
             //skip whitespace
-            while (idx < length && UriHelper.IsLWS(uriString[idx]))
+            while (idx < uriString.Length && UriHelper.IsLWS(uriString[idx]))
             {
                 ++idx;
             }
 
             // Unix: Unix path?
-            if (!IsWindowsSystem && idx < length && uriString[idx] == '/')
+            if (!IsWindowsSystem && idx < uriString.Length && uriString[idx] == '/')
             {
                 flags |= (Flags.UnixPath | Flags.ImplicitFile | Flags.AuthorityFound);
                 syntax = UriParser.UnixFileUri;
@@ -3530,13 +3527,13 @@ namespace System
             // Note that we don't support one-letter schemes that will be put into a DOS path bucket
 
             int end = idx;
-            while (end < length && uriString[end] != ':')
+            while (end < uriString.Length && uriString[end] != ':')
             {
                 ++end;
             }
 
             //NB: A string must have at least 3 characters and at least 1 before ':'
-            if (idx + 2 >= length || end == idx)
+            if ((uint)(idx + 2) >= (uint)uriString.Length || end == idx)
             {
                 err = ParsingError.BadFormat;
                 return 0;
@@ -3575,7 +3572,7 @@ namespace System
                         syntax = UriParser.FileUri;
                         idx += 2;
                         // V1.1 compat this will simply eat any slashes prepended to a UNC path
-                        while (idx < length && ((c = uriString[idx]) == '/' || c == '\\'))
+                        while ((uint)idx < (uint)uriString.Length && ((c = uriString[idx]) == '/' || c == '\\'))
                             ++idx;
 
                         return idx;
@@ -3585,7 +3582,7 @@ namespace System
                 }
             }
 
-            if (end == length)
+            if (end == uriString.Length)
             {
                 err = ParsingError.BadFormat;
                 return 0;
@@ -3593,7 +3590,7 @@ namespace System
 
             // This is a potentially valid scheme, but we have not identified it yet.
             // Check for illegal characters, canonicalize, and check the length.
-            err = CheckSchemeSyntax(new ReadOnlySpan<char>(uriString + idx, end - idx), ref syntax!);
+            err = CheckSchemeSyntax(uriString.AsSpan(idx, end - idx), ref syntax!);
             if (err != ParsingError.None)
             {
                 return 0;
