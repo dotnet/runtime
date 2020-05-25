@@ -39,8 +39,11 @@ namespace System.Formats.Cbor
         public CborConformanceLevel ConformanceLevel { get; }
 
         /// <summary>
-        ///   True if the writer automatically converts indefinite-length encodings into definite-length equivalents.
+        ///   Gets a value that indicates whether the writer automatically converts indefinite-length encodings into definite-length equivalents.
         /// </summary>
+        /// <value>
+        ///   <see langword="true"/> if the writer automatically converts indefinite-length encodings into definite-length equivalents; otherwise, <see langword="false"/>.
+        /// </value>
         public bool ConvertIndefiniteLengthEncodings { get; }
 
         /// <summary>
