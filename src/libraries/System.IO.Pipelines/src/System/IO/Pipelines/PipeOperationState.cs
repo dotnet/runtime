@@ -52,6 +52,18 @@ namespace System.IO.Pipelines
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryEndRead()
+        {
+            if (_readerData._readState == ReadState.Inactive)
+            {
+                return false;
+            }
+
+            _readerData._readState = ReadState.Inactive;
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginWrite()
         {
             _writerData._writeState = WriteState.Writing;
