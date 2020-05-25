@@ -47,6 +47,19 @@ namespace System.IO.Pipelines
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryEndRead()
+        {
+            if ((_state & State.Reading) != State.Reading &&
+                (_state & State.ReadingTentative) != State.ReadingTentative)
+            {
+                return false;
+            }
+
+            _state &= ~(State.Reading | State.ReadingTentative);
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginWrite()
         {
             _state |= State.Writing;

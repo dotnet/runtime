@@ -438,11 +438,10 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_InvalidExaminedOrConsumedPosition();
             }
 
-            BufferSegment? returnStart = null;
-            BufferSegment? returnEnd = null;
-
             CompletionData completionData = default;
 
+            IMemoryOwner<byte>? blockToReturn = null;
+            bool success;
             lock (_sync)
             {
                 var examinedEverything = false;
@@ -475,6 +474,8 @@ namespace System.IO.Pipelines
                     }
                 }
 
+                BufferSegment? returnStart = null;
+                BufferSegment? returnEnd = null;
                 if (consumedSegment != null)
                 {
                     if (_readHead == null)
@@ -541,18 +542,49 @@ namespace System.IO.Pipelines
                     _readerAwaitable.SetUncompleted();
                 }
 
-                while (returnStart != null && returnStart != returnEnd)
+                if (returnStart != null && returnStart != returnEnd)
                 {
                     BufferSegment? next = returnStart.NextSegment;
-                    returnStart.ResetMemory();
-                    ReturnSegmentUnsynchronized(returnStart);
-                    returnStart = next;
+                    if (next == null || next == returnEnd)
+                    {
+                        // Fast-path, single block to return; we will return the block outside of the lock.
+                        blockToReturn = returnStart.GetMemoryBlockAndResetSegment();
+                        ReturnSegmentUnsynchronized(returnStart);
+                    }
+                    else
+                    {
+                        // Multiple blocks to return; we will do it inside of lock.
+                        returnStart.ResetMemory();
+                        ReturnSegmentUnsynchronized(returnStart);
+                        returnStart = next;
+                        do
+                        {
+                            next = returnStart.NextSegment;
+                            returnStart.ResetMemory();
+                            ReturnSegmentUnsynchronized(returnStart);
+                            returnStart = next;
+                        } while (returnStart != null && returnStart != returnEnd) ;
+                    }
                 }
 
-                _operationState.EndRead();
+                success = _operationState.TryEndRead();
             }
 
-            TrySchedule(_writerScheduler, completionData);
+            if (success)
+            {
+                TrySchedule(_writerScheduler, completionData);
+            }
+
+            // Return the block before throwing the exception if there is one.
+            if (blockToReturn != null)
+            {
+                blockToReturn.Dispose();
+            }
+
+            if (!success)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoReadToComplete();
+            }
         }
 
         internal void CompleteReader(Exception? exception)

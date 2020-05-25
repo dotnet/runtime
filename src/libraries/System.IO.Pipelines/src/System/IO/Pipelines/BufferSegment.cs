@@ -60,6 +60,31 @@ namespace System.IO.Pipelines
             AvailableMemory = arrayPoolBuffer;
         }
 
+        public IMemoryOwner<byte>? GetMemoryBlockAndResetSegment()
+        {
+            IMemoryOwner<byte>? memoryOwner = _memoryOwner;
+            if (memoryOwner != null)
+            {
+                _memoryOwner = null;
+                // We return the owner rather than disposing
+            }
+            else
+            {
+                Debug.Assert(_array != null);
+                ArrayPool<byte>.Shared.Return(_array);
+                _array = null;
+            }
+
+            Next = null;
+            RunningIndex = 0;
+            Memory = default;
+            _next = null;
+            _end = 0;
+            AvailableMemory = default;
+
+            return memoryOwner;
+        }
+
         public void ResetMemory()
         {
             IMemoryOwner<byte>? memoryOwner = _memoryOwner;
