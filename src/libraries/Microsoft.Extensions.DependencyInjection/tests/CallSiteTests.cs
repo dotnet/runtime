@@ -175,6 +175,34 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [Theory]
         [InlineData(ServiceLifetime.Scoped)]
         [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void BuildExpressionAddsDisposableCaptureForEnumerableDisposableFactoryServices(ServiceLifetime lifetime)
+        {
+            IServiceCollection descriptors = new ServiceCollection();
+            descriptors.Add(ServiceDescriptor.Describe(typeof(DisposableServiceA), typeof(DisposableServiceA), lifetime));
+            descriptors.Add(ServiceDescriptor.Describe(typeof(DisposableServiceA), (s) => new DisposableServiceA(), lifetime));
+
+            // descriptors.Add(ServiceDescriptor.Describe(typeof(ServiceB), typeof(DisposableServiceB), lifetime));
+            descriptors.Add(ServiceDescriptor.Describe(
+                typeof(DisposableServiceD), p => new DisposableServiceD(p.GetServices<DisposableServiceA>()), lifetime));
+
+            var disposables = new List<object>();
+            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            provider.Root._captureDisposableCallback = obj =>
+            {
+                disposables.Add(obj);
+            };
+            var callSite = provider.CallSiteFactory.GetCallSite(typeof(DisposableServiceD), new CallSiteChain());
+            var compiledCallSite = CompileCallSite(callSite, provider);
+
+            var serviceC = (DisposableServiceD)compiledCallSite(provider.Root);
+
+            Assert.Equal(3, disposables.Count);
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Transient)]
         // We are not testing singleton here because singleton resolutions always got through
         // runtime resolver and there is no sense to eliminating call from there
         public void BuildExpressionElidesDisposableCaptureForNonDisposableServices(ServiceLifetime lifetime)
@@ -333,6 +361,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             public DisposableServiceC(ServiceB serviceB)
                 : base(serviceB)
+            {
+            }
+
+            public void Dispose()
+            {
+            }
+        }
+
+        private class DisposableServiceD : ServiceD, IDisposable
+        {
+            public DisposableServiceD(IEnumerable<DisposableServiceA> serviceA)
+                : base(serviceA)
             {
             }
 

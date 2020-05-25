@@ -44,12 +44,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             Debug.Assert(!_disposed);
 
-            _captureDisposableCallback?.Invoke(service);
-
             if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))
             {
                 return service;
             }
+
+            _captureDisposableCallback?.Invoke(service);
 
             lock (ResolvedServices)
             {
