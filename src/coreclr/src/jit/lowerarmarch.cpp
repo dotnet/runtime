@@ -887,6 +887,29 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         assert((simdSize == 8) || (simdSize == 16));
 
+        if ((argCnt == 1) || (simdSize == 8) || (vecCns.i64[0] == vecCns.i64[1]))
+        {
+            // If we are a single constant or if all parts are the same, we might be able to optimize
+            // this even further for certain values, such as Zero or AllBitsSet.
+
+            if (vecCns.i64[argIdx] == 0)
+            {
+                node->gtOp1 = nullptr;
+                node->gtOp2 = nullptr;
+
+                node->gtHWIntrinsicId = NI_Vector128_get_Zero;
+                return;
+            }
+            else if (vecCns.i64[argIdx] == -1)
+            {
+                node->gtOp1 = nullptr;
+                node->gtOp2 = nullptr;
+
+                node->gtHWIntrinsicId = NI_Vector128_get_AllBitsSet;
+                return;
+            }
+        }
+
         UNATIVE_OFFSET cnsSize  = simdSize;
         UNATIVE_OFFSET cnsAlign = cnsSize;
 
