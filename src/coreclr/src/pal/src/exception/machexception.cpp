@@ -357,17 +357,11 @@ PAL_ERROR CorUnix::CPalThread::DisableMachExceptions()
     return palError;
 }
 
-#if !defined(HOST_AMD64)
-extern "C"
-void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
-#else // defined(HOST_AMD64)
-
 // Since HijackFaultingThread pushed the context, exception record and info on the stack, we need to adjust the
 // signature of PAL_DispatchException such that the corresponding arguments are considered to be on the stack
 // per GCC64 calling convention rules. Hence, the first 6 dummy arguments (corresponding to RDI, RSI, RDX,RCX, R8, R9).
 extern "C"
 void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 dwRCX, DWORD64 dwR8, DWORD64 dwR9, PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
-#endif // !defined(HOST_AMD64)
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
@@ -414,10 +408,8 @@ void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 
     }
 }
 
-#if defined(HOST_X86) || defined(HOST_AMD64)
 extern "C" void PAL_DispatchExceptionWrapper();
 extern "C" int PAL_DispatchExceptionReturnOffset;
-#endif // HOST_X86 || HOST_AMD64
 
 /*++
 Function :
@@ -477,7 +469,6 @@ BuildExceptionRecord(
         {
             switch (exceptionInfo.Subcodes[0])
             {
-#if defined(HOST_X86) || defined(HOST_AMD64)
                 case EXC_I386_DIV:
                     exceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO;
                     break;
@@ -490,9 +481,6 @@ BuildExceptionRecord(
                 case EXC_I386_BOUND:
                     exceptionCode = EXCEPTION_ARRAY_BOUNDS_EXCEEDED;
                     break;
-#else
-#error Trap code to exception mapping not defined for this architecture
-#endif
                 default:
                     exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
                     break;
@@ -501,16 +489,11 @@ BuildExceptionRecord(
         break;
 
     case EXC_SOFTWARE:
-#if defined(HOST_X86) || defined(HOST_AMD64)
         exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
         break;
-#else
-#error Trap code to exception mapping not defined for this architecture
-#endif
 
     // Trace, breakpoint, etc. Details in subcode field.
     case EXC_BREAKPOINT:
-#if defined(HOST_X86) || defined(HOST_AMD64)
         if (exceptionInfo.Subcodes[0] == EXC_I386_SGL)
         {
             exceptionCode = EXCEPTION_SINGLE_STEP;
@@ -519,9 +502,6 @@ BuildExceptionRecord(
         {
             exceptionCode = EXCEPTION_BREAKPOINT;
         }
-#else
-#error Trap code to exception mapping not defined for this architecture
-#endif
         else
         {
             WARN("unexpected subcode %d for EXC_BREAKPOINT", exceptionInfo.Subcodes[0]);
@@ -615,17 +595,12 @@ HijackFaultingThread(
     // Fill in the exception record from the exception info
     BuildExceptionRecord(exceptionInfo, &exceptionRecord);
 
-#ifdef HOST_X86
-    threadContext.ContextFlags = CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS;
-#else
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
-#endif
     CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
 
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
     CONTEXT_GetThreadContextFromThreadState(x86_THREAD_STATE, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
 
-#if defined(CORECLR) && (defined(HOST_X86) || defined(HOST_AMD64))
     // For CoreCLR we look more deeply at access violations to determine whether they're the result of a stack
     // overflow. If so we'll terminate the process immediately (the current default policy of the CoreCLR EE).
     // Otherwise we'll either A/V ourselves trying to set up the SEH exception record and context on the
@@ -671,7 +646,6 @@ HijackFaultingThread(
     //          corrupted). Our managed jits always generate code which does this as does MSVC. GCC, however,
     //          does not do this by default. We have to explicitly provide the -fstack-check compiler option
     //          to enable the behavior.
-#if (defined(HOST_X86) || defined(HOST_AMD64)) && defined(__APPLE__)
     // Assume that AV isn't an SO to begin with.
     bool fIsStackOverflow = false;
 
@@ -680,11 +654,7 @@ HijackFaultingThread(
         // Calculate the page base addresses for the fault and the faulting thread's SP.
         int cbPage = getpagesize();
         char *pFaultPage = (char*)(exceptionRecord.ExceptionInformation[1] & ~(cbPage - 1));
-#ifdef HOST_X86
-        char *pStackTopPage = (char*)(threadContext.Esp & ~(cbPage - 1));
-#elif defined(HOST_AMD64)
         char *pStackTopPage = (char*)(threadContext.Rsp & ~(cbPage - 1));
-#endif
 
         if (pFaultPage == pStackTopPage || pFaultPage == (pStackTopPage - cbPage))
         {
@@ -699,24 +669,14 @@ HijackFaultingThread(
             vm_size_t vm_size;
             vm_region_flavor_t vm_flavor;
             mach_msg_type_number_t infoCnt;
-#ifdef HOST_64BIT
             vm_region_basic_info_data_64_t info;
             infoCnt = VM_REGION_BASIC_INFO_COUNT_64;
             vm_flavor = VM_REGION_BASIC_INFO_64;
-#else
-            vm_region_basic_info_data_t info;
-            infoCnt = VM_REGION_BASIC_INFO_COUNT;
-            vm_flavor = VM_REGION_BASIC_INFO;
-#endif
             mach_port_t object_name;
 
             vm_address = (vm_address_t)(pFaultPage + cbPage);
 
-#ifdef HOST_64BIT
             machret = vm_region_64(
-#else
-            machret = vm_region(
-#endif
                 mach_task_self(),
                 &vm_address,
                 &vm_size,
@@ -724,11 +684,7 @@ HijackFaultingThread(
                 (vm_region_info_t)&info,
                 &infoCnt,
                 &object_name);
-#ifdef HOST_X86
-            CHECK_MACH("vm_region", machret);
-#elif defined(HOST_AMD64)
             CHECK_MACH("vm_region_64", machret);
-#endif
 
             // If vm_region updated the address we gave it then that address was not part of a region at all
             // (and so this cannot be an SO). Otherwise check that the ESP lies in the region returned.
@@ -738,7 +694,6 @@ HijackFaultingThread(
                 fIsStackOverflow = true;
         }
 
-#if defined(HOST_AMD64)
         if (!fIsStackOverflow)
         {
             // Check if we can read pointer sizeD bytes below the target thread's stack pointer.
@@ -755,79 +710,8 @@ HijackFaultingThread(
                 fIsStackOverflow = true;
             }
         }
-#endif // HOST_AMD64
-    }
-#else // (HOST_X86 || HOST_AMD64) && __APPLE__
-#error Platform not supported for correct stack overflow handling
-#endif // (HOST_X86 || HOST_AMD64) && __APPLE__
-#endif // CORECLR && HOST_X86
-
-#if defined(HOST_X86)
-    NONPAL_ASSERTE(exceptionInfo.ThreadState.tsh.flavor == x86_THREAD_STATE32);
-
-    // Make a copy of the thread state because the one in exceptionInfo needs to be preserved to restore
-    // the state if the exception is forwarded.
-    x86_thread_state32_t ts32 = exceptionInfo.ThreadState.uts.ts32;
-
-    // If we're in single step mode, disable it since we're going to call PAL_DispatchException
-    if (exceptionRecord.ExceptionCode == EXCEPTION_SINGLE_STEP)
-    {
-        ts32.eflags &= ~EFL_TF;
     }
 
-    exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-    exceptionRecord.ExceptionRecord = NULL;
-    exceptionRecord.ExceptionAddress = (void *)ts32.eip;
-
-    void **FramePointer = (void **)ts32.esp;
-
-    *--FramePointer = (void *)ts32.eip;
-
-    // Construct a stack frame for a pretend activation of the function
-    // PAL_DispatchExceptionWrapper that serves only to make the stack
-    // correctly unwindable by the system exception unwinder.
-    // PAL_DispatchExceptionWrapper has an ebp frame, its local variables
-    // are the context and exception record, and it has just "called"
-    // PAL_DispatchException.
-    *--FramePointer = (void *)ts32.ebp;
-    ts32.ebp = (unsigned)FramePointer;
-
-    // Put the context on the stack
-    FramePointer = (void **)((ULONG_PTR)FramePointer - sizeof(CONTEXT));
-    // Make sure it's aligned - CONTEXT has 8-byte alignment
-    FramePointer = (void **)((ULONG_PTR)FramePointer - ((ULONG_PTR)FramePointer % 8));
-    CONTEXT *pContext = (CONTEXT *)FramePointer;
-    *pContext = threadContext;
-
-    // Put the exception record on the stack
-    FramePointer = (void **)((ULONG_PTR)FramePointer - sizeof(EXCEPTION_RECORD));
-    EXCEPTION_RECORD *pExceptionRecord = (EXCEPTION_RECORD *)FramePointer;
-    *pExceptionRecord = exceptionRecord;
-
-    FramePointer = (void **)((ULONG_PTR)FramePointer - sizeof(MachExceptionInfo));
-    MachExceptionInfo *pMachExceptionInfo = (MachExceptionInfo *)FramePointer;
-    *pMachExceptionInfo = exceptionInfo;
-
-    // Push arguments to PAL_DispatchException
-    FramePointer = (void **)((ULONG_PTR)FramePointer - 3 * sizeof(void *));
-
-    // Make sure it's aligned - ABI requires 16-byte alignment
-    FramePointer = (void **)((ULONG_PTR)FramePointer - ((ULONG_PTR)FramePointer % 16));
-    FramePointer[0] = pContext;
-    FramePointer[1] = pExceptionRecord;
-    FramePointer[2] = pMachExceptionInfo;
-
-    // Place the return address to right after the fake call in PAL_DispatchExceptionWrapper
-    FramePointer[-1] = (void *)((ULONG_PTR)PAL_DispatchExceptionWrapper + PAL_DispatchExceptionReturnOffset);
-
-    // Make the instruction register point to DispatchException
-    ts32.eip = (unsigned)PAL_DispatchException;
-    ts32.esp = (unsigned)&FramePointer[-1]; // skip return address
-
-    // Now set the thread state for the faulting thread so that PAL_DispatchException executes next
-    machret = thread_set_state(thread, x86_THREAD_STATE32, (thread_state_t)&ts32, x86_THREAD_STATE32_COUNT);
-    CHECK_MACH("thread_set_state(thread)", machret);
-#elif defined(HOST_AMD64)
     NONPAL_ASSERTE(exceptionInfo.ThreadState.tsh.flavor == x86_THREAD_STATE64);
 
     // Make a copy of the thread state because the one in exceptionInfo needs to be preserved to restore
@@ -919,9 +803,6 @@ HijackFaultingThread(
     // Now set the thread state for the faulting thread so that PAL_DispatchException executes next
     machret = thread_set_state(thread, x86_THREAD_STATE64, (thread_state_t)&ts64, x86_THREAD_STATE64_COUNT);
     CHECK_MACH("thread_set_state(thread)", machret);
-#else
-#error HijackFaultingThread not defined for this architecture
-#endif
 }
 
 /*++
@@ -1234,13 +1115,7 @@ void MachExceptionInfo::RestoreState(mach_port_t thread)
     {
         if (Subcodes[0] == EXC_I386_BPT)
         {
-#ifdef HOST_X86
-            ThreadState.uts.ts32.eip--;
-#elif defined(HOST_AMD64)
             ThreadState.uts.ts64.__rip--;
-#else
-#error Platform not supported
-#endif
         }
     }
     kern_return_t machret = thread_set_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, x86_THREAD_STATE_COUNT);

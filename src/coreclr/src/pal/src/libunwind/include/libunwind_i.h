@@ -140,7 +140,6 @@ cmpxchg_ptr (void *addr, void *old, void *new)
 }
 # define fetch_and_add1(_ptr)           AO_fetch_and_add1(_ptr)
 # define fetch_and_add(_ptr, value)     AO_fetch_and_add(_ptr, value)
-# define atomic_read(ptr) (AO_load(ptr))
    /* GCC 3.2.0 on HP-UX crashes on cmpxchg_ptr() */
 #  if !(defined(__hpux) && __GNUC__ == 3 && __GNUC_MINOR__ == 2)
 #   define HAVE_CMPXCHG
@@ -165,14 +164,10 @@ cmpxchg_ptr (void *addr, void *old, void *new)
 }
 # define fetch_and_add1(_ptr)           __sync_fetch_and_add(_ptr, 1)
 # define fetch_and_add(_ptr, value)     __sync_fetch_and_add(_ptr, value)
-# define atomic_read(ptr) (__atomic_load_n(ptr,__ATOMIC_RELAXED))
 # define HAVE_CMPXCHG
 # define HAVE_FETCH_AND_ADD
 #endif
-
-#ifndef atomic_read
 #define atomic_read(ptr)        (*(ptr))
-#endif
 
 #define UNWI_OBJ(fn)      UNW_PASTE(UNW_PREFIX,UNW_PASTE(I,fn))
 #define UNWI_ARCH_OBJ(fn) UNW_PASTE(UNW_PASTE(UNW_PASTE(_UI,UNW_TARGET),_), fn)
@@ -368,3 +363,4 @@ static inline void invalidate_edi (struct elf_dyn_info *edi)
 #define UNW_ALIGN(x,a) (((x)+(a)-1UL)&~((a)-1UL))
 
 #endif /* libunwind_i_h */
+

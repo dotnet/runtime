@@ -84,9 +84,6 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
 #elif defined(__arm__)
   if ((unsigned) reg < UNW_ARM_F0 || (unsigned) reg > UNW_ARM_F7)
     return -UNW_EBADREG;
-#elif defined(__aarch64__)
-  if ((unsigned) reg < UNW_AARCH64_V0 || (unsigned) reg > UNW_AARCH64_V31)
-    return -UNW_EBADREG;
 #else
 #error Fix me
 #endif
@@ -102,8 +99,6 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
           memcpy(&fpreg.fpr_acc[reg], val, sizeof(unw_fpreg_t));
 #elif defined(__arm__)
           memcpy(&fpreg.fpr[reg], val, sizeof(unw_fpreg_t));
-#elif defined(__aarch64__)
-          memcpy(&fpreg.fp_q[reg], val, sizeof(unw_fpreg_t));
 #else
 #error Fix me
 #endif
@@ -116,8 +111,6 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
           memcpy(val, &fpreg.fpr_acc[reg], sizeof(unw_fpreg_t));
 #elif defined(__arm__)
           memcpy(val, &fpreg.fpr[reg], sizeof(unw_fpreg_t));
-#elif defined(__aarch64__)
-          memcpy(val, &fpreg.fp_q[reg], sizeof(unw_fpreg_t));
 #else
 #error Fix me
 #endif

@@ -177,19 +177,24 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
-// lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
+// lookupImmBounds: Gets the lower and upper bounds for the imm-value of a given NamedIntrinsic
 //
 // Arguments:
 //    intrinsic -- NamedIntrinsic associated with the HWIntrinsic to lookup
 //    simdType  -- vector size
 //    baseType  -- base type of the Vector64/128<T>
+//    pImmLowerBound [OUT] - The lower incl. bound for a value of the intrinsic immediate operand
+//    pImmUpperBound [OUT] - The upper incl. bound for a value of the intrinsic immediate operand
 //
-// Return Value:
-//     The upper bound for a value of the intrinsic immediate operand
-int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types baseType)
+void HWIntrinsicInfo::lookupImmBounds(
+    NamedIntrinsic intrinsic, int simdSize, var_types baseType, int* pImmLowerBound, int* pImmUpperBound)
 {
     assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_IMM);
 
+    assert(pImmLowerBound != nullptr);
+    assert(pImmUpperBound != nullptr);
+
+    int immLowerBound = 0;
     int immUpperBound = 0;
 
     if (HWIntrinsicInfo::HasFullRangeImm(intrinsic))
@@ -209,15 +214,74 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize,
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_Vector64_GetElement:
             case NI_Vector128_GetElement:
-                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType);
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 
+            case NI_AdvSimd_ShiftLeftLogical:
+            case NI_AdvSimd_ShiftLeftLogicalSaturate:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateScalar:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsigned:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsignedScalar:
+            case NI_AdvSimd_ShiftLeftLogicalScalar:
+            case NI_AdvSimd_ShiftLeftLogicalWideningLower:
+            case NI_AdvSimd_ShiftLeftLogicalWideningUpper:
+            case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateUnsignedScalar:
+                // The left shift amount is in the range 0 to the element width in bits minus 1.
+                immUpperBound = BITS_PER_BYTE * genTypeSize(baseType) - 1;
+                break;
+
+            case NI_AdvSimd_ShiftRightArithmetic:
+            case NI_AdvSimd_ShiftRightArithmeticAdd:
+            case NI_AdvSimd_ShiftRightArithmeticAddScalar:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedLower:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedUpper:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightArithmeticRounded:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedAdd:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedAddScalar:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedScalar:
+            case NI_AdvSimd_ShiftRightArithmeticScalar:
+            case NI_AdvSimd_ShiftRightLogical:
+            case NI_AdvSimd_ShiftRightLogicalAdd:
+            case NI_AdvSimd_ShiftRightLogicalAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingLower:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingUpper:
+            case NI_AdvSimd_ShiftRightLogicalRounded:
+            case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
+            case NI_AdvSimd_ShiftRightLogicalRoundedAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingLower:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingUpper:
+            case NI_AdvSimd_ShiftRightLogicalRoundedScalar:
+            case NI_AdvSimd_ShiftRightLogicalScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateUnsignedScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar:
+            case NI_AdvSimd_Arm64_ShiftRightLogicalNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightLogicalRoundedNarrowingSaturateScalar:
+                // The right shift amount, in the range 1 to the element width in bits.
+                immLowerBound = 1;
+                immUpperBound = BITS_PER_BYTE * genTypeSize(baseType);
+                break;
             default:
                 unreached();
         }
     }
 
-    return immUpperBound;
+    assert(immLowerBound <= immUpperBound);
+
+    *pImmLowerBound = immLowerBound;
+    *pImmUpperBound = immUpperBound;
 }
 
 //------------------------------------------------------------------------
@@ -236,7 +300,12 @@ bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival, int simdSize, va
 {
     assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
 
-    return ival <= lookupImmUpperBound(id, simdSize, baseType) && ival >= 0;
+    int immLowerBound = 0;
+    int immUpperBound = 0;
+
+    lookupImmBounds(id, simdSize, baseType, &immLowerBound, &immUpperBound);
+
+    return (immLowerBound <= ival) && (ival <= immUpperBound);
 }
 
 //------------------------------------------------------------------------
