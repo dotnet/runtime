@@ -3,5 +3,3 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-
-[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/34748", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
