@@ -82,6 +82,18 @@ namespace System.IO.Pipelines
         {
             // Do not use directly; alas there isn't a protection modifier that is only for containing type.
             public volatile ReadState _readState;
+
+            // The read head which is the start of the PipeReader's consumed bytes
+            public BufferSegment? ReadHead;
+            public int ReadHeadIndex;
+            // The extent of the bytes available to the PipeReader to consume
+            public BufferSegment? ReadTail;
+            public int ReadTailIndex;
+            // The number of bytes flushed but not consumed by the reader
+            public long UnconsumedBytes;
+            // Stores the last examined position, used to calculate how many bytes were to release
+            // for back pressure management
+            public long LastExaminedIndex;
         }
 
         [StructLayout(LayoutKind.Auto)]

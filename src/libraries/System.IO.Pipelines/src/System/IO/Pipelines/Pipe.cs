@@ -49,26 +49,11 @@ namespace System.IO.Pipelines
 
         private readonly bool _useSynchronizationContext;
 
-        // The number of bytes flushed but not consumed by the reader
-        private long _unconsumedBytes;
-
         private PipeAwaitable _readerAwaitable;
         private PipeCompletion _readerCompletion;
 
-        // Stores the last examined position, used to calculate how many bytes were to release
-        // for back pressure management
-        private long _lastExaminedIndex = -1;
-
-        // The read head which is the start of the PipeReader's consumed bytes
-        private BufferSegment? _readHead;
-        private int _readHeadIndex;
-
         private readonly int _maxPooledBufferSize;
         private bool _disposed;
-
-        // The extent of the bytes available to the PipeReader to consume
-        private BufferSegment? _readTail;
-        private int _readTailIndex;
 
         // Determines what current operation is in flight (reading/writing)
         private PipeOperationState _operationState;
@@ -76,7 +61,7 @@ namespace System.IO.Pipelines
         private PipeAwaitable _writerAwaitable;
         private PipeCompletion _writerCompletion;
 
-        internal long Length => _unconsumedBytes;
+        internal long Length => _operationState.ReaderData.UnconsumedBytes;
 
         /// <summary>
         /// Initializes the <see cref="Pipe"/> using <see cref="PipeOptions.Default"/> as options.
@@ -123,11 +108,11 @@ namespace System.IO.Pipelines
             _writerCompletion.Reset();
             _readerAwaitable = new PipeAwaitable(completed: false, _useSynchronizationContext);
             _writerAwaitable = new PipeAwaitable(completed: true, _useSynchronizationContext);
-            _readTailIndex = 0;
-            _readHeadIndex = 0;
-            _lastExaminedIndex = -1;
+            _operationState.ReaderData.ReadTailIndex = 0;
+            _operationState.ReaderData.ReadHeadIndex = 0;
+            _operationState.ReaderData.LastExaminedIndex = -1;
             _operationState.WriterData.UnflushedBytes = 0;
-            _unconsumedBytes = 0;
+            _operationState.ReaderData.UnconsumedBytes = 0;
         }
 
         internal Memory<byte> GetMemory(int sizeHint)
@@ -183,8 +168,8 @@ namespace System.IO.Pipelines
                     // No reader in progress and no existing data; so we don't need the lock to allocate and initalize.
                     BufferSegment newSegment = AllocateSegment(sizeHint);
                     // Set all the pointers
-                    _operationState.WriterData.WritingHead = _readHead = _readTail = newSegment;
-                    _lastExaminedIndex = 0;
+                    _operationState.WriterData.WritingHead = _operationState.ReaderData.ReadHead = _operationState.ReaderData.ReadTail = newSegment;
+                    _operationState.ReaderData.LastExaminedIndex = 0;
                 }
                 else
                 {
@@ -202,8 +187,8 @@ namespace System.IO.Pipelines
                     // No existing write head so we need to initialize everything.
                     BufferSegment newSegment = AllocateSegment(sizeHint);
                     // Set all the pointers
-                    _operationState.WriterData.WritingHead = _readHead = _readTail = newSegment;
-                    _lastExaminedIndex = 0;
+                    _operationState.WriterData.WritingHead = _operationState.ReaderData.ReadHead = _operationState.ReaderData.ReadTail = newSegment;
+                    _operationState.ReaderData.LastExaminedIndex = 0;
                 }
                 else
                 {
@@ -270,8 +255,8 @@ namespace System.IO.Pipelines
 
         private void ReturnSegmentUnsynchronized(BufferSegment segment)
         {
-            Debug.Assert(segment != _readHead, "Returning _readHead segment that's in use!");
-            Debug.Assert(segment != _readTail, "Returning _readTail segment that's in use!");
+            Debug.Assert(segment != _operationState.ReaderData.ReadHead, "Returning ReadHead segment that's in use!");
+            Debug.Assert(segment != _operationState.ReaderData.ReadTail, "Returning ReadTail segment that's in use!");
             Debug.Assert(segment != _operationState.WriterData.WritingHead, "Returning WritingHead segment that's in use!");
 
             if (_bufferSegmentPool.Count < MaxSegmentPoolSize)
@@ -295,16 +280,16 @@ namespace System.IO.Pipelines
             _operationState.WriterData.WritingHead.End += _operationState.WriterData.WritingHeadBytesBuffered;
 
             // Always move the read tail to the write head
-            _readTail = _operationState.WriterData.WritingHead;
-            _readTailIndex = _operationState.WriterData.WritingHead.End;
+            _operationState.ReaderData.ReadTail = _operationState.WriterData.WritingHead;
+            _operationState.ReaderData.ReadTailIndex = _operationState.WriterData.WritingHead.End;
 
-            long oldLength = _unconsumedBytes;
-            _unconsumedBytes += _operationState.WriterData.UnflushedBytes;
+            long oldLength = _operationState.ReaderData.UnconsumedBytes;
+            _operationState.ReaderData.UnconsumedBytes += _operationState.WriterData.UnflushedBytes;
 
             // Do not reset if reader is complete
             if (_pauseWriterThreshold > 0 &&
                 oldLength < _pauseWriterThreshold &&
-                _unconsumedBytes >= _pauseWriterThreshold &&
+                _operationState.ReaderData.UnconsumedBytes >= _pauseWriterThreshold &&
                 !_readerCompletion.IsCompleted)
             {
                 _writerAwaitable.SetUncompleted();
@@ -440,30 +425,30 @@ namespace System.IO.Pipelines
             lock (_sync)
             {
                 var examinedEverything = false;
-                if (examinedSegment == _readTail)
+                if (examinedSegment == _operationState.ReaderData.ReadTail)
                 {
-                    examinedEverything = examinedIndex == _readTailIndex;
+                    examinedEverything = examinedIndex == _operationState.ReaderData.ReadTailIndex;
                 }
 
-                if (examinedSegment != null && _lastExaminedIndex >= 0)
+                if (examinedSegment != null && _operationState.ReaderData.LastExaminedIndex >= 0)
                 {
-                    long examinedBytes = BufferSegment.GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
-                    long oldLength = _unconsumedBytes;
+                    long examinedBytes = BufferSegment.GetLength(_operationState.ReaderData.LastExaminedIndex, examinedSegment, examinedIndex);
+                    long oldLength = _operationState.ReaderData.UnconsumedBytes;
 
                     if (examinedBytes < 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidExaminedPosition();
                     }
 
-                    _unconsumedBytes -= examinedBytes;
+                    _operationState.ReaderData.UnconsumedBytes -= examinedBytes;
 
                     // Store the absolute position
-                    _lastExaminedIndex = examinedSegment.RunningIndex + examinedIndex;
+                    _operationState.ReaderData.LastExaminedIndex = examinedSegment.RunningIndex + examinedIndex;
 
-                    Debug.Assert(_unconsumedBytes >= 0, "Length has gone negative");
+                    Debug.Assert(_operationState.ReaderData.UnconsumedBytes >= 0, "Length has gone negative");
 
                     if (oldLength >= _resumeWriterThreshold &&
-                        _unconsumedBytes < _resumeWriterThreshold)
+                        _operationState.ReaderData.UnconsumedBytes < _resumeWriterThreshold)
                     {
                         _writerAwaitable.Complete(out completionData);
                     }
@@ -473,26 +458,26 @@ namespace System.IO.Pipelines
                 BufferSegment? returnEnd = null;
                 if (consumedSegment != null)
                 {
-                    if (_readHead == null)
+                    if (_operationState.ReaderData.ReadHead == null)
                     {
                         ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
                         return;
                     }
 
-                    returnStart = _readHead;
+                    returnStart = _operationState.ReaderData.ReadHead;
                     returnEnd = consumedSegment;
 
                     void MoveReturnEndToNextBlock()
                     {
                         BufferSegment? nextBlock = returnEnd!.NextSegment;
-                        if (_readTail == returnEnd)
+                        if (_operationState.ReaderData.ReadTail == returnEnd)
                         {
-                            _readTail = nextBlock;
-                            _readTailIndex = 0;
+                            _operationState.ReaderData.ReadTail = nextBlock;
+                            _operationState.ReaderData.ReadTailIndex = 0;
                         }
 
-                        _readHead = nextBlock;
-                        _readHeadIndex = 0;
+                        _operationState.ReaderData.ReadHead = nextBlock;
+                        _operationState.ReaderData.ReadHeadIndex = 0;
 
                         returnEnd = nextBlock;
                     }
@@ -517,14 +502,14 @@ namespace System.IO.Pipelines
                         }
                         else
                         {
-                            _readHead = consumedSegment;
-                            _readHeadIndex = consumedIndex;
+                            _operationState.ReaderData.ReadHead = consumedSegment;
+                            _operationState.ReaderData.ReadHeadIndex = consumedIndex;
                         }
                     }
                     else
                     {
-                        _readHead = consumedSegment;
-                        _readHeadIndex = consumedIndex;
+                        _operationState.ReaderData.ReadHead = consumedSegment;
+                        _operationState.ReaderData.ReadHeadIndex = consumedIndex;
                     }
                 }
 
@@ -676,7 +661,7 @@ namespace System.IO.Pipelines
                     ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
                 }
 
-                if (_unconsumedBytes > 0 || _readerAwaitable.IsCompleted)
+                if (_operationState.ReaderData.UnconsumedBytes > 0 || _readerAwaitable.IsCompleted)
                 {
                     GetReadResult(out result);
                     return true;
@@ -778,7 +763,7 @@ namespace System.IO.Pipelines
                 // Return all segments
                 // if _readHead is null we need to try return _commitHead
                 // because there might be a block allocated for writing
-                BufferSegment? segment = _readHead ?? _readTail;
+                BufferSegment? segment = _operationState.ReaderData.ReadHead ?? _operationState.ReaderData.ReadTail;
                 while (segment != null)
                 {
                     BufferSegment returnSegment = segment;
@@ -788,9 +773,9 @@ namespace System.IO.Pipelines
                 }
 
                 _operationState.WriterData.WritingHead = null;
-                _readHead = null;
-                _readTail = null;
-                _lastExaminedIndex = -1;
+                _operationState.ReaderData.ReadHead = null;
+                _operationState.ReaderData.ReadTail = null;
+                _operationState.ReaderData.LastExaminedIndex = -1;
             }
         }
 
@@ -856,12 +841,12 @@ namespace System.IO.Pipelines
             bool isCanceled = _readerAwaitable.ObserveCancellation();
 
             // No need to read end if there is no head
-            BufferSegment? head = _readHead;
+            BufferSegment? head = _operationState.ReaderData.ReadHead;
             if (head != null)
             {
-                Debug.Assert(_readTail != null);
+                Debug.Assert(_operationState.ReaderData.ReadTail != null);
                 // Reading commit head shared with writer
-                var readOnlySequence = new ReadOnlySequence<byte>(head, _readHeadIndex, _readTail, _readTailIndex);
+                var readOnlySequence = new ReadOnlySequence<byte>(head, _operationState.ReaderData.ReadHeadIndex, _operationState.ReaderData.ReadTail, _operationState.ReaderData.ReadTailIndex);
                 result = new ReadResult(readOnlySequence, isCanceled, isCompleted);
             }
             else
