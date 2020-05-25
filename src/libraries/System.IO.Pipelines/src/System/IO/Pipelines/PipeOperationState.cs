@@ -14,79 +14,96 @@ namespace System.IO.Pipelines
     {
         // Ensure reader and writer data not on same cache line
         [FieldOffset(0)]
-        private WriterData _writerData;
+        public WriterDataState WriterData;
         [FieldOffset(128)]
-        private ReaderData _readerData;
+        public ReaderDataState ReaderData;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginRead()
         {
-            if ((_readerData._readState & ReadState.Reading) != 0)
+            if ((ReaderData._readState & ReadState.Reading) != 0)
             {
                 ThrowHelper.ThrowInvalidOperationException_AlreadyReading();
             }
 
-            _readerData._readState = ReadState.Reading;
+            ReaderData._readState = ReadState.Reading;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginReadTentative()
         {
-            if ((_readerData._readState & ReadState.Reading) != 0)
+            if ((ReaderData._readState & ReadState.Reading) != 0)
             {
                 ThrowHelper.ThrowInvalidOperationException_AlreadyReading();
             }
 
-            _readerData._readState = ReadState.ReadingTentative;
+            ReaderData._readState = ReadState.ReadingTentative;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EndRead()
         {
-            if (_readerData._readState == ReadState.Inactive)
+            if (ReaderData._readState == ReadState.Inactive)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoReadToComplete();
             }
 
-            _readerData._readState = ReadState.Inactive;
+            ReaderData._readState = ReadState.Inactive;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginWrite()
         {
-            _writerData._writeState = WriteState.Writing;
+            WriterData._writeState = WriteState.Writing;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EndWrite()
         {
-            _writerData._writeState = WriteState.Inactive;
+            WriterData._writeState = WriteState.Inactive;
         }
 
         public bool IsWritingActive
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (_writerData._writeState & WriteState.Writing) != 0;
+            get => (WriterData._writeState & WriteState.Writing) != 0;
         }
 
         public bool IsReadingActive
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (_readerData._readState & (ReadState.Reading | ReadState.ReadingTentative)) != 0;
+            get => (ReaderData._readState & (ReadState.Reading | ReadState.ReadingTentative)) != 0;
         }
 
-        private string State => $"WriteState: {_writerData._writeState}; ReadState: {_readerData._readState}";
+        private string State => $"WriteState: {WriterData._writeState}; ReadState: {ReaderData._readState}";
 
         [StructLayout(LayoutKind.Auto)]
-        private struct ReaderData
+        public struct ReaderDataState
         {
+            // Do not use directly; alas there isn't a protection modifier that is only for containing type.
             public volatile ReadState _readState;
         }
 
         [StructLayout(LayoutKind.Auto)]
-        private struct WriterData
+        public struct WriterDataState
         {
+            // Do not use directly; alas there isn't a protection modifier that is only for containing type.
             public volatile WriteState _writeState;
+
+            // The write head which is the extent of the PipeWriter's written bytes
+            public BufferSegment? WritingHead;
+            public Memory<byte> WritingHeadMemory;
+            public int WritingHeadBytesBuffered;
+            // The number of bytes written but not flushed
+            public long UnflushedBytes;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Advance(int bytesWritten)
+            {
+                UnflushedBytes += bytesWritten;
+                WritingHeadBytesBuffered += bytesWritten;
+                WritingHeadMemory = WritingHeadMemory.Slice(bytesWritten);
+            }
         }
 
         [Flags]
