@@ -1279,7 +1279,7 @@ namespace System
                         // only the blocking behavior, and thus ignore any poll errors
                         // and loop around to do another write (which may correctly fail
                         // if something else has gone wrong).
-                        Interop.Sys.Poll(fd, Interop.Sys.PollEvents.POLLOUT, Timeout.Infinite, out Interop.Sys.PollEvents triggered);
+                        Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
                         continue;
                     }
                     else

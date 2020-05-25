@@ -14,7 +14,6 @@
              Link="ProductionCode\System\Net\IPHostEntry.cs" />
     <Compile Include="Fakes\FakeContextAwareResult.cs" />
     <Compile Include="NameResolutionPalTests.cs" />
-    <Compile Include="Fakes\DebugThreadTracking.cs" />
     <Compile Include="Fakes\DnsFake.cs" />
     <Compile Include="Fakes\IPAddressFakeExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"

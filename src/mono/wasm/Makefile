@@ -43,10 +43,12 @@ emsdk_env.sh: | provision-wasm
 	cd $(EMSDK_PATH) && ./emsdk construct_env $(CURDIR)/emsdk_env.sh
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
-MONO_LIBS = $(MONO_BIN_DIR)/{libmono-ee-interp.a,libmono.a,libmono-ilgen.a,libmono-icall-table.a} ${SYS_NATIVE_DIR}/libSystem.Native.a
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
-BUILDS_BIN_DIR=$(MONO_BIN_DIR)/wasm/runtimes
+BUILDS_BIN_DIR=$(SYS_NATIVE_DIR)/wasm/runtimes
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
+MONO_LIBS = \
+	$(MONO_BIN_DIR)/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} \
+	${SYS_NATIVE_DIR}/libSystem.Native.a
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -s WASM_OBJECT_FILES=0 -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1
@@ -90,7 +92,7 @@ $(eval $(call InterpBuildTemplate,debug,,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS)))
 $(eval $(call InterpBuildTemplate,release,,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
 
 build:
-	EMSDK_PATH=$(PWD)/wasm/emsdk ../../../.dotnet/dotnet build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Release
+	EMSDK_PATH=$(PWD)/wasm/emsdk ../../../.dotnet/dotnet build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
 
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)

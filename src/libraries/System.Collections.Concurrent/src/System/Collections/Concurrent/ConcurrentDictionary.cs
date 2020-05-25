@@ -44,7 +44,7 @@ namespace System.Collections.Concurrent
         {
             internal readonly Node[] _buckets; // A singly-linked list for each bucket.
             internal readonly object[] _locks; // A set of locks, each guarding a section of the table.
-            internal volatile int[] _countPerLock; // The number of elements guarded by each lock.
+            internal readonly int[] _countPerLock; // The number of elements guarded by each lock.
 
             internal Tables(Node[] buckets, object[] locks, int[] countPerLock)
             {

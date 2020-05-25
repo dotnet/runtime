@@ -77,5 +77,53 @@ namespace System.PrivateUri.Tests
             Assert.Equal("xn--pck.com", test.IdnHost);
             Assert.Equal("https://\u30AF.com/", test.AbsoluteUri);
         }
+
+        [Theory]
+        [InlineData("foo", "foo", "foo", "foo")]
+        [InlineData("BAR", "bar", "bar", "bar")]
+        [InlineData("\u00FC", "\u00FC", "\u00FC", "xn--tda")]
+        [InlineData("\u00FC.\u00FC", "\u00FC.\u00FC", "\u00FC.\u00FC", "xn--tda.xn--tda")]
+        [InlineData("\u00FC.foo.\u00FC", "\u00FC.foo.\u00FC", "\u00FC.foo.\u00FC", "xn--tda.foo.xn--tda")]
+        [InlineData("xn--tda", "xn--tda", "xn--tda", "xn--tda")]
+        [InlineData("xn--tda.xn--tda", "xn--tda.xn--tda", "xn--tda.xn--tda", "xn--tda.xn--tda")]
+        [InlineData("127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1")]
+        [InlineData("127.0.o.1", "127.0.o.1", "127.0.o.1", "127.0.o.1")]
+        [InlineData("127.0.0.1.1", "127.0.0.1.1", "127.0.0.1.1", "127.0.0.1.1")]
+        [InlineData("[::]", "[::]", "::", "::")]
+        [InlineData("[123::]", "[123::]", "123::", "123::")]
+        [InlineData("[123:123::]", "[123:123::]", "123:123::", "123:123::")]
+        [InlineData("[123:123::%]", "[123:123::]", "123:123::%", "123:123::%")]
+        [InlineData("[123:123::%foo]", "[123:123::]", "123:123::%foo", "123:123::%foo")]
+        [InlineData("[123:123::%foo%20bar]", "[123:123::]", "123:123::%foo%20bar", "123:123::%foo%20bar")]
+        public void Host_DnsSafeHost_IdnHost_ProcessedCorrectly(string hostString, string host, string dnsSafeHost, string idnHost)
+        {
+            Asserts($"wss://{hostString}", host, dnsSafeHost, idnHost);
+            Asserts($"wss://{hostString}:1", host, dnsSafeHost, idnHost);
+            Asserts($"http://{hostString}", host, dnsSafeHost, idnHost);
+            Asserts($"http://{hostString}:1", host, dnsSafeHost, idnHost);
+            Asserts($"https://{hostString}", host, dnsSafeHost, idnHost);
+            Asserts($"https://{hostString}:1", host, dnsSafeHost, idnHost);
+
+            Asserts($"\\\\{hostString}", host, dnsSafeHost, idnHost);
+            Asserts($"file:////{hostString}", host, dnsSafeHost, idnHost);
+
+            static void Asserts(string uriString, string host, string dnsSafeHost, string idnHost)
+            {
+                var uri = new Uri(uriString);
+
+                Assert.Equal(host, uri.Host);
+                Assert.Equal(dnsSafeHost, uri.DnsSafeHost);
+                Assert.Equal(idnHost, uri.IdnHost);
+
+                if (host == dnsSafeHost)
+                {
+                    Assert.Same(uri.Host, uri.DnsSafeHost);
+                }
+                else
+                {
+                    Assert.Same(uri.DnsSafeHost, uri.IdnHost);
+                }
+            }
+        }
     }
 }

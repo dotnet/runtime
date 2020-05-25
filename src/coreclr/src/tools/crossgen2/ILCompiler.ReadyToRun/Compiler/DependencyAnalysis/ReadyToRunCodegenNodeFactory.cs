@@ -133,11 +133,13 @@ namespace ILCompiler.DependencyAnalysis
                 Module = module;
             }
 
-            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && Module.Equals(other.Module);
+            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && ((Module == null && other.Module == null) || Module.Equals(other.Module));
             public override bool Equals(object obj) => obj is ModuleAndIntValueKey && Equals((ModuleAndIntValueKey)obj);
             public override int GetHashCode()
             {
                 int hashCode = IntValue * 0x5498341 + 0x832424;
+                if (Module == null)
+                    return hashCode;
                 return hashCode * 23 + Module.GetHashCode();
             }
         }
@@ -255,9 +257,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _debugDirectoryEntries = new NodeCache<ModuleAndIntValueKey, DebugDirectoryEntryNode>(key =>
             {
-                if (key.IntValue < 0)
-                    return new NativeDebugDirectoryEntryNode(key.Module);
-                else
                     return new CopiedDebugDirectoryEntryNode(key.Module, key.IntValue);
             });
 
@@ -657,10 +656,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
-            if (!CompilationModuleGroup.IsCompositeBuildMode)
-            {
-                graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated for single-file R2R files");
-            }
+            graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated for R2R files");
             graph.AddRoot(DebugDirectoryNode, "Debug Directory will always contain at least one entry");
 
             if (Win32ResourcesNode != null)

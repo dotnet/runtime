@@ -9,6 +9,7 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -76,6 +77,7 @@ stages:
       - tvOS_x64
       - tvOS_arm64
       - iOS_x64
+      - iOS_x86
       - iOS_arm
       - iOS_arm64
       - OSX_x64
@@ -90,6 +92,49 @@ stages:
       # - Windows_NT_arm
       # - Windows_NT_arm64
       jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  #
+  # Build Mono LLVM release
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      # - Linux_arm
+      # - Linux_arm64
+      # - Linux_musl_x64
+      # - Linux_musl_arm64
+      # - Windows_NT_x64
+      # - Windows_NT_x86
+      # - Windows_NT_arm
+      # - Windows_NT_arm64
+      jobParameters:
+        runtimeVariant: LLVMJIT
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      # - Linux_arm
+      # - Linux_arm64
+      # - Linux_musl_x64
+      # - Linux_musl_arm64
+      # - Windows_NT_x64
+      # - Windows_NT_x86
+      # - Windows_NT_arm
+      # - Windows_NT_arm64
+      jobParameters:
+        runtimeVariant: LLVMAOT
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
   #
@@ -130,6 +175,7 @@ stages:
       - tvOS_x64
       - tvOS_arm64
       - iOS_x64
+      - iOS_x86
       - iOS_arm
       - iOS_arm64
       - Browser_wasm
@@ -195,11 +241,43 @@ stages:
       - iOS_arm
       - iOS_arm64
       - iOS_x64
+      - iOS_x86
       - Android_arm
       - Android_arm64
       - Android_x64
       - Android_x86
       - Browser_wasm
+
+    #
+    # Installer Build for platforms using Mono
+    #
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: false
+        buildFullPlatformManifest: false
+        runtimeVariant: LLVMJIT
+      runtimeFlavor: mono
+      platforms:
+      - OSX_x64
+      - Linux_x64
+
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: false
+        buildFullPlatformManifest: false
+        runtimeVariant: LLVMAOT
+      runtimeFlavor: mono
+      platforms:
+      - OSX_x64
+      - Linux_x64
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

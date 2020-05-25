@@ -10,7 +10,8 @@ namespace System.IO.Pipelines
 {
     internal sealed class BufferSegment : ReadOnlySequenceSegment<byte>
     {
-        private object? _memoryOwner;
+        private IMemoryOwner<byte>? _memoryOwner;
+        private byte[]? _array;
         private BufferSegment? _next;
         private int _end;
 
@@ -55,36 +56,35 @@ namespace System.IO.Pipelines
 
         public void SetOwnedMemory(byte[] arrayPoolBuffer)
         {
-            _memoryOwner = arrayPoolBuffer;
+            _array = arrayPoolBuffer;
             AvailableMemory = arrayPoolBuffer;
         }
 
         public void ResetMemory()
         {
-            if (_memoryOwner is IMemoryOwner<byte> owner)
+            IMemoryOwner<byte>? memoryOwner = _memoryOwner;
+            if (memoryOwner != null)
             {
-                owner.Dispose();
+                _memoryOwner = null;
+                memoryOwner.Dispose();
             }
             else
             {
-                Debug.Assert(_memoryOwner is byte[]);
-                byte[] poolArray = (byte[])_memoryOwner;
-                ArrayPool<byte>.Shared.Return(poolArray);
+                Debug.Assert(_array != null);
+                ArrayPool<byte>.Shared.Return(_array);
+                _array = null;
             }
 
-            // Order of below field clears is significant as it clears in a sequential order
-            // https://github.com/dotnet/corefx/pull/35256#issuecomment-462800477
             Next = null;
             RunningIndex = 0;
             Memory = default;
-            _memoryOwner = null;
             _next = null;
             _end = 0;
             AvailableMemory = default;
         }
 
         // Exposed for testing
-        internal object? MemoryOwner => _memoryOwner;
+        internal object? MemoryOwner => (object?)_memoryOwner ?? _array;
 
         public Memory<byte> AvailableMemory { get; private set; }
 
@@ -124,6 +124,5 @@ namespace System.IO.Pipelines
         {
             return (endSegment.RunningIndex + (uint)endIndex) - startPosition;
         }
-
     }
 }

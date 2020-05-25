@@ -1040,13 +1040,13 @@ namespace System.Management
                 // Should start with "select"
                 if ((q.Length < keyword.Length) ||
                     (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException(SR.InvalidQuery, "select");
+                    throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, keyword), nameof(query));
 
                 q = q.Remove(0, keyword.Length).TrimStart(null);
 
                 // Next should be a '*'
                 if (0 != q.IndexOf('*', 0))
-                    throw new ArgumentException(SR.InvalidQuery, "*");
+                    throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, "*"), nameof(query));
 
                 q = q.Remove(0, 1).TrimStart(null);
 
@@ -1055,7 +1055,7 @@ namespace System.Management
 
                 if ((q.Length < keyword.Length) ||
                     (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException(SR.InvalidQuery, "from");
+                    throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, keyword), nameof(query));
 
                 q = q.Remove(0, keyword.Length).TrimStart(null);
 
@@ -1064,7 +1064,7 @@ namespace System.Management
 
                 if ((q.Length < keyword.Length) ||
                     (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException(SR.InvalidQuery, "meta_class");
+                    throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, keyword), nameof(query));
 
                 q = q.Remove(0, keyword.Length).TrimStart(null);
 
@@ -1076,7 +1076,7 @@ namespace System.Management
 
                     if ((q.Length < keyword.Length) ||
                         (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                        throw new ArgumentException(SR.InvalidQuery, "where");
+                        throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, keyword), nameof(query));
 
                     q = q.Remove(0, keyword.Length);
 
@@ -1650,7 +1650,7 @@ namespace System.Management
 
             //Find "associators" clause
             if (0 != string.Compare(q, 0, TokenAssociators, 0, TokenAssociators.Length, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.InvalidQuery, "associators");    // Invalid query
+                throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, TokenAssociators), nameof(query));    // Invalid query
 
             // Strip off the clause
             q = q.Remove(0, TokenAssociators.Length);
@@ -1663,7 +1663,7 @@ namespace System.Management
 
             // Next token should be "of"
             if (0 != string.Compare(q, 0, TokenOf, 0, TokenOf.Length, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.InvalidQuery, "of");    // Invalid query
+                throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, TokenOf), nameof(query));    // Invalid query
 
             // Strip off the clause and leading WS
             q = q.Remove(0, TokenOf.Length).TrimStart(null);
@@ -1687,7 +1687,7 @@ namespace System.Management
             {
                 // Next should be the "where" clause
                 if (0 != string.Compare(q, 0, TokenWhere, 0, TokenWhere.Length, StringComparison.OrdinalIgnoreCase))
-                    throw new ArgumentException(SR.InvalidQuery, "where");    // Invalid query
+                    throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, TokenWhere), nameof(query));    // Invalid query
 
                 q = q.Remove(0, TokenWhere.Length);
 
@@ -2167,7 +2167,7 @@ namespace System.Management
 
             //Find "references" clause
             if (0 != string.Compare(q, 0, TokenReferences, 0, TokenReferences.Length, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.InvalidQuery, "references");    // Invalid query
+                throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, TokenReferences), nameof(query));    // Invalid query
 
             // Strip off the clause
             q = q.Remove(0, TokenReferences.Length);
@@ -2180,7 +2180,7 @@ namespace System.Management
 
             // Next token should be "of"
             if (0 != string.Compare(q, 0, TokenOf, 0, TokenOf.Length, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.InvalidQuery, "of");    // Invalid query
+                throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, TokenOf), nameof(query));    // Invalid query
 
             // Strip off the clause and leading WS
             q = q.Remove(0, TokenOf.Length).TrimStart(null);
@@ -2204,7 +2204,7 @@ namespace System.Management
             {
                 // Next should be the "where" clause
                 if (0 != string.Compare(q, 0, TokenWhere, 0, TokenWhere.Length, StringComparison.OrdinalIgnoreCase))
-                    throw new ArgumentException(SR.InvalidQuery, "where");    // Invalid query
+                    throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, TokenWhere), nameof(query));    // Invalid query
 
                 q = q.Remove(0, TokenWhere.Length);
 
@@ -3043,13 +3043,13 @@ namespace System.Management
             q = q.Remove(0, keyword.Length).TrimStart(null);
 
             if (!q.StartsWith("*", StringComparison.Ordinal))
-                throw new ArgumentException(SR.InvalidQuery, "*");
+                throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, "*"), nameof(query));
             q = q.Remove(0, 1).TrimStart(null);
 
             //Find "from" clause
             keyword = "from ";
             if ((q.Length < keyword.Length) || (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                throw new ArgumentException(SR.InvalidQuery, "from");
+                throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, keyword), nameof(query));
             ParseToken(ref q, keyword, null, ref bFound, ref eventClassName);
 
             //Find "within" clause
@@ -3119,7 +3119,7 @@ namespace System.Management
                     q = q.Remove(0, keyword.Length);
 
                     if (q.Length == 0) //bad query
-                        throw new ArgumentException(SR.InvalidQuery, "having");
+                        throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, keyword), nameof(query));
 
                     havingCondition = q;
                 }

@@ -26,7 +26,7 @@ namespace System.Runtime.Serialization
 
             if (throwMethod != null)
             {
-                throwIfDeserializationInProgressDelegate = (ThrowIfDeserializationInProgressWithSwitchDel)throwMethod.CreateDelegate(typeof(ThrowIfDeserializationInProgressWithSwitchDel));
+                throwIfDeserializationInProgressDelegate = throwMethod.CreateDelegate<ThrowIfDeserializationInProgressWithSwitchDel>();
             }
 
             return throwIfDeserializationInProgressDelegate;

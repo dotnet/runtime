@@ -200,13 +200,6 @@ private:
     unsigned  codePos; // the code position within the IG (see emitCurOffset())
 };
 
-enum class emitDataAlignment
-{
-    None,
-    Preferred,
-    Required
-};
-
 /************************************************************************/
 /*          The following describes an instruction group                */
 /************************************************************************/
@@ -1685,7 +1678,7 @@ public:
     void emitSetMediumJump(instrDescJmp* id);
 
 public:
-    CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, unsigned cnsSize, emitDataAlignment alignment);
+    CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
 
 private:
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
@@ -2180,9 +2173,9 @@ public:
         dataSection*   dsdList;
         dataSection*   dsdLast;
         UNATIVE_OFFSET dsdOffs;
-        bool           align16;
+        UNATIVE_OFFSET alignment; // in bytes, defaults to 4
 
-        dataSecDsc() : dsdList(nullptr), dsdLast(nullptr), dsdOffs(0), align16(false)
+        dataSecDsc() : dsdList(nullptr), dsdLast(nullptr), dsdOffs(0), alignment(4)
         {
         }
     };

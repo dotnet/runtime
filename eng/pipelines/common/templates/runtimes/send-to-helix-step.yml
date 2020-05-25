@@ -3,6 +3,7 @@ parameters:
   condition: ''
   archType: ''
   osGroup: ''
+  osSubgroup: ''
   buildConfig: ''
   creator: ''
   publishTestResults: ''
@@ -23,7 +24,7 @@ parameters:
   gcSimulatorTests: ''
   coreClrRepoRoot: ''
   runtimeFlavorDisplayName: 'CoreCLR'
-  runtimeMode: ''
+  runtimeVariant: ''
 
 steps:
 - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -39,7 +40,7 @@ steps:
       condition: ${{ parameters.condition }}
     env:
       __BuildArch: ${{ parameters.archType }}
-      __TargetOS: ${{ parameters.osGroup }}
+      __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
       __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
@@ -58,7 +59,7 @@ steps:
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
-      _RuntimeMode: ${{ parameters.runtimeMode }}
+      _RuntimeVariant: ${{ parameters.runtimeVariant }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
@@ -81,7 +82,7 @@ steps:
       condition: ${{ parameters.condition }}
     env:
       __BuildArch: ${{ parameters.archType }}
-      __TargetOS: ${{ parameters.osGroup }}
+      __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
       __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
@@ -100,7 +101,7 @@ steps:
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
-      _RuntimeMode: ${{ parameters.runtimeMode }}
+      _RuntimeVariant: ${{ parameters.runtimeVariant }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed

@@ -23,7 +23,7 @@ namespace System.Net.Mail
             {
                 throw new ArgumentNullException(nameof(addresses));
             }
-            if (addresses == string.Empty)
+            if (addresses.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(addresses)), nameof(addresses));
             }

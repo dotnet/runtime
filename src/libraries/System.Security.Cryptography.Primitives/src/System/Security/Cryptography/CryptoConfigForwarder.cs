@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
                 throw new MissingMethodException(t.FullName, CreateFromNameMethodName);
             }
 
-            return (Func<string, object?>)createFromName.CreateDelegate(typeof(Func<string, object?>));
+            return createFromName.CreateDelegate<Func<string, object?>>();
         }
 
         internal static object? CreateFromName(string name) => s_createFromName(name);

@@ -13,6 +13,16 @@
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-coop-mutex.h>
 
+#ifdef ENABLE_NETCORE
+#if defined(TARGET_OSX)
+#define MONO_LOADER_LIBRARY_NAME "libcoreclr.dylib"
+#elif defined(TARGET_ANDROID)
+#define MONO_LOADER_LIBRARY_NAME "libruntime-android.so"
+#else
+#define MONO_LOADER_LIBRARY_NAME "libcoreclr.so"
+#endif
+#endif
+
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
 

@@ -232,10 +232,10 @@ typedef unsigned char   regNumberSmall;
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
   #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
-  #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments (note this seems wrong as MAX_ARG_REG_COUNT is 2)
+  #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments
   #define MAX_RET_MULTIREG_BYTES        8  // Maximum size of a struct that could be returned in more than one register
 
-  #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass an argument.
+  #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass an argument.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 
   #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).

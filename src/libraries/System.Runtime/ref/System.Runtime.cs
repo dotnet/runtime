@@ -2548,6 +2548,9 @@ namespace System
         public static double Atan2(double y, double x) { throw null; }
         public static double Atanh(double d) { throw null; }
         public static long BigMul(int a, int b) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong BigMul(ulong a, ulong b, out ulong low) { throw null; }
+        public static long BigMul(long a, long b, out long low) { throw null; }
         public static double BitDecrement(double x) { throw null; }
         public static double BitIncrement(double x) { throw null; }
         public static double Cbrt(double d) { throw null; }
@@ -5698,6 +5701,13 @@ namespace System.Diagnostics.CodeAnalysis
         public bool ReturnValue { get { throw null; } }
         public string[] Members { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Constructor, Inherited = false)]
+    public sealed class RequiresUnreferencedCodeAttribute : System.Attribute
+    {
+        public RequiresUnreferencedCodeAttribute(string message) { }
+        public string Message { get { throw null; } }
+        public string? Url { get { throw null; } set { } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
     public sealed partial class SuppressMessageAttribute : System.Attribute
@@ -8117,6 +8127,8 @@ namespace System.Reflection
         public abstract System.Reflection.ICustomAttributeProvider ReturnTypeCustomAttributes { get; }
         public virtual System.Delegate CreateDelegate(System.Type delegateType) { throw null; }
         public virtual System.Delegate CreateDelegate(System.Type delegateType, object? target) { throw null; }
+        public T CreateDelegate<T>() where T : System.Delegate { throw null; }
+        public T CreateDelegate<T>(object? target) where T : System.Delegate { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public abstract System.Reflection.MethodInfo GetBaseDefinition();
         public override System.Type[] GetGenericArguments() { throw null; }

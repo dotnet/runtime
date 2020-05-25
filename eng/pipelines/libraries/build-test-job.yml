@@ -7,6 +7,7 @@ parameters:
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
+  runtimeVariant: ''
   timeoutInMinutes: 150
   container: ''
   publishTestArtifacs: true
@@ -29,6 +30,7 @@ jobs:
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
       name: test_build
@@ -38,7 +40,7 @@ jobs:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       # Libraries Test also depends on Product, now that the libraries build only depends on corelib
       - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}

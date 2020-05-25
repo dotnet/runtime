@@ -1507,8 +1507,7 @@ int LinearScan::ComputeOperandDstCount(GenTree* operand)
         // Stores and void-typed operands may be encountered when processing call nodes, which contain
         // pointers to argument setup stores.
         assert(operand->OperIsStore() || operand->OperIsBlkOp() || operand->OperIsPutArgStk() ||
-               operand->OperIsCompare() || operand->OperIs(GT_CMP) || operand->IsSIMDEqualityOrInequality() ||
-               operand->TypeGet() == TYP_VOID);
+               operand->OperIsCompare() || operand->OperIs(GT_CMP) || operand->TypeGet() == TYP_VOID);
         return 0;
     }
 }
@@ -2699,7 +2698,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
     {
         fixedReg = true;
     }
-    ReturnTypeDesc* retTypeDesc = nullptr;
+    const ReturnTypeDesc* retTypeDesc = nullptr;
     if (tree->IsMultiRegCall())
     {
         retTypeDesc = tree->AsCall()->GetReturnTypeDesc();
@@ -3074,9 +3073,9 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
 
         // srcCount = number of registers in which the value is returned by call
-        GenTreeCall*    call        = op1->AsCall();
-        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        srcCount                    = retTypeDesc->GetReturnRegCount();
+        const GenTreeCall*    call        = op1->AsCall();
+        const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        srcCount                          = retTypeDesc->GetReturnRegCount();
 
         for (int i = 0; i < srcCount; ++i)
         {
@@ -3284,9 +3283,9 @@ int LinearScan::BuildReturn(GenTree* tree)
             {
                 noway_assert(op1->IsMultiRegCall());
 
-                ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
-                int             srcCount    = retTypeDesc->GetReturnRegCount();
-                useCandidates               = retTypeDesc->GetABIReturnRegs();
+                const ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
+                const int             srcCount    = retTypeDesc->GetReturnRegCount();
+                useCandidates                     = retTypeDesc->GetABIReturnRegs();
                 for (int i = 0; i < srcCount; i++)
                 {
                     BuildUse(op1, useCandidates, i);

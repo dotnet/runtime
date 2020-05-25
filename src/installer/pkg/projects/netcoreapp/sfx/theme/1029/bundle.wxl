@@ -17,11 +17,11 @@ Jste připraveni? Dejme se tedy do toho!</String>
 /norestart   – potlačí všechny pokusy o restartování. Ve výchozím nastavení uživatelské rozhraní před restartováním zobrazí výzvu.
 /log log.txt – Uloží protokol do konkrétního souboru. Ve výchozím nastavení bude soubor protokolu vytvořen v adresáři %TEMP%.</String>
   <String Id="HelpCloseButton">&amp;Zavřít</String>
-  <String Id="InstallAcceptCheckbox">Souhl&amp;asím s licenčními podmínkami.</String>
-  <String Id="InstallOptionsButton">M&amp;ožnosti</String>
-  <String Id="InstallInstallButton">&amp;Instalovat</String>
+  <String Id="InstallAcceptCheckbox">&amp;Souhlasím s licenčními podmínkami</String>
+  <String Id="InstallOptionsButton">&amp;Možnosti</String>
+  <String Id="InstallInstallButton">&amp;Nainstalovat</String>
   <String Id="InstallCloseButton">&amp;Zavřít</String>
-  <String Id="OptionsHeader">Možnosti instalace</String>
+  <String Id="OptionsHeader">Možnosti nastavení</String>
   <String Id="OptionsLocationLabel">Umístění instalace:</String>
   <String Id="OptionsBrowseButton">&amp;Procházet</String>
   <String Id="OptionsOkButton">&amp;OK</String>
@@ -42,11 +42,11 @@ Jste připraveni? Dejme se tedy do toho!</String>
   <String Id="SuccessRestartText">Před použitím tohoto softwaru musíte restartovat počítač.</String>
   <String Id="SuccessRestartButton">&amp;Restartovat</String>
   <String Id="SuccessCloseButton">&amp;Zavřít</String>
-  <String Id="FailureHeader">Instalace se nepovedla.</String>
+  <String Id="FailureHeader">Instalace se nezdařila.</String>
   <String Id="FailureInstallHeader">Instalace se nepovedla.</String>
   <String Id="FailureUninstallHeader">Odinstalace se nepovedla.</String>
   <String Id="FailureRepairHeader">Oprava se nepovedla.</String>
-  <String Id="FailureHyperlinkLogText">Instalace se nepovedla kvůli jednomu nebo více problémům. Opravte prosím tyto problémy a zkuste software nainstalovat znovu. Další informace najdete v &lt;a href="#"&gt;souboru protokolu&lt;/a&gt;.</String>
+  <String Id="FailureHyperlinkLogText">Instalace se nepovedla kvůli jednomu nebo víc problémům. Opravte tyto problémy a zkuste software znovu nainstalovat. Další informace najdete v &lt;a href="#"&gt;souboru protokolu&lt;/a&gt;.</String>
   <String Id="FailureRestartText">Pro dokončení vrácení změn tohoto softwaru je potřeba restartovat počítač.</String>
   <String Id="FailureRestartButton">&amp;Restartovat</String>
   <String Id="FailureCloseButton">&amp;Zavřít</String>
@@ -59,7 +59,7 @@ Jste připraveni? Dejme se tedy do toho!</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Zrušit</String>
   <String Id="WelcomeHeaderMessage">Modul runtime .NET</String>
-  <String Id="WelcomeDescription">.NET je vývojová platforma, pomocí které lze vytvářet aplikace příkazového řádku, mikroslužby a moderní weby. Je opensourcová, víceplatformová a podporována společností Microsoft. Věříme, že s ní budete spokojeni.</String>
+  <String Id="WelcomeDescription">Modul .NET Runtime se používá ke spouštění aplikací .NET na počítači s Windows. .NET je open source, k dispozici pro více platforem a podporovaný Microsoftem. Doufáme, že se vám bude líbit!</String>
   <String Id="LearnMoreTitle">Další informace o .NET</String>
   <String Id="SuccessInstallLocation">Do [DOTNETHOME] se nainstalovaly následující položky.</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@ Jste připraveni? Dejme se tedy do toho!</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Kurzy&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetrie pro platformu .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Prohlášení o zásadách ochrany osobních údajů&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;Smlouva EULA ke knihovně .NET&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;Informace o licencování pro .NET&lt;/A&gt;</String>
+  <String Id="LicenseAssent">Kliknutím na Nainstalovat vyjadřujete souhlas s následujícími podmínkami.</String>
 </WixLocalization>
