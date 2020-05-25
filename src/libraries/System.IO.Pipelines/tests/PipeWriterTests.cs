@@ -188,7 +188,7 @@ namespace System.IO.Pipelines.Tests
         public void ThrowsOnAdvanceWithoutWrite()
         {
             PipeWriter buffer = Pipe.Writer;
-            Assert.Throws<InvalidOperationException>(() => buffer.Advance(1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.Advance(1));
         }
 
         [Fact]

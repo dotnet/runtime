@@ -329,13 +329,7 @@ namespace System.IO.Pipelines
         {
             // Advance is not under lock, so Write must be active or Read could release
             // the write head to free up idle memory before we have increased the unflushed data.
-            if (!_operationState.IsWritingActive)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoWriteToAdvance();
-            }
-
-            // The length check will hold because Writing is active, so we don't need to take a lock.
-            if ((uint)bytes > (uint)_writingHeadMemory.Length)
+            if (!_operationState.IsWritingActive || (uint)bytes > (uint)_writingHeadMemory.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
             }

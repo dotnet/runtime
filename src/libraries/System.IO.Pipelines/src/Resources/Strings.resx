@@ -141,9 +141,6 @@
   <data name="NoReadingOperationToComplete" xml:space="preserve">
     <value>No reading operation to complete.</value>
   </data>
-  <data name="NoWritingOperationToAdvance" xml:space="preserve">
-    <value>No writing operation to advance.</value>
-  </data>
   <data name="ReadCanceledOnPipeReader" xml:space="preserve">
     <value>Read was canceled on underlying PipeReader.</value>
   </data>
