@@ -128,6 +128,7 @@ namespace System.Net.Sockets
 
         private readonly IntPtr _port;
         private readonly SocketAsyncContext.AsyncOperation?[] _aioBatchedOperations;
+        private readonly SocketAsyncContext.AsyncOperation?[] _aioWorkItems;
         private readonly Interop.Sys.SocketEvent* _buffer;
         private readonly Interop.Sys.AioContext[] _aioContexts;
         private readonly Interop.Sys.IoEvent* _aioEvents;
@@ -337,6 +338,7 @@ namespace System.Net.Sockets
                     }
 
                     _aioBatchedOperations = new SocketAsyncContext.AsyncOperation?[aioElementCount];
+                    _aioWorkItems = new SocketAsyncContext.AsyncOperation?[aioElementCount];
                     _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * aioElementCount);
                     _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * aioElementCount);
                     _aioBlocksPointers = (Interop.Sys.IoControlBlock**)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock*) * aioElementCount);
@@ -356,6 +358,7 @@ namespace System.Net.Sockets
                 {
                     Debug.Assert(Interop.Sys.IsAioSupported() == false, "When AIO is supported IoSetup should always succeed");
                     _aioBatchedOperations = Array.Empty<SocketAsyncContext.AsyncOperation?>();
+                    _aioWorkItems = Array.Empty<SocketAsyncContext.AsyncOperation?>();
                     _aioContexts = Array.Empty<Interop.Sys.AioContext>();
                     IsAio = false;
                 }
@@ -558,6 +561,7 @@ namespace System.Net.Sockets
 
             Interop.Sys.AioContext aioContext = _aioContexts[aioContextInex];
             System.Span<SocketAsyncContext.AsyncOperation?> batchedOperations = new System.Span<SocketAsyncContext.AsyncOperation?>(_aioBatchedOperations, currentBatchIndex, batchSegmentSize);
+            System.Span<SocketAsyncContext.AsyncOperation?> workItems = new System.Span<SocketAsyncContext.AsyncOperation?>(_aioWorkItems, currentBatchIndex, batchSegmentSize);
             int currentBatchSize = 0;
 
             while (true)
@@ -609,22 +613,36 @@ namespace System.Net.Sockets
                         {
                             SocketAsyncContext.AsyncOperation asyncOperation = batchedOperations[(int)events[i].Data]!;
 
-                            asyncOperation.HandleBatchEvent(in events[i], inline: false);
-                            ThreadPool.UnsafeQueueUserWorkItem(asyncOperation, preferLocal: false);
+                            if (asyncOperation.HandleBatchEvent(in events[i], inline: false))
+                            {
+                                ThreadPool.UnsafeQueueUserWorkItem(asyncOperation, preferLocal: false);
+                            }
 
                             batchedOperations[(int)events[i].Data] = null;
                             ioControlBlocksSegment[i] = default;
                         }
                         break;
                     case AioContinuationHandling.ScheduleBatchOfWorkItems:
+                        int workItemIndex = 0;
                         for (int i = 0; i < events.Length; i++)
                         {
-                            batchedOperations[(int)events[i].Data]!.HandleBatchEvent(in events[i], inline: false);
+                            SocketAsyncContext.AsyncOperation asyncOperation = batchedOperations[(int)events[i].Data]!;
+
+                            if (asyncOperation.HandleBatchEvent(in events[i], inline: false))
+                            {
+                                workItems[workItemIndex++] = asyncOperation;
+                            }
+
+                            batchedOperations[(int)events[i].Data] = null;
                             ioControlBlocksSegment[i] = default;
                         }
-                        var workItems = batchedOperations.Slice(0, events.Length);
-                        ThreadPool.UnsafeQueueUserWorkItems<SocketAsyncContext.AsyncOperation>(workItems!, preferLocal: false);
-                        workItems.Clear();
+
+                        if (workItemIndex > 0)
+                        {
+                            var toSchedule = workItems.Slice(0, workItemIndex);
+                            ThreadPool.UnsafeQueueUserWorkItems<SocketAsyncContext.AsyncOperation>(toSchedule!, preferLocal: false);
+                            toSchedule.Clear();
+                        }
 
                         break;
                 }
