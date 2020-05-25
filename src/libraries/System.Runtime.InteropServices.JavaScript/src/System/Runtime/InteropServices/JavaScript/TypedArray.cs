@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         void Set(ITypedArray typedArray);
         void Set(ITypedArray typedArray, int offset);
+        TypedArrayTypeCode GetTypedArrayType();
     }
 
     public interface ITypedArray<T, U> where U : struct
@@ -77,6 +78,33 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal TypedArray(IntPtr jsHandle) : base(jsHandle)
         { }
+
+        public TypedArrayTypeCode GetTypedArrayType()
+        {
+            switch (this)
+            {
+                case Int8Array _:
+                    return TypedArrayTypeCode.Int8Array;
+                case Uint8Array _:
+                    return TypedArrayTypeCode.Uint8Array;
+                case Uint8ClampedArray _:
+                    return TypedArrayTypeCode.Uint8ClampedArray;
+                case Int16Array _:
+                    return TypedArrayTypeCode.Int16Array;
+                case Uint16Array _:
+                    return TypedArrayTypeCode.Uint16Array;
+                case Int32Array _:
+                    return TypedArrayTypeCode.Int32Array;
+                case Uint32Array _:
+                    return TypedArrayTypeCode.Uint32Array;
+                case Float32Array _:
+                    return TypedArrayTypeCode.Float32Array;
+                case Float64Array _:
+                    return TypedArrayTypeCode.Float64Array;
+                default:
+                    throw new ArrayTypeMismatchException("TypedArray is not of correct type.");
+            }
+        }
 
         public int BytesPerElement => (int)GetObjectProperty("BYTES_PER_ELEMENT");
         public string Name => (string)GetObjectProperty("name");
