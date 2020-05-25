@@ -87,7 +87,7 @@ namespace System.Formats.Cbor
         ///   if trying to write beyond the scope of one root-level CBOR data item.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="conformanceLevel"/> is not defined.
+        ///   <paramref name="conformanceLevel"/> is not a defined <see cref="CborConformanceLevel"/>.
         /// </exception>
         public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
         {
