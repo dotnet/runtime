@@ -143,6 +143,7 @@
 #include "eventpipemetadatagenerator.h"
 #include "eventpipeeventpayload.h"
 #include "eventpipesession.h"
+#include "eventpipesessionprovider.h"
 #endif // FEATURE_PERFTRACING
 
 //---------------------------------------------------------------------------------------
@@ -7110,6 +7111,58 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
         EventPipe::StartStreaming(sessionID);
 
         *pSession = sessionID;
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeAddProviderToSession(
+        EVENTPIPE_SESSION session,
+        COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig)
+{
+
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeAddProviderToSession.\n"));
+
+#ifdef FEATURE_PERFTRACING
+    if (providerConfig.providerName == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        EventPipeSession *pSession = EventPipe::GetSession(session);
+        if (pSession == NULL)
+        {
+            hr = E_INVALIDARG;
+        }
+        else
+        {
+            EventPipeSessionProvider *pProvider = new EventPipeSessionProvider(
+                    providerConfig.providerName,
+                    providerConfig.keywords,
+                    (EventPipeEventLevel)providerConfig.loggingLevel,
+                    providerConfig.filterData);
+
+            pSession->AddSessionProvider(pProvider);
+        }
     }
     EX_CATCH_HRESULT(hr);
 

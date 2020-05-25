@@ -652,6 +652,10 @@ public:
         BOOL requestSamples,
         EVENTPIPE_SESSION* pSession);
 
+    COM_METHOD EventPipeAddProviderToSession(
+        EVENTPIPE_SESSION session,
+        COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
+
     COM_METHOD EventPipeStopSession(
         EVENTPIPE_SESSION session);
 

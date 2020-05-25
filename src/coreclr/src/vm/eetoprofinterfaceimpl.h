@@ -502,6 +502,8 @@ public:
         ULONG numStackFrames,
         UINT_PTR stackFrames[]);
 
+    HRESULT EventPipeProviderCreated(EventPipeProvider *provider);
+
 private:
 
     //

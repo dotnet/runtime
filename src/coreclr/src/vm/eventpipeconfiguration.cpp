@@ -159,6 +159,13 @@ bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider, Event
         m_pProviderList->InsertTail(new SListElem<EventPipeProvider *>(&provider));
     }
 
+    {
+        // Let the profiler know the provider has been created so it can register if it wants to
+        BEGIN_PIN_PROFILER(CORProfilerIsMonitoringEventPipe());
+        g_profControlBlock.pProfInterface->EventPipeProviderCreated(&provider);
+        END_PIN_PROFILER();
+    }
+
     INT64 keywordForAllSessions;
     EventPipeEventLevel levelForAllSessions;
     ComputeKeywordAndLevel(provider, /* out */ keywordForAllSessions, /* out */ levelForAllSessions);

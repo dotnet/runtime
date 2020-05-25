@@ -2546,6 +2546,8 @@ interface ICorProfilerCallback10 : ICorProfilerCallback9
         [in, size_is(cbEventData)] LPCBYTE eventData,
         [in] ULONG numStackFrames,
         [in, length_is(numStackFrames)] UINT_PTR stackFrames[]);
+
+    HRESULT EventPipeProviderCreated([in] EVENTPIPE_PROVIDER provider);
 }
 
 /*
@@ -4121,6 +4123,10 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
         [in]  BOOL                              requestRundown,
         [in]  BOOL                              requestSamples,
         [out] EVENTPIPE_SESSION*                pSession);
+
+    HRESULT EventPipeAddProviderToSession(
+        [in] EVENTPIPE_SESSION                 session,
+        [in] COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
 
     HRESULT EventPipeStopSession(
         [in] EVENTPIPE_SESSION session);

@@ -6303,4 +6303,34 @@ HRESULT EEToProfInterfaceImpl::EventPipeEventDelivered(
 #endif // FEATURE_PERFTRACING
 }
 
+HRESULT EEToProfInterfaceImpl::EventPipeProviderCreated(EventPipeProvider *provider)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        // The profiler will likely call back in to the other EventPipe apis,
+        // some of which trigger
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
+                                LL_INFO10,
+                                "**PROF: EventPipeProviderCreated.\n"
+                                ));
+
+#ifdef FEATURE_PERFTRACING
+    if (m_pCallback10 == NULL)
+    {
+        return S_OK;
+    }
+
+    EVENTPIPE_PROVIDER providerID = (EVENTPIPE_PROVIDER)provider;
+    return m_pCallback10->EventPipeProviderCreated(providerID);
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
 #endif // PROFILING_SUPPORTED
