@@ -129,26 +129,6 @@ _UCD_access_reg (unw_addr_space_t as,
        return -UNW_EINVAL;
      }
   }
-#elif defined(UNW_TARGET_AARCH64)
-  if (regnum >= UNW_AARCH64_X0 && regnum < UNW_AARCH64_X30) {
-     *valp = ui->prstatus->pr_reg.x[regnum];
-  } else {
-     switch (regnum) {
-     case UNW_AARCH64_SP:
-       *valp = ui->prstatus->pr_reg.sp;
-       break;
-     case UNW_AARCH64_X30:
-       *valp = ui->prstatus->pr_reg.lr;
-       break;
-     case UNW_AARCH64_PC:
-       *valp = ui->prstatus->pr_reg.elr;
-       break;
-     default:
-       Debug(0, "bad regnum:%d\n", regnum);
-       return -UNW_EINVAL;
-     }
-  }
-
 #else
 #error Port me
 #endif

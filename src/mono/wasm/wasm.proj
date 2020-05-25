@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildWasmRuntimes">
+<Project Sdk="Microsoft.Build.Traversal">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
   <UsingTask TaskName="PInvokeTableGenerator"
-    AssemblyFile="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', '$(MonoConfiguration)', '$(NetCoreAppCurrent)'))publish\WasmAppBuilder.dll"/>
+    AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmAppBuilder.dll'))"/>
 
   <PropertyGroup>
     <WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
@@ -28,14 +28,7 @@
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
 
-  <Target Name="BuildWasmAppBuilder">
-    <!-- Need to publish this since it references System.Reflection.MetadataLoadContext -->
-    <MSBuild Projects="$(RepoRoot)\tools-local\tasks\mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)"
-             Targets="Restore;Build;Publish"/>
-  </Target>
-
-  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;BuildWasmAppBuilder">
+  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv">
     <MakeDir Directories="$(MonoObjDir)wasm"/>
     <PInvokeTableGenerator
       Modules="@(WasmPInvokeModules)"
@@ -44,7 +37,9 @@
       />
   </Target>
 
-  <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable">
+  <Target Name="BuildWasmRuntimes"
+          AfterTargets="Build"
+          DependsOnTargets="BuildPInvokeTable">
     <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) SYS_NATIVE_DIR=$(ArtifactsBinDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 

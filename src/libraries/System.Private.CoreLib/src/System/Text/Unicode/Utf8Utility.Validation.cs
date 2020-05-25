@@ -122,7 +122,7 @@ namespace System.Text.Unicode
 
                         do
                         {
-                            if (Sse2.IsSupported && Bmi1.IsSupported)
+                            if (Sse2.IsSupported)
                             {
                                 // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
                                 // going to perform an unaligned load. We don't necessarily care about aligning
@@ -158,7 +158,6 @@ namespace System.Text.Unicode
 
                         Debug.Assert(BitConverter.IsLittleEndian);
                         Debug.Assert(Sse2.IsSupported);
-                        Debug.Assert(Bmi1.IsSupported);
 
                         // The 'mask' value will have a 0 bit for each ASCII byte we saw and a 1 bit
                         // for each non-ASCII byte we saw. We can count the number of ASCII bytes,
@@ -167,7 +166,7 @@ namespace System.Text.Unicode
 
                         Debug.Assert(mask != 0);
 
-                        pInputBuffer += Bmi1.TrailingZeroCount(mask);
+                        pInputBuffer += BitOperations.TrailingZeroCount(mask);
                         if (pInputBuffer > pFinalPosWhereCanReadDWordFromInputBuffer)
                         {
                             goto ProcessRemainingBytesSlow;

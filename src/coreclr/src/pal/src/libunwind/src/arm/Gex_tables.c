@@ -152,12 +152,11 @@ HIDDEN int
 arm_exidx_decode (const uint8_t *buf, uint8_t len, struct dwarf_cursor *c)
 {
 #define READ_OP() *buf++
+  assert(buf != NULL);
+  assert(len > 0);
   const uint8_t *end = buf + len;
   int ret;
   struct arm_exbuf_data edata;
-
-  assert(buf != NULL);
-  assert(len > 0);
 
   while (buf < end)
     {

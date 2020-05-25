@@ -562,14 +562,14 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
 //
 // Arguments:
-//     initReg        - register to use as a scratch register
-//     pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
-//                      this call sets 'initReg' to a non-zero value.
+//     initReg          - register to use as a scratch register
+//     pInitRegModified - OUT parameter. *pInitRegModified is set to 'true' if and only if
+//                        this call sets 'initReg' to a non-zero value.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -593,7 +593,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
 
-    *pInitRegZeroed = false;
+    *pInitRegModified = true;
 }
 
 //---------------------------------------------------------------------
@@ -1402,7 +1402,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
         // Insert pieces in reverse order
         for (int i = regCount - 1; i >= 0; --i)
         {
-            var_types type = op1->GetRegTypeByIndex(i);
+            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
             regNumber reg  = op1->GetRegByIndex(i);
             if (op1->IsCopyOrReload())
             {
@@ -1444,7 +1444,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
     {
         for (unsigned i = 0; i < regCount; ++i)
         {
-            var_types type = op1->GetRegTypeByIndex(i);
+            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
             regNumber reg  = op1->GetRegByIndex(i);
             if (op1->IsCopyOrReload())
             {
@@ -2523,6 +2523,27 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
                     retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, target->GetRegNum());
     }
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+    else if (call->IsR2RRelativeIndir())
+    {
+        // Generate a direct call to a non-virtual user defined or helper method
+        assert(callType == CT_HELPER || callType == CT_USER_FUNC);
+        assert(call->gtEntryPoint.accessType == IAT_PVALUE);
+        assert(call->gtControlExpr == nullptr);
+
+        regNumber tmpReg = call->GetSingleTempReg();
+        GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, REG_R2R_INDIRECT_PARAM);
+
+        // We have now generated code for gtControlExpr evaluating it into `tmpReg`.
+        // We just need to emit "call tmpReg" in this case.
+        //
+        assert(genIsValidIntReg(tmpReg));
+
+        genEmitCall(emitter::EC_INDIR_R, methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
+                    retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, tmpReg);
+    }
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
     else
     {
         // Generate a direct call to a non-virtual user defined or helper method

@@ -13,7 +13,7 @@
 
       ./build.sh corehost installer.managed
 
-        This builds the CoreHost and also the Managed installer portion (e.g. Microsoft.DotNet.PlatformAbstractions)
+        This builds the CoreHost and also the Managed installer portion (e.g. Microsoft.NET.HostModel)
         projects. A space ' ' or '+' are the delimiters between multiple subsets to build.
 
       ./build.sh -test installer.tests
@@ -104,7 +104,7 @@
     <!-- Installer -->
     <SubsetName Include="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="CoreHost" Description="The .NET Core hosts." />
-    <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes PlatformAbstractions and HostModel." />
+    <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes HostModel." />
     <SubsetName Include="Installer.DepProjs" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
     <SubsetName Include="Installer.PkgProjs" Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
     <SubsetName Include="Bundles" Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />

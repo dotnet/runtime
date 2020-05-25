@@ -712,8 +712,12 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
                 BlockRange().Remove(list->Current());
             }
 
-            CORINFO_FIELD_HANDLE hnd =
-                comp->GetEmitter()->emitAnyConst(constArgValues, sizeof(constArgValues), emitDataAlignment::Required);
+            assert(sizeof(constArgValues) == 16);
+
+            UNATIVE_OFFSET cnsSize  = sizeof(constArgValues);
+            UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+
+            CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(constArgValues, cnsSize, cnsAlign);
             GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
@@ -742,14 +746,6 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         // into GT_IND(newAddr) where newAddr combines
         // the addr of SIMD vector with the given index.
         simdNode->gtOp1->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
-    }
-    else if (simdNode->IsSIMDEqualityOrInequality())
-    {
-        LowerNodeCC(simdNode,
-                    simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality ? GenCondition::EQ : GenCondition::NE);
-
-        simdNode->gtType = TYP_VOID;
-        simdNode->ClearUnusedValue();
     }
 #endif
     ContainCheckSIMD(simdNode);
@@ -947,6 +943,50 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return;
         }
 
+        case NI_Vector128_op_Equality:
+        case NI_Vector256_op_Equality:
+        {
+            LowerHWIntrinsicCmpOp(node, GT_EQ);
+            return;
+        }
+
+        case NI_Vector128_op_Inequality:
+        case NI_Vector256_op_Inequality:
+        {
+            LowerHWIntrinsicCmpOp(node, GT_NE);
+            return;
+        }
+
+        case NI_SSE2_Insert:
+        case NI_SSE41_Insert:
+        case NI_SSE41_X64_Insert:
+        {
+            assert(HWIntrinsicInfo::lookupNumArgs(node) == 3);
+
+            GenTreeArgList* argList = node->gtOp1->AsArgList();
+
+            // Insert takes either a 32-bit register or a memory operand.
+            // In either case, only gtSIMDBaseType bits are read and so
+            // widening or narrowing the operand may be unnecessary and it
+            // can just be used directly.
+
+            argList->Rest()->gtOp1 = TryRemoveCastIfPresent(node->gtSIMDBaseType, argList->Rest()->gtOp1);
+            break;
+        }
+
+        case NI_SSE42_Crc32:
+        {
+            assert(HWIntrinsicInfo::lookupNumArgs(node) == 2);
+
+            // Crc32 takes either a bit register or a memory operand.
+            // In either case, only gtType bits are read and so widening
+            // or narrowing the operand may be unnecessary and it can
+            // just be used directly.
+
+            node->gtOp2 = TryRemoveCastIfPresent(node->gtType, node->gtOp2);
+            break;
+        }
+
         case NI_SSE2_CompareGreaterThan:
         {
             if (node->gtSIMDBaseType != TYP_DOUBLE)
@@ -1101,6 +1141,238 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCmpOp: Lowers a Vector128 or Vector256 comparison intrinsic
+//
+//  Arguments:
+//     node  - The hardware intrinsic node.
+//     cmpOp - The comparison operation, currently must be GT_EQ or GT_NE
+//
+void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
+{
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    var_types      baseType    = node->gtSIMDBaseType;
+    unsigned       simdSize    = node->gtSIMDSize;
+    var_types      simdType    = Compiler::getSIMDTypeForSize(simdSize);
+
+    assert((intrinsicId == NI_Vector128_op_Equality) || (intrinsicId == NI_Vector128_op_Inequality) ||
+           (intrinsicId == NI_Vector256_op_Equality) || (intrinsicId == NI_Vector256_op_Inequality));
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(baseType));
+    assert(simdSize != 0);
+    assert(node->gtType == TYP_BOOL);
+    assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
+
+    // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
+    //          /--*  op2  simd
+    //          /--*  op1  simd
+    //   node = *  HWINTRINSIC   simd   T op_Equality
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
+
+    if (op2->IsIntegralConstVector(0) && comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        // On SSE4.1 or higher we can optimize comparisons against zero to
+        // just use PTEST. We can't support it for floating-point, however,
+        // as it has both +0.0 and -0.0 where +0.0 == -0.0
+
+        node->gtOp1 = op1;
+        BlockRange().Remove(op2);
+
+        LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+        ReplaceWithLclVar(op1Use);
+        op1 = node->gtOp1;
+
+        op2 = comp->gtClone(op1);
+        BlockRange().InsertAfter(op1, op2);
+        node->gtOp2 = op2;
+
+        if (simdSize == 32)
+        {
+            node->gtHWIntrinsicId = NI_AVX_TestZ;
+            LowerHWIntrinsicCC(node, NI_AVX_PTEST, cmpCnd);
+        }
+        else
+        {
+            node->gtHWIntrinsicId = NI_SSE41_TestZ;
+            LowerHWIntrinsicCC(node, NI_SSE41_PTEST, cmpCnd);
+        }
+
+        return;
+    }
+
+    NamedIntrinsic cmpIntrinsic;
+    var_types      cmpType;
+    NamedIntrinsic mskIntrinsic;
+    var_types      mskType;
+    int            mskConstant;
+
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            cmpType = baseType;
+            mskType = TYP_UBYTE;
+
+            if (simdSize == 32)
+            {
+                cmpIntrinsic = NI_AVX2_CompareEqual;
+                mskIntrinsic = NI_AVX2_MoveMask;
+                mskConstant  = -1;
+            }
+            else
+            {
+                assert(simdSize == 16);
+
+                cmpIntrinsic = NI_SSE2_CompareEqual;
+                mskIntrinsic = NI_SSE2_MoveMask;
+                mskConstant  = 0xFFFF;
+            }
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            mskType = TYP_UBYTE;
+
+            if (simdSize == 32)
+            {
+                cmpIntrinsic = NI_AVX2_CompareEqual;
+                cmpType      = baseType;
+                mskIntrinsic = NI_AVX2_MoveMask;
+                mskConstant  = -1;
+            }
+            else
+            {
+                assert(simdSize == 16);
+
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    cmpIntrinsic = NI_SSE41_CompareEqual;
+                    cmpType      = baseType;
+                }
+                else
+                {
+                    cmpIntrinsic = NI_SSE2_CompareEqual;
+                    cmpType      = TYP_UINT;
+                }
+
+                mskIntrinsic = NI_SSE2_MoveMask;
+                mskConstant  = 0xFFFF;
+            }
+            break;
+        }
+
+        case TYP_FLOAT:
+        {
+            cmpType = baseType;
+            mskType = baseType;
+
+            if (simdSize == 32)
+            {
+                cmpIntrinsic = NI_AVX_CompareEqual;
+                mskIntrinsic = NI_AVX_MoveMask;
+                mskConstant  = 0xFF;
+            }
+            else
+            {
+                cmpIntrinsic = NI_SSE_CompareEqual;
+                mskIntrinsic = NI_SSE_MoveMask;
+
+                if (simdSize == 16)
+                {
+                    mskConstant = 0xF;
+                }
+                else if (simdSize == 12)
+                {
+                    mskConstant = 0x7;
+                }
+                else
+                {
+                    assert(simdSize == 8);
+                    mskConstant = 0x3;
+                }
+            }
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            cmpType = baseType;
+            mskType = baseType;
+
+            if (simdSize == 32)
+            {
+                cmpIntrinsic = NI_AVX_CompareEqual;
+                mskIntrinsic = NI_AVX_MoveMask;
+                mskConstant  = 0xF;
+            }
+            else
+            {
+                assert(simdSize == 16);
+
+                cmpIntrinsic = NI_SSE2_CompareEqual;
+                mskIntrinsic = NI_SSE2_MoveMask;
+                mskConstant  = 0x3;
+            }
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, cmpIntrinsic, cmpType, simdSize);
+    BlockRange().InsertBefore(node, cmp);
+    LowerNode(cmp);
+
+    GenTree* msk = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, mskIntrinsic, mskType, simdSize);
+    BlockRange().InsertAfter(cmp, msk);
+    LowerNode(msk);
+
+    GenTree* mskCns = comp->gtNewIconNode(mskConstant, TYP_INT);
+    BlockRange().InsertAfter(msk, mskCns);
+
+    if ((baseType == TYP_FLOAT) && (simdSize < 16))
+    {
+        // For TYP_SIMD8 and TYP_SIMD12 we need to clear the upper bits and can't assume their value
+
+        GenTree* tmp = comp->gtNewOperNode(GT_AND, TYP_INT, msk, mskCns);
+        BlockRange().InsertAfter(mskCns, tmp);
+        LowerNode(msk);
+
+        msk = tmp;
+
+        mskCns = comp->gtNewIconNode(mskConstant, TYP_INT);
+        BlockRange().InsertAfter(msk, mskCns);
+    }
+
+    node->ChangeOper(cmpOp);
+
+    node->gtType = TYP_INT;
+    node->gtOp1  = msk;
+    node->gtOp2  = mskCns;
+
+    GenTree* cc = LowerNodeCC(node, cmpCnd);
+
+    node->gtType = TYP_VOID;
+    node->ClearUnusedValue();
+
+    LowerNode(node);
+}
+
+//----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsicCreate: Lowers a Vector128 or Vector256 Create call
 //
 //  Arguments:
@@ -1196,7 +1468,12 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, simdSize, emitDataAlignment::Required);
+        assert((simdSize == 16) || (simdSize == 32));
+
+        UNATIVE_OFFSET cnsSize  = simdSize;
+        UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+
+        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
         GenTree* clsVarAddr      = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
         BlockRange().InsertBefore(node, clsVarAddr);
 
@@ -2530,7 +2807,7 @@ bool Lowering::IsCallTargetInRange(void* addr)
 }
 
 // return true if the immediate can be folded into an instruction, for example small enough and non-relocatable
-bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
+bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
     if (!childNode->IsIntCnsFitsInI32())
     {
@@ -3066,7 +3343,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
+void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 {
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
@@ -3644,19 +3921,6 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
             CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
-            break;
-
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
-            // On SSE4/AVX, we can generate optimal code for (in)equality
-            // against zero using ptest. We can safely do this optimization
-            // for integral vectors but not for floating-point for the reason
-            // that we have +0.0 and -0.0 and +0.0 == -0.0
-            op2 = simdNode->gtGetOp2();
-            if ((comp->getSIMDSupportLevel() >= SIMD_SSE4_Supported) && op2->IsIntegralConstVector(0))
-            {
-                MakeSrcContained(simdNode, op2);
-            }
             break;
 
         case SIMDIntrinsicGetItem:
