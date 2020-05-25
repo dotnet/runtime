@@ -203,12 +203,14 @@ namespace R2RDump
     {
         private readonly DumpOptions _options;
         private readonly Dictionary<ReadyToRunSectionType, bool> _selectedSections = new Dictionary<ReadyToRunSectionType, bool>();
+        private readonly Encoding _encoding;
         private readonly TextWriter _writer;
         private Dumper _dumper;
 
         private R2RDump(DumpOptions options)
         {
             _options = options;
+            _encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
             if (_options.Verbose)
             {
@@ -220,7 +222,7 @@ namespace R2RDump
 
             if (_options.Out != null)
             {
-                _writer = new StreamWriter(_options.Out.FullName, append: false, encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false));
+                _writer = new StreamWriter(_options.Out.FullName, append: false, _encoding);
             }
             else
             {
@@ -569,7 +571,7 @@ namespace R2RDump
                     else
                     {
                         string perFileOutput = filename.FullName + ".common-methods.r2r";
-                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput), disassembler, _options);
+                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput, append: false, _encoding), disassembler, _options);
                         if (previousDumper != null)
                         {
                             new R2RDiff(previousDumper, _dumper, _writer).Run();
