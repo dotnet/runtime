@@ -352,7 +352,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                CORINFO_SIG_INFO*    sig,
                                                var_types            retType,
                                                var_types            baseType,
-                                               unsigned             simdSize)
+                                               unsigned             simdSize,
+                                               GenTree*             newobjThis)
 {
     assert(featureSIMD);
     assert(retType != TYP_UNKNOWN);
@@ -402,10 +403,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 #endif
 
+    GenTree* copyBlkDst = nullptr;
+    GenTree* copyBlkSrc = nullptr;
+
     switch (numArgs)
     {
         case 0:
         {
+            assert(newobjThis == nullptr);
+
             switch (intrinsic)
             {
 #if defined(TARGET_XARCH)
@@ -438,6 +444,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 1:
         {
+            assert(newobjThis == nullptr);
+
             bool isOpExplicit = (intrinsic == NI_VectorT128_op_Explicit);
 
 #if defined(TARGET_XARCH)
@@ -565,13 +573,30 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             argType = isInstanceMethod ? simdType
                                        : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
+            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 
             switch (intrinsic)
             {
 #if defined(TARGET_XARCH)
+                case NI_Vector2_CreateBroadcast:
+                case NI_Vector3_CreateBroadcast:
+                case NI_Vector4_CreateBroadcast:
+                case NI_VectorT128_CreateBroadcast:
+                {
+                    copyBlkDst = op1;
+                    copyBlkSrc = gtNewSimdAsHWIntrinsicNode(retType, op2, NI_Vector128_Create, baseType, simdSize);
+                    break;
+                }
+
+                case NI_VectorT256_CreateBroadcast:
+                {
+                    copyBlkDst = op1;
+                    copyBlkSrc = gtNewSimdAsHWIntrinsicNode(retType, op2, NI_Vector256_Create, baseType, simdSize);
+                    break;
+                }
+
                 case NI_Vector2_op_Division:
                 case NI_Vector3_op_Division:
                 {
@@ -766,6 +791,22 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdAsHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
                 }
 #elif defined(TARGET_ARM64)
+                case NI_Vector2_CreateBroadcast:
+                {
+                    copyBlkDst = op1;
+                    copyBlkSrc = gtNewSimdAsHWIntrinsicNode(retType, op2, NI_Vector64_Create, baseType, simdSize);
+                    break;
+                }
+
+                case NI_Vector3_CreateBroadcast:
+                case NI_Vector4_CreateBroadcast:
+                case NI_VectorT128_CreateBroadcast:
+                {
+                    copyBlkDst = op1;
+                    copyBlkSrc = gtNewSimdAsHWIntrinsicNode(retType, op2, NI_Vector128_Create, baseType, simdSize);
+                    break;
+                }
+
                 case NI_VectorT128_Max:
                 case NI_VectorT128_Min:
                 {
@@ -808,6 +849,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 3:
         {
+            assert(newobjThis == nullptr);
+
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
 
@@ -819,7 +862,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             argType = isInstanceMethod ? simdType
                                        : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
+            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 
@@ -849,6 +892,25 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             }
         }
     }
+
+    if (copyBlkDst != nullptr)
+    {
+        assert(copyBlkSrc != nullptr);
+
+        // At this point, we have a tree that we are going to store into a destination.
+        // TODO-1stClassStructs: This should be a simple store or assignment, and should not require
+        // GTF_ALL_EFFECT for the dest. This is currently emulating the previous behavior of
+        // block ops.
+
+        GenTree* dest = gtNewBlockVal(copyBlkDst, simdSize);
+        dest->gtFlags |= GTF_GLOB_REF;
+
+        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc, /* isVolatile */ false, /* isCopyBlock */ true);
+        retNode->gtFlags |= ((copyBlkDst->gtFlags | copyBlkSrc->gtFlags) & GTF_ALL_EFFECT);
+
+        return retNode;
+    }
+    assert(copyBlkSrc == nullptr);
 
     assert(!"Unexpected SimdAsHWIntrinsic");
     return nullptr;
