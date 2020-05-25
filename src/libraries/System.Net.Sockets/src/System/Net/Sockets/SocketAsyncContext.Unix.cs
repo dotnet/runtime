@@ -1466,7 +1466,8 @@ namespace System.Net.Sockets
                     op.Schedule();
                 }
                 // dispatch next operation (if there was any)
-                nextOp?.Dispatch();
+                // todo: handle next operation
+                //nextOp?.Dispatch();
             }
 
             public void CancelAndContinueProcessing(TOperation op)
