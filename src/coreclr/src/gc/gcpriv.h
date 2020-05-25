@@ -3786,6 +3786,9 @@ protected:
 #ifdef MULTIPLE_HEAPS
     PER_HEAP_ISOLATED
     BOOL gradual_decommit_in_progress_p;
+
+    PER_HEAP_ISOLATED
+    size_t max_decommit_step_size;
 #endif //MULTIPLE_HEAPS
 
 #define youngest_generation (generation_of (0))
