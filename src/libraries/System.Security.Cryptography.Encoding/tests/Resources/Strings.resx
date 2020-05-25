@@ -276,8 +276,8 @@
   <data name="Cbor_Reader_NotANullEncoding" xml:space="preserve">
     <value>CBOR simple value does not encode null.</value>
   </data>
-  <data name="Cbor_Reader_InvalidCbor_InvalidSimpleValueEncoding" xml:space="preserve">
-    <value>Invalid CBOR simple value encoding.</value>
+  <data name="Cbor_ConformanceLevel_InvalidSimpleValueEncoding" xml:space="preserve">
+    <value>CBOR Conformance level '{0}' does not support simple values in the range 24-31 and must be encoded as small as possible.</value>
   </data>
   <data name="Cbor_Reader_InvalidCbor_UnexpectedBreakByte" xml:space="preserve">
     <value>CBOR definite-length data items contains unexpected break byte.</value>
@@ -329,8 +329,5 @@
   </data>
   <data name="Cbor_Writer_DecimalOverflow" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
-  </data>
-  <data name="Cbor_Writer_InvalidSimpleValueRange" xml:space="preserve">
-    <value>Simple values in the 24-31 range are not permitted.</value>
   </data>
 </root>

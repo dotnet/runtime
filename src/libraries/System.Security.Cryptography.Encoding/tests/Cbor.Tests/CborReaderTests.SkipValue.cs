@@ -148,6 +148,7 @@ namespace System.Formats.Cbor.Tests
                 (CborConformanceLevel.Canonical, "a201020103"), // duplicate keys in map
                 (CborConformanceLevel.Ctap2Canonical, "a202020101"), // unsorted keys in map
                 (CborConformanceLevel.Ctap2Canonical, "c001"), // tagged value
+                (CborConformanceLevel.Strict, "f81f"), // non-canonical simple value
             }.Select(l => new object[] { l.Level, l.Encoding });
 
         [Fact]

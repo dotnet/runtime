@@ -185,9 +185,11 @@ namespace System.Formats.Cbor
                     EnsureReadCapacity(2);
                     byte value = _data.Span[_offset + 1];
 
-                    if (value <= (byte)CborAdditionalInfo.IndefiniteLength)
+                    if (value <= (byte)CborAdditionalInfo.IndefiniteLength &&
+                        _isConformanceLevelCheckEnabled &&
+                        CborConformanceLevelHelpers.RequireCanonicalSimpleValueEncodings(ConformanceLevel))
                     {
-                        throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidSimpleValueEncoding);
+                        throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_InvalidSimpleValueEncoding, ConformanceLevel));
                     }
 
                     AdvanceBuffer(2);

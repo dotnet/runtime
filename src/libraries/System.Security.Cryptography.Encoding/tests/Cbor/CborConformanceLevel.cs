@@ -22,6 +22,7 @@ namespace System.Formats.Cbor
         ///   Extends lax conformance with the following requirements:
         ///   <list type="bullet">
         ///   <item>Maps (major type 5) must not contain duplicate keys.</item>
+        ///   <item>Simple values (major type 7) be encoded as small a possible and exclude the reserved values 24-31.</item>
         ///   <item>UTF-8 string encodings must be valid.</item>
         ///   </list>
         /// </summary>
@@ -171,6 +172,23 @@ namespace System.Formats.Cbor
                 default:
                     throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
             };
+        }
+
+        public static bool RequireCanonicalSimpleValueEncodings(CborConformanceLevel conformanceLevel)
+        {
+            switch (conformanceLevel)
+            {
+                case CborConformanceLevel.Lax:
+                    return false;
+
+                case CborConformanceLevel.Strict:
+                case CborConformanceLevel.Canonical:
+                case CborConformanceLevel.Ctap2Canonical:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            }
         }
 
         public static int GetKeyEncodingHashCode(ReadOnlySpan<byte> encoding)

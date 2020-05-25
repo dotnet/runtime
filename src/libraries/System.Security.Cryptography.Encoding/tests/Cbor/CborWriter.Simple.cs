@@ -92,9 +92,10 @@ namespace System.Formats.Cbor
                 EnsureWriteCapacity(1);
                 WriteInitialByte(new CborInitialByte(CborMajorType.Simple, (CborAdditionalInfo)value));
             }
-            else if (value <= (CborSimpleValue)CborAdditionalInfo.IndefiniteLength)
+            else if (value <= (CborSimpleValue)CborAdditionalInfo.IndefiniteLength &&
+                     CborConformanceLevelHelpers.RequireCanonicalSimpleValueEncodings(ConformanceLevel))
             {
-                throw new ArgumentOutOfRangeException(SR.Cbor_Writer_InvalidSimpleValueRange);
+                throw new ArgumentOutOfRangeException(SR.Format(SR.Cbor_ConformanceLevel_InvalidSimpleValueEncoding, ConformanceLevel));
             }
             else
             {

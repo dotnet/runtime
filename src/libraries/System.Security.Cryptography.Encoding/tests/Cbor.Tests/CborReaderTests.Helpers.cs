@@ -243,9 +243,10 @@ namespace System.Formats.Cbor.Tests
                 // tagged values
                 "c202",
                 "d82076687474703a2f2f7777772e6578616d706c652e636f6d",
-                // special values
+                // simple values
                 "f4",
                 "f6",
+                // floating point encodings
                 "fa47c35000",
             };
 
@@ -296,10 +297,8 @@ namespace System.Formats.Cbor.Tests
                 "f9ff",
                 "faffffff",
                 "fbffffffffffffff",
-                // special value missing data
+                // two-byte simple value missing data
                 "f8",
-                // invalid special value
-                "f81f",
             };
     }
 }

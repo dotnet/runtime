@@ -81,11 +81,27 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData((CborSimpleValue)24)]
-        [InlineData((CborSimpleValue)31)]
-        public static void WriteSimpleValue_UnassignedValues_ShouldThrowArgumentOutOfRangeException(CborSimpleValue input)
+        [InlineData((CborSimpleValue)24, "f818")]
+        [InlineData((CborSimpleValue)31, "f81f")]
+        public static void WriteSimpleValue_InvalidValue_LaxConformance_ShouldSucceed(CborSimpleValue input, string hexExpectedEncoding)
         {
-            var writer = new CborWriter();
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            var writer = new CborWriter(CborConformanceLevel.Lax);
+            writer.WriteSimpleValue(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict, (CborSimpleValue)24)]
+        [InlineData(CborConformanceLevel.Canonical, (CborSimpleValue)24)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, (CborSimpleValue)24)]
+        [InlineData(CborConformanceLevel.Strict, (CborSimpleValue)31)]
+        [InlineData(CborConformanceLevel.Canonical, (CborSimpleValue)31)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, (CborSimpleValue)31)]
+
+        public static void WriteSimpleValue_InvalidValue_UnsupportedConformance_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel conformanceLevel, CborSimpleValue input)
+        {
+            var writer = new CborWriter(conformanceLevel);
             Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteSimpleValue(input));
         }
     }
