@@ -1190,7 +1190,7 @@ namespace System.Threading
             return true;
         }
 
-        public static bool UnsafeQueueUserWorkItems<T>(ReadOnlySpan<T> workItems, bool preferLocal) where T : IThreadPoolWorkItem
+        public static void UnsafeQueueUserWorkItems<T>(ReadOnlySpan<T> workItems, bool preferLocal) where T : IThreadPoolWorkItem
         {
             s_workQueue.Enqueue<T>(workItems, forceGlobal: !preferLocal);
         }

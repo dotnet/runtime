@@ -623,7 +623,7 @@ namespace System.Net.Sockets
                             ioControlBlocksSegment[i] = default;
                         }
                         var workItems = batchedOperations.Slice(0, events.Length);
-                        ThreadPool.UnsafeQueueUserWorkItems<SocketAsyncContext.AsyncOperation>(workItems!);
+                        ThreadPool.UnsafeQueueUserWorkItems<SocketAsyncContext.AsyncOperation>(workItems!, preferLocal: false);
                         workItems.Clear();
 
                         break;
