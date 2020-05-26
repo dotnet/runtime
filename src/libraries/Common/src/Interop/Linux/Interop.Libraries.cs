@@ -8,8 +8,5 @@ internal static partial class Interop
         internal const string Odbc32 = "libodbc.so.2";
         internal const string OpenLdap = "libldap-2.4.so.2";
         internal const string MsQuic = "msquic";
-
-        internal const string Ssl = "libssl.so";
-        internal const string Crypto = "libcrypto.so";
     }
 }

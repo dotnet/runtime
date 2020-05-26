@@ -171,9 +171,8 @@ namespace System.Net.Quic.Implementations.Managed
 
             fixed (byte* pdata = data)
             {
-                IntPtr bio = Interop.OpenSslQuic.BioNewMemBuf(pdata, data.Length);
-                pkcsHandle = Interop.OpenSslQuic.D2iPkcs12Bio(bio, IntPtr.Zero);
-                Interop.OpenSslQuic.BioFree(bio);
+                var localData = pdata;
+                pkcsHandle = Interop.OpenSslQuic.D2iPkcs12(IntPtr.Zero, ref localData, data.Length);
             }
 
             IntPtr keyHandle;
