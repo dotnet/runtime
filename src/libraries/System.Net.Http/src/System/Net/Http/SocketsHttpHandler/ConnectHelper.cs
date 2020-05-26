@@ -178,8 +178,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    // ToDo: [ActiveIssue("https://github.com/dotnet/runtime/issues/34638")]
-                    sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).GetAwaiter().GetResult();
+                    sslStream.AuthenticateAsClient(sslOptions);
                 }
             }
             catch (Exception e)
