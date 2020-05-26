@@ -199,7 +199,7 @@ frame_stack_alloc (FrameStack *stack, int size, StackFragment **out_frag)
 static MONO_ALWAYS_INLINE void
 frame_stack_pop (FrameStack *stack, StackFragment *frag, gpointer pos)
 {
-	g_assert ((guint8*)pos >= (guint8*)&frag->data && (guint8*)pos <= (guint8*)frag->end);
+	g_assert_checked ((guint8*)pos >= (guint8*)&frag->data && (guint8*)pos <= (guint8*)frag->end);
 	stack->current = frag;
 	mono_compiler_barrier ();
 	stack->current->pos = (guint8*)pos;
@@ -4008,12 +4008,18 @@ call:
 				// FIXME This can only happen in a few wrappers. Add separate opcode for it
 				*frame->retval = *sp;
 			}
+#ifdef ENABLE_CHECKED_BUILD
+			/* FIXME Fix these warnings and replace with assertions */
 			if (sp > frame->stack)
 				g_warning_d ("ret: more values on stack: %d", sp - frame->stack);
+#endif
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VOID)
+#ifdef ENABLE_CHECKED_BUILD
+			/* FIXME Fix these warnings and replace with assertions */
 			if (sp > frame->stack)
 				g_warning_ds ("ret.void: more values on stack: %d %s", sp - frame->stack, mono_method_full_name (frame->imethod->method, TRUE));
+#endif
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VT) {
 			gpointer dest_vt;
@@ -4029,8 +4035,11 @@ call:
 				dest_vt = frame->retval->data.p;
 			}
 			memcpy (dest_vt, sp->data.p, i32);
+#ifdef ENABLE_CHECKED_BUILD
+			/* FIXME Fix these warnings and replace with assertions */
 			if (sp > frame->stack)
 				g_warning_d ("ret.vt: more values on stack: %d", sp - frame->stack);
+#endif
 			goto exit_frame;
 		}
 
@@ -7186,7 +7195,7 @@ resume:
 exit_frame:
 	error_init_reuse (error);
 
-	g_assert (frame->imethod);
+	g_assert_checked (frame->imethod);
 
 	if (clause_args && clause_args->base_frame) {
 		// We finished executing a filter. The execution stack of the base frame
