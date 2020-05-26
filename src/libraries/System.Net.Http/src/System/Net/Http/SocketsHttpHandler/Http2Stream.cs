@@ -9,7 +9,6 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1370,11 +1369,6 @@ namespace System.Net.Http
                 public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 
                 public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-                public override void Write(ReadOnlySpan<byte> buffer)
-                {
-                    WriteAsync(new ReadOnlyMemory<byte>(buffer.ToArray()), cancellationToken: default).AsTask().GetAwaiter().GetResult();
-                }
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {

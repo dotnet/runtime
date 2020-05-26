@@ -13,6 +13,11 @@ namespace System.Net.Http
             _connection = connection;
         }
 
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -30,10 +35,10 @@ namespace System.Net.Http
         protected HttpConnection GetConnectionOrThrow()
         {
             return _connection ??
-                // This should only ever happen if the user-code that was handed this instance disposed of
-                // it, which is misuse, or held onto it and tried to use it later after we've disposed of it,
-                // which is also misuse.
-                ThrowObjectDisposedException();
+                   // This should only ever happen if the user-code that was handed this instance disposed of
+                   // it, which is misuse, or held onto it and tried to use it later after we've disposed of it,
+                   // which is also misuse.
+                   ThrowObjectDisposedException();
         }
 
         private HttpConnection ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().Name);
