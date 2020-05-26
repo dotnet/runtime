@@ -3839,28 +3839,21 @@ main_loop:
 			ip += 4;
 			goto call;
 		}
-		MINT_IN_CASE(MINT_CALL)
 		MINT_IN_CASE(MINT_CALLVIRT) {
 			// FIXME CALLVIRT opcodes are not used on netcore. We should kill them.
-			// FIXME braces from here until call: label.
-			gboolean is_virtual;
-			is_virtual = *ip == MINT_CALLVIRT;
-
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 
 			/* decrement by the actual number of args */
 			sp -= ip [2];
 			vt_sp -= ip [3];
 
-			if (is_virtual) {
-				MonoObject *this_arg = (MonoObject*)sp->data.p;
+			MonoObject *this_arg = (MonoObject*)sp->data.p;
 
-				cmethod = get_virtual_method (cmethod, this_arg->vtable);
-				if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
-					/* unbox */
-					gpointer unboxed = mono_object_unbox_internal (this_arg);
-					sp [0].data.p = unboxed;
-				}
+			cmethod = get_virtual_method (cmethod, this_arg->vtable);
+			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
+				/* unbox */
+				gpointer unboxed = mono_object_unbox_internal (this_arg);
+				sp [0].data.p = unboxed;
 			}
 
 			frame->ip = ip;
@@ -3869,7 +3862,22 @@ main_loop:
 #else
 			ip += 4;
 #endif
-call:;
+			goto call;
+		}
+		MINT_IN_CASE(MINT_CALL) {
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
+
+			/* decrement by the actual number of args */
+			sp -= ip [2];
+			vt_sp -= ip [3];
+
+			frame->ip = ip;
+#ifdef ENABLE_EXPERIMENT_TIERED
+			ip += 5;
+#else
+			ip += 4;
+#endif
+call:
 			/*
 			 * Make a non-recursive call by loading the new interpreter state based on child frame,
 			 * and going back to the main loop.
