@@ -218,6 +218,8 @@ public class ApkBuilder
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
         Utils.RunProcess(zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: OutputDir);
+        // we don't need the unaligned one any more
+        File.Delete(apkFile);
 
         // 5. Generate key
         
