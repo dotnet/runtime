@@ -269,7 +269,7 @@ namespace System
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
             }
-            else if (IsLinux)
+            else if (IsOpenSslSupported)
             {
                 // Covers Linux and FreeBSD
                 return OpenSslVersion >= new Version(1,1,1);
