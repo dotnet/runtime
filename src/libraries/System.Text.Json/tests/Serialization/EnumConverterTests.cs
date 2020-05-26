@@ -185,5 +185,31 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<MyCustomEnum>("2");
             Assert.Equal(MyCustomEnum.Second, obj);
         }
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public enum MyCustomJsonStringEnumMemberEnum
+        {
+            [System.Text.Json.Serialization.JsonStringEnumMemberAttribute("one_")]
+            One,
+            [System.Text.Json.Serialization.JsonStringEnumMemberAttribute("two_")]
+            Two,
+            [System.Text.Json.Serialization.JsonStringEnumMemberAttribute(null)]
+            Null
+        }
+        [InlineData(MyCustomJsonStringEnumMemberEnum.One, "one_", "0")]
+        [InlineData(MyCustomJsonStringEnumMemberEnum.Two, "two_", "1")]
+        [InlineData(MyCustomJsonStringEnumMemberEnum.Null, "null", "3")]
+        [Theory]
+        public void EnumWithJsonStringEnumMemberAttribute(MyCustomJsonStringEnumMemberEnum e, string serializedString, string serializedNumber)
+        {
+            string json = JsonSerializer.Serialize(e);
+            Assert.Equal($@"""{serializedString}""", json);
+
+            MyCustomJsonStringEnumMemberEnum obj = JsonSerializer.Deserialize<MyCustomJsonStringEnumMemberEnum>($"\"{serializedString}\"");
+            Assert.Equal(e, obj);
+
+            obj = JsonSerializer.Deserialize<MyCustomJsonStringEnumMemberEnum>(serializedNumber);
+            Assert.Equal(e, obj);
+        }
     }
 }

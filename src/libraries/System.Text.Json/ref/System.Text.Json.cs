@@ -535,6 +535,12 @@ namespace System.Text.Json.Serialization
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
+    public sealed partial class JsonStringEnumMemberAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonStringEnumMemberAttribute(string name) { }
+        public string Name { get { throw null; } }
+    }
     public sealed partial class ReferenceHandling
     {
         internal ReferenceHandling() { }
