@@ -199,8 +199,8 @@ namespace System.Net.Http
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
 #if TARGETS_BROWSER
-            get => throw new PlatformNotSupportedException("Property ServerCertificateCustomValidationCallback is not supported.");
-            set => throw new PlatformNotSupportedException("Property ServerCertificateCustomValidationCallback is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
 #else
             get => (_underlyingHandler.SslOptions.RemoteCertificateValidationCallback?.Target as ConnectHelper.CertificateCallbackMapper)?.FromHttpClientHandler;
             set
