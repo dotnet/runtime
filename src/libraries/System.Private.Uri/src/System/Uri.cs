@@ -3495,12 +3495,10 @@ namespace System
             InterlockedSetFlags(cF);
         }
 
-        //
         // verifies the syntax of the scheme part
         // Checks on implicit File: scheme due to simple Dos/Unc path passed
-        // returns the start of the next component  position
+        // returns the start of the next component position
         // throws UriFormatException if invalid scheme
-        //
         private static unsafe int ParseSchemeCheckImplicitFile(string uriString,
             ref ParsingError err, ref Flags flags, ref UriParser? syntax)
         {
@@ -3585,15 +3583,12 @@ namespace System
             if (end == uriString.Length)
             {
                 err = ParsingError.BadFormat;
-                return 0;
             }
-
-            // This is a potentially valid scheme, but we have not identified it yet.
-            // Check for illegal characters, canonicalize, and check the length.
-            err = CheckSchemeSyntax(uriString.AsSpan(idx, end - idx), ref syntax!);
-            if (err != ParsingError.None)
+            else
             {
-                return 0;
+                // This is a potentially valid scheme, but we have not identified it yet.
+                // Check for illegal characters, canonicalize, and check the length.
+                err = CheckSchemeSyntax(uriString.AsSpan(idx, end - idx), ref syntax!);
             }
             return end + 1;
         }
