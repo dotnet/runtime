@@ -19,13 +19,9 @@
 
   <ItemGroup>
     <!-- We currently only test with C# projects. -->
-    <!-- Only want to test one test on android until helix stabilizes -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Buffers\tests\System.Buffers.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' == 'Android'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' != 'Android'" />
+                      Condition="'$(BuildAllConfigurations)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
