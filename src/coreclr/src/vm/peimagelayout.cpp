@@ -40,6 +40,17 @@ PEImageLayout* PEImageLayout::LoadFromFlat(PEImageLayout* pflatimage)
     return new ConvertedImageLayout(pflatimage);
 }
 
+PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
+{
+    STANDARD_VM_CONTRACT;
+
+    PEImageLayoutHolder pFlat(new FlatImageLayout(pOwner));
+    if (!pFlat->CheckFormat())
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    return new ConvertedImageLayout(pFlat);
+}
+
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError)
 {
     STANDARD_VM_CONTRACT;
@@ -47,6 +58,11 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThro
 #if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
     return PEImageLayout::Map(pOwner);
 #else
+    if (pOwner->IsInBundle())
+    {
+        return PEImageLayout::LoadConverted(pOwner);
+    }
+
     PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,bThrowOnError));
     if (pAlloc->GetBase()==NULL)
         return NULL;
@@ -83,11 +99,7 @@ PEImageLayout* PEImageLayout::Map(PEImage* pOwner)
     if (pAlloc->GetBase()==NULL)
     {
         //cross-platform or a bad image
-        PEImageLayoutHolder pFlat(new FlatImageLayout(pOwner));
-        if (!pFlat->CheckFormat())
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-
-        pAlloc=new ConvertedImageLayout(pFlat);
+        pAlloc = LoadConverted(pOwner);
     }
     else
         if(!pAlloc->CheckFormat())
@@ -393,8 +405,8 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
 
 
     m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL,
-                                               PAGE_READWRITE, 0,
-                                               source->GetVirtualSize(), NULL));
+                                          PAGE_READWRITE, 0,
+                                          source->GetVirtualSize(), NULL));
     if (m_FileMap == NULL)
         ThrowLastError();
 
@@ -428,6 +440,8 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     m_pOwner=pOwner;
 
     HANDLE hFile = pOwner->GetFileHandle();
+    INT64 offset = pOwner->GetOffset();
+    INT64 size = pOwner->GetSize();
 
     // If mapping was requested, try to do SEC_IMAGE mapping
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening OS mapped %S (hFile %p)\n", (LPCWSTR) GetPath(), hFile));
@@ -459,21 +473,24 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
             ThrowWin32(dwLastError);
         }
 
-#endif // CROSSGEN_COMPILE
+#endif // !CROSSGEN_COMPILE
 
         return;
     }
+
+    DWORD offsetLowPart = (DWORD)offset;
+    DWORD offsetHighPart = (DWORD)(offset >> 32);
 
 #ifdef _DEBUG
     // Force relocs by occuping the preferred base while the actual mapping is performed
     CLRMapViewHolder forceRelocs;
     if (PEDecoder::GetForceRelocs())
     {
-        forceRelocs.Assign(CLRMapViewOfFile(m_FileMap, 0, 0, 0, 0));
+        forceRelocs.Assign(CLRMapViewOfFile(m_FileMap, 0, offsetHighPart, offsetLowPart, (SIZE_T)size));
     }
 #endif // _DEBUG
 
-    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, 0, 0, 0, 0));
+    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, 0, offsetHighPart, offsetLowPart, (SIZE_T)size));
     if (m_FileView == NULL)
         ThrowLastError();
     IfFailThrow(Init((void *) m_FileView));
@@ -502,7 +519,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
         }
     }
     else
-#endif
+#endif // CROSSGEN_COMPILE
     if (!IsNativeMachineFormat() && !IsI386())
     {
         //can't rely on the image
@@ -529,7 +546,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 #else //!TARGET_UNIX
 
 #ifndef CROSSGEN_COMPILE
-    m_LoadedFile = PAL_LOADLoadPEFile(hFile);
+    m_LoadedFile = PAL_LOADLoadPEFile(hFile, offset);
 
     if (m_LoadedFile == NULL)
     {
@@ -612,13 +629,19 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     m_pOwner=pOwner;
 
     HANDLE hFile = pOwner->GetFileHandle();
+    INT64 offset = pOwner->GetOffset();
+    INT64 size = pOwner->GetSize();
 
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %S\n", (LPCWSTR) GetPath()));
 
-    COUNT_T size = SafeGetFileSize(hFile, NULL);
-    if (size == 0xffffffff && GetLastError() != NOERROR)
+    // If a size is not specified, load the whole file
+    if (size == 0)
     {
-        ThrowLastError();
+        size = SafeGetFileSize(hFile, NULL);
+        if (size == 0xffffffff && GetLastError() != NOERROR)
+        {
+            ThrowLastError();
+        }
     }
 
     // It's okay if resource files are length zero
@@ -628,11 +651,16 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         if (m_FileMap == NULL)
             ThrowLastError();
 
-        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, 0, 0, 0));
+        //DWORD lowPart = (DWORD)offset;
+        //DWORD highPart = (DWORD)(offset >> 32);
+        char *addr = (char*)CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, 0, 0, 0);
+        addr += offset;
+        m_FileView.Assign((LPVOID)addr);
+
         if (m_FileView == NULL)
             ThrowLastError();
     }
-    Init(m_FileView, size);
+    Init(m_FileView, (COUNT_T)size);
 }
 
 NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
@@ -655,7 +683,7 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
             ThrowLastError();
         }
 
-        loadedImage = PAL_LOADLoadPEFile(fileHandle);
+        loadedImage = PAL_LOADLoadPEFile(fileHandle, 0);
     }
 #else
     loadedImage = CLRLoadLibraryEx(fullPath, NULL, GetLoadWithAlteredSearchPathFlag());

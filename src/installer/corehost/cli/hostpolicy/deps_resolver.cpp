@@ -281,10 +281,13 @@ void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& 
  *   -- When servicing directories are looked up, look up only if the deps file marks the entry as serviceable.
  *   -- When a deps json based probe is performed, the deps entry's package name and version must match.
  *   -- When looking into a published dir, for rid specific assets lookup rid split folders; for non-rid assets lookup the layout dir.
+ * The path to the resolved file is returned in candidate out parameter
+ * If the candidate is embedded within the single-file bundle (rather than an actual file on disk), loaded_from_bundle will be set to true.
  */
-bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level, pal::string_t* candidate)
+bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level, pal::string_t* candidate, bool & loaded_from_bundle)
 {
     candidate->clear();
+    loaded_from_bundle = false;
 
     for (const auto& config : m_probes)
     {
@@ -316,8 +319,9 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 // If the deps json has the package name and version, then someone has already done rid selection and
                 // put the right asset in the dir. So checking just package name and version would suffice.
                 // No need to check further for the exact asset relative sub path.
-                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, false, candidate))
+                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, false, candidate, loaded_from_bundle))
                 {
+                    assert(!loaded_from_bundle);
                     trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
                     return true;
                 }
@@ -343,7 +347,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 else
                 {
                     // Non-rid assets, lookup in the published dir.
-                    if (entry.to_dir_path(deps_dir, true, candidate))
+                    if (entry.to_dir_path(deps_dir, true, candidate, loaded_from_bundle))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -437,10 +441,17 @@ bool deps_resolver_t::resolve_tpa_list(
         name_to_resolved_asset_map_t::iterator existing = items.find(entry.asset.name);
         if (existing == items.end())
         {
-            if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
+            bool loaded_from_bundle = false;
+            if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path, loaded_from_bundle))
             {
-                deps_resolved_asset_t resolved_asset(entry.asset, resolved_path);
-                add_tpa_asset(resolved_asset, &items);
+                // Assemblies loaded directly from the bundle are not added to the TPA list.
+                // The runtime directly probes the bundle-manifest using a host-callback.
+                if (!loaded_from_bundle)
+                {
+                    deps_resolved_asset_t resolved_asset(entry.asset, resolved_path);
+                    add_tpa_asset(resolved_asset, &items);
+                }
+
                 return true;
             }
 
@@ -468,7 +479,8 @@ bool deps_resolver_t::resolve_tpa_list(
             if (entry.asset.assembly_version > existing_entry->asset.assembly_version ||
                 (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version >= existing_entry->asset.file_version))
             {
-                if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
+                bool loaded_from_bundle = false;
+                if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path, loaded_from_bundle))
                 {
                     // If the path is the same, then no need to replace
                     if (resolved_path != existing_entry->resolved_path)
@@ -480,9 +492,12 @@ bool deps_resolver_t::resolve_tpa_list(
                         existing_entry = nullptr;
                         items.erase(existing);
 
-                        deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
-                        deps_resolved_asset_t resolved_asset(asset, resolved_path);
-                        add_tpa_asset(resolved_asset, &items);
+                        if (!loaded_from_bundle)
+                        {
+                            deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
+                            deps_resolved_asset_t resolved_asset(asset, resolved_path);
+                            add_tpa_asset(resolved_asset, &items);
+                        }
                     }
                 }
                 else if (fx_level != 0)
@@ -505,9 +520,17 @@ bool deps_resolver_t::resolve_tpa_list(
         // First add managed assembly to the TPA.
         // TODO: Remove: the deps should contain the managed DLL.
         // Workaround for: csc.deps.json doesn't have the csc.dll
-        deps_asset_t asset(get_filename_without_ext(m_managed_app), get_filename(m_managed_app), version_t(), version_t());
-        deps_resolved_asset_t resolved_asset(asset, m_managed_app);
-        add_tpa_asset(resolved_asset, &items);
+
+        // If this is a single-file bundle, app.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
+        // In all other cases, add its path to the TPA list.
+        pal::string_t managed_app_name = get_filename(m_managed_app);
+        if (!bundle::info_t::is_single_file_bundle() ||
+            bundle::runner_t::app()->probe(managed_app_name) == nullptr)
+        {
+            deps_asset_t asset(get_filename_without_ext(m_managed_app), managed_app_name, version_t(), version_t());
+            deps_resolved_asset_t resolved_asset(asset, m_managed_app);
+            add_tpa_asset(resolved_asset, &items);
+        }
 
         // Add the app's entries
         const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
@@ -783,10 +806,14 @@ bool deps_resolver_t::resolve_probe_dirs(
         trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s]"), 
             entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
-        if (probe_deps_entry(entry, deps_dir, fx_level, &candidate))
+        bool loaded_from_bundle = false;
+        if (probe_deps_entry(entry, deps_dir, fx_level, &candidate, loaded_from_bundle))
         {
-            init_known_entry_path(entry, candidate);
-            add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
+            if (!loaded_from_bundle)
+            {
+                init_known_entry_path(entry, candidate);
+                add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
+            }
         }
         else
         {

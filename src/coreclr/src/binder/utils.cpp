@@ -80,7 +80,7 @@ namespace BINDER_SPACE
         SString platformPathSeparator(SString::Literal, GetPlatformPathSeparator());
         combinedPath.Set(pathA);
 
-        if (!combinedPath.EndsWith(platformPathSeparator))
+        if (!combinedPath.IsEmpty() && !combinedPath.EndsWith(platformPathSeparator))
         {
             combinedPath.Append(platformPathSeparator);
         }
