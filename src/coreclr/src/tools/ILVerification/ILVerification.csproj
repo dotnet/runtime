@@ -44,9 +44,6 @@
     <Compile Include="..\Common\TypeSystem\Common\ArrayType.cs">
       <Link>TypeSystem\Common\ArrayType.cs</Link>
     </Compile>
-    <Compile Include="..\Common\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs">
-      <Link>TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
-    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs</Link>
     </Compile>
@@ -62,9 +59,9 @@
     <Compile Include="..\Common\TypeSystem\Common\ExceptionStringID.cs">
       <Link>TypeSystem\Common\ExceptionStringID.cs</Link>
     </Compile>
-		<Compile Include="..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
-			<Link>Utilities\DebugNameFormatter.cs</Link>
-		</Compile>
+    <Compile Include="..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
+      <Link>Utilities\DebugNameFormatter.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\FieldForInstantiatedType.cs">
       <Link>TypeSystem\Common\FieldForInstantiatedType.cs</Link>
     </Compile>
@@ -74,9 +71,9 @@
     <Compile Include="..\Common\TypeSystem\Common\FieldDesc.FieldLayout.cs">
       <Link>TypeSystem\Common\FieldDesc.FieldLayout.cs</Link>
     </Compile>
-		<Compile Include="..\Common\TypeSystem\Common\FieldDesc.ToString.cs">
-			<Link>TypeSystem\Common\FieldDesc.ToString.cs</Link>
-		</Compile>
+    <Compile Include="..\Common\TypeSystem\Common\FieldDesc.ToString.cs">
+      <Link>TypeSystem\Common\FieldDesc.ToString.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\FieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\FieldLayoutAlgorithm.cs</Link>
     </Compile>
@@ -164,9 +161,9 @@
     <Compile Include="..\Common\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
-		<Compile Include="..\Common\TypeSystem\Common\MethodDesc.ToString.cs">
-			<Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
-		</Compile>
+    <Compile Include="..\Common\TypeSystem\Common\MethodDesc.ToString.cs">
+      <Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs">
       <Link>TypeSystem\Common\MethodDesc.Dummy.Diagnostic.ToString.cs</Link>
     </Compile>
@@ -179,9 +176,9 @@
     <Compile Include="..\Common\TypeSystem\Common\TypeDesc.Interfaces.cs">
       <Link>TypeSystem\Common\TypeDesc.Interfaces.cs</Link>
     </Compile>
-		<Compile Include="..\Common\TypeSystem\Common\TypeDesc.ToString.cs">
-			<Link>TypeSystem\Common\TypeDesc.ToString.cs</Link>
-		</Compile>
+    <Compile Include="..\Common\TypeSystem\Common\TypeDesc.ToString.cs">
+      <Link>TypeSystem\Common\TypeDesc.ToString.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\DefType.cs">
       <Link>TypeSystem\Common\DefType.cs</Link>
     </Compile>
@@ -298,11 +295,6 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\TypeSystemConstraintsHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\Common\System\NotImplemented.cs">
-      <Link>System\NotImplemented.cs</Link>
     </Compile>
   </ItemGroup>
 
