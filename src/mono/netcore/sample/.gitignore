@@ -1,0 +1,4 @@
+wasm-browser/StaticServer/wwwroot/managed
+wasm-browser/StaticServer/wwwroot/runtime.js
+wasm-browser/StaticServer/wwwroot/run-v8.sh
+wasm-browser/StaticServer/wwwroot/mono-config.js

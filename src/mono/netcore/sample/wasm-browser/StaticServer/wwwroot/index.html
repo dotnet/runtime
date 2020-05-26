@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <script type="text/javascript" src="mono-config.js"></script>
+    <script type="text/javascript" src="runtime.js"></script>
+    <script defer type="text/javascript" src="dotnet.js"></script>
+</head>
+<body>
+    <div id="feedback-body" class="container-fluid">
+        <p id="loading"><i class="fa fa-refresh fa-spin" style="font-size:14px;margin-right:0.5em;"></i> Loading...</p>
+    </div>
+    <div id="main-body" style="visibility: hidden">
+        <h1>Hello WasmSample</h1>
+    </div>
+
+    <script type="text/javascript">
+        var App = {
+            init: function () {
+                var feedback = document.getElementById("feedback-body");
+                if (feedback) {
+                    feedback.parentElement.removeChild(feedback);
+                }
+                document.getElementById("main-body").style.visibility = null;
+                BINDING.call_static_method("[WasmSample]Test:Main", ["WasmSample"]);
+            }
+        };
+    </script>
+</body>
+</html>
