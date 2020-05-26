@@ -17,9 +17,9 @@ namespace System.IO.Packaging
         private readonly Dictionary<TKey, LinkedListNode<TValue>> _dictionary;
         private readonly LinkedList<TValue> _order;
 
-        public OrderedDictionary(int initialCapacity, IEqualityComparer<TKey> comparer)
+        public OrderedDictionary(int initialCapacity)
         {
-            _dictionary = new Dictionary<TKey, LinkedListNode<TValue>>(initialCapacity, comparer);
+            _dictionary = new Dictionary<TKey, LinkedListNode<TValue>>(initialCapacity);
             _order = new LinkedList<TValue>();
         }
 
@@ -44,7 +44,7 @@ namespace System.IO.Packaging
 
         public bool Remove(TKey key)
         {
-            if (_dictionary.TryGetValue(key, out var value))
+            if (_dictionary.TryGetValue(key, out LinkedListNode<TValue> value))
             {
                 _order.Remove(value);
                 _dictionary.Remove(key);

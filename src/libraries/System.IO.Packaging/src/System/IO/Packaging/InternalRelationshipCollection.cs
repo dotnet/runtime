@@ -180,7 +180,7 @@ namespace System.IO.Packaging
 
             //_sourcePart may be null representing that the relationships are at the package level
             _uri = GetRelationshipPartUri(_sourcePart);
-            _relationships = new OrderedDictionary<string, PackageRelationship>(4, StringComparer.Ordinal);
+            _relationships = new OrderedDictionary<string, PackageRelationship>(4);
 
             // Load if available (not applicable to write-only mode).
             if ((package.FileOpenAccess == FileAccess.Read ||
