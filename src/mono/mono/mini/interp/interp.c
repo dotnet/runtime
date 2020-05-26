@@ -3140,25 +3140,10 @@ mono_interp_isinst (MonoObject* object, MonoClass* klass)
 	return isinst;
 }
 
-// Do not inline use of alloca.
-// Do not inline in case order of frame addresses matters.
-static MONO_NEVER_INLINE void
-mono_interp_calli_nat_dynamic_pinvoke (
-	// Parameters are sorted by name.
-	guchar* code,
-	ThreadContext* context,
-	MonoMethodSignature* csignature,
-	MonoError* error,
-	InterpFrame *parent_frame,
-	stackval *retval,
-	stackval *sp)
+static MONO_NEVER_INLINE InterpMethod*
+mono_interp_get_native_func_wrapper (InterpMethod* imethod, MonoMethodSignature* csignature, guchar* code)
 {
-	InterpFrame frame = {parent_frame, NULL, sp, retval};
-
-	// Recompute to limit parameters, which can also contribute to caller stack.
-	InterpMethod* const imethod = parent_frame->imethod;
-
-	g_assert (imethod->method->dynamic && csignature->pinvoke);
+	ERROR_DECL(error);
 
 	/* Pinvoke call is missing the wrapper. See mono_get_native_calli_wrapper */
 	MonoMarshalSpec** mspecs = g_newa0 (MonoMarshalSpec*, csignature->param_count + 1);
@@ -3172,13 +3157,10 @@ mono_interp_calli_nat_dynamic_pinvoke (
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 
-	{
-		ERROR_DECL (error);
-		frame.imethod = mono_interp_get_imethod (imethod->domain, m, error);
-		mono_error_cleanup (error); /* FIXME: don't swallow the error */
-	}
+	InterpMethod *cmethod = mono_interp_get_imethod (imethod->domain, m, error);
+	mono_error_cleanup (error); /* FIXME: don't swallow the error */
 
-	interp_exec_method (&frame, context, NULL, error);
+	return cmethod;
 }
 
 // Do not inline in case order of frame addresses matters.
@@ -3741,6 +3723,27 @@ main_loop:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_CALLI_NAT_DYNAMIC) {
+			MonoMethodSignature* csignature;
+
+			frame->ip = ip;
+
+			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
+
+			--sp;
+			guchar* code = (guchar*)sp->data.p;
+
+			/* decrement by the actual number of args */
+			sp -= csignature->param_count;
+			if (csignature->hasthis)
+				--sp;
+			vt_sp -= ip [2];
+
+			cmethod = mono_interp_get_native_func_wrapper (frame->imethod, csignature, code);
+
+			ip += 3;
+			goto call;
+		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
 			MonoMethodSignature* csignature;
 			stackval retval;
@@ -3760,12 +3763,8 @@ main_loop:
 			/* If this is a vt return, the pinvoke will write the result directly to vt_sp */
 			retval.data.p = vt_sp;
 
-			if (frame->imethod->method->dynamic && csignature->pinvoke) {
-				mono_interp_calli_nat_dynamic_pinvoke (code, context, csignature, error, frame, &retval, sp);
-			} else {
-				const gboolean save_last_error = ip [4];
-				ves_pinvoke_method (csignature, (MonoFuncV)code, context, frame, &retval, save_last_error, sp);
-			}
+			gboolean save_last_error = ip [4];
+			ves_pinvoke_method (csignature, (MonoFuncV)code, context, frame, &retval, save_last_error, sp);
 
 			CHECK_RESUME_STATE (context);
 

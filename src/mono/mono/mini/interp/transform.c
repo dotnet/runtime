@@ -2477,6 +2477,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				interp_add_ins (td, MINT_CALLI_NAT_FAST);
 				td->last_ins->data [1] = op;
 				td->last_ins->data [2] = save_last_error;
+			} else if (native && method->dynamic && csignature->pinvoke) {
+				interp_add_ins (td, MINT_CALLI_NAT_DYNAMIC);
+				td->last_ins->data [1] = vt_stack_used;
 			} else if (native) {
 				interp_add_ins (td, MINT_CALLI_NAT);
 #ifdef TARGET_X86
@@ -6457,6 +6460,7 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 		}
 		case MINT_CALLI:
 		case MINT_CALLI_NAT:
+		case MINT_CALLI_NAT_DYNAMIC:
 		case MINT_CALLI_NAT_FAST: {
 			MonoMethodSignature *csignature = (MonoMethodSignature*) td->data_items [ins->data [0]];
 			*pop = csignature->param_count + csignature->hasthis + 1;
