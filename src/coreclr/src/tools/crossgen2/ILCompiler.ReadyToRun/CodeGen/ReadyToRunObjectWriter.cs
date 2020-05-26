@@ -150,8 +150,6 @@ namespace ILCompiler.DependencyAnalysis
                     if (node is NativeDebugDirectoryEntryNode nddeNode)
                     {
                         // There should be only one NativeDebugDirectoryEntry.
-                        // This assert will need to be revisited when we implement the composite R2R format, where we'll need to figure
-                        // out how native symbols will be emitted, and verify that the DiaSymReader library is able to consume them.
                         Debug.Assert(nativeDebugDirectoryEntryNode == null);
                         nativeDebugDirectoryEntryNode = nddeNode;
                     }
@@ -176,11 +174,8 @@ namespace ILCompiler.DependencyAnalysis
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, _mapFileBuilder);
                 }
 
-                if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode || _componentModule != null)
-                {
-                    r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
-                    r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
-                }
+                r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
+                r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
 
                 if (_nodeFactory.Win32ResourcesNode != null)
                 {

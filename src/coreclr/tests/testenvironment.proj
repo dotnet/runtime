@@ -174,11 +174,13 @@
   <Target Name="CreateTestEnvFile" DependsOnTargets="OutputCOMPlusVariables">
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
+      <_TestEnvFileLine Include="set MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
       <_TestEnvFileLine Include="#!/usr/bin/env bash" />
       <_TestEnvFileLine Include="@(_COMPlusVariable->'export %(Identity)=%(Value)')"  />
+      <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(TestEnvFileName)" Lines="@(_TestEnvFileLine)" Overwrite="true" />

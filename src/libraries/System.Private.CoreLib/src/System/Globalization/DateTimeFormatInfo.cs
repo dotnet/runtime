@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Globalization
@@ -87,7 +88,7 @@ namespace System.Globalization
         private const string sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
         private const string universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
 
-        private Calendar calendar = null!; // initialized in helper called by ctors
+        private Calendar calendar;
 
         private int firstDayOfWeek = -1;
         private int calendarWeekRule = -1;
@@ -389,6 +390,7 @@ namespace System.Globalization
                 Debug.Assert(calendar != null, "DateTimeFormatInfo.Calendar: calendar != null");
                 return calendar;
             }
+            [MemberNotNull(nameof(calendar))]
             set
             {
                 if (IsReadOnly)

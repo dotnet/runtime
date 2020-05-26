@@ -927,6 +927,406 @@ class TestMergeReturnBlocks
 }
 #endregion
 
+class TestHFA
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static float ReturnFloat()
+    {
+        return 1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static double ReturnDouble()
+    {
+        return 1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector2 ReturnVector2()
+    {
+        return new Vector2(1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector3 ReturnVector3()
+    {
+        return new Vector3(1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector4 ReturnVector4()
+    {
+        return new Vector4(1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector4 ReturnVector4UsingCall()
+    {
+        return ReturnVector4();
+    }
+
+    struct FloatWrapper
+    {
+        public float f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static FloatWrapper ReturnFloatWrapper()
+    {
+        return new FloatWrapper();
+    }
+
+    struct DoubleWrapper
+    {
+        public double f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static DoubleWrapper ReturnDoubleWrapper()
+    {
+        return new DoubleWrapper();
+    }
+
+    struct Floats2Wrapper
+    {
+        public float f1;
+        public float f2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Floats2Wrapper ReturnFloats2Wrapper()
+    {
+        return new Floats2Wrapper();
+    }
+
+    struct Doubles2Wrapper
+    {
+        public double f1;
+        public double f2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Doubles2Wrapper ReturnDoubles2Wrapper()
+    {
+        return new Doubles2Wrapper();
+    }
+    struct Floats3Wrapper
+    {
+        public float f1;
+        public float f2;
+        public float f3;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Floats3Wrapper ReturnFloats3Wrapper()
+    {
+        return new Floats3Wrapper();
+    }
+
+    struct Doubles3Wrapper
+    {
+        public double f1;
+        public double f2;
+        public double f3;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Doubles3Wrapper ReturnDoubles3Wrapper()
+    {
+        return new Doubles3Wrapper();
+    }
+
+    struct Floats4Wrapper
+    {
+        public float f1;
+        public float f2;
+        public float f3;
+        public float f4;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Floats4Wrapper ReturnFloats4Wrapper()
+    {
+        return new Floats4Wrapper();
+    }
+
+    struct Doubles4Wrapper
+    {
+        public double f1;
+        public double f2;
+        public double f3;
+        public double f4;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Doubles4Wrapper ReturnDoubles4Wrapper()
+    {
+        return new Doubles4Wrapper();
+    }
+
+    struct Vector2Wrapper
+    {
+        Vector2 f1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector2Wrapper ReturnVector2Wrapper()
+    {
+        return new Vector2Wrapper();
+    }
+
+    struct Vector3Wrapper
+    {
+        Vector3 f1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector3Wrapper ReturnVector3Wrapper()
+    {
+        return new Vector3Wrapper();
+    }
+
+    struct Vector4Wrapper
+    {
+        Vector4 f1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector4Wrapper ReturnVector4Wrapper()
+    {
+        return new Vector4Wrapper();
+    }
+
+    struct Vector2x2Wrapper
+    {
+        Vector2 f1;
+        Vector2 f2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector2x2Wrapper ReturnVector2x2Wrapper()
+    {
+        return new Vector2x2Wrapper();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Test()
+    {
+        ReturnFloat();
+        ReturnDouble();
+        ReturnVector2();
+        ReturnVector3();
+        ReturnVector4();
+        ReturnVector4UsingCall();
+        ReturnFloatWrapper();
+        ReturnDoubleWrapper();
+        ReturnFloats2Wrapper();
+        ReturnDoubles2Wrapper();
+        ReturnFloats3Wrapper();
+        ReturnDoubles3Wrapper();
+        ReturnFloats4Wrapper();
+        ReturnDoubles4Wrapper();
+        ReturnVector2Wrapper();
+        ReturnVector3Wrapper();
+        ReturnVector4Wrapper();
+        ReturnVector2x2Wrapper();
+    }
+}
+
+class TestNon2PowerStructs
+{
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct Byte3Struct
+    {
+        public byte f1;
+        public byte f2;
+        public byte f3;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Byte3Struct(int v)
+        {
+            f1 = 1;
+            f2 = 2;
+            f3 = 3;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct Byte5Struct
+    {
+        public byte f1;
+        public byte f2;
+        public byte f3;
+        public byte f4;
+        public byte f5;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Byte5Struct(int v)
+        {
+            f1 = 4;
+            f2 = 5;
+            f3 = 6;
+            f4 = 7;
+            f5 = 8;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct Byte6Struct
+    {
+        public byte f1;
+        public byte f2;
+        public byte f3;
+        public byte f4;
+        public byte f5;
+        public byte f6;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Byte6Struct(int v)
+        {
+            f1 = 9;
+            f2 = 10;
+            f3 = 11;
+            f4 = 12;
+            f5 = 13;
+            f6 = 14;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct Byte7Struct
+    {
+        public byte f1;
+        public byte f2;
+        public byte f3;
+        public byte f4;
+        public byte f5;
+        public byte f6;
+        public byte f7;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Byte7Struct(int v)
+        {
+            f1 = 15;
+            f2 = 16;
+            f3 = 17;
+            f4 = 18;
+            f5 = 19;
+            f6 = 20;
+            f7 = 21;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    struct CompositeOfOddStructs
+    {
+        public Byte3Struct a;
+        public Byte5Struct b;
+        public Byte6Struct c;
+        public Byte7Struct d;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Byte3Struct Return3()
+    {
+        return new Byte3Struct(0);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Byte5Struct Return5()
+    {
+        return new Byte5Struct(0);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Byte6Struct Return6()
+    {
+        return new Byte6Struct(0);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Byte7Struct Return7()
+    {
+        return new Byte7Struct(0);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static CompositeOfOddStructs CreateComposite()
+    {
+        CompositeOfOddStructs c = new CompositeOfOddStructs();
+        c.a = Return3();
+        c.b = Return5();
+        c.c = Return6();
+        c.d = Return7();
+        return c;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TestComposite()
+    {
+        var c = CreateComposite();
+        Debug.Assert(c.a.f1 == 1);
+        Debug.Assert(c.a.f2 == 2);
+        Debug.Assert(c.a.f3 == 3);
+        Debug.Assert(c.b.f1 == 4);
+        Debug.Assert(c.b.f2 == 5);
+        Debug.Assert(c.b.f3 == 6);
+        Debug.Assert(c.b.f4 == 7);
+        Debug.Assert(c.b.f5 == 8);
+        Debug.Assert(c.c.f1 == 9);
+        Debug.Assert(c.c.f2 == 10);
+        Debug.Assert(c.c.f3 == 11);
+        Debug.Assert(c.c.f4 == 12);
+        Debug.Assert(c.c.f5 == 13);
+        Debug.Assert(c.c.f6 == 14);
+        Debug.Assert(c.d.f1 == 15);
+        Debug.Assert(c.d.f2 == 16);
+        Debug.Assert(c.d.f3 == 17);
+        Debug.Assert(c.d.f4 == 18);
+        Debug.Assert(c.d.f5 == 19);
+        Debug.Assert(c.d.f6 == 20);
+        Debug.Assert(c.d.f7 == 21);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static byte TestLocals(int v)
+    {
+        var a = Return3();
+        var a1 = a;
+        a1.f1 = 0;
+        var b = Return5();
+        var c = Return6();
+        var d = Return7();
+        if (v == 0)
+        {
+            return a.f1;
+        }
+        else if (v == 1)
+        {
+            return b.f1;
+        }
+        else if (v == 3)
+        {
+            return c.f1;
+        }
+        else if (v == 4)
+        {
+            return d.f1;
+        }
+        else
+        {
+            return a1.f1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Test()
+    {
+        TestComposite();
+        TestLocals(0);
+    }
+}
+
 class TestStructs
 {
     public static int Main()
@@ -934,6 +1334,8 @@ class TestStructs
         TestStructReturns.Test();
         TestUnsafeCasts.Test();
         TestMergeReturnBlocks.Test();
+        TestHFA.Test();
+        TestNon2PowerStructs.Test();
         return 100;
     }
 }

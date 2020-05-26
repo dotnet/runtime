@@ -19,12 +19,11 @@ parameters:
   stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
+  runtimeVariant: ''
   variables: {}
   pool: ''
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
-  runtimeMode: ''
-  runtimeModeDisplayName: ''
 
 ### Test run job
 
@@ -47,6 +46,7 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'build/tests/'
+    runtimeVariant: ${{ parameters.runtimeVariant }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
 
@@ -61,18 +61,18 @@ jobs:
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
-      - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Compute job name from template parameters
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeMode }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeModeDisplayName}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeVariant }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeVariant}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeModeDisplayName }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeVariant }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
     - name: testhostArg
@@ -106,10 +106,6 @@ jobs:
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
-
-    - ${{ if eq(parameters.runtimeMode, 'interpreter') }}:
-      - name: RuntimeModeDisplayName
-        value: 'Interpreter' 
 
     # Set job timeouts
     #
@@ -285,6 +281,7 @@ jobs:
         buildConfig: $(buildConfigUpper)
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup}}
         coreClrRepoRoot: $(coreClrRepoRoot)
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 
@@ -335,7 +332,10 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
           - normal
-          - no_tiered_compilation
+          - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+            - no_tiered_compilation
+          - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+            - interpreter
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:
           - jitminopts
@@ -459,6 +459,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeMode }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

@@ -910,6 +910,12 @@
         "unix-x64"
       ]
     },
+    "ios-x86": {
+      "#import": [
+        "ios",
+        "unix-x86"
+      ]
+    },
     "ios.10": {
       "#import": [
         "ios.9"
@@ -931,6 +937,12 @@
       "#import": [
         "ios.10",
         "ios.9-x64"
+      ]
+    },
+    "ios.10-x86": {
+      "#import": [
+        "ios.10",
+        "ios.9-x86"
       ]
     },
     "ios.11": {
@@ -1007,6 +1019,12 @@
         "ios-x64"
       ]
     },
+    "ios.8-x86": {
+      "#import": [
+        "ios.8",
+        "ios-x86"
+      ]
+    },
     "ios.9": {
       "#import": [
         "ios.8"
@@ -1028,6 +1046,12 @@
       "#import": [
         "ios.9",
         "ios.8-x64"
+      ]
+    },
+    "ios.9-x86": {
+      "#import": [
+        "ios.9",
+        "ios.8-x86"
       ]
     },
     "linux": {

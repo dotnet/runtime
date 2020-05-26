@@ -17,8 +17,10 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamAllowRenegotiationTests
+    public abstract class SslStreamAllowRenegotiationTestsBase
     {
+        protected abstract bool TestAuthenticateAsync { get; }
+
         [Fact]
         [OuterLoop] // Test hits external azure server.
         public async Task SslStream_AllowRenegotiation_True_Succeeds()
@@ -49,7 +51,7 @@ namespace System.Net.Security.Tests
                 };
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(options, CancellationToken.None);
+                await ssl.AuthenticateAsClientAsync(TestAuthenticateAsync, options);
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
@@ -89,7 +91,7 @@ namespace System.Net.Security.Tests
                 };
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(options, CancellationToken.None);
+                await ssl.AuthenticateAsClientAsync(TestAuthenticateAsync, options);
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
@@ -102,5 +104,15 @@ namespace System.Net.Security.Tests
                 await Assert.ThrowsAsync<IOException>(() => ssl.ReadAsync(message, 0, message.Length));
             }
         }
+    }
+
+    public sealed class SslStreamAllowRenegotiationTests_Sync : SslStreamAllowRenegotiationTestsBase
+    {
+        protected override bool TestAuthenticateAsync => false;
+    }
+
+    public sealed class SslStreamAllowRenegotiationTests_Async : SslStreamAllowRenegotiationTestsBase
+    {
+        protected override bool TestAuthenticateAsync => true;
     }
 }

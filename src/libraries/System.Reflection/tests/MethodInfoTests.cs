@@ -26,21 +26,41 @@ namespace System.Reflection.Tests
             object returnValue = ((Delegate_TC_Int)methodDelegate).DynamicInvoke(new object[] { baseClass });
             Assert.Equal(baseClass.VirtualMethod(), returnValue);
 
+            Delegate genMethodDelegate = virtualMethodInfo.CreateDelegate<Delegate_TC_Int>();
+            object genReturnValue = genMethodDelegate.DynamicInvoke(new object[] { baseClass });
+            Assert.Equal(returnValue, genReturnValue);
+
             methodDelegate = privateInstanceMethodInfo.CreateDelegate(typeof(Delegate_TC_Int));
             returnValue = ((Delegate_TC_Int)methodDelegate).DynamicInvoke(new object[] { baseClass });
             Assert.Equal(21, returnValue);
+
+            genMethodDelegate = privateInstanceMethodInfo.CreateDelegate<Delegate_TC_Int>();
+            genReturnValue = genMethodDelegate.DynamicInvoke(new object[] { baseClass });
+            Assert.Equal(returnValue, genReturnValue);
 
             methodDelegate = virtualMethodInfo.CreateDelegate(typeof(Delegate_Void_Int), baseClass);
             returnValue = ((Delegate_Void_Int)methodDelegate).DynamicInvoke(null);
             Assert.Equal(baseClass.VirtualMethod(), returnValue);
 
+            genMethodDelegate = virtualMethodInfo.CreateDelegate<Delegate_Void_Int>(baseClass);
+            genReturnValue = genMethodDelegate.DynamicInvoke(null);
+            Assert.Equal(returnValue, genReturnValue);
+
             methodDelegate = publicStaticMethodInfo.CreateDelegate(typeof(Delegate_Str_Str));
             returnValue = ((Delegate_Str_Str)methodDelegate).DynamicInvoke(new object[] { "85" });
             Assert.Equal("85", returnValue);
 
+            genMethodDelegate = publicStaticMethodInfo.CreateDelegate<Delegate_Str_Str>();
+            genReturnValue = genMethodDelegate.DynamicInvoke(new object[] { "85" });
+            Assert.Equal(returnValue, genReturnValue);
+
             methodDelegate = publicStaticMethodInfo.CreateDelegate(typeof(Delegate_Void_Str), "93");
             returnValue = ((Delegate_Void_Str)methodDelegate).DynamicInvoke(null);
             Assert.Equal("93", returnValue);
+
+            genMethodDelegate = publicStaticMethodInfo.CreateDelegate<Delegate_Void_Str>("93");
+            genReturnValue = genMethodDelegate.DynamicInvoke(null);
+            Assert.Equal(returnValue, genReturnValue);
         }
 
         [Fact]
@@ -57,9 +77,17 @@ namespace System.Reflection.Tests
             object returnValue = ((Delegate_TC_Int)methodDelegate).DynamicInvoke(new object[] { testSubClass });
             Assert.Equal(testSubClass.VirtualMethod(), returnValue);
 
+            Delegate genMethodDelegate = virtualMethodInfo.CreateDelegate<Delegate_TC_Int>();
+            object genReturnValue = genMethodDelegate.DynamicInvoke(new object[] { testSubClass });
+            Assert.Equal(returnValue, genReturnValue);
+
             methodDelegate = virtualMethodInfo.CreateDelegate(typeof(Delegate_Void_Int), testSubClass);
             returnValue = ((Delegate_Void_Int)methodDelegate).DynamicInvoke();
             Assert.Equal(testSubClass.VirtualMethod(), returnValue);
+
+            genMethodDelegate = virtualMethodInfo.CreateDelegate<Delegate_Void_Int>(testSubClass);
+            genReturnValue = genMethodDelegate.DynamicInvoke();
+            Assert.Equal(returnValue, genReturnValue);
         }
 
         [Fact]
@@ -78,17 +106,33 @@ namespace System.Reflection.Tests
             object returnValue = ((Delegate_GC_T_T<string>)methodDelegate).DynamicInvoke(new object[] { genericClass, "TestGeneric" });
             Assert.Equal(genericClass.GenericMethod1("TestGeneric"), returnValue);
 
+            Delegate genMethodDelegate = miMethod1String.CreateDelegate<Delegate_GC_T_T<string>>();
+            object genReturnValue = genMethodDelegate.DynamicInvoke(new object[] { genericClass, "TestGeneric" });
+            Assert.Equal(returnValue, genReturnValue);
+
             methodDelegate = miMethod1String.CreateDelegate(typeof(Delegate_T_T<string>), genericClass);
             returnValue = ((Delegate_T_T<string>)methodDelegate).DynamicInvoke(new object[] { "TestGeneric" });
             Assert.Equal(genericClass.GenericMethod1("TestGeneric"), returnValue);
+
+            genMethodDelegate = miMethod1String.CreateDelegate<Delegate_T_T<string>>(genericClass);
+            genReturnValue = genMethodDelegate.DynamicInvoke(new object[] { "TestGeneric" });
+            Assert.Equal(returnValue, genReturnValue);
 
             methodDelegate = miMethod2IntGeneric.CreateDelegate(typeof(Delegate_T_T<int>));
             returnValue = ((Delegate_T_T<int>)methodDelegate).DynamicInvoke(new object[] { 58 });
             Assert.Equal(58, returnValue);
 
+            genMethodDelegate = miMethod2IntGeneric.CreateDelegate<Delegate_T_T<int>>();
+            genReturnValue = genMethodDelegate.DynamicInvoke(new object[] { 58 });
+            Assert.Equal(returnValue, genReturnValue);
+
             methodDelegate = miMethod2StringGeneric.CreateDelegate(typeof(Delegate_Void_T<string>), "firstArg");
             returnValue = ((Delegate_Void_T<string>)methodDelegate).DynamicInvoke();
             Assert.Equal("firstArg", returnValue);
+
+            genMethodDelegate = miMethod2StringGeneric.CreateDelegate<Delegate_Void_T<string>>("firstArg");
+            genReturnValue = genMethodDelegate.DynamicInvoke();
+            Assert.Equal(returnValue, genReturnValue);
         }
 
         [Fact]
@@ -100,6 +144,10 @@ namespace System.Reflection.Tests
             Delegate methodDelegate = miPublicStructMethod.CreateDelegate(typeof(Delegate_DateTime_Str));
             object returnValue = ((Delegate_DateTime_Str)methodDelegate).DynamicInvoke(new object[] { testClass, null });
             Assert.Equal(testClass.PublicStructMethod(new DateTime()), returnValue);
+
+            Delegate genMethodDelegate = miPublicStructMethod.CreateDelegate<Delegate_DateTime_Str>();
+            object genReturnValue = genMethodDelegate.DynamicInvoke(new object[] { testClass, null });
+            Assert.Equal(returnValue, genReturnValue);
         }
 
         [Theory]

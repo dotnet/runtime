@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Loader
 {
@@ -129,7 +130,13 @@ namespace System.Runtime.Loader
         // Invoked by Mono to resolve requests to load satellite assemblies.
         private static Assembly? MonoResolveUsingResolveSatelliteAssembly(IntPtr gchALC, string assemblyName)
         {
-            return ResolveSatelliteAssembly(gchALC, new AssemblyName(assemblyName));
+            AssemblyLoadContext context;
+            // This check exists because the function can be called early in startup, before the default ALC is initialized
+            if (gchALC == IntPtr.Zero)
+                context = Default;
+            else
+                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 
         private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext)
@@ -155,15 +162,13 @@ namespace System.Runtime.Loader
             dll = context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
         }
 
-        #region Copied from AssemblyLoadContext.CoreCLR.cs, modified until our AssemblyBuilder implementation is functional
         private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
         {
             return
                 asm == null ? null :
                 asm is RuntimeAssembly rtAssembly ? rtAssembly :
-                //asm is System.Reflection.Emit.AssemblyBuilder ab ? ab.InternalAssembly :
+                asm is System.Reflection.Emit.AssemblyBuilder ab ? Unsafe.As<RuntimeAssembly>(ab) : // Mono AssemblyBuilder is also a RuntimeAssembly, see AssemblyBuilder.Mono.cs
                 null;
         }
-        #endregion
     }
 }

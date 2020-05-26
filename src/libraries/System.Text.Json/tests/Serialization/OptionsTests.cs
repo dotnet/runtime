@@ -451,35 +451,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void CopyConstructorTest_OriginalMutable()
+        public static void CopyConstructor_OriginalLocked()
         {
-            JsonSerializerOptions options = CreateOptionsInstance();
-            var newOptions = new JsonSerializerOptions(options);
-            VerifyOptionsEqual(options, newOptions);
-
-            // No exception is thrown on mutating the new options instance because it is "unlocked".
-            newOptions.ReferenceHandling = ReferenceHandling.Preserve;
-            newOptions.Converters.Add(new JsonStringEnumConverter());
-            newOptions.Converters.Add(new JsonStringEnumConverter());
-
-            // Changes to new options don't affect old options.
-            Assert.Equal(ReferenceHandling.Default, options.ReferenceHandling);
-            Assert.Equal(2, options.Converters.Count);
-            Assert.Equal(4, newOptions.Converters.Count);
-
-            // Changes to old options don't affect new options.
-            options.DefaultBufferSize = 2;
-            options.Converters.Add(new ConverterForInt32());
-
-            Assert.Equal(20, newOptions.DefaultBufferSize);
-            Assert.Equal(3, options.Converters.Count);
-            Assert.Equal(4, newOptions.Converters.Count);
-        }
-
-        [Fact]
-        public static void CopyConstructorTest_OriginalLocked()
-        {
-            JsonSerializerOptions options = CreateOptionsInstance();
+            JsonSerializerOptions options = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
             // Perform serialization with options, after which it will be locked.
             JsonSerializer.Serialize("1", options);
@@ -493,7 +467,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void CopyConstructorTest_MaxDepth()
+        public static void CopyConstructor_MaxDepth()
         {
             static void RunTest(int maxDepth, int effectiveMaxDepth)
             {
@@ -524,15 +498,15 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void CopyConstructorTest_CopiesAllPublicProperties()
+        public static void CopyConstructor_CopiesAllPublicProperties()
         {
             JsonSerializerOptions options = GetFullyPopulatedOptionsInstance();
             var newOptions = new JsonSerializerOptions(options);
-            VerifyOptionsEqual_WithReflection(options, newOptions);
+            VerifyOptionsEqual(options, newOptions);
         }
 
         [Fact]
-        public static void CopyConstructorTest_NullInput()
+        public static void CopyConstructor_NullInput()
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions(null));
             Assert.Contains("options", ex.ToString());
@@ -588,28 +562,6 @@ namespace System.Text.Json.Serialization.Tests
             return options;
         }
 
-        private static void VerifyOptionsEqual(JsonSerializerOptions options, JsonSerializerOptions newOptions)
-        {
-            Assert.Equal(options.AllowTrailingCommas, newOptions.AllowTrailingCommas);
-            Assert.Equal(options.DefaultBufferSize, newOptions.DefaultBufferSize);
-            Assert.Equal(options.IgnoreNullValues, newOptions.IgnoreNullValues);
-            Assert.Equal(options.IgnoreReadOnlyProperties, newOptions.IgnoreReadOnlyProperties);
-            Assert.Equal(options.MaxDepth, newOptions.MaxDepth);
-            Assert.Equal(options.PropertyNameCaseInsensitive, newOptions.PropertyNameCaseInsensitive);
-            Assert.Equal(options.ReadCommentHandling, newOptions.ReadCommentHandling);
-            Assert.Equal(options.WriteIndented, newOptions.WriteIndented);
-
-            Assert.Same(options.DictionaryKeyPolicy, newOptions.DictionaryKeyPolicy);
-            Assert.Same(options.Encoder, newOptions.Encoder);
-            Assert.Same(options.PropertyNamingPolicy, newOptions.PropertyNamingPolicy);
-
-            Assert.Equal(options.Converters.Count, newOptions.Converters.Count);
-            for (int i = 0; i < options.Converters.Count; i++)
-            {
-                Assert.Same(options.Converters[i], newOptions.Converters[i]);
-            }
-        }
-
         private static JsonSerializerOptions GetFullyPopulatedOptionsInstance()
         {
             var options = new JsonSerializerOptions();
@@ -620,7 +572,11 @@ namespace System.Text.Json.Serialization.Tests
 
                 if (propertyType == typeof(bool))
                 {
-                    property.SetValue(options, true);
+                    // IgnoreNullValues and DefaultIgnoreCondition cannot be active at the same time.
+                    if (property.Name != "IgnoreNullValues")
+                    {
+                        property.SetValue(options, true);
+                    }
                 }
                 if (propertyType == typeof(int))
                 {
@@ -647,6 +603,7 @@ namespace System.Text.Json.Serialization.Tests
                 else if (propertyType.IsValueType)
                 {
                     options.ReadCommentHandling = JsonCommentHandling.Disallow;
+                    options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
                 }
                 else
                 {
@@ -659,7 +616,7 @@ namespace System.Text.Json.Serialization.Tests
             return options;
         }
 
-        private static void VerifyOptionsEqual_WithReflection(JsonSerializerOptions options, JsonSerializerOptions newOptions)
+        private static void VerifyOptionsEqual(JsonSerializerOptions options, JsonSerializerOptions newOptions)
         {
             foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties())
             {
@@ -667,12 +624,10 @@ namespace System.Text.Json.Serialization.Tests
 
                 if (propertyType == typeof(bool))
                 {
-                    Assert.True((bool)property.GetValue(options));
                     Assert.Equal((bool)property.GetValue(options), (bool)property.GetValue(newOptions));
                 }
                 else if (propertyType == typeof(int))
                 {
-                    Assert.Equal(32, (int)property.GetValue(options));
                     Assert.Equal((int)property.GetValue(options), (int)property.GetValue(newOptions));
                 }
                 else if (typeof(IEnumerable).IsAssignableFrom(propertyType))
@@ -692,6 +647,10 @@ namespace System.Text.Json.Serialization.Tests
                     {
                         Assert.Equal(options.ReadCommentHandling, newOptions.ReadCommentHandling);
                     }
+                    else if (property.Name == "DefaultIgnoreCondition")
+                    {
+                        Assert.Equal(options.DefaultIgnoreCondition, newOptions.DefaultIgnoreCondition);
+                    }
                     else
                     {
                         Assert.True(false, $"Public option was added to JsonSerializerOptions but not copied in the copy ctor: {property.Name}");
@@ -702,6 +661,47 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Same(property.GetValue(options), property.GetValue(newOptions));
                 }
             }
+        }
+
+        [Fact]
+        public static void CopyConstructor_IgnoreNullValuesCopied()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+            var newOptions = new JsonSerializerOptions(options);
+            VerifyOptionsEqual(options, newOptions);
+        }
+
+        [Fact]
+        public static void CannotSetBoth_IgnoreNullValues_And_DefaultIgnoreCondition()
+        {
+            // Set IgnoreNullValues first.
+            JsonSerializerOptions options = new JsonSerializerOptions { IgnoreNullValues = true };
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                () => options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault);
+            string exAsStr = ex.ToString();
+            Assert.Contains("IgnoreNullValues", exAsStr);
+            Assert.Contains("DefaultIgnoreCondition", exAsStr);
+
+            options.IgnoreNullValues = false;
+            // We can set the property now.
+            options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+
+            // Set DefaultIgnoreCondition first.
+
+            options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
+            Assert.Throws<InvalidOperationException>(
+                () => options.IgnoreNullValues = true);
+
+            options.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
+            // We can set the property now.
+            options.IgnoreNullValues = true;
+        }
+
+        [Fact]
+        public static void CannotSet_DefaultIgnoreCondition_To_Always()
+        {
+            Assert.Throws<ArgumentException>(() => new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.Always });
         }
     }
 }

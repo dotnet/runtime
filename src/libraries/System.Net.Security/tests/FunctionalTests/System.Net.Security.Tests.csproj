@@ -9,6 +9,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="NotifyReadVirtualNetworkStream.cs" />
     <Compile Include="DummyTcpServer.cs" />
+    <Compile Include="SslStreamExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="TestHelper.cs" />
     <!-- SslStream Tests -->

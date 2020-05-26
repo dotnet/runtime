@@ -59,22 +59,11 @@ namespace System.Globalization
             if (indexOfSeparator >= 0)
             {
                 icuSuffix = icuSuffixAndVersion.AsSpan().Slice(0, indexOfSeparator);
-
-                if (icuSuffix.Length > 35)
-                {
-                    Environment.FailFast($"The resolved \"{icuSuffix.ToString()}\" suffix from System.Globalization.AppLocalIcu switch has to be < 20 chars long.");
-                }
-
                 version = icuSuffixAndVersion.AsSpan().Slice(icuSuffix.Length + 1);
             }
             else
             {
                 version = icuSuffixAndVersion;
-            }
-
-            if (version.Length > 33)
-            {
-                Environment.FailFast($"The resolved version \"{version.ToString()}\" from System.Globalization.AppLocalIcu switch has to be < 33 chars long.");
             }
 
             if (suffixWithSeparator)

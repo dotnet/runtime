@@ -620,7 +620,7 @@ namespace System.Reflection.Emit
             // We need to lock here to prevent a method from being "tokenized" twice.
             // We don't need to synchronize this with Type.DefineMethod because it only appends newly
             // constructed MethodBuilders to the end of m_listMethods
-            lock (m_containingType.m_listMethods)
+            lock (m_containingType.m_listMethods!)
             {
                 if (m_tkMethod.Token != 0)
                 {

@@ -132,14 +132,23 @@ namespace System.Text.Json
 
                 if (ignoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenNull);
-                    IgnoreNullValues = true;
+                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenWritingDefault);
+                    IgnoreDefaultValuesOnWrite = true;
                 }
             }
-            else
+#pragma warning disable CS0618 // IgnoreNullValues is obsolete
+            else if (Options.IgnoreNullValues)
             {
-                IgnoreNullValues = Options.IgnoreNullValues;
+                Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
+                IgnoreDefaultValuesOnRead = true;
+                IgnoreDefaultValuesOnWrite = true;
             }
+            else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault)
+            {
+                Debug.Assert(!Options.IgnoreNullValues);
+                IgnoreDefaultValuesOnWrite = true;
+            }
+#pragma warning restore CS0618 // IgnoreNullValues is obsolete
         }
 
         public static TAttribute? GetAttribute<TAttribute>(PropertyInfo propertyInfo) where TAttribute : Attribute
@@ -183,7 +192,8 @@ namespace System.Text.Json
             Options = options;
         }
 
-        public bool IgnoreNullValues { get; private set; }
+        public bool IgnoreDefaultValuesOnRead { get; private set; }
+        public bool IgnoreDefaultValuesOnWrite { get; private set; }
 
         public bool IsPropertyPolicy { get; protected set; }
 
@@ -307,7 +317,7 @@ namespace System.Text.Json
 
         public Type? RuntimePropertyType { get; private set; } = null;
 
-        public abstract void SetValueAsObject(object obj, object? value);
+        public abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
 
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }

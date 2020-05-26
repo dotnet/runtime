@@ -318,16 +318,17 @@ else()
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports)
   generate_exports_file(${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
-  if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
+  if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # This is required to force using our own PAL, not one that we are loaded with.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 
-    set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
+    if(CLR_CMAKE_TARGET_SUNOS)
+        set(JIT_EXPORTS_LINKER_OPTION -Wl,-M,${JIT_EXPORTS_FILE})
+    else(CLR_CMAKE_TARGET_SUNOS)
+        set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
+    endif(CLR_CMAKE_TARGET_SUNOS)
   elseif(CLR_CMAKE_TARGET_OSX)
     set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
-  elseif(CLR_CMAKE_TARGET_SUNOS)
-    # Add linker exports file option
-    set(JIT_EXPORTS_LINKER_OPTION -Wl,-M,${JIT_EXPORTS_FILE})
   endif()
 
   set(SHARED_LIB_SOURCES ${SOURCES})

@@ -967,6 +967,7 @@ namespace System.Numerics.Tests
 
         // A test for operator != (Vector3f, Vector3f)
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36905", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
         public void Vector3InequalityTest()
         {
             Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);

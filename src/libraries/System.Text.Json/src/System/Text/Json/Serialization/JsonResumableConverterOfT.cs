@@ -41,6 +41,6 @@ namespace System.Text.Json.Serialization
             TryWrite(writer, value, options, ref state);
         }
 
-        public override bool HandleNull => false;
+        public sealed override bool HandleNull => false;
     }
 }

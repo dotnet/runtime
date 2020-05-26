@@ -198,6 +198,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Double>>() / sizeof(Double);
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Double>>() / sizeof(Double);
+        private static readonly byte Imm = 1;
 
         private static Double[] _data = new Double[Op1ElementCount];
 

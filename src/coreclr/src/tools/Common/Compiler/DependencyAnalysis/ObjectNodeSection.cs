@@ -39,16 +39,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return this == DataSection || this == ReadOnlyDataSection || this == FoldableReadOnlyDataSection || this == TextSection || this == XDataSection;
+                return this == DataSection || this == ReadOnlyDataSection || this == FoldableReadOnlyDataSection || this == TextSection || this == XDataSection || this == BssSection;
             }
         }
                
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
-        public static readonly ObjectNodeSection FoldableReadOnlyDataSection = new ObjectNodeSection("rdata$F", SectionType.ReadOnly);
+        public static readonly ObjectNodeSection FoldableReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection TextSection = new ObjectNodeSection("text", SectionType.Executable);
         public static readonly ObjectNodeSection TLSSection = new ObjectNodeSection("TLS", SectionType.Writeable);
+        public static readonly ObjectNodeSection BssSection = new ObjectNodeSection("bss", SectionType.Writeable);
         public static readonly ObjectNodeSection ManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
         public static readonly ObjectNodeSection FoldableManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
         public static readonly ObjectNodeSection ManagedCodeUnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);

@@ -83,7 +83,12 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     rm $__ResponseFile
 
     __Command=$_DebuggerFullPath
-    __Command+=" $CORE_ROOT/corerun"
+    # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+        __Command+=" $__TestDotNetCmd"
+    else
+        __Command+=" dotnet"
+    fi
     __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
     __Command+=" @$__ResponseFile"
     __Command+=" $ExtraCrossGen2Args"
@@ -178,7 +183,12 @@ if defined RunCrossGen2 (
     del /Q !__ResponseFile!
 
     set __Command=!_DebuggerFullPath!
-    set __Command=!__Command! "!CORE_ROOT!\CoreRun.exe"
+    REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if defined __TestDotNetCmd (
+        set __Command=!__Command! "!__TestDotNetCmd!"
+    ) else (
+        set __Command=!__Command! "dotnet"
+    )
     set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!

@@ -74,25 +74,17 @@ public:
     static void QCALLTYPE Clear(void *dst, size_t length);
 };
 
-#define MIN_GC_MEMORYPRESSURE_THRESHOLD 100000
-#define RELATIVE_GC_RATIO 8
-
-const UINT NEW_PRESSURE_COUNT = 4;
+const UINT MEM_PRESSURE_COUNT = 4;
 
 class GCInterface {
 private:
-
-    static UINT64   m_ulMemPressure;
-    static UINT64   m_ulThreshold;
     static INT32    m_gc_counts[3];
 
-    static UINT64   m_addPressure[NEW_PRESSURE_COUNT];
-    static UINT64   m_remPressure[NEW_PRESSURE_COUNT];
+    static UINT64   m_addPressure[MEM_PRESSURE_COUNT];
+    static UINT64   m_remPressure[MEM_PRESSURE_COUNT];
     static UINT     m_iteration;
 
 public:
-    static CrstStatic m_MemoryPressureLock;
-
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
@@ -150,15 +142,12 @@ public:
     static
     void QCALLTYPE _RemoveMemoryPressure(UINT64 bytesAllocated);
 
-    static void RemoveMemoryPressure(UINT64 bytesAllocated);
-    static void AddMemoryPressure(UINT64 bytesAllocated);
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
 
-    // New less sensitive implementation of Add/RemoveMemoryPressure:
     static void CheckCollectionCount();
-    static void NewRemoveMemoryPressure(UINT64 bytesAllocated);
-    static void NewAddMemoryPressure(UINT64 bytesAllocated);
+    static void RemoveMemoryPressure(UINT64 bytesAllocated);
+    static void AddMemoryPressure(UINT64 bytesAllocated);
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.

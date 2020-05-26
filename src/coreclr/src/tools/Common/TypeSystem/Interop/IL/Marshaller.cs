@@ -50,6 +50,7 @@ namespace Internal.TypeSystem.Interop
         LayoutClassPtr,
         AsAnyA,
         AsAnyW,
+        ComInterface,
         Invalid
     }
     public enum MarshalDirection

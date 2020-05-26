@@ -7,6 +7,7 @@ parameters:
   framework: ''
   isOfficialBuild: false
   isOfficialAllConfigurations: false
+  isSourceBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
   timeoutInMinutes: 150
@@ -24,8 +25,12 @@ jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
       ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
-        displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        ${{ if eq(parameters.isSourceBuild, false) }}:
+          displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        ${{ if eq(parameters.isSourceBuild, true) }}:
+          displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', 'Source Build', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', 'sourcebuild', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
         displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
         name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -75,6 +80,9 @@ jobs:
           - _finalFrameworkArg: -allConfigurations
           - _extraHelixArguments: /p:BuildAllConfigurations=true
 
+        - ${{ if eq(parameters.isSourceBuild, true) }}:
+          - _finalFrameworkArg: /p:DotnetBuildFromSource=true
+
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
 
@@ -91,7 +99,7 @@ jobs:
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           # Download full product dependencies for mono or test
           - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
 

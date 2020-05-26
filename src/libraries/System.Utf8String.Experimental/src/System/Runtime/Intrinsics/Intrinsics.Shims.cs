@@ -25,6 +25,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<uint> AsUInt32<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector128<ulong> AsUInt64<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static T GetElement<T>(this Vector128<T> vector, int index) where T : struct => throw new PlatformNotSupportedException();
+        public static T ToScalar<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
     }
     internal readonly struct Vector128<T>
         where T : struct
@@ -147,7 +148,6 @@ namespace System.Runtime.Intrinsics.Arm
         {
             public static Vector64<byte> AddAcross(Vector64<byte> value) => throw new PlatformNotSupportedException();
         }
-        public static byte Extract(Vector64<byte> vector, byte index) => throw new PlatformNotSupportedException();
         public static Vector64<byte> PopCount(Vector64<byte> value) => throw new PlatformNotSupportedException();
     }
 }

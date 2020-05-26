@@ -470,7 +470,7 @@ namespace
         args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_2]  = PTR_TO_ARGHOLDER(externalComObject);
         args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
-        CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
+        CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
 
         return retObjRef;
     }
@@ -844,7 +844,7 @@ namespace InteropLibImports
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
-            GCInterface::NewAddMemoryPressure(memoryInBytes);
+            GCInterface::AddMemoryPressure(memoryInBytes);
         }
         END_EXTERNAL_ENTRYPOINT;
 
@@ -863,7 +863,7 @@ namespace InteropLibImports
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
-            GCInterface::NewRemoveMemoryPressure(memoryInBytes);
+            GCInterface::RemoveMemoryPressure(memoryInBytes);
         }
         END_EXTERNAL_ENTRYPOINT;
 

@@ -12,44 +12,37 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\CertificateValidationPal.cs" />
-    <Compile Include="System\Net\FixedSizeReader.cs" />
-    <Compile Include="System\Net\HelperAsyncResults.cs" />
     <Compile Include="System\Net\Logging\NetEventSource.cs" />
+    <Compile Include="System\Net\SslStreamContext.cs" />
+    <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
+    <Compile Include="System\Security\Authentication\AuthenticationException.cs" />
+    <Compile Include="System\Net\Security\CipherSuitesPolicy.cs" />
+    <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
+    <Compile Include="System\Net\Security\ReadWriteAdapter.cs" />
+    <Compile Include="System\Net\Security\ProtectionLevel.cs" />
     <Compile Include="System\Net\Security\SniHelper.cs" />
     <Compile Include="System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="System\Net\Security\SslAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslServerAuthenticationOptions.cs" />
-    <Compile Include="System\Net\Security\SslStream.Implementation.Adapters.cs" />
-    <Compile Include="System\Net\SslStreamContext.cs" />
-    <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
-    <Compile Include="System\Net\Security\CipherSuitesPolicy.cs" />
-    <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="System\Net\Security\SecureChannel.cs" />
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
     <Compile Include="System\Net\Security\SslStream.cs" />
     <Compile Include="System\Net\Security\SslStream.Implementation.cs" />
-    <Compile Include="System\Net\Security\ProtectionLevel.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />
     <Compile Include="System\Net\Security\TlsAlertType.cs" />
     <Compile Include="System\Net\Security\TlsAlertMessage.cs" />
     <Compile Include="System\Net\Security\TlsFrameHelper.cs" />
-    <Compile Include="System\Security\Authentication\AuthenticationException.cs" />
     <!-- NegotiateStream -->
-    <Compile Include="System\Net\BufferAsyncResult.cs" />
     <Compile Include="System\Net\NTAuthentication.cs" />
     <Compile Include="System\Net\StreamFramer.cs" />
     <Compile Include="System\Net\Security\NegotiateStream.cs" />
-    <Compile Include="System\Net\Security\NegoState.cs" />
-    <Compile Include="System\Net\Security\InternalNegotiateStream.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\PolicyEnforcement.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ProtectionScenario.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ServiceNameCollection.cs" />
     <!-- Logging -->
-    <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs"
-             Link="Common\System\Net\Logging\DebugThreadTracking.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
@@ -67,8 +60,6 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
-    <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
-             Link="Common\System\Net\LazyAsyncResult.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
              Link="Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"

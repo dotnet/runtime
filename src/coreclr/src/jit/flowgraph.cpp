@@ -10959,7 +10959,11 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
         {
             test->SetRootNode(sideEffList);
 
-            fgMorphBlockStmt(block, test DEBUGARG("fgRemoveConditionalJump"));
+            if (fgStmtListThreaded)
+            {
+                gtSetStmtInfo(test);
+                fgSetStmtSeq(test);
+            }
         }
     }
 }

@@ -36,6 +36,8 @@ namespace R2RDump
             command.AddOption(new Option(new[] { "--referencePath", "--rp" }, "Search paths for reference assemblies", new Argument<DirectoryInfo[]>()));
             command.AddOption(new Option(new[] { "--inlineSignatureBinary", "--isb" }, "Embed binary signature into its textual representation", new Argument<bool>()));
             command.AddOption(new Option(new[] { "--signatureBinary", "--sb" }, "Append signature binary to its textual representation", new Argument<bool>()));
+            command.AddOption(new Option(new[] { "--create-pdb" }, "Create PDB", new Argument<bool>()));
+            command.AddOption(new Option(new[] { "--pdb-path" }, "PDB output path for --createpdb", new Argument<string>()));
             return command;
         }
     }

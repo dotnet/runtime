@@ -124,7 +124,7 @@ namespace Internal.Runtime.InteropServices
 
             if (!Path.IsPathRooted(cxt.AssemblyPath))
             {
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(cxt));
             }
 
             Type classType = FindClassType(cxt.ClassId, cxt.AssemblyPath, cxt.AssemblyName, cxt.TypeName);
@@ -156,7 +156,7 @@ namespace Internal.Runtime.InteropServices
 
             if (!Path.IsPathRooted(cxt.AssemblyPath))
             {
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(cxt));
             }
 
             Type classType = FindClassType(cxt.ClassId, cxt.AssemblyPath, cxt.AssemblyName, cxt.TypeName);
@@ -288,7 +288,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
             if (cxtInt.InterfaceId != Guid.Empty
                 || cxtInt.ClassFactoryDest != IntPtr.Zero)
             {
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(pCxtInt));
             }
 
             try
@@ -328,7 +328,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             if (cxtInt.InterfaceId != Guid.Empty
                 || cxtInt.ClassFactoryDest != IntPtr.Zero)
             {
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(pCxtInt));
             }
 
             try

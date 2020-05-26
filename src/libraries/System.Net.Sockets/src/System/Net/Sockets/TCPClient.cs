@@ -427,18 +427,7 @@ namespace System.Net.Sockets
 
         public void Dispose() => Dispose(true);
 
-        ~TcpClient()
-        {
-#if DEBUG
-            DebugThreadTracking.SetThreadSource(ThreadKinds.Finalization);
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.System | ThreadKinds.Async))
-            {
-#endif
-                Dispose(false);
-#if DEBUG
-            }
-#endif
-        }
+        ~TcpClient() => Dispose(false);
 
         // Gets or sets the size of the receive buffer in bytes.
         public int ReceiveBufferSize

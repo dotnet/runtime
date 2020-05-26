@@ -109,7 +109,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (property == null)
                 {
-                    throw new ArgumentException(nameof(properties));
+                    throw new ArgumentException(null, nameof(properties));
                 }
             }
 
@@ -130,7 +130,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (property == null)
                 {
-                    throw new ArgumentException(nameof(properties));
+                    throw new ArgumentException(null, nameof(properties));
                 }
             }
 
@@ -153,7 +153,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (property == null)
                 {
-                    throw new ArgumentException(nameof(properties));
+                    throw new ArgumentException(null, nameof(properties));
                 }
             }
 
@@ -369,7 +369,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySchemaProperty))
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
 
             if (!((ActiveDirectorySchemaProperty)value).isBound)
                 throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, ((ActiveDirectorySchemaProperty)value).Name));

@@ -45,5 +45,4 @@
              Projects="@(ApiCompatProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
-
 </Project>

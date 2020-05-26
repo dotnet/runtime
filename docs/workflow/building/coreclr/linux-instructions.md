@@ -19,7 +19,7 @@ Please note that when choosing an image choosing the same image as the host os y
 Once you have chosen an image the build is one command run from the root of the runtime repository:
 
 ```sh
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191120200116 ./src/coreclr/build.sh -clang9
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20200508132555-78cbb55 ./build.sh --subset clr -clang9
 ```
 
 Dissecting the command:
@@ -30,16 +30,18 @@ Dissecting the command:
 
 `-w: /runtime`: set /runtime as working directory for the container
 
-`mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191120200116`: image name.
+`mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20200508132555-78cbb55`: image name.
 
-`./src/coreclr/build.sh`: command to be run in the container, run the build to coreclr.
+`./build.sh`: command to be run in the container, run the build to coreclr.
+
+`--subset clr`: build the runtime subset (excluding libraries and installers)
 
 `-clang9`: argument to use clang 9 for the build, only compiler in the build image.
 
-If you are attempting to cross build for arm/arm64 then use the crossrootfs location to set the ROOTFS_DIR. The command would add `-e ROOTFS_DIR=<crossrootfs location>`. See [Docker Images](#Docker-Images) for the crossrootfs location. In addition you will need to specify `cross`.
+If you are attempting to cross build for arm/arm64 then use the crossrootfs location to set the ROOTFS_DIR. The command would add `-e ROOTFS_DIR=<crossrootfs location>`. See [Docker Images](#Docker-Images) for the crossrootfs location. In addition you will need to specify `--cross`.
 
 ```sh
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20200413125008-cfdd435 ./src/coreclr/build.sh arm64 cross
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20200508132638-b2c2436 ./build.sh --arch arm64 --cross --subset clr
 ```
 
 Note that instructions on building the crossrootfs location can be found at [cross-building.md](cross-building.md). These instructions are suggested only if there are plans to change the rootfs, or the Docker images for arm/arm64 are insufficient for you build.
@@ -69,47 +71,7 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 Toolchain Setup
 ---------------
 
-Add Kitware's APT feed to your configuration for a newer version of CMake. See their instructions at <https://apt.kitware.com/>.
-
-Install the following packages for the toolchain:
-
-- cmake (at least 3.15.5)
-- llvm-3.9
-- clang-9
-- libunwind8
-- libunwind8-dev
-- gettext
-- libicu-dev
-- liblttng-ust-dev
-- libcurl4-openssl-dev
-- libssl-dev
-- libkrb5-dev
-- libnuma-dev (optional, enables numa support)
-
-Note: ARM clang has a known issue with CompareExchange
-([#15074](https://github.com/dotnet/coreclr/issues/15074)), so for ARM you must
-use clang-4.0 or higher.  Moreover, when building with clang-5.0, the
-following errors occur:
-
-```
-src/coreclr/src/debug/inc/arm/primitives.h:66:1: error: __declspec attribute 'selectany' is
-      not supported [-Werror,-Wignored-attributes]
-```
-
-This is fixed in clang-5.0.2, which can be installed from the apt
-repository listed below.
-
-For other version of Debian/Ubuntu, please visit http://apt.llvm.org/.
-
-Then install the packages you need:
-
-    ~$ sudo apt-get install cmake llvm-3.9 clang-9 libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev libnuma-dev libkrb5-dev
-
-You now have all the required components.
-
-If you are using Fedora, then you will need to install the following packages:
-
-    ~$ sudo dnf install llvm cmake clang lldb-devel libunwind-devel lttng-ust-devel libicu-devel numactl-devel
+Follow instructions and install dependencies listed [here](https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/linux-requirements.md#toolchain-setup).
 
 Git Setup
 ---------

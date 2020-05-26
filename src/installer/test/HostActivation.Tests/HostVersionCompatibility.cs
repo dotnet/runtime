@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build.Framework;
-using Microsoft.DotNet.PlatformAbstractions;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -137,13 +137,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         private static bool IsRidSupported()
         {
-            Platform platform = RuntimeEnvironment.OperatingSystemPlatform;
-
             // Some current Linux RIDs are not supported in 2.0\2.1; just test for Ubuntu 16.
             return (
-                platform == Platform.Windows ||
-                platform == Platform.Darwin ||
-                (platform == Platform.Linux && RuntimeEnvironment.GetRuntimeIdentifier() == "ubuntu.16.04-x64")
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+                (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.RuntimeIdentifier == "ubuntu.16.04-x64")
             );
         }
 

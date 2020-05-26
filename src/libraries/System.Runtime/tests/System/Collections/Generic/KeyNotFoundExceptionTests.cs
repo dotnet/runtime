@@ -16,7 +16,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new KeyNotFoundException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_KEYNOTFOUND, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_KEYNOTFOUND, validateMessage: false);
         }
 
         [Fact]
@@ -24,7 +24,7 @@ namespace System.Tests
         {
             string message = "this is not the key you're looking for";
             var exception = new KeyNotFoundException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_KEYNOTFOUND, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_KEYNOTFOUND, message: message);
         }
 
         [Fact]
@@ -33,7 +33,7 @@ namespace System.Tests
             string message = "this is not the key you're looking for";
             var innerException = new Exception("Inner exception");
             var exception = new KeyNotFoundException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_KEYNOTFOUND, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_KEYNOTFOUND, innerException: innerException, message: message);
         }
     }
 }

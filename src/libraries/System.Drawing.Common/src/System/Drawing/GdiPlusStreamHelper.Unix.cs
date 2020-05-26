@@ -43,10 +43,10 @@ namespace System.Drawing
     {
         private Stream _stream;
 
-        public unsafe GdiPlusStreamHelper(Stream stream, bool seekToOrigin)
+        public unsafe GdiPlusStreamHelper(Stream stream, bool seekToOrigin, bool makeSeekable = true)
         {
             // Seeking required
-            if (!stream.CanSeek)
+            if (makeSeekable && !stream.CanSeek)
             {
                 var memoryStream = new MemoryStream();
                 stream.CopyTo(memoryStream);

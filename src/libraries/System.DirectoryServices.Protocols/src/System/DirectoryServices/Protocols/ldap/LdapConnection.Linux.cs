@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net;
+using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -24,9 +25,9 @@ namespace System.DirectoryServices.Protocols
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
         {
             int error;
-            if (tempCredential == null && AuthType == AuthType.External)
+            if (tempCredential == null && (AuthType == AuthType.External || AuthType == AuthType.Kerberos))
             {
-                error = Interop.ldap_simple_bind(_ldapHandle, null, null);
+                error = BindSasl();
             }
             else
             {
@@ -34,6 +35,44 @@ namespace System.DirectoryServices.Protocols
             }
 
             return error;
+        }
+
+        private int BindSasl()
+        {
+            SaslDefaultCredentials defaults = GetSaslDefaults();
+            IntPtr ptrToDefaults = Marshal.AllocHGlobal(Marshal.SizeOf(defaults));
+            Marshal.StructureToPtr(defaults, ptrToDefaults, false);
+            try
+            {
+                return Interop.ldap_sasl_interactive_bind(_ldapHandle, null, Interop.KerberosDefaultMechanism, IntPtr.Zero, IntPtr.Zero, Interop.LDAP_SASL_QUIET, LdapPal.SaslInteractionProcedure, ptrToDefaults);
+            }
+            finally
+            {
+                GC.KeepAlive(defaults); //Making sure we keep it in scope as we will still use ptrToDefaults
+                Marshal.FreeHGlobal(ptrToDefaults);
+            }
+        }
+
+        private SaslDefaultCredentials GetSaslDefaults()
+        {
+            var defaults = new SaslDefaultCredentials { mech = Interop.KerberosDefaultMechanism };
+            IntPtr outValue = IntPtr.Zero;
+            int error = Interop.ldap_get_option_ptr(_ldapHandle, LdapOption.LDAP_OPT_X_SASL_REALM, ref outValue);
+            if (error == 0 && outValue != IntPtr.Zero)
+            {
+                defaults.realm = Marshal.PtrToStringAnsi(outValue);
+            }
+            error = Interop.ldap_get_option_ptr(_ldapHandle, LdapOption.LDAP_OPT_X_SASL_AUTHCID, ref outValue);
+            if (error == 0 && outValue != IntPtr.Zero)
+            {
+                defaults.authcid = Marshal.PtrToStringAnsi(outValue);
+            }
+            error = Interop.ldap_get_option_ptr(_ldapHandle, LdapOption.LDAP_OPT_X_SASL_AUTHZID, ref outValue);
+            if (error == 0 && outValue != IntPtr.Zero)
+            {
+                defaults.authzid = Marshal.PtrToStringAnsi(outValue);
+            }
+            return defaults;
         }
     }
 }

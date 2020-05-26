@@ -8,6 +8,7 @@ trigger:
     - '*'
     - src/libraries/System.Private.CoreLib/*
     exclude:
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md

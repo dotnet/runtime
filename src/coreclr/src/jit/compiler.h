@@ -2621,6 +2621,16 @@ public:
                                                  var_types      baseType,
                                                  unsigned       size);
 
+    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
+                                                   NamedIntrinsic hwIntrinsicID,
+                                                   var_types      baseType,
+                                                   unsigned       size)
+    {
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, hwIntrinsicID, baseType, size);
+        node->gtFlags |= GTF_SIMDASHW_OP;
+        return node;
+    }
+
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
         var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
     {
@@ -2657,13 +2667,14 @@ public:
                                                    NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
-    GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
     CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType);
     var_types getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
                                          CORINFO_CLASS_HANDLE clsHnd,
                                          CORINFO_SIG_INFO*    sig,
                                          var_types            baseType);
 #endif // FEATURE_HW_INTRINSICS
+
+    GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type);
@@ -3500,19 +3511,21 @@ public:
         assert(varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
-        // We make local variable SIMD12 types 16 bytes instead of just 12. lvSize()
-        // already does this calculation. However, we also need to prevent mapping types if the var is a
-        // dependently promoted struct field, which must remain its exact size within its parent struct.
-        // However, we don't know this until late, so we may have already pretended the field is bigger
-        // before that.
-        if ((varDsc->lvSize() == 16) && !lvaIsFieldOfDependentlyPromotedStruct(varDsc))
-        {
-            return true;
-        }
-        else
+        // We make local variable SIMD12 types 16 bytes instead of just 12.
+        // lvSize() will return 16 bytes for SIMD12, even for fields.
+        // However, we can't do that mapping if the var is a dependently promoted struct field.
+        // Such a field must remain its exact size within its parent struct unless it is a single
+        // field *and* it is the only field in a struct of 16 bytes.
+        if (varDsc->lvSize() != 16)
         {
             return false;
         }
+        if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+        {
+            LclVarDsc* parentVarDsc = lvaGetDesc(varDsc->lvParentLcl);
+            return (parentVarDsc->lvFieldCnt == 1) && (parentVarDsc->lvSize() == 16);
+        }
+        return true;
     }
 #endif // defined(FEATURE_SIMD)
 
@@ -3713,6 +3726,10 @@ protected:
                               CorInfoIntrinsics     intrinsicID,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
+                                          CORINFO_METHOD_HANDLE method,
+                                          CORINFO_SIG_INFO*     sig,
+                                          bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
@@ -3720,10 +3737,6 @@ protected:
                             CORINFO_METHOD_HANDLE method,
                             CORINFO_SIG_INFO*     sig,
                             bool                  mustExpand);
-    GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
-                                       CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
-                                       bool                  mustExpand);
     GenTree* impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
@@ -3751,17 +3764,24 @@ protected:
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig);
+                                 CORINFO_SIG_INFO*     sig,
+                                 var_types             baseType,
+                                 var_types             retType,
+                                 unsigned              simdSize);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr = false);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
-    GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immUpperBound);
+    GenTree* addRangeCheckIfNeeded(
+        NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immLowerBound, int immUpperBound);
 
 #ifdef TARGET_XARCH
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
                               CORINFO_CLASS_HANDLE  clsHnd,
                               CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig);
+                              CORINFO_SIG_INFO*     sig,
+                              var_types             baseType,
+                              var_types             retType,
+                              unsigned              simdSize);
     GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
@@ -7961,9 +7981,7 @@ private:
 
     static bool isRelOpSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
     {
-        return (intrinsicId == SIMDIntrinsicEqual || intrinsicId == SIMDIntrinsicLessThan ||
-                intrinsicId == SIMDIntrinsicLessThanOrEqual || intrinsicId == SIMDIntrinsicGreaterThan ||
-                intrinsicId == SIMDIntrinsicGreaterThanOrEqual);
+        return (intrinsicId == SIMDIntrinsicEqual);
     }
 
     // Returns base type of a TYP_SIMD local.
@@ -8067,22 +8085,6 @@ private:
     // Create a GT_SIMD tree for a Get property of SIMD vector with a fixed index.
     GenTreeSIMD* impSIMDGetFixed(var_types simdType, var_types baseType, unsigned simdSize, int index);
 
-    // Creates a GT_SIMD tree for Select operation
-    GenTree* impSIMDSelect(CORINFO_CLASS_HANDLE typeHnd,
-                           var_types            baseType,
-                           unsigned             simdVectorSize,
-                           GenTree*             op1,
-                           GenTree*             op2,
-                           GenTree*             op3);
-
-    // Creates a GT_SIMD tree for Min/Max operation
-    GenTree* impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
-                           CORINFO_CLASS_HANDLE typeHnd,
-                           var_types            baseType,
-                           unsigned             simdVectorSize,
-                           GenTree*             op1,
-                           GenTree*             op2);
-
     // Transforms operands and returns the SIMD intrinsic to be applied on
     // transformed operands to obtain given relop result.
     SIMDIntrinsicID impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
@@ -8092,9 +8094,6 @@ private:
                                  GenTree**            op1,
                                  GenTree**            op2);
 
-    // Creates a GT_SIMD tree for Abs intrinsic.
-    GenTree* impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, unsigned simdVectorSize, GenTree* op1);
-
 #if defined(TARGET_XARCH)
 
     // Transforms operands and returns the SIMD intrinsic to be applied on
@@ -8103,26 +8102,6 @@ private:
                                           unsigned             simdVectorSize,
                                           GenTree**            op1,
                                           GenTree**            op2);
-
-    // Transforms operands and returns the SIMD intrinsic to be applied on
-    // transformed operands to obtain > comparison result.
-    SIMDIntrinsicID impSIMDLongRelOpGreaterThan(CORINFO_CLASS_HANDLE typeHnd,
-                                                unsigned             simdVectorSize,
-                                                GenTree**            op1,
-                                                GenTree**            op2);
-
-    // Transforms operands and returns the SIMD intrinsic to be applied on
-    // transformed operands to obtain >= comparison result.
-    SIMDIntrinsicID impSIMDLongRelOpGreaterThanOrEqual(CORINFO_CLASS_HANDLE typeHnd,
-                                                       unsigned             simdVectorSize,
-                                                       GenTree**            op1,
-                                                       GenTree**            op2);
-
-    // Transforms operands and returns the SIMD intrinsic to be applied on
-    // transformed operands to obtain >= comparison result in case of int32
-    // and small int base type vectors.
-    SIMDIntrinsicID impSIMDIntegralRelOpGreaterThanOrEqual(
-        CORINFO_CLASS_HANDLE typeHnd, unsigned simdVectorSize, var_types baseType, GenTree** op1, GenTree** op2);
 
 #endif // defined(TARGET_XARCH)
 

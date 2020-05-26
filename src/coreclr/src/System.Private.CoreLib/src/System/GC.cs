@@ -135,7 +135,7 @@ namespace System
 
             if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
             {
-                throw new ArgumentOutOfRangeException("pressure",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
 

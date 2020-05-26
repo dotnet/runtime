@@ -302,24 +302,23 @@ namespace System
             if (baseUri.IsNotAbsoluteUri)
                 return false;
 
-            UriFormatException? e;
+            UriFormatException? e = null;
             string? newUriString = null;
 
             bool dontEscape;
             if (baseUri.Syntax.IsSimple)
             {
                 dontEscape = relativeUri.UserEscaped;
-                result = ResolveHelper(baseUri, relativeUri, ref newUriString, ref dontEscape, out e);
-                Debug.Assert(e is null || result is null);
+                result = ResolveHelper(baseUri, relativeUri, ref newUriString, ref dontEscape);
             }
             else
             {
                 dontEscape = false;
                 newUriString = baseUri.Syntax.InternalResolve(baseUri, relativeUri, out e);
-            }
 
-            if (e != null)
-                return false;
+                if (e != null)
+                    return false;
+            }
 
             if (result is null)
                 result = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
@@ -665,13 +664,11 @@ namespace System
         // to  return combined URI strings from both Uris
         // otherwise if e != null on output the operation has failed
         //
-        internal static Uri? ResolveHelper(Uri baseUri, Uri? relativeUri, ref string? newUriString, ref bool userEscaped,
-            out UriFormatException? e)
+        internal static Uri? ResolveHelper(Uri baseUri, Uri? relativeUri, ref string? newUriString, ref bool userEscaped)
         {
             Debug.Assert(!baseUri.IsNotAbsoluteUri && !baseUri.UserDrivenParsing, "Uri::ResolveHelper()|baseUri is not Absolute or is controlled by User Parser.");
 
-            e = null;
-            string relativeStr = string.Empty;
+            string relativeStr;
 
             if ((object?)relativeUri != null)
             {
@@ -739,16 +736,9 @@ namespace System
                 // If we are here then input like "http://host/path/" + "C:\x" will produce the result  http://host/path/c:/x
             }
 
+            GetCombinedString(baseUri, relativeStr, userEscaped, ref newUriString);
 
-            ParsingError err = GetCombinedString(baseUri, relativeStr, userEscaped, ref newUriString);
-
-            if (err != ParsingError.None)
-            {
-                e = GetException(err);
-                return null;
-            }
-
-            if ((object?)newUriString == (object)baseUri._string)
+            if (ReferenceEquals(newUriString, baseUri._string))
                 return baseUri;
 
             return null;
@@ -871,18 +861,19 @@ namespace System
             {
                 //a relative uri could have quite tricky form, it's better to fix it now.
                 string? newUriString = null;
-                UriFormatException? e;
                 bool dontEscape = false;
 
-                uriLink = ResolveHelper(this, uriLink, ref newUriString, ref dontEscape, out e)!;
-                if (e != null)
-                    return false;
+                uriLink = ResolveHelper(this, uriLink, ref newUriString, ref dontEscape)!;
 
-                if ((object?)uriLink == null)
+                if (uriLink is null)
+                {
+                    UriFormatException? e = null;
+
                     uriLink = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e)!;
 
-                if (e != null)
-                    return false;
+                    if (e != null)
+                        return false;
+                }
             }
 
             if (Syntax.SchemeName != uriLink.Syntax.SchemeName)
