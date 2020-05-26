@@ -91,11 +91,6 @@ endef
 $(eval $(call InterpBuildTemplate,debug,,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS)))
 $(eval $(call InterpBuildTemplate,release,,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
 
-$(BUILDS_BIN_DIR)/runtime-test.js: runtime-test.js
-	cp runtime-test.js $@
-
-build-native: $(BUILDS_BIN_DIR)/runtime-test.js
-
 build:
 	EMSDK_PATH=$(PWD)/wasm/emsdk ../../../.dotnet/dotnet build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
 
