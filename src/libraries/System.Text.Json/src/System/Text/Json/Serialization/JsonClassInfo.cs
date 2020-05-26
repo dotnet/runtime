@@ -101,7 +101,7 @@ namespace System.Text.Json
                                 ? StringComparer.OrdinalIgnoreCase
                                 : StringComparer.Ordinal);
 
-                        HashSet<string> ignoredProperties = new HashSet<string>();
+                        HashSet<string>? ignoredProperties = null;
 
                         // We start from the most derived type and ascend to the base type.
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
@@ -134,14 +134,15 @@ namespace System.Text.Json
                                             // Overwrite previously cached property since it has [JsonIgnore].
                                             cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
                                         }
-                                        else if (!(isIgnored || other.PropertyInfo!.Name == propertyName || ignoredProperties.Contains(propertyName)))
+                                        else if (!(isIgnored || other.PropertyInfo!.Name == propertyName || ignoredProperties?.Contains(propertyName) == true))
                                         {
                                             // The collision is invalid if none of the following is true:
                                             // 1. The current property has [JsonIgnore].
                                             // 2. The current property was hidden by a previously cached property with the same CLR property name
                                             //    (either by overriding or with the new operator).
                                             // 3. The current property has a conflicting name with a previously cached property that did not hide it.
-                                            //    The property that hid it has [JsonIgnore] (and was overwritten), so we'll ignore this one as well.
+                                            //    The property that hid it has [JsonIgnore] (and was overwritten from the caches),
+                                            //    so we'll ignore this one as well.
                                             ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
                                         }
                                         // Ignore the current property.
@@ -149,7 +150,7 @@ namespace System.Text.Json
 
                                     if (jsonPropertyInfo.IsIgnored)
                                     {
-                                        ignoredProperties.Add(propertyName);
+                                        (ignoredProperties ??= new HashSet<string>()).Add(propertyName);
                                     }
                                 }
                                 else
