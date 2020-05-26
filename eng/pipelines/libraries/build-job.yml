@@ -104,6 +104,13 @@ jobs:
                 sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
                 targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
 
+            - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+              - task: CopyFiles@2
+                displayName: Prepare lib-runtime-packs folder to publish
+                inputs:
+                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/lib-runtime-packs
+                  targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/lib-runtime-packs
+
             - task: CopyFiles@2
               displayName: Prepare artifacts toolset folder to publish
               inputs:
