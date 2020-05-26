@@ -701,11 +701,8 @@ OPDEF(MINT_ARRAY_IS_PRIMITIVE, "array_is_primitive", 1, Pop1, Push1, MintOpNoArg
 
 /* Calls */
 OPDEF(MINT_CALL, "call", 4, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_VCALL, "vcall", 4, VarPop, Push0, MintOpMethodToken)
 OPDEF(MINT_CALLVIRT, "callvirt", 4, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_VCALLVIRT, "vcallvirt", 4, VarPop, Push0, MintOpMethodToken)
 OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 4, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_VCALLVIRT_FAST, "vcallvirt.fast", 4, VarPop, Push0, MintOpMethodToken)
 OPDEF(MINT_CALL_DELEGATE, "call.delegate", 3, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALLI, "calli", 3, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT, "calli.nat", 5, VarPop, VarPush, MintOpMethodToken)

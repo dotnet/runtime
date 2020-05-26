@@ -2169,7 +2169,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	guint32 vt_res_size = 0;
 	int op = -1;
 	int native = 0;
-	int is_void = 0;
 	int need_null_check = is_virtual;
 	gboolean is_delegate_invoke = FALSE;
 
@@ -2439,8 +2438,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			PUSH_VT(td, vt_res_size);
 		}
 		PUSH_TYPE(td, stack_type[mt], klass);
-	} else
-		is_void = TRUE;
+	}
 
 	if (op >= 0) {
 		interp_add_ins (td, op);
@@ -2478,11 +2476,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		else if (calli)
 			interp_add_ins (td, native ? ((op != -1) ? MINT_CALLI_NAT_FAST : MINT_CALLI_NAT) : MINT_CALLI);
 		else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass))
-			interp_add_ins (td, is_void ? MINT_VCALLVIRT_FAST : MINT_CALLVIRT_FAST);
+			interp_add_ins (td, MINT_CALLVIRT_FAST);
 		else if (is_virtual)
-			interp_add_ins (td, is_void ? MINT_VCALLVIRT : MINT_CALLVIRT);
+			interp_add_ins (td, MINT_CALLVIRT);
 		else
-			interp_add_ins (td, is_void ? MINT_VCALL : MINT_CALL);
+			interp_add_ins (td, MINT_CALL);
 
 		if (is_delegate_invoke) {
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
@@ -6444,16 +6442,10 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 		case MINT_JIT_CALL:
 		case MINT_CALL:
 		case MINT_CALLVIRT:
-		case MINT_CALLVIRT_FAST:
-		case MINT_VCALL:
-		case MINT_VCALLVIRT:
-		case MINT_VCALLVIRT_FAST: {
+		case MINT_CALLVIRT_FAST: {
 			InterpMethod *imethod = (InterpMethod*) td->data_items [ins->data [0]];
 			*pop = imethod->param_count + imethod->hasthis;
-			if (opcode == MINT_JIT_CALL)
-				*push = imethod->rtype->type != MONO_TYPE_VOID;
-			else
-				*push = opcode == MINT_CALL || opcode == MINT_CALLVIRT || opcode == MINT_CALLVIRT_FAST;
+			*push = imethod->rtype->type != MONO_TYPE_VOID;
 			break;
 		}
 #ifndef ENABLE_NETCORE

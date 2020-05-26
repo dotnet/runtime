@@ -3762,8 +3762,7 @@ main_loop:
 			ip += 5;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALLVIRT_FAST)
-		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
+		MINT_IN_CASE(MINT_CALLVIRT_FAST) {
 			MonoObject *this_arg;
 			int slot;
 
@@ -3840,14 +3839,12 @@ main_loop:
 			ip += 4;
 			goto call;
 		}
-		MINT_IN_CASE(MINT_VCALL)
 		MINT_IN_CASE(MINT_CALL)
-		MINT_IN_CASE(MINT_CALLVIRT)
-		MINT_IN_CASE(MINT_VCALLVIRT) {
+		MINT_IN_CASE(MINT_CALLVIRT) {
 			// FIXME CALLVIRT opcodes are not used on netcore. We should kill them.
 			// FIXME braces from here until call: label.
 			gboolean is_virtual;
-			is_virtual = *ip == MINT_CALLVIRT || *ip == MINT_VCALLVIRT;
+			is_virtual = *ip == MINT_CALLVIRT;
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 
