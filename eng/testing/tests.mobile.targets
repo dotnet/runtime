@@ -130,6 +130,11 @@
     <ZipDirectory SourceDirectory="$(BundleBinDir)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
+    <!--<RemoveDir Directories="$(BundleDir)" />-->
+  </Target>
+
+  <Target Name="Cleanup">
+    <RemoveDir Directories="$(PublishDir)" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
@@ -158,5 +163,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;ArchiveTests" />
+          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;ArchiveTests;Cleanup" />
 </Project>
