@@ -1220,7 +1220,9 @@ namespace Internal.JitInterface
         private byte* getClassName(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
-            return (byte*)GetPin(StringToUTF8(type.ToString()));
+            StringBuilder nameBuilder = new StringBuilder();
+            TypeString.Instance.AppendName(nameBuilder, type);
+            return (byte*)GetPin(StringToUTF8(nameBuilder.ToString()));
         }
 
         private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
@@ -1347,7 +1349,14 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_GC_PTR;
 
                 if (metadataType.IsBeforeFieldInit)
-                    result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
+                {
+#if READYTORUN
+                    if (_compilation.CompilationModuleGroup.VersionsWithType(metadataType))
+#endif
+                    {
+                        result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
+                    }
+                }
 
                 // Assume overlapping fields for explicit layout.
                 if (metadataType.IsExplicitLayout)
@@ -1361,7 +1370,7 @@ namespace Internal.JitInterface
             if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
             {
                 // Prevent the JIT from drilling into types outside of the current versioning bubble
-                result |= CorInfoFlag.CORINFO_FLG_OVERLAPPING_FIELDS;
+                result |= CorInfoFlag.CORINFO_FLG_DONT_PROMOTE;
             }
 #endif
 
