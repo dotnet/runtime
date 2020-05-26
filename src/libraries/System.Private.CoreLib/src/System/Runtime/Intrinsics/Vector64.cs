@@ -942,6 +942,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to extend.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with the lower 64-bits set to the value of <paramref name="vector" /> and the upper 64-bits initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static Vector128<T> ToVector128<T>(this Vector64<T> vector)
             where T : struct
         {
@@ -957,6 +958,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to extend.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with the lower 64-bits set to the value of <paramref name="vector" /> and the upper 64-bits left uninitialized.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static unsafe Vector128<T> ToVector128Unsafe<T>(this Vector64<T> vector)
             where T : struct
         {

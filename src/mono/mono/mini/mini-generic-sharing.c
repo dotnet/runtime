@@ -26,6 +26,7 @@
 #include "aot-runtime.h"
 #include "mini-runtime.h"
 #include "llvmonly-runtime.h"
+#include "interp/interp.h"
 
 #define ALLOW_PARTIAL_SHARING TRUE
 //#define ALLOW_PARTIAL_SHARING FALSE
@@ -1711,7 +1712,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 		return res;
 	}
 
-	if (sig->param_count > 8)
+	if (sig->param_count > MAX_INTERP_ENTRY_ARGS)
 		/* Call the generic interpreter entry point, the specialized ones only handle a limited number of arguments */
 		generic = TRUE;
 

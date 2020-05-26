@@ -47,15 +47,16 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
         nonConstImmReg = REG_NA;
 
         immValue      = (int)immOp->AsIntCon()->IconValue();
-        immUpperBound = immValue + 1;
+        immLowerBound = immValue;
+        immUpperBound = immValue;
     }
     else
     {
-        nonConstImmReg = immOp->GetRegNum();
+        HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType,
+                                         &immLowerBound, &immUpperBound);
 
-        immValue = 0;
-        immUpperBound =
-            HWIntrinsicInfo::lookupImmUpperBound(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType);
+        nonConstImmReg = immOp->GetRegNum();
+        immValue       = immLowerBound;
 
         if (TestImmOpZeroOrOne())
         {
@@ -110,6 +111,15 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitBegin()
             GetEmitter()->emitIns_R_L(INS_adr, EA_8BYTE, beginLabel, branchTargetReg);
             GetEmitter()->emitIns_R_R_R_I(INS_add, EA_8BYTE, branchTargetReg, branchTargetReg, nonConstImmReg, 3,
                                           INS_OPTS_LSL);
+
+            // If the lower bound is non zero we need to adjust the branch target value by subtracting
+            // (immLowerBound << 3).
+            if (immLowerBound != 0)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_sub, EA_8BYTE, branchTargetReg, branchTargetReg,
+                                            ((ssize_t)immLowerBound << 3));
+            }
+
             GetEmitter()->emitIns_R(INS_br, EA_8BYTE, branchTargetReg);
         }
 
@@ -136,7 +146,7 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitCaseEnd()
 
     if (NonConstImmOp())
     {
-        const bool isLastCase = (immValue + 1 == immUpperBound);
+        const bool isLastCase = (immValue == immUpperBound);
 
         if (isLastCase)
         {
@@ -360,6 +370,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_Aes_PolynomialMultiplyWideningLower:
+                ins = INS_pmull;
+                opt = INS_OPTS_1D;
+                break;
+
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
                 break;
@@ -397,6 +412,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Crc32_ComputeCrc32C:
             case NI_Crc32_Arm64_ComputeCrc32:
             case NI_Crc32_Arm64_ComputeCrc32C:
+            case NI_Aes_PolynomialMultiplyWideningLower:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
@@ -617,6 +633,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_Vector64_ToVector128:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
+                break;
+
+            case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_GetLower:
+                if (op1Reg != targetReg)
+                {
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
+                }
+                break;
+
             case NI_Vector64_GetElement:
             case NI_Vector128_GetElement:
             case NI_Vector64_ToScalar:
@@ -637,6 +665,93 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
                                             INS_OPTS_NONE);
+            }
+            break;
+
+            case NI_AdvSimd_ShiftLeftLogicalSaturateScalar:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsignedScalar:
+            case NI_AdvSimd_ShiftLeftLogicalScalar:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedScalar:
+            case NI_AdvSimd_ShiftRightArithmeticScalar:
+            case NI_AdvSimd_ShiftRightLogicalRoundedScalar:
+            case NI_AdvSimd_ShiftRightLogicalScalar:
+            case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateUnsignedScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateUnsignedScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar:
+            case NI_AdvSimd_Arm64_ShiftRightLogicalNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightLogicalRoundedNarrowingSaturateScalar:
+                opt      = INS_OPTS_NONE;
+                emitSize = emitTypeSize(intrin.baseType);
+                __fallthrough;
+
+            case NI_AdvSimd_ShiftLeftLogical:
+            case NI_AdvSimd_ShiftLeftLogicalSaturate:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsigned:
+            case NI_AdvSimd_ShiftLeftLogicalWideningLower:
+            case NI_AdvSimd_ShiftLeftLogicalWideningUpper:
+            case NI_AdvSimd_ShiftRightArithmetic:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedLower:
+            case NI_AdvSimd_ShiftRightArithmeticRounded:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower:
+            case NI_AdvSimd_ShiftRightLogical:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingLower:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightLogicalRounded:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingLower:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateLower:
+            {
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int shiftAmount = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, shiftAmount, opt);
+                }
+            }
+            break;
+
+            case NI_AdvSimd_ShiftRightArithmeticAddScalar:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalRoundedAddScalar:
+                opt      = INS_OPTS_NONE;
+                emitSize = emitTypeSize(intrin.baseType);
+                __fallthrough;
+
+            case NI_AdvSimd_ShiftRightArithmeticAdd:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedUpper:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedAdd:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightLogicalAdd:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingUpper:
+            case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingUpper:
+            {
+                assert(isRMW);
+
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                }
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int shiftAmount = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op2Reg, shiftAmount, opt);
+                }
             }
             break;
 

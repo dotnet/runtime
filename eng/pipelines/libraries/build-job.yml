@@ -7,6 +7,7 @@ parameters:
   framework: ''
   isOfficialBuild: false
   isOfficialAllConfigurations: false
+  runtimeVariant: ''
 
   # When set to a non-empty value (Debug / Release), it determines the runtime's
   # build configuration to use for building libraries and tests. Setting this
@@ -43,6 +44,7 @@ jobs:
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
       testScope: ${{ parameters.testScope }}
       name: build
       displayName: 'Build'
@@ -51,7 +53,7 @@ jobs:
         dependsOn:
         # Use full product dependency for non-coreclr and test builds
         - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
-          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - _subset: libs
@@ -74,7 +76,7 @@ jobs:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
         - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-          - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
           - script: |

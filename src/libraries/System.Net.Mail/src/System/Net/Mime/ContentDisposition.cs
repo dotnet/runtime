@@ -83,7 +83,7 @@ namespace System.Net.Mime
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     throw new ArgumentException(SR.net_emptystringset, nameof(value));
                 }

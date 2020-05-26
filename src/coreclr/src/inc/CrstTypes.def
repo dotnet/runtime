@@ -283,9 +283,6 @@ Crst GCCover
     AcquiredBefore LoaderHeap CodeVersioning
 End
 
-Crst GCMemoryPressure
-End
-
 Crst GlobalStrLiteralMap
     AcquiredBefore HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList ThreadStore UniqueStack
 End

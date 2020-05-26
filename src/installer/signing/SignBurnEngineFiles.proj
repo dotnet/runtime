@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <StageProject Include="@(InstallerProject -> WithMetadataValue('SignPhase', 'BundleInstallerFiles'))" />
+    <StageProject Include="@(ProjectToBuild -> WithMetadataValue('SignPhase', 'BundleInstallerFiles'))" />
   </ItemGroup>
 
   <!-- To sign the burn engines, they need to be extracted from the bundles using WiX tools. -->

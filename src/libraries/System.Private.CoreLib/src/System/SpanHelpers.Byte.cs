@@ -1733,33 +1733,11 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundByte(ulong match)
-        {
-            if (Bmi1.X64.IsSupported)
-            {
-                return (int)(Bmi1.X64.TrailingZeroCount(match) >> 3);
-            }
-            else
-            {
-                // Flag least significant power of two bit
-                ulong powerOfTwoFlag = match ^ (match - 1);
-                // Shift all powers of two into the high byte and extract
-                return (int)((powerOfTwoFlag * XorPowerOfTwoToHighByte) >> 57);
-            }
-        }
+            => BitOperations.TrailingZeroCount(match) >> 3;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundByte(ulong match)
-        {
-            return 7 - (BitOperations.LeadingZeroCount(match) >> 3);
-        }
-
-        private const ulong XorPowerOfTwoToHighByte = (0x07ul |
-                                                       0x06ul << 8 |
-                                                       0x05ul << 16 |
-                                                       0x04ul << 24 |
-                                                       0x03ul << 32 |
-                                                       0x02ul << 40 |
-                                                       0x01ul << 48) + 1;
+            => BitOperations.Log2(match) >> 3;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ushort LoadUShort(ref byte start)

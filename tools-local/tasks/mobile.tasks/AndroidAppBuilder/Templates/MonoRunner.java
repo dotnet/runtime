@@ -13,8 +13,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.app.Activity;
-import android.os.Bundle;
 import android.os.Environment;
+import android.net.Uri;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -22,6 +22,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.BufferedInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class MonoRunner extends Instrumentation
 {
@@ -43,13 +46,18 @@ public class MonoRunner extends Instrumentation
 
         MonoRunner.inst = this;
         Context context = getContext();
-        AssetManager am = context.getAssets();
         String filesDir = context.getFilesDir().getAbsolutePath();
         String cacheDir = context.getCacheDir().getAbsolutePath();
-        String docsDir  = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath();
+        File docsPath  = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+        if (docsPath == null) {
+            docsPath = context.getCacheDir();
+        }
+        String docsDir = docsPath.getAbsolutePath();
 
-        copyAssetDir(am, "", filesDir);
+        // unzip libs and test files to filesDir
+        unzipAssets(context, filesDir, "assets.zip");
 
+        Log.i("DOTNET", "initRuntime");
         int retcode = initRuntime(filesDir, cacheDir, docsDir);
         runOnMainSync(new Runnable() {
             public void run() {
@@ -62,34 +70,38 @@ public class MonoRunner extends Instrumentation
         });
     }
 
-    static void copyAssetDir(AssetManager am, String path, String outpath) {
+    static void unzipAssets(Context context, String toPath, String zipName) {
+        AssetManager assetManager = context.getAssets();
         try {
-            String[] res = am.list(path);
-            for (int i = 0; i < res.length; ++i) {
-                String fromFile = res[i];
-                String toFile = outpath + "/" + res[i];
-                try {
-                    InputStream fromStream = am.open(fromFile);
-                    Log.w("DOTNET", "\tCOPYING " + fromFile + " to " + toFile);
-                    copy(fromStream, new FileOutputStream(toFile));
-                } catch (FileNotFoundException e) {
-                    new File(toFile).mkdirs();
-                    copyAssetDir(am, fromFile, toFile);
+            InputStream inputStream = assetManager.open(zipName);
+            ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(inputStream));
+            ZipEntry zipEntry;
+            byte[] buffer = new byte[4096];
+            while ((zipEntry = zipInputStream.getNextEntry()) != null) {
+                String fileOrDirectory = zipEntry.getName();
+                Uri.Builder builder = new Uri.Builder();
+                builder.scheme("file");
+                builder.appendPath(toPath);
+                builder.appendPath(fileOrDirectory);
+                String fullToPath = builder.build().getPath();
+                if (zipEntry.isDirectory()) {
+                    File directory = new File(fullToPath);
+                    directory.mkdirs();
                     continue;
                 }
+                Log.i("DOTNET", "Extracting asset to " + fullToPath);
+                int count = 0;
+                FileOutputStream fileOutputStream = new FileOutputStream(fullToPath);
+                while ((count = zipInputStream.read(buffer)) != -1) {
+                    fileOutputStream.write(buffer, 0, count);
+                }
+                fileOutputStream.close();
+                zipInputStream.closeEntry();
             }
+            zipInputStream.close();
+        } catch (IOException e) {
+            Log.e("DOTNET", e.getLocalizedMessage());
         }
-        catch (Exception e) {
-            Log.w("DOTNET", "EXCEPTION", e);
-        }
-    }
-
-    static void copy(InputStream in, OutputStream out) throws IOException {
-        byte[] buff = new byte [1024];
-        for (int len = in.read(buff); len != -1; len = in.read(buff))
-            out.write(buff, 0, len);
-        in.close();
-        out.close();
     }
 
     native int initRuntime(String libsDir, String cacheDir, String docsDir);

@@ -84,12 +84,12 @@ namespace System.Numerics
         }
         private static readonly Vector<T> s_one = new Vector<T>(GetOneValue());
 
-        internal static Vector<T> AllOnes
+        internal static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            get => s_allOnes;
+            get => s_allBitsSet;
         }
-        private static readonly Vector<T> s_allOnes = new Vector<T>(GetAllBitsSetValue());
+        private static readonly Vector<T> s_allBitsSet = new Vector<T>(GetAllBitsSetValue());
         #endregion Static Members
 
         #region Constructors
@@ -478,11 +478,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals(object? obj)
         {
-            if (!(obj is Vector<T>))
-            {
-                return false;
-            }
-            return Equals((Vector<T>)obj);
+            return (obj is Vector<T> other) && Equals(other);
         }
 
         /// <summary>
@@ -493,130 +489,7 @@ namespace System.Numerics
         [Intrinsic]
         public readonly bool Equals(Vector<T> other)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                for (int g = 0; g < Count; g++)
-                {
-                    if (!ScalarEquals(this[g], other[g]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            else
-            {
-                if (typeof(T) == typeof(byte))
-                {
-                    return
-                        this.register.byte_0 == other.register.byte_0
-                        && this.register.byte_1 == other.register.byte_1
-                        && this.register.byte_2 == other.register.byte_2
-                        && this.register.byte_3 == other.register.byte_3
-                        && this.register.byte_4 == other.register.byte_4
-                        && this.register.byte_5 == other.register.byte_5
-                        && this.register.byte_6 == other.register.byte_6
-                        && this.register.byte_7 == other.register.byte_7
-                        && this.register.byte_8 == other.register.byte_8
-                        && this.register.byte_9 == other.register.byte_9
-                        && this.register.byte_10 == other.register.byte_10
-                        && this.register.byte_11 == other.register.byte_11
-                        && this.register.byte_12 == other.register.byte_12
-                        && this.register.byte_13 == other.register.byte_13
-                        && this.register.byte_14 == other.register.byte_14
-                        && this.register.byte_15 == other.register.byte_15;
-                }
-                else if (typeof(T) == typeof(sbyte))
-                {
-                    return
-                        this.register.sbyte_0 == other.register.sbyte_0
-                        && this.register.sbyte_1 == other.register.sbyte_1
-                        && this.register.sbyte_2 == other.register.sbyte_2
-                        && this.register.sbyte_3 == other.register.sbyte_3
-                        && this.register.sbyte_4 == other.register.sbyte_4
-                        && this.register.sbyte_5 == other.register.sbyte_5
-                        && this.register.sbyte_6 == other.register.sbyte_6
-                        && this.register.sbyte_7 == other.register.sbyte_7
-                        && this.register.sbyte_8 == other.register.sbyte_8
-                        && this.register.sbyte_9 == other.register.sbyte_9
-                        && this.register.sbyte_10 == other.register.sbyte_10
-                        && this.register.sbyte_11 == other.register.sbyte_11
-                        && this.register.sbyte_12 == other.register.sbyte_12
-                        && this.register.sbyte_13 == other.register.sbyte_13
-                        && this.register.sbyte_14 == other.register.sbyte_14
-                        && this.register.sbyte_15 == other.register.sbyte_15;
-                }
-                else if (typeof(T) == typeof(ushort))
-                {
-                    return
-                        this.register.uint16_0 == other.register.uint16_0
-                        && this.register.uint16_1 == other.register.uint16_1
-                        && this.register.uint16_2 == other.register.uint16_2
-                        && this.register.uint16_3 == other.register.uint16_3
-                        && this.register.uint16_4 == other.register.uint16_4
-                        && this.register.uint16_5 == other.register.uint16_5
-                        && this.register.uint16_6 == other.register.uint16_6
-                        && this.register.uint16_7 == other.register.uint16_7;
-                }
-                else if (typeof(T) == typeof(short))
-                {
-                    return
-                        this.register.int16_0 == other.register.int16_0
-                        && this.register.int16_1 == other.register.int16_1
-                        && this.register.int16_2 == other.register.int16_2
-                        && this.register.int16_3 == other.register.int16_3
-                        && this.register.int16_4 == other.register.int16_4
-                        && this.register.int16_5 == other.register.int16_5
-                        && this.register.int16_6 == other.register.int16_6
-                        && this.register.int16_7 == other.register.int16_7;
-                }
-                else if (typeof(T) == typeof(uint))
-                {
-                    return
-                        this.register.uint32_0 == other.register.uint32_0
-                        && this.register.uint32_1 == other.register.uint32_1
-                        && this.register.uint32_2 == other.register.uint32_2
-                        && this.register.uint32_3 == other.register.uint32_3;
-                }
-                else if (typeof(T) == typeof(int))
-                {
-                    return
-                        this.register.int32_0 == other.register.int32_0
-                        && this.register.int32_1 == other.register.int32_1
-                        && this.register.int32_2 == other.register.int32_2
-                        && this.register.int32_3 == other.register.int32_3;
-                }
-                else if (typeof(T) == typeof(ulong))
-                {
-                    return
-                        this.register.uint64_0 == other.register.uint64_0
-                        && this.register.uint64_1 == other.register.uint64_1;
-                }
-                else if (typeof(T) == typeof(long))
-                {
-                    return
-                        this.register.int64_0 == other.register.int64_0
-                        && this.register.int64_1 == other.register.int64_1;
-                }
-                else if (typeof(T) == typeof(float))
-                {
-                    return
-                        this.register.single_0 == other.register.single_0
-                        && this.register.single_1 == other.register.single_1
-                        && this.register.single_2 == other.register.single_2
-                        && this.register.single_3 == other.register.single_3;
-                }
-                else if (typeof(T) == typeof(double))
-                {
-                    return
-                        this.register.double_0 == other.register.double_0
-                        && this.register.double_1 == other.register.double_1;
-                }
-                else
-                {
-                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
-                }
-            }
+            return this == other;
         }
 
         /// <summary>
@@ -1722,7 +1595,7 @@ namespace System.Numerics
         /// <returns>The one's complement vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator ~(Vector<T> value) =>
-            s_allOnes ^ value;
+            AllBitsSet ^ value;
         #endregion Bitwise Operators
 
         #region Logical Operators
@@ -1734,8 +1607,133 @@ namespace System.Numerics
         /// <returns>True if all elements are equal; False otherwise.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Vector<T> left, Vector<T> right) =>
-            left.Equals(right);
+        public static bool operator ==(Vector<T> left, Vector<T> right)
+        {
+            if (Vector.IsHardwareAccelerated)
+            {
+                for (int g = 0; g < Count; g++)
+                {
+                    if (!ScalarEquals(left[g], right[g]))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return
+                        left.register.byte_0 == right.register.byte_0
+                        && left.register.byte_1 == right.register.byte_1
+                        && left.register.byte_2 == right.register.byte_2
+                        && left.register.byte_3 == right.register.byte_3
+                        && left.register.byte_4 == right.register.byte_4
+                        && left.register.byte_5 == right.register.byte_5
+                        && left.register.byte_6 == right.register.byte_6
+                        && left.register.byte_7 == right.register.byte_7
+                        && left.register.byte_8 == right.register.byte_8
+                        && left.register.byte_9 == right.register.byte_9
+                        && left.register.byte_10 == right.register.byte_10
+                        && left.register.byte_11 == right.register.byte_11
+                        && left.register.byte_12 == right.register.byte_12
+                        && left.register.byte_13 == right.register.byte_13
+                        && left.register.byte_14 == right.register.byte_14
+                        && left.register.byte_15 == right.register.byte_15;
+                }
+                else if (typeof(T) == typeof(sbyte))
+                {
+                    return
+                        left.register.sbyte_0 == right.register.sbyte_0
+                        && left.register.sbyte_1 == right.register.sbyte_1
+                        && left.register.sbyte_2 == right.register.sbyte_2
+                        && left.register.sbyte_3 == right.register.sbyte_3
+                        && left.register.sbyte_4 == right.register.sbyte_4
+                        && left.register.sbyte_5 == right.register.sbyte_5
+                        && left.register.sbyte_6 == right.register.sbyte_6
+                        && left.register.sbyte_7 == right.register.sbyte_7
+                        && left.register.sbyte_8 == right.register.sbyte_8
+                        && left.register.sbyte_9 == right.register.sbyte_9
+                        && left.register.sbyte_10 == right.register.sbyte_10
+                        && left.register.sbyte_11 == right.register.sbyte_11
+                        && left.register.sbyte_12 == right.register.sbyte_12
+                        && left.register.sbyte_13 == right.register.sbyte_13
+                        && left.register.sbyte_14 == right.register.sbyte_14
+                        && left.register.sbyte_15 == right.register.sbyte_15;
+                }
+                else if (typeof(T) == typeof(ushort))
+                {
+                    return
+                        left.register.uint16_0 == right.register.uint16_0
+                        && left.register.uint16_1 == right.register.uint16_1
+                        && left.register.uint16_2 == right.register.uint16_2
+                        && left.register.uint16_3 == right.register.uint16_3
+                        && left.register.uint16_4 == right.register.uint16_4
+                        && left.register.uint16_5 == right.register.uint16_5
+                        && left.register.uint16_6 == right.register.uint16_6
+                        && left.register.uint16_7 == right.register.uint16_7;
+                }
+                else if (typeof(T) == typeof(short))
+                {
+                    return
+                        left.register.int16_0 == right.register.int16_0
+                        && left.register.int16_1 == right.register.int16_1
+                        && left.register.int16_2 == right.register.int16_2
+                        && left.register.int16_3 == right.register.int16_3
+                        && left.register.int16_4 == right.register.int16_4
+                        && left.register.int16_5 == right.register.int16_5
+                        && left.register.int16_6 == right.register.int16_6
+                        && left.register.int16_7 == right.register.int16_7;
+                }
+                else if (typeof(T) == typeof(uint))
+                {
+                    return
+                        left.register.uint32_0 == right.register.uint32_0
+                        && left.register.uint32_1 == right.register.uint32_1
+                        && left.register.uint32_2 == right.register.uint32_2
+                        && left.register.uint32_3 == right.register.uint32_3;
+                }
+                else if (typeof(T) == typeof(int))
+                {
+                    return
+                        left.register.int32_0 == right.register.int32_0
+                        && left.register.int32_1 == right.register.int32_1
+                        && left.register.int32_2 == right.register.int32_2
+                        && left.register.int32_3 == right.register.int32_3;
+                }
+                else if (typeof(T) == typeof(ulong))
+                {
+                    return
+                        left.register.uint64_0 == right.register.uint64_0
+                        && left.register.uint64_1 == right.register.uint64_1;
+                }
+                else if (typeof(T) == typeof(long))
+                {
+                    return
+                        left.register.int64_0 == right.register.int64_0
+                        && left.register.int64_1 == right.register.int64_1;
+                }
+                else if (typeof(T) == typeof(float))
+                {
+                    return
+                        left.register.single_0 == right.register.single_0
+                        && left.register.single_1 == right.register.single_1
+                        && left.register.single_2 == right.register.single_2
+                        && left.register.single_3 == right.register.single_3;
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return
+                        left.register.double_0 == right.register.double_0
+                        && left.register.double_1 == right.register.double_1;
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+        }
 
         /// <summary>
         /// Returns a boolean indicating whether any single pair of elements in the given vectors are not equal.

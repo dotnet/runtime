@@ -146,7 +146,16 @@ mono_mobile_runtime_init (void)
     chdir (bundle_path);
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-    monovm_initialize(0, NULL, NULL);
+
+    const char* appctx_keys[2];
+    appctx_keys[0] = "RUNTIME_IDENTIFIER";
+    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
+
+    const char* appctx_values[2];
+    appctx_values[0] = "%RID%";
+    appctx_values[1] = bundle_path;
+    
+    monovm_initialize(2, appctx_keys, appctx_values);
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
     mono_install_assembly_preload_hook (assembly_preload_hook, NULL);

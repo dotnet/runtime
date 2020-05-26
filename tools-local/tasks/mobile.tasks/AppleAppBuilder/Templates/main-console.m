@@ -48,7 +48,7 @@ UITextView* logLabel;
     summaryLabel.font = [UIFont boldSystemFontOfSize: 12];
     summaryLabel.numberOfLines = 2;
     summaryLabel.textAlignment = NSTextAlignmentLeft;
-#ifdef TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
+#ifdef TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)
     summaryLabel.text = @"Loading...";
 #else
     summaryLabel.text = @"Jitting...";

@@ -80,6 +80,7 @@ public class ApkBuilder
         Directory.CreateDirectory(OutputDir);
         Directory.CreateDirectory(Path.Combine(OutputDir, "bin"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
+        Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         
         var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
@@ -89,17 +90,13 @@ public class ApkBuilder
             extensionsToIgnore.Add(".dbg");
         }
 
-        // Copy AppDir to OutputDir/assets (ignore native files)
-        Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets"), file =>
+        // Copy AppDir to OutputDir/assets-tozip (ignore native files)
+        // these files then will be zipped and copied to apk/assets/assets.zip
+        Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
         {
             string fileName = Path.GetFileName(file);
             string extension = Path.GetExtension(file);
 
-            if (file.Any(s => s >= 128))
-            {
-                // non-ascii files/folders are not allowed
-                return false;
-            }
             if (extensionsToIgnore.Contains(extension))
             {
                 // ignore native files, those go to lib/%abi%
@@ -124,6 +121,10 @@ public class ApkBuilder
         string keytool = "keytool";
         string javac = "javac";
         string cmake = "cmake";
+        string zip = "zip";
+
+        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-r ../assets/assets.zip .");
+        Directory.Delete(Path.Combine(OutputDir, "assets-tozip"), true);
         
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
@@ -140,7 +141,8 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
         string runtimeAndroidSrc = Utils.GetEmbeddedResource("runtime-android.c")
-            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
+            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)
+            .Replace("%RID%", GetRid(abi)));
         File.WriteAllText(Path.Combine(OutputDir, "runtime-android.c"), runtimeAndroidSrc);
         
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
@@ -216,6 +218,8 @@ public class ApkBuilder
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
         Utils.RunProcess(zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: OutputDir);
+        // we don't need the unaligned one any more
+        File.Delete(apkFile);
 
         // 5. Generate key
         
@@ -236,6 +240,14 @@ public class ApkBuilder
 
         return (alignedApk, packageId);
     }
+
+    private static string GetRid(string abi) => abi switch 
+        {
+            "arm64-v8a" => "android-arm64",
+            "armeabi-v7a" => "android-arm",
+            "x86_64" => "android-x64",
+            _ => "android-" + abi
+        };
     
     /// <summary>
     /// Scan android SDK for build tools (ignore preview versions)

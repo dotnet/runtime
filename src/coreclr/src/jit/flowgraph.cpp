@@ -10959,7 +10959,11 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
         {
             test->SetRootNode(sideEffList);
 
-            fgMorphBlockStmt(block, test DEBUGARG("fgRemoveConditionalJump"));
+            if (fgStmtListThreaded)
+            {
+                gtSetStmtInfo(test);
+                fgSetStmtSeq(test);
+            }
         }
     }
 }
@@ -23783,7 +23787,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             if (tmpNum != BAD_VAR_NUM)
             {
                 LclVarDsc* const tmpDsc = lvaGetDesc(tmpNum);
-                if (!fgVarNeedsExplicitZeroInit(tmpDsc, bbInALoop, bbIsReturn))
+                if (!fgVarNeedsExplicitZeroInit(tmpNum, bbInALoop, bbIsReturn))
                 {
                     JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", tmpNum);
                     tmpDsc->lvSuppressedZeroInit = 1;

@@ -33,8 +33,9 @@
         RunInUnloadableContext=$(_RunInUnloadableContext);
         TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes);
         TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes);
-        RuntimeMode=$(_RuntimeMode);
-        BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion)
+        RuntimeVariant=$(_RuntimeVariant);
+        BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
+        HelixRuntimeRid=$(HelixRuntimeRid)
       </_PropertiesToPass>
     </PropertyGroup>
 
@@ -64,10 +65,11 @@
   </Target>
 
   <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
-  <PropertyGroup>
-    <HelixRuntimeRid Condition="'$(TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Linux_musl'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+  <PropertyGroup Condition="'$(HelixRuntimeRid)' == ''">
+    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>

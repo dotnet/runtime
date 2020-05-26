@@ -199,7 +199,7 @@ namespace System.Text.Json
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// or <see cref="DefaultIgnoreCondition"/> has been set to a non-default value. These properties cannot be used together.
         /// </exception>
-        [Obsolete("Use DefaultIgnoreCondition instead.", error: false)]
+        [Obsolete("To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingDefault.", error: false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public bool IgnoreNullValues
         {
@@ -211,7 +211,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
-                if (value == true && _defaultIgnoreCondition != JsonIgnoreCondition.Never)
+                if (value && _defaultIgnoreCondition != JsonIgnoreCondition.Never)
                 {
                     Debug.Assert(_defaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault);
                     throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);

@@ -803,18 +803,6 @@ mono_compile_method_checked (MonoMethod *method, MonoError *error)
 }
 
 gpointer
-mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper, MonoError *error)
-{
-	gpointer res;
-
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	error_init (error);
-	res = callbacks.create_jump_trampoline (domain, method, add_sync_wrapper, error);
-	return res;
-}
-
-gpointer
 mono_runtime_create_delegate_trampoline (MonoClass *klass)
 {
 	MONO_REQ_GC_NEUTRAL_MODE
@@ -8714,7 +8702,7 @@ mono_print_unhandled_exception (MonoObject *exc)
 }
 
 /**
- * mono_delegate_ctor_with_method:
+ * mono_delegate_ctor:
  * \param this pointer to an uninitialized delegate object
  * \param target target object
  * \param addr pointer to native code
@@ -8724,82 +8712,22 @@ mono_print_unhandled_exception (MonoObject *exc)
  * associated with \p addr.  This is useful when sharing generic code.
  * In that case \p addr will most probably not be associated with the
  * correct instantiation of the method.
- * On failure returns FALSE and sets \p error.
+ * If \method is NULL, it is looked up using \addr in the JIT info tables.
  */
-gboolean
-mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error)
+void
+mono_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	error_init (error);
 	MonoDelegateHandle delegate = MONO_HANDLE_CAST (MonoDelegate, this_obj);
 
-	g_assert (!MONO_HANDLE_IS_NULL (this_obj));
+	UnlockedIncrement (&mono_stats.delegate_creations);
 
 	MonoClass *klass = mono_handle_class (this_obj);
 	g_assert (mono_class_has_parent (klass, mono_defaults.multicastdelegate_class));
 
-	if (method)
-		MONO_HANDLE_SETVAL (delegate, method, MonoMethod*, method);
-
-	UnlockedIncrement (&mono_stats.delegate_creations);
-
-	if (addr)
-		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, addr);
-
-#ifndef DISABLE_REMOTING
-	if (!MONO_HANDLE_IS_NULL (target) && mono_class_is_transparent_proxy (mono_handle_class (target))) {
-		if (callbacks.interp_get_remoting_invoke) {
-			MONO_HANDLE_SETVAL (delegate, interp_method, gpointer, callbacks.interp_get_remoting_invoke (method, addr, error));
-		} else {
-			g_assert (method);
-			method = mono_marshal_get_remoting_invoke (method, error);
-			return_val_if_nok (error, FALSE);
-			MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, mono_compile_method_checked (method, error));
-		}
-		return_val_if_nok (error, FALSE);
-	}
-#endif
-
-	MONO_HANDLE_SET (delegate, target, target);
-	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, callbacks.create_delegate_trampoline (MONO_HANDLE_DOMAIN (delegate), mono_handle_class (delegate)));
-	g_assert (callbacks.init_delegate);
-	callbacks.init_delegate (delegate, error);
-	return_val_if_nok (error, FALSE);
-	return TRUE;
-}
-
-/**
- * mono_delegate_ctor:
- * \param this pointer to an uninitialized delegate object
- * \param target target object
- * \param addr pointer to native code
- * \param error set on error.
- * This is used to initialize a delegate.
- * On failure returns FALSE and sets \p error.
- */
-gboolean
-mono_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	error_init (error);
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji;
-	MonoMethod *method = NULL;
-
-	g_assert (addr);
-
-	ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr));
-	/* Shared code */
-	if (!ji && domain != mono_get_root_domain ())
-		ji = mono_jit_info_table_find (mono_get_root_domain (), mono_get_addr_from_ftnptr (addr));
-	if (ji) {
-		method = mono_jit_info_get_method (ji);
-		g_assert (!mono_class_is_gtd (method->klass));
-	}
-
-	return mono_delegate_ctor_with_method (this_obj, target, addr, method, error);
+	/* Done by the EE */
+	callbacks.init_delegate (delegate, target, addr, method, error);
 }
 
 /**
