@@ -707,7 +707,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     if ((baseType == TYP_FLOAT) && (simdSize == 12))
     {
         // For TYP_SIMD12 we don't want the upper bits to participate in the comparison. So, we will insert all ones
-        // into those bits of the result, "as if" the upper bits are equal. Then if all lower bits are equal, we get the 
+        // into those bits of the result, "as if" the upper bits are equal. Then if all lower bits are equal, we get the
         // expected all-ones result, and will get the expected 0's only where there are non-matching bits.
 
         GenTree* idxCns = comp->gtNewIconNode(3, TYP_INT);
