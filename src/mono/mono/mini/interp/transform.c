@@ -2463,53 +2463,57 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		mono_error_assert_ok (error);
 		td->last_ins->data [1] = vt_stack_used;
 	} else {
-#ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
-		/* Try using fast icall path for simple signatures */
-		if (native && !method->dynamic)
-			op = interp_icall_op_for_sig (csignature);
-#endif
-		if (csignature->call_convention == MONO_CALL_VARARG)
-			interp_add_ins (td, MINT_CALL_VARARG);
-		else if (is_delegate_invoke)
-			interp_add_ins (td, MINT_CALL_DELEGATE);
-		else if (calli)
-			interp_add_ins (td, native ? ((op != -1) ? MINT_CALLI_NAT_FAST : MINT_CALLI_NAT) : MINT_CALLI);
-		else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass))
-			interp_add_ins (td, MINT_CALLVIRT_FAST);
-		else if (is_virtual)
-			interp_add_ins (td, MINT_CALLVIRT);
-		else
-			interp_add_ins (td, MINT_CALL);
-
 		if (is_delegate_invoke) {
+			interp_add_ins (td, MINT_CALL_DELEGATE);
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 			td->last_ins->data [1] = vt_stack_used;
 		} else if (calli) {
-			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
-#ifdef TARGET_X86
-			/* Windows not tested/supported yet */
-			if (td->last_ins->opcode == MINT_CALLI_NAT)
-				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
+#ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
+			/* Try using fast icall path for simple signatures */
+			if (native && !method->dynamic)
+				op = interp_icall_op_for_sig (csignature);
 #endif
-
 			if (op != -1) {
-				g_assert (td->last_ins->opcode == MINT_CALLI_NAT_FAST);
+				interp_add_ins (td, MINT_CALLI_NAT_FAST);
 				td->last_ins->data [1] = op;
 				td->last_ins->data [2] = save_last_error;
 			} else if (native) {
-				g_assert (td->last_ins->opcode == MINT_CALLI_NAT);
+				interp_add_ins (td, MINT_CALLI_NAT);
+#ifdef TARGET_X86
+				/* Windows not tested/supported yet */
+				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
+#endif
 				td->last_ins->data [1] = vt_stack_used;
 				td->last_ins->data [2] = vt_res_size;
 				td->last_ins->data [3] = save_last_error;
 			} else {
-				g_assert (td->last_ins->opcode == MINT_CALLI);
+				interp_add_ins (td, MINT_CALLI);
 				td->last_ins->data [1] = vt_stack_used;
 			}
+			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 		} else {
 			InterpMethod *imethod = mono_interp_get_imethod (domain, target_method, error);
+			return_val_if_nok (error, FALSE);
+
+			if (csignature->call_convention == MONO_CALL_VARARG) {
+				interp_add_ins (td, MINT_CALL_VARARG);
+				td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
+			} else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass)) {
+				interp_add_ins (td, MINT_CALLVIRT_FAST);
+				if (mono_class_is_interface (target_method->klass))
+					td->last_ins->data [1] = -2 * MONO_IMT_SIZE + mono_method_get_imt_slot (target_method);
+				else
+					td->last_ins->data [1] = mono_method_get_vtable_slot (target_method);
+			} else if (is_virtual) {
+				interp_add_ins (td, MINT_CALLVIRT);
+				td->last_ins->data [1] = imethod->param_count + imethod->hasthis;
+			} else {
+				interp_add_ins (td, MINT_CALL);
+				td->last_ins->data [1] = imethod->param_count + imethod->hasthis;
+			}
 			td->last_ins->data [0] = get_data_item_index (td, (void *)imethod);
-			td->last_ins->data [1] = imethod->param_count + imethod->hasthis;
 			td->last_ins->data [2] = vt_stack_used;
+
 #ifdef ENABLE_EXPERIMENT_TIERED
 			if (MINT_IS_PATCHABLE_CALL (td->last_ins->opcode)) {
 				g_assert (!calli && !is_virtual);
@@ -2517,16 +2521,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				g_hash_table_insert (td->patchsite_hash, td->last_ins, target_method);
 			}
 #endif
-			return_val_if_nok (error, FALSE);
-			if (csignature->call_convention == MONO_CALL_VARARG)
-				td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
-			else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass)) {
-				/* FIXME Use fastpath also for MBRO. Asserts in mono_method_get_vtable_slot */
-				if (mono_class_is_interface (target_method->klass))
-					td->last_ins->data [1] = -2 * MONO_IMT_SIZE + mono_method_get_imt_slot (target_method);
-				else
-					td->last_ins->data [1] = mono_method_get_vtable_slot (target_method);
-			}
 		}
 	}
 	td->ip += 5;
