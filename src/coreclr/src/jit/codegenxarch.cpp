@@ -1868,7 +1868,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
     GenTree* op1       = treeNode->gtGetOp1();
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
     assert(op1->IsMultiRegNode());
-    unsigned regCount = op1->GetMultiRegCount();
+    unsigned regCount = actualOp1->GetMultiRegCount();
 
     // Assumption: The current implementation requires that a multi-reg
     // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
@@ -1968,17 +1968,14 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
         {
-            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
+            var_types type = actualOp1->GetRegTypeByIndex(i);
             regNumber reg  = op1->GetRegByIndex(i);
-            if (op1->IsCopyOrReload())
+            if (reg == REG_NA)
             {
-                // GT_COPY/GT_RELOAD will have valid reg for those positions
+                // GT_COPY/GT_RELOAD will have valid reg only for those positions
                 // that need to be copied or reloaded.
-                regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
-                if (reloadReg != REG_NA)
-                {
-                    reg = reloadReg;
-                }
+                assert(op1->IsCopyOrReload());
+                reg = actualOp1->GetRegByIndex(i);
             }
 
             assert(reg != REG_NA);
