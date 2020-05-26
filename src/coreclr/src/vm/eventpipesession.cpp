@@ -275,6 +275,7 @@ void EventPipeSession::AddSessionProvider(EventPipeSessionProvider *pProvider)
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 

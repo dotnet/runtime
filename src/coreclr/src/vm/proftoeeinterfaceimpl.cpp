@@ -7165,7 +7165,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeAddProviderToSession(
                     (EventPipeEventLevel)providerConfig.loggingLevel,
                     providerConfig.filterData);
 
-            pSession->AddSessionProvider(pProvider);
+            EventPipe::AddProviderToSession(pProvider, pSession);
         }
     }
     EX_CATCH_HRESULT(hr);

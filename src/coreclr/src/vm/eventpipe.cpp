@@ -639,6 +639,28 @@ EventPipeProvider *EventPipe::GetProvider(const SString &providerName)
     return s_config.GetProvider(providerName);
 }
 
+void EventPipe::AddProviderToSession(EventPipeSessionProvider *pProvider, EventPipeSession *pSession)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+
+    CONTRACTL_END;
+
+    if (pProvider == nullptr || pSession == nullptr)
+    {
+        return;
+    }
+    {
+        CrstHolder _crst(GetLock());
+
+        pSession->AddSessionProvider(pProvider);
+    }
+}
+
 void EventPipe::DeleteProvider(EventPipeProvider *pProvider)
 {
     CONTRACTL

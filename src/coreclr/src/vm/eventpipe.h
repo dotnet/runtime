@@ -19,6 +19,7 @@ class EventPipeFile;
 class EventPipeEventSource;
 class EventPipeProvider;
 class EventPipeSession;
+class EventPipeSessionProvider;
 class IpcStream;
 enum class EventPipeSessionType;
 enum class EventPipeSerializationFormat;
@@ -94,6 +95,8 @@ public:
 
     // Get a provider.
     static EventPipeProvider *GetProvider(const SString &providerName);
+
+    static void AddProviderToSession(EventPipeSessionProvider *pProvider, EventPipeSession *pSession);
 
     // Delete a provider.
     static void DeleteProvider(EventPipeProvider *pProvider);
