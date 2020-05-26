@@ -44,6 +44,9 @@
       example, the platform manifest includes data from all RIDs.
     -->
     <RestoreAllBuildRids Condition="'$(RestoreAllBuildRids)' == ''">true</RestoreAllBuildRids>
+
+    <!-- Enable creating a LightCommand pakage for MSI creation. -->
+    <EnableCreateLightCommandPackageDrop>true</EnableCreateLightCommandPackageDrop>
   </PropertyGroup>
 
   <PropertyGroup>
