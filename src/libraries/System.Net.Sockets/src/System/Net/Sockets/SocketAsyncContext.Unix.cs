@@ -1197,7 +1197,8 @@ namespace System.Net.Sockets
 
         public bool PreferInlineCompletions
         {
-            [PreserveDependency("get_PreferInlineCompletions", "System.Net.Sockets.Socket")]
+            // Socket.PreferInlineCompletions is an experimental API with internal access modifier.
+            // PreserveDependency ensures the setter is available externally using reflection.
             [PreserveDependency("set_PreferInlineCompletions", "System.Net.Sockets.Socket")]
             get => _socket.PreferInlineCompletions;
         }
