@@ -25,6 +25,7 @@ namespace System
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsIOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
+        public static bool IsTvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -116,7 +117,7 @@ namespace System
             (IsOpenSslSupported &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
-        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsIOS;
+        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsIOS || IsTvOS;
 
         // OpenSSL 1.1.1 and above.
         public static bool SupportsTls13 => GetTls13Support();
@@ -264,7 +265,7 @@ namespace System
                 // assume no if key is missing or on error.
                 return false;
             }
-            else if (IsOSX)
+            else if (IsOSX || IsIOS || IsTvOS)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
