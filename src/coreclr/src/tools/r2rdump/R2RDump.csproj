@@ -21,8 +21,8 @@
     <PackageReference Include="Microsoft.NETCore.CoreDisTools">
       <Version>1.0.1-prerelease-00005</Version>
     </PackageReference>
-    <PackageReference Include="System.CommandLine.Experimental">
-      <Version>0.2.0-alpha.19174.3</Version>
+    <PackageReference Include="System.CommandLine">
+      <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>
     <ProjectReference Include="..\crossgen2\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
   </ItemGroup>
