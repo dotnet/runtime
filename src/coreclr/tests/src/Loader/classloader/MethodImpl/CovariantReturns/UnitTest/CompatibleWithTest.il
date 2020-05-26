@@ -13,31 +13,38 @@
 
     .method public hidebysig newslot virtual instance int32[] M1() 
     {
+        ldnull
         ret
     }
 
     .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<int32> M2() 
     {
+        ldnull
         ret
     }
 
     .method public hidebysig newslot virtual instance int32 M3() 
     {
+        ldc.i4.0
         ret
     }
 
     .method public hidebysig newslot virtual instance valuetype [mscorlib]System.Nullable`1<int32> M4() 
     {
+        ldc.i4.0
+        newobj instance void valuetype [mscorlib]System.Nullable`1<int32>::.ctor(!0)
         ret
     }
 
     .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<class Base> M5() 
     {
+        ldnull
         ret
     }
 
     .method public hidebysig newslot virtual instance native int[] M6() 
     {
+        ldnull
         ret
     }
 }
@@ -49,6 +56,7 @@
     .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<int32> M1() 
     {
         .override method instance int32[] C1::M1();
+        ldnull
         ret
     }
 }
@@ -60,6 +68,7 @@
     .method public hidebysig newslot virtual instance int32[] M2() 
     {
         .override method instance class [System.Runtime]System.Collections.Generic.IList`1<int32> C1::M2();
+        ldnull
         ret
     }
 }
@@ -71,6 +80,8 @@
     .method public hidebysig virtual instance valuetype [mscorlib]System.Nullable`1<int32> M3() 
     {
         .override method instance int32 C1::M3();
+        ldc.i4.0
+        newobj instance void valuetype [mscorlib]System.Nullable`1<int32>::.ctor(!0)
         ret
     }
 }
@@ -82,6 +93,7 @@
     .method public hidebysig virtual instance int32 M4() 
     {
         .override method instance valuetype [mscorlib]System.Nullable`1<int32> C1::M4();
+        ldc.i4.0
         ret
     }
 }
@@ -93,6 +105,7 @@
     .method public hidebysig virtual instance uint32[] M1() 
     {
         .override method instance int32[] C1::M1();
+        ldnull
         ret
     }
 }
@@ -104,6 +117,7 @@
     .method public hidebysig newslot virtual instance uint32[] M2() 
     {
         .override method instance class [System.Runtime]System.Collections.Generic.IList`1<int32> C1::M2();
+        ldnull
         ret
     }
 }
@@ -115,6 +129,7 @@
     .method public hidebysig newslot virtual instance class Derived[] M5() 
     {
         .override method instance class [System.Runtime]System.Collections.Generic.IList`1<class Base> C1::M5();
+        ldnull
         ret
     }
 }
@@ -126,6 +141,7 @@
     .method public hidebysig virtual instance uint64[] M6() 
     {
         .override method instance native int[] C1::M6();
+        ldnull
         ret
     }
 }
@@ -137,6 +153,7 @@
     .method public hidebysig virtual instance uint32[] M6() 
     {
         .override method instance native int[] C1::M6();
+        ldnull
         ret
     }
 }
@@ -146,6 +163,7 @@
     .method public static void RunTestC1() noinlining 
     {
         newobj instance void class C1::.ctor()
+        callvirt instance int32[] class C1::M1()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -155,6 +173,7 @@
     .method public static void RunTestC2() noinlining 
     {
         newobj instance void class C2::.ctor()
+        callvirt instance int32[] class C1::M1()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -164,6 +183,7 @@
     .method public static void RunTestC3() noinlining 
     {
         newobj instance void class C3::.ctor()
+        callvirt instance class [System.Runtime]System.Collections.Generic.IList`1<int32> class C1::M2()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -173,6 +193,7 @@
     .method public static void RunTestC4() noinlining 
     {
         newobj instance void class C4::.ctor()
+        callvirt instance int32 class C1::M3()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -182,6 +203,7 @@
     .method public static void RunTestC5() noinlining 
     {
         newobj instance void class C5::.ctor()
+        callvirt instance valuetype [mscorlib]System.Nullable`1<int32> C1::M4()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -191,6 +213,7 @@
     .method public static void RunTestC6() noinlining 
     {
         newobj instance void class C6::.ctor()
+        callvirt instance int32[] class C1::M1()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -200,6 +223,7 @@
     .method public static void RunTestC7() noinlining 
     {
         newobj instance void class C7::.ctor()
+        callvirt instance class [System.Runtime]System.Collections.Generic.IList`1<int32> class C1::M2()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -209,6 +233,7 @@
     .method public static void RunTestC8() noinlining 
     {
         newobj instance void class C8::.ctor()
+        callvirt instance class [System.Runtime]System.Collections.Generic.IList`1<class Base> class C1::M5()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -218,6 +243,7 @@
     .method public static void RunTestC9() noinlining 
     {
         newobj instance void class C9::.ctor()
+        callvirt instance native int[] class C1::M6()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -227,6 +253,7 @@
     .method public static void RunTestC10() noinlining 
     {
         newobj instance void class C10::.ctor()
+        callvirt instance native int[] class C1::M6()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)

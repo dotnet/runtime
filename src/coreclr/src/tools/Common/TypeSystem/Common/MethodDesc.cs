@@ -138,7 +138,7 @@ namespace Internal.TypeSystem
                 if (!allowCovariantReturn)
                     return false;
 
-                if (!this._returnType.CanCastTo(otherSignature._returnType))
+                if (!otherSignature._returnType.IsCompatibleWith(this._returnType))
                     return false;
             }
 
