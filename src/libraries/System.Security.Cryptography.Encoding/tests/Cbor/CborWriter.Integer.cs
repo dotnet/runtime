@@ -81,7 +81,8 @@ namespace System.Formats.Cbor
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
-        ///   Intended as an escape hatch in cases of valid CBOR negative integers exceeding available primitive sizes.
+        ///   This method supports encoding integers between -18446744073709551616 and -1.
+        ///   Useful for handling values that do not fit in the <see cref="long"/> type.
         /// </remarks>
         public void WriteCborNegativeIntegerEncoding(ulong value)
         {

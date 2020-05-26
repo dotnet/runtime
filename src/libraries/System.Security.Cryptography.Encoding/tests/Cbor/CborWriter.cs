@@ -49,6 +49,9 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Declares whether this writer allows multiple root-level CBOR data items.
         /// </summary>
+        /// <value>
+        ///   <see langword="true"/> if the writer allows multiple root-level CBOR data items; otherwise, <see langword="false"/>.
+        /// </value>
         public bool AllowMultipleRootLevelValues { get; }
 
         /// <summary>

@@ -12,13 +12,13 @@ namespace System.Formats.Cbor
         // Implements major type 6 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>
-        ///   Writes a semantic tag (major type 6).
+        ///   Assign a semantic tag (major type 6) to the next data item.
         /// </summary>
         /// <param name="tag">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteTag(CborTag tag)
         {
@@ -33,13 +33,13 @@ namespace System.Formats.Cbor
 
         /// <summary>
         ///   Writes a <see cref="DateTimeOffset"/> value as a tagged date/time string,
-        ///   as described in RFC7049 section 2.4.1
+        ///   as described in RFC7049 section 2.4.1.
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteDateTimeOffset(DateTimeOffset value)
         {
@@ -54,13 +54,13 @@ namespace System.Formats.Cbor
 
         /// <summary>
         ///   Writes a unix time in seconds as a tagged date/time value,
-        ///   as described in RFC7049 section 2.4.1
+        ///   as described in RFC7049 section 2.4.1.
         /// </summary>
         /// <param name="seconds">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteUnixTimeSeconds(long seconds)
         {
@@ -70,16 +70,16 @@ namespace System.Formats.Cbor
 
         /// <summary>
         ///   Writes a unix time in seconds as a tagged date/time value,
-        ///   as described in RFC7049 section 2.4.1
+        ///   as described in RFC7049 section 2.4.1.
         /// </summary>
         /// <param name="seconds">The value to write.</param>
         /// <exception cref="ArgumentException">
         ///   The <paramref name="seconds"/> parameter cannot be infinite or NaN
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteUnixTimeSeconds(double seconds)
         {
@@ -94,7 +94,7 @@ namespace System.Formats.Cbor
 
         /// <summary>
         ///   Writes a <see cref="BigInteger"/> value as a tagged bignum encoding,
-        ///   as described in RFC7049 section 2.4.2
+        ///   as described in RFC7049 section 2.4.2.
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
@@ -118,9 +118,9 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteDecimal(decimal value)
         {
