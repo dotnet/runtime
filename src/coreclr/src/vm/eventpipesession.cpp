@@ -30,7 +30,8 @@ EventPipeSession::EventPipeSession(
                                                     m_SessionType(sessionType),
                                                     m_format(format),
                                                     m_rundownRequested(rundownSwitch),
-                                                    m_synchronousCallback(callback)
+                                                    m_synchronousCallback(callback),
+                                                    m_pBufferManager(nullptr)
 {
     CONTRACTL
     {
@@ -39,7 +40,7 @@ EventPipeSession::EventPipeSession(
         MODE_PREEMPTIVE;
         PRECONDITION(index < EventPipe::MaxNumberOfSessions);
         PRECONDITION(format < EventPipeSerializationFormat::Count);
-        PRECONDITION(circularBufferSizeInMB > 0);
+        PRECONDITION(m_SessionType == EventPipeSessionType::Synchronous || circularBufferSizeInMB > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
         PRECONDITION((m_synchronousCallback != nullptr) == (m_SessionType == EventPipeSessionType::Synchronous));
@@ -55,7 +56,10 @@ EventPipeSession::EventPipeSession(
         sequencePointAllocationBudget = 10 * 1024 * 1024;
     }
 
-    m_pBufferManager = new EventPipeBufferManager(this, static_cast<size_t>(circularBufferSizeInMB) << 20, sequencePointAllocationBudget);
+    if (m_SessionType != EventPipeSessionType::Synchronous)
+    {
+        m_pBufferManager = new EventPipeBufferManager(this, static_cast<size_t>(circularBufferSizeInMB) << 20, sequencePointAllocationBudget);
+    }
 
     // Create the event pipe file.
     // A NULL output path means that we should not write the results to a file.
@@ -93,7 +97,10 @@ EventPipeSession::~EventPipeSession()
     CONTRACTL_END;
 
     delete m_pProviderList;
-    delete m_pBufferManager;
+    if (m_pBufferManager != nullptr)
+    {
+        delete m_pBufferManager;
+    }
     delete m_pFile;
 }
 
@@ -297,7 +304,7 @@ bool EventPipeSession::WriteAllBuffersToFile(bool *pEventsWritten)
     }
     CONTRACTL_END;
 
-    if (m_pFile == nullptr)
+    if (m_pFile == nullptr || m_pBufferManager == nullptr)
         return true;
 
     // Get the current time stamp.
@@ -347,6 +354,7 @@ bool EventPipeSession::WriteEvent(
         }
         else
         {
+            _ASSERTE(m_pBufferManager != nullptr);
             return m_pBufferManager->WriteEvent(pThread, *this, event, payload, pActivityId, pRelatedActivityId, pEventThread, pStack);
         }
     }
@@ -364,7 +372,7 @@ void EventPipeSession::WriteSequencePointUnbuffered()
     }
     CONTRACTL_END;
 
-    if (m_pFile == nullptr)
+    if (m_pFile == nullptr || m_pBufferManager == nullptr)
         return;
     EventPipeSequencePoint sequencePoint;
     m_pBufferManager->InitSequencePointThreadList(&sequencePoint);
@@ -382,12 +390,22 @@ EventPipeEventInstance *EventPipeSession::GetNextEvent()
     }
     CONTRACTL_END;
 
+    if (m_pBufferManager == nullptr)
+    {
+        return nullptr;
+    }
+
     return m_pBufferManager->GetNextEvent();
 }
 
 CLREvent *EventPipeSession::GetWaitEvent()
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (m_pBufferManager == nullptr)
+    {
+        return nullptr;
+    }
 
     return m_pBufferManager->GetWaitEvent();
 }
@@ -476,6 +494,7 @@ void EventPipeSession::DisableIpcStreamingThread()
     CONTRACTL_END;
 
     _ASSERTE(!g_fProcessDetach);
+    _ASSERTE(m_pBufferManager != nullptr);
 
     // The IPC streaming thread will watch this value and exit
     // when profiling is disabled.
@@ -516,6 +535,11 @@ void EventPipeSession::SuspendWriteEvent()
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
+
+    if (m_pBufferManager == nullptr)
+    {
+        return;
+    }
 
     // Force all in-progress writes to either finish or cancel
     // This is required to ensure we can safely flush and delete the buffers

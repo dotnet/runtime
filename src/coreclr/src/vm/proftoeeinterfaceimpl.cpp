@@ -7103,7 +7103,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
 
         EventPipeProviderConfiguration *pProviders = reinterpret_cast<EventPipeProviderConfiguration *>(pProviderConfigs);
         UINT64 sessionID = EventPipe::Enable(NULL,
-                                             100, // circularBufferSizeInMB (shouldn't need this once it's synchronous)
+                                             0, // We don't use a circular buffer since it's synchronous
                                              pProviders,
                                              cProviderConfigs,
                                              EventPipeSessionType::Synchronous,
