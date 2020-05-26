@@ -78,6 +78,8 @@ jobs:
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
+      - src/libraries/Native/Unix/System.Globalization.Native/*
+      - src/libraries/Native/Unix/Common/*
       exclude:
       - eng/Version.Details.xml
       - '*.md'
@@ -543,24 +545,6 @@ jobs:
       framework: allConfigurations
       runTests: true
       liveRuntimeBuildConfig: release
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
-# Libraries Sourcebuild Build
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_x64
-    jobParameters:
-      runTests: false
-      liveRuntimeBuildConfig: release
-      isSourceBuild: true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),

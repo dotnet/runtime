@@ -480,19 +480,15 @@ namespace System
             // Parse relativeUri and populate Uri internal data.
             CreateThis(relativeUri, dontEscape, UriKind.RelativeOrAbsolute);
 
-            UriFormatException? e;
             if (baseUri.Syntax!.IsSimple)
             {
                 // Resolve Uris if possible OR get merged Uri String to re-parse below
-                Uri? uriResult = ResolveHelper(baseUri, this, ref relativeUri, ref dontEscape, out e);
-
-                if (e != null)
-                    throw e;
+                Uri? uriResult = ResolveHelper(baseUri, this, ref relativeUri, ref dontEscape);
 
                 // If resolved into a Uri then we build from that Uri
                 if (uriResult != null)
                 {
-                    if ((object)uriResult != (object)this)
+                    if (!ReferenceEquals(this, uriResult))
                         CreateThisFromUri(uriResult);
 
                     return;
@@ -501,7 +497,7 @@ namespace System
             else
             {
                 dontEscape = false;
-                relativeUri = baseUri.Syntax.InternalResolve(baseUri, this, out e);
+                relativeUri = baseUri.Syntax.InternalResolve(baseUri, this, out UriFormatException? e);
                 if (e != null)
                     throw e;
             }
@@ -528,20 +524,16 @@ namespace System
             CreateThisFromUri(relativeUri);
 
             string? newUriString = null;
-            UriFormatException? e;
             bool dontEscape;
 
             if (baseUri.Syntax!.IsSimple)
             {
                 dontEscape = InFact(Flags.UserEscaped);
-                Uri? resolvedRelativeUri = ResolveHelper(baseUri, this, ref newUriString, ref dontEscape, out e);
-
-                if (e != null)
-                    throw e;
+                Uri? resolvedRelativeUri = ResolveHelper(baseUri, this, ref newUriString, ref dontEscape);
 
                 if (resolvedRelativeUri != null)
                 {
-                    if ((object)resolvedRelativeUri != (object)this)
+                    if (!ReferenceEquals(this, resolvedRelativeUri))
                         CreateThisFromUri(resolvedRelativeUri);
 
                     DebugSetLeftCtor();
@@ -551,7 +543,7 @@ namespace System
             else
             {
                 dontEscape = false;
-                newUriString = baseUri.Syntax.InternalResolve(baseUri, this, out e);
+                newUriString = baseUri.Syntax.InternalResolve(baseUri, this, out UriFormatException? e);
                 if (e != null)
                     throw e;
             }
@@ -568,7 +560,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private static unsafe ParsingError GetCombinedString(Uri baseUri, string relativeStr,
+        private static unsafe void GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string? result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -610,7 +602,7 @@ namespace System
                             // This is the place where we switch the scheme.
                             // Return relative part as the result Uri.
                             result = relativeStr;
-                            return ParsingError.None;
+                            return;
                         }
                     }
                     break;
@@ -620,11 +612,11 @@ namespace System
             if (relativeStr.Length == 0)
             {
                 result = baseUri.OriginalString;
-                return ParsingError.None;
             }
-
-            result = CombineUri(baseUri, relativeStr, dontEscape ? UriFormat.UriEscaped : UriFormat.SafeUnescaped);
-            return ParsingError.None;
+            else
+            {
+                result = CombineUri(baseUri, relativeStr, dontEscape ? UriFormat.UriEscaped : UriFormat.SafeUnescaped);
+            }
         }
 
         private static UriFormatException? GetException(ParsingError err)

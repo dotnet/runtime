@@ -9,18 +9,6 @@ env:
 - TARGET=mipsel-unknown-linux-gnu
 # Currently experiencing build failures here
 #- TARGET=powerpc64-linux-gnu
-
-linux-s390x: &linux-s390x
-  os: linux
-  arch: s390x
-  env: TARGET=s390x-linux-gnu
-  script:
-    - ./autogen.sh
-    - ./configure
-    - make -j32
-    - ulimit -c unlimited
-    - make check -j32
-
 script:
 - ./autogen.sh
 - ./configure --target=$TARGET --host=$HOST
@@ -28,7 +16,3 @@ script:
 - sudo bash -c 'echo core.%p.%p > /proc/sys/kernel/core_pattern'
 - ulimit -c unlimited
 - if [ $TARGET == 'x86_64-linux-gnu' ]; then make check -j32; fi
-
-jobs:
-  include:
-    - <<: *linux-s390x

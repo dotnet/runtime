@@ -281,6 +281,7 @@ jobs:
         buildConfig: $(buildConfigUpper)
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup}}
         coreClrRepoRoot: $(coreClrRepoRoot)
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 

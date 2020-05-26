@@ -60,7 +60,7 @@
 
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) kill-server"/>
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) start-server"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -c" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -c" ContinueOnError="WarnAndContinue" />
     <Message Condition="'$(DeployAndRun)' == 'true'" Importance="High" Text="Uninstalling app if it exists (throws an error if it doesn't but it can be ignored):"/>
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />

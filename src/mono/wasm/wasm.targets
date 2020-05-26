@@ -1,0 +1,41 @@
+<Project>
+
+  <UsingTask TaskName="PInvokeTableGenerator"
+    AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmAppBuilder.dll'))"/>
+
+  <PropertyGroup>
+    <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmPInvokeModules Include="libSystem.Native"/>
+    <WasmPInvokeModules Include="libSystem.Security.Cryptography.Native.OpenSsl"/>
+    <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)\System.Private.CoreLib.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Runtime.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Console\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Console.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime.InteropServices.RuntimeInformation\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Runtime.InteropServices.RuntimeInformation.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.FileSystem.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem.DriveInfo\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.FileSystem.DriveInfo.dll"/>
+  </ItemGroup>
+
+  <Target Name="CheckEnv">
+    <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
+    <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
+    <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
+  </Target>
+
+  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv">
+    <MakeDir Directories="$(ArtifactsObjDir)wasm"/>
+    <PInvokeTableGenerator
+      Modules="@(WasmPInvokeModules)"
+      Assemblies="@(WasmPInvokeAssemblies)"
+      OutputPath="$(WasmPInvokeTablePath)"
+      />
+  </Target>
+
+  <Target Name="BuildWasmRuntimes"
+          DependsOnTargets="BuildPInvokeTable">
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) BUILDS_BIN_DIR=$(NativeBinDir)/wasm/runtimes SYS_NATIVE_DIR=$(ArtifactsObjDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)/System.Native CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
+  </Target>
+
+</Project>

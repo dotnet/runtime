@@ -278,7 +278,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private Process GetPingProcess(IPAddress address, byte[] buffer, PingOptions? options)
+        private Process GetPingProcess(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
             string? pingExecutable = isIpv4 ? UnixCommandLinePing.Ping4UtilityPath : UnixCommandLinePing.Ping6UtilityPath;
@@ -293,7 +293,7 @@ namespace System.Net.NetworkInformation
                 fragmentOption = options.DontFragment ? UnixCommandLinePing.PingFragmentOptions.Do : UnixCommandLinePing.PingFragmentOptions.Dont;
             }
 
-            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
+            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, timeout, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
 
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
@@ -303,7 +303,7 @@ namespace System.Net.NetworkInformation
 
         private PingReply SendWithPingUtility(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            using (Process p = GetPingProcess(address, buffer, options))
+            using (Process p = GetPingProcess(address, buffer, timeout, options))
             {
                 p.Start();
                 if (!p.WaitForExit(timeout) || p.ExitCode == 1 || p.ExitCode == 2)
@@ -326,7 +326,7 @@ namespace System.Net.NetworkInformation
 
         private async Task<PingReply> SendWithPingUtilityAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            using (Process p = GetPingProcess(address, buffer, options))
+            using (Process p = GetPingProcess(address, buffer, timeout, options))
             {
                 var processCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 p.EnableRaisingEvents = true;
