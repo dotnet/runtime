@@ -1866,6 +1866,9 @@ const int max_snoop_level = 128;
 #define MH_TH_CARD_BUNDLE  (180*1024*1024)
 #endif //CARD_BUNDLE
 
+// min size to decommit to make the OS call worthwhile
+#define MIN_DECOMMIT_SIZE  (100*OS_PAGE_SIZE)
+
 // max size to decommit per millisecond
 #define DECOMMIT_SIZE_PER_MILLISECOND (160*1024)
 
@@ -9257,7 +9260,7 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
     uint8_t*  page_start = align_on_page (heap_segment_allocated(seg));
     size_t size = heap_segment_committed (seg) - page_start;
     extra_space = align_on_page (extra_space);
-    if (size >= max ((extra_space + 2*OS_PAGE_SIZE), 100*OS_PAGE_SIZE))
+    if (size >= max ((extra_space + 2*OS_PAGE_SIZE), MIN_DECOMMIT_SIZE))
     {
         page_start += max(extra_space, 32*OS_PAGE_SIZE);
         decommit_heap_segment_pages_worker (seg, page_start);
@@ -10056,8 +10059,8 @@ gc_heap::init_semi_shared()
     // gradual decommit: set size to some reasonable value per time interval
     max_decommit_step_size = ((DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS) / n_heaps);
 
-    // but do at least 100 pages per step to make the OS call worthwhile
-    max_decommit_step_size = max (max_decommit_step_size, (100 * OS_PAGE_SIZE));
+    // but do at least MIN_DECOMMIT_SIZE per step to make the OS call worthwhile
+    max_decommit_step_size = max (max_decommit_step_size, MIN_DECOMMIT_SIZE);
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_BASICFREEZE
