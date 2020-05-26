@@ -2368,10 +2368,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			vararg_stack = ALIGN_TO (vararg_stack, align);
 			vararg_stack += arg_size;
 		}
-		/* allocate space for the pointer to varargs space start */
-		vararg_stack += sizeof (gpointer);
-		vt_stack_used += ALIGN_TO (vararg_stack, MINT_VT_ALIGNMENT);
+		/*
+		 * MINT_CALL_VARARG needs this space on the vt stack. Make sure the
+		 * vtstack space is sufficient.
+		 */
 		PUSH_VT (td, vararg_stack);
+		POP_VT (td, vararg_stack);
 	}
 
 	if (need_null_check) {
@@ -2418,6 +2420,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			vt_stack_used += size;
 		}
 	}
+	/* Pop the vt stack used by the arguments */
+	td->vt_sp -= vt_stack_used;
 
 	/* need to handle typedbyref ... */
 	if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -2459,6 +2463,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_add_ins (td, MINT_JIT_CALL);
 		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
 		mono_error_assert_ok (error);
+		td->last_ins->data [1] = vt_stack_used;
+		td->last_ins->data [2] = vt_res_size;
 	} else {
 #ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
 		/* Try using fast icall path for simple signatures */
@@ -2480,6 +2486,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 		if (is_delegate_invoke) {
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
+			td->last_ins->data [1] = vt_stack_used;
 		} else if (calli) {
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 #ifdef TARGET_X86
@@ -2494,12 +2501,18 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				td->last_ins->data [2] = save_last_error;
 			} else if (native) {
 				g_assert (td->last_ins->opcode == MINT_CALLI_NAT);
-				td->last_ins->data [1] = save_last_error;
+				td->last_ins->data [1] = vt_stack_used;
+				td->last_ins->data [2] = vt_res_size;
+				td->last_ins->data [3] = save_last_error;
+			} else {
+				g_assert (td->last_ins->opcode == MINT_CALLI);
+				td->last_ins->data [1] = vt_stack_used;
 			}
 		} else {
 			InterpMethod *imethod = mono_interp_get_imethod (domain, target_method, error);
 			td->last_ins->data [0] = get_data_item_index (td, (void *)imethod);
 			td->last_ins->data [1] = imethod->param_count + imethod->hasthis;
+			td->last_ins->data [2] = vt_stack_used;
 #ifdef ENABLE_EXPERIMENT_TIERED
 			if (MINT_IS_PATCHABLE_CALL (td->last_ins->opcode)) {
 				g_assert (!calli && !is_virtual);
@@ -2520,12 +2533,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 	td->ip += 5;
-	if (vt_stack_used != 0 || vt_res_size != 0) {
-		interp_add_ins (td, MINT_VTRESULT);
-		td->last_ins->data [0] = vt_res_size;
-		WRITE32_INS (td->last_ins, 1, &vt_stack_used);
-		td->vt_sp -= vt_stack_used;
-	}
 
 	return TRUE;
 }

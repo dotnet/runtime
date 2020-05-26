@@ -700,17 +700,17 @@ OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 1, Pop1, Push1, MintOpNoArg
 OPDEF(MINT_ARRAY_IS_PRIMITIVE, "array_is_primitive", 1, Pop1, Push1, MintOpNoArgs)
 
 /* Calls */
-OPDEF(MINT_CALL, "call", 3, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_VCALL, "vcall", 3, VarPop, Push0, MintOpMethodToken)
-OPDEF(MINT_CALLVIRT, "callvirt", 3, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_VCALLVIRT, "vcallvirt", 3, VarPop, Push0, MintOpMethodToken)
-OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 3, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_VCALLVIRT_FAST, "vcallvirt.fast", 3, VarPop, Push0, MintOpMethodToken)
-OPDEF(MINT_CALL_DELEGATE, "call.delegate", 2, VarPop, VarPush, MintOpMethodToken)
-OPDEF(MINT_CALLI, "calli", 2, VarPop, VarPush, MintOpMethodToken)
-OPDEF(MINT_CALLI_NAT, "calli.nat", 3, VarPop, VarPush, MintOpMethodToken)
+OPDEF(MINT_CALL, "call", 4, VarPop, Push1, MintOpMethodToken)
+OPDEF(MINT_VCALL, "vcall", 4, VarPop, Push0, MintOpMethodToken)
+OPDEF(MINT_CALLVIRT, "callvirt", 4, VarPop, Push1, MintOpMethodToken)
+OPDEF(MINT_VCALLVIRT, "vcallvirt", 4, VarPop, Push0, MintOpMethodToken)
+OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 4, VarPop, Push1, MintOpMethodToken)
+OPDEF(MINT_VCALLVIRT_FAST, "vcallvirt.fast", 4, VarPop, Push0, MintOpMethodToken)
+OPDEF(MINT_CALL_DELEGATE, "call.delegate", 3, VarPop, VarPush, MintOpMethodToken)
+OPDEF(MINT_CALLI, "calli", 3, VarPop, VarPush, MintOpMethodToken)
+OPDEF(MINT_CALLI_NAT, "calli.nat", 5, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT_FAST, "calli.nat.fast", 4, VarPop, VarPush, MintOpMethodToken)
-OPDEF(MINT_CALL_VARARG, "call.vararg", 3, VarPop, VarPush, MintOpMethodToken)
+OPDEF(MINT_CALL_VARARG, "call.vararg", 4, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALLRUN, "callrun", 3, VarPop, VarPush, MintOpNoArgs)
 
 OPDEF(MINT_ICALL_V_V, "mono_icall_v_v", 2, Pop0, Push0, MintOpClassToken) /* not really */
@@ -728,7 +728,7 @@ OPDEF(MINT_ICALL_PPPPP_P, "mono_icall_ppppp_p", 2, Pop5, Push1, MintOpClassToken
 OPDEF(MINT_ICALL_PPPPPP_V, "mono_icall_pppppp_v", 2, Pop6, Push0, MintOpClassToken)
 OPDEF(MINT_ICALL_PPPPPP_P, "mono_icall_pppppp_p", 2, Pop6, Push1, MintOpClassToken)
 // FIXME: MintOp
-OPDEF(MINT_JIT_CALL, "mono_jit_call", 2, VarPop, VarPush, MintOpNoArgs)
+OPDEF(MINT_JIT_CALL, "mono_jit_call", 4, VarPop, VarPush, MintOpNoArgs)
 OPDEF(MINT_JIT_CALL2, "mono_jit_call2", 5, VarPop, VarPush, MintOpNoArgs)
 
 OPDEF(MINT_MONO_LDPTR, "mono_ldptr", 2, Pop0, Push1, MintOpClassToken)
