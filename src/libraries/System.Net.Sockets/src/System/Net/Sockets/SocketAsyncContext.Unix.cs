@@ -47,6 +47,7 @@ namespace System.Net.Sockets
         private void ReturnOperation(AcceptOperation operation)
         {
             operation.Reset();
+            operation.Next = operation;
             operation.Callback = null;
             operation.SocketAddress = null;
             Volatile.Write(ref _cachedAcceptOperation, operation); // benign race condition
@@ -55,6 +56,7 @@ namespace System.Net.Sockets
         private void ReturnOperation(BufferMemoryReceiveOperation operation)
         {
             operation.Reset();
+            operation.Next = operation;
             operation.Buffer = default;
             operation.Callback = null;
             operation.SocketAddress = null;
@@ -64,6 +66,7 @@ namespace System.Net.Sockets
         private void ReturnOperation(BufferListReceiveOperation operation)
         {
             operation.Reset();
+            operation.Next = operation;
             operation.Buffers = null;
             operation.Callback = null;
             operation.SocketAddress = null;
@@ -73,6 +76,7 @@ namespace System.Net.Sockets
         private void ReturnOperation(BufferMemorySendOperation operation)
         {
             operation.Reset();
+            operation.Next = operation;
             operation.Buffer = default;
             operation.Callback = null;
             operation.SocketAddress = null;
@@ -82,6 +86,7 @@ namespace System.Net.Sockets
         private void ReturnOperation(BufferListSendOperation operation)
         {
             operation.Reset();
+            operation.Next = operation;
             operation.Buffers = null;
             operation.Callback = null;
             operation.SocketAddress = null;
@@ -125,7 +130,6 @@ namespace System.Net.Sockets
 #endif
 
             public readonly SocketAsyncContext AssociatedContext;
-            public AsyncOperation Next = null!; // initialized by helper called from ctor
             public SocketError ErrorCode;
             public byte[]? SocketAddress;
             public int SocketAddressLen;
@@ -143,7 +147,6 @@ namespace System.Net.Sockets
             {
                 _state = (int)State.Waiting;
                 Event = null;
-                Next = this;
 #if DEBUG
                 _callbackQueued = 0;
 #endif
@@ -283,8 +286,6 @@ namespace System.Net.Sockets
                 ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
             }
 
-            public void Process() => ((IThreadPoolWorkItem)this).Execute();
-
             void IThreadPoolWorkItem.Execute()
             {
                 // ReadOperation and WriteOperation, the only two types derived from
@@ -329,18 +330,33 @@ namespace System.Net.Sockets
             }
         }
 
+        private interface IQueuedOperation<TOperation>
+        {
+            TOperation Next { get; set; }
+        }
+
         // These two abstract classes differentiate the operations that go in the
         // read queue vs the ones that go in the write queue.
-        private abstract class ReadOperation : AsyncOperation, IThreadPoolWorkItem
+        private abstract class ReadOperation
+            : AsyncOperation, IThreadPoolWorkItem, IQueuedOperation<ReadOperation>
         {
-            public ReadOperation(SocketAsyncContext context) : base(context) { }
+            public ReadOperation(SocketAsyncContext context) : base(context) { Next = this; }
+
+            public ReadOperation Next { get; set; }
+
+            public void Process() => AssociatedContext.ProcessAsyncReadOperation(this);
 
             void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncReadOperation(this);
         }
 
-        private abstract class WriteOperation : AsyncOperation, IThreadPoolWorkItem
+        private abstract class WriteOperation
+            : AsyncOperation, IThreadPoolWorkItem, IQueuedOperation<WriteOperation>
         {
-            public WriteOperation(SocketAsyncContext context) : base(context) { }
+            public WriteOperation(SocketAsyncContext context) : base(context) { Next = this; }
+
+            public WriteOperation Next { get; set; }
+
+            public void Process() => AssociatedContext.ProcessAsyncWriteOperation(this);
 
             void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncWriteOperation(this);
         }
@@ -669,7 +685,7 @@ namespace System.Net.Sockets
         }
 
         private struct OperationQueue<TOperation>
-            where TOperation : AsyncOperation
+            where TOperation : AsyncOperation, IQueuedOperation<TOperation>
         {
             // Quick overview:
             //
@@ -686,7 +702,7 @@ namespace System.Net.Sockets
             // If we successfully process all enqueued operations, then the state becomes Ready;
             // otherwise, the state becomes Waiting and we wait for another epoll notification.
 
-            private enum QueueState : byte
+            private enum QueueState : int
             {
                 Ready = 0,          // Indicates that data MAY be available on the socket.
                                     // Queue must be empty.
@@ -709,7 +725,7 @@ namespace System.Net.Sockets
                                             // since the last time we checked the state of the queue.
                                             // If this happens, we MUST retry the operation, otherwise we risk
                                             // "losing" the notification and causing the operation to pend indefinitely.
-            private AsyncOperation? _tail;   // Queue of pending IO operations to process when data becomes available.
+            private TOperation? _tail;   // Queue of pending IO operations to process when data becomes available.
 
             // The _queueLock is used to ensure atomic access to the queue state above.
             // The lock is only ever held briefly, to read and/or update queue state, and
@@ -830,9 +846,9 @@ namespace System.Net.Sockets
                 }
             }
 
-            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false)
+            public TOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false)
             {
-                AsyncOperation op;
+                TOperation op;
                 using (Lock())
                 {
                     Trace(context, $"Enter");
@@ -1094,7 +1110,7 @@ namespace System.Net.Sockets
                         {
                             // We're not the head of the queue.
                             // Just find this op and remove it.
-                            AsyncOperation current = _tail.Next;
+                            TOperation current = _tail.Next;
                             while (current.Next != op)
                             {
                                 current = current.Next;
@@ -1130,7 +1146,7 @@ namespace System.Net.Sockets
 
                     if (_tail != null)
                     {
-                        AsyncOperation op = _tail;
+                        TOperation op = _tail;
                         do
                         {
                             aborted |= op.TryCancel();
@@ -1249,7 +1265,7 @@ namespace System.Net.Sockets
         }
 
         private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int observedSequenceNumber)
-            where TOperation : AsyncOperation
+            where TOperation : AsyncOperation, IQueuedOperation<TOperation>
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -2053,23 +2069,31 @@ namespace System.Net.Sockets
                 events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
             }
 
-            AsyncOperation? receiveOperation =
+            ReadOperation? receiveOperation =
                 (events & Interop.Sys.SocketEvents.Read) != 0 ? _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this) : null;
-            AsyncOperation? sendOperation =
+            WriteOperation? sendOperation =
                 (events & Interop.Sys.SocketEvents.Write) != 0 ? _sendQueue.ProcessSyncEventOrGetAsyncEvent(this) : null;
 
             // This method is called from a thread pool thread. When we have only one operation to process, process it
             // synchronously to avoid an extra thread pool work item. When we have two operations to process, processing both
             // synchronously may delay the second operation, so schedule one onto the thread pool and process the other
             // synchronously. There might be better ways of doing this.
-            if (sendOperation == null)
+            if (sendOperation is null)
             {
-                receiveOperation?.Process();
+                if (receiveOperation is not null)
+                {
+                    receiveOperation.Process();
+                }
+            }
+            else if (receiveOperation is null)
+            {
+                sendOperation.Process();
             }
             else
             {
-                receiveOperation?.Schedule();
-                sendOperation.Process();
+                // When there are two operations perfer to run the receive operation and scehedule the send.
+                sendOperation.Schedule();
+                receiveOperation.Process();
             }
         }
 
