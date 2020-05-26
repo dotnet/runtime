@@ -49,6 +49,10 @@ build_test_wrappers()
 
 generate_layout()
 {
+    if [[ $__SkipGenerateLayout != 0 ]]; then
+        return
+    fi
+
     echo "${__MsgPrefix}Creating test overlay..."
 
     __TestDir="$__ProjectDir"/tests
@@ -135,17 +139,18 @@ generate_layout()
             exit "$exitCode"
         fi
     fi
-
-    # Precompile framework assemblies with crossgen if required
-    if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
-        if [[ "$__SkipCrossgenFramework" == 0 ]]; then
-            precompile_coreroot_fx
-        fi
-    fi
 }
 
-precompile_coreroot_fx()
+precompile_framework()
 {
+    if [[ "$__SkipCrossgenFramework" != 0 ]]; then
+        return
+    fi
+
+    if [[ "$__DoCrossgen" == 0 && "$__DoCrossgen2" == 0 ]]; then
+        return
+    fi
+
     local overlayDir="$CORE_ROOT"
     local compilerName=Crossgen
 
@@ -394,9 +399,8 @@ build_Tests()
         __up="/t:UpdateInvalidPackageVersions"
     fi
 
-    if [[ "$__SkipGenerateLayout" != 1 ]]; then
-        generate_layout
-    fi
+    generate_layout
+    precompile_framework
 }
 
 build_MSBuild_projects()
@@ -713,9 +717,10 @@ if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__
     build_Tests
 elif [[ ! -z "$__BuildTestWrappersOnly" ]]; then
     build_test_wrappers
-else
-    generate_layout
 fi
+
+generate_layout
+precompile_framework
 
 if [[ "$?" -ne 0 ]]; then
     echo "Failed to build tests"
