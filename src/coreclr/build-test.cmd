@@ -61,7 +61,8 @@ set __TargetsWindows=1
 set __DoCrossgen=
 set __DoCrossgen2=
 set __CompositeBuildMode=
-set __CopyNativeTestBinaries=0
+set __CopyNativeTestBinaries=1
+set __CopyNativeOnly=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
 set __LocalCoreFXConfig=%__BuildType%
@@ -105,8 +106,9 @@ if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!pr
 if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipcopynative"        (set __CopyNativeTestBinaries=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "copynativeonly"        (set __SkipStressDependencies=1&set __CopyNativeOnly=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __SkipCrossgenFramework=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtesthostonly"     (set __SkipNative=1&set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set __SkipStressDependencies=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -335,7 +337,7 @@ REM === Managed test build section
 REM ===
 REM =========================================================================================
 
-if defined __SkipManaged goto SkipManagedBuild
+if defined __SkipManaged if "%__CopyNativeTestBinaries%" == "1" goto SkipManagedBuild
 
 echo %__MsgPrefix%Starting the Managed Tests Build
 
@@ -370,7 +372,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
 
     set __TestGroupToBuild=%%G
 
-    if not "%__CopyNativeTestBinaries%" == "1" (
+    if not "%__SkipManaged%" == "1" (
         set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! -warnAsError:0
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /nodeReuse:false
@@ -395,7 +397,8 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
             goto     :Exit_Failure
         )
-    ) else (
+    )
+    if "%__CopyNativeTestBinaries%" == "1" (
         set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
@@ -417,7 +420,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
     set __AppendToLog=true
 )
 
-if "%__CopyNativeTestBinaries%" == "1" goto :SkipManagedBuild
+if "%__SkipManaged%" == "1" goto :SkipManagedBuild
 
 REM Check that we've built about as many tests as we expect. This is primarily intended to prevent accidental changes that cause us to build
 REM drastically fewer Pri-1 tests than expected.

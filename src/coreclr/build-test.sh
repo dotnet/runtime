@@ -430,6 +430,7 @@ usage_list+=("-skiprestorepackages: skip package restore.")
 usage_list+=("-skipstressdependencies: Don't install stress dependencies.")
 usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
+usage_list+=("-skipcopynative: Don't copy native references to test output folders.")
 
 usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
@@ -461,11 +462,14 @@ handle_arguments_local() {
             __BuildTestWrappers=0
             ;;
 
+        skipcopynative|-skipcopynative)
+            __CopyNativeTestBinaries=0
+            ;;
+
         copynativeonly|-copynativeonly)
             __SkipStressDependencies=1
             __SkipNative=1
             __SkipManaged=1
-            __CopyNativeTestBinaries=1
             __CopyNativeProjectsAfterCombinedTestBuild=true
             __SkipGenerateLayout=1
             __SkipCrossgenFramework=1
@@ -561,7 +565,7 @@ __CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
-__CopyNativeTestBinaries=0
+__CopyNativeTestBinaries=1
 __CrossBuild=0
 __DistroRid=""
 __DoCrossgen=0
