@@ -436,7 +436,7 @@ void EventPipe::Disable(EventPipeSessionID id)
     });
 
 #ifdef DEBUG
-    if (s_numberOfSessions == 0)
+    if ((int)s_numberOfSessions == 0)
     {
         _ASSERTE(!MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
         _ASSERTE(!MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
