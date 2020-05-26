@@ -26,12 +26,12 @@ EventPipeSession::EventPipeSession(
     bool rundownEnabled,
     EventPipeSessionSynchronousCallback callback) : m_index(index),
                                                     m_pProviderList(new EventPipeSessionProviderList(pProviders, numProviders)),
+                                                    m_pBufferManager(nullptr),
                                                     m_rundownEnabled(rundownEnabled),
                                                     m_SessionType(sessionType),
                                                     m_format(format),
                                                     m_rundownRequested(rundownSwitch),
-                                                    m_synchronousCallback(callback),
-                                                    m_pBufferManager(nullptr)
+                                                    m_synchronousCallback(callback)
 {
     CONTRACTL
     {
