@@ -74,6 +74,10 @@
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/threadpool.h>
 
+#ifdef ENABLE_PERFTRACING
+#include <mono/eventpipe/ep.h>
+#endif
+
 #include "mini.h"
 #include "seq-points.h"
 #include "tasklets.h"
@@ -4531,6 +4535,10 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
 	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
+#ifdef ENABLE_PERFTRACING
+	ep_init ();
+#endif
+
 	mono_profiler_state.context_enable = mini_profiler_context_enable;
 	mono_profiler_state.context_get_this = mini_profiler_context_get_this;
 	mono_profiler_state.context_get_argument = mini_profiler_context_get_argument;
@@ -4992,6 +5000,9 @@ mini_cleanup (MonoDomain *domain)
 	mono_runtime_print_stats ();
 	jit_stats_cleanup ();
 	mono_jit_dump_cleanup ();
+#ifdef ENABLE_PERFTRACING
+	ep_shutdown ();
+#endif
 }
 #else
 void
