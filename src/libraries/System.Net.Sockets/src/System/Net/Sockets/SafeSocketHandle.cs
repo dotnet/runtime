@@ -43,7 +43,9 @@ namespace System.Net.Sockets
 
         internal bool OwnsHandle { get; }
 
-        internal bool PreferInlineCompletions { get; set; } = true;
+        private static readonly bool PreferInlineCompletionsDefault = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS_DEFAULT") == "1";
+
+        internal bool PreferInlineCompletions { get; set; } = PreferInlineCompletionsDefault;
 
         private bool TryOwnClose()
         {
