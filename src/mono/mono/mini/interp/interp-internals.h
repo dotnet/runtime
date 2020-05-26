@@ -151,6 +151,7 @@ struct InterpMethod {
 	gpointer jit_wrapper;
 	gpointer jit_addr;
 	MonoMethodSignature *jit_sig;
+	gint32 jit_vt_res_size;
 	gpointer jit_entry;
 	gpointer llvmonly_unbox_entry;
 	MonoType *rtype;

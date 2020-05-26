@@ -2301,6 +2301,21 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 
 		rmethod->jit_addr = addr;
 		rmethod->jit_sig = sig;
+
+		if (sig->ret->type != MONO_TYPE_VOID) {
+			int mt = mint_type (sig->ret);
+			if (mt == MINT_TYPE_VT) {
+				MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
+				/*
+				 * We cache this size here, instead of the instruction stream of the
+				 * calling instruction, to save space for common callvirt instructions
+				 * that could end up doing a jit call.
+				 */
+				gint32 size = mono_class_value_size (klass, NULL);
+				rmethod->jit_vt_res_size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			}
+		}
+
 		mono_memory_barrier ();
 		rmethod->jit_wrapper = jit_wrapper;
 
@@ -3813,8 +3828,10 @@ main_loop:
 
 				CHECK_RESUME_STATE (context);
 
-				if (cmethod->rtype->type != MONO_TYPE_VOID)
+				if (cmethod->rtype->type != MONO_TYPE_VOID) {
 					sp++;
+					vt_sp += cmethod->jit_vt_res_size;
+				}
 			}
 
 			MINT_IN_BREAK;
@@ -3925,11 +3942,12 @@ call:
 
 			CHECK_RESUME_STATE (context);
 
-			if (rmethod->rtype->type != MONO_TYPE_VOID)
+			if (rmethod->rtype->type != MONO_TYPE_VOID) {
 				sp++;
-			vt_sp += ip [3];
+				vt_sp += rmethod->jit_vt_res_size;
+			}
 
-			ip += 4;
+			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JIT_CALL2) {

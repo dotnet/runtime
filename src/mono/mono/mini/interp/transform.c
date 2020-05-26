@@ -2462,7 +2462,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
 		mono_error_assert_ok (error);
 		td->last_ins->data [1] = vt_stack_used;
-		td->last_ins->data [2] = vt_res_size;
 	} else {
 #ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
 		/* Try using fast icall path for simple signatures */
