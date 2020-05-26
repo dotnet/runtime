@@ -103,9 +103,6 @@ namespace System.Net.Security.Tests
                 "Server: " + serverSslProtocols + "; Client: " + clientSslProtocols +
                 " expectedToFail: " + expectedToFail);
 
-            int timeOut = expectedToFail ? TestConfiguration.FailingTestTimeoutMiliseconds
-                : TestConfiguration.PassingTestTimeoutMilliseconds;
-
             (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();
 
             using (SslStream sslServerStream = new SslStream(
@@ -145,7 +142,7 @@ namespace System.Net.Security.Tests
 
                 try
                 {
-                    await clientAuthentication.TimeoutAfter(timeOut);
+                    await clientAuthentication.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
                     _logVerbose.WriteLine("ServerAsyncAuthenticateTest.clientAuthentication complete.");
                 }
                 catch (Exception ex)
@@ -155,7 +152,7 @@ namespace System.Net.Security.Tests
                     clientStream.Socket.Shutdown(SocketShutdown.Send);
                 }
 
-                await serverAuthentication.TimeoutAfter(timeOut);
+                await serverAuthentication.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
                 _logVerbose.WriteLine("ServerAsyncAuthenticateTest.serverAuthentication complete.");
 
                 _log.WriteLine(
