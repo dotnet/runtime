@@ -342,12 +342,12 @@ protected:
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
-    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
+    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegModified);
 #else
     void genPushCalleeSavedRegisters();
 #endif
 
-    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
+    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegModified, regMaskTP maskArgRegsLiveIn);
 
 #if defined(TARGET_ARM)
 
@@ -435,18 +435,18 @@ protected:
 
     void genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg);
 
-    regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
+    regNumber genGetZeroReg(regNumber initReg, bool* pInitRegModified);
 
-    void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
+    void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegModified);
 
-    void genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed);
+    void genReportGenericContextArg(regNumber initReg, bool* pInitRegModified);
 
-    void genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed);
+    void genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified);
 
     void genFinalizeFrame();
 
 #ifdef PROFILING_SUPPORTED
-    void genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed);
+    void genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified);
     void genProfilingLeaveCallback(unsigned helper);
 #endif // PROFILING_SUPPORTED
 
@@ -512,7 +512,7 @@ protected:
     void genFuncletEpilog();
     void genCaptureFuncletPrologEpilogInfo();
 
-    void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
+    void genSetPSPSym(regNumber initReg, bool* pInitRegModified);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
 #if defined(TARGET_ARM)
@@ -978,7 +978,6 @@ protected:
     void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode);
@@ -1028,6 +1027,7 @@ protected:
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
+    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
     void genSSEIntrinsic(GenTreeHWIntrinsic* node);
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
@@ -1047,6 +1047,59 @@ protected:
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(TARGET_XARCH)
+
+#ifdef TARGET_ARM64
+    class HWIntrinsicImmOpHelper final
+    {
+    public:
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+
+        void EmitBegin();
+        void EmitCaseEnd();
+
+        // Returns true after the last call to EmitCaseEnd() (i.e. this signals that code generation is done).
+        bool Done() const
+        {
+            return (immValue > immUpperBound);
+        }
+
+        // Returns a value of the immediate operand that should be used for a case.
+        int ImmValue() const
+        {
+            return immValue;
+        }
+
+    private:
+        // Returns true if immOp is non contained immediate (i.e. the value of the immediate operand is enregistered in
+        // nonConstImmReg).
+        bool NonConstImmOp() const
+        {
+            return nonConstImmReg != REG_NA;
+        }
+
+        // Returns true if a non constant immediate operand can be either 0 or 1.
+        bool TestImmOpZeroOrOne() const
+        {
+            assert(NonConstImmOp());
+            return (immLowerBound == 0) && (immUpperBound == 1);
+        }
+
+        emitter* GetEmitter() const
+        {
+            return codeGen->GetEmitter();
+        }
+
+        CodeGen* const codeGen;
+        BasicBlock*    endLabel;
+        BasicBlock*    nonZeroLabel;
+        int            immValue;
+        int            immLowerBound;
+        int            immUpperBound;
+        regNumber      nonConstImmReg;
+        regNumber      branchTargetReg;
+    };
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HW_INTRINSICS
 
 #if !defined(TARGET_64BIT)
@@ -1060,6 +1113,9 @@ protected:
     // Do liveness update for register produced by the current node in codegen after
     // code has been emitted for it.
     void genProduceReg(GenTree* tree);
+    void genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum);
+    void genUnspillLocal(
+        unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
     void genUnspillRegIfNeeded(GenTree* tree);
     regNumber genConsumeReg(GenTree* tree);
     void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
@@ -1222,10 +1278,13 @@ protected:
     void genEHFinallyOrFilterRet(BasicBlock* block);
 #endif // !FEATURE_EH_FUNCLETS
 
-    void genMultiRegCallStoreToLocal(GenTree* treeNode);
+    void genMultiRegStoreToLocal(GenTree* treeNode);
 
-    // Deals with codegen for muti-register struct returns.
+    // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
+#ifdef FEATURE_SIMD
+    void genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc);
+#endif
     void genStructReturn(GenTree* treeNode);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -1412,11 +1471,13 @@ public:
 
     void instGen_Return(unsigned stkArgSize);
 
-#ifdef TARGET_ARM64
-    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_ISH);
-#else
-    void instGen_MemoryBarrier();
-#endif
+    enum BarrierKind
+    {
+        BARRIER_FULL,      // full barrier
+        BARRIER_LOAD_ONLY, // load barier
+    };
+
+    void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 

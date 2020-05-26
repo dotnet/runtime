@@ -285,7 +285,7 @@ namespace System.Drawing
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
                 // it to GDI+ is likely to cause an AV.
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(logFont));
             }
 
             Interop.User32.LOGFONT nativeLogFont = ToLogFontInternal(graphics);

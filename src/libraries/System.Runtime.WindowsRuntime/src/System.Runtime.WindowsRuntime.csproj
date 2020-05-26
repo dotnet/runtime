@@ -5,18 +5,19 @@
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
     <NoWarn>$(NoWarn);1698;0436</NoWarn>
-    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard1.0;netstandard1.2;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
+    <DefineConstants Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">$(DefineConstants);FEATURE_APPX</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.cs" />
@@ -55,47 +56,38 @@
     <Compile Include="System\VoidTypeParameter.cs" />
     <Compile Include="System\Windows\TokenizerHelper.cs" />
     <Compile Include="System\Windows\UI\Color.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs">
-      <Link>Common\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
-      <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs">
-      <Link>Common\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
-      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
-      <Link>Common\System\IO\Win32Marshal.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs"
+             Link="Common\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs"
+             Link="Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs"
+             Link="Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
+             Link="Common\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs"
+             Link="Common\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
+             Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
+             Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
     <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" PrivateAssets="all" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Reference Include="System.Runtime" />
     <Reference Include="System.IO" />
     <Reference Include="System.Threading.Tasks" />

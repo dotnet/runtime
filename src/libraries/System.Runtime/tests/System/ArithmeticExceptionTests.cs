@@ -14,7 +14,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new ArithmeticException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_ARITHMETIC, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_ARITHMETIC, validateMessage: false);
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace System.Tests
         {
             string message = "arithmetic operation error";
             var exception = new ArithmeticException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_ARITHMETIC, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_ARITHMETIC, message: message);
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace System.Tests
             string message = "arithmetic operation error";
             var innerException = new Exception("Inner exception");
             var exception = new ArithmeticException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_ARITHMETIC, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_ARITHMETIC, innerException: innerException, message: message);
         }
     }
 }

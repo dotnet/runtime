@@ -158,6 +158,9 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.AsAnyW:
                     return context.GetWellKnownType(WellKnownType.IntPtr);
 
+                case MarshallerKind.ComInterface:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
+
                 case MarshallerKind.Unknown:
                 default:
                     throw new NotSupportedException();
@@ -562,6 +565,10 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.LayoutClass;
                 else
                     return MarshallerKind.Invalid;
+            }
+            else if (type.IsInterface)
+            {
+                return MarshallerKind.ComInterface;
             }
             else
                 return MarshallerKind.Invalid;

@@ -961,7 +961,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !tree->IsMultiReg() && !(tree->gtFlags & GTF_SPILLED))
     {
         const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
         var_types        type   = varDsc->GetRegisterType(tree);
@@ -998,13 +998,38 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTree*    data = tree->gtOp1;
-    instruction ins  = ins_Store(targetType);
-    emitAttr    attr = emitTypeSize(targetType);
+    GenTree* data = tree->gtOp1;
 
     assert(!data->isContained());
     genConsumeReg(data);
-    emit->emitIns_S_R(ins, attr, data->GetRegNum(), varNum, offset);
+    regNumber dataReg = data->GetRegNum();
+    if (tree->IsOffsetMisaligned())
+    {
+        // Arm supports unaligned access only for integer types,
+        // convert the storing floating data into 1 or 2 integer registers and write them as int.
+        regNumber addr = tree->ExtractTempReg();
+        emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offset);
+        if (targetType == TYP_FLOAT)
+        {
+            regNumber floatAsInt = tree->GetSingleTempReg();
+            emit->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, floatAsInt, dataReg);
+            emit->emitIns_R_R(INS_str, EA_4BYTE, floatAsInt, addr);
+        }
+        else
+        {
+            regNumber halfdoubleAsInt1 = tree->ExtractTempReg();
+            regNumber halfdoubleAsInt2 = tree->GetSingleTempReg();
+            emit->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, halfdoubleAsInt1, halfdoubleAsInt2, dataReg);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 0);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 4);
+        }
+    }
+    else
+    {
+        emitAttr    attr = emitTypeSize(targetType);
+        instruction ins  = ins_Store(targetType);
+        emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
+    }
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
@@ -1025,7 +1050,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // case is handled separately.
     if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
     {
-        genMultiRegCallStoreToLocal(tree);
+        genMultiRegStoreToLocal(tree);
     }
     else
     {
@@ -1623,14 +1648,14 @@ void CodeGen::genCodeForMulLong(GenTreeMultiRegOp* node)
 // genProfilingEnterCallback: Generate the profiling function enter callback.
 //
 // Arguments:
-//     initReg        - register to use as scratch register
-//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
-//                      not zero after this call.
+//     initReg          - register to use as scratch register
+//     pInitRegModified - OUT parameter. *pInitRegModified set to 'true' if and only if
+//                        this call sets 'initReg' to a non-zero value.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1663,7 +1688,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     if (initReg == argReg)
     {
-        *pInitRegZeroed = false;
+        *pInitRegModified = true;
     }
 }
 
@@ -1793,14 +1818,17 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 // Arguments:
 //      frameSize         - the size of the stack frame being allocated.
 //      initReg           - register to use as a scratch register.
-//      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
+//      pInitRegModified  - OUT parameter. *pInitRegModified is set to 'true' if and only if
 //                          this call sets 'initReg' to a non-zero value.
 //      maskArgRegsLiveIn - incoming argument registers that are currently live.
 //
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned  frameSize,
+                               regNumber initReg,
+                               bool*     pInitRegModified,
+                               regMaskTP maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1830,7 +1858,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         }
 
         regSet.verifyRegUsed(initReg);
-        *pInitRegZeroed = false; // The initReg does not contain zero
+        *pInitRegModified = true;
 
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, frameSize);
         compiler->unwindPadding();
@@ -1850,7 +1878,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         if ((genRegMask(initReg) & (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
                                     RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
         {
-            *pInitRegZeroed = false;
+            *pInitRegModified = true;
         }
     }
 

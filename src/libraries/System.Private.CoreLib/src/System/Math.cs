@@ -18,6 +18,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -111,6 +112,61 @@ namespace System
         public static long BigMul(int a, int b)
         {
             return ((long)a) * b;
+        }
+
+        /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
+        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
+        {
+            if (Bmi2.X64.IsSupported)
+            {
+                ulong tmp;
+                ulong high = Bmi2.X64.MultiplyNoFlags(a, b, &tmp);
+                low = tmp;
+                return high;
+            }
+
+            return SoftwareFallback(a, b, out low);
+
+            static ulong SoftwareFallback(ulong a, ulong b, out ulong low)
+            {
+                // Adaptation of algorithm for multiplication
+                // of 32-bit unsigned integers described
+                // in Hacker's Delight by Henry S. Warren, Jr. (ISBN 0-201-91465-4), Chapter 8
+                // Basically, it's an optimized version of FOIL method applied to
+                // low and high dwords of each operand
+
+                // Use 32-bit uints to optimize the fallback for 32-bit platforms.
+                uint al = (uint)a;
+                uint ah = (uint)(a >> 32);
+                uint bl = (uint)b;
+                uint bh = (uint)(b >> 32);
+
+                ulong mull = ((ulong)al) * bl;
+                ulong t = ((ulong)ah) * bl + (mull >> 32);
+                ulong tl = ((ulong)al) * bh + (uint)t;
+
+                low = tl << 32 | (uint)mull;
+
+                return ((ulong)ah) * bh + (t >> 32) + (tl >> 32);
+            }
+        }
+
+        /// <summary>Produces the full product of two 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
+        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        public static long BigMul(long a, long b, out long low)
+        {
+            ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
+            low = (long)ulow;
+            return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
         }
 
         public static double BitDecrement(double x)
@@ -539,6 +595,7 @@ namespace System
             return decimal.Max(val1, val2);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Max(double val1, double val2)
         {
             // This matches the IEEE 754:2019 `maximum` function
@@ -547,17 +604,17 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((val1 > val2) || double.IsNaN(val1))
+            if (val1 != val2)
             {
+                if (!double.IsNaN(val1))
+                {
+                    return val2 < val1 ? val1 : val2;
+                }
+
                 return val1;
             }
 
-            if (val1 == val2)
-            {
-                return double.IsNegative(val1) ? val2 : val1;
-            }
-
-            return val2;
+            return double.IsNegative(val2) ? val1 : val2;
         }
 
         [NonVersionable]
@@ -585,6 +642,7 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Max(float val1, float val2)
         {
             // This matches the IEEE 754:2019 `maximum` function
@@ -593,17 +651,17 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((val1 > val2) || float.IsNaN(val1))
+            if (val1 != val2)
             {
+                if (!float.IsNaN(val1))
+                {
+                    return val2 < val1 ? val1 : val2;
+                }
+
                 return val1;
             }
 
-            if (val1 == val2)
-            {
-                return float.IsNegative(val1) ? val2 : val1;
-            }
-
-            return val2;
+            return float.IsNegative(val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
@@ -663,6 +721,7 @@ namespace System
             return decimal.Min(val1, val2);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Min(double val1, double val2)
         {
             // This matches the IEEE 754:2019 `minimum` function
@@ -671,17 +730,12 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((val1 < val2) || double.IsNaN(val1))
+            if (val1 != val2 && !double.IsNaN(val1))
             {
-                return val1;
+                return val1 < val2 ? val1 : val2;
             }
 
-            if (val1 == val2)
-            {
-                return double.IsNegative(val1) ? val1 : val2;
-            }
-
-            return val2;
+            return double.IsNegative(val1) ? val1 : val2;
         }
 
         [NonVersionable]
@@ -709,6 +763,7 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Min(float val1, float val2)
         {
             // This matches the IEEE 754:2019 `minimum` function
@@ -717,17 +772,12 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((val1 < val2) || float.IsNaN(val1))
+            if (val1 != val2 && !float.IsNaN(val1))
             {
-                return val1;
+                return val1 < val2 ? val1 : val2;
             }
 
-            if (val1 == val2)
-            {
-                return float.IsNegative(val1) ? val1 : val2;
-            }
-
-            return val2;
+            return float.IsNegative(val1) ? val1 : val2;
         }
 
         [CLSCompliant(false)]

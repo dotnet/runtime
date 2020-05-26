@@ -39,21 +39,6 @@ namespace Internal.Cryptography
             return buffer;
         }
 
-        // encodes the integer i into a 4-byte array, in big endian.
-        public static void WriteInt(uint i, byte[] arr, int offset)
-        {
-            unchecked
-            {
-                Debug.Assert(arr != null);
-                Debug.Assert(arr.Length >= offset + sizeof(uint));
-
-                arr[offset] = (byte)(i >> 24);
-                arr[offset + 1] = (byte)(i >> 16);
-                arr[offset + 2] = (byte)(i >> 8);
-                arr[offset + 3] = (byte)i;
-            }
-        }
-
         public static byte[] FixupKeyParity(this byte[] key)
         {
             byte[] oddParityKey = new byte[key.Length];

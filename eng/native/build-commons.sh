@@ -53,10 +53,23 @@ check_prereqs()
 
     function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; }
 
-    local cmake_version="$(cmake --version | awk '/^cmake version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
+    local cmake_version="$(cmake --version | awk '/^cmake.* version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
 
     if [[ "$(version "$cmake_version")" -lt "$(version 3.14.2)" ]]; then
-        echo "Please install CMake 3.14.2 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
+        echo "Please install CMake 3.14.2 or newer from https://cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
+    fi
+
+    if [[ "$__HostOS" == "OSX" ]]; then
+        # Check presence of pkg-config on the path
+        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+
+        if ! pkg-config openssl ; then
+            # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
+            # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
+            export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig
+            # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
+            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+        fi
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
@@ -82,6 +95,7 @@ build_native()
         buildTool="make"
     fi
 
+    runtimeVersionHeaderFile="$intermediatesDir/../runtime_version.h"
     if [[ "$__SkipConfigure" == 0 ]]; then
         # if msbuild is not supported, then set __SkipGenerateVersion to 1
         if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then __SkipGenerateVersion=1; fi
@@ -95,7 +109,8 @@ build_native()
         if [[ "$__SkipGenerateVersion" == 0 ]]; then
             "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary "$__ArcadeScriptArgs" "$__RepoRootDir"/eng/empty.csproj \
                                                    /p:NativeVersionFile="$__versionSourceFile" \
-                                                   /t:GenerateNativeVersionFile /restore \
+                                                   /p:RuntimeVersionFile="$runtimeVersionHeaderFile" \
+                                                   /t:GenerateRuntimeVersionFile /restore \
                                                    $__CommonMSBuildArgs $__binlogArg $__UnprocessedBuildArgs
             local exit_code="$?"
             if [[ "$exit_code" != 0 ]]; then
@@ -103,12 +118,24 @@ build_native()
                 exit "$exit_code"
             fi
         else
-            # Generate the dummy version.c, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
+            # Generate the dummy version.c and runtime_version.h, but only if they didn't exist to make sure we don't trigger unnecessary rebuild
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
             if [[ -e "$__versionSourceFile" ]]; then
                 read existingVersionSourceLine < "$__versionSourceFile"
             fi
             if [[ "$__versionSourceLine" != "$existingVersionSourceLine" ]]; then
+                cat << EOF > $runtimeVersionHeaderFile
+#define RuntimeAssemblyMajorVersion 0
+#define RuntimeAssemblyMinorVersion 0
+#define RuntimeFileMajorVersion 0
+#define RuntimeFileMinorVersion 0
+#define RuntimeFileBuildVersion 0
+#define RuntimeFileRevisionVersion 0
+#define RuntimeProductMajorVersion 0
+#define RuntimeProductMinorVersion 0
+#define RuntimeProductPatchVersion 0
+#define RuntimeProductVersion
+EOF
                 echo "$__versionSourceLine" > "$__versionSourceFile"
             fi
         fi
@@ -382,7 +409,7 @@ done
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
-platform=$(uname)
+platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
   __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then

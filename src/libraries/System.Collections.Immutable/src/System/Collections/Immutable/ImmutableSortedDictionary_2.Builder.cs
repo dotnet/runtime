@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -567,7 +566,6 @@ namespace System.Collections.Immutable
             /// true if the <see cref="ImmutableSortedDictionary{TKey, TValue}"/> contains
             /// an element with the specified value; otherwise, false.
             /// </returns>
-            [Pure]
             public bool ContainsValue(TValue value)
             {
                 return _root.ContainsValue(value, _valueComparer);
@@ -606,7 +604,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to search for.</param>
             /// <returns>The value for the key, or the default value for type <typeparamref name="TValue"/> if no matching key was found.</returns>
-            [Pure]
             [return: MaybeNull]
             public TValue GetValueOrDefault(TKey key)
             {
@@ -621,7 +618,6 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The value for the key, or <paramref name="defaultValue"/> if no matching key was found.
             /// </returns>
-            [Pure]
             public TValue GetValueOrDefault(TKey key, TValue defaultValue)
             {
                 Requires.NotNullAllowStructs(key, nameof(key));

@@ -135,6 +135,8 @@ namespace System.Drawing
             if (encoder == null)
                 throw new ArgumentNullException(nameof(encoder));
 
+            ThrowIfDirectoryDoesntExist(filename);
+
             IntPtr encoderParamsMemory = IntPtr.Zero;
 
             if (encoderParams != null)
@@ -241,7 +243,7 @@ namespace System.Drawing
                 {
                     Gdip.CheckStatus(Gdip.GdipSaveImageToStream(
                         new HandleRef(this, nativeImage),
-                        new GPStream(stream),
+                        new GPStream(stream, makeSeekable: false),
                         ref g,
                         new HandleRef(encoderParams, encoderParamsMemory)));
                 }

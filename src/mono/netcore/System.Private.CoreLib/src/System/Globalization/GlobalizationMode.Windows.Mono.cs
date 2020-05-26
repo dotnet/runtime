@@ -6,9 +6,9 @@ namespace System.Globalization
 {
     internal partial class GlobalizationMode
     {
-        private static bool GetGlobalizationInvariantMode()
-        {
-            return GetInvariantSwitchValue();
-        }
+        internal static bool Invariant { get; } = GetInvariantSwitchValue();
+        internal static bool UseNls { get; } = !Invariant &&
+            (GetSwitchValue("DOTNET_SYSTEM_GLOBALIZATION_USENLS") ||
+                Interop.Globalization.LoadICU() == 0);
     }
 }

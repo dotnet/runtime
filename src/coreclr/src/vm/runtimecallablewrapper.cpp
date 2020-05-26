@@ -2432,22 +2432,11 @@ void RCW::AddMemoryPressure(GCPressureSize pressureSize)
     CONTRACTL_END;
 
     int pressure = s_rGCPressureTable[pressureSize];
-
-    if (pressureSize >= GCPressureSize_WinRT_Base)
-    {
-        // use the new implementation for WinRT RCWs
-        GCInterface::NewAddMemoryPressure(pressure);
-    }
-    else
-    {
-        // use the old implementation for classic COM interop
-        GCInterface::AddMemoryPressure(pressure);
-    }
+    GCInterface::AddMemoryPressure(pressure);
 
     // Remember the pressure we set.
     m_Flags.m_GCPressure = pressureSize;
 }
-
 
 void RCW::RemoveMemoryPressure()
 {
@@ -2464,17 +2453,7 @@ void RCW::RemoveMemoryPressure()
         return;
 
     int pressure = s_rGCPressureTable[m_Flags.m_GCPressure];
-
-    if (m_Flags.m_GCPressure >= GCPressureSize_WinRT_Base)
-    {
-        // use the new implementation for WinRT RCWs
-        GCInterface::NewRemoveMemoryPressure(pressure);
-    }
-    else
-    {
-        // use the old implementation for classic COM interop
-        GCInterface::RemoveMemoryPressure(pressure);
-    }
+    GCInterface::RemoveMemoryPressure(pressure);
 
     m_Flags.m_GCPressure = GCPressureSize_None;
 }

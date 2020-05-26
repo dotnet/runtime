@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\Common\tests\CoreFx.Private.TestUtilities.Unicode\**\*.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\tests\TestUtilities.Unicode\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -43,7 +43,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="$(MicrosoftDotNetPlatformAbstractionsVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />

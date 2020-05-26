@@ -650,7 +650,7 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
         {
             if (nativeImage != NULL)
             {
-                pAssembly = nativeImage->LoadComponentAssembly(index);
+                pAssembly = nativeImage->LoadManifestAssembly(index);
             }
             else
             {
@@ -658,6 +658,7 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
                 spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
                                 fromModule->GetNativeAssemblyImport(),
                                 NULL);
+                spec.SetParentAssembly(fromModule->GetDomainAssembly());
                 pAssembly = spec.LoadAssembly(FILE_LOADED);
             }
             fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);

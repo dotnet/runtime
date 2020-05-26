@@ -13,6 +13,30 @@ using Internal.ReadyToRunConstants;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
+    /// This represents all possible signatures that is 
+    /// </summary>
+    public class ReadyToRunSignature
+    {
+    }
+
+    /// <summary>
+    /// For now, this means the signature is not parsed yet
+    /// </summary>
+    public class TodoSignature : ReadyToRunSignature
+    {
+    }
+
+    public class MethodDefEntrySignature : ReadyToRunSignature
+    {
+        public uint MethodDefToken { get; set; }
+    }
+
+    public class MethodRefEntrySignature : ReadyToRunSignature
+    {
+        public uint MethodRefToken { get; set; }
+    }
+
+    /// <summary>
     /// Helper class for converting metadata tokens into their textual representation.
     /// </summary>
     public class MetadataNameFormatter : DisassemblingTypeProvider
@@ -39,11 +63,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             return formatter.EmitHandleName(handle, namespaceQualified, owningTypeOverride, signaturePrefix);
         }
 
-        public static string FormatSignature(IAssemblyResolver assemblyResolver, ReadyToRunReader r2rReader, int imageOffset)
+        public static string FormatSignature(IAssemblyResolver assemblyResolver, ReadyToRunReader r2rReader, int imageOffset, out ReadyToRunSignature result)
         {
             SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader.GetGlobalMetadataReader(), r2rReader, imageOffset);
-            string result = decoder.ReadR2RSignature();
-            return result;
+            string answer = decoder.ReadR2RSignature(out result);
+            return answer;
         }
 
         /// <summary>
@@ -518,13 +542,14 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// by custom encoding per fixup type.
         /// </summary>
         /// <returns></returns>
-        public string ReadR2RSignature()
+        public string ReadR2RSignature(out ReadyToRunSignature result)
         {
+            result = null;
             StringBuilder builder = new StringBuilder();
             int startOffset = _offset;
             try
             {
-                ParseSignature(builder);
+                result = ParseSignature(builder);
                 EmitSignatureBinaryFrom(builder, startOffset);
             }
             catch (Exception ex)
@@ -634,7 +659,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Parse the signature into a given output string builder.
         /// </summary>
         /// <param name="builder">Output signature builder</param>
-        private void ParseSignature(StringBuilder builder)
+        private ReadyToRunSignature ParseSignature(StringBuilder builder)
         {
             uint fixupType = ReadByte();
             EmitInlineSignatureBinaryBytes(builder, 1);
@@ -650,8 +675,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 moduleDecoder = new SignatureDecoder(_options, refAsmEcmaReader, _image, _offset, refAsmEcmaReader, _contextReader);
             }
 
-            moduleDecoder.ParseSignature((ReadyToRunFixupKind)fixupType, builder);
+            ReadyToRunSignature result = moduleDecoder.ParseSignature((ReadyToRunFixupKind)fixupType, builder);
             _offset = moduleDecoder.Offset;
+            return result;
         }
 
         /// <summary>
@@ -659,14 +685,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="fixupType">Fixup type to parse</param>
         /// <param name="builder">Output signature builder</param>
-        private void ParseSignature(ReadyToRunFixupKind fixupType, StringBuilder builder)
+        private ReadyToRunSignature ParseSignature(ReadyToRunFixupKind fixupType, StringBuilder builder)
         {
+            ReadyToRunSignature result = new TodoSignature();
             switch (fixupType)
             {
                 case ReadyToRunFixupKind.ThisObjDictionaryLookup:
                     builder.Append("THISOBJ_DICTIONARY_LOOKUP @ ");
                     ParseType(builder);
                     builder.Append(": ");
+                    // It looks like ReadyToRunSignature is potentially a composite pattern
                     ParseSignature(builder);
                     break;
 
@@ -702,15 +730,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 case ReadyToRunFixupKind.MethodEntry_DefToken:
-                    ParseMethodDefToken(builder, owningTypeOverride: null);
+                    uint methodDefToken = ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
                     builder.Append(_options.Naked ? ")" : "_DEF_TOKEN)");
+                    result = new MethodDefEntrySignature { MethodDefToken = methodDefToken };
                     break;
 
                 case ReadyToRunFixupKind.MethodEntry_RefToken:
-                    ParseMethodRefToken(builder, owningTypeOverride: null);
+                    uint methodRefToken = ParseMethodRefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
                     builder.Append(_options.Naked ? ")" : "_REF_TOKEN)");
+                    result = new MethodRefEntrySignature { MethodRefToken = methodRefToken };
                     break;
 
 
@@ -831,12 +861,44 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunFixupKind.Check_TypeLayout:
                     ParseType(builder);
+                    ReadyToRunTypeLayoutFlags layoutFlags = (ReadyToRunTypeLayoutFlags)ReadUInt();
+                    builder.Append($" Flags {layoutFlags}");
+                    int actualSize = (int)ReadUInt();
+                    builder.Append($" Size {actualSize}");
+
+                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA))
+                    {
+                        builder.Append($" HFAType {ReadUInt()}");
+                    }
+
+                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment))
+                    {
+                        if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment_Native))
+                        {
+                            builder.Append($" Align {ReadUInt()}");
+                        }
+                    }
+
+                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout))
+                    {
+                        if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty))
+                        {
+                            int cbGCRefMap = (actualSize / _contextReader.TargetPointerSize + 7) / 8;
+                            builder.Append(" GCLayout ");
+                            for (int i = 0; i < cbGCRefMap; i++)
+                            {
+                                builder.Append(ReadByte().ToString("X"));
+                            }
+                        }
+                    }
+
                     builder.Append(" (CHECK_TYPE_LAYOUT)");
                     break;
 
                 case ReadyToRunFixupKind.Check_FieldOffset:
-                    builder.Append("CHECK_FIELD_OFFSET");
-                    // TODO
+                    builder.Append($"{ReadUInt()} ");
+                    ParseField(builder);
+                    builder.Append(" (CHECK_FIELD_OFFSET)");
                     break;
 
                 case ReadyToRunFixupKind.Check_InstructionSetSupport:
@@ -877,6 +939,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(string.Format("Unknown fixup type: {0:X2}", fixupType));
                     break;
             }
+            return result;
         }
 
         /// <summary>
@@ -1203,7 +1266,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Read a methodDef token from the signature and output the corresponding object to the builder.
         /// </summary>
         /// <param name="builder">Output string builder</param>
-        private void ParseMethodDefToken(StringBuilder builder, string owningTypeOverride)
+        private uint ParseMethodDefToken(StringBuilder builder, string owningTypeOverride)
         {
             StringBuilder signaturePrefixBuilder = new StringBuilder();
             uint methodDefToken = ReadUIntAndEmitInlineSignatureBinary(signaturePrefixBuilder) | (uint)CorTokenType.mdtMethodDef;
@@ -1213,6 +1276,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 namespaceQualified: true,
                 owningTypeOverride: owningTypeOverride,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
+            return methodDefToken;
         }
 
         /// <summary>
@@ -1220,7 +1284,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="builder">Output string builder</param>
         /// <param name="owningTypeOverride">Explicit owning type override</param>
-        private void ParseMethodRefToken(StringBuilder builder, string owningTypeOverride)
+        private uint ParseMethodRefToken(StringBuilder builder, string owningTypeOverride)
         {
             StringBuilder signaturePrefixBuilder = new StringBuilder();
             uint methodRefToken = ReadUIntAndEmitInlineSignatureBinary(signaturePrefixBuilder) | (uint)CorTokenType.mdtMemberRef;
@@ -1230,6 +1294,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 namespaceQualified: false,
                 owningTypeOverride: owningTypeOverride,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
+            return methodRefToken;
         }
 
         /// <summary>
@@ -1658,12 +1723,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Read a string token from the signature stream and convert it to the actual string.
         /// </summary>
-        /// <returns></returns>
         private void ParseStringHandle(StringBuilder builder)
         {
             uint rid = ReadUIntAndEmitInlineSignatureBinary(builder);
             UserStringHandle stringHandle = MetadataTokens.UserStringHandle((int)rid);
-            builder.Append(_metadataReader.GetUserString(stringHandle));
+            builder.AppendEscapedString(_metadataReader.GetUserString(stringHandle));
         }
     }
 }

@@ -29,6 +29,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Drawing.Tests
@@ -804,6 +805,40 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetHicon());
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In .NET Framework we use GDI 1.0")]
+        public void SaveWmfAsPngDoesntChangeImageBoundaries()
+        {
+            if (PlatformDetection.IsWindows7)
+            {
+                throw new SkipTestException("GDI+ 1.1 is not supported");
+            }
+
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                // https://github.com/dotnet/runtime/issues/28859
+                throw new SkipTestException("Arm precision");
+            }
+
+            string output = GetTestFilePath() + ".png";
+            using Stream wmfStream = File.OpenRead(Helpers.GetTestBitmapPath("gdiwmfboundariesbug.wmf"));
+            using Image bitmapFromWmf = Bitmap.FromStream(wmfStream);
+            bitmapFromWmf.Save(output, ImageFormat.Png);
+
+            using Stream expectedPngStream = File.OpenRead(Helpers.GetTestBitmapPath("gdiwmfboundariesbug-output.png"));
+            using Image expectedPngBitmap = Bitmap.FromStream(expectedPngStream);
+            using MemoryStream expectedMemoryStream = new MemoryStream();
+            expectedPngBitmap.Save(expectedMemoryStream, ImageFormat.Png);
+
+            using Stream outputPngStream = File.OpenRead(output);
+            using Image outputPngBitmap = Bitmap.FromStream(outputPngStream);
+            using MemoryStream outputMemoryStream = new MemoryStream();
+            outputPngBitmap.Save(outputMemoryStream, ImageFormat.Png);
+
+            Assert.Equal(expectedMemoryStream.ToArray(), outputMemoryStream.ToArray());
+        }
+
         // This test causes an AV on Linux
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -1091,7 +1126,7 @@ namespace System.Drawing.Tests
         public static IEnumerable<object[]> LockBits_NotUnix_TestData()
         {
             Bitmap bitmap() => new Bitmap(2, 2, PixelFormat.Format32bppArgb);
-            yield return new object[] { bitmap(), new Rectangle(1, 1, 1,1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb, 8, 1 };
+            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb, 8, 1 };
             yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb, 8, 3 };
             yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb, 8, 2 };
 
@@ -1706,7 +1741,7 @@ namespace System.Drawing.Tests
 
             using (FileStream stream = new FileStream(path, FileMode.Open))
             {
-                using (Bitmap bitmap = new Bitmap(new NonSeekableStream(stream)))
+                using (Bitmap bitmap = new Bitmap(new TestStream(stream, canSeek: false)))
                 {
                     Assert.Equal(100, bitmap.Height);
                     Assert.Equal(100, bitmap.Width);
@@ -1715,22 +1750,55 @@ namespace System.Drawing.Tests
             }
         }
 
-        private class NonSeekableStream : Stream
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void SaveToRestrictiveStream(bool canRead, bool canSeek)
+        {
+            using (Stream backingStream = new MemoryStream())
+            using (Stream restrictiveStream = new TestStream(backingStream, canRead, canSeek))
+            {
+                using (Bitmap bitmap = new Bitmap(100, 100))
+                {
+                    bitmap.Save(restrictiveStream, ImageFormat.Png);
+                }
+
+                backingStream.Position = 0;
+
+                using (Bitmap bitmap = new Bitmap(backingStream))
+                {
+                    Assert.Equal(100, bitmap.Height);
+                    Assert.Equal(100, bitmap.Width);
+                    Assert.Equal(ImageFormat.Png, bitmap.RawFormat);
+                }
+            }
+        }
+
+        private class TestStream : Stream
         {
             private Stream _stream;
+            private bool _canRead;
+            private bool _canSeek;
 
-            public NonSeekableStream(Stream stream)
+            public TestStream(Stream stream, bool canRead = true, bool canSeek = true)
             {
                 _stream = stream;
+                _canRead = canRead;
+                _canSeek = canSeek;
             }
 
-            public override bool CanRead => _stream.CanRead;
-            public override bool CanSeek => false;
+            public override bool CanRead => _canRead && _stream.CanRead;
+            public override bool CanSeek => _canSeek && _stream.CanSeek;
             public override bool CanWrite => _stream.CanWrite;
             public override long Length => _stream.Length;
-            public override long Position { get => _stream.Position; set => throw new InvalidOperationException(); }
+            public override long Position
+            {
+                get => _stream.Position;
+                set => _stream.Position = _canSeek ? value : throw new NotSupportedException();
+            }
             public override void Flush() => _stream.Flush();
-            public override int Read(byte[] buffer, int offset, int count) => _stream.Read(buffer, offset, count);
+            public override int Read(byte[] buffer, int offset, int count) => _canRead ?  _stream.Read(buffer, offset, count) : throw new NotSupportedException();
             public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
             public override void SetLength(long value) => _stream.SetLength(value);
             public override void Write(byte[] buffer, int offset, int count) => _stream.Write(buffer, offset, count);

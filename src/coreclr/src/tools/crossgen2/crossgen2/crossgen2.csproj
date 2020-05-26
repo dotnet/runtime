@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetFramework Condition="'$(BuildingInsideVisualStudio)' == 'true'">netcoreapp3.0</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -14,6 +13,7 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
+    <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">

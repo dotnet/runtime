@@ -281,19 +281,7 @@ CHARARRAYREF AllocateCharArray(DWORD dwArrayLength)
     return (CHARARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_CHAR, dwArrayLength);
 }
 
-void Object::ValidatePromote(ScanContext *sc, DWORD flags)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-
-#if defined (VERIFY_HEAP)
-    Validate();
-#endif
-}
-
-void Object::ValidateHeap(Object *from, BOOL bDeep)
+void Object::ValidateHeap(BOOL bDeep)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -1884,7 +1872,7 @@ void ThreadBaseObject::SetInternal(Thread *it)
 
     // Now the native Thread will only be destroyed after the managed Thread is collected.
     // Tell the GC that the managed Thread actually represents much more memory.
-    GCInterface::NewAddMemoryPressure(sizeof(Thread));
+    GCInterface::AddMemoryPressure(sizeof(Thread));
 }
 
 void ThreadBaseObject::ClearInternal()
@@ -1893,7 +1881,7 @@ void ThreadBaseObject::ClearInternal()
 
     _ASSERTE(m_InternalThread != NULL);
     m_InternalThread = NULL;
-    GCInterface::NewRemoveMemoryPressure(sizeof(Thread));
+    GCInterface::RemoveMemoryPressure(sizeof(Thread));
 }
 
 #endif // #ifndef DACCESS_COMPILE

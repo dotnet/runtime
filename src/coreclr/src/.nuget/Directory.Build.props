@@ -28,7 +28,7 @@
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
-    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux;FreeBSD</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux;FreeBSD;NetBSD;SunOS</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
     <!-- Identify OS family based upon the RuntimeOS, which could be distro specific (e.g. osx.10.12) or
@@ -96,6 +96,20 @@
         <PackageRID Condition="'$(PortableBuild)' == 'true'">freebsd-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'netbsd'">
+      <PropertyGroup>
+        <PackageRID>netbsd-$(TargetArchitecture)</PackageRID>
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">netbsd-$(TargetArchitecture)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'sunos'">
+      <PropertyGroup>
+        <PackageRID>sunos-$(TargetArchitecture)</PackageRID>
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">sunos-$(TargetArchitecture)</PackageRID>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(_runtimeOSFamily)' == 'android'">
       <PropertyGroup>
         <PackageRID>android.21-$(TargetArchitecture)</PackageRID>
@@ -158,6 +172,12 @@
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';FreeBSD;'))">
     <OfficialBuildRID Include="freebsd-x64" />
+  </ItemGroup>
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';NetBSD;'))">
+    <OfficialBuildRID Include="netbsd-x64" />
+  </ItemGroup>
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';SunOS;'))">
+    <OfficialBuildRID Include="sunos-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Windows_NT;'))">
     <OfficialBuildRID Include="win-x86">

@@ -7,6 +7,7 @@ parameters:
   container: ''
   pool: ''
   platform: ''
+  runtimeFlavorDisplayName: ''
   jobParameters: {}
 
 jobs:
@@ -18,6 +19,7 @@ jobs:
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
+    runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 
     # Linux arm

@@ -36,6 +36,21 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        public void LongTimePattern_Set_InvalidatesDerivedPatterns()
+        {
+            const string Pattern = "#$";
+            var format = new DateTimeFormatInfo();
+            var d = DateTimeOffset.Now;
+            d.ToString("F", format); // FullDateTimePattern
+            d.ToString("G", format); // GeneralLongTimePattern
+            d.ToString(format); // DateTimeOffsetPattern
+            format.LongTimePattern = Pattern;
+            Assert.Contains(Pattern, d.ToString("F", format));
+            Assert.Contains(Pattern, d.ToString("G", format));
+            Assert.Contains(Pattern, d.ToString(format));
+        }
+
+        [Fact]
         public void LongTimePattern_SetNullValue_ThrowsArgumentNullException()
         {
             var format = new DateTimeFormatInfo();
@@ -48,9 +63,8 @@ namespace System.Globalization.Tests
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.LongTimePattern = "HH:mm:ss");
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void LongTimePattern_CheckReadingTimeFormatWithSingleQuotes()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void LongTimePattern_CheckReadingTimeFormatWithSingleQuotes_ICU()
         {
             // Usually fr-CA long time format has a single quotes e.g. "HH 'h' mm 'min' ss 's'".
             // Ensuring when reading such formats from ICU we'll not eat the spaces after the single quotes.

@@ -124,7 +124,7 @@ namespace Internal.Runtime.InteropServices
 
             if (!Path.IsPathRooted(cxt.AssemblyPath))
             {
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(cxt));
             }
 
             Type classType = FindClassType(cxt.ClassId, cxt.AssemblyPath, cxt.AssemblyName, cxt.TypeName);
@@ -156,7 +156,7 @@ namespace Internal.Runtime.InteropServices
 
             if (!Path.IsPathRooted(cxt.AssemblyPath))
             {
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(cxt));
             }
 
             Type classType = FindClassType(cxt.ClassId, cxt.AssemblyPath, cxt.AssemblyName, cxt.TypeName);
@@ -231,7 +231,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
-        [NativeCallable]
+        [UnmanagedCallersOnly]
         public static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
@@ -268,7 +268,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
-        [NativeCallable]
+        [UnmanagedCallersOnly]
         public static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
@@ -288,7 +288,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
             if (cxtInt.InterfaceId != Guid.Empty
                 || cxtInt.ClassFactoryDest != IntPtr.Zero)
             {
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(pCxtInt));
             }
 
             try
@@ -308,7 +308,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
         [CLSCompliant(false)]
-        [NativeCallable]
+        [UnmanagedCallersOnly]
         public static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
@@ -328,7 +328,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             if (cxtInt.InterfaceId != Guid.Empty
                 || cxtInt.ClassFactoryDest != IntPtr.Zero)
             {
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(pCxtInt));
             }
 
             try

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -580,9 +581,7 @@ namespace System
         {
             if (value < -10000 || value > 10000)
             {
-                // DateTimeOffset.AddYears(int years) is implemented on top of DateTime.AddYears(int value). Use the more appropriate
-                // parameter name out of the two for the exception.
-                throw new ArgumentOutOfRangeException("years", SR.ArgumentOutOfRange_DateTimeBadYears);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_DateTimeBadYears);
             }
             return AddMonths(value * 12);
         }
@@ -1355,7 +1354,7 @@ namespace System
             return TimeZoneInfo.ConvertTimeToUtc(this, TimeZoneInfoOptions.NoThrowOnInvalidTime);
         }
 
-        public static bool TryParse(string? s, out DateTime result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out DateTime result)
         {
             if (s == null)
             {
@@ -1370,7 +1369,7 @@ namespace System
             return DateTimeParse.TryParse(s, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None, out result);
         }
 
-        public static bool TryParse(string? s, IFormatProvider? provider, DateTimeStyles styles, out DateTime result)
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, DateTimeStyles styles, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(styles, nameof(styles));
 
@@ -1389,7 +1388,7 @@ namespace System
             return DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), styles, out result);
         }
 
-        public static bool TryParseExact(string? s, string? format, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
+        public static bool TryParseExact([NotNullWhen(true)] string? s, [NotNullWhen(true)] string? format, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(style, nameof(style));
 
@@ -1408,7 +1407,7 @@ namespace System
             return DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }
 
-        public static bool TryParseExact(string? s, string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
+        public static bool TryParseExact([NotNullWhen(true)] string? s, [NotNullWhen(true)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(style, nameof(style));
 
@@ -1421,7 +1420,7 @@ namespace System
             return DateTimeParse.TryParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }
 
-        public static bool TryParseExact(ReadOnlySpan<char> s, string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
+        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(style, nameof(style));
             return DateTimeParse.TryParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style, out result);

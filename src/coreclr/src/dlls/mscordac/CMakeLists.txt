@@ -31,9 +31,9 @@ else(CLR_CMAKE_HOST_WIN32)
     # Add dependency on export file
     add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
     if(CLR_CMAKE_HOST_LINUX)
 
@@ -73,7 +73,7 @@ else(CLR_CMAKE_HOST_WIN32)
     endif(CLR_CMAKE_HOST_LINUX)
 endif(CLR_CMAKE_HOST_WIN32)
 
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
@@ -88,8 +88,12 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
 
     # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    if(CLR_CMAKE_HOST_SUNOS)
+        set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+    else(CLR_CMAKE_HOST_SUNOS)
+        set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
+    endif(CLR_CMAKE_HOST_SUNOS)
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
 if(CLR_CMAKE_HOST_OSX)
     # Add linker exports file option
@@ -190,24 +194,7 @@ target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 # Create the DAC module index header file containing the DAC build id
 # for xplat and the timestamp/size on Windows.
 if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    set(
-        DAC_MODULE_INDEX_FILE 
-        ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h
-    )
-    add_custom_command(
-        OUTPUT ${DAC_MODULE_INDEX_FILE}
-        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordaccore> ${DAC_MODULE_INDEX_FILE}
-        DEPENDS mscordaccore
-        COMMENT "Generating DAC module index file -> ${DAC_MODULE_INDEX_FILE}"
-    )
-    set_source_files_properties(
-        ${DAC_MODULE_INDEX_FILE} 
-        PROPERTIES GENERATED TRUE
-    )
-    add_custom_target(
-        dac_module_index_header
-        DEPENDS ${DAC_MODULE_INDEX_FILE} 
-    )
+    generate_module_index(mscordaccore ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets

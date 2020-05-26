@@ -131,7 +131,7 @@ namespace System.Diagnostics
                     object? target = Activator.CreateInstance(symbolsType);
 
                     // Create an instance delegate for the GetSourceLineInfo method
-                    GetSourceLineInfoDelegate getSourceLineInfo = (GetSourceLineInfoDelegate)symbolsMethodInfo.CreateDelegate(typeof(GetSourceLineInfoDelegate), target);
+                    GetSourceLineInfoDelegate getSourceLineInfo = symbolsMethodInfo.CreateDelegate<GetSourceLineInfoDelegate>(target);
 
                     // We could race with another thread. It doesn't matter if we win or lose, the losing instance will be GC'ed and all threads including this one will
                     // use the winning instance

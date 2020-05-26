@@ -702,6 +702,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
 
     if (varTypeIsStruct(type))
     {
+        assert(typeClass != nullptr);
         size = info.compCompHnd->getClassSize(typeClass);
         if (forReturn)
         {
@@ -969,9 +970,11 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             // IND(ADDR(IND(x)) == IND(x)
             if (op1->gtOper == GT_ADDR)
             {
-                if (op1->AsOp()->gtOp1->gtOper == GT_IND && (op1->AsOp()->gtOp1->gtFlags & GTF_IND_ARR_INDEX) == 0)
+                GenTreeUnOp* addr  = op1->AsUnOp();
+                GenTree*     indir = addr->gtGetOp1();
+                if (indir->OperIs(GT_IND) && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
                 {
-                    op1 = op1->AsOp()->gtOp1->AsOp()->gtOp1;
+                    op1 = indir->AsIndir()->Addr();
                 }
             }
         }
@@ -981,6 +984,11 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             if (op1->gtOper == GT_IND && (op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
             {
                 return op1->AsOp()->gtOp1;
+            }
+            else
+            {
+                // Addr source can't be CSE-ed.
+                op1->SetDoNotCSE();
             }
         }
     }
@@ -1123,6 +1131,28 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 #endif
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+// gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
+//
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+
+inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
+                                                               GenTree*                ctxTree,
+                                                               void*                   compileTimeHandle)
+{
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
+    GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
+
+    return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
 }
 
 //------------------------------------------------------------------------
@@ -1778,8 +1808,11 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
     //
     // Increment counts on the local itself.
     //
-    if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    if ((lvType != TYP_STRUCT) || (promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT))
     {
+        // We increment ref counts of this local for primitive types, including structs that have been retyped as their
+        // only field, as well as for structs whose fields are not independently promoted.
+
         //
         // Increment lvRefCnt
         //
@@ -1931,9 +1964,9 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
         if (opts.compDbgCode)
             return true;
 
-        if (lvaGenericsContextUseCount > 0)
+        if (lvaGenericsContextInUse)
         {
-            JITDUMP("Reporting this as generic context: %u refs\n", lvaGenericsContextUseCount);
+            JITDUMP("Reporting this as generic context\n");
             return true;
         }
     }
@@ -1944,14 +1977,11 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     // because collectible types need the generics context when gc-ing.
     if (genericsContextIsThis)
     {
-        const bool isUsed   = lvaGenericsContextUseCount > 0;
         const bool mustKeep = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
 
-        if (isUsed || mustKeep)
+        if (lvaGenericsContextInUse || mustKeep)
         {
-            JITDUMP("Reporting this as generic context: %u refs%s\n", lvaGenericsContextUseCount,
-                    mustKeep ? ", must keep" : "");
-
+            JITDUMP("Reporting this as generic context: %s\n", mustKeep ? "must keep" : "referenced");
             return true;
         }
     }
@@ -1979,7 +2009,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Otherwise, if an exact type parameter is needed in the body, report the generics context.
         // We do this because collectible types needs the generics context when gc-ing.
-        if (lvaGenericsContextUseCount > 0)
+        if (lvaGenericsContextInUse)
         {
             return true;
         }

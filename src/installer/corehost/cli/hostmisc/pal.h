@@ -79,8 +79,6 @@
 #define FALLBACK_HOST_RID _X("linux")
 #endif
 
-#define LIBCLRJIT_NAME MAKE_LIBNAME("clrjit")
-
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
 #define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
 
@@ -146,7 +144,9 @@ namespace pal
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::_wcsicmp(str1, str2); }
     inline int strncmp(const char_t* str1, const char_t* str2, int len) { return ::wcsncmp(str1, str2, len); }
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::_wcsnicmp(str1, str2, len); }
-
+    inline int pathcmp(const pal::string_t &path1, const pal::string_t &path2) { return strcasecmp(path1.c_str(), path2.c_str()); }
+    inline string_t to_string(int value) { return std::to_wstring(value); }
+	
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
     inline FILE * file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
 
@@ -204,6 +204,8 @@ namespace pal
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::strcasecmp(str1, str2); }
     inline int strncmp(const char_t* str1, const char_t* str2, int len) { return ::strncmp(str1, str2, len); }
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::strncasecmp(str1, str2, len); }
+    inline int pathcmp(const pal::string_t& path1, const pal::string_t& path2) { return strcmp(path1.c_str(), path2.c_str()); }
+    inline string_t to_string(int value) { return std::to_string(value); }
 
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline FILE * file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
@@ -237,7 +239,6 @@ namespace pal
         return ret;
     }
 
-    string_t to_string(int value);
     string_t get_timestamp();
 
     bool getcwd(string_t* recv);
@@ -248,7 +249,6 @@ namespace pal
     inline void err_flush() { std::fflush(stderr); }
     inline void out_flush() { std::fflush(stdout); }
 
-    // Based upon https://github.com/dotnet/core-setup/blob/master/src/Microsoft.DotNet.PlatformAbstractions/Native/PlatformApis.cs
     string_t get_current_os_rid_platform();
     inline string_t get_current_os_fallback_rid()
     {
@@ -271,6 +271,7 @@ namespace pal
 
     bool get_own_executable_path(string_t* recv);
     bool get_own_module_path(string_t* recv);
+    bool get_method_module_path(string_t* recv, void* method);
     bool get_module_path(dll_t mod, string_t* recv);
     bool get_current_module(dll_t *mod);
     bool getenv(const char_t* name, string_t* recv);
@@ -297,6 +298,7 @@ namespace pal
     bool get_default_bundle_extraction_base_dir(string_t& extraction_dir);
 
     int xtoi(const char_t* input);
+    bool unicode_palstring(const char16_t* str, pal::string_t* out);
 
     bool get_loaded_library(const char_t *library_name, const char *symbol_name, /*out*/ dll_t *dll, /*out*/ string_t *path);
     bool load_library(const string_t* path, dll_t* dll);

@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
+using System.IO;
 using System.Runtime.InteropServices;
-using System.Xml.Linq;
 
 namespace System
 {
@@ -35,14 +34,10 @@ namespace System
         // OSX family
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
-        public static Version OSXVersion => IsOSX ?
-            ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion) :
-            throw new PlatformNotSupportedException();
-        private static Lazy<Version> m_osxProductVersion = new Lazy<Version>(GetOSXProductVersion);
-        public static bool IsMacOsHighSierraOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 13));
+        public static bool IsMacOsHighSierraOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 13);
         public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
-        public static bool IsMacOsMojaveOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 14));
-        public static bool IsMacOsCatalinaOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 15));
+        public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
+        public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
@@ -50,9 +45,6 @@ namespace System
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
-
-        private static Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
-        public static Version ICUVersion => m_icuVersion.Value;
 
         public static bool IsSuperUser => !IsWindows ?
             libc.geteuid() == 0 :
@@ -110,75 +102,6 @@ namespace System
             }
         }
 
-        private static Version GetICUVersion()
-        {
-            int version = 0;
-            Type interopGlobalization = Type.GetType("Interop+Globalization");
-            if (interopGlobalization != null)
-            {
-                MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
-                if (methodInfo != null)
-                {
-                    version = (int)methodInfo.Invoke(null, null);
-                }
-            }
-
-            return new Version( version & 0xFF,
-                            (version >> 8)  & 0xFF,
-                            (version >> 16) & 0xFF,
-                                version >> 24);
-        }
-
-        private static Version GetOSXProductVersion()
-        {
-            if (IsOSX)
-            {
-                try
-                {
-                    // <plist version="1.0">
-                    // <dict>
-                    //         <key>ProductBuildVersion</key>
-                    //         <string>17A330h</string>
-                    //         <key>ProductCopyright</key>
-                    //         <string>1983-2017 Apple Inc.</string>
-                    //         <key>ProductName</key>
-                    //         <string>Mac OS X</string>
-                    //         <key>ProductUserVisibleVersion</key>
-                    //         <string>10.13</string>
-                    //         <key>ProductVersion</key>
-                    //         <string>10.13</string>
-                    // </dict>
-                    // </plist>
-
-                    XElement dict = XDocument.Load("/System/Library/CoreServices/SystemVersion.plist").Root.Element("dict");
-                    if (dict != null)
-                    {
-                        foreach (XElement key in dict.Elements("key"))
-                        {
-                            if ("ProductVersion".Equals(key.Value))
-                            {
-                                XElement stringElement = key.NextNode as XElement;
-                                if (stringElement != null && stringElement.Name.LocalName.Equals("string"))
-                                {
-                                    string versionString = stringElement.Value;
-                                    if (versionString != null)
-                                    {
-                                        return Version.Parse(versionString);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            // In case of exception, couldn't get the version or non osx
-            return new Version(0, 0, 0);
-        }
-
         private static Version s_opensslVersion;
         private static Version GetOpenSslVersion()
         {
@@ -227,11 +150,38 @@ namespace System
             }
         }
 
-        private static DistroInfo GetDistroInfo() => new DistroInfo()
+        private static DistroInfo GetDistroInfo()
         {
-            Id = Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystem,
-            VersionId = ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion)
-        };
+            DistroInfo result = new DistroInfo();
+
+            if (IsFreeBSD)
+            {
+                result.Id = "FreeBSD";
+                // example:
+                // FreeBSD 11.0-RELEASE-p1 FreeBSD 11.0-RELEASE-p1 #0 r306420: Thu Sep 29 01:43:23 UTC 2016     root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC
+                // What we want is major release as minor releases should be compatible.
+                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split()[1].Split('.')[0]);
+            }
+            else if (File.Exists("/etc/os-release"))
+            {
+                foreach (string line in File.ReadAllLines("/etc/os-release"))
+                {
+                    if (line.StartsWith("ID=", StringComparison.Ordinal))
+                    {
+                        result.Id = line.Substring(3).Trim('"', '\'');
+                    }
+                    else if (line.StartsWith("VERSION_ID=", StringComparison.Ordinal))
+                    {
+                        result.VersionId = ToVersion(line.Substring(11).Trim('"', '\''));
+                    }
+                }
+            }
+
+            result.Id ??= "Linux";
+            result.VersionId ??= ToVersion(string.Empty);
+
+            return result;
+        }
 
         private static bool IsRedHatFamilyAndVersion(int major = -1, int minor = -1, int build = -1, int revision = -1)
         {

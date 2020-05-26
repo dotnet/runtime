@@ -285,23 +285,41 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        public Task ConnectAsync(IPAddress address, int port) =>
-            Task.Factory.FromAsync(
-                (targetAddess, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetAddess, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
-                address, port, state: this);
+        public Task ConnectAsync(IPAddress address, int port)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
 
-        public Task ConnectAsync(string host, int port) =>
-            Task.Factory.FromAsync(
-                (targetHost, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetHost, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
-                host, port, state: this);
+            Task result = CompleteConnectAsync(Client.ConnectAsync(address, port));
 
-        public Task ConnectAsync(IPAddress[] addresses, int port) =>
-            Task.Factory.FromAsync(
-                (targetAddresses, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetAddresses, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
-                addresses, port, state: this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return result;
+        }
+
+        public Task ConnectAsync(string host, int port)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
+
+            Task result = CompleteConnectAsync(Client.ConnectAsync(host, port));
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return result;
+        }
+
+        public Task ConnectAsync(IPAddress[] addresses, int port)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
+
+            Task result = CompleteConnectAsync(Client.ConnectAsync(addresses, port));
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return result;
+        }
+
+        private async Task CompleteConnectAsync(Task task)
+        {
+            await task.ConfigureAwait(false);
+            _active = true;
+        }
 
         public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback? requestCallback, object? state)
         {
@@ -409,18 +427,7 @@ namespace System.Net.Sockets
 
         public void Dispose() => Dispose(true);
 
-        ~TcpClient()
-        {
-#if DEBUG
-            DebugThreadTracking.SetThreadSource(ThreadKinds.Finalization);
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.System | ThreadKinds.Async))
-            {
-#endif
-                Dispose(false);
-#if DEBUG
-            }
-#endif
-        }
+        ~TcpClient() => Dispose(false);
 
         // Gets or sets the size of the receive buffer in bytes.
         public int ReceiveBufferSize

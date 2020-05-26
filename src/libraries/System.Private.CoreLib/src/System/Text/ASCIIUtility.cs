@@ -12,32 +12,10 @@ using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 #endif
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else // TARGET_64BIT
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif // TARGET_64BIT
-#else
-using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
-using nuint = System.UInt64;
-#endif
-
 namespace System.Text
 {
     internal static partial class ASCIIUtility
     {
-#if DEBUG && SYSTEM_PRIVATE_CORELIB
-        static ASCIIUtility()
-        {
-            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
-            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
-        }
-#endif // DEBUG && SYSTEM_PRIVATE_CORELIB
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllBytesInUInt64AreAscii(ulong value)
         {
@@ -410,7 +388,7 @@ namespace System.Text
 
             if ((bufferLength & 8) != 0)
             {
-                if (Bmi1.X64.IsSupported)
+                if (UIntPtr.Size == sizeof(ulong))
                 {
                     // If we can use 64-bit tzcnt to count the number of leading ASCII bytes, prefer it.
 
@@ -418,10 +396,10 @@ namespace System.Text
                     if (!AllBytesInUInt64AreAscii(candidateUInt64))
                     {
                         // Clear everything but the high bit of each byte, then tzcnt.
-                        // Remember the / 8 at the end to convert bit count to byte count.
+                        // Remember to divide by 8 at the end to convert bit count to byte count.
 
                         candidateUInt64 &= UInt64HighBitsOnlyMask;
-                        pBuffer += (nuint)(Bmi1.X64.TrailingZeroCount(candidateUInt64) / 8);
+                        pBuffer += (nuint)(BitOperations.TrailingZeroCount(candidateUInt64) >> 3);
                         goto Finish;
                     }
                 }
@@ -524,7 +502,9 @@ namespace System.Text
 
             char* pOriginalBuffer = pBuffer;
 
+#if SYSTEM_PRIVATE_CORELIB
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
+#endif
 
             // Before we drain off char-by-char, try a generic vectorized loop.
             // Only run the loop if we have at least two vectors we can pull out.
@@ -687,7 +667,9 @@ namespace System.Text
             Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
             const uint NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether 'currentMask' contains non-ASCII data
 
+#if SYSTEM_PRIVATE_CORELIB
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
+#endif
 
             // Read the first vector unaligned.
 
@@ -932,7 +914,7 @@ namespace System.Text
 
             if ((bufferLength & 4) != 0)
             {
-                if (Bmi1.X64.IsSupported)
+                if (UIntPtr.Size == sizeof(ulong))
                 {
                     // If we can use 64-bit tzcnt to count the number of leading ASCII chars, prefer it.
 
@@ -940,12 +922,12 @@ namespace System.Text
                     if (!AllCharsInUInt64AreAscii(candidateUInt64))
                     {
                         // Clear the low 7 bits (the ASCII bits) of each char, then tzcnt.
-                        // Remember the / 8 at the end to convert bit count to byte count,
+                        // Remember to divide by 8 at the end to convert bit count to byte count,
                         // then the & ~1 at the end to treat a match in the high byte of
                         // any char the same as a match in the low byte of that same char.
 
                         candidateUInt64 &= 0xFF80FF80_FF80FF80ul;
-                        pBuffer = (char*)((byte*)pBuffer + ((nuint)(Bmi1.X64.TrailingZeroCount(candidateUInt64) / 8) & ~(nuint)1));
+                        pBuffer = (char*)((byte*)pBuffer + ((nuint)(BitOperations.TrailingZeroCount(candidateUInt64) >> 3) & ~(nuint)1));
                         goto Finish;
                     }
                 }

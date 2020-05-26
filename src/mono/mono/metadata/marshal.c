@@ -512,7 +512,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 		gpointer compiled_ptr = mono_compile_method_checked (wrapper, error);
 		goto_if_nok (error, leave);
 
-		mono_delegate_ctor_with_method (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
+		mono_delegate_ctor (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
 		goto_if_nok (error, leave);
 	}
 
@@ -2228,7 +2228,11 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 			return res;
 		cache_key = method->klass;
 	} else if (static_method_with_first_arg_bound) {
-		cache = get_cache (&get_method_image (target_method)->delegate_bound_static_invoke_cache,
+		GHashTable **cache_ptr;
+
+		cache_ptr = &mono_method_get_wrapper_cache (target_method)->delegate_bound_static_invoke_cache;
+
+		cache = get_cache (cache_ptr,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
 		/*
@@ -5191,11 +5195,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHan
 {
 	g_assert_not_netcore ();
 
-	MonoGCHandle gchandle = 0;
-	gsize const bytes = copy_managed_common (src, dest, start_index, length, (gpointer*)&managed_source_addr, &gchandle, error);
-	if (bytes)
-		memmove (dest, managed_source_addr, bytes); // no references should be involved
-	mono_gchandle_free_internal (gchandle);
+	if (length != 0) {
+		MonoGCHandle gchandle = 0;
+		gsize const bytes = copy_managed_common (src, dest, start_index, length, (gpointer*)&managed_source_addr, &gchandle, error);
+		if (bytes)
+			memmove (dest, managed_source_addr, bytes); // no references should be involved
+		mono_gchandle_free_internal (gchandle);
+	}
 }
 
 void
@@ -5208,11 +5214,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gconstpoin
 {
 	g_assert_not_netcore ();
 
-	MonoGCHandle gchandle = 0;
-	gsize const bytes = copy_managed_common (dest, src, start_index, length, &managed_dest_addr, &gchandle, error);
-	if (bytes)
-		memmove (managed_dest_addr, src, bytes); // no references should be involved
-	mono_gchandle_free_internal (gchandle);
+	if (length != 0) { 
+		MonoGCHandle gchandle = 0;
+		gsize const bytes = copy_managed_common (dest, src, start_index, length, &managed_dest_addr, &gchandle, error);
+		if (bytes)
+			memmove (managed_dest_addr, src, bytes); // no references should be involved
+		mono_gchandle_free_internal (gchandle);
+	}
 }
 
 MonoStringHandle
@@ -6260,6 +6268,36 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 
 		return res;
 	}
+	case MONO_TYPE_SZARRAY: {
+		//TODO: Implement structs and in-params for all value types	
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		// we only support char[] for in-params; we return a pointer to the managed heap here, and that's not 'in'-safe
+		if ((param_attrs & PARAM_ATTRIBUTE_IN) && eklass != mono_get_char_class ())
+			break;
+
+		if (m_class_get_rank (klass) > 1)
+			break;
+
+		if (arr->bounds)
+			if (arr->bounds->lower_bound != 0)
+				break;
+
+		if (mono_class_is_auto_layout (eklass))
+			break;
+
+		if (m_class_is_valuetype (eklass) && (mono_class_is_explicit_layout (eklass) || m_class_is_blittable (eklass) || m_class_is_enumtype (eklass)))
+			return arr->vector;
+
+		if (eklass == mono_get_char_class ()) {
+			char *res =  mono_utf16_to_utf8 ((mono_unichar2 *) arr->vector, arr->max_length, error);
+			return_val_if_nok (error, NULL);
+			return res;
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -6318,6 +6356,20 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		}
 
 		mono_marshal_free (ptr);
+		break;
+	}
+	case MONO_TYPE_SZARRAY: {
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		if (eklass != mono_get_char_class ())
+			break;
+
+		mono_unichar2 *utf16_array = g_utf8_to_utf16 ((const char *)ptr, arr->max_length, NULL, NULL, NULL);
+		g_free (ptr);
+		memcpy (arr->vector, utf16_array, arr->max_length * sizeof (mono_unichar2));
+		g_free (utf16_array);
 		break;
 	}
 	default:
@@ -6544,8 +6596,8 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	if (image->wrapper_caches.delegate_abstract_invoke_cache)
 		g_hash_table_foreach_remove (image->wrapper_caches.delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
 	// FIXME: Need to clear the caches in other images as well
-	if (image->delegate_bound_static_invoke_cache)
-		g_hash_table_remove (image->delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
+	if (image->wrapper_caches.delegate_bound_static_invoke_cache)
+		g_hash_table_remove (image->wrapper_caches.delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
 
 	if (marshal_mutex_initialized)
 		mono_marshal_unlock ();

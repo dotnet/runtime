@@ -103,29 +103,10 @@ HRESULT EEConfig::Init()
     iGCStress     = 0;
 #endif
 
-#ifdef STRESS_HEAP
-    iGCStressMix  = 0;
-    iGCStressStep = 1;
-#endif
-
     fGCBreakOnOOM = false;
-    iGCgen0size = 0;
-    iGCSegmentSize = 0;
     iGCconcurrent = 0;
-#ifdef _DEBUG
-    iGCLatencyMode = -1;
-#endif //_DEBUG
-    iGCForceCompact = 0;
     iGCHoardVM = 0;
-    iGCLOHCompactionMode = 0;
     iGCLOHThreshold = 0;
-    iGCHeapCount = 0;
-    iGCNoAffinitize = 0;
-    iGCAffinityMask = 0;
-
-#ifdef GCTRIMCOMMIT
-    iGCTrimCommit = 0;
-#endif
 
     m_fFreepZapSet = false;
 
@@ -144,14 +125,6 @@ HRESULT EEConfig::Init()
     fJitAlignLoops = false;
     fJitMinOpts = false;
     fPInvokeRestoreEsp = (DWORD)-1;
-
-    fLegacyNullReferenceExceptionPolicy = false;
-    fLegacyUnhandledExceptionPolicy = false;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // By default, there is not pre-V4 CSE policy
-    fLegacyCorruptedStateExceptionsPolicy = false;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     fNgenBindOptimizeNonGac = false;
     fStressLog = false;
@@ -476,7 +449,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GcCoverage, (LPWSTR*)&pszGcCoverageOnMethod));
     pszGcCoverageOnMethod = NarrowWideChar((LPWSTR)pszGcCoverageOnMethod);
-    iGCLatencyMode = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GCLatencyMode, iGCLatencyMode);
 #endif
 
     bool gcConcurrentWasForced = false;
@@ -507,17 +479,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #ifdef STRESS_HEAP
     BOOL bGCStressAndHeapVerifyAllowed = true;
-    iGCStressMix        =  CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressMix);
-    iGCStressStep       =  CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressStep);
-
-    // For GC stress mix mode ensure reasonable defaults
-    if (iGCStressMix != 0)
-    {
-        if (iGCStress == 0)
-            iGCStress |= int(GCSTRESS_ALLOC) | int(GCSTRESS_TRANSITION);
-        if (iGCStressStep == 0 || iGCStressStep == 1)
-            iGCStressStep = 0x10;
-    }
 
     if (iGCStress)
     {
@@ -558,21 +519,14 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
             else
             {
                 // If GCStress was enabled, and
-                // If GcConcurrent was NOT explicitly specified in the environment, and
-                // If GSCtressMix was NOT specified
-                // Then let's turn off concurrent GC since it make objects move less
-                if (iGCStressMix == 0)
-                {
-                    iGCconcurrent   =
-                    g_IGCconcurrent = 0;
-                }
+                // If GcConcurrent was NOT explicitly specified in the environment,
+                // then let's turn off concurrent GC since it make objects move less
+                iGCconcurrent = g_IGCconcurrent = 0;
             }
         }
         else
         {
             iGCStress = 0;
-            iGCStressMix  = 0;
-            iGCStressStep = 1;
         }
     }
 
@@ -585,24 +539,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #endif //STRESS_HEAP
 
-#ifdef HOST_64BIT
-    iGCAffinityMask = GetConfigULONGLONG_DontUse_(CLRConfig::EXTERNAL_GCHeapAffinitizeMask, iGCAffinityMask);
-    if (!iGCAffinityMask) iGCAffinityMask =  Configuration::GetKnobULONGLONGValue(W("System.GC.HeapAffinitizeMask"));
-    if (!iGCSegmentSize) iGCSegmentSize =  GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
-    if (!iGCgen0size) iGCgen0size = GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
-#else
-    iGCAffinityMask = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_GCHeapAffinitizeMask, iGCAffinityMask);
-    if (!iGCAffinityMask) iGCAffinityMask = Configuration::GetKnobDWORDValue(W("System.GC.HeapAffinitizeMask"), 0);
-    if (!iGCSegmentSize) iGCSegmentSize =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
-    if (!iGCgen0size) iGCgen0size = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
-#endif //HOST_64BIT
-
-    const ULONGLONG ullHeapHardLimit = Configuration::GetKnobULONGLONGValue(W("System.GC.HeapHardLimit"));
-    iGCHeapHardLimit = FitsIn<size_t, ULONGLONG>(ullHeapHardLimit)
-        ? static_cast<size_t>(ullHeapHardLimit)
-        : ClrSafeInt<size_t>::MaxInt();
-    iGCHeapHardLimitPercent = Configuration::GetKnobDWORDValue(W("System.GC.HeapHardLimitPercent"), 0);
-
     if (g_IGCHoardVM)
         iGCHoardVM = g_IGCHoardVM;
     else
@@ -613,15 +549,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         iGCLOHThreshold = Configuration::GetKnobDWORDValue(W("System.GC.LOHThreshold"), CLRConfig::EXTERNAL_GCLOHThreshold);
         iGCLOHThreshold = max (iGCLOHThreshold, LARGE_OBJECT_SIZE);
     }
-
-    if (!iGCLOHCompactionMode) iGCLOHCompactionMode = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCLOHCompact, iGCLOHCompactionMode);
-
-#ifdef GCTRIMCOMMIT
-    if (g_IGCTrimCommit)
-        iGCTrimCommit = g_IGCTrimCommit;
-    else
-        iGCTrimCommit = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_gcTrimCommitOnLowMemory, iGCTrimCommit);
-#endif
 
 #ifdef FEATURE_CONSERVATIVE_GC
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
@@ -660,12 +587,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         IfFailRet(hr);
     }
 #endif
-
-    iGCForceCompact     =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_gcForceCompact, iGCForceCompact);
-    iGCNoAffinitize = Configuration::GetKnobBooleanValue(W("System.GC.NoAffinitize"),
-                                                         CLRConfig::EXTERNAL_GCNoAffinitize);
-    iGCHeapCount = Configuration::GetKnobDWORDValue(W("System.GC.HeapCount"), CLRConfig::EXTERNAL_GCHeapCount);
-
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
 

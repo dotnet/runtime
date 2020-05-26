@@ -39,12 +39,12 @@
     <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
     <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
     <TargetstvOS Condition="'$(TargetOS)' == 'tvOS'">true</TargetstvOS>
-    <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetsiOSSimulator>
+    <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and ('$(Platform)' == 'x64' or '$(Platform)' == 'x86')">true</TargetsiOSSimulator>
     <TargetstvOSSimulator Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetstvOSSimulator>
     <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
-    <TargetsWASM Condition="'$(TargetOS)' == 'WebAssembly'">true</TargetsWASM>
+    <TargetsBrowser Condition="'$(TargetOS)' == 'Browser'">true</TargetsBrowser>
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsWASM)' == 'true'">true</TargetsUnix>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -99,6 +99,15 @@
 
   <PropertyGroup>
     <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
-    <MonoLLVMDir Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>  
+    <MonoLLVMDir Condition="('$(MonoEnableLLVM)' == 'true' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser') and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
+  </PropertyGroup>
+
+  <!-- Paths for Mobile App Projects  -->
+  <PropertyGroup>
+    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
+    <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
+    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
+    <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
+    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
 </Project>

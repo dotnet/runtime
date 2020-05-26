@@ -1859,7 +1859,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoStackCrawlMark *stack_mark, 
 	//  is messed up when we go to construct the Local as the type arg...
 	//
 	// By contrast, if we started with Mine<System.Generic.Dict<int, Local>> we'd go in with assembly->image
-	// as the root and then even the detour into generics would still not screw us when we went to load Local.
+	// as the root and then even the detour into generics would still not cause issues when we went to load Local.
 	if (!info->assembly.name && !type) {
 		/* try mscorlib */
 		type = mono_reflection_get_type_checked (alc, rootimage, NULL, info, ignoreCase, TRUE, &type_resolve, error);
@@ -7310,7 +7310,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 		return_val_if_nok (error, NULL_HANDLE);
 	}
 
-	mono_delegate_ctor_with_method (delegate, target, NULL, method, error);
+	mono_delegate_ctor (delegate, target, NULL, method, error);
 	return_val_if_nok (error, NULL_HANDLE);
 	return delegate;
 }

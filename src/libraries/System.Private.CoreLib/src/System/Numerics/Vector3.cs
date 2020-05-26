@@ -70,9 +70,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals(object? obj)
         {
-            if (!(obj is Vector3))
-                return false;
-            return Equals((Vector3)obj);
+            return (obj is Vector3 other) && Equals(other);
         }
 
         /// <summary>
@@ -218,21 +216,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Clamp(Vector3 value1, Vector3 min, Vector3 max)
         {
-            // This compare order is very important!!!
             // We must follow HLSL behavior in the case user specified min value is bigger than max value.
-            float x = value1.X;
-            x = (min.X > x) ? min.X : x;  // max(x, minx)
-            x = (max.X < x) ? max.X : x;  // min(x, maxx)
-
-            float y = value1.Y;
-            y = (min.Y > y) ? min.Y : y;  // max(y, miny)
-            y = (max.Y < y) ? max.Y : y;  // min(y, maxy)
-
-            float z = value1.Z;
-            z = (min.Z > z) ? min.Z : z;  // max(z, minz)
-            z = (max.Z < z) ? max.Z : z;  // min(z, maxz)
-
-            return new Vector3(x, y, z);
+            return Vector3.Min(Vector3.Max(value1, min), max);
         }
 
         /// <summary>

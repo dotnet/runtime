@@ -3,6 +3,7 @@
   <PropertyGroup>
     <!-- Make this Internal package's runtime.json point to the non-Internal runtime packages. -->
     <RuntimeProjectFile>$(MSBuildThisFileDirectory)Microsoft.NETCore.App.pkgproj</RuntimeProjectFile>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
@@ -19,8 +20,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Dependency Include="Microsoft.NETCore.Platforms" Version="$(Version)" TargetFramework="$(NETCoreAppFramework)" />
-    <Dependency Include="Microsoft.NETCore.Targets" Version="$(Version)" TargetFramework="$(NETCoreAppFramework)" />
+    <Dependency Include="Microsoft.NETCore.Platforms" Version="$(Version)" TargetFramework="$(NetCoreAppCurrent)" />
+    <Dependency Include="Microsoft.NETCore.Targets" Version="$(Version)" TargetFramework="$(NetCoreAppCurrent)" />
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

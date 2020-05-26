@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // CompareEventInfo is marked as Obsolete.
     public partial class ComAwareEventInfoTests
     {
         [Fact]
@@ -40,7 +39,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Ctor_NullEventName_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => new ComAwareEventInfo(typeof(NonComObject), null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new ComAwareEventInfo(typeof(NonComObject), null));
         }
 
         [Fact]
@@ -109,5 +108,4 @@ namespace System.Runtime.InteropServices.Tests
             public void Raise(object sender) => Event.Invoke(1, null);
         }
     }
-#pragma warning restore 0618
 }

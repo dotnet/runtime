@@ -19,7 +19,7 @@ namespace System.Net.Http.Json
             Debug.Assert(content.Headers.ContentType != null);
             Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
 
-            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options ?? JsonContent.DefaultSerializerOptions, cancellationToken);
+            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
         }
 
         public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
@@ -28,7 +28,7 @@ namespace System.Net.Http.Json
             Debug.Assert(content.Headers.ContentType != null);
             Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
 
-            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options ?? JsonContent.DefaultSerializerOptions, cancellationToken);
+            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
         }
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
@@ -38,12 +38,16 @@ namespace System.Net.Http.Json
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
+#if NETCOREAPP
+                contentStream = Encoding.CreateTranscodingStream(contentStream, innerStreamEncoding: sourceEncoding, outerStreamEncoding: Encoding.UTF8);
+#else
                 contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
+#endif
             }
 
             using (contentStream)
             {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -54,12 +58,16 @@ namespace System.Net.Http.Json
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
+#if NETCOREAPP
+                contentStream = Encoding.CreateTranscodingStream(contentStream, innerStreamEncoding: sourceEncoding, outerStreamEncoding: Encoding.UTF8);
+#else
                 contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
+#endif
             }
 
             using (contentStream)
             {
-                return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -76,7 +84,7 @@ namespace System.Net.Http.Json
                 !mediaType.Equals(JsonContent.JsonMediaType, StringComparison.OrdinalIgnoreCase) &&
                 !IsValidStructuredSyntaxJsonSuffix(mediaType.AsSpan()))
             {
-                throw new NotSupportedException(SR.ContentTypeNotSupported);
+                throw new NotSupportedException(SR.Format(SR.ContentTypeNotSupported, mediaType));
             }
         }
 

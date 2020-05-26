@@ -63,6 +63,129 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        public void BinaryReader_EofReachedEarlyTests_ThrowsException()
+        {
+            // test integer primitives
+
+            RunTest(writer => writer.Write(byte.MinValue), reader => reader.ReadByte());
+            RunTest(writer => writer.Write(byte.MaxValue), reader => reader.ReadByte());
+            RunTest(writer => writer.Write(sbyte.MinValue), reader => reader.ReadSByte());
+            RunTest(writer => writer.Write(sbyte.MaxValue), reader => reader.ReadSByte());
+            RunTest(writer => writer.Write(short.MinValue), reader => reader.ReadInt16());
+            RunTest(writer => writer.Write(short.MaxValue), reader => reader.ReadInt16());
+            RunTest(writer => writer.Write(ushort.MinValue), reader => reader.ReadUInt16());
+            RunTest(writer => writer.Write(ushort.MaxValue), reader => reader.ReadUInt16());
+            RunTest(writer => writer.Write(int.MinValue), reader => reader.ReadInt32());
+            RunTest(writer => writer.Write(int.MaxValue), reader => reader.ReadInt32());
+            RunTest(writer => writer.Write(uint.MinValue), reader => reader.ReadUInt32());
+            RunTest(writer => writer.Write(uint.MaxValue), reader => reader.ReadUInt32());
+            RunTest(writer => writer.Write(long.MinValue), reader => reader.ReadInt64());
+            RunTest(writer => writer.Write(long.MaxValue), reader => reader.ReadInt64());
+            RunTest(writer => writer.Write(ulong.MinValue), reader => reader.ReadUInt64());
+            RunTest(writer => writer.Write(ulong.MaxValue), reader => reader.ReadUInt64());
+            RunTest(writer => writer.Write7BitEncodedInt(int.MinValue), reader => reader.Read7BitEncodedInt());
+            RunTest(writer => writer.Write7BitEncodedInt(int.MaxValue), reader => reader.Read7BitEncodedInt());
+            RunTest(writer => writer.Write7BitEncodedInt64(long.MinValue), reader => reader.Read7BitEncodedInt64());
+            RunTest(writer => writer.Write7BitEncodedInt64(long.MaxValue), reader => reader.Read7BitEncodedInt64());
+
+            // test non-integer numeric types
+
+            RunTest(writer => writer.Write((float)0.1234), reader => reader.ReadSingle());
+            RunTest(writer => writer.Write((double)0.1234), reader => reader.ReadDouble());
+            RunTest(writer => writer.Write((decimal)0.1234), reader => reader.ReadDecimal());
+
+            // test non-numeric primitive types
+
+            RunTest(writer => writer.Write(true), reader => reader.ReadBoolean());
+            RunTest(writer => writer.Write(false), reader => reader.ReadBoolean());
+            RunTest(writer => writer.Write(string.Empty), reader => reader.ReadString());
+            RunTest(writer => writer.Write("hello world"), reader => reader.ReadString());
+            RunTest(writer => writer.Write(new string('x', 1024 * 1024)), reader => reader.ReadString());
+
+            void RunTest(Action<BinaryWriter> writeAction, Action<BinaryReader> readAction)
+            {
+                UTF8Encoding encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+                MemoryStream memoryStream = new MemoryStream();
+
+                // First, call the write action twice
+
+                BinaryWriter writer = new BinaryWriter(memoryStream, encoding, leaveOpen: true);
+                writeAction(writer);
+                writeAction(writer);
+                writer.Close();
+
+                // Make sure we populated the inner stream, then truncate it before EOF reached.
+
+                Assert.True(memoryStream.Length > 0);
+                memoryStream.Position = 0; // reset read pointer
+                memoryStream.SetLength(memoryStream.Length - 1); // truncate the last byte of the stream
+
+                BinaryReader reader = new BinaryReader(memoryStream, encoding);
+                readAction(reader); // should succeed
+                Assert.Throws<EndOfStreamException>(() => readAction(reader)); // should fail
+            }
+        }
+
+        /*
+         * Other tests for Read7BitEncodedInt[64] are in BinaryWriter.WriteTests.cs, not here.
+         */
+
+        [Fact]
+        public void BinaryReader_Read7BitEncodedInt_AllowsOverlongEncodings()
+        {
+            MemoryStream memoryStream = new MemoryStream(new byte[] { 0x9F, 0x00 /* overlong */ });
+            BinaryReader reader = new BinaryReader(memoryStream);
+
+            int actual = reader.Read7BitEncodedInt();
+            Assert.Equal(0x1F, actual);
+        }
+
+        [Fact]
+        public void BinaryReader_Read7BitEncodedInt_BadFormat_Throws()
+        {
+            // Serialized form of 0b1_00000000_00000000_00000000_00000000
+            //                      |0x10|| 0x80 || 0x80 || 0x80 || 0x80|
+
+            MemoryStream memoryStream = new MemoryStream(new byte[] { 0x80, 0x80, 0x80, 0x80, 0x10 });
+            BinaryReader reader = new BinaryReader(memoryStream);
+            Assert.Throws<FormatException>(() => reader.Read7BitEncodedInt());
+
+            // 5 bytes, all with the "there's more data after this" flag set
+
+            memoryStream = new MemoryStream(new byte[] { 0x80, 0x80, 0x80, 0x80, 0x80 });
+            reader = new BinaryReader(memoryStream);
+            Assert.Throws<FormatException>(() => reader.Read7BitEncodedInt());
+        }
+
+        [Fact]
+        public void BinaryReader_Read7BitEncodedInt64_AllowsOverlongEncodings()
+        {
+            MemoryStream memoryStream = new MemoryStream(new byte[] { 0x9F, 0x00 /* overlong */ });
+            BinaryReader reader = new BinaryReader(memoryStream);
+
+            long actual = reader.Read7BitEncodedInt64();
+            Assert.Equal(0x1F, actual);
+        }
+
+        [Fact]
+        public void BinaryReader_Read7BitEncodedInt64_BadFormat_Throws()
+        {
+            // Serialized form of 0b1_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000
+            //                      | || 0x80| | 0x80|| 0x80 || 0x80 || 0x80 || 0x80 || 0x80 || 0x80 || 0x80|
+            //                       `-- 0x02
+
+            MemoryStream memoryStream = new MemoryStream(new byte[] { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02 });
+            BinaryReader reader = new BinaryReader(memoryStream);
+            Assert.Throws<FormatException>(() => reader.Read7BitEncodedInt64());
+
+            // 10 bytes, all with the "there's more data after this" flag set
+
+            memoryStream = new MemoryStream(new byte[] { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 });
+            reader = new BinaryReader(memoryStream);
+            Assert.Throws<FormatException>(() => reader.Read7BitEncodedInt());
+        }
+
         private void ValidateDisposedExceptions(BinaryReader binaryReader)
         {
             byte[] byteBuffer = new byte[10];

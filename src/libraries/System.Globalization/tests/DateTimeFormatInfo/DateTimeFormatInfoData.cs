@@ -11,12 +11,12 @@ namespace System.Globalization.Tests
     {
         public static string EnUSEraName()
         {
-            return PlatformDetection.IsWindows ? "A.D." : "AD";
+            return PlatformDetection.IsNlsGlobalization ? "A.D." : "AD";
         }
 
         public static string EnUSAbbreviatedEraName()
         {
-            return PlatformDetection.IsWindows ? "AD" : "A";
+            return PlatformDetection.IsNlsGlobalization ? "AD" : "A";
         }
 
         public static string JaJPAbbreviatedEraName()
@@ -24,12 +24,12 @@ namespace System.Globalization.Tests
             // For Windows<Win7 and others, the default calendar is Gregorian Calendar, AD is expected to be the Era Name
             // CLDR has the Japanese abbreviated era name for the Gregorian Calendar in English - "AD",
             // so for non-Windows machines it will be "AD".
-            return PlatformDetection.IsWindows ? "\u897F\u66A6" : "AD";
+            return PlatformDetection.IsNlsGlobalization ? "\u897F\u66A6" : "AD";
         }
 
         public static string[] FrFRDayNames()
         {
-            if (PlatformDetection.IsOSX && PlatformDetection.OSXVersion < new Version(10, 12))
+            if (PlatformDetection.IsOSX && Environment.OSVersion.Version < new Version(10, 12))
             {
                 return new string[] { "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi" };
             }
@@ -38,7 +38,7 @@ namespace System.Globalization.Tests
 
         public static string[] FrFRAbbreviatedDayNames()
         {
-            if (PlatformDetection.IsOSX  && PlatformDetection.OSXVersion < new Version(10, 12))
+            if (PlatformDetection.IsOSX  && Environment.OSVersion.Version < new Version(10, 12))
             {
                 return new string[] { "Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam." };
             }

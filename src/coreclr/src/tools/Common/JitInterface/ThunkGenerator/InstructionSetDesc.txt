@@ -18,7 +18,9 @@
 ; Definition of X86 instruction sets
 
 definearch         ,X86   ,32Bit     ,X64
+instructionset     ,X86   ,X86Base   ,        ,22 ,X86Base  ,base
 instructionset     ,X86   ,Sse       ,        ,1  ,SSE      ,sse
+implication        ,X86   ,SSE       ,X86Base
 instructionset     ,X86   ,Sse2      ,        ,2  ,SSE2     ,sse2
 implication        ,X86   ,SSE2      ,SSE
 instructionset     ,X86   ,Sse3      ,        ,3  ,SSE3     ,sse3
@@ -48,9 +50,11 @@ instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
 implication        ,X86   ,POPCNT    ,SSE42
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
+implication        ,X86   ,Vector256 ,AVX
 
 ; Definition of X64 instruction sets (Define )
 definearch         ,X64   ,64Bit     ,X64
+instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,BMI1
 instructionset64bit,X86   ,BMI2
 instructionset64bit,X86   ,LZCNT

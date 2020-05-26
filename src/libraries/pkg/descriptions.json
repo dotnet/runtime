@@ -261,11 +261,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.NETCore.Platforms.Future",
-    "Description": "Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.  This package represents future platforms not yet supported in .NETCore stable release and is subject to change.",
-    "CommonTypes": []
-  },
-  {
     "Name": "Microsoft.NETCore.Portable.Compatibility",
     "Description": "Enables compatibility with portable libraries targeting previous .NET releases like .NET Framework 4.0 and Silverlight.\nThis package supports retargeting references to classic reference assemblies (mscorlib.dll, system.dll, etc) to new contract assemblies (System.Runtime.dll, System.IO, etc).  It does this in a pay-for-play way to prevent consuming assemblies from having to reference all of the contracts that happen to overlap with mscorlib.  As such, when using this package you may encounter errors like\n\terror CS0012: The type 'WebRequest' is defined in an assembly that is not referenced. You must add a reference to assembly 'System.Net.Requests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.\nTo resolve these errors install the package with the same name as the missing assembly.",
     "CommonTypes": []

@@ -15,6 +15,9 @@
     <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">
       <_crossHostArch>x64</_crossHostArch>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'armel' AND '$(OS)' != 'Windows_NT'">
+      <_crossHostArch>x64</_crossHostArch>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
       <_crossHostArch>x64</_crossHostArch>
     </PropertyGroup>

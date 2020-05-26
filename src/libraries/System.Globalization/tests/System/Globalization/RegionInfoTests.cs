@@ -52,8 +52,9 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("name", () => new RegionInfo(name));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
-        public void CurrentRegion()
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CurrentRegion_Unix()
         {
             using (new ThreadCultureChange("en-US"))
             {
@@ -63,8 +64,9 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        public void TestCurrentRegion()
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CurrentRegion_Windows()
         {
             RemoteExecutor.Invoke(() =>
             {
@@ -149,15 +151,15 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> RegionInfo_TestData()
         {
             yield return new object[] { 0x409, 244, "US Dollar", "US Dollar", "\u0055\u0053\u0020\u0044\u006f\u006c\u006c\u0061\u0072", "USA", "USA" };
-            yield return new object[] { 0x411, 122, "Japanese Yen", "Japanese Yen", PlatformDetection.IsWindows ? "\u5186" : "\u65e5\u672c\u5186", "JPN", "JPN" };
+            yield return new object[] { 0x411, 122, "Japanese Yen", "Japanese Yen", PlatformDetection.IsNlsGlobalization ? "\u5186" : "\u65e5\u672c\u5186", "JPN", "JPN" };
             yield return new object[] { 0x804, 45, "Chinese Yuan", "PRC Yuan Renminbi", "\u4eba\u6c11\u5e01", "CHN", "CHN" };
-            yield return new object[] { 0x401, 205, "Saudi Riyal", "Saudi Riyal", PlatformDetection.IsWindows ?
+            yield return new object[] { 0x401, 205, "Saudi Riyal", "Saudi Riyal", PlatformDetection.IsNlsGlobalization ?
                                                     "\u0631\u064a\u0627\u0644\u00a0\u0633\u0639\u0648\u062f\u064a" :
                                                     "\u0631\u064a\u0627\u0644\u0020\u0633\u0639\u0648\u062f\u064a",
                                                     "SAU", "SAU" };
-            yield return new object[] { 0x412, 134, "South Korean Won", "Korean Won", PlatformDetection.IsWindows ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR" };
+            yield return new object[] { 0x412, 134, "South Korean Won", "Korean Won", PlatformDetection.IsNlsGlobalization ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR" };
             yield return new object[] { 0x40d, 117, "Israeli New Shekel", "Israeli New Sheqel",
-                                                    PlatformDetection.IsWindows || PlatformDetection.ICUVersion.Major >= 58 ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
+                                                    PlatformDetection.IsNlsGlobalization || PlatformDetection.ICUVersion.Major >= 58 ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
         }
 
         [Theory]

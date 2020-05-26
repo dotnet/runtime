@@ -292,12 +292,76 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void FirstWithPredicateOnOrdered()
+        {
+            IEnumerable<int> orderBy = Enumerable.Range(0, 10).Shuffle().OrderBy(i => i);
+            IEnumerable<int> orderByDescending = Enumerable.Range(0, 10).Shuffle().OrderByDescending(i => i);
+            int counter;
+
+            counter = 0;
+            Assert.Equal(0, orderBy.First(i => { counter++; return true; }));
+            Assert.Equal(1, counter);
+
+            counter = 0;
+            Assert.Equal(9, orderBy.First(i => { counter++; return i == 9; }));
+            Assert.Equal(10, counter);
+
+            counter = 0;
+            Assert.Throws<InvalidOperationException>(() => orderBy.First(i => { counter++; return false; }));
+            Assert.Equal(10, counter);
+
+            counter = 0;
+            Assert.Equal(9, orderByDescending.First(i => { counter++; return true; }));
+            Assert.Equal(1, counter);
+
+            counter = 0;
+            Assert.Equal(0, orderByDescending.First(i => { counter++; return i == 0; }));
+            Assert.Equal(10, counter);
+
+            counter = 0;
+            Assert.Throws<InvalidOperationException>(() => orderByDescending.First(i => { counter++; return false; }));
+            Assert.Equal(10, counter);
+        }
+
+        [Fact]
         public void FirstOrDefaultOnOrdered()
         {
             Assert.Equal(0, Enumerable.Range(0, 10).Shuffle().OrderBy(i => i).FirstOrDefault());
             Assert.Equal(9, Enumerable.Range(0, 10).Shuffle().OrderByDescending(i => i).FirstOrDefault());
             Assert.Equal(10, Enumerable.Range(0, 100).Shuffle().OrderByDescending(i => i.ToString().Length).ThenBy(i => i).FirstOrDefault());
             Assert.Equal(0, Enumerable.Empty<int>().OrderBy(i => i).FirstOrDefault());
+        }
+
+        [Fact]
+        public void FirstOrDefaultWithPredicateOnOrdered()
+        {
+            IEnumerable<int> orderBy = Enumerable.Range(0, 10).Shuffle().OrderBy(i => i);
+            IEnumerable<int> orderByDescending = Enumerable.Range(0, 10).Shuffle().OrderByDescending(i => i);
+            int counter;
+
+            counter = 0;
+            Assert.Equal(0, orderBy.FirstOrDefault(i => { counter++; return true; }));
+            Assert.Equal(1, counter);
+
+            counter = 0;
+            Assert.Equal(9, orderBy.FirstOrDefault(i => { counter++; return i == 9; }));
+            Assert.Equal(10, counter);
+
+            counter = 0;
+            Assert.Equal(0, orderBy.FirstOrDefault(i => { counter++; return false; }));
+            Assert.Equal(10, counter);
+
+            counter = 0;
+            Assert.Equal(9, orderByDescending.FirstOrDefault(i => { counter++; return true; }));
+            Assert.Equal(1, counter);
+
+            counter = 0;
+            Assert.Equal(0, orderByDescending.FirstOrDefault(i => { counter++; return i == 0; }));
+            Assert.Equal(10, counter);
+
+            counter = 0;
+            Assert.Equal(0, orderByDescending.FirstOrDefault(i => { counter++; return false; }));
+            Assert.Equal(10, counter);
         }
 
         [Fact]

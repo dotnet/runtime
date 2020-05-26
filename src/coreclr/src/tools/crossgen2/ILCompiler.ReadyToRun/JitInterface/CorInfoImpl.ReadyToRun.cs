@@ -136,10 +136,12 @@ namespace Internal.JitInterface
         private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate::m_functionPointer
 
         private readonly ReadyToRunCodegenCompilation _compilation;
-        private IReadyToRunMethodCodeNode _methodCodeNode;
+        private MethodWithGCInfo _methodCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
+
+        private static readonly UnboxingMethodDescFactory s_unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -204,7 +206,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
+        public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode)
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
@@ -624,6 +626,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
+                // For Vector256.Create and similar cases
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
@@ -1151,25 +1155,6 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
             }
 
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
-                && originalMethod.IsNativeCallable)
-            {
-                if (!originalMethod.Signature.IsStatic) // Must be a static method
-                {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, originalMethod);
-                }
-
-                if (originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation) // No generics involved
-                {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, originalMethod);
-                }
-
-                if (Marshaller.IsMarshallingRequired(originalMethod.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
-                {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, originalMethod);
-                }
-            }
-
             exactType = type;
 
             constrainedType = null;
@@ -1503,7 +1488,7 @@ namespace Internal.JitInterface
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
             ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
-            ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+            _methodCodeNode.Fixups.Add(node);
         }
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
@@ -1532,9 +1517,9 @@ namespace Internal.JitInterface
                 out useInstantiatingStub);
 
             var targetDetails = _compilation.TypeSystemContext.Target;
-            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsNativeCallable)
+            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsUnmanagedCallersOnly)
             {
-                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
+                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented");
             }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
@@ -1566,7 +1551,7 @@ namespace Internal.JitInterface
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
                                 isUnboxingStub: false,
-                                _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
+                                MethodBeingCompiled));
                         }
                     break;
 
@@ -1884,7 +1869,7 @@ namespace Internal.JitInterface
 
                             if ((td.IsValueType) && !md.Signature.IsStatic)
                             {
-                                md = _unboxingThunkFactory.GetUnboxingMethod(md);
+                                md = getUnboxingThunk(md);
                             }
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
@@ -1907,6 +1892,11 @@ namespace Internal.JitInterface
             }
         }
 
+        private MethodDesc getUnboxingThunk(MethodDesc method)
+        {
+            return s_unboxingThunkFactory.GetUnboxingMethod(method);
+        }
+
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
         {
             // TODO: READYTORUN FUTURE: Handle this case correctly
@@ -1914,48 +1904,15 @@ namespace Internal.JitInterface
             throw new RequiresRuntimeJitException("embedMethodHandle: " + methodDesc.ToString());
         }
 
-        private bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        private bool NeedsTypeLayoutCheck(TypeDesc type)
         {
-            // Primitive types and enums have fixed layout
-            if (type.IsPrimitive || type.IsEnum)
-            {
-                return true;
-            }
+            if (!type.IsDefType)
+                return false;
 
-            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
-            {
-                if (!type.IsValueType)
-                {
-                    // Eventually, we may respect the non-versionable attribute for reference types too. For now, we are going
-                    // to play it safe and ignore it.
-                    return false;
-                }
+            if (!type.IsValueType)
+                return false;
 
-                // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
-                return type is MetadataType metadataType && metadataType.IsNonVersionable();
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Is field layout of the inheritance chain fixed within the current version bubble?
-        /// </summary>
-        private bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
-        {
-            // This method is not expected to be called for value types
-            Debug.Assert(!type.IsValueType);
-
-            while (!type.IsObject && type != null)
-            {
-                if (!IsLayoutFixedInCurrentVersionBubble(type))
-                {
-                    return false;
-                }
-                type = type.BaseType;
-            }
-
-            return true;
+            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type);
         }
 
         private bool HasLayoutMetadata(TypeDesc type)
@@ -1991,14 +1948,13 @@ namespace Internal.JitInterface
             {
                 // No-op except for instance fields
             }
-            else if (!IsLayoutFixedInCurrentVersionBubble(pMT))
+            else if (!_compilation.IsLayoutFixedInCurrentVersionBubble(pMT))
             {
                 if (pMT.IsValueType)
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
-                    pResult->offset = 0;
-                    pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
-                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    // No-op other than generating the check field offset fixup
                 }
                 else
                 {
@@ -2014,7 +1970,7 @@ namespace Internal.JitInterface
             {
                 // ENCODE_NONE
             }
-            else if (IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
+            else if (_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
             {
                 // ENCODE_NONE
             }
@@ -2115,7 +2071,7 @@ namespace Internal.JitInterface
             pBlockCounts = (BlockCounts*)GetPin(_bbCounts = new byte[count * sizeof(BlockCounts)]);
             if (_profileDataNode == null)
             {
-                _profileDataNode = _compilation.NodeFactory.ProfileData((MethodWithGCInfo)_methodCodeNode);
+                _profileDataNode = _compilation.NodeFactory.ProfileData(_methodCodeNode);
             }
             return 0;
         }

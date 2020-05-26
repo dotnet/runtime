@@ -87,6 +87,7 @@ bool emitInsIsCompare(instruction ins);
 bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
+bool emitInsIsVectorRightShift(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
@@ -187,7 +188,7 @@ union byteShiftedImm {
 
 static emitter::byteShiftedImm emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL);
 
-static INT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
+static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
 
 /************************************************************************
 *
@@ -300,8 +301,8 @@ static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
-// Returns the encoding to shift by 'shift' bits for an Arm64 vector or scalar instruction
-static code_t insEncodeVectorShift(emitAttr size, ssize_t shift);
+// Returns the encoding for ASIMD Shift instruction.
+static code_t insEncodeVectorShift(emitAttr size, ssize_t shiftAmount);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 vector instruction
 static code_t insEncodeElemsize(emitAttr size);
@@ -438,6 +439,11 @@ static emitAttr optGetElemsize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'widen-arrangement' specified by the vector register arrangement
 static insOpts optWidenElemsize(insOpts arrangement);
 
+//  For the given 'srcArrangement' returns the "widen" 'dstArrangement' specifying the destination vector register
+//  arrangement
+//  of Long Pairwise instructions. Note that destination vector elements twice as long as the source vector elements.
+static insOpts optWidenDstArrangement(insOpts srcArrangement);
+
 //  For the given 'conversion' returns the 'dstsize' specified by the conversion option
 static emitAttr optGetDstsize(insOpts conversion);
 
@@ -448,9 +454,9 @@ static emitAttr optGetSrcsize(insOpts conversion);
 //    for an element of size 'elemsize' in a vector register of size 'datasize'
 static bool isValidVectorIndex(emitAttr datasize, emitAttr elemsize, ssize_t index);
 
-// For a given Load/Store Vector instruction 'ins' returns a number of consecutive SIMD registers
-// the instruction loads to/store from.
-static unsigned insGetLoadStoreRegisterListSize(instruction ins);
+// For a given instruction 'ins' which contains a register lists returns a
+// number of consecutive SIMD registers the instruction loads to/store from.
+static unsigned insGetRegisterListSize(instruction ins);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
@@ -510,6 +516,13 @@ inline static unsigned getBitWidth(emitAttr size)
 inline static unsigned isValidImmShift(ssize_t imm, emitAttr size)
 {
     return (imm >= 0) && (imm < getBitWidth(size));
+}
+
+// Returns true if the 'shiftAmount' represents a valid shift for the given 'size'.
+inline static unsigned isValidVectorShiftAmount(ssize_t shiftAmount, emitAttr size, bool rightShift)
+{
+    return (rightShift && (shiftAmount >= 1) && (shiftAmount <= getBitWidth(size))) ||
+           ((shiftAmount >= 0) && (shiftAmount < getBitWidth(size)));
 }
 
 inline static bool isValidGeneralDatasize(emitAttr size)

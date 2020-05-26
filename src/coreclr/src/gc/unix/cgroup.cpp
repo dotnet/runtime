@@ -54,6 +54,8 @@ Abstract:
 #define CGROUP1_CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 #define CGROUP2_CPU_MAX_FILENAME "/cpu.max"
 
+extern bool ReadMemoryValueFromFile(const char* filename, uint64_t* val);
+
 class CGroup
 {
     // the cgroup version number or 0 to indicate cgroups are not found or not enabled
@@ -132,6 +134,10 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
+#if !HAVE_NON_LEGACY_STATFS
+        return 0;
+#else
+
         struct statfs stats;
         int result = statfs("/sys/fs/cgroup", &stats);
         if (result != 0)
@@ -145,6 +151,7 @@ private:
                 assert(!"Unexpected file system type for /sys/fs/cgroup");
                 return 0;
         }
+#endif
     }
 
     static bool IsCGroup1MemorySubsystem(const char *strTok){
@@ -412,52 +419,6 @@ private:
             }
         }
 
-        return result;
-    }
-
-    static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
-    {
-        bool result = false;
-        char *line = nullptr;
-        size_t lineLen = 0;
-        char* endptr = nullptr;
-        uint64_t num = 0, l, multiplier;
-        FILE* file = nullptr;
-
-        if (val == nullptr)
-            goto done;
-
-        file = fopen(filename, "r");
-        if (file == nullptr)
-            goto done;
-
-        if (getline(&line, &lineLen, file) == -1)
-            goto done;
-
-        errno = 0;
-        num = strtoull(line, &endptr, 0);
-        if (line == endptr || errno != 0)
-            goto done;
-
-        multiplier = 1;
-        switch(*endptr)
-        {
-            case 'g':
-            case 'G': multiplier = 1024;
-            case 'm':
-            case 'M': multiplier = multiplier*1024;
-            case 'k':
-            case 'K': multiplier = multiplier*1024;
-        }
-
-        *val = num * multiplier;
-        result = true;
-        if (*val/multiplier != num)
-            result = false;
-    done:
-        if (file)
-            fclose(file);
-        free(line);
         return result;
     }
 

@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.0;netstandard1.3;netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard1.3;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Channels.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <Compile Include="System.Threading.Channels.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">

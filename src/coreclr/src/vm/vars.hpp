@@ -467,10 +467,6 @@ EXTERN HINSTANCE            g_pDebuggerDll;
 EXTERN int g_IGCconcurrent;
 extern int g_IGCHoardVM;
 
-#ifdef GCTRIMCOMMIT
-extern int g_IGCTrimCommit;
-#endif
-
 // Returns a BOOL to indicate if the runtime is active or not
 BOOL IsRuntimeActive();
 
@@ -694,12 +690,23 @@ struct ModuleIndex
 
 typedef DPTR(GSCookie) PTR_GSCookie;
 
+#ifdef _MSC_VER
+#define READONLY_ATTR
+#else
+#ifdef __APPLE__
+#define READONLY_ATTR_ARGS section("__TEXT,__const")
+#else
+#define READONLY_ATTR_ARGS section(".rodata")
+#endif
+#define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
+#endif
+
 #ifndef DACCESS_COMPILE
 // const is so that it gets placed in the .text section (which is read-only)
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
-extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie;
+extern "C" RAW_KEYWORD(volatile) READONLY_ATTR const GSCookie s_gsCookie;
 
 inline
 GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&s_gsCookie); }

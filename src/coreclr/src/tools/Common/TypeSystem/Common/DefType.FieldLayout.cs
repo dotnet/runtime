@@ -281,22 +281,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        /// <summary>
-        /// Gets a value indicating whether the fields of the type satisfy the Homogeneous Float Aggregate classification.
-        /// </summary>
-        public bool IsHfa
-        {
-            get
-            {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics))
-                {
-                    ComputeValueTypeShapeCharacteristics();
-                }
-                return (_valueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.HomogenousFloatAggregate) != 0;
-            }
-        }
-
-        internal ValueTypeShapeCharacteristics ValueTypeShapeCharacteristics
+        public ValueTypeShapeCharacteristics ValueTypeShapeCharacteristics
         {
             get
             {
@@ -308,24 +293,37 @@ namespace Internal.TypeSystem
             }
         }
 
-        /// <summary>
-        /// Get the Homogeneous Float Aggregate element type if this is a HFA type (<see cref="IsHfa"/> is true).
-        /// </summary>
-        public DefType HfaElementType
-        {
-            get
-            {
-                // We are not caching this because this is rare and not worth wasting space in DefType.
-                return this.Context.GetLayoutAlgorithmForType(this).ComputeHomogeneousFloatAggregateElementType(this);
-            }
-        }
-
         private void ComputeValueTypeShapeCharacteristics()
         {
             _valueTypeShapeCharacteristics = this.Context.GetLayoutAlgorithmForType(this).ComputeValueTypeShapeCharacteristics(this);
             _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the type is a homogeneous floating-point or short-vector aggregate.
+        /// </summary>
+        public bool IsHomogeneousAggregate
+        {
+            get
+            {
+                return (ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) != 0;
+            }
+        }
+
+        /// <summary>
+        /// If the type is a homogeneous floating-point or short-vector aggregate, returns its element size.
+        /// </summary>
+        public int GetHomogeneousAggregateElementSize()
+        {
+            return (ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
+            {
+                ValueTypeShapeCharacteristics.Float32Aggregate => 4,
+                ValueTypeShapeCharacteristics.Float64Aggregate => 8,
+                ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
+                ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
+                _ => throw new InvalidOperationException()
+            };
+        }
 
         public void ComputeInstanceLayout(InstanceLayoutKind layoutKind)
         {

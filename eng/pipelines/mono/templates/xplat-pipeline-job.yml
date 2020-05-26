@@ -9,7 +9,8 @@ parameters:
   liveLibrariesBuildConfig: ''
   strategy: ''
   pool: ''
-  llvm: false
+  runtimeVariant: ''
+  liveRuntimeBuildConfig: 'release'
 
   # arcade-specific parameters
   condition: true
@@ -34,7 +35,7 @@ jobs:
     container: ${{ parameters.container }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
-    llvm: ${{ parameters.llvm }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -46,14 +47,49 @@ jobs:
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
 
     variables:
+    - name: coreClrProductArtifactName
+      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_${{ parameters.liveRuntimeBuildConfig }}'
+
+    - name: coreClrProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(liveRuntimeBuildConfigUpper)'
+
     - name: buildProductArtifactName
-      ${{ if ne(parameters.llvm, true) }}:
-        value: 'MonoProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-      ${{ if eq(parameters.llvm, true) }}:
-        value: 'MonoProduct_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: binTestsPath
+      value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
 
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: managedTestArtifactRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: managedTestArtifactName
+      value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
+
+    - name: microsoftNetSdkIlFolderPath
+      value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
+
+    - name: microsoftNetSdkIlArtifactName
+      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
+
+    - name: monoRepoRoot
+      value: '$(Build.SourcesDirectory)/src/mono'
+
+    - name: nativeTestArtifactName
+      value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: nativeTestArtifactRootFolderPath
+      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: liveRuntimeBuildConfigUpper
+      ${{ if eq(parameters.liveRuntimeBuildConfig, 'release') }}:
+        value: 'Release'
+      ${{ if eq(parameters.liveRuntimeBuildConfig, 'checked') }}:
+        value: 'Checked'
+      ${{ if eq(parameters.liveRuntimeBuildConfig, 'debug') }}:
+        value: 'Debug'
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''

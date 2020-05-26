@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         {
             AsnEncodedData a = new AsnEncodedData(new byte[3]);
             object ign;
-            Assert.Throws<ArgumentNullException>(() => ign = new Pkcs9AttributeObject(a));
+            AssertExtensions.Throws<ArgumentException, ArgumentNullException>("asnEncodedData", "asnEncodedData.Oid", () => ign = new Pkcs9AttributeObject(a));
         }
 
         [Fact]
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             AsnEncodedData a = new AsnEncodedData(oid, new byte[3]);
             object ign;
-            Assert.Throws<ArgumentNullException>(() => ign = new Pkcs9AttributeObject(a));
+            AssertExtensions.Throws<ArgumentException, ArgumentNullException>("asnEncodedData", "oid.Value", () => ign = new Pkcs9AttributeObject(a));
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             AsnEncodedData a = new AsnEncodedData(oid, new byte[3]);
             object ign;
-            AssertExtensions.Throws<ArgumentException>("oid.Value", () => ign = new Pkcs9AttributeObject(a));
+            AssertExtensions.Throws<ArgumentException>("asnEncodedData", "oid.Value", () => ign = new Pkcs9AttributeObject(a));
         }
 
         [Fact]

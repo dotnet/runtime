@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if defined(TARGET_FREEBSD)
+#define _WITH_GETLINE
+#endif
+
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"
@@ -13,6 +17,8 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <ctime>
+#include <locale>
+#include <codecvt>
 #include <pwd.h>
 #include "config.h"
 
@@ -35,7 +41,15 @@
 #define DT_LNK 10
 #endif
 
-pal::string_t pal::to_string(int value) { return std::to_string(value); }
+#ifdef __linux__
+#define PAL_CWD_SIZE 0
+#elif defined(MAXPATHLEN)
+#define PAL_CWD_SIZE MAXPATHLEN
+#elif defined(PATH_MAX)
+#define PAL_CWD_SIZE PATH_MAX
+#else
+#error "Don't know how to obtain max path on this platform"
+#endif
 
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
@@ -114,7 +128,7 @@ void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
 bool pal::getcwd(pal::string_t* recv)
 {
     recv->clear();
-    pal::char_t* buf = ::getcwd(nullptr, 0);
+    pal::char_t* buf = ::getcwd(nullptr, PAL_CWD_SIZE);
     if (buf == nullptr)
     {
         if (errno == ENOENT)
@@ -125,6 +139,7 @@ bool pal::getcwd(pal::string_t* recv)
         trace::error(_X("getcwd() failed: %s"), strerror(errno));
         return false;
     }
+
     recv->assign(buf);
     ::free(buf);
     return true;
@@ -248,6 +263,16 @@ void pal::unload_library(dll_t library)
 int pal::xtoi(const char_t* input)
 {
     return atoi(input);
+}
+
+bool pal::unicode_palstring(const char16_t* str, pal::string_t* out)
+{
+    out->clear();
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conversion;
+    out->assign(conversion.to_bytes(str));
+
+    return true;
 }
 
 bool pal::is_path_rooted(const pal::string_t& path)
@@ -754,6 +779,28 @@ bool pal::get_own_executable_path(pal::string_t* recv)
     }
     return false;
 }
+#elif defined(__sun)
+bool pal::get_own_executable_path(pal::string_t* recv)
+{
+    const char *path;
+    if ((path = getexecname()) == NULL)
+    {
+        return false;
+    }
+    else if (*path != '/')
+    {
+        if (!getcwd(recv))
+        {
+            return false;
+        }
+
+        recv->append("/").append(path);
+        return true;
+    }
+
+    recv->assign(path);
+    return true;
+}
 #else
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
@@ -768,6 +815,16 @@ bool pal::get_own_module_path(string_t* recv)
 {
     Dl_info info;
     if (dladdr((void *)&pal::get_own_module_path, &info) == 0)
+        return false;
+
+    recv->assign(info.dli_fname);
+    return true;
+}
+
+bool pal::get_method_module_path(string_t* recv, void* method)
+{
+    Dl_info info;
+    if (dladdr(method, &info) == 0)
         return false;
 
     recv->assign(info.dli_fname);

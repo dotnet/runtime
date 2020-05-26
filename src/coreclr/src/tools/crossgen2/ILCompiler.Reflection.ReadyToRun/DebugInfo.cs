@@ -134,7 +134,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 var entry = new DebugInfoBoundsEntry();
                 previousNativeOffset += reader.ReadUInt();
                 entry.NativeOffset = previousNativeOffset;
-                entry.ILOffset = (uint)(reader.ReadUInt() + (int)MappingTypes.MaxMappingValue);
+                entry.ILOffset = reader.ReadUInt() + (uint)DebugInfoBoundsType.MaxMappingValue;
                 entry.SourceTypes = (SourceTypes)reader.ReadUInt();
                 _boundsList.Add(entry);
             }

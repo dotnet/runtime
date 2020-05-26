@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.Json.Serialization
 {
     public partial class JsonConverter<T>
@@ -14,6 +16,7 @@ namespace System.Text.Json.Serialization
             return ReadCore(ref reader, options, ref state);
         }
 
+        [return: MaybeNull]
         internal T ReadCore(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
